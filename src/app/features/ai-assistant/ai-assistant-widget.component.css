@@ -1,0 +1,13 @@
+/* Scrollbar customizations and markdown container styles */
+.chat-markdown p {
+  margin: 0;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

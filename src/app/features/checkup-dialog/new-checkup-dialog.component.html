@@ -1,0 +1,224 @@
+@if (isOpen()) {
+  <div
+    class="m3-modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-checkup-title"
+    (mousedown)="onBackdropMouseDown($event)"
+    (click)="onBackdropClick($event)"
+  >
+    <div
+      class="m3-modal-dialog"
+      (mousedown)="$event.stopPropagation()"
+      (click)="$event.stopPropagation()"
+    >
+      <!-- Modal Header -->
+      <div class="m3-modal-header">
+        <h3 id="modal-checkup-title">Registrar Nuevo Control Clínico Pediátrico</h3>
+        <button
+          type="button"
+          class="modal-close-btn"
+          title="Cerrar modal"
+          aria-label="Cerrar modal"
+          (click)="closeModal()"
+          [disabled]="isSubmitting()"
+        >
+          &times;
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <form [formGroup]="checkupForm" class="m3-modal-body" (ngSubmit)="onSubmit()">
+        <p class="modal-subtitle">
+          Registro de nueva consulta pediátrica, medidas somatométricas y evolución médica del paciente.
+        </p>
+
+        @if (errorMessage()) {
+          <div class="m3-alert-error" role="alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <!-- Bloque 1: Datos de la Consulta Pediátrica -->
+        <fieldset class="clinical-fieldset">
+          <legend>Datos de la Consulta Pediátrica</legend>
+          <div class="form-grid-2">
+            <div class="m3-textfield">
+              <input
+                type="text"
+                id="inp-checkup-paciente-id"
+                [value]="activePatientService.patientId() != null ? activePatientService.patientId() : '—'"
+                readonly
+                disabled
+                placeholder=" "
+              />
+              <label for="inp-checkup-paciente-id">Historia Clínica N°</label>
+            </div>
+            <div class="m3-textfield">
+              <input
+                type="text"
+                id="inp-checkup-paciente-nombre"
+                [value]="activePatientService.patientName()"
+                readonly
+                disabled
+                placeholder=" "
+              />
+              <label for="inp-checkup-paciente-nombre">Paciente Seleccionado</label>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="m3-textfield" [class.has-error]="isInvalid('checkupDate')">
+              <input
+                type="date"
+                id="inp-control-fecha"
+                formControlName="checkupDate"
+                [max]="todayDate"
+                required
+                placeholder=" "
+              />
+              <label for="inp-control-fecha">Fecha de la Consulta *</label>
+              @if (isInvalid('checkupDate')) {
+                <span class="error-helper-text">La fecha de la consulta es obligatoria</span>
+              }
+            </div>
+
+            <div class="m3-textfield" [class.has-error]="isInvalid('reason')">
+              <select id="inp-control-motivo" formControlName="reason" required>
+                <option value="ROUTINE">Control de rutina</option>
+                <option value="VACCINATION">Vacunación</option>
+                <option value="ILLNESS">Patología aguda / Enfermedad</option>
+                <option value="FOLLOW_UP">Seguimiento crónico</option>
+                <option value="OTHER">Otros</option>
+              </select>
+              <label for="inp-control-motivo">Motivo de la Consulta *</label>
+              @if (isInvalid('reason')) {
+                <span class="error-helper-text">El motivo de la consulta es obligatorio</span>
+              }
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Bloque 2: Medidas Somatométricas / Antropométricas -->
+        <fieldset class="clinical-fieldset">
+          <legend>Medidas Antropométricas de la Consulta</legend>
+          @if (activePatientService.latestMeasurements(); as latest) {
+            <div class="fieldset-header-row">
+              <span class="field-label-sm">
+                Valores anteriores: {{ latest.weight ?? '—' }} kg / {{ latest.height ?? '—' }} cm / {{ latest.headCircumference ?? '—' }} cm
+              </span>
+              <button
+                type="button"
+                class="m3-button m3-button-text btn-copy"
+                title="Cargar últimas mediciones registradas"
+                (click)="copyPreviousMeasurements()"
+              >
+                ↻ Cargar mediciones previas
+              </button>
+            </div>
+          }
+
+          <div class="form-grid-3">
+            <div class="m3-textfield" [class.has-error]="isInvalid('weight')">
+              <input
+                type="number"
+                step="0.01"
+                id="inp-ctrl-peso"
+                formControlName="weight"
+                placeholder=" "
+                required
+              />
+              <label for="inp-ctrl-peso">Peso (kg) *</label>
+              @if (isInvalid('weight')) {
+                <span class="error-helper-text">Peso obligatorio (ej: 7.95)</span>
+              }
+            </div>
+
+            <div class="m3-textfield" [class.has-error]="isInvalid('height')">
+              <input
+                type="number"
+                step="0.1"
+                id="inp-ctrl-altura"
+                formControlName="height"
+                placeholder=" "
+                required
+              />
+              <label for="inp-ctrl-altura">Talla / Longitud (cm) *</label>
+              @if (isInvalid('height')) {
+                <span class="error-helper-text">Talla obligatoria (ej: 67.5)</span>
+              }
+            </div>
+
+            <div class="m3-textfield" [class.has-error]="isInvalid('headCircumference')">
+              <input
+                type="number"
+                step="0.1"
+                id="inp-ctrl-pc"
+                formControlName="headCircumference"
+                placeholder=" "
+                required
+              />
+              <label for="inp-ctrl-pc">Perímetro Cefálico (cm) *</label>
+              @if (isInvalid('headCircumference')) {
+                <span class="error-helper-text">Perímetro cefálico obligatorio (ej: 43.8)</span>
+              }
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Bloque 3: Observaciones y conducta médica -->
+        <fieldset class="clinical-fieldset">
+          <legend>Examen Físico, Vacunas & Pautas de Alarma Indicadas</legend>
+          <div class="m3-textfield">
+            <textarea
+              id="inp-ctrl-obs"
+              formControlName="observations"
+              rows="3"
+              placeholder=" "
+            ></textarea>
+            <label for="inp-ctrl-obs">Observaciones clínicas y Examen físico</label>
+          </div>
+          <div class="m3-textfield">
+            <input
+              type="text"
+              id="inp-ctrl-vacunas"
+              formControlName="appliedVaccines"
+              placeholder=" "
+            />
+            <label for="inp-ctrl-vacunas">Inmunizaciones aplicadas en este control</label>
+          </div>
+        </fieldset>
+
+        <!-- Modal Footer Actions -->
+        <div class="m3-modal-footer">
+          <button
+            type="button"
+            class="m3-button m3-button-text"
+            (click)="closeModal()"
+            [disabled]="isSubmitting()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="m3-button m3-button-filled"
+            [disabled]="isSubmitting()"
+          >
+            @if (isSubmitting()) {
+              <span class="spinner-small" aria-hidden="true"></span>
+              <span>Registrando Control...</span>
+            } @else {
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-2v-4H8v-2h4V8h2v4h4v2z"/>
+              </svg>
+              <span>Registrar Control</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

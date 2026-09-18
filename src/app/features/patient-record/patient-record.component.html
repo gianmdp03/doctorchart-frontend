@@ -1,0 +1,616 @@
+<div class="app-view patient-record-view">
+  @if (activePatientService.isLoading() && !activePatientService.activePatient()) {
+    <div class="m3-card elevated empty-state-card record-loading-card">
+      <div class="record-spinner-circle">
+        <div class="m3-spinner-ring"></div>
+      </div>
+      <h2>Cargando Ficha Clínica...</h2>
+      <p class="empty-state-text">Sincronizando información del paciente con el servidor clínico.</p>
+    </div>
+  } @else if (activePatientService.activePatient(); as patient) {
+    <!-- Sub-tabs navigation bar -->
+    <nav class="subtabs-nav" aria-label="Subsecciones de Ficha Clínica">
+      <button
+        type="button"
+        class="subtab-label"
+        [class.active]="selectedSubtab() === 'general'"
+        (click)="setSubtab('general')"
+      >
+        1. Datos Generales & Tutores
+      </button>
+      <button
+        type="button"
+        class="subtab-label"
+        [class.active]="selectedSubtab() === 'perinatal'"
+        (click)="setSubtab('perinatal')"
+      >
+        2. Antecedentes Perinatales & Nacer
+      </button>
+      <button
+        type="button"
+        class="subtab-label"
+        [class.active]="selectedSubtab() === 'personal'"
+        (click)="setSubtab('personal')"
+      >
+        3. Personales & Familiares
+      </button>
+      <button
+        type="button"
+        class="subtab-label"
+        [class.active]="selectedSubtab() === 'nutrition'"
+        (click)="setSubtab('nutrition')"
+      >
+        4. Alimentación & Vacunas
+      </button>
+      <button
+        type="button"
+        class="subtab-label"
+        [class.active]="selectedSubtab() === 'history'"
+        (click)="setSubtab('history')"
+      >
+        5. Historia Clínica & Consultas SOAP
+      </button>
+    </nav>
+
+    <div class="subtab-content-container">
+      <!-- SUBTAB 1: DATOS GENERALES & TUTORES -->
+      @if (selectedSubtab() === 'general') {
+        <section id="content-general" class="subtab-content-panel">
+          <div class="clinical-grid">
+            <!-- Datos Básicos del Niño -->
+            <fieldset class="clinical-fieldset">
+              <legend>Identificación del Paciente</legend>
+              <div class="info-row">
+                <span class="info-label">Historia Clínica N°:</span>
+                <span class="info-val"><strong>{{ patient.id }}</strong></span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Nombre Completo:</span>
+                <span class="info-val">{{ patient.fullName }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Fecha de Nacimiento:</span>
+                <span class="info-val">{{ activePatientService.formattedBirthDate() }} ({{ activePatientService.ageDisplay() }})</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Sexo Biológico:</span>
+                <span class="info-val">{{ biologicalSex() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Grupo y Factor:</span>
+                <span class="info-val">{{ bloodType() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">DNI Paciente:</span>
+                <span class="info-val">{{ patientNationalId() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Nacionalidad:</span>
+                <span class="info-val">Argentina</span>
+              </div>
+            </fieldset>
+
+            <!-- Datos de los Adultos Responsables -->
+            <fieldset class="clinical-fieldset">
+              <legend>Adultos Responsables y Domicilio Familiar</legend>
+
+              <h4 class="fieldset-subheading">Adulto Responsable 1</h4>
+              <div class="info-row">
+                <span class="info-label">Nombre Completo:</span>
+                <span class="info-val">{{ guardian1Name() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Teléfono de Contacto:</span>
+                <span class="info-val">
+                  <a [href]="'tel:' + guardian1Phone()" class="phone-link">{{ guardian1Phone() }}</a>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">DNI:</span>
+                <span class="info-val">{{ guardian1Dni() }}</span>
+              </div>
+
+              <h4 class="fieldset-subheading">Adulto Responsable 2</h4>
+              <div class="info-row">
+                <span class="info-label">Nombre Completo:</span>
+                <span class="info-val">{{ guardian2Name() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Teléfono de Contacto:</span>
+                <span class="info-val">
+                  <a [href]="'tel:' + guardian2Phone()" class="phone-link">{{ guardian2Phone() }}</a>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">DNI:</span>
+                <span class="info-val">{{ guardian2Dni() }}</span>
+              </div>
+
+              <h4 class="fieldset-subheading">Domicilio y Cobertura</h4>
+              <div class="info-row">
+                <span class="info-label">Dirección:</span>
+                <span class="info-val">{{ address() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Cobertura Médica:</span>
+                <span class="info-val">{{ healthInsurance() }}</span>
+              </div>
+            </fieldset>
+          </div>
+        </section>
+      }
+
+      <!-- SUBTAB 2: ANTECEDENTES PERINATALES & NACER -->
+      @if (selectedSubtab() === 'perinatal') {
+        <section id="content-perinatal" class="subtab-content-panel">
+          <div class="clinical-grid">
+            <fieldset class="clinical-fieldset">
+              <legend>Antecedentes del Embarazo y Nacimiento</legend>
+              <div class="info-row">
+                <span class="info-label">Número de Embarazo (Gesta):</span>
+                <span class="info-val"><strong>Gesta {{ gestationCount() }}</strong> (Para 1, Abortos 0, Cesáreas 1)</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Controles Prenatales:</span>
+                <span class="info-val">{{ prenatalVisits() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Complicaciones del Embarazo:</span>
+                <div class="info-val">
+                  <div class="chips-wrap">
+                    @for (chip of pregnancyComplicationChips(); track chip.name) {
+                      <span class="m3-chip" [class.filter-active]="chip.active">{{ chip.name }}</span>
+                    }
+                  </div>
+                  <p class="clinical-detail-box">
+                    <strong>Detalle clínico:</strong> {{ pregnancyDetail() }}
+                  </p>
+                </div>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Tipo de Parto:</span>
+                <span class="info-val">{{ deliveryType() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Líquido Amniótico:</span>
+                <span class="info-val">Claro, sin grumos ni meconio</span>
+              </div>
+            </fieldset>
+
+            <fieldset class="clinical-fieldset">
+              <legend>Medidas Antropométricas al Nacer</legend>
+              <div class="info-row">
+                <span class="info-label">Peso al Nacer:</span>
+                <span class="info-val"><strong>{{ birthWeightDisplay() }}</strong> (Adecuado para edad gestacional, P50 OMS)</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Talla al Nacer:</span>
+                <span class="info-val"><strong>{{ birthHeightDisplay() }}</strong> (P50 OMS)</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Perímetro Cefálico al Nacer:</span>
+                <span class="info-val"><strong>{{ birthHeadCircDisplay() }}</strong> (Normocéfalo, P52 OMS)</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Puntaje APGAR:</span>
+                <span class="info-val">9 / 10 (Vigoroso al 1' y a los 5')</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Edad Gestacional:</span>
+                <span class="info-val">39 semanas y 2 días (Capurro concordante)</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Pesquisa Neonatal:</span>
+                <span class="info-val">FEI / FCF normal (TSH, PKU, FQ, Galactosemia, HSR, Déficit de Biotinidasa normales). Emisiones otoacústicas: Pasa bilateral. Fondo de ojo: Normal.</span>
+              </div>
+            </fieldset>
+          </div>
+        </section>
+      }
+
+      <!-- SUBTAB 3: PERSONALES & FAMILIARES -->
+      @if (selectedSubtab() === 'personal') {
+        <section id="content-personal" class="subtab-content-panel">
+          <div class="clinical-grid">
+            <fieldset class="clinical-fieldset">
+              <legend>Antecedentes Médicos Personales</legend>
+              <div class="info-row">
+                <span class="info-label">Enfermedades Previas:</span>
+                <span class="info-val">{{ chronicOrPreviousDiseases() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Internaciones o Cirugías:</span>
+                <span class="info-val">{{ hospitalizationsOrSurgeries() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Alergias Conocidas:</span>
+                <span class="info-val">
+                  @if (allergies(); as allg) {
+                    {{ allg }}
+                  } @else {
+                    <strong style="color: var(--md-sys-color-success);">Sin alergias medicamentosas ni alimentarias reportadas</strong> a la fecha. No dermatitis atópica severa.
+                  }
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Medicación Habitual:</span>
+                <span class="info-val">
+                  @for (med of habitualMedication(); track $index) {
+                    <div>{{ $index + 1 }}. {{ med }}</div>
+                  }
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Peso Registrado al Nacer:</span>
+                <span class="info-val">{{ birthWeightDisplay() }}</span>
+              </div>
+            </fieldset>
+
+            <fieldset class="clinical-fieldset">
+              <legend>Antecedentes Médicos Familiares</legend>
+              <div class="info-row">
+                <span class="info-label">Enfermedades Crónicas Familiares:</span>
+                <span class="info-val">
+                  @for (item of familyChronicDiseases(); track $index) {
+                    <div>• {{ item }}</div>
+                  }
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Alergias en la Familia:</span>
+                <span class="info-val">{{ familyAllergies() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Enfermedades Genéticas:</span>
+                <span class="info-val">
+                  @if (geneticDiseases(); as gen) {
+                    {{ gen }}
+                  } @else {
+                    <strong style="color: var(--md-sys-color-success);">Negativas</strong>. Sin historia de cromosomopatías, cardiopatías congénitas sindrómicas, fibrosis quística ni muertes súbitas del lactante en familiares de primer o segundo grado.
+                  }
+                </span>
+              </div>
+            </fieldset>
+          </div>
+        </section>
+      }
+
+      <!-- SUBTAB 4: ALIMENTACIÓN Y VACUNAS -->
+      @if (selectedSubtab() === 'nutrition') {
+        <section id="content-nutrition" class="subtab-content-panel">
+          <div class="clinical-grid">
+            <fieldset class="clinical-fieldset">
+              <legend>Alimentación y Desarrollo Nutricional</legend>
+              <div class="info-row">
+                <span class="info-label">Tipo de Alimentación:</span>
+                <div class="info-val">
+                  @if (feedingDietCustom(); as diet) {
+                    <p>{{ diet }}</p>
+                  } @else {
+                    <p>Sin información de alimentación registrada.</p>
+                  }
+                </div>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Pautas Madurativas:</span>
+                <span class="info-val">{{ developmentalMilestones() }}</span>
+              </div>
+            </fieldset>
+
+            <fieldset class="clinical-fieldset">
+              <legend>Calendario Nacional de Vacunación</legend>
+              <p style="font-size: 0.82rem; color: var(--md-sys-color-secondary); margin-bottom: 0.5rem;">
+                Registro esquemático de inmunizaciones aplicadas:
+              </p>
+              <div class="m3-table-wrapper">
+                <table class="m3-table">
+                  <thead>
+                    <tr>
+                      <th>Edad</th>
+                      <th>Vacuna / Biológico</th>
+                      <th>Fecha</th>
+                      <th>Lote</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (vac of vaccineSchedule(); track vac.name) {
+                      <tr [style.background-color]="vac.pending ? 'var(--md-sys-color-surface-container-high)' : ''">
+                        <td>{{ vac.age }}</td>
+                        <td>{{ vac.name }}</td>
+                        <td>{{ vac.date }}</td>
+                        <td>{{ vac.lot }}</td>
+                        <td>
+                          <span
+                            class="m3-badge"
+                            [class.badge-success]="!vac.pending"
+                            [class.badge-warning]="vac.pending"
+                          >
+                            {{ vac.status }}
+                          </span>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="5" class="table-empty-cell">
+                          No se registran vacunas aplicadas en la ficha clínica.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </fieldset>
+          </div>
+        </section>
+      }
+
+      <!-- SUBTAB 5: HISTORIA CLÍNICA & CONSULTAS SOAP (UNIVERSAL) -->
+      @if (selectedSubtab() === 'history') {
+        <section id="content-history" class="subtab-content-panel">
+          <div class="m3-card">
+            <!-- Header with Title, Specialty Filter and Actions -->
+            <div class="m3-card-header encounter-section-header">
+              <div class="encounter-title-wrap">
+                <h3 class="m3-card-title">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                  </svg>
+                  Historia Clínica & Consultas SOAP (Universal)
+                </h3>
+                <p class="section-subtitle">
+                  Registro clínico universal multi-especialidad estructurado bajo el estándar SOAP (80% Relacional / 20% Dinámico).
+                </p>
+              </div>
+
+              <div class="encounter-header-actions">
+                <!-- Specialty Filter Selector -->
+                <div class="filter-box">
+                  <label for="specialty-filter" class="filter-label">Filtrar por Especialidad:</label>
+                  <select
+                    id="specialty-filter"
+                    class="specialty-filter-select"
+                    [ngModel]="selectedSpecialtyFilter()"
+                    (ngModelChange)="selectedSpecialtyFilter.set($event)"
+                  >
+                    <option value="ALL">Todas las Especialidades ({{ encounters().length }})</option>
+                    @for (opt of specialtyOptions; track opt.value) {
+                      <option [value]="opt.value">{{ opt.label }}</option>
+                    }
+                  </select>
+                </div>
+
+                <!-- Migration Button -->
+                <button
+                  type="button"
+                  class="m3-button m3-button-tonal btn-migrate"
+                  (click)="migratePediatricCheckups()"
+                  [disabled]="isMigrating()"
+                  title="Convierte controles pediátricos previos en consultas SOAP con código CIE-10 Z00.1"
+                >
+                  @if (isMigrating()) {
+                    <span class="spinner-small" aria-hidden="true"></span>
+                    Migrando...
+                  } @else {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+                    </svg>
+                    Migrar Controles Previos a SOAP
+                  }
+                </button>
+
+                <!-- New Encounter Button -->
+                <button
+                  type="button"
+                  class="m3-button m3-button-filled btn-new-encounter"
+                  (click)="openNewEncounterModal(undefined, $event)"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                  </svg>
+                  + Nueva Consulta SOAP
+                </button>
+              </div>
+            </div>
+
+            <!-- Migration Alert Feedback -->
+            @if (migrationMessage()) {
+              <div class="m3-alert-info">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                </svg>
+                <span>{{ migrationMessage() }}</span>
+              </div>
+            }
+
+            <!-- Tabla de Consultas Clínicas SOAP -->
+            <div class="m3-table-wrapper">
+              <table class="m3-table">
+                <thead>
+                  <tr>
+                    <th>N° Consulta</th>
+                    <th>Fecha</th>
+                    <th>Especialidad</th>
+                    <th>Tipo</th>
+                    <th>Motivo de Consulta (S)</th>
+                    <th>Diagnóstico Principal (A)</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (isLoadingEncounters()) {
+                    <tr>
+                      <td colspan="7" class="table-loading-cell">
+                        Cargando historial de consultas SOAP...
+                      </td>
+                    </tr>
+                  } @else {
+                    @for (enc of filteredEncounters(); track enc.id) {
+                      <tr>
+                        <td><strong>#E-{{ enc.id }}</strong></td>
+                        <td>{{ enc.encounterDate }}</td>
+                        <td>
+                          <span class="m3-badge" [class]="getSpecialtyBadgeClass(enc.specialty)">
+                            {{ getSpecialtyLabel(enc.specialty) }}
+                          </span>
+                        </td>
+                        <td>{{ getConsultationTypeLabel(enc.consultationType) }}</td>
+                        <td class="encounter-complaint-cell">{{ enc.chiefComplaint }}</td>
+                        <td class="encounter-diag-cell">
+                          <span class="diag-code-tag">{{ enc.primaryDiagnosisCode }}</span>
+                          {{ enc.primaryDiagnosisDescription }}
+                        </td>
+                        <td>
+                          <div class="table-actions">
+                            <button
+                              type="button"
+                              class="m3-button m3-button-tonal btn-action-sm"
+                              (click)="openEncounterDetail(enc.id)"
+                              title="Ver detalle completo de la consulta SOAP"
+                            >
+                              Ver Detalle
+                            </button>
+                            <button
+                              type="button"
+                              class="btn-icon-danger"
+                              (click)="deleteEncounter(enc.id, $event)"
+                              title="Eliminar consulta"
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="7" class="table-empty-cell">
+                          No se registran consultas SOAP para el filtro seleccionado.
+                          Haga clic en <strong>"+ Nueva Consulta SOAP"</strong> para iniciar la atención clínica.
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Herramientas Pediátricas Complementarias (Desacopladas) -->
+            <div class="pediatric-complement-card">
+              <div class="pediatric-complement-header" (click)="togglePediatricTools()">
+                <div class="pediatric-title-group">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                  </svg>
+                  <h4>Herramientas Pediátricas Complementarias (Somatometría Histórica & Controles Previos)</h4>
+                </div>
+                <button type="button" class="btn-toggle-tools">
+                  {{ isPediatricToolsExpanded() ? '▲ Ocultar Herramientas' : '▼ Ver Herramientas Pediátricas' }}
+                </button>
+              </div>
+
+              @if (isPediatricToolsExpanded()) {
+                <div class="pediatric-tools-body">
+                  <div class="pediatric-quick-nav">
+                    <button type="button" class="m3-button m3-button-tonal" (click)="navigateToGrowthCurves()">
+                      Ver Curvas de Crecimiento OMS
+                    </button>
+                    <button type="button" class="m3-button m3-button-tonal" (click)="navigateToMilestones()">
+                      Ver Hitos Madurativos
+                    </button>
+                    <button type="button" class="m3-button m3-button-tonal" (click)="openNewCheckupModal($event)">
+                      + Registrar Control Somatométrico Clásico
+                    </button>
+                  </div>
+
+                  <!-- Tabla Somatométrica Histórica -->
+                  <div class="m3-table-wrapper mt-2">
+                    <table class="m3-table">
+                      <thead>
+                        <tr>
+                          <th>N° Control</th>
+                          <th>Fecha</th>
+                          <th>Edad</th>
+                          <th>Motivo</th>
+                          <th>Peso (kg)</th>
+                          <th>Altura (cm)</th>
+                          <th>P. Cefálico (cm)</th>
+                          <th>Percentil OMS</th>
+                          <th>Observaciones Clínicas</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (checkup of checkupTableData(); track checkup.code) {
+                          <tr [style.background-color]="checkup.isLatest ? 'rgba(0, 104, 116, 0.05)' : ''">
+                            <td><strong>{{ checkup.code }}</strong></td>
+                            <td>{{ checkup.date }}</td>
+                            <td>{{ checkup.age }}</td>
+                            <td><span class="m3-chip">{{ checkup.reason }}</span></td>
+                            <td>{{ checkup.weight }}</td>
+                            <td>{{ checkup.height }}</td>
+                            <td>{{ checkup.headCircumference }}</td>
+                            <td>{{ checkup.percentile }}</td>
+                            <td>{{ checkup.observations }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Antropometría comparativa resumida -->
+                  <div class="metrics-comparison-grid mt-2">
+                    <div class="m3-card tonal metric-card">
+                      <div class="metric-card-title">Ganancia Ponderal Total</div>
+                      <div class="metric-card-value">{{ totalWeightGain() }}</div>
+                      <div class="metric-card-sub">{{ totalWeightGainSub() }}</div>
+                    </div>
+                    <div class="m3-card tonal metric-card">
+                      <div class="metric-card-title">Crecimiento Longitudinal</div>
+                      <div class="metric-card-value">{{ totalHeightGain() }}</div>
+                      <div class="metric-card-sub">{{ totalHeightGainSub() }}</div>
+                    </div>
+                    <div class="m3-card tonal metric-card">
+                      <div class="metric-card-title">Crecimiento Craneal</div>
+                      <div class="metric-card-value">{{ totalHeadCircGain() }}</div>
+                      <div class="metric-card-sub">{{ totalHeadCircGainSub() }}</div>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+  } @else {
+    <!-- Empty State Prompt when no active patient is selected -->
+    <div class="m3-card elevated empty-state-card">
+      <div class="empty-state-content">
+        <div class="empty-icon-circle">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+        </div>
+        <h2>No hay paciente activo seleccionado</h2>
+        <p class="empty-state-text">
+          Para visualizar la Ficha Clínica Integral completa con sus 5 secciones clínicas (Datos Generales, Antecedentes Perinatales, Personales & Familiares, Alimentación & Vacunas, y Evolución Somatométrica), seleccione un paciente del directorio o registre uno nuevo.
+        </p>
+        <div class="empty-state-actions">
+          <button type="button" class="m3-button m3-button-filled" (click)="navigateToPatients()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+            Ir al Directorio de Pacientes
+          </button>
+          <button type="button" class="m3-button m3-button-tonal" (click)="openNewPatientModal($event)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            + Registrar Nuevo Paciente
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

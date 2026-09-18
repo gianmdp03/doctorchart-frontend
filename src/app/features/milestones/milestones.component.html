@@ -1,0 +1,252 @@
+<div class="milestone-view-container">
+  <div class="milestone-header">
+    <div class="milestone-title-wrapper">
+      <h2 class="milestone-title">
+        Ayuda Memoria Pediátrica: Hitos Madurativos y Pautas de Alarma
+      </h2>
+      <p class="milestone-subtitle">
+        Guía clínica rápida de pesquisa psicomotora, nutricional y banderas rojas según franja etaria:
+      </p>
+    </div>
+
+    @if (activePatientService.activePatient(); as patient) {
+      <div class="patient-context-bar">
+        <span class="patient-chip">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+          <span>Paciente: <strong>{{ patient.fullName }}</strong> ({{ activePatientService.ageDisplay() }})</span>
+        </span>
+        @if (patientStage(); as pStage) {
+          <span class="patient-stage-badge">
+            Etapa sugerida: {{ pStage }} meses
+          </span>
+        }
+        <button
+          type="button"
+          class="btn-ficha-link"
+          (click)="goToPatientRecord()"
+          title="Ver Ficha Clínica del paciente"
+        >
+          Ver Ficha
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- Segmented Age Controller Bar -->
+  <nav class="milestone-age-bar" aria-label="Selección de franja etaria">
+    @for (stage of stages(); track stage.id) {
+      <button
+        type="button"
+        class="milestone-age-label"
+        [class.active]="selectedStage() === stage.id"
+        [class.patient-range]="stage.isPatientStage"
+        (click)="selectStage(stage.id)"
+        [attr.aria-pressed]="selectedStage() === stage.id"
+      >
+        {{ stage.label }}
+      </button>
+    }
+  </nav>
+
+  <!-- Milestone Content Container -->
+  <div class="milestone-content-container">
+
+    <!-- STAGE 0-3 MESES -->
+    @if (selectedStage() === '0-3') {
+      <section id="stage-0-3" class="milestone-stage-panel">
+        <div class="milestone-card-grid">
+          <article class="milestone-card">
+            <h3 class="m3-card-title">Reflejos Arcaicos y Neurodesarrollo</h3>
+            <ul class="milestone-list">
+              <li>Reflejo de Moro simétrico y activo.</li>
+              <li>Prensión palmar y plantar obligatoria presente.</li>
+              <li>Reflejo de búsqueda y succión vigorosa.</li>
+              <li>Marcha automática y tono flexor fisiológico.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">Motor & Postura</h3>
+            <ul class="milestone-list">
+              <li>En prono: Levanta la cabeza 45 grados momentáneamente.</li>
+              <li>Gira la cabeza hacia estímulos sonoros suaves.</li>
+              <li>Manos frecuentemente empuñadas en el primer mes.</li>
+              <li>Inicio de sostén cefálico hacia el 3er mes.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">Social y Lenguaje</h3>
+            <ul class="milestone-list">
+              <li>Fijación de la mirada y seguimiento a 90 grados.</li>
+              <li>Sonrisa social en respuesta al rostro humano (hacia las 6-8 semanas).</li>
+              <li>Gorjeos vocálicos ("a-gu", "e-he").</li>
+              <li>Calma ante la voz materna o contacto físico piel a piel.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card alarm-card">
+            <h3 class="m3-card-title" [style.color]="'var(--md-sys-color-error)'">Banderas Rojas (0 a 3 Meses)</h3>
+            <ul class="milestone-list">
+              <li>Fiebre &gt; 38°C (Urgencia infectológica en menor de 3 meses).</li>
+              <li>Letargia o rechazo total al alimento (más de 2 tomas seguidas).</li>
+              <li>Fontanela anterior abombada o intensamente deprimida.</li>
+              <li>Asimetría en movimientos de miembros o hipotonía severa ("bebé de trapo").</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    }
+
+    <!-- STAGE 4-6 MESES -->
+    @if (selectedStage() === '4-6') {
+      <section id="stage-4-6" class="milestone-stage-panel">
+        <div class="milestone-card-grid">
+          <article class="milestone-card">
+            <h3 class="m3-card-title">1. Reflejos y Evolución Neurológica</h3>
+            <ul class="milestone-list">
+              <li>Integración/desaparición progresiva del reflejo de Moro.</li>
+              <li>Desaparición de la prensión palmar involuntaria: inicio del agarre voluntario.</li>
+              <li>Aparición incipiente del reflejo de paracaídas anterior.</li>
+              <li>Desaparición del reflejo tónico cervical asimétrico ("espadachín").</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">2. Motor Grueso y Fino</h3>
+            <ul class="milestone-list">
+              <li><strong>Sostén cefálico completo y firme:</strong> No hay caída de cabeza en tracción supina.</li>
+              <li>En prono: Apoyo en antebrazos y manos con pecho totalmente despegado.</li>
+              <li>Rueda de decúbito prono a supino y viceversa.</li>
+              <li>Sedestación con apoyo en trípode con manos apoyadas hacia adelante.</li>
+              <li>Prensión voluntaria bimanual y transferencia de objetos de una mano a otra.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">3. Lenguaje, Social y Cognitivo</h3>
+            <ul class="milestone-list">
+              <li><strong>Sonrisa y carcajada franca:</strong> Risa sonora ante cosquillas y juegos interactivos.</li>
+              <li>Balbuceo duplicativo con consonantes labiales ("ba-ba", "ma-ma", "da-da").</li>
+              <li>Gira la cabeza rápidamente 180° cuando escucha su nombre o juguetes con sonido.</li>
+              <li>Lleva absolutamente todos los objetos a la boca (fase oral exploratoria).</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card nutrition-card">
+            <h3 class="m3-card-title" [style.color]="'#2e7d32'">4. Pautas Nutricionales (Inicio de AC)</h3>
+            <ul class="milestone-list">
+              <li>Inicio a los 6 meses cumplidos con signos de madurez neuromuscular completos.</li>
+              <li>Texturas pisadas con tenedor o papillas grumosas suaves (nunca licuados homogéneos).</li>
+              <li>Alimentos de alta densidad calórica y férrica: carnes cocidas, yema de huevo, zapallo, batata, palta.</li>
+              <li>Agua potable segura ofrecida en vaso o vasito de aprendizaje (sin biberón obligatorio).</li>
+              <li>Mantener leche materna a libre demanda o fórmula de inicio/continuación.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card alarm-card">
+            <h3 class="m3-card-title" [style.color]="'var(--md-sys-color-error)'">5. Banderas Rojas y Pautas de Alarma</h3>
+            <ul class="milestone-list">
+              <li>Ausencia de sostén cefálico firme al sentar o en suspensión vertical.</li>
+              <li>Falta de respuesta a la voz de los cuidadores o ausencia de sonrisa social recíproca.</li>
+              <li>Manos permanentemente cerradas en puño con pulgar atrapado (signo piramidal).</li>
+              <li>Incapacidad para rodar o asimetría persistente en el uso de extremidades.</li>
+              <li>Dificultad respiratoria con tiraje subcostal, aleteo nasal o quejido espiratorio.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    }
+
+    <!-- STAGE 7-9 MESES -->
+    @if (selectedStage() === '7-9') {
+      <section id="stage-7-9" class="milestone-stage-panel">
+        <div class="milestone-card-grid">
+          <article class="milestone-card">
+            <h3 class="m3-card-title">Motor & Sedestación Independiente</h3>
+            <ul class="milestone-list">
+              <li>Se sienta solo sin apoyo de manos durante periodos prolongados.</li>
+              <li>Inicia reptación o gateo coordinado sobre cuatro apoyos.</li>
+              <li>Prensión en pinza inferior (entre pulgar y base del índice).</li>
+              <li>Busca objetos que caen de su campo visual directo (permanencia del objeto).</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">Social y Cognitivo</h3>
+            <ul class="milestone-list">
+              <li>"Angustia del octavo mes" / Ansiedad ante la presencia de extraños.</li>
+              <li>Juega al "¿Dónde está el bebé?" (peek-a-boo) y tira juguetes para oír el sonido.</li>
+              <li>Comprende el tono de voz de prohibición o llamado ("no").</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card alarm-card">
+            <h3 class="m3-card-title" [style.color]="'var(--md-sys-color-error)'">Banderas Rojas (7 a 9 Meses)</h3>
+            <ul class="milestone-list">
+              <li>Incapacidad para sentarse con apoyo o espalda encorvada hipotónica.</li>
+              <li>Ausencia de balbuceo consonántico.</li>
+              <li>Falta de interés por interactuar con los padres o cuidadores.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    }
+
+    <!-- STAGE 10-12 MESES -->
+    @if (selectedStage() === '10-12') {
+      <section id="stage-10-12" class="milestone-stage-panel">
+        <div class="milestone-card-grid">
+          <article class="milestone-card">
+            <h3 class="m3-card-title">Bipedestación & Primeras Palabras</h3>
+            <ul class="milestone-list">
+              <li>Se pone de pie sujetándose de muebles o barrotes de la cuna.</li>
+              <li>Marcha lateral con apoyo o da primeros pasos independientes.</li>
+              <li>Prensión en pinza digital fina (yema de pulgar contra yema de índice).</li>
+              <li>Dice al menos una o dos palabras con significado ("mamá", "papá", "agua").</li>
+              <li>Aplaude, dice "chau" con la mano y responde activamente a consignas simples.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card alarm-card">
+            <h3 class="m3-card-title" [style.color]="'var(--md-sys-color-error)'">Banderas Rojas (10 a 12 Meses)</h3>
+            <ul class="milestone-list">
+              <li>No soporta su peso sobre las piernas al colocarlo de pie con apoyo.</li>
+              <li>No busca objetos ocultos bajo una tela o manta.</li>
+              <li>No emite ninguna palabra ni responde a su propio nombre.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    }
+
+    <!-- STAGE 12-24 MESES -->
+    @if (selectedStage() === '12-24') {
+      <section id="stage-12-24" class="milestone-stage-panel">
+        <div class="milestone-card-grid">
+          <article class="milestone-card">
+            <h3 class="m3-card-title">Marcha Independiente & Autonomía</h3>
+            <ul class="milestone-list">
+              <li>Camina solo de manera estable y sube escalones tomado de la mano.</li>
+              <li>Construye torres de 3 a 6 cubos y garabatea espontáneamente.</li>
+              <li>Vocabulario de 10 a 50 palabras; junta dos palabras ("mamá leche", "vamos auto").</li>
+              <li>Usa la cuchara con derrame parcial y bebe de un vaso con ambas manos.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card alarm-card">
+            <h3 class="m3-card-title" [style.color]="'var(--md-sys-color-error)'">Banderas Rojas (1 a 2 Años)</h3>
+            <ul class="milestone-list">
+              <li>No camina a los 18 meses cumplidos.</li>
+              <li>Pérdida de cualquier habilidad motriz o del lenguaje previamente adquirida.</li>
+              <li>Ausencia de contacto ocular o conductas repetitivas/estereotipadas.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    }
+
+  </div>
+</div>

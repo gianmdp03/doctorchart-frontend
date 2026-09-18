@@ -1,0 +1,46 @@
+@if (!authService.isAuthInitialized()) {
+  <div class="app-splash-screen" role="status" aria-live="polite">
+    <div class="splash-content">
+      <div class="splash-logo">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+        </svg>
+      </div>
+      <h2 class="splash-title">DoctorChart</h2>
+      <div class="splash-spinner"></div>
+      <p class="splash-text">Verificando sesión segura...</p>
+    </div>
+  </div>
+} @else if (!authService.isLoggedIn()) {
+  <app-login-page />
+} @else if (!doctorProfileService.loaded() || doctorProfileService.loading()) {
+  <div class="app-splash-screen" role="status" aria-live="polite">
+    <div class="splash-content">
+      <div class="splash-logo">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+        </svg>
+      </div>
+      <h2 class="splash-title">DoctorChart</h2>
+      <div class="splash-spinner"></div>
+      <p class="splash-text">Verificando perfil médico...</p>
+    </div>
+  </div>
+} @else if (!doctorProfileService.hasSpecialty()) {
+  <app-specialty-selection />
+} @else {
+  <app-header />
+  <app-patient-quick-banner />
+  <app-main-nav />
+
+  <main class="app-content-container">
+    <router-outlet />
+  </main>
+
+  <app-new-patient-dialog />
+  <app-new-checkup-dialog />
+  <app-new-encounter-dialog />
+  <app-encounter-detail-dialog />
+  <app-user-profile-dialog />
+  <app-ai-assistant-widget />
+}

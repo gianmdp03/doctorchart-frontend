@@ -1,0 +1,80 @@
+<section class="patient-quick-banner" aria-label="Resumen de paciente activo">
+  @if (activePatientService.activePatient(); as patient) {
+    <div class="patient-identity">
+      <div class="patient-avatar">{{ activePatientService.patientInitials() }}</div>
+      <div class="patient-titles">
+        <h2>
+          {{ patient.fullName }}
+          <span class="m3-badge badge-success">Activo</span>
+          <a routerLink="/pacientes" class="change-patient-btn" title="Cambiar paciente activo">⇄ Cambiar Paciente</a>
+        </h2>
+        <div class="patient-meta">
+          <span><strong>ID:</strong> #{{ patient.id }}</span>
+          @if (patient.nationalId) {
+            <span><strong>DNI:</strong> {{ patient.nationalId }}</span>
+          }
+          <span><strong>F. Nacimiento:</strong> {{ activePatientService.formattedBirthDate() }}</span>
+          <span><strong>Edad:</strong> {{ activePatientService.ageDisplay() }}</span>
+          @if (doctorSpecialtyService.isPediatricMode() && activePatientService.primaryGuardian() !== '—') {
+            <span><strong>Tutor:</strong> {{ activePatientService.primaryGuardian() }}</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Metrics Strip -->
+    <div class="patient-metrics-strip">
+      <div class="metric-pill" title="Último peso registrado">
+        <span class="label">Peso:</span>
+        <span class="val">{{ activePatientService.formattedWeight() }}</span>
+      </div>
+      <div class="metric-pill" title="Última talla registrada">
+        <span class="label">Talla:</span>
+        <span class="val">{{ activePatientService.formattedHeight() }}</span>
+      </div>
+      @if (doctorSpecialtyService.isPediatricMode()) {
+        <div class="metric-pill" title="Último perímetro cefálico">
+          <span class="label">P. Cefálico:</span>
+          <span class="val">{{ activePatientService.formattedHeadCircumference() }}</span>
+        </div>
+        <div class="metric-pill" title="Ganancia ponderal desde nacimiento">
+          <span class="label">Δ Ponderal:</span>
+          <span class="val">{{ activePatientService.deltaWeight() }}</span>
+        </div>
+      } @else {
+        <div class="metric-pill" title="Índice de Masa Corporal">
+          <span class="label">IMC:</span>
+          <span class="val">{{ activePatientService.bmiDisplay() }}</span>
+        </div>
+        @if (patient.bloodType) {
+          <div class="metric-pill" title="Grupo y Factor Sanguíneo">
+            <span class="label">Grupo:</span>
+            <span class="val">{{ patient.bloodType }}</span>
+          </div>
+        }
+      }
+    </div>
+  } @else {
+    <div class="patient-identity">
+      <div class="patient-avatar">--</div>
+      <div class="patient-titles">
+        <h2>
+          Sin paciente seleccionado
+          <span class="m3-badge badge-info">Esperando selección</span>
+        </h2>
+        <div class="patient-meta">
+          <span>Haga clic en <strong>Directorio</strong> para seleccionar un paciente o use el buscador superior</span>
+        </div>
+      </div>
+    </div>
+    <div class="patient-metrics-strip">
+      <a routerLink="/pacientes" class="m3-button m3-button-tonal select-patient-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+        </svg>
+        <span>Ver Directorio / Seleccionar</span>
+      </a>
+    </div>
+  }
+</section>
+

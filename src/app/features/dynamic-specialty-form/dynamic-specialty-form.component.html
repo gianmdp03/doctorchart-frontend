@@ -1,0 +1,178 @@
+<div class="dynamic-form-container">
+  @if (activeSchema(); as s) {
+    <!-- Specialty Header Banner -->
+    <div class="specialty-banner">
+      <div class="banner-header">
+        <span class="specialty-badge">{{ s.specialty }}</span>
+        <span class="version-tag">v{{ s.version }}</span>
+      </div>
+      <h3 class="specialty-title">{{ s.displayName }}</h3>
+      <p class="specialty-desc">{{ s.description }}</p>
+    </div>
+
+    <!-- Grouped Dynamic Fields -->
+    <div class="groups-list">
+      @for (group of groupedFields(); track group.groupName) {
+        <div class="field-group-card">
+          <div class="group-header">
+            <h4 class="group-title">{{ group.groupName }}</h4>
+            <div class="group-line"></div>
+          </div>
+
+          <div class="fields-grid">
+            @for (field of group.fields; track field.key) {
+              <div
+                class="field-item"
+                [class.field-full-width]="field.type === 'TEXTAREA' || field.type === 'MULTI_SELECT'"
+              >
+                <!-- Field Label & Required Mark -->
+                <label [for]="'field-' + field.key" class="field-label">
+                  {{ field.label }}
+                  @if (field.required) {
+                    <span class="required-indicator" title="Campo obligatorio">*</span>
+                  }
+                  @if (field.unit) {
+                    <span class="field-unit">({{ field.unit }})</span>
+                  }
+                </label>
+
+                <!-- Input Type: TEXT -->
+                @if (field.type === 'TEXT') {
+                  <input
+                    [id]="'field-' + field.key"
+                    type="text"
+                    class="form-control"
+                    [placeholder]="field.placeholder || ''"
+                    [value]="getFieldValue(field.key) || ''"
+                    [disabled]="readOnly()"
+                    (input)="onTextChange(field.key, $event)"
+                  />
+                }
+
+                <!-- Input Type: NUMBER -->
+                @if (field.type === 'NUMBER') {
+                  <div class="number-input-wrapper">
+                    <input
+                      [id]="'field-' + field.key"
+                      type="number"
+                      class="form-control"
+                      [min]="field.minValue ?? null"
+                      [max]="field.maxValue ?? null"
+                      [step]="'any'"
+                      [placeholder]="field.placeholder || (field.minValue !== undefined ? 'Min ' + field.minValue : '')"
+                      [value]="getFieldValue(field.key) ?? ''"
+                      [disabled]="readOnly()"
+                      (input)="onNumberChange(field.key, $event)"
+                    />
+                    @if (field.unit) {
+                      <span class="unit-badge">{{ field.unit }}</span>
+                    }
+                  </div>
+                  @if (field.minValue !== undefined || field.maxValue !== undefined) {
+                    <span class="range-hint">
+                      Rango sugerido:
+                      {{ field.minValue !== undefined ? field.minValue : '—' }} a
+                      {{ field.maxValue !== undefined ? field.maxValue : '—' }}
+                      {{ field.unit || '' }}
+                    </span>
+                  }
+                }
+
+                <!-- Input Type: SELECT -->
+                @if (field.type === 'SELECT') {
+                  <select
+                    [id]="'field-' + field.key"
+                    class="form-control form-select"
+                    [value]="getFieldValue(field.key) || ''"
+                    [disabled]="readOnly()"
+                    (change)="onSelectChange(field.key, $event)"
+                  >
+                    <option value="" disabled selected>Seleccione una opción...</option>
+                    @for (opt of field.options; track opt.value) {
+                      <option [value]="opt.value">{{ opt.label }}</option>
+                    }
+                  </select>
+                }
+
+                <!-- Input Type: MULTI_SELECT -->
+                @if (field.type === 'MULTI_SELECT') {
+                  <div class="multi-select-chips">
+                    @for (opt of field.options; track opt.value) {
+                      <button
+                        type="button"
+                        class="chip-button"
+                        [class.chip-selected]="isOptionSelected(field.key, opt.value)"
+                        [disabled]="readOnly()"
+                        (click)="toggleMultiSelect(field.key, opt.value)"
+                      >
+                        <span class="chip-check">
+                          @if (isOptionSelected(field.key, opt.value)) {
+                            ✓
+                          } @else {
+                            +
+                          }
+                        </span>
+                        {{ opt.label }}
+                      </button>
+                    }
+                  </div>
+                }
+
+                <!-- Input Type: BOOLEAN -->
+                @if (field.type === 'BOOLEAN') {
+                  <div class="boolean-toggle-wrapper">
+                    <label class="switch-label">
+                      <input
+                        [id]="'field-' + field.key"
+                        type="checkbox"
+                        class="toggle-checkbox"
+                        [checked]="!!getFieldValue(field.key)"
+                        [disabled]="readOnly()"
+                        (change)="onBooleanChange(field.key, $event)"
+                      />
+                      <span class="toggle-slider"></span>
+                      <span class="toggle-text">
+                        {{ getFieldValue(field.key) ? 'Sí / Positivo' : 'No / Negativo' }}
+                      </span>
+                    </label>
+                  </div>
+                }
+
+                <!-- Input Type: DATE -->
+                @if (field.type === 'DATE') {
+                  <input
+                    [id]="'field-' + field.key"
+                    type="date"
+                    class="form-control"
+                    [value]="getFieldValue(field.key) || ''"
+                    [disabled]="readOnly()"
+                    (input)="onTextChange(field.key, $event)"
+                  />
+                }
+
+                <!-- Input Type: TEXTAREA -->
+                @if (field.type === 'TEXTAREA') {
+                  <textarea
+                    [id]="'field-' + field.key"
+                    rows="3"
+                    class="form-control textarea-control"
+                    [placeholder]="field.placeholder || 'Detallar hallazgos clínicos observados...'"
+                    [value]="getFieldValue(field.key) || ''"
+                    [disabled]="readOnly()"
+                    (input)="onTextChange(field.key, $event)"
+                  ></textarea>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- Empty / Loading State -->
+    <div class="empty-state">
+      <div class="empty-icon">🏥</div>
+      <p class="empty-text">Seleccione una especialidad médica para cargar su protocolo clínico.</p>
+    </div>
+  }
+</div>

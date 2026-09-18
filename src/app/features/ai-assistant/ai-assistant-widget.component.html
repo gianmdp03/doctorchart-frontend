@@ -1,0 +1,249 @@
+<!-- CONTENEDOR FLOTANTE INFERIOR DERECHO -->
+<aside
+  class="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none font-sans"
+  aria-label="Asistente Pediátrico Clínico DoctorChart Copilot"
+>
+  <!-- ========================================================================= -->
+  <!-- 1. BOTÓN DISPARADOR FLOTANTE (FAB) -->
+  <!-- ========================================================================= -->
+  @if (!chatService.isOpen()) {
+    <button
+      type="button"
+      (click)="chatService.toggleChat()"
+      hlmBtn
+      variant="outline"
+      class="pointer-events-auto relative size-14 rounded-full bg-zinc-900/95 hover:bg-zinc-800/95 border-2 border-teal-500/50 hover:border-teal-400 text-teal-400 shadow-[0_0_30px_rgba(20,184,166,0.35)] transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer group"
+      aria-label="Abrir asistente pediátrico DoctorChart"
+      data-testid="fab-trigger"
+    >
+      <!-- Efecto resplandor sutil -->
+      <span
+        class="absolute inset-0 rounded-full bg-teal-500/10 animate-pulse pointer-events-none"
+      ></span>
+
+      <!-- Ícono principal con hover suave -->
+      <ng-icon
+        name="lucideSparkles"
+        class="size-6 text-teal-400 transition-transform duration-300 group-hover:rotate-12"
+      />
+
+      <!-- Badge de Mensajes no leídos / Ping dot -->
+      @if (chatService.hasUnread()) {
+        <span class="absolute -top-1 -right-1 flex h-4 w-4" data-testid="unread-ping">
+          <span
+            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"
+          ></span>
+          <span
+            class="relative inline-flex rounded-full h-4 w-4 bg-teal-500 border-2 border-zinc-950"
+          ></span>
+        </span>
+      }
+    </button>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- 2. VENTANA DE CHAT EXPANDIDA (SPARTAN UI + ZINC PALETTE + TEAL CLINICAL ACCENTS) -->
+  <!-- ========================================================================= -->
+  @if (chatService.isOpen()) {
+    <div
+      class="pointer-events-auto fixed inset-x-3 bottom-3 sm:static sm:inset-auto w-[calc(100vw-24px)] sm:w-[420px] h-[85vh] sm:h-[590px] bg-zinc-950/95 backdrop-blur-2xl border border-zinc-800/90 rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-5"
+      role="dialog"
+      aria-label="Ventana de chat de DoctorChart Copilot"
+      data-testid="chat-dialog"
+    >
+      <!-- CABECERA DEL CHAT -->
+      <header
+        class="px-4 py-3.5 bg-zinc-900/90 border-b border-zinc-800 flex items-center justify-between gap-3 shrink-0"
+      >
+        <div class="flex items-center gap-3">
+          <!-- Avatar con estado online clínico -->
+          <div
+            class="relative size-9 rounded-xl bg-teal-950/50 border border-teal-500/30 text-teal-400 flex items-center justify-center shrink-0 shadow-inner"
+          >
+            <ng-icon name="lucideBot" class="size-5" />
+            <span
+              class="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-teal-500 border-2 border-zinc-900"
+            ></span>
+          </div>
+
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h3 class="font-bold text-sm text-zinc-100 tracking-tight">
+                DoctorChart Copilot
+              </h3>
+              <span
+                hlmBadge
+                variant="outline"
+                class="border-teal-500/40 bg-teal-950/40 text-teal-400 text-[10px] px-1.5 py-0 font-medium"
+              >
+                Pediatría IA
+              </span>
+            </div>
+            <p class="text-[11px] text-zinc-400 font-medium flex items-center gap-1 mt-0.5">
+              <span class="size-1.5 rounded-full bg-emerald-400"></span>
+              <span>En línea • Asesor Clínico</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1">
+          <!-- Botón Reiniciar Historial -->
+          <button
+            type="button"
+            hlmBtn
+            variant="ghost"
+            size="icon"
+            (click)="chatService.clearHistory()"
+            class="size-8 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+            title="Reiniciar conversación"
+            aria-label="Reiniciar conversación"
+            data-testid="btn-clear-history"
+          >
+            <ng-icon name="lucideRotateCcw" class="size-4" />
+          </button>
+
+          <!-- Botón Cerrar Chat -->
+          <button
+            type="button"
+            hlmBtn
+            variant="ghost"
+            size="icon"
+            (click)="chatService.closeChat()"
+            class="size-8 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+            title="Cerrar chat"
+            aria-label="Cerrar chat"
+            data-testid="btn-close-chat"
+          >
+            <ng-icon name="lucideX" class="size-4" />
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENEDOR PRINCIPAL DE MENSAJES -->
+      <div
+        #messagesContainer
+        class="flex-1 p-4 overflow-y-auto space-y-3.5 scroll-smooth overscroll-contain"
+        data-testid="messages-container"
+      >
+        @for (msg of chatService.messages(); track msg.id) {
+          @if (msg.sender === 'user') {
+            <!-- Burbuja Usuario -->
+            <div class="flex justify-end" data-testid="user-message">
+              <div
+                class="max-w-[85%] bg-teal-600 text-white px-4 py-2.5 rounded-2xl rounded-tr-xs text-xs sm:text-sm font-medium shadow-md leading-relaxed select-text"
+              >
+                {{ msg.text }}
+              </div>
+            </div>
+          } @else {
+            <!-- Burbuja Asistente / Error Clínico -->
+            <div class="flex justify-start items-start gap-2" data-testid="assistant-message">
+              <div
+                class="size-6 rounded-lg bg-zinc-800 border border-zinc-700/60 text-teal-400 flex items-center justify-center shrink-0 mt-1"
+              >
+                <ng-icon name="lucideBot" class="size-3.5" />
+              </div>
+
+              <div
+                [class.border-rose-700]="msg.isError"
+                [class.bg-rose-950/30]="msg.isError"
+                [class.text-rose-200]="msg.isError"
+                [class.border-zinc-800]="!msg.isError"
+                [class.bg-zinc-900/80]="!msg.isError"
+                [class.text-zinc-200]="!msg.isError"
+                class="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tl-xs text-xs sm:text-sm shadow-sm leading-relaxed border select-text"
+              >
+                <div
+                  class="chat-markdown space-y-1"
+                  [innerHTML]="formatMessageText(msg.text)"
+                ></div>
+                <span
+                  class="block text-[10px] text-zinc-500 mt-1 text-right font-medium"
+                >
+                  {{ msg.timestamp | date: 'shortTime' }}
+                </span>
+              </div>
+            </div>
+          }
+        }
+
+        <!-- Indicador de Escribiendo (Typing) -->
+        @if (chatService.isTyping()) {
+          <div class="flex justify-start items-center gap-2" data-testid="typing-indicator">
+            <div
+              class="size-6 rounded-lg bg-zinc-800 border border-zinc-700/60 text-teal-400 flex items-center justify-center shrink-0"
+            >
+              <ng-icon name="lucideBot" class="size-3.5" />
+            </div>
+            <div
+              class="bg-zinc-900 border border-zinc-800 text-zinc-400 px-3.5 py-2 rounded-2xl rounded-tl-xs text-xs flex items-center gap-1.5 shadow-sm"
+            >
+              <span class="text-[11px] font-medium mr-1 text-zinc-300">DoctorChart está evaluando</span>
+              <span class="size-1.5 rounded-full bg-teal-400 animate-bounce"></span>
+              <span
+                class="size-1.5 rounded-full bg-teal-400 animate-bounce [animation-delay:0.2s]"
+              ></span>
+              <span
+                class="size-1.5 rounded-full bg-teal-400 animate-bounce [animation-delay:0.4s]"
+              ></span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- SUGERENCIAS RÁPIDAS (PROMPT CHIPS) -->
+      <div
+        class="px-3 py-2 bg-zinc-900/60 border-t border-zinc-800/80 overflow-x-auto flex items-center gap-1.5 shrink-0 scrollbar-none"
+        data-testid="suggested-prompts"
+      >
+        @for (prompt of chatService.suggestedPrompts; track prompt) {
+          <button
+            type="button"
+            (click)="onPromptClick(prompt)"
+            [disabled]="chatService.isTyping()"
+            class="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 hover:text-teal-400 border border-zinc-700/60 hover:border-teal-500/50 rounded-full text-[11px] font-medium text-zinc-300 whitespace-nowrap transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+          >
+            {{ prompt }}
+          </button>
+        }
+      </div>
+
+      <!-- CAJA DE TEXTO Y ENVÍO -->
+      <footer
+        class="p-3 bg-zinc-900/90 border-t border-zinc-800 shrink-0"
+      >
+        <form (ngSubmit)="onSendMessage()" class="flex items-center gap-2">
+          <input
+            hlmInput
+            type="text"
+            [ngModel]="inputMessage()"
+            (ngModelChange)="inputMessage.set($event)"
+            name="chatMessageInput"
+            (keydown)="onKeyDown($event)"
+            [disabled]="chatService.isTyping()"
+            placeholder="Consultar sobre percentiles, hitos madurativos o controles..."
+            class="flex-1 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder-zinc-500 focus-visible:ring-teal-500/40 text-xs sm:text-sm h-10 rounded-xl"
+            data-testid="chat-input"
+          />
+
+          <button
+            type="submit"
+            hlmBtn
+            variant="default"
+            size="icon"
+            [disabled]="!inputMessage().trim() || chatService.isTyping()"
+            class="size-10 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer shadow-sm flex items-center justify-center"
+            aria-label="Enviar consulta"
+            data-testid="btn-send"
+          >
+            @if (chatService.isTyping()) {
+              <ng-icon name="lucideLoader2" class="size-4 animate-spin text-white" />
+            } @else {
+              <ng-icon name="lucideSend" class="size-4 text-white" />
+            }
+          </button>
+        </form>
+      </footer>
+    </div>
+  }
+</aside>

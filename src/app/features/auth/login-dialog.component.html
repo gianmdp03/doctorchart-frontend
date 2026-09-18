@@ -1,0 +1,312 @@
+@if (isOpen()) {
+  <div
+    class="m3-modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-auth-title"
+    (click)="onBackdropClick($event)"
+  >
+    <div class="m3-modal-dialog auth-dialog" (click)="$event.stopPropagation()">
+      <!-- Header with branding -->
+      <div class="m3-modal-header auth-header">
+        <div class="auth-header-brand">
+          <div class="auth-brand-badge">
+            <span class="badge-dot"></span>
+            <span>Ecosistema Syntah • Pointly</span>
+          </div>
+          <h3 id="modal-auth-title">
+            @if (mode() === 'login') {
+              Iniciar Sesión en DoctorChart
+            } @else {
+              Crear Cuenta Unificada
+            }
+          </h3>
+        </div>
+        <button
+          type="button"
+          class="modal-close-btn"
+          title="Cerrar modal"
+          aria-label="Cerrar modal"
+          (click)="closeModal()"
+          [disabled]="isSubmitting()"
+        >
+          &times;
+        </button>
+      </div>
+
+      <!-- Segmented Mode Switcher -->
+      <div class="auth-mode-switcher" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          class="mode-switch-btn"
+          [class.active]="mode() === 'login'"
+          [attr.aria-selected]="mode() === 'login'"
+          (click)="setMode('login')"
+          [disabled]="isSubmitting()"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+          </svg>
+          <span>Iniciar Sesión</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="mode-switch-btn"
+          [class.active]="mode() === 'register'"
+          [attr.aria-selected]="mode() === 'register'"
+          (click)="setMode('register')"
+          [disabled]="isSubmitting()"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+          <span>Crear Cuenta</span>
+        </button>
+      </div>
+
+      <div class="m3-modal-body auth-body">
+        @if (errorMessage()) {
+          <div class="m3-alert-error" role="alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        @if (successMessage()) {
+          <div class="m3-alert-success" role="alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <span>{{ successMessage() }}</span>
+          </div>
+        }
+
+        <!-- LOGIN VIEW -->
+        @if (mode() === 'login') {
+          <form [formGroup]="loginForm" class="auth-form" (ngSubmit)="onLoginSubmit()">
+            <p class="auth-subtitle">
+              Accede a tu ficha clínica pediátrica unificada con tus credenciales de Pointly.
+            </p>
+
+            <!-- Google OAuth Button -->
+            <button
+              type="button"
+              class="m3-oauth-btn google-btn"
+              (click)="handleGoogleOAuth()"
+              [disabled]="isSubmitting()"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Continuar con Google</span>
+            </button>
+
+            <div class="auth-divider">
+              <span>o mediante correo</span>
+            </div>
+
+            <div class="m3-textfield" [class.has-error]="isLoginInvalid('email')">
+              <input
+                type="email"
+                id="login-email"
+                formControlName="email"
+                placeholder=" "
+                autocomplete="email"
+                required
+              />
+              <label for="login-email">Correo Electrónico *</label>
+              @if (isLoginInvalid('email')) {
+                <span class="error-helper-text">Ingrese un correo electrónico válido</span>
+              }
+            </div>
+
+            <div class="m3-textfield" [class.has-error]="isLoginInvalid('password')">
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                id="login-password"
+                formControlName="password"
+                placeholder=" "
+                autocomplete="current-password"
+                required
+              />
+              <label for="login-password">Contraseña *</label>
+              <button
+                type="button"
+                class="password-visibility-toggle"
+                (click)="togglePasswordVisibility()"
+                title="Mostrar u ocultar contraseña"
+                tabindex="-1"
+              >
+                @if (showPassword()) {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                  </svg>
+                } @else {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                  </svg>
+                }
+              </button>
+              @if (isLoginInvalid('password')) {
+                <span class="error-helper-text">La contraseña debe tener al menos 6 caracteres</span>
+              }
+            </div>
+
+            <div class="m3-modal-footer auth-footer">
+              <button
+                type="button"
+                class="m3-button m3-button-text"
+                (click)="closeModal()"
+                [disabled]="isSubmitting()"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                class="m3-button m3-button-filled"
+                [disabled]="isSubmitting()"
+              >
+                @if (isSubmitting()) {
+                  <span class="spinner-small" aria-hidden="true"></span>
+                  <span>Iniciando Sesión...</span>
+                } @else {
+                  <span>Iniciar Sesión</span>
+                }
+              </button>
+            </div>
+          </form>
+        }
+
+        <!-- REGISTER VIEW -->
+        @if (mode() === 'register') {
+          <form [formGroup]="registerForm" class="auth-form" (ngSubmit)="onRegisterSubmit()">
+            <p class="auth-subtitle">
+              Crea tu perfil profesional en Pointly para sincronizar historias clínicas en la nube.
+            </p>
+
+            <div class="m3-textfield" [class.has-error]="isRegisterInvalid('fullName')">
+              <input
+                type="text"
+                id="reg-fullname"
+                formControlName="fullName"
+                placeholder=" "
+                autocomplete="name"
+                required
+              />
+              <label for="reg-fullname">Nombre y Apellido Completo *</label>
+              @if (isRegisterInvalid('fullName')) {
+                <span class="error-helper-text">Ingrese su nombre y apellido completo</span>
+              }
+            </div>
+
+            <div class="m3-textfield" [class.has-error]="isRegisterInvalid('dni')">
+              <input
+                type="text"
+                id="reg-dni"
+                formControlName="dni"
+                placeholder=" "
+                required
+              />
+              <label for="reg-dni">DNI / Documento de Identidad *</label>
+              @if (isRegisterInvalid('dni')) {
+                <span class="error-helper-text">Ingrese un documento válido</span>
+              }
+            </div>
+
+            <div class="m3-textfield" [class.has-error]="isRegisterInvalid('email')">
+              <input
+                type="email"
+                id="reg-email"
+                formControlName="email"
+                placeholder=" "
+                autocomplete="email"
+                required
+              />
+              <label for="reg-email">Correo Electrónico *</label>
+              @if (isRegisterInvalid('email')) {
+                <span class="error-helper-text">Ingrese un correo electrónico válido</span>
+              }
+            </div>
+
+            <div class="m3-textfield" [class.has-error]="isRegisterInvalid('password')">
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                id="reg-password"
+                formControlName="password"
+                placeholder=" "
+                autocomplete="new-password"
+                required
+              />
+              <label for="reg-password">Contraseña (Mínimo 6 caracteres) *</label>
+              <button
+                type="button"
+                class="password-visibility-toggle"
+                (click)="togglePasswordVisibility()"
+                title="Mostrar u ocultar contraseña"
+                tabindex="-1"
+              >
+                @if (showPassword()) {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                  </svg>
+                } @else {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                  </svg>
+                }
+              </button>
+              @if (isRegisterInvalid('password')) {
+                <span class="error-helper-text">La contraseña debe tener al menos 6 caracteres</span>
+              }
+            </div>
+
+            <div class="m3-textfield" [class.has-error]="isRegisterInvalid('confirmPassword')">
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                id="reg-confirm-password"
+                formControlName="confirmPassword"
+                placeholder=" "
+                autocomplete="new-password"
+                required
+              />
+              <label for="reg-confirm-password">Confirmar Contraseña *</label>
+              @if (isRegisterInvalid('confirmPassword')) {
+                <span class="error-helper-text">Debe confirmar la contraseña</span>
+              }
+            </div>
+
+            <div class="m3-modal-footer auth-footer">
+              <button
+                type="button"
+                class="m3-button m3-button-text"
+                (click)="closeModal()"
+                [disabled]="isSubmitting()"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                class="m3-button m3-button-filled"
+                [disabled]="isSubmitting()"
+              >
+                @if (isSubmitting()) {
+                  <span class="spinner-small" aria-hidden="true"></span>
+                  <span>Registrando Cuenta...</span>
+                } @else {
+                  <span>Crear Cuenta</span>
+                }
+              </button>
+            </div>
+          </form>
+        }
+      </div>
+    </div>
+  </div>
+}

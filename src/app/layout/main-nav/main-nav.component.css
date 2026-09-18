@@ -1,0 +1,10 @@
+:host {
+  display: block;
+}
+
+.m3-tab-item.tab-active {
+  color: var(--md-sys-color-primary);
+  border-bottom-color: var(--md-sys-color-primary);
+  font-weight: 700;
+  background-color: rgba(0, 104, 116, 0.08);
+}

@@ -1,0 +1,33 @@
+:host {
+  display: block;
+}
+
+.change-patient-btn {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--md-sys-color-primary, #006874);
+  text-decoration: none;
+  background-color: var(--md-sys-color-surface-container-high, #e6ecec);
+  border: 1px solid var(--md-sys-color-outline-variant, #b2c9cc);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--md-shape-full, 9999px);
+  margin-left: 0.5rem;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+}
+
+.change-patient-btn:hover {
+  background-color: var(--md-sys-color-primary-container, #9eeffd);
+  border-color: var(--md-sys-color-primary, #006874);
+  color: var(--md-sys-color-on-primary-container, #001f24);
+}
+
+.select-patient-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+

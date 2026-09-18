@@ -1,0 +1,1311 @@
+/* ==========================================================================
+   PEDIATRIC CLINICAL CARE & MILESTONE TRACKER - MATERIAL DESIGN 3 STYLESHEET
+   Pure CSS3 Implementation - No JavaScript Required
+   ========================================================================== */
+
+/* --- GOOGLE FONTS IMPORT --- */
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap');
+
+/* --- MATERIAL DESIGN 3 DESIGN TOKENS (:root) --- */
+:root {
+  /* Color Palette - Medical Teal/Cyan Theme */
+  --md-sys-color-primary: #006874;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #9eeffd;
+  --md-sys-color-on-primary-container: #001f24;
+  --md-sys-color-secondary: #4a6267;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #cce8ed;
+  --md-sys-color-on-secondary-container: #051f23;
+  --md-sys-color-tertiary: #525e7d;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #dae2ff;
+  --md-sys-color-on-tertiary-container: #0e1b37;
+  
+  /* Semantic Status Colors */
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #410002;
+  --md-sys-color-success: #146c2e;
+  --md-sys-color-on-success: #ffffff;
+  --md-sys-color-success-container: #bbf2c8;
+  --md-sys-color-on-success-container: #002108;
+  --md-sys-color-warning: #934b00;
+  --md-sys-color-warning-container: #ffdcbb;
+  --md-sys-color-on-warning-container: #2f1500;
+
+  /* Surfaces & Backgrounds */
+  --md-sys-color-background: #fbfdfd;
+  --md-sys-color-on-background: #191c1d;
+  --md-sys-color-surface: #fbfdfd;
+  --md-sys-color-on-surface: #191c1d;
+  --md-sys-color-surface-variant: #dbe4e6;
+  --md-sys-color-on-surface-variant: #3f484a;
+  
+  /* Tonal Surface Containers */
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f4f8f8;
+  --md-sys-color-surface-container: #edf2f2;
+  --md-sys-color-surface-container-high: #e7ecec;
+  --md-sys-color-surface-container-highest: #e1e6e6;
+  
+  /* Outlines */
+  --md-sys-color-outline: #6f797a;
+  --md-sys-color-outline-variant: #bfc8ca;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+
+  /* Typography Scales */
+  --md-ref-typeface-brand: 'Google Sans', 'Roboto', system-ui, -apple-system, sans-serif;
+  --md-ref-typeface-plain: 'Roboto', system-ui, -apple-system, sans-serif;
+
+  /* Shape Radii */
+  --md-shape-xs: 4px;
+  --md-shape-s: 8px;
+  --md-shape-m: 12px;
+  --md-shape-l: 16px;
+  --md-shape-xl: 28px;
+  --md-shape-full: 9999px;
+
+  /* Elevation Shadows */
+  --md-elevation-0: none;
+  --md-elevation-1: 0px 1px 3px 1px rgba(0, 25, 29, 0.12), 0px 1px 2px 0px rgba(0, 25, 29, 0.20);
+  --md-elevation-2: 0px 2px 6px 2px rgba(0, 25, 29, 0.12), 0px 1px 2px 0px rgba(0, 25, 29, 0.20);
+  --md-elevation-3: 0px 4px 8px 3px rgba(0, 25, 29, 0.12), 0px 1px 3px 0px rgba(0, 25, 29, 0.20);
+  --md-elevation-4: 0px 6px 10px 4px rgba(0, 25, 29, 0.12), 0px 2px 3px 0px rgba(0, 25, 29, 0.20);
+
+  /* Transition timings */
+  --md-sys-motion-standard: 250ms cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-emphasized: 400ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* --- RESET & BASE STYLES --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--md-ref-typeface-plain);
+  background-color: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-background);
+  line-height: 1.5;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--md-ref-typeface-brand);
+  color: var(--md-sys-color-on-surface);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+/* --- HIDDEN STATE CONTROLLERS (Pure CSS Logic) --- */
+.nav-controller,
+.subtab-controller,
+.modal-controller,
+.curve-controller,
+.milestone-controller {
+  display: none !important;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- TOP APP BAR & SEARCH SYSTEM --- */
+.m3-top-app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--md-sys-color-surface-container-low);
+  box-shadow: var(--md-elevation-1);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--md-sys-color-surface-variant);
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 250px;
+}
+
+.brand-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--md-shape-m);
+  background: linear-gradient(135deg, var(--md-sys-color-primary), #0097a7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-sys-color-on-primary);
+  box-shadow: var(--md-elevation-1);
+}
+
+.brand-text h1 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+  line-height: 1.2;
+}
+
+.brand-text span {
+  font-size: 0.75rem;
+  color: var(--md-sys-color-secondary);
+  font-weight: 500;
+}
+
+/* Google Workspace Style Search Bar */
+.search-container {
+  flex: 1;
+  max-width: 680px;
+  background-color: var(--md-sys-color-surface-container-high);
+  border-radius: var(--md-shape-full);
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 1rem;
+  transition: background-color var(--md-sys-motion-standard), box-shadow var(--md-sys-motion-standard);
+  border: 1px solid transparent;
+}
+
+.search-container:focus-within {
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border-color: var(--md-sys-color-primary);
+  box-shadow: var(--md-elevation-2);
+}
+
+.search-icon {
+  color: var(--md-sys-color-on-surface-variant);
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: var(--md-ref-typeface-plain);
+  font-size: 0.95rem;
+  color: var(--md-sys-color-on-surface);
+  outline: none;
+  min-width: 140px;
+}
+
+.search-input::placeholder {
+  color: var(--md-sys-color-outline);
+}
+
+.search-chips-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 0.5rem;
+}
+
+.app-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Clinician Profile Badge */
+.clinician-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.8rem 0.3rem 0.4rem;
+  background-color: var(--md-sys-color-surface-container);
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.clinician-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.clinician-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.clinician-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--md-sys-color-on-surface);
+}
+
+.clinician-title {
+  font-size: 0.68rem;
+  color: var(--md-sys-color-secondary);
+}
+
+/* --- PATIENT QUICK BANNER --- */
+.patient-quick-banner {
+  background: linear-gradient(90deg, #e0f2f1 0%, var(--md-sys-color-surface-container) 100%);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  padding: 0.85rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.patient-identity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.patient-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--md-shape-m);
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 1.25rem;
+  font-weight: 700;
+  box-shadow: var(--md-elevation-1);
+}
+
+.patient-titles h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.patient-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.82rem;
+  color: var(--md-sys-color-secondary);
+  margin-top: 0.15rem;
+}
+
+.patient-metrics-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.metric-pill {
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-full);
+  padding: 0.35rem 0.85rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.metric-pill .label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--md-sys-color-secondary);
+  font-weight: 600;
+}
+
+.metric-pill .val {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+}
+
+.metric-pill .sub {
+  font-size: 0.72rem;
+  color: var(--md-sys-color-tertiary);
+  font-weight: 500;
+}
+
+/* --- PRIMARY NAVIGATION BAR (M3 Tab Bar) --- */
+.m3-main-nav {
+  display: flex;
+  background-color: var(--md-sys-color-surface-container-low);
+  border-bottom: 2px solid var(--md-sys-color-surface-variant);
+  padding: 0 1.75rem;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.m3-tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all var(--md-sys-motion-standard);
+  position: relative;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.m3-tab-item:hover {
+  background-color: rgba(0, 104, 116, 0.06);
+  color: var(--md-sys-color-primary);
+}
+
+/* Nav Radio Switch Logic */
+#nav-patient-record:checked ~ .m3-main-nav label[for="nav-patient-record"],
+#nav-patient-list:checked ~ .m3-main-nav label[for="nav-patient-list"],
+#nav-growth-curves:checked ~ .m3-main-nav label[for="nav-growth-curves"],
+#nav-milestones:checked ~ .m3-main-nav label[for="nav-milestones"] {
+  color: var(--md-sys-color-primary);
+  border-bottom-color: var(--md-sys-color-primary);
+  font-weight: 700;
+  background-color: rgba(0, 104, 116, 0.08);
+}
+
+/* --- MAIN CONTAINER & VIEW SWITCHING --- */
+.app-content-container {
+  flex: 1;
+  padding: 1.75rem;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.app-view {
+  display: block;
+  animation: fadeIn 300ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* --- M3 CARD STYLES --- */
+.m3-card {
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border-radius: var(--md-shape-l);
+  box-shadow: var(--md-elevation-1);
+  padding: 1.5rem;
+  position: relative;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  transition: box-shadow var(--md-sys-motion-standard), transform var(--md-sys-motion-standard);
+  margin-bottom: 1.5rem;
+}
+
+.m3-card.elevated {
+  box-shadow: var(--md-elevation-2);
+}
+
+.m3-card.tonal {
+  background-color: var(--md-sys-color-surface-container);
+  border: none;
+}
+
+.m3-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--md-sys-color-surface-variant);
+}
+
+.m3-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* --- M3 BUTTONS --- */
+.m3-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.35rem;
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: var(--md-shape-full);
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  outline: none;
+  transition: all var(--md-sys-motion-standard);
+  user-select: none;
+}
+
+.m3-button-filled {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  box-shadow: var(--md-elevation-1);
+}
+
+.m3-button-filled:hover {
+  box-shadow: var(--md-elevation-2);
+  background-color: #005660;
+}
+
+.m3-button-tonal {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.m3-button-tonal:hover {
+  background-color: #b7dbe2;
+}
+
+.m3-button-outlined {
+  background-color: transparent;
+  color: var(--md-sys-color-primary);
+  border: 1px solid var(--md-sys-color-outline);
+}
+
+.m3-button-outlined:hover {
+  background-color: rgba(0, 104, 116, 0.05);
+  border-color: var(--md-sys-color-primary);
+}
+
+.m3-button-text {
+  background: transparent;
+  color: var(--md-sys-color-primary);
+  padding: 0.4rem 0.8rem;
+}
+
+.m3-button-text:hover {
+  background: rgba(0, 104, 116, 0.08);
+}
+
+/* FAB - Floating Action Button */
+.m3-fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  padding: 1rem 1.5rem;
+  border-radius: var(--md-shape-l);
+  box-shadow: var(--md-elevation-3);
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--md-sys-motion-emphasized);
+}
+
+.m3-fab:hover {
+  box-shadow: var(--md-elevation-4);
+  transform: translateY(-2px);
+  background-color: #8be5f5;
+}
+
+/* --- M3 CHIPS & BADGES --- */
+.m3-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--md-shape-s);
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.m3-chip.filter-active {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border-color: transparent;
+}
+
+.m3-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--md-shape-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badge-success {
+  background-color: var(--md-sys-color-success-container);
+  color: var(--md-sys-color-on-success-container);
+}
+
+.badge-warning {
+  background-color: var(--md-sys-color-warning-container);
+  color: var(--md-sys-color-on-warning-container);
+}
+
+.badge-error {
+  background-color: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
+
+.badge-info {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+/* --- M3 OUTLINED TEXT FIELD WITH FLOATING LABEL (Pure CSS) --- */
+.m3-textfield {
+  position: relative;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  width: 100%;
+}
+
+.m3-textfield input,
+.m3-textfield select,
+.m3-textfield textarea {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-shape-s);
+  background-color: var(--md-sys-color-surface-container-lowest);
+  font-family: var(--md-ref-typeface-plain);
+  font-size: 0.95rem;
+  color: var(--md-sys-color-on-surface);
+  outline: none;
+  transition: border-color var(--md-sys-motion-standard), box-shadow var(--md-sys-motion-standard);
+}
+
+.m3-textfield textarea {
+  min-height: 85px;
+  resize: vertical;
+}
+
+.m3-textfield label {
+  position: absolute;
+  left: 0.85rem;
+  top: 0.95rem;
+  padding: 0 0.35rem;
+  background-color: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.92rem;
+  pointer-events: none;
+  transition: transform var(--md-sys-motion-standard), color var(--md-sys-motion-standard), font-size var(--md-sys-motion-standard);
+  transform-origin: left top;
+}
+
+/* Floating label trigger on focus or non-empty value */
+.m3-textfield input:focus,
+.m3-textfield select:focus,
+.m3-textfield textarea:focus {
+  border-color: var(--md-sys-color-primary);
+  border-width: 2px;
+  padding: calc(0.95rem - 1px) calc(1rem - 1px);
+}
+
+.m3-textfield input:focus ~ label,
+.m3-textfield input:not(:placeholder-shown) ~ label,
+.m3-textfield select:focus ~ label,
+.m3-textfield select:valid ~ label,
+.m3-textfield textarea:focus ~ label,
+.m3-textfield textarea:not(:placeholder-shown) ~ label {
+  transform: translateY(-1.55rem) scale(0.8);
+  color: var(--md-sys-color-primary);
+  font-weight: 500;
+}
+
+.m3-textfield-helper {
+  font-size: 0.75rem;
+  color: var(--md-sys-color-outline);
+  margin-top: 0.25rem;
+  margin-left: 0.75rem;
+}
+
+/* Checkbox & Radio Controls M3 Style */
+.m3-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--md-sys-color-on-surface);
+  user-select: none;
+}
+
+.m3-checkbox-label input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--md-sys-color-outline);
+  border-radius: var(--md-shape-xs);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: all var(--md-sys-motion-standard);
+  background-color: transparent;
+}
+
+.m3-checkbox-label input[type="checkbox"]:checked {
+  background-color: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+.m3-checkbox-label input[type="checkbox"]:checked::before {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+
+/* --- ACCORDIONS (<details> / <summary>) --- */
+details.m3-accordion {
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-m);
+  margin-bottom: 0.75rem;
+  background-color: var(--md-sys-color-surface-container-low);
+  overflow: hidden;
+  transition: background-color var(--md-sys-motion-standard);
+}
+
+details.m3-accordion[open] {
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border-color: var(--md-sys-color-primary);
+}
+
+details.m3-accordion summary {
+  padding: 1rem 1.25rem;
+  font-family: var(--md-ref-typeface-brand);
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--md-sys-color-on-surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  user-select: none;
+}
+
+details.m3-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+details.m3-accordion summary::after {
+  content: "▼";
+  font-size: 0.75rem;
+  color: var(--md-sys-color-outline);
+  transition: transform var(--md-sys-motion-standard);
+}
+
+details.m3-accordion[open] summary::after {
+  transform: rotate(180deg);
+  color: var(--md-sys-color-primary);
+}
+
+details.m3-accordion .accordion-content {
+  padding: 1.25rem;
+  border-top: 1px solid var(--md-sys-color-surface-variant);
+}
+
+/* --- FICHA CLINICA SUB-TABS (Pure CSS) --- */
+.subtabs-nav {
+  display: flex;
+  gap: 0.5rem;
+  background-color: var(--md-sys-color-surface-container);
+  padding: 0.5rem;
+  border-radius: var(--md-shape-xl);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.subtab-label {
+  padding: 0.55rem 1.15rem;
+  border-radius: var(--md-shape-full);
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  transition: all var(--md-sys-motion-standard);
+  user-select: none;
+}
+
+.subtab-label:hover {
+  background-color: rgba(0, 104, 116, 0.08);
+  color: var(--md-sys-color-primary);
+}
+
+/* Subtab Activation */
+#subtab-general:checked ~ .subtabs-nav label[for="subtab-general"],
+#subtab-perinatal:checked ~ .subtabs-nav label[for="subtab-perinatal"],
+#subtab-personal:checked ~ .subtabs-nav label[for="subtab-personal"],
+#subtab-nutrition:checked ~ .subtabs-nav label[for="subtab-nutrition"],
+#subtab-history:checked ~ .subtabs-nav label[for="subtab-history"] {
+  background-color: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-primary);
+  font-weight: 700;
+  box-shadow: var(--md-elevation-1);
+}
+
+.subtab-content-panel {
+  display: none;
+  animation: fadeIn 250ms ease-out;
+}
+
+#subtab-general:checked ~ .subtab-content-container #content-general,
+#subtab-perinatal:checked ~ .subtab-content-container #content-perinatal,
+#subtab-personal:checked ~ .subtab-content-container #content-personal,
+#subtab-nutrition:checked ~ .subtab-content-container #content-nutrition,
+#subtab-history:checked ~ .subtab-content-container #content-history {
+  display: block;
+}
+
+/* Clinical Info Grid & Fieldsets */
+.clinical-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.clinical-fieldset {
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-m);
+  padding: 1.25rem;
+  background-color: var(--md-sys-color-surface-container-lowest);
+  margin-bottom: 1.25rem;
+}
+
+.clinical-fieldset legend {
+  padding: 0 0.5rem;
+  font-family: var(--md-ref-typeface-brand);
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+  font-size: 0.95rem;
+}
+
+.info-row {
+  display: flex;
+  margin-bottom: 0.75rem;
+  font-size: 0.88rem;
+  border-bottom: 1px dashed var(--md-sys-color-surface-variant);
+  padding-bottom: 0.4rem;
+}
+
+.info-label {
+  font-weight: 600;
+  color: var(--md-sys-color-secondary);
+  width: 40%;
+  min-width: 120px;
+}
+
+.info-val {
+  color: var(--md-sys-color-on-surface);
+  flex: 1;
+}
+
+/* Vaccine & History Tables */
+.m3-table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--md-shape-m);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  margin: 1rem 0;
+}
+
+.m3-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.m3-table th {
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-ref-typeface-brand);
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid var(--md-sys-color-outline-variant);
+}
+
+.m3-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface);
+}
+
+.m3-table tbody tr:hover {
+  background-color: var(--md-sys-color-surface-container-low);
+}
+
+/* --- PATIENT LIST VIEW CARDS & DIRECTORY --- */
+.patient-directory-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.patient-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.patient-card {
+  border-radius: var(--md-shape-l);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  padding: 1.25rem;
+  background-color: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-elevation-1);
+  transition: all var(--md-sys-motion-standard);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.patient-card:hover {
+  box-shadow: var(--md-elevation-2);
+  border-color: var(--md-sys-color-primary);
+  transform: translateY(-2px);
+}
+
+.patient-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.patient-card-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--md-shape-m);
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.patient-card-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+}
+
+.patient-card-age {
+  font-size: 0.78rem;
+  color: var(--md-sys-color-secondary);
+}
+
+/* --- GROWTH CURVES MODULE (SVG Interactive) --- */
+.curve-switcher-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.curve-switch-label {
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--md-shape-full);
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 0.85rem;
+  font-weight: 500;
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  transition: all var(--md-sys-motion-standard);
+}
+
+#curve-weight:checked ~ .curve-switcher-bar label[for="curve-weight"],
+#curve-height:checked ~ .curve-switcher-bar label[for="curve-height"],
+#curve-head:checked ~ .curve-switcher-bar label[for="curve-head"] {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  font-weight: 700;
+}
+
+.curve-graph-panel {
+  display: none;
+}
+
+#curve-weight:checked ~ .curve-charts-container #chart-weight,
+#curve-height:checked ~ .curve-charts-container #chart-height,
+#curve-head:checked ~ .curve-charts-container #chart-head {
+  display: block;
+}
+
+.growth-svg-container {
+  width: 100%;
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border-radius: var(--md-shape-m);
+  padding: 1rem;
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* SVG Chart Elements */
+.svg-grid-line {
+  stroke: #e0e6e6;
+  stroke-width: 1;
+  stroke-dasharray: 4 2;
+}
+
+.svg-axis-line {
+  stroke: var(--md-sys-color-outline);
+  stroke-width: 2;
+}
+
+.svg-axis-text {
+  font-family: var(--md-ref-typeface-plain);
+  font-size: 11px;
+  fill: var(--md-sys-color-secondary);
+}
+
+.percentile-area-outer {
+  fill: rgba(0, 104, 116, 0.06);
+}
+
+.percentile-area-inner {
+  fill: rgba(0, 104, 116, 0.12);
+}
+
+.percentile-line {
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.percentile-line.p97, .percentile-line.p3 {
+  stroke: #90a4ae;
+  stroke-dasharray: 4 2;
+}
+
+.percentile-line.p85, .percentile-line.p15 {
+  stroke: #78909c;
+}
+
+.percentile-line.p50 {
+  stroke: var(--md-sys-color-primary);
+  stroke-width: 2.5;
+}
+
+.patient-curve-line {
+  fill: none;
+  stroke: #ba1a1a;
+  stroke-width: 3;
+}
+
+/* Pure CSS Data Point Hover Effect */
+.data-point {
+  cursor: pointer;
+}
+
+.data-point circle {
+  fill: #ba1a1a;
+  stroke: #ffffff;
+  stroke-width: 2.5;
+  transition: transform 150ms ease, r 150ms ease;
+  transform-origin: center;
+}
+
+.data-point:hover circle {
+  r: 7;
+  fill: #006874;
+}
+
+.data-point .svg-tooltip {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+.data-point:hover .svg-tooltip {
+  opacity: 1;
+}
+
+/* --- AYUDA MEMORIA BEBÉ (Hitos del Desarrollo) --- */
+.milestone-age-bar {
+  display: flex;
+  gap: 0.5rem;
+  background-color: var(--md-sys-color-surface-container);
+  padding: 0.5rem;
+  border-radius: var(--md-shape-xl);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.milestone-age-label {
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--md-shape-full);
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--md-sys-motion-standard);
+}
+
+.milestone-age-label:hover {
+  background-color: rgba(0, 104, 116, 0.08);
+  color: var(--md-sys-color-primary);
+}
+
+#age-0-3:checked ~ .milestone-age-bar label[for="age-0-3"],
+#age-4-6:checked ~ .milestone-age-bar label[for="age-4-6"],
+#age-7-9:checked ~ .milestone-age-bar label[for="age-7-9"],
+#age-10-12:checked ~ .milestone-age-bar label[for="age-10-12"],
+#age-12-24:checked ~ .milestone-age-bar label[for="age-12-24"] {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  font-weight: 700;
+  box-shadow: var(--md-elevation-1);
+}
+
+.milestone-stage-panel {
+  display: none;
+  animation: fadeIn 250ms ease;
+}
+
+#age-0-3:checked ~ .milestone-content-container #stage-0-3,
+#age-4-6:checked ~ .milestone-content-container #stage-4-6,
+#age-7-9:checked ~ .milestone-content-container #stage-7-9,
+#age-10-12:checked ~ .milestone-content-container #stage-10-12,
+#age-12-24:checked ~ .milestone-content-container #stage-12-24 {
+  display: block;
+}
+
+.milestone-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.milestone-card {
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border-radius: var(--md-shape-l);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  padding: 1.25rem;
+  box-shadow: var(--md-elevation-1);
+}
+
+.milestone-card.alarm-card {
+  border-left: 5px solid var(--md-sys-color-error);
+  background: linear-gradient(135deg, #fffafa 0%, var(--md-sys-color-surface-container-lowest) 100%);
+}
+
+.milestone-card.nutrition-card {
+  border-left: 5px solid #2e7d32;
+}
+
+.milestone-list {
+  list-style: none;
+  margin-top: 0.75rem;
+}
+
+.milestone-list li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--md-sys-color-on-surface);
+}
+
+.milestone-list li::before {
+  content: "✔";
+  position: absolute;
+  left: 0;
+  color: var(--md-sys-color-primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.alarm-card .milestone-list li::before {
+  content: "⚠";
+  color: var(--md-sys-color-error);
+}
+
+/* --- MODAL SYSTEM --- */
+.m3-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 31, 36, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.m3-modal-dialog {
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border-radius: var(--md-shape-xl);
+  max-width: 860px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--md-elevation-4);
+  transform: scale(0.95);
+  transition: transform var(--md-sys-motion-standard);
+  overflow: hidden;
+}
+
+.m3-modal-header {
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid var(--md-sys-color-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--md-sys-color-surface-container-low);
+}
+
+.m3-modal-header h3 {
+  font-size: 1.25rem;
+  color: var(--md-sys-color-on-surface);
+}
+
+.modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 1.25rem;
+  font-weight: 700;
+  transition: background-color var(--md-sys-motion-standard);
+}
+
+.modal-close-btn:hover {
+  background-color: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-error);
+}
+
+.m3-modal-body {
+  padding: 1.5rem 1.75rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.m3-modal-footer {
+  padding: 1rem 1.75rem;
+  border-top: 1px solid var(--md-sys-color-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  background-color: var(--md-sys-color-surface-container-low);
+}
+
+/* --- RESPONSIVE BREAKPOINTS --- */
+@media (max-width: 960px) {
+  .m3-top-app-bar {
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+  }
+  
+  .search-container {
+    order: 3;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .patient-quick-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .patient-metrics-strip {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-content-container {
+    padding: 1rem 0.75rem;
+  }
+
+  .m3-main-nav {
+    padding: 0 0.5rem;
+  }
+
+  .clinical-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .m3-modal-dialog {
+    max-height: 96vh;
+    border-radius: var(--md-shape-l);
+  }
+}
+
+/* --- SNACKBAR TOAST NOTIFICATION --- */
+.m3-snackbar {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background-color: var(--md-sys-color-on-surface);
+  color: var(--md-sys-color-surface);
+  padding: 0.85rem 1.5rem;
+  border-radius: var(--md-shape-full);
+  box-shadow: var(--md-elevation-3);
+  font-size: 0.9rem;
+  font-family: var(--md-ref-typeface-brand);
+  font-weight: 500;
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 300ms cubic-bezier(0.2, 0, 0, 1), opacity 300ms ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.m3-snackbar.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
