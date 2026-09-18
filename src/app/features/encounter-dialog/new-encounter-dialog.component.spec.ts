@@ -261,4 +261,48 @@ describe('NewEncounterDialogComponent', () => {
     expect(component.isSubmitting()).toBe(false);
     expect(component.isOpen()).toBe(true);
   });
+
+  it('should toggle progressive disclosure sections correctly', () => {
+    expect(component.isHpiExpanded()).toBe(false);
+    component.toggleHpi();
+    expect(component.isHpiExpanded()).toBe(true);
+
+    expect(component.isFullVitalsExpanded()).toBe(false);
+    component.toggleFullVitals();
+    expect(component.isFullVitalsExpanded()).toBe(true);
+
+    expect(component.isSecondaryDiagExpanded()).toBe(false);
+    component.toggleSecondaryDiag();
+    expect(component.isSecondaryDiagExpanded()).toBe(true);
+
+    expect(component.isPrescriptionsExpanded()).toBe(false);
+    component.togglePrescriptions();
+    expect(component.isPrescriptionsExpanded()).toBe(true);
+
+    expect(component.isDiagnosticOrdersExpanded()).toBe(false);
+    component.toggleDiagnosticOrders();
+    expect(component.isDiagnosticOrdersExpanded()).toBe(true);
+  });
+
+  it('should submit successfully without primary diagnosis code (optional in ambulatory care)', () => {
+    component.isOpen.set(true);
+    component.encounterForm.patchValue({
+      encounterDate: '2026-09-17',
+      consultationType: 'FIRST_VISIT',
+      chiefComplaint: 'Consulta ginecológica',
+      primaryDiagnosisCode: '', // Empty code
+      primaryDiagnosisDescription: 'Control ginecológico y citología',
+      systolicBloodPressure: 115,
+      diastolicBloodPressure: 75,
+    });
+
+    component.onSubmit();
+
+    expect(encounterServiceSpy.create).toHaveBeenCalled();
+    const sentPayload: ClinicalEncounterRequest = encounterServiceSpy.create.mock.calls[0][0];
+    expect(sentPayload.primaryDiagnosisCode).toBeUndefined();
+    expect(sentPayload.primaryDiagnosisDescription).toBe('Control ginecológico y citología');
+    expect(sentPayload.vitalSigns?.systolicBloodPressure).toBe(115);
+    expect(component.isOpen()).toBe(false);
+  });
 });

@@ -10,6 +10,7 @@ import { of, throwError } from 'rxjs';
 import { PatientDetailDTO } from '../../core/models/patient.model';
 import { MedicalCheckupDetailDTO } from '../../core/models/checkup.model';
 import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
+import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 
 describe('PatientRecordComponent', () => {
   let component: PatientRecordComponent;
@@ -268,5 +269,86 @@ describe('PatientRecordComponent', () => {
 
     component.navigateToMilestones();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/hitos']);
+  });
+
+  describe('Contextual subtabs & Specialty integration', () => {
+    it('should configure subtabs correctly for GYNECOLOGY', () => {
+      const specialtyService = TestBed.inject(DoctorSpecialtyService);
+      specialtyService.setSpecialty('GYNECOLOGY');
+      fixture.detectChanges();
+
+      const tabs = component.availableSubtabs();
+      const tabIds = tabs.map((t) => t.id);
+      expect(tabIds).toContain('general');
+      expect(tabIds).toContain('gynecology');
+      expect(tabIds).toContain('personal');
+      expect(tabIds).toContain('history');
+      expect(tabIds).not.toContain('perinatal');
+      expect(tabIds).not.toContain('nutrition');
+    });
+
+    it('should configure subtabs correctly for CARDIOLOGY with adult patient', () => {
+      const adultPatient: PatientDetailDTO = {
+        ...mockPatient,
+        id: 9999,
+        birthDate: '1985-05-20',
+      };
+      activePatientService.setActivePatient(adultPatient);
+      const specialtyService = TestBed.inject(DoctorSpecialtyService);
+      specialtyService.setSpecialty('CARDIOLOGY');
+      fixture.detectChanges();
+
+      const tabs = component.availableSubtabs();
+      const tabIds = tabs.map((t) => t.id);
+      expect(tabIds).toContain('general');
+      expect(tabIds).toContain('cardiovascular');
+      expect(tabIds).toContain('personal');
+      expect(tabIds).toContain('history');
+      expect(tabIds).not.toContain('perinatal');
+      expect(tabIds).not.toContain('nutrition');
+    });
+
+    it('should configure subtabs correctly for PEDIATRICS with adult vs child patient', () => {
+      const specialtyService = TestBed.inject(DoctorSpecialtyService);
+      specialtyService.setSpecialty('PEDIATRICS');
+
+      // Child (< 16 years)
+      activePatientService.setActivePatient(mockPatient);
+      fixture.detectChanges();
+      let tabIds = component.availableSubtabs().map((t) => t.id);
+      expect(tabIds).toContain('general');
+      expect(tabIds).toContain('perinatal');
+      expect(tabIds).toContain('personal');
+      expect(tabIds).toContain('nutrition');
+      expect(tabIds).toContain('history');
+
+      // Adult (>= 16 years)
+      const adultPatient: PatientDetailDTO = {
+        ...mockPatient,
+        id: 8888,
+        birthDate: '1990-01-01',
+      };
+      activePatientService.setActivePatient(adultPatient);
+      fixture.detectChanges();
+      tabIds = component.availableSubtabs().map((t) => t.id);
+      expect(tabIds).toContain('general');
+      expect(tabIds).toContain('personal');
+      expect(tabIds).toContain('history');
+      expect(tabIds).not.toContain('perinatal');
+      expect(tabIds).not.toContain('nutrition');
+    });
+
+    it('should display encounters empty state when patient has 0 encounters', () => {
+      component.encounters.set([]);
+      component.isLoadingEncounters.set(false);
+      component.setSubtab('history');
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const emptyCard = compiled.querySelector('.empty-encounters-card');
+      expect(emptyCard).toBeTruthy();
+      expect(emptyCard?.textContent).toContain('Paciente sin consultas registradas');
+      expect(emptyCard?.textContent).toContain('Iniciar Primera Consulta');
+    });
   });
 });

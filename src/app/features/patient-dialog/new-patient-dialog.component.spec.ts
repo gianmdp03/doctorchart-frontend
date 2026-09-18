@@ -15,26 +15,12 @@ describe('NewPatientDialogComponent', () => {
 
   const mockCreatedPatient: PatientDetailDTO = {
     id: 101,
-    fullName: 'Joaquín Benítez',
-    birthDate: '2023-05-12',
-    guardianInfo: {
-      firstGuardianFullName: 'Lucía Fernández',
-      firstGuardianPhone: '1144556677',
-      firstGuardianNationalId: '38123456',
-      address: 'Av. Corrientes 1234, CABA',
-    },
-    personalHistory: {
-      birthMeasurements: {
-        weight: 3.45,
-        height: 50.0,
-        headCircumference: 35.0,
-      },
-    },
-    latestMeasurements: {
-      weight: 11.2,
-      height: 82.5,
-      headCircumference: 46.0,
-    },
+    fullName: 'Carlos Gardel',
+    birthDate: '1985-05-12',
+    nationalId: '30123456',
+    phone: '+5491144556677',
+    email: 'carlos@example.com',
+    address: 'Av. Corrientes 1234, CABA',
   };
 
   beforeEach(async () => {
@@ -86,18 +72,16 @@ describe('NewPatientDialogComponent', () => {
     expect(component.errorMessage()).toBeNull();
   });
 
-  it('should copy birth measurements to current measurements', () => {
-    component.patientForm.patchValue({
-      birthWeight: 3.25,
-      birthHeight: 49.5,
-      birthHeadCircumference: 34.8,
-    });
+  it('should reactively switch contact section title based on age (< 16 vs >= 16)', () => {
+    // Under 16
+    component.patientForm.patchValue({ birthDate: '2020-01-01' });
+    expect(component.isMinor()).toBe(true);
+    expect(component.contactSectionTitle()).toBe('Padre, Madre o Tutor Responsable');
 
-    component.copyBirthToCurrent();
-
-    expect(component.patientForm.get('currentWeight')?.value).toBe(3.25);
-    expect(component.patientForm.get('currentHeight')?.value).toBe(49.5);
-    expect(component.patientForm.get('currentHeadCircumference')?.value).toBe(34.8);
+    // 16 or older
+    component.patientForm.patchValue({ birthDate: '1995-05-20' });
+    expect(component.isMinor()).toBe(false);
+    expect(component.contactSectionTitle()).toBe('Contacto de Emergencia / Familiar Directo');
   });
 
   it('should not submit if form is invalid and display error message', () => {
@@ -108,36 +92,26 @@ describe('NewPatientDialogComponent', () => {
     expect(component.errorMessage()).toContain('Por favor complete');
   });
 
-  it('should submit successfully, update active patient, dispatch patient-created event, and navigate to /ficha', () => {
+  it('should submit adult patient with universal payload, update active patient, and navigate to /ficha', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
 
     component.openModal();
 
-    // Fill valid form
+    // Fill valid adult form
     component.patientForm.patchValue({
-      fullName: 'Joaquín Benítez',
-      birthDate: '2023-05-12',
-      firstGuardianFullName: 'Lucía Fernández',
-      firstGuardianPhone: '1144556677',
-      firstGuardianNationalId: '38123456',
+      fullName: 'Carlos Gardel',
+      birthDate: '1985-05-12',
+      nationalId: '30123456',
+      gender: 'MALE',
+      phone: '+5491144556677',
+      email: 'carlos@example.com',
       address: 'Av. Corrientes 1234, CABA',
-      gestationCount: 1,
-      prenatalVisitsSummary: 'Controles completos y adecuados',
-      compPreeclampsia: true,
-      birthWeight: 3.45,
-      birthHeight: 50.0,
-      birthHeadCircumference: 35.0,
-      chronicOrPreviousDiseases: 'Bronquiolitis a los 6 meses',
-      hospitalizationsOrSurgeries: 'Sin internaciones',
-      allergies: 'Sin alergias',
-      habitualMedication: 'Ninguna',
-      familyChronicDiseases: 'Hipertensión materna',
-      feedingDiet: 'Lactancia materna exclusiva (LME)',
-      vaccinationHistory: 'Al día',
-      developmentalMilestones: 'Adecuados',
-      currentWeight: 11.2,
-      currentHeight: 82.5,
-      currentHeadCircumference: 46.0,
+      insuranceProvider: 'OSDE',
+      insuranceNumber: '99887766',
+      insurancePlan: '210',
+      contactName: 'María Rosa',
+      contactPhone: '+5491155443322',
+      contactRelationship: 'Cónyuge',
     });
 
     expect(component.patientForm.valid).toBe(true);
@@ -147,13 +121,21 @@ describe('NewPatientDialogComponent', () => {
     expect(patientServiceSpy.createPatient).toHaveBeenCalledTimes(1);
     const sentPayload = patientServiceSpy.createPatient.mock.calls[0][0];
 
-    expect(sentPayload.fullName).toBe('Joaquín Benítez');
-    expect(sentPayload.birthDate).toBe('2023-05-12');
-    expect(sentPayload.guardianInfo?.firstGuardianFullName).toBe('Lucía Fernández');
-    expect(sentPayload.perinatalHistory?.pregnancyComplications).toContain('Hipertensión / Preeclampsia');
-    expect(sentPayload.personalHistory?.birthMeasurements?.weight).toBe(3.45);
-    expect(sentPayload.personalHistory?.chronicOrPreviousDiseases).toEqual(['Bronquiolitis a los 6 meses']);
-    expect(sentPayload.latestMeasurements?.weight).toBe(11.2);
+    expect(sentPayload.fullName).toBe('Carlos Gardel');
+    expect(sentPayload.birthDate).toBe('1985-05-12');
+    expect(sentPayload.nationalId).toBe('30123456');
+    expect(sentPayload.gender).toBe('MALE');
+    expect(sentPayload.phone).toBe('+5491144556677');
+    expect(sentPayload.email).toBe('carlos@example.com');
+    expect(sentPayload.address).toBe('Av. Corrientes 1234, CABA');
+    expect(sentPayload.insuranceInfo?.providerName).toBe('OSDE');
+    expect(sentPayload.insuranceInfo?.affiliateNumber).toBe('99887766');
+    expect(sentPayload.emergencyContact?.contactName).toBe('María Rosa');
+    expect(sentPayload.emergencyContact?.relationship).toBe('Cónyuge');
+    expect(sentPayload.guardianInfo).toBeNull();
+    // Verify zero legacy pediatric mock objects sent
+    expect(sentPayload.perinatalHistory).toBeUndefined();
+    expect(sentPayload.immunizationAndNutrition).toBeUndefined();
 
     expect(activePatientServiceSpy.setActivePatient).toHaveBeenCalledWith(mockCreatedPatient);
     expect(dispatchSpy).toHaveBeenCalledWith(
@@ -165,6 +147,31 @@ describe('NewPatientDialogComponent', () => {
     dispatchSpy.mockRestore();
   });
 
+  it('should submit minor patient and populate guardianInfo', () => {
+    component.openModal();
+
+    component.patientForm.patchValue({
+      fullName: 'Benjamín Rossi',
+      birthDate: '2022-04-10',
+      gender: 'MALE',
+      contactName: 'Laura Rossi',
+      contactPhone: '+5491199887766',
+      contactNationalId: '35123456',
+      contactRelationship: 'Madre',
+    });
+
+    expect(component.isMinor()).toBe(true);
+    component.onSubmit();
+
+    expect(patientServiceSpy.createPatient).toHaveBeenCalledTimes(1);
+    const sentPayload = patientServiceSpy.createPatient.mock.calls[0][0];
+
+    expect(sentPayload.fullName).toBe('Benjamín Rossi');
+    expect(sentPayload.guardianInfo?.firstGuardianFullName).toBe('Laura Rossi');
+    expect(sentPayload.guardianInfo?.firstGuardianNationalId).toBe('35123456');
+    expect(sentPayload.guardianInfo?.firstGuardianPhone).toBe('+5491199887766');
+  });
+
   it('should handle API error gracefully by showing error message', () => {
     patientServiceSpy.createPatient.mockReturnValue(
       throwError(() => ({ error: { message: 'El DNI ya se encuentra registrado' } }))
@@ -173,22 +180,7 @@ describe('NewPatientDialogComponent', () => {
     component.openModal();
     component.patientForm.patchValue({
       fullName: 'Test Error',
-      birthDate: '2023-01-01',
-      firstGuardianFullName: 'Parent',
-      firstGuardianPhone: '12345',
-      firstGuardianNationalId: '12345678',
-      address: 'Street 123',
-      gestationCount: 1,
-      prenatalVisitsSummary: 'OK',
-      birthWeight: 3.1,
-      birthHeight: 49,
-      birthHeadCircumference: 34,
-      feedingDiet: 'LME',
-      vaccinationHistory: 'OK',
-      developmentalMilestones: 'OK',
-      currentWeight: 5.0,
-      currentHeight: 55,
-      currentHeadCircumference: 37,
+      birthDate: '1990-01-01',
     });
 
     component.onSubmit();

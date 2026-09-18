@@ -85,6 +85,20 @@ export class ActivePatientService {
     return remMonths > 0 ? `${years} años ${remMonths}m` : `${years} años`;
   });
 
+  readonly ageInYears = computed(() => {
+    const raw = this.activePatient()?.birthDate;
+    if (!raw) return 0;
+    const birth = new Date(raw + 'T00:00:00');
+    if (isNaN(birth.getTime())) return 0;
+    const now = new Date();
+    let years = now.getFullYear() - birth.getFullYear();
+    const m = now.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+      years--;
+    }
+    return Math.max(0, years);
+  });
+
   readonly primaryGuardian = computed(() => {
     const info = this.activePatient()?.guardianInfo;
     if (!info) return '—';
@@ -98,39 +112,62 @@ export class ActivePatientService {
 
   readonly formattedWeight = computed(() => {
     const m = this.latestMeasurements();
-    return m?.weight != null ? `${m.weight.toFixed(3)} kg` : '—';
+    const weight = m?.weight != null ? Number(m.weight) : null;
+    if (weight != null && !isNaN(weight) && weight > 0) {
+      return `${weight >= 10 ? weight.toFixed(1) : weight.toFixed(3)} kg`;
+    }
+    return '-- kg';
   });
 
   readonly formattedHeight = computed(() => {
     const m = this.latestMeasurements();
-    return m?.height != null ? `${m.height.toFixed(1)} cm` : '—';
+    const height = m?.height != null ? Number(m.height) : null;
+    if (height != null && !isNaN(height) && height > 0) {
+      return `${height.toFixed(1)} cm`;
+    }
+    return '-- cm';
   });
 
   readonly formattedHeadCircumference = computed(() => {
     const m = this.latestMeasurements();
-    return m?.headCircumference != null ? `${m.headCircumference.toFixed(1)} cm` : '—';
+    const hc = m?.headCircumference != null ? Number(m.headCircumference) : null;
+    if (hc != null && !isNaN(hc) && hc > 0) {
+      return `${hc.toFixed(1)} cm`;
+    }
+    return '-- cm';
   });
 
   readonly deltaWeight = computed(() => {
     const patient = this.activePatient();
-    const currentWeight = patient?.latestMeasurements?.weight;
-    const birthWeight = patient?.personalHistory?.birthMeasurements?.weight;
-    if (currentWeight != null && birthWeight != null) {
+    const currentWeight = patient?.latestMeasurements?.weight != null ? Number(patient.latestMeasurements.weight) : null;
+    const birthWeight = patient?.personalHistory?.birthMeasurements?.weight != null ? Number(patient.personalHistory.birthMeasurements.weight) : null;
+    if (currentWeight != null && birthWeight != null && !isNaN(currentWeight) && !isNaN(birthWeight) && currentWeight > 0 && birthWeight > 0) {
       const diff = currentWeight - birthWeight;
       const sign = diff >= 0 ? '+' : '';
       return `${sign}${diff.toFixed(3)} kg`;
     }
-    return '—';
+    return '--';
   });
 
   readonly bmiDisplay = computed(() => {
     const m = this.latestMeasurements();
-    if (m?.weight && m?.height && m.height > 0) {
-      const heightM = m.height / 100;
-      const bmi = m.weight / (heightM * heightM);
-      return `${bmi.toFixed(1)} kg/m²`;
+    const weight = m?.weight != null ? Number(m.weight) : null;
+    const height = m?.height != null ? Number(m.height) : null;
+    if (
+      weight != null &&
+      height != null &&
+      !isNaN(weight) &&
+      !isNaN(height) &&
+      weight > 0 &&
+      height > 0
+    ) {
+      const heightM = height / 100;
+      const bmi = weight / (heightM * heightM);
+      if (isFinite(bmi) && bmi > 0) {
+        return `${bmi.toFixed(1)} kg/m²`;
+      }
     }
-    return '—';
+    return '--';
   });
 
   constructor() {

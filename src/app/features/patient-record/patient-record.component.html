@@ -10,46 +10,16 @@
   } @else if (activePatientService.activePatient(); as patient) {
     <!-- Sub-tabs navigation bar -->
     <nav class="subtabs-nav" aria-label="Subsecciones de Ficha Clínica">
-      <button
-        type="button"
-        class="subtab-label"
-        [class.active]="selectedSubtab() === 'general'"
-        (click)="setSubtab('general')"
-      >
-        1. Datos Generales & Tutores
-      </button>
-      <button
-        type="button"
-        class="subtab-label"
-        [class.active]="selectedSubtab() === 'perinatal'"
-        (click)="setSubtab('perinatal')"
-      >
-        2. Antecedentes Perinatales & Nacer
-      </button>
-      <button
-        type="button"
-        class="subtab-label"
-        [class.active]="selectedSubtab() === 'personal'"
-        (click)="setSubtab('personal')"
-      >
-        3. Personales & Familiares
-      </button>
-      <button
-        type="button"
-        class="subtab-label"
-        [class.active]="selectedSubtab() === 'nutrition'"
-        (click)="setSubtab('nutrition')"
-      >
-        4. Alimentación & Vacunas
-      </button>
-      <button
-        type="button"
-        class="subtab-label"
-        [class.active]="selectedSubtab() === 'history'"
-        (click)="setSubtab('history')"
-      >
-        5. Historia Clínica & Consultas SOAP
-      </button>
+      @for (tab of availableSubtabs(); track tab.id) {
+        <button
+          type="button"
+          class="subtab-label"
+          [class.active]="selectedSubtab() === tab.id"
+          (click)="setSubtab(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
+      }
     </nav>
 
     <div class="subtab-content-container">
@@ -57,7 +27,7 @@
       @if (selectedSubtab() === 'general') {
         <section id="content-general" class="subtab-content-panel">
           <div class="clinical-grid">
-            <!-- Datos Básicos del Niño -->
+            <!-- Datos Básicos del Paciente -->
             <fieldset class="clinical-fieldset">
               <legend>Identificación del Paciente</legend>
               <div class="info-row">
@@ -84,47 +54,89 @@
                 <span class="info-label">DNI Paciente:</span>
                 <span class="info-val">{{ patientNationalId() }}</span>
               </div>
+              @if (!isChild()) {
+                <div class="info-row">
+                  <span class="info-label">Teléfono:</span>
+                  <span class="info-val">
+                    @if (patientPhone() !== '—') {
+                      <a [href]="'tel:' + patientPhone()" class="phone-link">{{ patientPhone() }}</a>
+                    } @else {
+                      —
+                    }
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Email:</span>
+                  <span class="info-val">{{ patientEmail() }}</span>
+                </div>
+              }
               <div class="info-row">
                 <span class="info-label">Nacionalidad:</span>
                 <span class="info-val">Argentina</span>
               </div>
             </fieldset>
 
-            <!-- Datos de los Adultos Responsables -->
+            <!-- Datos de los Adultos Responsables / Contacto de Emergencia y Domicilio -->
             <fieldset class="clinical-fieldset">
-              <legend>Adultos Responsables y Domicilio Familiar</legend>
+              @if (isChild()) {
+                <legend>Adultos Responsables y Domicilio Familiar</legend>
 
-              <h4 class="fieldset-subheading">Adulto Responsable 1</h4>
-              <div class="info-row">
-                <span class="info-label">Nombre Completo:</span>
-                <span class="info-val">{{ guardian1Name() }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Teléfono de Contacto:</span>
-                <span class="info-val">
-                  <a [href]="'tel:' + guardian1Phone()" class="phone-link">{{ guardian1Phone() }}</a>
-                </span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">DNI:</span>
-                <span class="info-val">{{ guardian1Dni() }}</span>
-              </div>
+                <h4 class="fieldset-subheading">Adulto Responsable 1</h4>
+                <div class="info-row">
+                  <span class="info-label">Nombre Completo:</span>
+                  <span class="info-val">{{ guardian1Name() }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Teléfono de Contacto:</span>
+                  <span class="info-val">
+                    <a [href]="'tel:' + guardian1Phone()" class="phone-link">{{ guardian1Phone() }}</a>
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">DNI:</span>
+                  <span class="info-val">{{ guardian1Dni() }}</span>
+                </div>
 
-              <h4 class="fieldset-subheading">Adulto Responsable 2</h4>
-              <div class="info-row">
-                <span class="info-label">Nombre Completo:</span>
-                <span class="info-val">{{ guardian2Name() }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Teléfono de Contacto:</span>
-                <span class="info-val">
-                  <a [href]="'tel:' + guardian2Phone()" class="phone-link">{{ guardian2Phone() }}</a>
-                </span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">DNI:</span>
-                <span class="info-val">{{ guardian2Dni() }}</span>
-              </div>
+                <h4 class="fieldset-subheading">Adulto Responsable 2</h4>
+                <div class="info-row">
+                  <span class="info-label">Nombre Completo:</span>
+                  <span class="info-val">{{ guardian2Name() }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Teléfono de Contacto:</span>
+                  <span class="info-val">
+                    <a [href]="'tel:' + guardian2Phone()" class="phone-link">{{ guardian2Phone() }}</a>
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">DNI:</span>
+                  <span class="info-val">{{ guardian2Dni() }}</span>
+                </div>
+              } @else {
+                <legend>Contacto de Emergencia y Cobertura</legend>
+
+                @if (emergencyContactInfo(); as contact) {
+                  <h4 class="fieldset-subheading">Contacto de Emergencia / Familiar Directo</h4>
+                  <div class="info-row">
+                    <span class="info-label">Nombre Completo:</span>
+                    <span class="info-val">{{ contact.contactName || contact.name || '—' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Parentesco:</span>
+                    <span class="info-val">{{ contact.relationship || 'Familiar Directo' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Teléfono:</span>
+                    <span class="info-val">
+                      @if (contact.phone) {
+                        <a [href]="'tel:' + contact.phone" class="phone-link">{{ contact.phone }}</a>
+                      } @else {
+                        —
+                      }
+                    </span>
+                  </div>
+                }
+              }
 
               <h4 class="fieldset-subheading">Domicilio y Cobertura</h4>
               <div class="info-row">
@@ -143,65 +155,158 @@
       <!-- SUBTAB 2: ANTECEDENTES PERINATALES & NACER -->
       @if (selectedSubtab() === 'perinatal') {
         <section id="content-perinatal" class="subtab-content-panel">
-          <div class="clinical-grid">
-            <fieldset class="clinical-fieldset">
-              <legend>Antecedentes del Embarazo y Nacimiento</legend>
-              <div class="info-row">
-                <span class="info-label">Número de Embarazo (Gesta):</span>
-                <span class="info-val"><strong>Gesta {{ gestationCount() }}</strong> (Para 1, Abortos 0, Cesáreas 1)</span>
+          @if (!hasPerinatalHistory()) {
+            <div class="m3-card empty-state-card clinical-empty-state">
+              <div class="empty-icon-wrap">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                </svg>
               </div>
-              <div class="info-row">
-                <span class="info-label">Controles Prenatales:</span>
-                <span class="info-val">{{ prenatalVisits() }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Complicaciones del Embarazo:</span>
-                <div class="info-val">
-                  <div class="chips-wrap">
-                    @for (chip of pregnancyComplicationChips(); track chip.name) {
-                      <span class="m3-chip" [class.filter-active]="chip.active">{{ chip.name }}</span>
+              <h3>Sin antecedentes perinatales registrados</h3>
+              <p class="empty-state-text">No se registran datos de gestación, parto ni medidas al nacer para este paciente.</p>
+            </div>
+          } @else {
+            <div class="clinical-grid">
+              <fieldset class="clinical-fieldset">
+                <legend>Antecedentes del Embarazo y Nacimiento</legend>
+                <div class="info-row">
+                  <span class="info-label">Número de Embarazo (Gesta):</span>
+                  <span class="info-val">
+                    @if (gestationCount() != null) {
+                      <strong>Gesta {{ gestationCount() }}</strong>
+                    } @else {
+                      Sin registrar
+                    }
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Controles Prenatales:</span>
+                  <span class="info-val">{{ prenatalVisits() }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Complicaciones del Embarazo:</span>
+                  <div class="info-val">
+                    @if (pregnancyComplicationChips().length > 0) {
+                      <div class="chips-wrap">
+                        @for (chip of pregnancyComplicationChips(); track chip.name) {
+                          <span class="m3-chip filter-active">{{ chip.name }}</span>
+                        }
+                      </div>
+                    } @else {
+                      <span>Sin complicaciones registradas</span>
                     }
                   </div>
-                  <p class="clinical-detail-box">
-                    <strong>Detalle clínico:</strong> {{ pregnancyDetail() }}
-                  </p>
                 </div>
+                <div class="info-row">
+                  <span class="info-label">Tipo de Parto:</span>
+                  <span class="info-val">{{ deliveryType() }}</span>
+                </div>
+              </fieldset>
+
+              <fieldset class="clinical-fieldset">
+                <legend>Medidas Antropométricas al Nacer</legend>
+                <div class="info-row">
+                  <span class="info-label">Peso al Nacer:</span>
+                  <span class="info-val"><strong>{{ birthWeightDisplay() }}</strong></span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Talla al Nacer:</span>
+                  <span class="info-val"><strong>{{ birthHeightDisplay() }}</strong></span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Perímetro Cefálico al Nacer:</span>
+                  <span class="info-val"><strong>{{ birthHeadCircDisplay() }}</strong></span>
+                </div>
+              </fieldset>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- SUBTAB: ANTECEDENTES GINECO-OBSTÉTRICOS (GYNECOLOGY) -->
+      @if (selectedSubtab() === 'gynecology') {
+        <section id="content-gynecology" class="subtab-content-panel">
+          <div class="clinical-grid">
+            <fieldset class="clinical-fieldset">
+              <legend>Salud Ginecológica y Reproductiva</legend>
+              <div class="info-row">
+                <span class="info-label">Fecha de Última Menstruación (FUM):</span>
+                <span class="info-val"><strong>{{ fumDisplay() }}</strong></span>
               </div>
               <div class="info-row">
-                <span class="info-label">Tipo de Parto:</span>
-                <span class="info-val">{{ deliveryType() }}</span>
+                <span class="info-label">Ritmo y Regularidad Menstrual:</span>
+                <span class="info-val">{{ menstrualCycleDisplay() }}</span>
               </div>
               <div class="info-row">
-                <span class="info-label">Líquido Amniótico:</span>
-                <span class="info-val">Claro, sin grumos ni meconio</span>
+                <span class="info-label">Fórmula Obstétrica (G/P/C/A):</span>
+                <span class="info-val"><strong>{{ obstetricFormulaDisplay() }}</strong></span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Método Anticonceptivo Actual:</span>
+                <span class="info-val">{{ contraceptionDisplay() }}</span>
               </div>
             </fieldset>
 
             <fieldset class="clinical-fieldset">
-              <legend>Medidas Antropométricas al Nacer</legend>
+              <legend>Cribado y Prevención Ginecológica</legend>
               <div class="info-row">
-                <span class="info-label">Peso al Nacer:</span>
-                <span class="info-val"><strong>{{ birthWeightDisplay() }}</strong> (Adecuado para edad gestacional, P50 OMS)</span>
+                <span class="info-label">Último Papanicolaou (PAP):</span>
+                <span class="info-val">{{ papDisplay() }}</span>
               </div>
               <div class="info-row">
-                <span class="info-label">Talla al Nacer:</span>
-                <span class="info-val"><strong>{{ birthHeightDisplay() }}</strong> (P50 OMS)</span>
+                <span class="info-label">Última Mamografía / Eco Mamaria:</span>
+                <span class="info-val">{{ mammographyDisplay() }}</span>
               </div>
               <div class="info-row">
-                <span class="info-label">Perímetro Cefálico al Nacer:</span>
-                <span class="info-val"><strong>{{ birthHeadCircDisplay() }}</strong> (Normocéfalo, P52 OMS)</span>
+                <span class="info-label">Estado de Controles Preventivos:</span>
+                <span class="info-val">
+                  @if (papDisplay() !== 'Sin registrar' || mammographyDisplay() !== 'Sin registrar') {
+                    <span class="m3-chip filter-active">Estudios registrados</span>
+                  } @else {
+                    <span>Sin registros preventivos en ficha</span>
+                  }
+                </span>
+              </div>
+            </fieldset>
+          </div>
+        </section>
+      }
+
+      <!-- SUBTAB: RIESGO CARDIOVASCULAR & ESTILO DE VIDA (CARDIOLOGY / MED. GENERAL) -->
+      @if (selectedSubtab() === 'cardiovascular') {
+        <section id="content-cardiovascular" class="subtab-content-panel">
+          <div class="clinical-grid">
+            <fieldset class="clinical-fieldset">
+              <legend>Factores de Riesgo y Estilo de Vida</legend>
+              <div class="info-row">
+                <span class="info-label">Tabaquismo:</span>
+                <span class="info-val">{{ smokingDisplay() }}</span>
               </div>
               <div class="info-row">
-                <span class="info-label">Puntaje APGAR:</span>
-                <span class="info-val">9 / 10 (Vigoroso al 1' y a los 5')</span>
+                <span class="info-label">Actividad Física Habitual:</span>
+                <span class="info-val">{{ physicalActivityDisplay() }}</span>
               </div>
               <div class="info-row">
-                <span class="info-label">Edad Gestacional:</span>
-                <span class="info-val">39 semanas y 2 días (Capurro concordante)</span>
+                <span class="info-label">Presión Arterial Basal:</span>
+                <span class="info-val"><strong>{{ bloodPressureBaselineDisplay() }}</strong></span>
               </div>
               <div class="info-row">
-                <span class="info-label">Pesquisa Neonatal:</span>
-                <span class="info-val">FEI / FCF normal (TSH, PKU, FQ, Galactosemia, HSR, Déficit de Biotinidasa normales). Emisiones otoacústicas: Pasa bilateral. Fondo de ojo: Normal.</span>
+                <span class="info-label">Score de Riesgo Cardiovascular:</span>
+                <span class="info-val"><strong>{{ cardioRiskScoreDisplay() }}</strong></span>
+              </div>
+            </fieldset>
+
+            <fieldset class="clinical-fieldset">
+              <legend>Comorbilidades Cardiovasculares Asociadas</legend>
+              <div class="info-row">
+                <span class="info-label">Antecedentes Crónicos Relevantes:</span>
+                <span class="info-val">{{ cardiovascularConditionsDisplay() }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Monitoreo Antropométrico Adulto:</span>
+                <span class="info-val">
+                  IMC actual: <strong>{{ activePatientService.bmiDisplay() }}</strong>
+                </span>
               </div>
             </fieldset>
           </div>
@@ -211,137 +316,159 @@
       <!-- SUBTAB 3: PERSONALES & FAMILIARES -->
       @if (selectedSubtab() === 'personal') {
         <section id="content-personal" class="subtab-content-panel">
-          <div class="clinical-grid">
-            <fieldset class="clinical-fieldset">
-              <legend>Antecedentes Médicos Personales</legend>
-              <div class="info-row">
-                <span class="info-label">Enfermedades Previas:</span>
-                <span class="info-val">{{ chronicOrPreviousDiseases() }}</span>
+          @if (!hasPersonalHistory() && !hasFamilyHistory()) {
+            <div class="m3-card empty-state-card clinical-empty-state">
+              <div class="empty-icon-wrap">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                </svg>
               </div>
-              <div class="info-row">
-                <span class="info-label">Internaciones o Cirugías:</span>
-                <span class="info-val">{{ hospitalizationsOrSurgeries() }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Alergias Conocidas:</span>
-                <span class="info-val">
-                  @if (allergies(); as allg) {
-                    {{ allg }}
-                  } @else {
-                    <strong style="color: var(--md-sys-color-success);">Sin alergias medicamentosas ni alimentarias reportadas</strong> a la fecha. No dermatitis atópica severa.
-                  }
-                </span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Medicación Habitual:</span>
-                <span class="info-val">
-                  @for (med of habitualMedication(); track $index) {
-                    <div>{{ $index + 1 }}. {{ med }}</div>
-                  }
-                </span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Peso Registrado al Nacer:</span>
-                <span class="info-val">{{ birthWeightDisplay() }}</span>
-              </div>
-            </fieldset>
+              <h3>Sin antecedentes médicos registrados</h3>
+              <p class="empty-state-text">No se registran antecedentes patológicos personales ni familiares para este paciente.</p>
+            </div>
+          } @else {
+            <div class="clinical-grid">
+              <fieldset class="clinical-fieldset">
+                <legend>Antecedentes Médicos Personales</legend>
+                <div class="info-row">
+                  <span class="info-label">Enfermedades Previas:</span>
+                  <span class="info-val">{{ chronicOrPreviousDiseases() || 'Sin antecedentes patológicos registrados.' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Internaciones o Cirugías:</span>
+                  <span class="info-val">{{ hospitalizationsOrSurgeries() || 'Sin internaciones ni cirugías registradas.' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Alergias Conocidas:</span>
+                  <span class="info-val">{{ allergies() || 'Sin alergias registradas.' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Medicación Habitual:</span>
+                  <span class="info-val">
+                    @if (habitualMedication().length > 0) {
+                      @for (med of habitualMedication(); track $index) {
+                        <div>{{ $index + 1 }}. {{ med }}</div>
+                      }
+                    } @else {
+                      <span>Sin medicación habitual registrada.</span>
+                    }
+                  </span>
+                </div>
+                @if (birthWeightDisplay() !== '—') {
+                  <div class="info-row">
+                    <span class="info-label">Peso Registrado al Nacer:</span>
+                    <span class="info-val">{{ birthWeightDisplay() }}</span>
+                  </div>
+                }
+              </fieldset>
 
-            <fieldset class="clinical-fieldset">
-              <legend>Antecedentes Médicos Familiares</legend>
-              <div class="info-row">
-                <span class="info-label">Enfermedades Crónicas Familiares:</span>
-                <span class="info-val">
-                  @for (item of familyChronicDiseases(); track $index) {
-                    <div>• {{ item }}</div>
-                  }
-                </span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Alergias en la Familia:</span>
-                <span class="info-val">{{ familyAllergies() }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Enfermedades Genéticas:</span>
-                <span class="info-val">
-                  @if (geneticDiseases(); as gen) {
-                    {{ gen }}
-                  } @else {
-                    <strong style="color: var(--md-sys-color-success);">Negativas</strong>. Sin historia de cromosomopatías, cardiopatías congénitas sindrómicas, fibrosis quística ni muertes súbitas del lactante en familiares de primer o segundo grado.
-                  }
-                </span>
-              </div>
-            </fieldset>
-          </div>
+              <fieldset class="clinical-fieldset">
+                <legend>Antecedentes Médicos Familiares</legend>
+                <div class="info-row">
+                  <span class="info-label">Enfermedades Crónicas Familiares:</span>
+                  <span class="info-val">
+                    @if (familyChronicDiseases().length > 0) {
+                      @for (item of familyChronicDiseases(); track $index) {
+                        <div>• {{ item }}</div>
+                      }
+                    } @else {
+                      <span>Sin antecedentes patológicos familiares registrados.</span>
+                    }
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Alergias en la Familia:</span>
+                  <span class="info-val">{{ familyAllergies() || 'Sin alergias familiares registradas.' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Enfermedades Genéticas:</span>
+                  <span class="info-val">{{ geneticDiseases() || 'Sin antecedentes genéticos registrados.' }}</span>
+                </div>
+              </fieldset>
+            </div>
+          }
         </section>
       }
 
       <!-- SUBTAB 4: ALIMENTACIÓN Y VACUNAS -->
       @if (selectedSubtab() === 'nutrition') {
         <section id="content-nutrition" class="subtab-content-panel">
-          <div class="clinical-grid">
-            <fieldset class="clinical-fieldset">
-              <legend>Alimentación y Desarrollo Nutricional</legend>
-              <div class="info-row">
-                <span class="info-label">Tipo de Alimentación:</span>
-                <div class="info-val">
-                  @if (feedingDietCustom(); as diet) {
-                    <p>{{ diet }}</p>
-                  } @else {
-                    <p>Sin información de alimentación registrada.</p>
-                  }
-                </div>
+          @if (!hasNutritionData()) {
+            <div class="m3-card empty-state-card clinical-empty-state">
+              <div class="empty-icon-wrap">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                </svg>
               </div>
-              <div class="info-row">
-                <span class="info-label">Pautas Madurativas:</span>
-                <span class="info-val">{{ developmentalMilestones() }}</span>
-              </div>
-            </fieldset>
-
-            <fieldset class="clinical-fieldset">
-              <legend>Calendario Nacional de Vacunación</legend>
-              <p style="font-size: 0.82rem; color: var(--md-sys-color-secondary); margin-bottom: 0.5rem;">
-                Registro esquemático de inmunizaciones aplicadas:
-              </p>
-              <div class="m3-table-wrapper">
-                <table class="m3-table">
-                  <thead>
-                    <tr>
-                      <th>Edad</th>
-                      <th>Vacuna / Biológico</th>
-                      <th>Fecha</th>
-                      <th>Lote</th>
-                      <th>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (vac of vaccineSchedule(); track vac.name) {
-                      <tr [style.background-color]="vac.pending ? 'var(--md-sys-color-surface-container-high)' : ''">
-                        <td>{{ vac.age }}</td>
-                        <td>{{ vac.name }}</td>
-                        <td>{{ vac.date }}</td>
-                        <td>{{ vac.lot }}</td>
-                        <td>
-                          <span
-                            class="m3-badge"
-                            [class.badge-success]="!vac.pending"
-                            [class.badge-warning]="vac.pending"
-                          >
-                            {{ vac.status }}
-                          </span>
-                        </td>
-                      </tr>
-                    } @empty {
-                      <tr>
-                        <td colspan="5" class="table-empty-cell">
-                          No se registran vacunas aplicadas en la ficha clínica.
-                        </td>
-                      </tr>
+              <h3>Sin datos de alimentación ni vacunas</h3>
+              <p class="empty-state-text">No se registran datos de nutrición ni vacunas aplicadas para este paciente.</p>
+            </div>
+          } @else {
+            <div class="clinical-grid">
+              <fieldset class="clinical-fieldset">
+                <legend>Alimentación y Desarrollo Nutricional</legend>
+                <div class="info-row">
+                  <span class="info-label">Tipo de Alimentación:</span>
+                  <div class="info-val">
+                    @if (feedingDietCustom(); as diet) {
+                      <p>{{ diet }}</p>
+                    } @else {
+                      <p>Sin información de alimentación registrada.</p>
                     }
-                  </tbody>
-                </table>
-              </div>
-            </fieldset>
-          </div>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Pautas Madurativas:</span>
+                  <span class="info-val">{{ developmentalMilestones() || 'Pautas madurativas no registradas.' }}</span>
+                </div>
+              </fieldset>
+
+              <fieldset class="clinical-fieldset">
+                <legend>Calendario Nacional de Vacunación</legend>
+                <p style="font-size: 0.82rem; color: var(--md-sys-color-secondary); margin-bottom: 0.5rem;">
+                  Registro esquemático de inmunizaciones aplicadas:
+                </p>
+                <div class="m3-table-wrapper">
+                  <table class="m3-table">
+                    <thead>
+                      <tr>
+                        <th>Edad</th>
+                        <th>Vacuna / Biológico</th>
+                        <th>Fecha</th>
+                        <th>Lote</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (vac of vaccineSchedule(); track vac.name) {
+                        <tr [style.background-color]="vac.pending ? 'var(--md-sys-color-surface-container-high)' : ''">
+                          <td>{{ vac.age }}</td>
+                          <td>{{ vac.name }}</td>
+                          <td>{{ vac.date }}</td>
+                          <td>{{ vac.lot }}</td>
+                          <td>
+                            <span
+                              class="m3-badge"
+                              [class.badge-success]="!vac.pending"
+                              [class.badge-warning]="vac.pending"
+                            >
+                              {{ vac.status }}
+                            </span>
+                          </td>
+                        </tr>
+                      } @empty {
+                        <tr>
+                          <td colspan="5" class="table-empty-cell">
+                            No se registran vacunas aplicadas en la ficha clínica.
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </fieldset>
+            </div>
+          }
         </section>
       }
 
@@ -423,32 +550,60 @@
               </div>
             }
 
-            <!-- Tabla de Consultas Clínicas SOAP -->
-            <div class="m3-table-wrapper">
-              <table class="m3-table">
-                <thead>
-                  <tr>
-                    <th>N° Consulta</th>
-                    <th>Fecha</th>
-                    <th>Especialidad</th>
-                    <th>Tipo</th>
-                    <th>Motivo de Consulta (S)</th>
-                    <th>Diagnóstico Principal (A)</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @if (isLoadingEncounters()) {
+            <!-- Estado Vacío o Tabla de Consultas Clínicas SOAP -->
+            @if (isLoadingEncounters()) {
+              <div class="m3-table-wrapper">
+                <table class="m3-table">
+                  <tbody>
                     <tr>
-                      <td colspan="7" class="table-loading-cell">
+                      <td class="table-loading-cell">
                         Cargando historial de consultas SOAP...
                       </td>
                     </tr>
-                  } @else {
+                  </tbody>
+                </table>
+              </div>
+            } @else if (encounters().length === 0) {
+              <div class="m3-card empty-state-card clinical-empty-state empty-encounters-card">
+                <div class="empty-icon-wrap">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                  </svg>
+                </div>
+                <h3>Paciente sin consultas registradas</h3>
+                <p class="empty-state-text">Este paciente fue registrado recientemente y no posee evoluciones previas.</p>
+                <div class="empty-state-actions mt-2">
+                  <button
+                    type="button"
+                    class="m3-button m3-button-filled"
+                    (click)="openNewEncounterModal()"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    + Iniciar Primera Consulta
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="m3-table-wrapper">
+                <table class="m3-table">
+                  <thead>
+                    <tr>
+                      <th>N° Consulta</th>
+                      <th>Fecha</th>
+                      <th>Especialidad</th>
+                      <th>Tipo</th>
+                      <th>Motivo de Consulta (S)</th>
+                      <th>Diagnóstico Principal (A)</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     @for (enc of filteredEncounters(); track enc.id) {
                       <tr>
                         <td><strong>#E-{{ enc.id }}</strong></td>
-                        <td>{{ enc.encounterDate }}</td>
+                        <td>{{ enc.encounterDate?.split('T')?.[0] || enc.encounterDate }}</td>
                         <td>
                           <span class="m3-badge" [class]="getSpecialtyBadgeClass(enc.specialty)">
                             {{ getSpecialtyLabel(enc.specialty) }}
@@ -457,7 +612,9 @@
                         <td>{{ getConsultationTypeLabel(enc.consultationType) }}</td>
                         <td class="encounter-complaint-cell">{{ enc.chiefComplaint }}</td>
                         <td class="encounter-diag-cell">
-                          <span class="diag-code-tag">{{ enc.primaryDiagnosisCode }}</span>
+                          @if (enc.primaryDiagnosisCode) {
+                            <span class="diag-code-tag">{{ enc.primaryDiagnosisCode }}</span>
+                          }
                           {{ enc.primaryDiagnosisDescription }}
                         </td>
                         <td>
@@ -491,10 +648,10 @@
                         </td>
                       </tr>
                     }
-                  }
-                </tbody>
-              </table>
-            </div>
+                  </tbody>
+                </table>
+              </div>
+            }
 
             <!-- Herramientas Pediátricas Complementarias (Desacopladas) -->
             <div class="pediatric-complement-card">

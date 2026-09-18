@@ -124,6 +124,33 @@ export class NewEncounterDialogComponent implements OnInit {
   readonly prescriptions = signal<PrescriptionItem[]>([]);
   readonly diagnosticOrders = signal<string[]>([]);
 
+  // Progressive disclosure toggle signals
+  readonly isHpiExpanded = signal<boolean>(false);
+  readonly isFullVitalsExpanded = signal<boolean>(false);
+  readonly isSecondaryDiagExpanded = signal<boolean>(false);
+  readonly isPrescriptionsExpanded = signal<boolean>(false);
+  readonly isDiagnosticOrdersExpanded = signal<boolean>(false);
+
+  toggleHpi(): void {
+    this.isHpiExpanded.update((v) => !v);
+  }
+
+  toggleFullVitals(): void {
+    this.isFullVitalsExpanded.update((v) => !v);
+  }
+
+  toggleSecondaryDiag(): void {
+    this.isSecondaryDiagExpanded.update((v) => !v);
+  }
+
+  togglePrescriptions(): void {
+    this.isPrescriptionsExpanded.update((v) => !v);
+  }
+
+  toggleDiagnosticOrders(): void {
+    this.isDiagnosticOrdersExpanded.update((v) => !v);
+  }
+
   // Temp form fields for adding secondary diagnoses, prescriptions and orders
   readonly newSecondaryCode = signal<string>('');
   readonly newSecondaryDesc = signal<string>('');
@@ -160,7 +187,7 @@ export class NewEncounterDialogComponent implements OnInit {
     physicalExamination: [''],
 
     // A - Assessment
-    primaryDiagnosisCode: ['Z00.0', [Validators.required]],
+    primaryDiagnosisCode: [''],
     primaryDiagnosisDescription: [
       'Examen médico general de rutina del adulto',
       [Validators.required, Validators.minLength(3)],
@@ -278,6 +305,11 @@ export class NewEncounterDialogComponent implements OnInit {
         primaryDiagnosisCode: 'L20.9',
         primaryDiagnosisDescription: 'Dermatitis atópica no especificada',
       });
+    } else if (specialty === 'GYNECOLOGY') {
+      this.encounterForm.patchValue({
+        primaryDiagnosisCode: 'Z01.4',
+        primaryDiagnosisDescription: 'Examen ginecológico general y cribado de rutina',
+      });
     } else if (specialty === 'OPHTHALMOLOGY') {
       this.encounterForm.patchValue({
         primaryDiagnosisCode: 'H52.1',
@@ -309,15 +341,17 @@ export class NewEncounterDialogComponent implements OnInit {
     });
   }
 
-  // Secondary Diagnoses management
+  // Secondary diagnoses management
   addSecondaryDiagnosis(): void {
     const code = this.newSecondaryCode().trim();
     const desc = this.newSecondaryDesc().trim();
-    if (!code || !desc) return;
-    this.secondaryDiagnoses.update((list) => [
-      ...list,
-      { code, description: desc, isChronic: this.newSecondaryChronic() },
-    ]);
+    if (!desc) return;
+    const item: DiagnosisItem = {
+      code: code || 'R69',
+      description: desc,
+      isChronic: this.newSecondaryChronic(),
+    };
+    this.secondaryDiagnoses.update((list) => [...list, item]);
     this.newSecondaryCode.set('');
     this.newSecondaryDesc.set('');
     this.newSecondaryChronic.set(false);
@@ -393,8 +427,8 @@ export class NewEncounterDialogComponent implements OnInit {
       weightKg: null,
       heightCm: null,
       physicalExamination: '',
-      primaryDiagnosisCode: 'Z00.0',
-      primaryDiagnosisDescription: 'Examen médico general de rutina del adulto',
+      primaryDiagnosisCode: '',
+      primaryDiagnosisDescription: '',
       clinicalImpression: '',
       treatmentPlan: '',
       followUpInstructions: '',
@@ -432,9 +466,21 @@ export class NewEncounterDialogComponent implements OnInit {
     const formVal = this.encounterForm.getRawValue();
     const bmiVal = this.computedBmi().value;
 
+    const hasAnyVitals =
+      formVal.systolicBloodPressure != null ||
+      formVal.diastolicBloodPressure != null ||
+      formVal.heartRate != null ||
+      formVal.respiratoryRate != null ||
+      formVal.temperatureCelsius != null ||
+      formVal.oxygenSaturationPercent != null ||
+      formVal.weightKg != null ||
+      formVal.heightCm != null;
+
+    const rawDiagCode = formVal.primaryDiagnosisCode?.trim();
+
     const payload: ClinicalEncounterRequest = {
       patientId,
-      encounterDate: formVal.encounterDate ?? this.todayDate,
+      encounterDate: this.formatEncounterDateTime(formVal.encounterDate ?? this.todayDate),
       specialty: this.selectedSpecialty(),
       consultationType: formVal.consultationType ?? 'FIRST_VISIT',
 
@@ -443,28 +489,30 @@ export class NewEncounterDialogComponent implements OnInit {
       historyOfPresentIllness: formVal.historyOfPresentIllness?.trim() || undefined,
 
       // O - Objective
-      vitalSigns: {
-        systolicBloodPressure:
-          formVal.systolicBloodPressure != null ? Number(formVal.systolicBloodPressure) : null,
-        diastolicBloodPressure:
-          formVal.diastolicBloodPressure != null ? Number(formVal.diastolicBloodPressure) : null,
-        heartRate: formVal.heartRate != null ? Number(formVal.heartRate) : null,
-        respiratoryRate:
-          formVal.respiratoryRate != null ? Number(formVal.respiratoryRate) : null,
-        temperatureCelsius:
-          formVal.temperatureCelsius != null ? Number(formVal.temperatureCelsius) : null,
-        oxygenSaturationPercent:
-          formVal.oxygenSaturationPercent != null
-            ? Number(formVal.oxygenSaturationPercent)
-            : null,
-        weightKg: formVal.weightKg != null ? Number(formVal.weightKg) : null,
-        heightCm: formVal.heightCm != null ? Number(formVal.heightCm) : null,
-        bodyMassIndex: bmiVal,
-      },
+      vitalSigns: hasAnyVitals
+        ? {
+            systolicBloodPressure:
+              formVal.systolicBloodPressure != null ? Number(formVal.systolicBloodPressure) : null,
+            diastolicBloodPressure:
+              formVal.diastolicBloodPressure != null ? Number(formVal.diastolicBloodPressure) : null,
+            heartRate: formVal.heartRate != null ? Number(formVal.heartRate) : null,
+            respiratoryRate:
+              formVal.respiratoryRate != null ? Number(formVal.respiratoryRate) : null,
+            temperatureCelsius:
+              formVal.temperatureCelsius != null ? Number(formVal.temperatureCelsius) : null,
+            oxygenSaturationPercent:
+              formVal.oxygenSaturationPercent != null
+                ? Number(formVal.oxygenSaturationPercent)
+                : null,
+            weightKg: formVal.weightKg != null ? Number(formVal.weightKg) : null,
+            heightCm: formVal.heightCm != null ? Number(formVal.heightCm) : null,
+            bodyMassIndex: bmiVal,
+          }
+        : undefined,
       physicalExamination: formVal.physicalExamination?.trim() || undefined,
 
       // A - Assessment
-      primaryDiagnosisCode: formVal.primaryDiagnosisCode.trim(),
+      primaryDiagnosisCode: rawDiagCode ? rawDiagCode : undefined,
       primaryDiagnosisDescription: formVal.primaryDiagnosisDescription.trim(),
       secondaryDiagnoses:
         this.secondaryDiagnoses().length > 0 ? this.secondaryDiagnoses() : undefined,
@@ -512,5 +560,13 @@ export class NewEncounterDialogComponent implements OnInit {
         this.errorMessage.set(serverMsg);
       },
     });
+  }
+
+  private formatEncounterDateTime(dateVal: string | null | undefined): string {
+    const raw = dateVal?.trim() || this.todayDate;
+    if (raw.includes('T')) {
+      return raw;
+    }
+    return `${raw}T00:00:00`;
   }
 }

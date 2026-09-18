@@ -20,8 +20,21 @@ import { MedicalCheckupDetailDTO } from '../../core/models/checkup.model';
 import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
 import { MedicalSpecialty } from '../../core/models/specialty.model';
 import { SPECIALTY_OPTIONS, SpecialtyOption } from '../encounter-dialog/new-encounter-dialog.component';
+import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 
-export type SubtabType = 'general' | 'perinatal' | 'personal' | 'nutrition' | 'history';
+export type SubtabType =
+  | 'general'
+  | 'perinatal'
+  | 'personal'
+  | 'nutrition'
+  | 'history'
+  | 'gynecology'
+  | 'cardiovascular';
+
+export interface RecordSubtabItem {
+  id: SubtabType;
+  label: string;
+}
 
 export interface CheckupTableRow {
   code: string;
@@ -60,6 +73,7 @@ export interface ComplicationChip {
 })
 export class PatientRecordComponent implements OnInit {
   readonly activePatientService = inject(ActivePatientService);
+  readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
   private readonly checkupService = inject(CheckupService);
   private readonly clinicalEncounterService = inject(ClinicalEncounterService);
   private readonly router = inject(Router);
@@ -67,6 +81,76 @@ export class PatientRecordComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly selectedSubtab = signal<SubtabType>('general');
+
+  readonly isChild = computed(() => {
+    return this.activePatientService.ageInYears() < 16;
+  });
+
+  readonly availableSubtabs = computed<RecordSubtabItem[]>(() => {
+    const specialty = this.doctorSpecialtyService.activeSpecialty();
+    const child = this.isChild();
+
+    if (specialty === 'GYNECOLOGY') {
+      return [
+        { id: 'general', label: '1. Datos Generales' },
+        { id: 'gynecology', label: '2. Antecedentes Gineco-Obstétricos' },
+        { id: 'personal', label: '3. Personales & Familiares' },
+        { id: 'history', label: '4. Historia Clínica & Consultas SOAP' },
+      ];
+    }
+
+    if (specialty === 'CARDIOLOGY' || specialty === 'GENERAL_MEDICINE') {
+      if (child) {
+        return [
+          { id: 'general', label: '1. Datos Generales & Tutores' },
+          { id: 'cardiovascular', label: '2. Riesgo Cardiovascular & Estilo de Vida' },
+          { id: 'personal', label: '3. Personales & Familiares' },
+          { id: 'nutrition', label: '4. Alimentación & Vacunas' },
+          { id: 'history', label: '5. Historia Clínica & Consultas SOAP' },
+        ];
+      }
+      return [
+        { id: 'general', label: '1. Datos Generales' },
+        { id: 'cardiovascular', label: '2. Riesgo Cardiovascular & Estilo de Vida' },
+        { id: 'personal', label: '3. Personales & Familiares' },
+        { id: 'history', label: '4. Historia Clínica & Consultas SOAP' },
+      ];
+    }
+
+    if (specialty === 'PEDIATRICS') {
+      if (child) {
+        return [
+          { id: 'general', label: '1. Datos Generales & Tutores' },
+          { id: 'perinatal', label: '2. Antecedentes Perinatales & Nacer' },
+          { id: 'personal', label: '3. Personales & Familiares' },
+          { id: 'nutrition', label: '4. Alimentación & Vacunas' },
+          { id: 'history', label: '5. Historia Clínica & Consultas SOAP' },
+        ];
+      }
+      return [
+        { id: 'general', label: '1. Datos Generales' },
+        { id: 'personal', label: '2. Personales & Familiares' },
+        { id: 'history', label: '3. Historia Clínica & Consultas SOAP' },
+      ];
+    }
+
+    // Default or other specialties
+    if (child) {
+      return [
+        { id: 'general', label: '1. Datos Generales & Tutores' },
+        { id: 'perinatal', label: '2. Antecedentes Perinatales & Nacer' },
+        { id: 'personal', label: '3. Personales & Familiares' },
+        { id: 'nutrition', label: '4. Alimentación & Vacunas' },
+        { id: 'history', label: '5. Historia Clínica & Consultas SOAP' },
+      ];
+    }
+    return [
+      { id: 'general', label: '1. Datos Generales' },
+      { id: 'cardiovascular', label: '2. Riesgo Cardiovascular & Estilo de Vida' },
+      { id: 'personal', label: '3. Personales & Familiares' },
+      { id: 'history', label: '4. Historia Clínica & Consultas SOAP' },
+    ];
+  });
   readonly checkups = signal<MedicalCheckupDetailDTO[]>([]);
   readonly isLoadingCheckups = signal<boolean>(false);
 
@@ -99,6 +183,15 @@ export class PatientRecordComponent implements OnInit {
         } else {
           this.checkups.set([]);
           this.encounters.set([]);
+        }
+      });
+    });
+
+    effect(() => {
+      const validSubtabs = this.availableSubtabs().map((t) => t.id);
+      untracked(() => {
+        if (!validSubtabs.includes(this.selectedSubtab())) {
+          this.selectedSubtab.set(validSubtabs[0] || 'general');
         }
       });
     });
@@ -314,11 +407,29 @@ export class PatientRecordComponent implements OnInit {
   // --- Subtab 1 Computeds ---
   readonly patientNationalId = computed(() => {
     const p = this.activePatientService.activePatient();
-    return p?.guardianInfo?.firstGuardianNationalId ?? '—';
+    return p?.nationalId || p?.guardianInfo?.firstGuardianNationalId || '—';
   });
 
-  readonly biologicalSex = computed(() => 'No especificado');
-  readonly bloodType = computed(() => 'Sin registrar');
+  readonly biologicalSex = computed(() => {
+    const p = this.activePatientService.activePatient();
+    if (p?.gender === 'FEMALE') return 'Femenino';
+    if (p?.gender === 'MALE') return 'Masculino';
+    if (p?.gender === 'OTHER') return 'Otro';
+    return 'No especificado';
+  });
+
+  readonly bloodType = computed(() => {
+    return this.activePatientService.activePatient()?.bloodType || 'Sin registrar';
+  });
+
+  readonly patientPhone = computed(() => {
+    const p = this.activePatientService.activePatient();
+    return p?.phone || p?.guardianInfo?.firstGuardianPhone || '—';
+  });
+
+  readonly patientEmail = computed(() => {
+    return this.activePatientService.activePatient()?.email || '—';
+  });
 
   readonly guardian1Name = computed(() => {
     return (
@@ -362,16 +473,41 @@ export class PatientRecordComponent implements OnInit {
     );
   });
 
+  readonly emergencyContactInfo = computed(() => {
+    return this.activePatientService.activePatient()?.emergencyContact || null;
+  });
+
   readonly address = computed(() => {
-    return (
-      this.activePatientService.activePatient()?.guardianInfo?.address ||
-      '—'
+    const p = this.activePatientService.activePatient();
+    return p?.address || p?.guardianInfo?.address || '—';
+  });
+
+  readonly healthInsurance = computed(() => {
+    const p = this.activePatientService.activePatient();
+    const ins = p?.insuranceInfo;
+    if (ins?.providerName) {
+      const plan = ins.planName ? ` (${ins.planName})` : '';
+      const num = ins.affiliateNumber ? ` - N° ${ins.affiliateNumber}` : '';
+      return `${ins.providerName}${plan}${num}`;
+    }
+    return 'Sin cobertura registrada';
+  });
+
+  // --- Subtab 2 Computeds ---
+  readonly hasPerinatalHistory = computed(() => {
+    const p = this.activePatientService.activePatient();
+    const ph = p?.perinatalHistory;
+    const bm = p?.personalHistory?.birthMeasurements;
+    return !!(
+      ph?.gestationCount != null ||
+      (ph?.prenatalVisitsSummary && ph.prenatalVisitsSummary.trim().length > 0) ||
+      (ph?.pregnancyComplications && ph.pregnancyComplications.length > 0) ||
+      (bm?.weight != null && bm.weight > 0) ||
+      (bm?.height != null && bm.height > 0) ||
+      (bm?.headCircumference != null && bm.headCircumference > 0)
     );
   });
 
-  readonly healthInsurance = computed(() => 'Sin cobertura registrada');
-
-  // --- Subtab 2 Computeds ---
   readonly gestationCount = computed(() => {
     return this.activePatientService.activePatient()?.perinatalHistory?.gestationCount ?? null;
   });
@@ -379,7 +515,7 @@ export class PatientRecordComponent implements OnInit {
   readonly prenatalVisits = computed(() => {
     return (
       this.activePatientService.activePatient()?.perinatalHistory?.prenatalVisitsSummary ||
-      'Sin datos de controles prenatales registrados.'
+      'Sin registrar'
     );
   });
 
@@ -392,33 +528,57 @@ export class PatientRecordComponent implements OnInit {
   });
 
   readonly pregnancyDetail = computed(() => {
-    return 'Sin detalles perinatales adicionales.';
+    return null;
   });
 
-  readonly deliveryType = computed(() => 'No especificado');
+  readonly deliveryType = computed(() => 'Sin registrar');
 
   readonly birthWeightDisplay = computed(() => {
     const w = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.weight;
-    return w != null ? `${w.toFixed(3)} kg` : '—';
+    return w != null && !isNaN(Number(w)) && Number(w) > 0 ? `${Number(w).toFixed(3)} kg` : '—';
   });
 
   readonly birthHeightDisplay = computed(() => {
     const h = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.height;
-    return h != null ? `${h.toFixed(1)} cm` : '—';
+    return h != null && !isNaN(Number(h)) && Number(h) > 0 ? `${Number(h).toFixed(1)} cm` : '—';
   });
 
   readonly birthHeadCircDisplay = computed(() => {
     const hc = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.headCircumference;
-    return hc != null ? `${hc.toFixed(1)} cm` : '—';
+    return hc != null && !isNaN(Number(hc)) && Number(hc) > 0 ? `${Number(hc).toFixed(1)} cm` : '—';
   });
 
   // --- Subtab 3 Computeds ---
+  readonly hasPersonalHistory = computed(() => {
+    const p = this.activePatientService.activePatient();
+    const ph = p?.personalHistory;
+    return !!(
+      (ph?.chronicOrPreviousDiseases && ph.chronicOrPreviousDiseases.length > 0) ||
+      (ph?.hospitalizationsOrSurgeries && ph.hospitalizationsOrSurgeries.length > 0) ||
+      (ph?.allergies && ph.allergies.length > 0) ||
+      (p?.allergies && p.allergies.length > 0) ||
+      (p?.chronicConditions && p.chronicConditions.length > 0) ||
+      (ph?.habitualMedication && ph.habitualMedication.length > 0)
+    );
+  });
+
+  readonly hasFamilyHistory = computed(() => {
+    const p = this.activePatientService.activePatient();
+    const fh = p?.familyHistory;
+    return !!(
+      (fh?.familyChronicDiseases && fh.familyChronicDiseases.length > 0) ||
+      (fh?.familyAllergies && fh.familyAllergies.length > 0) ||
+      (fh?.geneticDiseases && fh.geneticDiseases.length > 0)
+    );
+  });
+
   readonly chronicOrPreviousDiseases = computed(() => {
-    const list = this.activePatientService.activePatient()?.personalHistory?.chronicOrPreviousDiseases;
+    const p = this.activePatientService.activePatient();
+    const list = p?.personalHistory?.chronicOrPreviousDiseases || p?.chronicConditions;
     if (list && list.length > 0) {
       return list.join('. ');
     }
-    return 'Sin antecedentes patológicos conocidos.';
+    return null;
   });
 
   readonly hospitalizationsOrSurgeries = computed(() => {
@@ -426,11 +586,12 @@ export class PatientRecordComponent implements OnInit {
     if (list && list.length > 0) {
       return list.join('. ');
     }
-    return 'Sin internaciones ni cirugías previas registradas.';
+    return null;
   });
 
   readonly allergies = computed(() => {
-    const list = this.activePatientService.activePatient()?.personalHistory?.allergies;
+    const p = this.activePatientService.activePatient();
+    const list = p?.personalHistory?.allergies || p?.allergies;
     if (list && list.length > 0) {
       return list.join(', ');
     }
@@ -442,7 +603,7 @@ export class PatientRecordComponent implements OnInit {
     if (list && list.length > 0) {
       return list;
     }
-    return ['Sin medicación habitual registrada.'];
+    return [];
   });
 
   readonly familyChronicDiseases = computed<string[]>(() => {
@@ -450,7 +611,7 @@ export class PatientRecordComponent implements OnInit {
     if (list && list.length > 0) {
       return list;
     }
-    return ['Sin antecedentes patológicos familiares registrados.'];
+    return [];
   });
 
   readonly familyAllergies = computed(() => {
@@ -458,7 +619,7 @@ export class PatientRecordComponent implements OnInit {
     if (list && list.length > 0) {
       return list.join(', ');
     }
-    return 'Sin alergias familiares registradas.';
+    return null;
   });
 
   readonly geneticDiseases = computed(() => {
@@ -470,14 +631,23 @@ export class PatientRecordComponent implements OnInit {
   });
 
   // --- Subtab 4 Computeds ---
+  readonly hasNutritionData = computed(() => {
+    const p = this.activePatientService.activePatient();
+    const inut = p?.immunizationAndNutrition;
+    return !!(
+      inut?.feedingDiet ||
+      inut?.developmentalMilestones ||
+      (inut?.vaccinationHistory && inut.vaccinationHistory.length > 0)
+    );
+  });
+
   readonly feedingDietCustom = computed(() => {
     return this.activePatientService.activePatient()?.immunizationAndNutrition?.feedingDiet || null;
   });
 
   readonly developmentalMilestones = computed(() => {
     return (
-      this.activePatientService.activePatient()?.immunizationAndNutrition?.developmentalMilestones ||
-      'Pautas madurativas no registradas.'
+      this.activePatientService.activePatient()?.immunizationAndNutrition?.developmentalMilestones || null
     );
   });
 
@@ -642,5 +812,82 @@ export class PatientRecordComponent implements OnInit {
     const birthHC = patient?.personalHistory?.birthMeasurements?.headCircumference;
     if (currentHC == null || birthHC == null) return 'Sin mediciones comparativas';
     return `PC nacer: ${birthHC.toFixed(1)} cm ➔ Actual: ${currentHC.toFixed(1)} cm`;
+  });
+
+  // --- Gynecology Subtab Computeds ---
+  readonly gynecologyData = computed<Record<string, any> | null>(() => {
+    const extra = this.activePatientService.activePatient()?.patientExtraData;
+    return (extra?.['gynecology'] || extra?.['obstetric'] || extra) ?? null;
+  });
+
+  readonly fumDisplay = computed(() => {
+    const d = this.gynecologyData();
+    return d?.['fum'] || d?.['lastMenstrualPeriod'] || 'Sin registrar';
+  });
+
+  readonly menstrualCycleDisplay = computed(() => {
+    const d = this.gynecologyData();
+    return d?.['menstrualCycle'] || d?.['cycleRegularity'] || 'Sin registrar';
+  });
+
+  readonly obstetricFormulaDisplay = computed(() => {
+    const d = this.gynecologyData();
+    if (!d) return 'Sin registrar';
+    const g = d['gesta'] ?? d['gravida'] ?? null;
+    const p = d['partos'] ?? d['para'] ?? null;
+    const c = d['cesareas'] ?? d['cesarean'] ?? null;
+    const a = d['abortos'] ?? d['abortions'] ?? null;
+    if (g != null || p != null || c != null || a != null) {
+      return `G${g ?? 0} P${p ?? 0} C${c ?? 0} A${a ?? 0}`;
+    }
+    return 'Sin registrar';
+  });
+
+  readonly contraceptionDisplay = computed(() => {
+    const d = this.gynecologyData();
+    return d?.['contraception'] || d?.['contraceptiveMethod'] || 'Sin registrar / No utiliza';
+  });
+
+  readonly papDisplay = computed(() => {
+    const d = this.gynecologyData();
+    return d?.['lastPap'] || d?.['papSmear'] || 'Sin registrar';
+  });
+
+  readonly mammographyDisplay = computed(() => {
+    const d = this.gynecologyData();
+    return d?.['lastMammography'] || d?.['mammography'] || 'Sin registrar';
+  });
+
+  // --- Cardiology Subtab Computeds ---
+  readonly cardiologyData = computed<Record<string, any> | null>(() => {
+    const extra = this.activePatientService.activePatient()?.patientExtraData;
+    return (extra?.['cardiology'] || extra?.['cardiovascular'] || extra) ?? null;
+  });
+
+  readonly smokingDisplay = computed(() => {
+    const d = this.cardiologyData();
+    return d?.['smoking'] || d?.['tobacco'] || 'No refiere tabaquismo activo';
+  });
+
+  readonly physicalActivityDisplay = computed(() => {
+    const d = this.cardiologyData();
+    return d?.['physicalActivity'] || d?.['exercise'] || 'Sin registrar';
+  });
+
+  readonly cardiovascularConditionsDisplay = computed(() => {
+    const p = this.activePatientService.activePatient();
+    const list = p?.chronicConditions || [];
+    const cardioTerms = list.filter((c) => /hipertens|hta|dislip|colesterol|coronari|infarto|arritm/i.test(c));
+    return cardioTerms.length > 0 ? cardioTerms.join(', ') : 'Sin antecedentes cardiovasculares reportados';
+  });
+
+  readonly bloodPressureBaselineDisplay = computed(() => {
+    const d = this.cardiologyData();
+    return d?.['baselineBP'] || d?.['bloodPressure'] || 'Sin registro basal';
+  });
+
+  readonly cardioRiskScoreDisplay = computed(() => {
+    const d = this.cardiologyData();
+    return d?.['riskScore'] || 'Riesgo bajo / No calculado';
   });
 }

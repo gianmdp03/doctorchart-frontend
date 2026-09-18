@@ -147,7 +147,7 @@
                 <p>Registre las quejas expresadas directamente por el paciente o su acompañante.</p>
               </div>
 
-              <div class="m3-textfield" [class.has-error]="isInvalid('chiefComplaint')">
+              <div class="m3-textfield chief-complaint-field" [class.has-error]="isInvalid('chiefComplaint')">
                 <input
                   id="chiefComplaint"
                   type="text"
@@ -161,15 +161,34 @@
                 <span class="error-helper-text">El motivo de consulta es obligatorio.</span>
               }
 
-              <div class="m3-textfield mt-3" style="margin-top: 1rem;">
-                <textarea
-                  id="historyOfPresentIllness"
-                  rows="4"
-                  placeholder=" "
-                  formControlName="historyOfPresentIllness"
-                ></textarea>
-                <label for="historyOfPresentIllness">Historia de la Enfermedad Actual / Cronología de Síntomas</label>
+              <!-- Progressive Disclosure: Anamnesis / HPI -->
+              <div class="disclosure-header mt-3">
+                <button
+                  type="button"
+                  class="disclosure-toggle-btn"
+                  (click)="toggleHpi()"
+                >
+                  <span>
+                    @if (isHpiExpanded() || encounterForm.get('historyOfPresentIllness')?.value) {
+                      ▲ Ocultar Anamnesis / Evolución cronológica
+                    } @else {
+                      + Agregar Anamnesis / Evolución cronológica de síntomas ▼
+                    }
+                  </span>
+                </button>
               </div>
+
+              @if (isHpiExpanded() || encounterForm.get('historyOfPresentIllness')?.value) {
+                <div class="m3-textfield mt-2">
+                  <textarea
+                    id="historyOfPresentIllness"
+                    rows="4"
+                    placeholder=" "
+                    formControlName="historyOfPresentIllness"
+                  ></textarea>
+                  <label for="historyOfPresentIllness">Historia de la Enfermedad Actual / Cronología de Síntomas</label>
+                </div>
+              }
             </div>
           }
 
@@ -190,10 +209,10 @@
                 </button>
               </div>
 
-              <!-- Signos Vitales Grid -->
+              <!-- Signos Vitales Esenciales (Vista Compacta Inmediata) -->
               <fieldset class="section-box">
-                <legend>Signos Vitales & Parámetros Fisiológicos</legend>
-                <div class="vitals-grid">
+                <legend>Signos Vitales y Somatometría (Entrada Rápida)</legend>
+                <div class="vitals-compact-grid">
                   <div class="m3-textfield">
                     <input
                       id="systolicBloodPressure"
@@ -212,47 +231,6 @@
                       formControlName="diastolicBloodPressure"
                     />
                     <label for="diastolicBloodPressure">PA Diastólica (mmHg)</label>
-                  </div>
-
-                  <div class="m3-textfield">
-                    <input
-                      id="heartRate"
-                      type="number"
-                      placeholder=" "
-                      formControlName="heartRate"
-                    />
-                    <label for="heartRate">Frec. Cardíaca (lpm)</label>
-                  </div>
-
-                  <div class="m3-textfield">
-                    <input
-                      id="respiratoryRate"
-                      type="number"
-                      placeholder=" "
-                      formControlName="respiratoryRate"
-                    />
-                    <label for="respiratoryRate">Frec. Resp. (rpm)</label>
-                  </div>
-
-                  <div class="m3-textfield">
-                    <input
-                      id="temperatureCelsius"
-                      type="number"
-                      step="0.1"
-                      placeholder=" "
-                      formControlName="temperatureCelsius"
-                    />
-                    <label for="temperatureCelsius">Temperatura (°C)</label>
-                  </div>
-
-                  <div class="m3-textfield">
-                    <input
-                      id="oxygenSaturationPercent"
-                      type="number"
-                      placeholder=" "
-                      formControlName="oxygenSaturationPercent"
-                    />
-                    <label for="oxygenSaturationPercent">SatO2 (%)</label>
                   </div>
 
                   <div class="m3-textfield">
@@ -278,8 +256,8 @@
                   </div>
                 </div>
 
-                <!-- Live Computed BMI & WHO Nutritional Classification -->
-                <div class="bmi-calc-box">
+                <!-- Live Computed BMI & Nutritional Status -->
+                <div class="bmi-calc-box mt-2">
                   <div class="bmi-label-val">
                     <span class="bmi-title">Índice de Masa Corporal (IMC):</span>
                     <strong class="bmi-number">
@@ -294,10 +272,72 @@
                     {{ computedBmi().label }}
                   </span>
                 </div>
+
+                <!-- Progressive Disclosure: Signos Vitales Completos -->
+                <div class="disclosure-header mt-3">
+                  <button
+                    type="button"
+                    class="disclosure-toggle-btn"
+                    (click)="toggleFullVitals()"
+                  >
+                    <span>
+                      @if (isFullVitalsExpanded()) {
+                        ▲ Ocultar Signos Vitales Avanzados (FC, FR, Temp, SatO2)
+                      } @else {
+                        + Cargar Signos Vitales Completos (FC, FR, Temp, SatO2) ▼
+                      }
+                    </span>
+                  </button>
+                </div>
+
+                @if (isFullVitalsExpanded()) {
+                  <div class="vitals-advanced-grid mt-2">
+                    <div class="m3-textfield">
+                      <input
+                        id="heartRate"
+                        type="number"
+                        placeholder=" "
+                        formControlName="heartRate"
+                      />
+                      <label for="heartRate">Frec. Cardíaca (lpm)</label>
+                    </div>
+
+                    <div class="m3-textfield">
+                      <input
+                        id="respiratoryRate"
+                        type="number"
+                        placeholder=" "
+                        formControlName="respiratoryRate"
+                      />
+                      <label for="respiratoryRate">Frec. Resp. (rpm)</label>
+                    </div>
+
+                    <div class="m3-textfield">
+                      <input
+                        id="temperatureCelsius"
+                        type="number"
+                        step="0.1"
+                        placeholder=" "
+                        formControlName="temperatureCelsius"
+                      />
+                      <label for="temperatureCelsius">Temperatura (°C)</label>
+                    </div>
+
+                    <div class="m3-textfield">
+                      <input
+                        id="oxygenSaturationPercent"
+                        type="number"
+                        placeholder=" "
+                        formControlName="oxygenSaturationPercent"
+                      />
+                      <label for="oxygenSaturationPercent">SatO2 (%)</label>
+                    </div>
+                  </div>
+                }
               </fieldset>
 
               <!-- Physical Examination -->
-              <div class="m3-textfield mt-3" style="margin-top: 1rem;">
+              <div class="m3-textfield mt-3">
                 <textarea
                   id="physicalExamination"
                   rows="4"
@@ -317,7 +357,7 @@
                 <p>Síntesis nosológica de los problemas de salud identificados en la consulta.</p>
               </div>
 
-              <!-- Presets rápidos -->
+              <!-- Sugerencias rápidas CIE-10 -->
               <div class="presets-bar">
                 <span class="presets-title">Sugerencias rápidas CIE-10:</span>
                 <div class="preset-chips">
@@ -333,17 +373,8 @@
                 </div>
               </div>
 
-              <!-- Primary Diagnosis -->
-              <div class="form-grid-2 mt-2">
-                <div class="m3-textfield" [class.has-error]="isInvalid('primaryDiagnosisCode')">
-                  <input
-                    id="primaryDiagnosisCode"
-                    type="text"
-                    placeholder=" "
-                    formControlName="primaryDiagnosisCode"
-                  />
-                  <label for="primaryDiagnosisCode">Código Diagnóstico Principal (* CIE-10/SNOMED)</label>
-                </div>
+              <!-- Primary Diagnosis: Flexible, Description First (Obligatorio), Code (Opcional) -->
+              <div class="form-grid-2 mt-3">
                 <div class="m3-textfield" [class.has-error]="isInvalid('primaryDiagnosisDescription')">
                   <input
                     id="primaryDiagnosisDescription"
@@ -351,68 +382,101 @@
                     placeholder=" "
                     formControlName="primaryDiagnosisDescription"
                   />
-                  <label for="primaryDiagnosisDescription">Descripción del Diagnóstico Principal (*)</label>
+                  <label for="primaryDiagnosisDescription">Diagnóstico Principal / Impresión Clínica (* Requerido)</label>
+                </div>
+                <div class="m3-textfield">
+                  <input
+                    id="primaryDiagnosisCode"
+                    type="text"
+                    placeholder=" "
+                    formControlName="primaryDiagnosisCode"
+                  />
+                  <label for="primaryDiagnosisCode">Código CIE-10 / SNOMED (Opcional)</label>
                 </div>
               </div>
+              @if (isInvalid('primaryDiagnosisDescription')) {
+                <span class="error-helper-text">La descripción del diagnóstico es obligatoria.</span>
+              }
 
-              <!-- Secondary Diagnoses -->
-              <fieldset class="section-box mt-3">
-                <legend>Diagnósticos Secundarios o Comorbilidades</legend>
-                <div class="add-row">
-                  <input
-                    type="text"
-                    class="mini-input code-input"
-                    placeholder="Código (Ej: E11.9)"
-                    [ngModel]="newSecondaryCode()"
-                    (ngModelChange)="newSecondaryCode.set($event)"
-                    [ngModelOptions]="{ standalone: true }"
-                  />
-                  <input
-                    type="text"
-                    class="mini-input desc-input"
-                    placeholder="Descripción (Ej: Diabetes Mellitus tipo 2)"
-                    [ngModel]="newSecondaryDesc()"
-                    (ngModelChange)="newSecondaryDesc.set($event)"
-                    [ngModelOptions]="{ standalone: true }"
-                  />
-                  <label class="checkbox-label">
-                    <input
-                      type="checkbox"
-                      [checked]="newSecondaryChronic()"
-                      (change)="newSecondaryChronic.set($any($event.target).checked)"
-                    />
-                    Crónico
-                  </label>
-                  <button
-                    type="button"
-                    class="m3-button m3-button-tonal btn-add"
-                    (click)="addSecondaryDiagnosis()"
-                  >
-                    + Agregar
-                  </button>
-                </div>
-
-                <div class="diagnoses-chips-list">
-                  @for (diag of secondaryDiagnoses(); track diag.code; let idx = $index) {
-                    <div class="secondary-diag-chip">
-                      <strong>{{ diag.code }}</strong>: {{ diag.description }}
-                      @if (diag.isChronic) {
-                        <span class="chronic-tag">Crónico</span>
-                      }
-                      <button
-                        type="button"
-                        class="chip-delete-btn"
-                        (click)="removeSecondaryDiagnosis(idx)"
-                        title="Eliminar diagnóstico secundario"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  } @empty {
-                    <p class="empty-list-msg">No se han registrado diagnósticos secundarios.</p>
+              <!-- Progressive Disclosure: Secondary Diagnoses -->
+              <div class="disclosure-header mt-3">
+                <button
+                  type="button"
+                  class="disclosure-toggle-btn"
+                  (click)="toggleSecondaryDiag()"
+                >
+                  <span>
+                    @if (isSecondaryDiagExpanded() || secondaryDiagnoses().length > 0) {
+                      ▲ Ocultar Diagnósticos Secundarios y Comorbilidades
+                    } @else {
+                      + Adjuntar Diagnósticos Secundarios o Comorbilidades ▼
+                    }
+                  </span>
+                  @if (secondaryDiagnoses().length > 0) {
+                    <span class="badge-count">{{ secondaryDiagnoses().length }}</span>
                   }
-                </div>
-              </fieldset>
+                </button>
+              </div>
+
+              @if (isSecondaryDiagExpanded() || secondaryDiagnoses().length > 0) {
+                <fieldset class="section-box mt-2">
+                  <legend>Diagnósticos Secundarios</legend>
+                  <div class="add-row">
+                    <input
+                      type="text"
+                      class="mini-input code-input"
+                      placeholder="CIE-10 (Ej: E11.9)"
+                      [ngModel]="newSecondaryCode()"
+                      (ngModelChange)="newSecondaryCode.set($event)"
+                      [ngModelOptions]="{ standalone: true }"
+                    />
+                    <input
+                      type="text"
+                      class="mini-input desc-input"
+                      placeholder="Descripción (*)"
+                      [ngModel]="newSecondaryDesc()"
+                      (ngModelChange)="newSecondaryDesc.set($event)"
+                      [ngModelOptions]="{ standalone: true }"
+                    />
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        [checked]="newSecondaryChronic()"
+                        (change)="newSecondaryChronic.set($any($event.target).checked)"
+                      />
+                      Crónico
+                    </label>
+                    <button
+                      type="button"
+                      class="m3-button m3-button-tonal btn-add"
+                      (click)="addSecondaryDiagnosis()"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+
+                  <div class="diagnoses-chips-list">
+                    @for (diag of secondaryDiagnoses(); track diag.code; let idx = $index) {
+                      <div class="secondary-diag-chip">
+                        <strong>{{ diag.code }}</strong>: {{ diag.description }}
+                        @if (diag.isChronic) {
+                          <span class="chronic-tag">Crónico</span>
+                        }
+                        <button
+                          type="button"
+                          class="chip-delete-btn"
+                          (click)="removeSecondaryDiagnosis(idx)"
+                          title="Eliminar diagnóstico secundario"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    } @empty {
+                      <p class="empty-list-msg">No se han registrado diagnósticos secundarios.</p>
+                    }
+                  </div>
+                </fieldset>
+              }
 
               <!-- Clinical Impression -->
               <div class="m3-textfield mt-3">
@@ -422,7 +486,7 @@
                   placeholder=" "
                   formControlName="clinicalImpression"
                 ></textarea>
-                <label for="clinicalImpression">Juicio Clínico / Impresión Diagnóstica / Justificación Nosológica</label>
+                <label for="clinicalImpression">Juicio Clínico / Justificación Nosológica (Opcional)</label>
               </div>
             </div>
           }
@@ -435,7 +499,7 @@
                 <p>Estrategia terapéutica, indicaciones farmacológicas y seguimiento.</p>
               </div>
 
-              <!-- Treatment Plan -->
+              <!-- Treatment Plan (Ágil y directo) -->
               <div class="m3-textfield">
                 <textarea
                   id="treatmentPlan"
@@ -443,147 +507,189 @@
                   placeholder=" "
                   formControlName="treatmentPlan"
                 ></textarea>
-                <label for="treatmentPlan">Plan Terapéutico y Conducta Médica</label>
+                <label for="treatmentPlan">Indicaciones y Plan Terapéutico General</label>
               </div>
 
-              <!-- Structured Prescriptions -->
-              <fieldset class="section-box mt-3">
-                <legend>Prescripción Farmacológica Estructurada</legend>
-                <div class="rx-add-grid">
-                  <input
-                    type="text"
-                    class="mini-input"
-                    placeholder="Fármaco / Principio activo (*)"
-                    [ngModel]="newRxDrug()"
-                    (ngModelChange)="newRxDrug.set($event)"
-                    [ngModelOptions]="{ standalone: true }"
-                  />
-                  <input
-                    type="text"
-                    class="mini-input"
-                    placeholder="Dosis (Ej: 500 mg, 5 ml)"
-                    [ngModel]="newRxDose()"
-                    (ngModelChange)="newRxDose.set($event)"
-                    [ngModelOptions]="{ standalone: true }"
-                  />
-                  <select
-                    class="mini-input"
-                    [ngModel]="newRxRoute()"
-                    (ngModelChange)="newRxRoute.set($event)"
-                    [ngModelOptions]="{ standalone: true }"
-                  >
-                    <option value="Oral">Vía Oral</option>
-                    <option value="Inhalatoria">Vía Inhalatoria</option>
-                    <option value="Tópica">Vía Tópica</option>
-                    <option value="Sublingual">Vía Sublingual</option>
-                    <option value="Intravenosa">Vía Intravenosa</option>
-                    <option value="Intramuscular">Vía Intramuscular</option>
-                    <option value="Oftálmica">Vía Oftálmica</option>
-                  </select>
-                  <input
-                    type="text"
-                    class="mini-input"
-                    placeholder="Frecuencia (Ej: Cada 8 hs)"
-                    [ngModel]="newRxFreq()"
-                    (ngModelChange)="newRxFreq.set($event)"
-                    [ngModelOptions]="{ standalone: true }"
-                  />
-                  <input
-                    type="number"
-                    class="mini-input"
-                    placeholder="Días de tto."
-                    [ngModel]="newRxDuration()"
-                    (ngModelChange)="newRxDuration.set($event ? +$event : null)"
-                    [ngModelOptions]="{ standalone: true }"
-                  />
-                  <button
-                    type="button"
-                    class="m3-button m3-button-tonal btn-add"
-                    (click)="addPrescription()"
-                  >
-                    + Recetar
-                  </button>
-                </div>
-
-                <!-- Prescriptions Table -->
-                @if (prescriptions().length > 0) {
-                  <div class="rx-table-wrap mt-2">
-                    <table class="mini-table">
-                      <thead>
-                        <tr>
-                          <th>Medicamento</th>
-                          <th>Dosis</th>
-                          <th>Vía</th>
-                          <th>Frecuencia</th>
-                          <th>Duración</th>
-                          <th>Acción</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        @for (rx of prescriptions(); track rx.medicationName; let idx = $index) {
-                          <tr>
-                            <td><strong>{{ rx.medicationName }}</strong></td>
-                            <td>{{ rx.dosage }}</td>
-                            <td>{{ rx.administrationRoute }}</td>
-                            <td>{{ rx.frequency }}</td>
-                            <td>{{ rx.durationDays ? rx.durationDays + ' días' : 'Crónico/Continuo' }}</td>
-                            <td>
-                              <button
-                                type="button"
-                                class="btn-text-danger"
-                                (click)="removePrescription(idx)"
-                              >
-                                Quitar
-                              </button>
-                            </td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  </div>
-                } @else {
-                  <p class="empty-list-msg">No se han registrado indicaciones farmacológicas para esta consulta.</p>
-                }
-              </fieldset>
-
-              <!-- Diagnostic Orders -->
-              <fieldset class="section-box mt-3">
-                <legend>Solicitud de Estudios Complementarios / Laboratorios</legend>
-                <div class="add-row">
-                  <input
-                    type="text"
-                    class="mini-input desc-input"
-                    placeholder="Estudio o examen (Ej: Hemograma completo, Radiografía de tórax F y P, ECG...)"
-                    [ngModel]="newDiagnosticOrder()"
-                    (ngModelChange)="newDiagnosticOrder.set($event)"
-                    [ngModelOptions]="{ standalone: true }"
-                  />
-                  <button
-                    type="button"
-                    class="m3-button m3-button-tonal btn-add"
-                    (click)="addDiagnosticOrder()"
-                  >
-                    + Agregar Estudio
-                  </button>
-                </div>
-
-                <div class="chips-wrap mt-2">
-                  @for (order of diagnosticOrders(); track order; let idx = $index) {
-                    <span class="m3-chip filter-active">
-                      {{ order }}
-                      <button
-                        type="button"
-                        class="chip-delete-btn"
-                        (click)="removeDiagnosticOrder(idx)"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  } @empty {
-                    <p class="empty-list-msg">No se han solicitado estudios complementarios.</p>
+              <!-- Progressive Disclosure: Prescripciones Estructuradas -->
+              <div class="disclosure-header mt-3">
+                <button
+                  type="button"
+                  class="disclosure-toggle-btn"
+                  (click)="togglePrescriptions()"
+                >
+                  <span>
+                    @if (isPrescriptionsExpanded() || prescriptions().length > 0) {
+                      ▲ Ocultar Recetas Farmacológicas
+                    } @else {
+                      + Adjuntar Recetas Farmacológicas Estructuradas ▼
+                    }
+                  </span>
+                  @if (prescriptions().length > 0) {
+                    <span class="badge-count">{{ prescriptions().length }}</span>
                   }
-                </div>
-              </fieldset>
+                </button>
+              </div>
+
+              @if (isPrescriptionsExpanded() || prescriptions().length > 0) {
+                <fieldset class="section-box mt-2">
+                  <legend>Prescripción Farmacológica Estructurada</legend>
+                  <div class="rx-add-grid">
+                    <input
+                      type="text"
+                      class="mini-input"
+                      placeholder="Fármaco / Principio activo (*)"
+                      [ngModel]="newRxDrug()"
+                      (ngModelChange)="newRxDrug.set($event)"
+                      [ngModelOptions]="{ standalone: true }"
+                    />
+                    <input
+                      type="text"
+                      class="mini-input"
+                      placeholder="Dosis (Ej: 500 mg, 5 ml)"
+                      [ngModel]="newRxDose()"
+                      (ngModelChange)="newRxDose.set($event)"
+                      [ngModelOptions]="{ standalone: true }"
+                    />
+                    <select
+                      class="mini-input"
+                      [ngModel]="newRxRoute()"
+                      (ngModelChange)="newRxRoute.set($event)"
+                      [ngModelOptions]="{ standalone: true }"
+                    >
+                      <option value="Oral">Vía Oral</option>
+                      <option value="Inhalatoria">Vía Inhalatoria</option>
+                      <option value="Tópica">Vía Tópica</option>
+                      <option value="Sublingual">Vía Sublingual</option>
+                      <option value="Intravenosa">Vía Intravenosa</option>
+                      <option value="Intramuscular">Vía Intramuscular</option>
+                      <option value="Oftálmica">Vía Oftálmica</option>
+                    </select>
+                    <input
+                      type="text"
+                      class="mini-input"
+                      placeholder="Frecuencia (Ej: Cada 8 hs)"
+                      [ngModel]="newRxFreq()"
+                      (ngModelChange)="newRxFreq.set($event)"
+                      [ngModelOptions]="{ standalone: true }"
+                    />
+                    <input
+                      type="number"
+                      class="mini-input"
+                      placeholder="Días de tto."
+                      [ngModel]="newRxDuration()"
+                      (ngModelChange)="newRxDuration.set($event ? +$event : null)"
+                      [ngModelOptions]="{ standalone: true }"
+                    />
+                    <button
+                      type="button"
+                      class="m3-button m3-button-tonal btn-add"
+                      (click)="addPrescription()"
+                    >
+                      + Recetar
+                    </button>
+                  </div>
+
+                  <!-- Prescriptions Table -->
+                  @if (prescriptions().length > 0) {
+                    <div class="rx-table-wrap mt-2">
+                      <table class="mini-table">
+                        <thead>
+                          <tr>
+                            <th>Medicamento</th>
+                            <th>Dosis</th>
+                            <th>Vía</th>
+                            <th>Frecuencia</th>
+                            <th>Duración</th>
+                            <th>Acción</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (rx of prescriptions(); track rx.medicationName; let idx = $index) {
+                            <tr>
+                              <td><strong>{{ rx.medicationName }}</strong></td>
+                              <td>{{ rx.dosage }}</td>
+                              <td>{{ rx.administrationRoute }}</td>
+                              <td>{{ rx.frequency }}</td>
+                              <td>{{ rx.durationDays ? rx.durationDays + ' días' : 'Crónico/Continuo' }}</td>
+                              <td>
+                                <button
+                                  type="button"
+                                  class="btn-text-danger"
+                                  (click)="removePrescription(idx)"
+                                >
+                                  Quitar
+                                </button>
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  } @else {
+                    <p class="empty-list-msg">No se han registrado indicaciones farmacológicas.</p>
+                  }
+                </fieldset>
+              }
+
+              <!-- Progressive Disclosure: Órdenes de Estudios -->
+              <div class="disclosure-header mt-3">
+                <button
+                  type="button"
+                  class="disclosure-toggle-btn"
+                  (click)="toggleDiagnosticOrders()"
+                >
+                  <span>
+                    @if (isDiagnosticOrdersExpanded() || diagnosticOrders().length > 0) {
+                      ▲ Ocultar Solicitud de Estudios Complementarios
+                    } @else {
+                      + Adjuntar Solicitud de Estudios Complementarios ▼
+                    }
+                  </span>
+                  @if (diagnosticOrders().length > 0) {
+                    <span class="badge-count">{{ diagnosticOrders().length }}</span>
+                  }
+                </button>
+              </div>
+
+              @if (isDiagnosticOrdersExpanded() || diagnosticOrders().length > 0) {
+                <fieldset class="section-box mt-2">
+                  <legend>Solicitud de Estudios Complementarios / Laboratorios</legend>
+                  <div class="add-row">
+                    <input
+                      type="text"
+                      class="mini-input desc-input"
+                      placeholder="Estudio o examen (Ej: Hemograma, Rx tórax, ECG...)"
+                      [ngModel]="newDiagnosticOrder()"
+                      (ngModelChange)="newDiagnosticOrder.set($event)"
+                      [ngModelOptions]="{ standalone: true }"
+                    />
+                    <button
+                      type="button"
+                      class="m3-button m3-button-tonal btn-add"
+                      (click)="addDiagnosticOrder()"
+                    >
+                      + Agregar Estudio
+                    </button>
+                  </div>
+
+                  <div class="chips-wrap mt-2">
+                    @for (order of diagnosticOrders(); track order; let idx = $index) {
+                      <span class="m3-chip filter-active">
+                        {{ order }}
+                        <button
+                          type="button"
+                          class="chip-delete-btn"
+                          (click)="removeDiagnosticOrder(idx)"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    } @empty {
+                      <p class="empty-list-msg">No se han solicitado estudios complementarios.</p>
+                    }
+                  </div>
+                </fieldset>
+              }
 
               <!-- Follow Up -->
               <div class="form-grid-2 mt-3">

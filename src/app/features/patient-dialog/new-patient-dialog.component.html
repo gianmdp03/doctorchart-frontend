@@ -15,11 +15,7 @@
       <!-- Modal Header -->
       <div class="m3-modal-header">
         <h3 id="modal-patient-title">
-          @if (doctorSpecialtyService.isPediatricMode()) {
-            Alta de Nuevo Paciente Pediátrico
-          } @else {
-            Alta de Nuevo Paciente
-          }
+          + Alta Rápida de Paciente
         </h3>
         <button
           type="button"
@@ -33,14 +29,10 @@
         </button>
       </div>
 
-      <!-- Modal Body (Form with Universal & Specialty-Adaptive Blocks) -->
+      <!-- Modal Body (Universal 4-Block Intake Form) -->
       <form [formGroup]="patientForm" class="m3-modal-body" (ngSubmit)="onSubmit()">
         <p class="modal-subtitle">
-          @if (doctorSpecialtyService.isPediatricMode()) {
-            Complete exhaustivamente todos los bloques de datos clínicos y antecedentes neonatales/pediátricos.
-          } @else {
-            Complete los datos personales y antecedentes clínicos para dar de alta al paciente en la clínica.
-          }
+          Registro ágil y universal para cualquier especialidad clínica (30 segundos).
         </p>
 
         @if (errorMessage()) {
@@ -52,14 +44,10 @@
           </div>
         }
 
-        <!-- Bloque 1: Datos Personales del Paciente (Universal) -->
+        <!-- Bloque 1: Identificación -->
         <fieldset class="clinical-fieldset">
-          <legend>1. Datos Personales del Paciente</legend>
-          <div class="form-grid-3">
-            <div class="m3-textfield">
-              <input type="text" id="inp-paciente-id" placeholder=" " value="Autogenerado" readonly disabled />
-              <label for="inp-paciente-id">N° Historia Clínica</label>
-            </div>
+          <legend>1. Identificación del Paciente</legend>
+          <div class="form-grid-2">
             <div class="m3-textfield" [class.has-error]="isInvalid('fullName')">
               <input
                 type="text"
@@ -68,11 +56,12 @@
                 placeholder=" "
                 required
               />
-              <label for="inp-paciente-fullname">Nombre y Apellido Completo *</label>
+              <label for="inp-paciente-fullname">Nombre Completo *</label>
               @if (isInvalid('fullName')) {
-                <span class="error-helper-text">El nombre y apellido es obligatorio</span>
+                <span class="error-helper-text">El nombre completo es requerido</span>
               }
             </div>
+
             <div class="m3-textfield" [class.has-error]="isInvalid('birthDate')">
               <input
                 type="date"
@@ -84,12 +73,12 @@
               />
               <label for="inp-paciente-fnac">Fecha de Nacimiento *</label>
               @if (isInvalid('birthDate')) {
-                <span class="error-helper-text">La fecha de nacimiento es obligatoria</span>
+                <span class="error-helper-text">La fecha de nacimiento es requerida</span>
               }
             </div>
           </div>
 
-          <div class="form-grid-3 mt-3">
+          <div class="form-grid-2 mt-3">
             <div class="m3-textfield">
               <input
                 type="text"
@@ -99,32 +88,22 @@
               />
               <label for="inp-paciente-dni">DNI / Documento de Identidad</label>
             </div>
+
             <div class="m3-textfield">
               <select id="inp-paciente-gender" formControlName="gender">
-                <option value="MALE">Masculino</option>
                 <option value="FEMALE">Femenino</option>
-                <option value="OTHER">Otro / No binario</option>
-                <option value="UNKNOWN">Desconocido</option>
+                <option value="MALE">Masculino</option>
+                <option value="OTHER">Otro</option>
               </select>
-              <label for="inp-paciente-gender">Sexo Biológico / Género</label>
-            </div>
-            <div class="m3-textfield">
-              <select id="inp-paciente-blood" formControlName="bloodType">
-                <option value="">No determinado</option>
-                <option value="0+">0+</option>
-                <option value="0-">0-</option>
-                <option value="A+">A+</option>
-                <option value="A-">A-</option>
-                <option value="B+">B+</option>
-                <option value="B-">B-</option>
-                <option value="AB+">AB+</option>
-                <option value="AB-">AB-</option>
-              </select>
-              <label for="inp-paciente-blood">Grupo y Factor Sanguíneo</label>
+              <label for="inp-paciente-gender">Sexo Biológico</label>
             </div>
           </div>
+        </fieldset>
 
-          <div class="form-grid-3 mt-3">
+        <!-- Bloque 2: Contacto -->
+        <fieldset class="clinical-fieldset">
+          <legend>2. Datos de Contacto</legend>
+          <div class="form-grid-3">
             <div class="m3-textfield">
               <input
                 type="tel"
@@ -132,8 +111,9 @@
                 formControlName="phone"
                 placeholder=" "
               />
-              <label for="inp-paciente-phone">Teléfono de Contacto</label>
+              <label for="inp-paciente-phone">Teléfono / WhatsApp</label>
             </div>
+
             <div class="m3-textfield">
               <input
                 type="email"
@@ -143,6 +123,7 @@
               />
               <label for="inp-paciente-email">Correo Electrónico</label>
             </div>
+
             <div class="m3-textfield">
               <input
                 type="text"
@@ -150,410 +131,96 @@
                 formControlName="address"
                 placeholder=" "
               />
-              <label for="inp-paciente-dir">Dirección de Residencia</label>
+              <label for="inp-paciente-dir">Dirección / Domicilio</label>
             </div>
           </div>
         </fieldset>
 
-        <!-- Bloque 2: Cobertura Médica y Contacto de Emergencia (Universal) -->
+        <!-- Bloque 3: Cobertura Médica -->
         <fieldset class="clinical-fieldset">
-          <legend>2. Cobertura Médica y Contacto de Emergencia</legend>
+          <legend>3. Cobertura Médica</legend>
           <div class="form-grid-3">
             <div class="m3-textfield">
               <input
                 type="text"
-                id="inp-insurance-provider"
+                id="inp-paciente-os"
                 formControlName="insuranceProvider"
                 placeholder=" "
               />
-              <label for="inp-insurance-provider">Obra Social / Cobertura</label>
+              <label for="inp-paciente-os">Obra Social / Prepaga</label>
             </div>
+
             <div class="m3-textfield">
               <input
                 type="text"
-                id="inp-insurance-plan"
-                formControlName="insurancePlan"
-                placeholder=" "
-              />
-              <label for="inp-insurance-plan">Plan / Modalidad</label>
-            </div>
-            <div class="m3-textfield">
-              <input
-                type="text"
-                id="inp-insurance-number"
+                id="inp-paciente-os-num"
                 formControlName="insuranceNumber"
                 placeholder=" "
               />
-              <label for="inp-insurance-number">N° de Afiliado / Credencial</label>
+              <label for="inp-paciente-os-num">Número de Afiliado</label>
             </div>
-          </div>
 
-          <div class="form-grid-3 mt-3">
             <div class="m3-textfield">
               <input
                 type="text"
-                id="inp-emergency-name"
-                formControlName="emergencyContactName"
+                id="inp-paciente-os-plan"
+                formControlName="insurancePlan"
                 placeholder=" "
               />
-              <label for="inp-emergency-name">Contacto de Emergencia</label>
+              <label for="inp-paciente-os-plan">Plan / Categoría</label>
             </div>
+          </div>
+        </fieldset>
+
+        <!-- Bloque 4: Contacto de Acompañamiento / Emergencia (Reactivo a la Edad) -->
+        <fieldset class="clinical-fieldset">
+          <legend>{{ contactSectionTitle() }}</legend>
+          <p class="fieldset-helper">{{ contactSectionSubtitle() }}</p>
+
+          <div class="form-grid-2">
+            <div class="m3-textfield">
+              <input
+                type="text"
+                id="inp-contact-name"
+                formControlName="contactName"
+                placeholder=" "
+              />
+              <label for="inp-contact-name">Nombre y Apellido</label>
+            </div>
+
             <div class="m3-textfield">
               <input
                 type="tel"
-                id="inp-emergency-phone"
-                formControlName="emergencyContactPhone"
+                id="inp-contact-phone"
+                formControlName="contactPhone"
                 placeholder=" "
               />
-              <label for="inp-emergency-phone">Teléfono de Emergencia</label>
+              <label for="inp-contact-phone">Teléfono de Contacto</label>
             </div>
+          </div>
+
+          <div class="form-grid-2 mt-3">
             <div class="m3-textfield">
               <input
                 type="text"
-                id="inp-emergency-rel"
-                formControlName="emergencyContactRelationship"
+                id="inp-contact-rel"
+                formControlName="contactRelationship"
                 placeholder=" "
               />
-              <label for="inp-emergency-rel">Vínculo / Relación</label>
+              <label for="inp-contact-rel">{{ isMinor() ? 'Vínculo (Madre, Padre, Tutor)' : 'Vínculo / Relación (Cónyuge, Hijo/a, Familiar)' }}</label>
+            </div>
+
+            <div class="m3-textfield">
+              <input
+                type="text"
+                id="inp-contact-dni"
+                formControlName="contactNationalId"
+                placeholder=" "
+              />
+              <label for="inp-contact-dni">DNI del Contacto / Tutor</label>
             </div>
           </div>
         </fieldset>
-
-        <!-- Bloque 3: Antecedentes Médicos Personales y Familiares (Universal) -->
-        <fieldset class="clinical-fieldset">
-          <legend>3. Antecedentes Médicos Personales y Familiares</legend>
-          <div class="m3-textfield mb-3">
-            <textarea
-              id="inp-enf-previas"
-              formControlName="chronicOrPreviousDiseases"
-              placeholder=" "
-              rows="2"
-            ></textarea>
-            <label for="inp-enf-previas">Enfermedades Previas o Crónicas</label>
-          </div>
-          <div class="m3-textfield mb-3">
-            <textarea
-              id="inp-internaciones"
-              formControlName="hospitalizationsOrSurgeries"
-              placeholder=" "
-              rows="2"
-            ></textarea>
-            <label for="inp-internaciones">Internaciones o Cirugías Previas</label>
-          </div>
-          <div class="form-grid-2 mb-3">
-            <div class="m3-textfield">
-              <input
-                type="text"
-                id="inp-alergias-pers"
-                formControlName="allergies"
-                placeholder=" "
-              />
-              <label for="inp-alergias-pers">Alergias Conocidas</label>
-            </div>
-            <div class="m3-textfield">
-              <input
-                type="text"
-                id="inp-medicacion"
-                formControlName="habitualMedication"
-                placeholder=" "
-              />
-              <label for="inp-medicacion">Medicación Habitual</label>
-            </div>
-          </div>
-          <div class="form-grid-3">
-            <div class="m3-textfield">
-              <input
-                type="text"
-                id="inp-enf-fam"
-                formControlName="familyChronicDiseases"
-                placeholder=" "
-              />
-              <label for="inp-enf-fam">Enfermedades Familiares</label>
-            </div>
-            <div class="m3-textfield">
-              <input
-                type="text"
-                id="inp-alergias-fam"
-                formControlName="familyAllergies"
-                placeholder=" "
-              />
-              <label for="inp-alergias-fam">Alergias Familiares</label>
-            </div>
-            <div class="m3-textfield">
-              <input
-                type="text"
-                id="inp-enf-geneticas"
-                formControlName="geneticDiseases"
-                placeholder=" "
-              />
-              <label for="inp-enf-geneticas">Antecedentes Genéticos</label>
-            </div>
-          </div>
-        </fieldset>
-
-        <!-- Bloque 4: Medidas Antropométricas Actuales (Universal) -->
-        <fieldset class="clinical-fieldset">
-          <legend>4. Medidas Antropométricas Actuales</legend>
-          @if (doctorSpecialtyService.isPediatricMode()) {
-            <div class="fieldset-header-row">
-              <span class="field-label-sm" style="margin-bottom: 0;">Medidas registradas en primera consulta</span>
-              <button
-                type="button"
-                class="m3-button m3-button-tonal btn-copy"
-                (click)="copyBirthToCurrent()"
-                title="Copiar las medidas registradas al nacer"
-              >
-                Copiar del nacimiento
-              </button>
-            </div>
-          }
-          <div [class]="doctorSpecialtyService.isPediatricMode() ? 'form-grid-3' : 'form-grid-2'">
-            <div class="m3-textfield" [class.has-error]="isInvalid('currentWeight')">
-              <input
-                type="number"
-                step="0.001"
-                id="inp-actual-peso"
-                formControlName="currentWeight"
-                placeholder=" "
-              />
-              <label for="inp-actual-peso">Peso Actual (kg)</label>
-            </div>
-            <div class="m3-textfield" [class.has-error]="isInvalid('currentHeight')">
-              <input
-                type="number"
-                step="0.1"
-                id="inp-actual-altura"
-                formControlName="currentHeight"
-                placeholder=" "
-              />
-              <label for="inp-actual-altura">Talla / Altura Actual (cm)</label>
-            </div>
-            @if (doctorSpecialtyService.isPediatricMode()) {
-              <div class="m3-textfield" [class.has-error]="isInvalid('currentHeadCircumference')">
-                <input
-                  type="number"
-                  step="0.1"
-                  id="inp-actual-pc"
-                  formControlName="currentHeadCircumference"
-                  placeholder=" "
-                />
-                <label for="inp-actual-pc">Perímetro Cefálico Actual (cm)</label>
-              </div>
-            }
-          </div>
-        </fieldset>
-
-        <!-- BLOQUES EXCLUSIVOS PARA PEDIATRÍA -->
-        @if (doctorSpecialtyService.isPediatricMode()) {
-          <!-- Bloque Pediátrico: Adultos Responsables / Contacto Familiar -->
-          <fieldset class="clinical-fieldset">
-            <legend>5. Adultos Responsables / Tutores (Pediátrico)</legend>
-
-            <h4 class="fieldset-section-title">Adulto 1 (Principal)</h4>
-            <div class="form-grid-3">
-              <div class="m3-textfield">
-                <input
-                  type="text"
-                  id="inp-tutor-name1"
-                  formControlName="firstGuardianFullName"
-                  placeholder=" "
-                />
-                <label for="inp-tutor-name1">Nombre y Apellido del Adulto 1</label>
-              </div>
-              <div class="m3-textfield">
-                <input
-                  type="tel"
-                  id="inp-tutor-tel1"
-                  formControlName="firstGuardianPhone"
-                  placeholder=" "
-                />
-                <label for="inp-tutor-tel1">Teléfono de Contacto 1</label>
-              </div>
-              <div class="m3-textfield">
-                <input
-                  type="text"
-                  id="inp-tutor-dni1"
-                  formControlName="firstGuardianNationalId"
-                  placeholder=" "
-                />
-                <label for="inp-tutor-dni1">DNI del Adulto 1</label>
-              </div>
-            </div>
-
-            <h4 class="fieldset-section-title mt-4">Adulto 2 (Secundario / Alternativo)</h4>
-            <div class="form-grid-3">
-              <div class="m3-textfield">
-                <input
-                  type="text"
-                  id="inp-tutor-name2"
-                  formControlName="secondGuardianFullName"
-                  placeholder=" "
-                />
-                <label for="inp-tutor-name2">Nombre y Apellido del Adulto 2</label>
-              </div>
-              <div class="m3-textfield">
-                <input
-                  type="tel"
-                  id="inp-tutor-tel2"
-                  formControlName="secondGuardianPhone"
-                  placeholder=" "
-                />
-                <label for="inp-tutor-tel2">Teléfono de Contacto 2</label>
-              </div>
-              <div class="m3-textfield">
-                <input
-                  type="text"
-                  id="inp-tutor-dni2"
-                  formControlName="secondGuardianNationalId"
-                  placeholder=" "
-                />
-                <label for="inp-tutor-dni2">DNI del Adulto 2</label>
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- Bloque Pediátrico: Antecedentes del Embarazo y Nacimiento -->
-          <fieldset class="clinical-fieldset">
-            <legend>6. Antecedentes del Embarazo y Nacimiento (Neonatal / Pediátrico)</legend>
-            <div class="form-grid-2">
-              <div class="m3-textfield" [class.has-error]="isInvalid('gestationCount')">
-                <input
-                  type="number"
-                  id="inp-gesta"
-                  formControlName="gestationCount"
-                  min="1"
-                  max="20"
-                  placeholder=" "
-                />
-                <label for="inp-gesta">Número de Embarazo (Gesta)</label>
-              </div>
-              <div class="m3-textfield">
-                <input
-                  type="text"
-                  id="inp-controles-prenatales"
-                  formControlName="prenatalVisitsSummary"
-                  placeholder=" "
-                />
-                <label for="inp-controles-prenatales">Controles Prenatales Realizados</label>
-              </div>
-            </div>
-
-            <div class="mt-3">
-              <label class="field-label-sm">
-                Complicaciones durante el embarazo:
-              </label>
-              <div class="checkbox-grid">
-                <label class="m3-checkbox-label">
-                  <input type="checkbox" formControlName="compPreeclampsia" />
-                  <span>Hipertensión / Preeclampsia</span>
-                </label>
-                <label class="m3-checkbox-label">
-                  <input type="checkbox" formControlName="compDiabetes" />
-                  <span>Diabetes gestacional</span>
-                </label>
-                <label class="m3-checkbox-label">
-                  <input type="checkbox" formControlName="compPrematuro" />
-                  <span>Parto prematuro</span>
-                </label>
-                <label class="m3-checkbox-label">
-                  <input type="checkbox" formControlName="compColestasis" />
-                  <span>Colestasis gravídica</span>
-                </label>
-                <label class="m3-checkbox-label">
-                  <input type="checkbox" formControlName="compInfeccion" />
-                  <span>Infección urinaria / RPM</span>
-                </label>
-                <label class="m3-checkbox-label">
-                  <input type="checkbox" formControlName="compOtras" />
-                  <span>Otras complicaciones</span>
-                </label>
-              </div>
-              <div class="m3-textfield mt-3">
-                <textarea
-                  id="inp-complicaciones-notas"
-                  formControlName="pregnancyComplicationsNotes"
-                  placeholder=" "
-                  rows="2"
-                ></textarea>
-                <label for="inp-complicaciones-notas">Observaciones perinatales adicionales</label>
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- Bloque Pediátrico: Medidas Antropométricas al Nacer -->
-          <fieldset class="clinical-fieldset">
-            <legend>7. Medidas Antropométricas al Nacer</legend>
-            <div class="form-grid-3">
-              <div class="m3-textfield" [class.has-error]="isInvalid('birthWeight')">
-                <input
-                  type="number"
-                  step="0.001"
-                  id="inp-nacer-peso"
-                  formControlName="birthWeight"
-                  placeholder=" "
-                />
-                <label for="inp-nacer-peso">Peso al Nacer (kg)</label>
-              </div>
-              <div class="m3-textfield" [class.has-error]="isInvalid('birthHeight')">
-                <input
-                  type="number"
-                  step="0.1"
-                  id="inp-nacer-altura"
-                  formControlName="birthHeight"
-                  placeholder=" "
-                />
-                <label for="inp-nacer-altura">Talla al Nacer (cm)</label>
-              </div>
-              <div class="m3-textfield" [class.has-error]="isInvalid('birthHeadCircumference')">
-                <input
-                  type="number"
-                  step="0.1"
-                  id="inp-nacer-pc"
-                  formControlName="birthHeadCircumference"
-                  placeholder=" "
-                />
-                <label for="inp-nacer-pc">Perímetro Cefálico al Nacer (cm)</label>
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- Bloque Pediátrico: Alimentación y Vacunación -->
-          <fieldset class="clinical-fieldset">
-            <legend>8. Alimentación y Vacunación</legend>
-            <div class="form-grid-2">
-              <div class="m3-textfield">
-                <select id="inp-alimentacion" formControlName="feedingDiet">
-                  <option value="" disabled hidden></option>
-                  <option value="Lactancia materna exclusiva (LME)">Lactancia materna exclusiva (LME)</option>
-                  <option value="Lactancia mixta">Lactancia mixta</option>
-                  <option value="Fórmula infantil exclusiva">Fórmula infantil exclusiva</option>
-                  <option value="Alimentación complementaria oportuna (con LM)">Alimentación complementaria oportuna (con LM)</option>
-                  <option value="Alimentación complementaria oportuna (con fórmula)">Alimentación complementaria oportuna (con fórmula)</option>
-                  <option value="Alimentación familiar completa">Alimentación familiar completa</option>
-                </select>
-                <label for="inp-alimentacion">Tipo de Alimentación Actual</label>
-              </div>
-              <div class="m3-textfield">
-                <input
-                  type="text"
-                  id="inp-vacunacion"
-                  formControlName="vaccinationHistory"
-                  placeholder=" "
-                />
-                <label for="inp-vacunacion">Esquema de Vacunación Actual</label>
-              </div>
-            </div>
-            <div class="m3-textfield mt-3">
-              <textarea
-                id="inp-hitos"
-                formControlName="developmentalMilestones"
-                placeholder=" "
-                rows="2"
-              ></textarea>
-              <label for="inp-hitos">Pautas Madurativas e Hitos del Desarrollo</label>
-            </div>
-          </fieldset>
-        }
 
         <!-- Modal Footer Actions -->
         <div class="m3-modal-footer">
@@ -567,17 +234,14 @@
           </button>
           <button
             type="submit"
-            class="m3-button m3-button-filled"
+            class="m3-button m3-button-primary"
             [disabled]="isSubmitting()"
           >
             @if (isSubmitting()) {
               <span class="spinner-small" aria-hidden="true"></span>
-              <span>Guardando Ficha...</span>
+              <span>Guardando Paciente...</span>
             } @else {
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm2 16H5V5h11.17L19 7.83V19zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zM6 6h9v4H6z"/>
-              </svg>
-              <span>Guardar Ficha del Paciente</span>
+              <span>+ Registrar Paciente e Iniciar Ficha</span>
             }
           </button>
         </div>

@@ -1,15 +1,18 @@
 import {
   Component,
   HostListener,
+  computed,
   inject,
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { PatientService } from '../../core/services/patient.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { PatientRequestDTO } from '../../core/models/patient.model';
+import { GuardianInfo } from '../../core/models/clinical-records.model';
 
 @Component({
   selector: 'app-new-patient-dialog',
@@ -27,77 +30,63 @@ export class NewPatientDialogComponent {
   readonly isOpen = signal<boolean>(false);
   readonly isSubmitting = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly isPediatricDetailsOpen = signal<boolean>(true);
 
   readonly maxDate = new Date().toISOString().split('T')[0];
 
   readonly patientForm = this.fb.group({
-    // Bloque 1: Datos Personales del Paciente (Universales)
+    // Bloque 1: Identificación
     fullName: ['', [Validators.required, Validators.minLength(2)]],
     birthDate: ['', [Validators.required]],
     nationalId: [''],
-    gender: ['MALE'],
-    bloodType: [''],
+    gender: ['FEMALE'],
+
+    // Bloque 2: Contacto
     phone: [''],
     email: [''],
     address: [''],
 
-    // Cobertura Médica (Universal)
+    // Bloque 3: Cobertura Médica
     insuranceProvider: [''],
     insurancePlan: [''],
     insuranceNumber: [''],
 
-    // Contacto de Emergencia (Universal)
-    emergencyContactName: [''],
-    emergencyContactPhone: [''],
-    emergencyContactRelationship: [''],
-
-    // Bloque 2: Adultos Responsables (Solo Pediátrico)
-    firstGuardianFullName: [''],
-    firstGuardianPhone: [''],
-    firstGuardianNationalId: [''],
-    secondGuardianFullName: [''],
-    secondGuardianPhone: [''],
-    secondGuardianNationalId: [''],
-
-    // Bloque 3: Antecedentes del Embarazo y Nacimiento (Pediátricos)
-    gestationCount: [1, [Validators.min(1), Validators.max(20)]],
-    prenatalVisitsSummary: ['Controles completos y adecuados'],
-    compPreeclampsia: [false],
-    compDiabetes: [false],
-    compPrematuro: [false],
-    compColestasis: [false],
-    compInfeccion: [false],
-    compOtras: [false],
-    pregnancyComplicationsNotes: [''],
-
-    // Bloque 4: Medidas Antropométricas al Nacer
-    birthWeight: [null as number | null, [Validators.min(0.1)]],
-    birthHeight: [null as number | null, [Validators.min(10)]],
-    birthHeadCircumference: [null as number | null, [Validators.min(10)]],
-
-    // Bloque 5: Antecedentes Médicos Personales
-    chronicOrPreviousDiseases: [''],
-    hospitalizationsOrSurgeries: [''],
-    allergies: [''],
-    habitualMedication: [''],
-
-    // Bloque 6: Antecedentes Médicos Familiares
-    familyChronicDiseases: [''],
-    familyAllergies: [''],
-    geneticDiseases: [''],
-
-    // Bloque 7: Alimentación y Vacunación
-    feedingDiet: ['Lactancia materna exclusiva (LME)'],
-    vaccinationHistory: ['Al día según Calendario Nacional'],
-    developmentalMilestones: ['Hitos motores y madurativos acordes a la edad cronológica'],
-
-    // Bloque 8: Medidas Antropométricas Actuales
-    currentWeight: [null as number | null, [Validators.min(0.1)]],
-    currentHeight: [null as number | null, [Validators.min(10)]],
-    currentHeadCircumference: [null as number | null, [Validators.min(10)]],
+    // Bloque 4: Contacto de Acompañamiento / Emergencia
+    contactName: [''],
+    contactPhone: [''],
+    contactRelationship: [''],
+    contactNationalId: [''],
   });
 
+  private readonly birthDateValue = toSignal(
+    this.patientForm.controls.birthDate.valueChanges,
+    { initialValue: this.patientForm.controls.birthDate.value }
+  );
+
+  readonly isMinor = computed(() => {
+    const raw = this.birthDateValue();
+    if (!raw) return false;
+    const birth = new Date(raw + 'T00:00:00');
+    if (isNaN(birth.getTime())) return false;
+    const now = new Date();
+    let years = now.getFullYear() - birth.getFullYear();
+    const m = now.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+      years--;
+    }
+    return years < 16;
+  });
+
+  readonly contactSectionTitle = computed(() => {
+    return this.isMinor()
+      ? 'Padre, Madre o Tutor Responsable'
+      : 'Contacto de Emergencia / Familiar Directo';
+  });
+
+  readonly contactSectionSubtitle = computed(() => {
+    return this.isMinor()
+      ? 'Datos del adulto o tutor legal a cargo del menor de 16 años.'
+      : 'Datos de contacto ante urgencias o familiar directo.';
+  });
 
   private openedAt = 0;
   private backdropMouseDown = false;
@@ -139,65 +128,22 @@ export class NewPatientDialogComponent {
     return !!(control && control.invalid && (control.dirty || control.touched));
   }
 
-  copyBirthToCurrent(): void {
-    const weight = this.patientForm.get('birthWeight')?.value;
-    const height = this.patientForm.get('birthHeight')?.value;
-    const headCircumference = this.patientForm.get('birthHeadCircumference')?.value;
-
-    this.patientForm.patchValue({
-      currentWeight: weight,
-      currentHeight: height,
-      currentHeadCircumference: headCircumference,
-    });
-  }
-
   resetForm(): void {
     this.patientForm.reset({
       fullName: '',
       birthDate: '',
       nationalId: '',
-      gender: 'MALE',
-      bloodType: '',
+      gender: 'FEMALE',
       phone: '',
       email: '',
       address: '',
       insuranceProvider: '',
       insurancePlan: '',
       insuranceNumber: '',
-      emergencyContactName: '',
-      emergencyContactPhone: '',
-      emergencyContactRelationship: '',
-      firstGuardianFullName: '',
-      firstGuardianPhone: '',
-      firstGuardianNationalId: '',
-      secondGuardianFullName: '',
-      secondGuardianPhone: '',
-      secondGuardianNationalId: '',
-      gestationCount: 1,
-      prenatalVisitsSummary: 'Controles completos y adecuados',
-      compPreeclampsia: false,
-      compDiabetes: false,
-      compPrematuro: false,
-      compColestasis: false,
-      compInfeccion: false,
-      compOtras: false,
-      pregnancyComplicationsNotes: '',
-      birthWeight: null,
-      birthHeight: null,
-      birthHeadCircumference: null,
-      chronicOrPreviousDiseases: '',
-      hospitalizationsOrSurgeries: '',
-      allergies: '',
-      habitualMedication: '',
-      familyChronicDiseases: '',
-      familyAllergies: '',
-      geneticDiseases: '',
-      feedingDiet: 'Lactancia materna exclusiva (LME)',
-      vaccinationHistory: 'Al día según Calendario Nacional',
-      developmentalMilestones: 'Hitos motores y madurativos acordes a la edad cronológica',
-      currentWeight: null,
-      currentHeight: null,
-      currentHeadCircumference: null,
+      contactName: '',
+      contactPhone: '',
+      contactRelationship: '',
+      contactNationalId: '',
     });
     this.errorMessage.set(null);
     this.isSubmitting.set(false);
@@ -214,15 +160,7 @@ export class NewPatientDialogComponent {
     this.errorMessage.set(null);
 
     const formVal = this.patientForm.getRawValue();
-    const isPediatric = this.doctorSpecialtyService.isPediatricMode();
-
-    const emergencyContact = formVal.emergencyContactName?.trim()
-      ? {
-          fullName: formVal.emergencyContactName.trim(),
-          phone: formVal.emergencyContactPhone?.trim() || null,
-          relationship: formVal.emergencyContactRelationship?.trim() || null,
-        }
-      : null;
+    const under16 = this.isMinor();
 
     const insuranceInfo = formVal.insuranceProvider?.trim()
       ? {
@@ -232,87 +170,35 @@ export class NewPatientDialogComponent {
         }
       : null;
 
-    const allergies = this.parseList(formVal.allergies);
-    const chronicConditions = this.parseList(formVal.chronicOrPreviousDiseases);
+    const emergencyContact = formVal.contactName?.trim()
+      ? {
+          contactName: formVal.contactName.trim(),
+          phone: formVal.contactPhone?.trim() || null,
+          relationship: formVal.contactRelationship?.trim() || (under16 ? 'Tutor' : 'Familiar Directo'),
+        }
+      : null;
 
-    // Complicaciones del embarazo
-    const complications: string[] = [];
-    if (formVal.compPreeclampsia) complications.push('Hipertensión / Preeclampsia');
-    if (formVal.compDiabetes) complications.push('Diabetes gestacional');
-    if (formVal.compPrematuro) complications.push('Parto prematuro');
-    if (formVal.compColestasis) complications.push('Colestasis gravídica');
-    if (formVal.compInfeccion) complications.push('Infección urinaria / RPM');
-    if (formVal.compOtras) complications.push('Otras complicaciones');
-    if (formVal.pregnancyComplicationsNotes?.trim()) {
-      const extra = this.parseList(formVal.pregnancyComplicationsNotes);
-      complications.push(...extra);
-    }
+    const guardianInfo: GuardianInfo | null = (under16 && formVal.contactName?.trim())
+      ? {
+          firstGuardianFullName: formVal.contactName.trim(),
+          firstGuardianPhone: formVal.contactPhone?.trim() || undefined,
+          firstGuardianNationalId: formVal.contactNationalId?.trim() || undefined,
+          address: formVal.address?.trim() || undefined,
+        }
+      : null;
 
     const payload: PatientRequestDTO = {
       fullName: (formVal.fullName ?? '').trim(),
       birthDate: formVal.birthDate ?? '',
-      nationalId: formVal.nationalId?.trim() || undefined,
-      gender: formVal.gender || undefined,
-      bloodType: formVal.bloodType?.trim() || undefined,
-      phone: formVal.phone?.trim() || formVal.firstGuardianPhone?.trim() || undefined,
-      email: formVal.email?.trim() || undefined,
-      address: formVal.address?.trim() || undefined,
+      nationalId: formVal.nationalId?.trim() || null,
+      gender: formVal.gender || null,
+      phone: formVal.phone?.trim() || (under16 ? formVal.contactPhone?.trim() : null) || null,
+      email: formVal.email?.trim() || null,
+      address: formVal.address?.trim() || null,
       emergencyContact,
       insuranceInfo,
-      allergies: allergies.length > 0 ? allergies : undefined,
-      chronicConditions: chronicConditions.length > 0 ? chronicConditions : undefined,
-      guardianInfo: formVal.firstGuardianFullName?.trim()
-        ? {
-            firstGuardianFullName: formVal.firstGuardianFullName?.trim() || undefined,
-            firstGuardianPhone: formVal.firstGuardianPhone?.trim() || undefined,
-            firstGuardianNationalId: formVal.firstGuardianNationalId?.trim() || undefined,
-            secondGuardianFullName: formVal.secondGuardianFullName?.trim() || undefined,
-            secondGuardianPhone: formVal.secondGuardianPhone?.trim() || undefined,
-            secondGuardianNationalId: formVal.secondGuardianNationalId?.trim() || undefined,
-            address: formVal.address?.trim() || undefined,
-          }
-        : undefined,
-      perinatalHistory: (isPediatric || complications.length > 0 || formVal.prenatalVisitsSummary?.trim())
-        ? {
-            gestationCount: formVal.gestationCount != null ? Number(formVal.gestationCount) : null,
-            prenatalVisitsSummary: formVal.prenatalVisitsSummary?.trim() || undefined,
-            pregnancyComplications: complications,
-          }
-        : undefined,
-      personalHistory: {
-        chronicOrPreviousDiseases: chronicConditions,
-        hospitalizationsOrSurgeries: this.parseList(formVal.hospitalizationsOrSurgeries),
-        allergies: allergies,
-        habitualMedication: this.parseList(formVal.habitualMedication),
-        birthMeasurements: (isPediatric || formVal.birthWeight != null || formVal.birthHeight != null)
-          ? {
-              weight: formVal.birthWeight != null ? Number(formVal.birthWeight) : null,
-              height: formVal.birthHeight != null ? Number(formVal.birthHeight) : null,
-              headCircumference: formVal.birthHeadCircumference != null ? Number(formVal.birthHeadCircumference) : null,
-            }
-          : undefined,
-      },
-      familyHistory: {
-        familyChronicDiseases: this.parseList(formVal.familyChronicDiseases),
-        familyAllergies: this.parseList(formVal.familyAllergies),
-        geneticDiseases: this.parseList(formVal.geneticDiseases),
-      },
-      immunizationAndNutrition: (isPediatric || formVal.feedingDiet || formVal.vaccinationHistory)
-        ? {
-            feedingDiet: formVal.feedingDiet?.trim() || undefined,
-            vaccinationHistory: this.parseList(formVal.vaccinationHistory),
-            developmentalMilestones: formVal.developmentalMilestones?.trim() || undefined,
-          }
-        : undefined,
-      latestMeasurements: {
-        weight: formVal.currentWeight != null ? Number(formVal.currentWeight) : null,
-        height: formVal.currentHeight != null ? Number(formVal.currentHeight) : null,
-        headCircumference: isPediatric && formVal.currentHeadCircumference != null
-          ? Number(formVal.currentHeadCircumference)
-          : null,
-      },
+      guardianInfo,
     };
-
 
     this.patientService.createPatient(payload).subscribe({
       next: (createdPatient) => {
@@ -332,13 +218,5 @@ export class NewPatientDialogComponent {
         this.errorMessage.set(serverMsg);
       },
     });
-  }
-
-  private parseList(value: string | null | undefined): string[] {
-    if (!value) return [];
-    return value
-      .split(/[\n,;]+/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
   }
 }

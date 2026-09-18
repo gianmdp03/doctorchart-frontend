@@ -38,7 +38,7 @@
                 Consulta Médica #{{ enc.id }} • {{ enc.patientFullName }}
               </h2>
               <div class="modal-subtitle-row">
-                <span>Fecha: <strong>{{ enc.encounterDate }}</strong></span>
+                <span>Fecha: <strong>{{ enc.encounterDate?.split('T')?.[0] || enc.encounterDate }}</strong></span>
                 <span>•</span>
                 <span>Tipo: <strong>{{ getConsultationTypeLabel(enc.consultationType) }}</strong></span>
               </div>
@@ -180,7 +180,9 @@
               <div class="primary-diag-box">
                 <span class="diag-tag">Diagnóstico Principal</span>
                 <div class="diag-code-desc">
-                  <span class="code-badge">{{ enc.primaryDiagnosisCode }}</span>
+                  @if (enc.primaryDiagnosisCode) {
+                    <span class="code-badge">{{ enc.primaryDiagnosisCode }}</span>
+                  }
                   <strong class="desc-text">{{ enc.primaryDiagnosisDescription }}</strong>
                 </div>
               </div>

@@ -49,7 +49,7 @@ export interface ClinicalEncounterRequest {
   physicalExamination?: string;
 
   // A - Assessment
-  primaryDiagnosisCode: string;
+  primaryDiagnosisCode?: string | null;
   primaryDiagnosisDescription: string;
   secondaryDiagnoses?: DiagnosisItem[];
   clinicalImpression?: string;
@@ -77,6 +77,6 @@ export interface ClinicalEncounterList {
   specialty: MedicalSpecialty;
   consultationType: ConsultationType;
   chiefComplaint: string;
-  primaryDiagnosisCode: string;
+  primaryDiagnosisCode?: string | null;
   primaryDiagnosisDescription: string;
 }

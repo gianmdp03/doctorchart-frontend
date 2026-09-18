@@ -64,6 +64,12 @@
 }
 
 /* Fieldset Section Headers */
+.fieldset-helper {
+  font-size: 0.8rem;
+  color: var(--md-sys-color-secondary, #4a6267);
+  margin: -0.25rem 0 0.75rem 0;
+}
+
 .fieldset-section-title {
   font-size: 0.88rem;
   font-weight: 600;
