@@ -172,6 +172,14 @@ export class ActivePatientService {
 
   constructor() {
     this.hydrateFromStorage();
+    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+      window.addEventListener('auth-signout', () => {
+        this.clear();
+      });
+      window.addEventListener('auth-success', () => {
+        this.clear();
+      });
+    }
   }
 
   private hydrateFromStorage(): void {

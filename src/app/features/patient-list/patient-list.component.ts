@@ -237,10 +237,17 @@ export class PatientListComponent implements OnInit {
       const handlePatientCreated = () => {
         this.loadInitial();
       };
+      const handleAuthChange = () => {
+        this.loadInitial();
+      };
       window.addEventListener('patient-created', handlePatientCreated);
+      window.addEventListener('auth-success', handleAuthChange);
+      window.addEventListener('auth-signout', handleAuthChange);
 
       this.destroyRef.onDestroy(() => {
         window.removeEventListener('patient-created', handlePatientCreated);
+        window.removeEventListener('auth-success', handleAuthChange);
+        window.removeEventListener('auth-signout', handleAuthChange);
         if (this.observer) {
           this.observer.disconnect();
         }
