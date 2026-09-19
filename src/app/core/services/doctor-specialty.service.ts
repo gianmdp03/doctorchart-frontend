@@ -57,20 +57,13 @@ export class DoctorSpecialtyService {
 
   readonly headerBrandTitle = computed(() => {
     const s = this.activeSpecialty();
-    if (s === 'PEDIATRICS') {
-      return 'PediatríaCare M3';
-    }
     const opt = this.currentSpecialtyOption();
     return s ? `DoctorChart • ${opt.shortLabel}` : 'DoctorChart';
   });
 
   readonly headerBrandSubtitle = computed(() => {
-    const s = this.activeSpecialty();
-    if (s === 'PEDIATRICS') {
-      return 'Seguimiento Clínico Pediátrico & Curvas OMS';
-    }
     const opt = this.currentSpecialtyOption();
-    return s ? `Módulo Clínico de ${opt.label}` : 'Módulo Clínico';
+    return `Módulo Clínico de ${opt.label}`;
   });
 
   constructor() {

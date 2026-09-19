@@ -29,13 +29,15 @@
 } @else if (!doctorProfileService.hasSpecialty()) {
   <app-specialty-selection />
 } @else {
-  <app-header />
-  <app-patient-quick-banner />
-  <app-main-nav />
-
-  <main class="app-content-container">
-    <router-outlet />
-  </main>
+  <div class="app-layout-shell">
+    <app-sidebar />
+    <div class="app-main-viewport">
+      <app-header />
+      <main class="app-main-content">
+        <router-outlet />
+      </main>
+    </div>
+  </div>
 
   <app-new-patient-dialog />
   <app-new-checkup-dialog />

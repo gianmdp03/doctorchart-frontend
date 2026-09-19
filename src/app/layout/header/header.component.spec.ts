@@ -2,57 +2,84 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HeaderComponent } from './header.component';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
+import { PatientService } from '../../core/services/patient.service';
+import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
+import { DoctorProfileService } from '../../core/services/doctor-profile.service';
 import { signal } from '@angular/core';
-import { User } from '@supabase/supabase-js';
+import { of } from 'rxjs';
+import { provideRouter } from '@angular/router';
 
 describe('HeaderComponent', () => {
   let component: HeaderComponent;
   let fixture: ComponentFixture<HeaderComponent>;
 
-  let authServiceMock: {
-    currentUser: ReturnType<typeof signal<User | null>>;
-    isLoggedIn: ReturnType<typeof signal<boolean>>;
-    userName: ReturnType<typeof signal<string>>;
-    userRole: ReturnType<typeof signal<string | null>>;
-    isSuperAdmin: ReturnType<typeof signal<boolean>>;
-    isCompany: ReturnType<typeof signal<boolean>>;
-    hasDoctorchartPlan: ReturnType<typeof signal<boolean>>;
-    doctorchartPlanTier: ReturnType<typeof signal<string | null>>;
-    daysRemaining: ReturnType<typeof signal<number>>;
-    openLoginModal: ReturnType<typeof vi.fn>;
-    openProfileModal: ReturnType<typeof vi.fn>;
-  };
-
-  let activePatientServiceMock: {
-    patientId: ReturnType<typeof signal<number | null>>;
-    patientName: ReturnType<typeof signal<string>>;
-  };
+  let authServiceMock: any;
+  let activePatientServiceMock: any;
+  let patientServiceMock: any;
+  let doctorSpecialtyServiceMock: any;
+  let doctorProfileServiceMock: any;
 
   beforeEach(async () => {
     authServiceMock = {
-      currentUser: signal<User | null>(null),
-      isLoggedIn: signal<boolean>(false),
-      userName: signal<string>('Usuario'),
-      userRole: signal<string | null>(null),
-      isSuperAdmin: signal<boolean>(false),
-      isCompany: signal<boolean>(false),
-      hasDoctorchartPlan: signal<boolean>(false),
-      doctorchartPlanTier: signal<string | null>(null),
-      daysRemaining: signal<number>(0),
+      currentUser: signal(null),
+      isLoggedIn: signal(true),
+      userName: signal('Dra. Sofía Mendoza'),
+      userEmail: signal('sofia@doctorchart.com'),
+      userRole: signal('DOCTOR'),
+      isSuperAdmin: signal(false),
+      hasDoctorchartPlan: signal(true),
+      doctorchartPlanTier: signal('PROFESSIONAL'),
+      daysRemaining: signal(30),
       openLoginModal: vi.fn(),
       openProfileModal: vi.fn(),
+      signOut: vi.fn().mockResolvedValue(undefined),
     };
 
     activePatientServiceMock = {
-      patientId: signal<number | null>(null),
-      patientName: signal<string>(''),
+      patientId: signal(101),
+      patientName: signal('Mateo Benítez'),
+      loadPatient: vi.fn(),
+    };
+
+    patientServiceMock = {
+      getPatients: vi.fn().mockReturnValue(
+        of({
+          content: [
+            { id: 101, fullName: 'Mateo Benítez', birthDate: '2024-05-10', nationalId: '54123456' },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+          size: 8,
+          number: 0,
+        })
+      ),
+    };
+
+    doctorSpecialtyServiceMock = {
+      activeSpecialty: signal('PEDIATRICS'),
+      isPediatricMode: signal(true),
+      currentSpecialtyOption: signal({
+        value: 'PEDIATRICS',
+        label: 'Pediatría y Neonatología',
+        shortLabel: 'Pediatría',
+        icon: 'baby',
+      }),
+    };
+
+    doctorProfileServiceMock = {
+      profile: signal({ specialty: 'PEDIATRICS' }),
+      hasSpecialty: signal(true),
     };
 
     await TestBed.configureTestingModule({
       imports: [HeaderComponent],
       providers: [
+        provideRouter([]),
         { provide: AuthService, useValue: authServiceMock },
         { provide: ActivePatientService, useValue: activePatientServiceMock },
+        { provide: PatientService, useValue: patientServiceMock },
+        { provide: DoctorSpecialtyService, useValue: doctorSpecialtyServiceMock },
+        { provide: DoctorProfileService, useValue: doctorProfileServiceMock },
       ],
     }).compileComponents();
 
@@ -65,166 +92,61 @@ describe('HeaderComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render demo clinician info and Iniciar Sesión button when not logged in', () => {
+  it('should render specialty badge and omnibox search input', () => {
     const el: HTMLElement = fixture.nativeElement;
-    const badge = el.querySelector('.clinician-badge');
-    expect(badge).toBeTruthy();
+    const omnibox = el.querySelector('.omnibox-input');
+    expect(omnibox).toBeTruthy();
 
-    const name = el.querySelector('.clinician-name')?.textContent?.trim();
-    expect(name).toBe('Profesional Médico');
-
-    const loginBtn = el.querySelector('.clinician-login-chip');
-    expect(loginBtn).toBeTruthy();
-    expect(loginBtn?.textContent?.trim()).toBe('Iniciar Sesión');
-
-    expect(component.clinicianInitials()).toBe('DC');
+    const badge = el.querySelector('.specialty-badge');
+    expect(badge?.textContent).toContain('Pediatría');
   });
 
-  it('should open login modal when clinician badge is clicked while logged out', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-
-    component.handleClinicianBadgeClick();
-
-    expect(authServiceMock.openLoginModal).toHaveBeenCalled();
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'open-login-modal' })
-    );
-
-    dispatchSpy.mockRestore();
-  });
-
-  it('should open login modal when Iniciar Sesión chip is clicked', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-    const stopPropagationSpy = vi.fn();
-    const mockEvent = {
-      stopPropagation: stopPropagationSpy,
-    } as unknown as Event;
-
-    component.handleLoginClick(mockEvent);
-
-    expect(stopPropagationSpy).toHaveBeenCalled();
-    expect(authServiceMock.openLoginModal).toHaveBeenCalled();
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'open-login-modal' })
-    );
-
-    dispatchSpy.mockRestore();
-  });
-
-  it('should render authenticated user initials and Conectado status when logged in', () => {
-    authServiceMock.isLoggedIn.set(true);
-    authServiceMock.currentUser.set({
-      id: 'doc-1',
-      email: 'pediatra@pointly.care',
-    } as unknown as User);
-    authServiceMock.userName.set('Dra. Sofía Mendoza');
-
-    fixture.detectChanges();
-
-    const el: HTMLElement = fixture.nativeElement;
-    const name = el.querySelector('.clinician-name')?.textContent?.trim();
-    expect(name).toBe('Dra. Sofía Mendoza');
-
-    const statusBadge = el.querySelector('.clinician-status-badge');
-    expect(statusBadge?.textContent).toContain('Conectado');
-
+  it('should compute clinician initials correctly', () => {
     expect(component.clinicianInitials()).toBe('DS');
   });
 
-  it('should open profile modal when clinician badge is clicked while logged in', () => {
-    authServiceMock.isLoggedIn.set(true);
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+  it('should toggle create menu when button is clicked', () => {
+    const stopPropagationSpy = vi.fn();
+    const event = { stopPropagation: stopPropagationSpy } as unknown as Event;
 
-    component.handleClinicianBadgeClick();
-
-    expect(authServiceMock.openProfileModal).toHaveBeenCalled();
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'open-profile-modal' })
-    );
-
-    dispatchSpy.mockRestore();
+    expect(component.isCreateMenuOpen()).toBe(false);
+    component.toggleCreateMenu(event);
+    expect(component.isCreateMenuOpen()).toBe(true);
+    expect(stopPropagationSpy).toHaveBeenCalled();
   });
 
-  it('should update search query on input', () => {
-    const event = {
-      target: { value: 'Mateo' },
-    } as unknown as Event;
+  it('should toggle profile menu when profile button is clicked', () => {
+    const stopPropagationSpy = vi.fn();
+    const event = { stopPropagation: stopPropagationSpy } as unknown as Event;
 
-    component.onSearchInput(event);
-    expect(component.searchQuery()).toBe('Mateo');
+    expect(component.isProfileMenuOpen()).toBe(false);
+    component.toggleProfileMenu(event);
+    expect(component.isProfileMenuOpen()).toBe(true);
   });
 
-  it('should dispatch open-new-patient-modal on button click', () => {
+  it('should dispatch open-new-patient-modal event on new patient action', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-
     component.handleNewPatientClick();
-
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'open-new-patient-modal' })
     );
-
     dispatchSpy.mockRestore();
   });
 
-  it('should dispatch open-new-checkup-modal on button click', () => {
+  it('should dispatch open-new-encounter-modal event on new encounter action', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-
-    component.handleNewCheckupClick();
-
+    component.handleNewEncounterClick();
     expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'open-new-checkup-modal' })
+      expect.objectContaining({ type: 'open-new-encounter-modal' })
     );
-
     dispatchSpy.mockRestore();
   });
 
-  it('should render plan tier badge when user has active doctorchart plan', () => {
-    authServiceMock.isLoggedIn.set(true);
-    authServiceMock.currentUser.set({
-      id: 'doc-pro',
-      email: 'pediatra@pointly.care',
-    } as unknown as User);
-    authServiceMock.userName.set('Dra. Sofía Mendoza');
-    authServiceMock.hasDoctorchartPlan.set(true);
-    authServiceMock.doctorchartPlanTier.set('PRO');
-    authServiceMock.daysRemaining.set(15);
+  it('should focus search input on Ctrl+K shortcut', () => {
+    const event = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true });
+    const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
 
-    fixture.detectChanges();
-
-    const el: HTMLElement = fixture.nativeElement;
-    const planBadge = el.querySelector('.plan-tier-badge');
-    expect(planBadge).toBeTruthy();
-    expect(planBadge?.textContent?.trim()).toBe('Plan PRO');
-
-    const daysLeft = el.querySelector('.clinician-days-left');
-    expect(daysLeft?.textContent?.trim()).toBe('(15d)');
-  });
-
-  it('should render Super Admin badge when user is super admin', () => {
-    authServiceMock.isLoggedIn.set(true);
-    authServiceMock.currentUser.set({
-      id: 'super-1',
-      email: 'admin@system.local',
-    } as unknown as User);
-    authServiceMock.userName.set('Admin Root');
-    authServiceMock.isSuperAdmin.set(true);
-    authServiceMock.hasDoctorchartPlan.set(true);
-    authServiceMock.doctorchartPlanTier.set('SUPER_ADMIN');
-
-    fixture.detectChanges();
-
-    const el: HTMLElement = fixture.nativeElement;
-    const planBadge = el.querySelector('.plan-tier-badge');
-    expect(planBadge).toBeTruthy();
-    expect(planBadge?.textContent?.trim()).toBe('Super Admin');
-    expect(planBadge?.classList.contains('plan-superadmin')).toBe(true);
-  });
-
-  it('should render Planes Syntah button with correct href', () => {
-    const el: HTMLElement = fixture.nativeElement;
-    const syntahBtn = el.querySelector('a.syntah-plans-btn');
-    expect(syntahBtn).toBeTruthy();
-    expect(syntahBtn?.getAttribute('href')).toBe('http://localhost:4200/company-panel#plans-catalog');
-    expect(syntahBtn?.textContent).toContain('Planes Syntah');
+    component.handleGlobalShortcut(event);
+    expect(preventDefaultSpy).toHaveBeenCalled();
   });
 });

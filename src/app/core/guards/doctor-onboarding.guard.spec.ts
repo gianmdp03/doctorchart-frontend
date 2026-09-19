@@ -86,6 +86,6 @@ describe('doctorOnboardingGuard', () => {
     );
 
     expect(result instanceof UrlTree).toBe(true);
-    expect((result as UrlTree).toString()).toBe('/pacientes');
+    expect((result as UrlTree).toString()).toBe('/dashboard');
   });
 });

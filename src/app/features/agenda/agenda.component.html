@@ -1,0 +1,106 @@
+<div class="agenda-page">
+  <header class="agenda-header">
+    <div class="agenda-title-wrap">
+      <h1 class="agenda-title">Agenda de Turnos</h1>
+      <p class="agenda-subtitle">
+        <span>{{ todayFormatted() }}</span>
+        <span class="bullet-separator">•</span>
+        <span class="text-teal-700 font-semibold">{{ waitingCount() }} pacientes en espera</span>
+      </p>
+    </div>
+
+    <div class="agenda-filters-bar">
+      <div class="filter-pills-group">
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="filterStatus() === 'ALL'"
+          (click)="filterStatus.set('ALL')"
+        >
+          Todos ({{ appointments().length }})
+        </button>
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="filterStatus() === 'WAITING'"
+          (click)="filterStatus.set('WAITING')"
+        >
+          En espera ({{ waitingCount() }})
+        </button>
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="filterStatus() === 'COMPLETED'"
+          (click)="filterStatus.set('COMPLETED')"
+        >
+          Atendidos ({{ completedCount() }})
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="agenda-content-card">
+    @if (isLoading()) {
+      <div class="agenda-loading">
+        <div class="agenda-spinner"></div>
+        <span>Cargando turnos de la jornada...</span>
+      </div>
+    } @else if (filteredAppointments().length > 0) {
+      <div class="agenda-list">
+        @for (item of filteredAppointments(); track item.id) {
+          <div class="appointment-row">
+            <div class="time-box">
+              <ng-icon name="lucideClock" class="text-slate-400" />
+              <span class="time-text">{{ item.time }}</span>
+            </div>
+
+            <div class="patient-details">
+              <div class="patient-main-line">
+                <span class="patient-name">{{ item.patientName }}</span>
+                <span class="patient-age">({{ item.ageDisplay }})</span>
+                <span class="status-pill {{ getStatusClass(item.status) }}">
+                  {{ getStatusLabel(item.status) }}
+                </span>
+              </div>
+              <div class="patient-sub-line">
+                <span class="reason-text"><strong>Motivo:</strong> {{ item.reason }}</span>
+                @if (item.phone !== '—') {
+                  <span class="phone-text">
+                    <ng-icon name="lucidePhone" class="text-slate-400 text-xs" />
+                    {{ item.phone }}
+                  </span>
+                }
+              </div>
+            </div>
+
+            <div class="appointment-actions">
+              <button
+                type="button"
+                class="btn-action-primary"
+                (click)="startConsultation(item)"
+                title="Abrir formulario SOAP para este paciente"
+              >
+                <ng-icon name="lucideStethoscope" />
+                <span>Atender</span>
+              </button>
+              <button
+                type="button"
+                class="btn-action-secondary"
+                (click)="openPatientRecord(item.patientId)"
+                title="Ver ficha del paciente"
+              >
+                Ficha
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="agenda-empty">
+        <ng-icon name="lucideCalendar" class="empty-calendar-icon" />
+        <h3>Sin turnos para el filtro seleccionado</h3>
+        <p>No hay pacientes registrados en este estado para la jornada de hoy.</p>
+      </div>
+    }
+  </div>
+</div>

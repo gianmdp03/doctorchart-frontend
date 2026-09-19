@@ -1,9 +1,7 @@
 import { Component, effect, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { HeaderComponent } from './layout/header/header.component';
-import { PatientQuickBannerComponent } from './layout/patient-quick-banner/patient-quick-banner.component';
-import { MainNavComponent } from './layout/main-nav/main-nav.component';
-import { ActivePatientService } from './core/services/active-patient.service';
+import { SidebarComponent } from './layout/sidebar/sidebar.component';
 import { AuthService } from './core/services/auth.service';
 import { DoctorProfileService } from './core/services/doctor-profile.service';
 import { NewPatientDialogComponent } from './features/patient-dialog/new-patient-dialog.component';
@@ -19,9 +17,8 @@ import { SpecialtySelectionComponent } from './features/onboarding/specialty-sel
   selector: 'app-root',
   imports: [
     RouterOutlet,
+    SidebarComponent,
     HeaderComponent,
-    PatientQuickBannerComponent,
-    MainNavComponent,
     NewPatientDialogComponent,
     NewCheckupDialogComponent,
     NewEncounterDialogComponent,

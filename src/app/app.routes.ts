@@ -6,14 +6,38 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'pacientes',
+    redirectTo: 'dashboard',
   },
   {
-    path: 'onboarding/select-specialty',
-    canActivate: [doctorchartPlanGuard, preventCompletedOnboardingGuard],
+    path: 'dashboard',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () =>
-      import('./features/onboarding/specialty-selection/specialty-selection.component').then(
-        (m) => m.SpecialtySelectionComponent
+      import('./features/dashboard/dashboard.component').then(
+        (m) => m.DashboardComponent
+      ),
+  },
+  {
+    path: 'agenda',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () =>
+      import('./features/agenda/agenda.component').then(
+        (m) => m.AgendaComponent
+      ),
+  },
+  {
+    path: 'pacientes',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () =>
+      import('./features/patient-list/patient-list.component').then(
+        (m) => m.PatientListComponent
+      ),
+  },
+  {
+    path: 'pacientes/:id',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () =>
+      import('./features/patient-record/patient-record.component').then(
+        (m) => m.PatientRecordComponent
       ),
   },
   {
@@ -25,11 +49,27 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'pacientes',
+    path: 'ficha/:id',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () =>
-      import('./features/patient-list/patient-list.component').then(
-        (m) => m.PatientListComponent
+      import('./features/patient-record/patient-record.component').then(
+        (m) => m.PatientRecordComponent
+      ),
+  },
+  {
+    path: 'consultas',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () =>
+      import('./features/consultas/consultas.component').then(
+        (m) => m.ConsultasComponent
+      ),
+  },
+  {
+    path: 'onboarding/select-specialty',
+    canActivate: [doctorchartPlanGuard, preventCompletedOnboardingGuard],
+    loadComponent: () =>
+      import('./features/onboarding/specialty-selection/specialty-selection.component').then(
+        (m) => m.SpecialtySelectionComponent
       ),
   },
   {
@@ -50,6 +90,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'pacientes',
+    redirectTo: 'dashboard',
   },
 ];

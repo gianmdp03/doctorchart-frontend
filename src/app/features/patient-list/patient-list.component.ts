@@ -357,7 +357,7 @@ export class PatientListComponent implements OnInit {
       this.activePatientService.setActivePatient(patient.detail);
     }
     this.activePatientService.loadPatient(patient.id);
-    this.router.navigate(['/ficha']);
+    this.router.navigate(['/pacientes', patient.id]);
   }
 
   openNewPatientModal(event?: Event): void {

@@ -1,0 +1,162 @@
+<aside class="sidebar-container" [class.is-collapsed]="isCollapsed()">
+  <!-- Sidebar Header: Brand Logo & Title -->
+  <div class="sidebar-brand">
+    <div class="brand-logo-icon" title="DoctorChart">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+      </svg>
+    </div>
+    @if (!isCollapsed()) {
+      <div class="brand-text-wrap">
+        <span class="brand-title">DoctorChart</span>
+        <span class="brand-specialty-pill">{{ specialtyService.currentSpecialtyOption().shortLabel }}</span>
+      </div>
+    }
+  </div>
+
+  <!-- Main Navigation Links -->
+  <nav class="sidebar-nav" aria-label="Navegación principal">
+    <div class="nav-group-label" [class.sr-only]="isCollapsed()">
+      @if (!isCollapsed()) {
+        <span>Clínica</span>
+      }
+    </div>
+
+    <!-- 1. Inicio / Dashboard -->
+    <a
+      routerLink="/dashboard"
+      routerLinkActive="active"
+      class="nav-item"
+      title="Inicio / Dashboard"
+    >
+      <ng-icon name="lucideLayoutDashboard" class="nav-icon" />
+      @if (!isCollapsed()) {
+        <span class="nav-label">Inicio / Dashboard</span>
+      }
+    </a>
+
+    <!-- 2. Agenda de Turnos -->
+    <a
+      routerLink="/agenda"
+      routerLinkActive="active"
+      class="nav-item"
+      title="Agenda de Turnos"
+    >
+      <ng-icon name="lucideCalendar" class="nav-icon" />
+      @if (!isCollapsed()) {
+        <span class="nav-label">Agenda de Turnos</span>
+        <span class="nav-badge">Hoy</span>
+      }
+    </a>
+
+    <!-- 3. Directorio de Pacientes -->
+    <a
+      routerLink="/pacientes"
+      routerLinkActive="active"
+      class="nav-item"
+      title="Directorio de Pacientes"
+    >
+      <ng-icon name="lucideUsers" class="nav-icon" />
+      @if (!isCollapsed()) {
+        <span class="nav-label">Pacientes</span>
+      }
+    </a>
+
+    <!-- 4. Consultas Clínicas -->
+    <a
+      routerLink="/consultas"
+      routerLinkActive="active"
+      class="nav-item"
+      title="Consultas Clínicas SOAP"
+    >
+      <ng-icon name="lucideStethoscope" class="nav-icon" />
+      @if (!isCollapsed()) {
+        <span class="nav-label">Consultas Clínicas</span>
+      }
+    </a>
+
+    <!-- Herramientas de Especialidad (Contextuales) -->
+    <div class="nav-divider"></div>
+    <div class="nav-group-label" [class.sr-only]="isCollapsed()">
+      @if (!isCollapsed()) {
+        <span>Herramientas de {{ specialtyService.currentSpecialtyOption().shortLabel }}</span>
+      }
+    </div>
+
+    @if (isPediatrics()) {
+      <a
+        routerLink="/curvas"
+        routerLinkActive="active"
+        class="nav-item specialty-item"
+        title="Curvas de Crecimiento OMS"
+      >
+        <ng-icon name="lucideTrendingUp" class="nav-icon text-emerald-600" />
+        @if (!isCollapsed()) {
+          <span class="nav-label">Curvas OMS</span>
+        }
+      </a>
+
+      <a
+        routerLink="/hitos"
+        routerLinkActive="active"
+        class="nav-item specialty-item"
+        title="Hitos Madurativos (0-2 años)"
+      >
+        <ng-icon name="lucideBaby" class="nav-icon text-amber-600" />
+        @if (!isCollapsed()) {
+          <span class="nav-label">Hitos 0-2 años</span>
+        }
+      </a>
+    } @else if (isCardiology()) {
+      <div class="nav-item specialty-item static-nav-item" title="Estratificación de Riesgo Cardiovascular">
+        <ng-icon name="lucideHeartPulse" class="nav-icon text-rose-600" />
+        @if (!isCollapsed()) {
+          <span class="nav-label">Riesgo Cardiovascular</span>
+        }
+      </div>
+    } @else if (isGynecology()) {
+      <div class="nav-item specialty-item static-nav-item" title="Salud Reproductiva y Calculador FUM">
+        <ng-icon name="lucideSparkles" class="nav-icon text-fuchsia-600" />
+        @if (!isCollapsed()) {
+          <span class="nav-label">Calculadora Obstétrica</span>
+        }
+      </div>
+    } @else {
+      <div class="nav-item specialty-item static-nav-item" title="Cribado Preventivo Integral">
+        <ng-icon name="lucideActivity" class="nav-icon text-cyan-600" />
+        @if (!isCollapsed()) {
+          <span class="nav-label">Cribado Preventivo</span>
+        }
+      </div>
+    }
+  </nav>
+
+  <!-- Sidebar Footer: Profile info & Collapse Toggle -->
+  <div class="sidebar-footer">
+    <div class="footer-profile-row" [title]="authService.userName() || 'Profesional Médico'">
+      <div class="profile-avatar">
+        {{ clinicianInitials() }}
+      </div>
+      @if (!isCollapsed()) {
+        <div class="profile-info-text">
+          <span class="profile-name">{{ authService.userName() || 'Médico' }}</span>
+          <span class="profile-status-text">En línea</span>
+        </div>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="collapse-toggle-btn"
+      (click)="toggleCollapse()"
+      [attr.aria-label]="isCollapsed() ? 'Expandir menú lateral' : 'Colapsar menú lateral'"
+      [title]="isCollapsed() ? 'Expandir menú' : 'Colapsar menú'"
+    >
+      @if (isCollapsed()) {
+        <ng-icon name="lucideChevronRight" />
+      } @else {
+        <ng-icon name="lucideChevronLeft" />
+      }
+    </button>
+  </div>
+</aside>

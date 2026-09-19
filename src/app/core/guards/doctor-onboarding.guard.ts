@@ -50,7 +50,7 @@ export const preventCompletedOnboardingGuard: CanActivateFn = async (route, stat
   }
 
   if (doctorProfileService.hasSpecialty()) {
-    return router.createUrlTree(['/pacientes']);
+    return router.createUrlTree(['/dashboard']);
   }
 
   return true;

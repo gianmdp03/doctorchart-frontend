@@ -1,0 +1,124 @@
+<div class="consultas-page">
+  <header class="consultas-header">
+    <div class="title-group">
+      <h1 class="page-title">Historial de Consultas Clínicas</h1>
+      <p class="page-subtitle">Registro consolidado de evoluciones bajo estándar SOAP</p>
+    </div>
+
+    <button
+      type="button"
+      class="cta-primary-btn"
+      (click)="openNewEncounterModal()"
+    >
+      <ng-icon name="lucidePlus" />
+      <span>+ Nueva Consulta SOAP</span>
+    </button>
+  </header>
+
+  <!-- Filter Toolbar -->
+  <div class="filter-toolbar-card">
+    <div class="search-input-wrap">
+      <ng-icon name="lucideSearch" class="search-icon" />
+      <input
+        type="search"
+        class="filter-input"
+        placeholder="Buscar por paciente, motivo o código CIE-10..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </div>
+
+    <div class="specialty-filter-wrap">
+      <ng-icon name="lucideFilter" class="filter-icon" />
+      <select
+        class="specialty-select"
+        [ngModel]="selectedSpecialty()"
+        (ngModelChange)="selectedSpecialty.set($event)"
+      >
+        <option value="ALL">Todas las Especialidades</option>
+        @for (opt of specialtyOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Consultations Table -->
+  <div class="consultas-table-card">
+    @if (isLoading()) {
+      <div class="consultas-loading">
+        <div class="consultas-spinner"></div>
+        <span>Cargando consultas clínicas...</span>
+      </div>
+    } @else if (filteredConsultations().length > 0) {
+      <div class="table-container">
+        <table class="clinical-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Paciente</th>
+              <th>Especialidad</th>
+              <th>Tipo</th>
+              <th>Motivo de Consulta (S)</th>
+              <th>Diagnóstico (A)</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of filteredConsultations(); track c.id) {
+              <tr>
+                <td><strong>#E-{{ c.id }}</strong></td>
+                <td><span class="text-slate-600 font-medium">{{ c.encounterDate }}</span></td>
+                <td>
+                  <span class="patient-link" (click)="openPatientRecord(c.patientId)">
+                    {{ c.patientName }}
+                  </span>
+                </td>
+                <td>
+                  <span class="specialty-pill">{{ c.specialty }}</span>
+                </td>
+                <td><span class="text-xs text-slate-600">{{ c.consultationType }}</span></td>
+                <td><span class="complaint-text" [title]="c.chiefComplaint">{{ c.chiefComplaint }}</span></td>
+                <td>
+                  <div class="diag-group">
+                    @if (c.primaryDiagnosisCode) {
+                      <span class="diag-code">{{ c.primaryDiagnosisCode }}</span>
+                    }
+                    <span class="diag-desc" [title]="c.primaryDiagnosis">{{ c.primaryDiagnosis }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="actions-group">
+                    <button
+                      type="button"
+                      class="btn-detail"
+                      (click)="openEncounterDetail(c.id)"
+                      title="Ver SOAP completo"
+                    >
+                      Ver Detalle
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-view-patient"
+                      (click)="openPatientRecord(c.patientId)"
+                      title="Ir a Ficha"
+                    >
+                      Ficha →
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="consultas-empty">
+        <ng-icon name="lucideStethoscope" class="empty-icon" />
+        <h3>No se encontraron consultas clínicas</h3>
+        <p>Intente modificar el filtro de búsqueda o registre una nueva consulta clínica SOAP.</p>
+      </div>
+    }
+  </div>
+</div>
