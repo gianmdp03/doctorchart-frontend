@@ -12,6 +12,7 @@ import { LoginPageComponent } from './features/auth/login-page.component';
 import { UserProfileDialogComponent } from './features/auth/user-profile-dialog.component';
 import { AiAssistantWidgetComponent } from './features/ai-assistant/ai-assistant-widget.component';
 import { SpecialtySelectionComponent } from './features/onboarding/specialty-selection/specialty-selection.component';
+import { PrescriptionPrintLayoutComponent } from './features/prescription-print-layout/prescription-print-layout.component';
 
 @Component({
   selector: 'app-root',
@@ -27,6 +28,7 @@ import { SpecialtySelectionComponent } from './features/onboarding/specialty-sel
     UserProfileDialogComponent,
     AiAssistantWidgetComponent,
     SpecialtySelectionComponent,
+    PrescriptionPrintLayoutComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',

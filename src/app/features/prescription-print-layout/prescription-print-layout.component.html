@@ -1,0 +1,310 @@
+@if (isOpen()) {
+  <div class="print-preview-backdrop" (click)="closeModal()">
+    <div class="print-preview-dialog" (click)="$event.stopPropagation()">
+      <!-- Toolbar Controls (Hidden when printing) -->
+      <header class="print-toolbar no-print">
+        <div class="toolbar-left">
+          <div class="toolbar-title-group">
+            <span class="toolbar-badge">Vista Previa de Impresión</span>
+            <h2 class="toolbar-title">
+              @if (documentType() === 'PRESCRIPTION') {
+                Recetario Farmacológico Oficial
+              } @else {
+                Orden Médica de Prácticas y Estudios
+              }
+            </h2>
+          </div>
+
+          <!-- Document Type Switcher -->
+          <div class="toggle-group doc-type-toggle">
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.active]="documentType() === 'PRESCRIPTION'"
+              (click)="setDocType('PRESCRIPTION')"
+            >
+              <ng-icon name="lucidePill" />
+              <span>Receta Médica</span>
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.active]="documentType() === 'STUDY_ORDERS'"
+              (click)="setDocType('STUDY_ORDERS')"
+            >
+              <ng-icon name="lucideFileText" />
+              <span>Estudios Médicos</span>
+            </button>
+          </div>
+
+          <!-- Format Switcher -->
+          <div class="toggle-group format-toggle">
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.active]="printFormat() === 'A4_DUAL'"
+              (click)="setFormat('A4_DUAL')"
+              title="A4 con Original y Duplicado lado a lado"
+            >
+              A4 Doble Vía
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.active]="printFormat() === 'A5_SINGLE'"
+              (click)="setFormat('A5_SINGLE')"
+              title="A5 Formato simple media carilla"
+            >
+              A5 Simple
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <button
+            type="button"
+            class="action-btn btn-print-cta"
+            (click)="print()"
+          >
+            <ng-icon name="lucidePrinter" />
+            <span>Imprimir Documento</span>
+          </button>
+          <button
+            type="button"
+            class="action-btn btn-close"
+            (click)="closeModal()"
+            aria-label="Cerrar vista previa"
+          >
+            <ng-icon name="lucideX" />
+          </button>
+        </div>
+      </header>
+
+      <!-- Scrollable Preview Area -->
+      <div class="preview-scroll-viewport">
+        <div
+          class="printable-sheet-container"
+          [class.format-a4-dual]="printFormat() === 'A4_DUAL'"
+          [class.format-a5-single]="printFormat() === 'A5_SINGLE'"
+        >
+          @if (printFormat() === 'A4_DUAL') {
+            <!-- Original Sheet -->
+            <section class="prescription-sheet sheet-original" aria-label="Receta Original">
+              <ng-container *ngTemplateOutlet="sheetTemplate; context: { copyLabel: 'ORIGINAL' }"></ng-container>
+            </section>
+
+            <!-- Cut separator line for A4 print -->
+            <div class="sheet-divider-cut">
+              <span class="cut-label">Línea de corte / doblado</span>
+            </div>
+
+            <!-- Duplicate Sheet -->
+            <section class="prescription-sheet sheet-duplicate" aria-label="Receta Duplicado">
+              <ng-container *ngTemplateOutlet="sheetTemplate; context: { copyLabel: 'DUPLICADO' }"></ng-container>
+            </section>
+          } @else {
+            <!-- A5 Single Sheet -->
+            <section class="prescription-sheet sheet-single" aria-label="Receta Médica">
+              <ng-container *ngTemplateOutlet="sheetTemplate; context: { copyLabel: 'EJEMPLAR ÚNICO' }"></ng-container>
+            </section>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reusable Prescription Sheet Template -->
+<ng-template #sheetTemplate let-copyLabel="copyLabel">
+  <div class="sheet-inner">
+    <!-- Header: Institution & Doctor Profile -->
+    <header class="sheet-header">
+      <div class="clinic-branding">
+        <div class="clinic-logo-mark">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+          </svg>
+        </div>
+        <div class="clinic-text">
+          <h1 class="clinic-name">{{ clinicInfo().name }}</h1>
+          <p class="clinic-sub">{{ clinicInfo().address }}</p>
+          <p class="clinic-contact">{{ clinicInfo().phone }}</p>
+        </div>
+      </div>
+
+      <div class="doctor-branding">
+        <h2 class="doc-name">{{ doctorName() }}</h2>
+        <p class="doc-spec">{{ doctorSpecialty() }}</p>
+        <p class="doc-license">{{ doctorLicense() }}</p>
+      </div>
+    </header>
+
+    <!-- Document Subheader & Code -->
+    <div class="doc-banner">
+      <div class="doc-type-badge">
+        @if (documentType() === 'PRESCRIPTION') {
+          <span class="doc-title">RECETA MÉDICA</span>
+        } @else {
+          <span class="doc-title">ORDEN DE ESTUDIOS</span>
+        }
+        <span class="copy-badge">{{ copyLabel }}</span>
+      </div>
+      <div class="doc-meta">
+        <span class="doc-date"><strong>Fecha:</strong> {{ formattedDate() }}</span>
+        <span class="doc-code"><strong>ID:</strong> {{ electronicRecipeCode() }}</span>
+      </div>
+    </div>
+
+    <!-- Patient Data Box -->
+    <section class="patient-info-box">
+      <div class="patient-grid">
+        <div class="info-cell cell-name">
+          <span class="info-label">Paciente:</span>
+          <strong class="info-val">{{ patientName() }}</strong>
+        </div>
+        <div class="info-cell cell-dni">
+          <span class="info-label">DNI / Doc:</span>
+          <span class="info-val">{{ patientDni() }}</span>
+        </div>
+        <div class="info-cell cell-age">
+          <span class="info-label">Edad:</span>
+          <span class="info-val">{{ patientAge() }}</span>
+        </div>
+        <div class="info-cell cell-coverage">
+          <span class="info-label">Cobertura / Plan:</span>
+          <span class="info-val">{{ patientCoverage() }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Area: Rp or Studies -->
+    <section class="sheet-body">
+      @if (documentType() === 'PRESCRIPTION') {
+        <div class="rx-symbol-heading">
+          <span class="rx-symbol">Rp/</span>
+        </div>
+
+        <div class="medications-content">
+          @if (encounterData()?.prescriptions && (encounterData()?.prescriptions?.length || 0) > 0) {
+            <div class="medications-list">
+              @for (item of encounterData()!.prescriptions; track item.medicationName; let idx = $index) {
+                <div class="prescription-entry">
+                  <div class="entry-line-main">
+                    <span class="entry-num">{{ idx + 1 }}.</span>
+                    <strong class="entry-drug">{{ item.medicationName }}</strong>
+                    @if (item.dosage) {
+                      <span class="entry-dose">{{ item.dosage }}</span>
+                    }
+                    @if (item.administrationRoute) {
+                      <span class="entry-route">({{ item.administrationRoute }})</span>
+                    }
+                  </div>
+                  @if (item.frequency || item.durationDays || item.instructions) {
+                    <div class="entry-line-sub">
+                      @if (item.frequency) {
+                        <span><strong>Frecuencia:</strong> {{ item.frequency }}</span>
+                      }
+                      @if (item.durationDays) {
+                        <span>· <strong>Duración:</strong> {{ item.durationDays }} días</span>
+                      }
+                      @if (item.instructions) {
+                        <p class="entry-indication"><strong>Ind:</strong> {{ item.instructions }}</p>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-lines-placeholder">
+              <div class="empty-line"></div>
+              <div class="empty-line"></div>
+              <div class="empty-line"></div>
+              <div class="empty-line"></div>
+            </div>
+          }
+
+          <!-- Diagnostic & Clinical Notes -->
+          @if (encounterData()?.primaryDiagnosisDescription || encounterData()?.patientInstructions) {
+            <div class="clinical-footnotes">
+              @if (encounterData()?.primaryDiagnosisDescription) {
+                <p class="diag-note">
+                  <strong>Diagnóstico:</strong>
+                  @if (encounterData()?.primaryDiagnosisCode) {
+                    [{{ encounterData()?.primaryDiagnosisCode }}]
+                  }
+                  {{ encounterData()?.primaryDiagnosisDescription }}
+                </p>
+              }
+              @if (encounterData()?.patientInstructions) {
+                <p class="instructions-note">
+                  <strong>Indicaciones generales:</strong> {{ encounterData()?.patientInstructions }}
+                </p>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- STUDY_ORDERS -->
+        <div class="study-orders-content">
+          <p class="study-preamble">Solicito la realización de los siguientes estudios diagnósticos y prácticas:</p>
+
+          @if (encounterData()?.diagnosticOrders && (encounterData()?.diagnosticOrders?.length || 0) > 0) {
+            <ol class="study-orders-list">
+              @for (study of encounterData()!.diagnosticOrders; track study; let idx = $index) {
+                <li class="study-order-item">
+                  <strong>{{ study }}</strong>
+                </li>
+              }
+            </ol>
+          } @else {
+            <div class="empty-lines-placeholder">
+              <div class="empty-line"></div>
+              <div class="empty-line"></div>
+              <div class="empty-line"></div>
+            </div>
+          }
+
+          @if (encounterData()?.primaryDiagnosisDescription) {
+            <div class="clinical-footnotes mt-4">
+              <p class="diag-note">
+                <strong>Diagnóstico presuntivo:</strong>
+                @if (encounterData()?.primaryDiagnosisCode) {
+                  [{{ encounterData()?.primaryDiagnosisCode }}]
+                }
+                {{ encounterData()?.primaryDiagnosisDescription }}
+              </p>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <!-- Footer: Digital Verification & Doctor Signature Area -->
+    <footer class="sheet-footer">
+      <div class="footer-security">
+        <div class="qr-mockup">
+          <ng-icon name="lucideQrCode" class="qr-icon" />
+        </div>
+        <div class="security-text">
+          <span class="security-badge">
+            <ng-icon name="lucideCheckCircle" class="check-icon" />
+            Firma Digital Registrada
+          </span>
+          <p class="legal-cite">Ley 27.553 · DoctorChart Cloud</p>
+          <p class="validity-cite">Válido por 30 días</p>
+        </div>
+      </div>
+
+      <div class="footer-signature">
+        <div class="sig-line"></div>
+        <div class="sig-details">
+          <p class="sig-doc-name">{{ doctorName() }}</p>
+          <p class="sig-doc-spec">{{ doctorSpecialty() }}</p>
+          <p class="sig-doc-license">{{ doctorLicense() }}</p>
+          <p class="sig-caption">Firma y Sello del Profesional</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+</ng-template>

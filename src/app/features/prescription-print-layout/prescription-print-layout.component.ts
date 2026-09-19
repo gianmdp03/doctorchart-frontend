@@ -3,7 +3,6 @@ import {
   computed,
   HostListener,
   inject,
-  Input,
   PLATFORM_ID,
   signal,
 } from '@angular/core';
@@ -30,7 +29,6 @@ export type PrintDocumentType = 'PRESCRIPTION' | 'STUDY_ORDERS';
 
 @Component({
   selector: 'app-prescription-print-layout',
-  standalone: true,
   imports: [CommonModule, FormsModule, NgIcon],
   providers: [
     provideIcons({
@@ -136,8 +134,9 @@ export class PrescriptionPrintLayoutComponent {
   });
 
   @HostListener('window:open-prescription-print-modal', ['$event'])
-  onOpenModal(event: CustomEvent): void {
-    const detail = event.detail;
+  onOpenModal(event?: Event): void {
+    const customEvent = event as CustomEvent | undefined;
+    const detail = customEvent?.detail;
     if (detail) {
       this.documentType.set(detail.type || 'PRESCRIPTION');
       this.encounterData.set({
