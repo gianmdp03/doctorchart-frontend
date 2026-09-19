@@ -1,0 +1,146 @@
+<header class="patient-clinical-banner" role="banner" aria-label="Cabecera clínica del paciente">
+  <!-- Left: Navigation & Core Demographics -->
+  <div class="banner-left-block">
+    <button
+      type="button"
+      class="btn-nav-back"
+      (click)="goBack()"
+      title="Volver al Directorio de Pacientes"
+    >
+      <ng-icon name="lucideChevronLeft" class="text-slate-500" />
+      <span>Directorio</span>
+    </button>
+
+    <div class="patient-avatar-circle">
+      {{ initials() }}
+    </div>
+
+    <div class="patient-core-info">
+      <div class="patient-name-row">
+        <h1 class="patient-fullname">
+          {{ (patient || activePatientService.activePatient())?.fullName || 'Paciente' }}
+        </h1>
+        <span class="hc-number-chip">HC #{{ (patient || activePatientService.activePatient())?.id }}</span>
+
+        <!-- Cobertura / Obra Social Badge Prominente -->
+        @if (coverageInfo().isParticular) {
+          <span class="coverage-chip particular" title="Atención Particular / Sin Cobertura Registrada">
+            <ng-icon name="lucideCreditCard" class="text-slate-400" />
+            <span>Particular</span>
+          </span>
+        } @else {
+          <span class="coverage-chip insured" title="Cobertura Médica Activa">
+            <ng-icon name="lucideCreditCard" class="text-teal-600" />
+            <strong class="coverage-provider">{{ coverageInfo().label }}</strong>
+            @if (coverageInfo().affiliate) {
+              <span class="coverage-divider">·</span>
+              <span class="coverage-affiliate">Afiliado: {{ coverageInfo().affiliate }}</span>
+            }
+          </span>
+        }
+      </div>
+
+      <div class="patient-demographics-row">
+        <span class="demo-item"><strong>DNI:</strong> {{ nationalId() }}</span>
+        <span class="demo-bullet">•</span>
+        <span class="demo-item"><strong>Edad:</strong> {{ dynamicAge() }}</span>
+        <span class="demo-bullet">•</span>
+        <span class="demo-item"><strong>Sexo:</strong> {{ sexLabel() }}</span>
+        @if ((patient || activePatientService.activePatient())?.bloodType; as bg) {
+          @if (bg !== 'Sin registrar') {
+            <span class="demo-bullet">•</span>
+            <span class="demo-item"><strong>Grupo:</strong> {{ bg }}</span>
+          }
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Center: Patient Safety Alerts (High Clinical Contrast) -->
+  <div class="banner-safety-block" role="region" aria-label="Alertas médicas críticas de seguridad">
+    <!-- Allergies Badges (Red / Danger) -->
+    @if (allergyList().length > 0) {
+      <div class="alerts-group allergies-group">
+        @for (allergy of allergyList(); track allergy) {
+          <div class="safety-badge danger" [title]="'Alergia severa reportada: ' + allergy">
+            <span class="safety-dot-pulse red"></span>
+            <ng-icon name="lucideShieldAlert" class="safety-icon text-red-600" />
+            <span class="safety-text"><strong>ALERGIA:</strong> {{ allergy }}</span>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Chronic Conditions (Amber / Warning) -->
+    @if (chronicConditionList().length > 0) {
+      <div class="alerts-group chronic-group">
+        @for (cond of chronicConditionList(); track cond) {
+          <div class="safety-badge warning" [title]="'Condición médica de base: ' + cond">
+            <ng-icon name="lucideAlertTriangle" class="safety-icon text-amber-600" />
+            <span class="safety-text"><strong>ANTECEDENTE:</strong> {{ cond }}</span>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Neutral State: No Allergies Reported -->
+    @if (allergyList().length === 0 && chronicConditionList().length === 0) {
+      <div class="safety-badge neutral" title="Sin antecedentes ni alergias reportadas">
+        <ng-icon name="lucideCheckCircle2" class="safety-icon text-emerald-600" />
+        <span class="safety-text text-emerald-700">Sin alergias conocidas</span>
+      </div>
+    }
+  </div>
+
+  <!-- Right: Streamlined Contextual Actions -->
+  <div class="banner-actions-block">
+    <!-- Primary Contextual Action Button -->
+    <button
+      type="button"
+      class="btn-primary-soap"
+      (click)="onNewEncounter()"
+      title="Iniciar nueva evolución médica bajo estándar SOAP"
+    >
+      <ng-icon name="lucidePlus" class="text-base" />
+      <span>+ Nueva Evolución SOAP</span>
+    </button>
+
+    <!-- Secondary Actions Dropdown Menu -->
+    <div class="more-menu-container">
+      <button
+        type="button"
+        class="btn-more-options"
+        (click)="toggleMenu($event)"
+        [attr.aria-expanded]="isMenuOpen()"
+        title="Más acciones del paciente"
+      >
+        <ng-icon name="lucideMoreHorizontal" />
+      </button>
+
+      @if (isMenuOpen()) {
+        <div class="dropdown-actions-menu" (click)="$event.stopPropagation()">
+          <button type="button" class="dropdown-menu-item" (click)="onEditPatient()">
+            <ng-icon name="lucideUser" class="text-slate-500" />
+            <span>Editar Datos de Filiación y Cobertura</span>
+          </button>
+
+          @if (doctorSpecialtyService.isPediatricMode() && isChild()) {
+            <button type="button" class="dropdown-menu-item" (click)="onNewCheckup()">
+              <ng-icon name="lucideBaby" class="text-amber-500" />
+              <span>+ Control Somatométrico Pediátrico</span>
+            </button>
+            <button type="button" class="dropdown-menu-item" (click)="goToCurves()">
+              <ng-icon name="lucideTrendingUp" class="text-indigo-500" />
+              <span>Ver Curvas de Crecimiento OMS</span>
+            </button>
+          }
+
+          <button type="button" class="dropdown-menu-item" (click)="onPrintSummary()">
+            <ng-icon name="lucidePrinter" class="text-slate-500" />
+            <span>Imprimir Resumen de Historia Clínica</span>
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</header>

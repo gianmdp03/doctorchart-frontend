@@ -79,4 +79,10 @@ export interface ClinicalEncounterList {
   chiefComplaint: string;
   primaryDiagnosisCode?: string | null;
   primaryDiagnosisDescription: string;
+  vitalSigns?: VitalSigns | null;
+  prescriptions?: PrescriptionItem[] | null;
+  historyOfPresentIllness?: string | null;
+  treatmentPlan?: string | null;
+  followUpInstructions?: string | null;
+  followUpDate?: string | null;
 }

@@ -1,0 +1,53 @@
+<div class="medication-autocomplete-wrap">
+  <div class="input-container">
+    <ng-icon name="lucidePill" class="input-icon text-teal-600" />
+    <input
+      #inputRef
+      type="text"
+      class="medication-input"
+      placeholder="Escriba el fármaco o principio activo (ej: Ibuprofeno, Amoxi, Losartán)..."
+      [value]="query()"
+      (input)="onInput($event)"
+      (focus)="onFocus()"
+      (keydown)="onKeyDown($event)"
+      autocomplete="off"
+    />
+    @if (isSearching()) {
+      <div class="search-mini-spinner"></div>
+    }
+  </div>
+
+  @if (isOpen() && results().length > 0) {
+    <div class="suggestions-dropdown animate-fade-in" role="listbox">
+      <div class="dropdown-header-tip">
+        <ng-icon name="lucideSparkles" class="text-amber-500" />
+        <span>Vademécum predictivo: presione Enter o seleccione para autocompletar posología</span>
+      </div>
+
+      <ul class="suggestions-list">
+        @for (med of results(); track med.id; let i = $index) {
+          <li
+            class="suggestion-item"
+            [class.is-selected]="i === selectedIndex()"
+            (mousedown)="selectMedication(med)"
+            (mouseenter)="selectedIndex.set(i)"
+            role="option"
+            [attr.aria-selected]="i === selectedIndex()"
+          >
+            <div class="item-main">
+              <strong class="item-name">{{ med.name }}</strong>
+              <span class="item-generic">{{ med.genericName }} • {{ med.presentation }}</span>
+            </div>
+
+            <div class="item-meta">
+              <span class="category-chip">{{ med.category }}</span>
+              <span class="posology-hint" title="Posología sugerida">
+                {{ med.defaultDose }} | {{ med.typicalFrequency }}
+              </span>
+            </div>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</div>

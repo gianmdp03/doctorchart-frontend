@@ -1,0 +1,306 @@
+<div class="clinical-timeline-container" role="feed" aria-label="Línea de tiempo de consultas médicas SOAP">
+  <!-- Timeline Controls & Toolbar -->
+  <div class="timeline-toolbar">
+    <div class="toolbar-left">
+      <div class="filter-spec-wrapper">
+        <ng-icon name="lucideFilter" class="filter-icon text-slate-400" />
+        <label for="timeline-spec-select" class="sr-only">Filtrar por Especialidad</label>
+        <select
+          id="timeline-spec-select"
+          class="timeline-filter-select"
+          [ngModel]="selectedSpecialtyFilter()"
+          (ngModelChange)="selectedSpecialtyFilter.set($event)"
+        >
+          <option value="ALL">Todas las Especialidades ({{ encounters.length }})</option>
+          @for (opt of specialtyOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="accordion-quick-toggles">
+        <button type="button" class="btn-toggle-subtle" (click)="expandAll()" title="Expandir todas las consultas">
+          Expandir Todo
+        </button>
+        <span class="toggle-sep">|</span>
+        <button type="button" class="btn-toggle-subtle" (click)="collapseAll()" title="Colapsar todas las consultas">
+          Colapsar Todo
+        </button>
+      </div>
+    </div>
+
+    <div class="toolbar-right">
+      <button
+        type="button"
+        class="btn-new-encounter-cta"
+        (click)="newEncounter.emit()"
+        title="Registrar nueva evolución SOAP"
+      >
+        <ng-icon name="lucidePlus" />
+        <span>+ Nueva Evolución SOAP</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (isLoading) {
+    <div class="timeline-loading-card">
+      <div class="timeline-spinner"></div>
+      <span>Cargando evoluciones clínicas...</span>
+    </div>
+  } @else if (filteredEncounters().length === 0) {
+    <!-- Empty State -->
+    <div class="timeline-empty-card">
+      <div class="empty-icon-circle">
+        <ng-icon name="lucideStethoscope" />
+      </div>
+      <h3>Sin evoluciones registradas</h3>
+      <p>No se encontraron consultas previas para los filtros seleccionados.</p>
+      <button type="button" class="btn-new-encounter-cta mt-3" (click)="newEncounter.emit()">
+        <ng-icon name="lucidePlus" />
+        <span>Iniciar Primera Evolución SOAP</span>
+      </button>
+    </div>
+  } @else {
+    <!-- The Vertical Timeline Feed -->
+    <div class="vertical-timeline-feed">
+      @for (enc of filteredEncounters(); track enc.id; let idx = $index) {
+        <article class="timeline-entry" [class.is-expanded]="isCardExpanded(enc.id)">
+          <!-- Node Indicator on the Line -->
+          <div class="timeline-node-marker">
+            <div class="node-icon-circle" [ngClass]="getSpecialtyBadgeClass(enc.specialty)">
+              <ng-icon name="lucideStethoscope" />
+            </div>
+          </div>
+
+          <!-- Timeline Card -->
+          <div class="timeline-card">
+            <!-- Card Header (Clickable Accordion Trigger) -->
+            <div class="card-header" (click)="toggleCard(enc.id)">
+              <div class="header-left">
+                <span class="encounter-code">#E-{{ enc.id }}</span>
+                <span class="encounter-datetime">
+                  <ng-icon name="lucideCalendar" class="text-slate-400" />
+                  <strong>{{ formatDate(enc.encounterDate) }}</strong>
+                  @if (formatTime(enc.encounterDate)) {
+                    <span class="time-part">{{ formatTime(enc.encounterDate) }}</span>
+                  }
+                </span>
+
+                <span class="specialty-badge {{ getSpecialtyBadgeClass(enc.specialty) }}">
+                  {{ getSpecialtyLabel(enc.specialty) }}
+                </span>
+
+                <span class="consultation-type-badge {{ getConsultationTypeClass(enc.consultationType) }}">
+                  {{ getConsultationTypeLabel(enc.consultationType) }}
+                </span>
+              </div>
+
+              <div class="header-right">
+                <button
+                  type="button"
+                  class="btn-chevron-toggle"
+                  [attr.aria-label]="isCardExpanded(enc.id) ? 'Colapsar evolución' : 'Expandir evolución'"
+                >
+                  <ng-icon [name]="isCardExpanded(enc.id) ? 'lucideChevronUp' : 'lucideChevronDown'" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Prominent Primary Diagnosis (A) Banner -->
+            <div class="card-diagnosis-strip" (click)="toggleCard(enc.id)">
+              <div class="diag-content">
+                <span class="diag-label">Diagnóstico (A):</span>
+                @if (enc.primaryDiagnosisCode) {
+                  <span class="diag-code-chip">{{ enc.primaryDiagnosisCode }}</span>
+                }
+                <strong class="diag-description">{{ enc.primaryDiagnosisDescription }}</strong>
+              </div>
+              <div class="diag-chief-complaint-preview">
+                <span class="complaint-label">Motivo:</span>
+                <span class="complaint-text">{{ enc.chiefComplaint }}</span>
+              </div>
+            </div>
+
+            <!-- Accordion Collapsible Body (SOAP Blocks) -->
+            @if (isCardExpanded(enc.id)) {
+              <div class="card-soap-body animate-fade-in">
+                <!-- S - Subjetivo -->
+                <div class="soap-block block-s">
+                  <div class="block-tag">S</div>
+                  <div class="block-content">
+                    <h4 class="block-title">Subjetivo (Anamnesis)</h4>
+                    <p class="chief-complaint-full"><strong>Motivo de consulta:</strong> {{ enc.chiefComplaint }}</p>
+                    @if (enc.historyOfPresentIllness) {
+                      <p class="hpi-text"><strong>Evolución de la enfermedad:</strong> {{ enc.historyOfPresentIllness }}</p>
+                    }
+                  </div>
+                </div>
+
+                <!-- O - Objetivo (Signos Vitales y Somatometría) -->
+                <div class="soap-block block-o">
+                  <div class="block-tag">O</div>
+                  <div class="block-content">
+                    <h4 class="block-title">Objetivo (Signos Vitales & Examen Físico)</h4>
+
+                    @if (enc.vitalSigns; as v) {
+                      <div class="vitals-grid">
+                        <!-- Blood Pressure -->
+                        @if (v.systolicBloodPressure != null || v.diastolicBloodPressure != null) {
+                          <div class="vital-pill" title="Presión Arterial">
+                            <span class="v-label">PA:</span>
+                            <span class="v-value">{{ v.systolicBloodPressure || '--' }}/{{ v.diastolicBloodPressure || '--' }} <small>mmHg</small></span>
+                          </div>
+                        }
+
+                        <!-- Heart Rate -->
+                        @if (v.heartRate != null) {
+                          <div class="vital-pill" title="Frecuencia Cardíaca">
+                            <span class="v-label">FC:</span>
+                            <span class="v-value">{{ v.heartRate }} <small>lpm</small></span>
+                          </div>
+                        }
+
+                        <!-- Respiratory Rate -->
+                        @if (v.respiratoryRate != null) {
+                          <div class="vital-pill" title="Frecuencia Respiratoria">
+                            <span class="v-label">FR:</span>
+                            <span class="v-value">{{ v.respiratoryRate }} <small>rpm</small></span>
+                          </div>
+                        }
+
+                        <!-- Temperature -->
+                        @if (v.temperatureCelsius != null) {
+                          <div class="vital-pill" title="Temperatura Axilar">
+                            <span class="v-label">Temp:</span>
+                            <span class="v-value">{{ v.temperatureCelsius }} <small>°C</small></span>
+                          </div>
+                        }
+
+                        <!-- Oxygen Saturation -->
+                        @if (v.oxygenSaturationPercent != null) {
+                          <div class="vital-pill" title="Saturación de Oxígeno">
+                            <span class="v-label">SatO2:</span>
+                            <span class="v-value">{{ v.oxygenSaturationPercent }} <small>%</small></span>
+                          </div>
+                        }
+
+                        <!-- Weight -->
+                        @if (v.weightKg != null) {
+                          <div class="vital-pill" title="Peso Corporal">
+                            <span class="v-label">Peso:</span>
+                            <span class="v-value">{{ v.weightKg }} <small>kg</small></span>
+                          </div>
+                        }
+
+                        <!-- Height -->
+                        @if (v.heightCm != null) {
+                          <div class="vital-pill" title="Talla / Altura">
+                            <span class="v-label">Talla:</span>
+                            <span class="v-value">{{ v.heightCm }} <small>cm</small></span>
+                          </div>
+                        }
+
+                        <!-- BMI -->
+                        @if (v.bodyMassIndex != null) {
+                          <div class="vital-pill bmi-pill" title="Índice de Masa Corporal">
+                            <span class="v-label">IMC:</span>
+                            <span class="bmi-chip {{ getBmiStatus(v.bodyMassIndex).badgeClass }}">
+                              {{ getBmiStatus(v.bodyMassIndex).label }}
+                            </span>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <p class="text-xs text-slate-400 italic">Sin signos vitales registrados en esta consulta.</p>
+                    }
+                  </div>
+                </div>
+
+                <!-- P - Plan Terapéutico y Prescripciones -->
+                <div class="soap-block block-p">
+                  <div class="block-tag">P</div>
+                  <div class="block-content">
+                    <h4 class="block-title">Plan Terapéutico & Prescripciones Farmacológicas</h4>
+
+                    @if (enc.treatmentPlan) {
+                      <p class="treatment-plan-text">{{ enc.treatmentPlan }}</p>
+                    }
+
+                    <!-- Prescriptions List -->
+                    @if (enc.prescriptions && enc.prescriptions.length > 0) {
+                      <div class="prescriptions-list-wrap mt-2">
+                        <span class="text-xs font-semibold text-slate-600 block mb-1">Medicamentos Prescritos (Rp/):</span>
+                        <div class="rx-items-grid">
+                          @for (rx of enc.prescriptions; track rx.medicationName) {
+                            <div class="rx-item-card">
+                              <ng-icon name="lucidePill" class="text-teal-600 text-sm flex-shrink-0" />
+                              <div class="rx-info">
+                                <strong class="rx-drug-name">{{ rx.medicationName }}</strong>
+                                <span class="rx-posology">
+                                  {{ rx.dosage }} • {{ rx.administrationRoute }} • {{ rx.frequency }}
+                                  @if (rx.durationDays) {
+                                    <span> • por {{ rx.durationDays }} días</span>
+                                  }
+                                </span>
+                                @if (rx.instructions) {
+                                  <span class="rx-inst text-slate-500 italic text-xs block">"{{ rx.instructions }}"</span>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    <!-- Follow-up instructions & alarm warnings -->
+                    @if (enc.followUpInstructions) {
+                      <div class="follow-up-box mt-2">
+                        <span class="text-xs font-semibold text-amber-800">Pautas de alarma e indicaciones:</span>
+                        <p class="text-xs text-amber-950 mt-0.5">{{ enc.followUpInstructions }}</p>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Card Actions Footer -->
+            <div class="card-footer-actions">
+              <button
+                type="button"
+                class="btn-action-print"
+                (click)="onPrintCard(enc, $event)"
+                title="Re-imprimir indicaciones y receta médica de esta consulta"
+              >
+                <ng-icon name="lucidePrinter" />
+                <span>Imprimir Receta / Constancia</span>
+              </button>
+
+              <div class="actions-right">
+                <button
+                  type="button"
+                  class="btn-action-view"
+                  (click)="onViewCard(enc.id, $event)"
+                  title="Ver detalle completo de la evolución clínica"
+                >
+                  <ng-icon name="lucideEye" />
+                  <span>Ver Detalle</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-action-delete"
+                  (click)="onDeleteCard(enc.id, $event)"
+                  title="Eliminar esta consulta clínica"
+                >
+                  <ng-icon name="lucideTrash2" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>

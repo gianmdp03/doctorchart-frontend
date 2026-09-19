@@ -8,6 +8,12 @@ import {
 } from './clinical-records.model';
 import { MedicalCheckupListDTO } from './checkup.model';
 
+export interface InsuranceInfo {
+  providerName?: string | null;
+  planName?: string | null;
+  affiliateNumber?: string | null;
+}
+
 export interface PatientRequestDTO {
   fullName: string;
   birthDate: string; // ISO format YYYY-MM-DD
@@ -18,7 +24,7 @@ export interface PatientRequestDTO {
   email?: string | null;
   address?: string | null;
   emergencyContact?: any | null;
-  insuranceInfo?: any | null;
+  insuranceInfo?: InsuranceInfo | null;
   allergies?: string[] | null;
   chronicConditions?: string[] | null;
   patientExtraData?: Record<string, any> | null;
@@ -41,7 +47,7 @@ export interface PatientDetailDTO {
   email?: string | null;
   address?: string | null;
   emergencyContact?: any | null;
-  insuranceInfo?: any | null;
+  insuranceInfo?: InsuranceInfo | null;
   allergies?: string[] | null;
   chronicConditions?: string[] | null;
   patientExtraData?: Record<string, any> | null;
