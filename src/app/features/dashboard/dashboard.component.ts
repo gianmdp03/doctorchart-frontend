@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  HostListener,
   inject,
   OnInit,
   PLATFORM_ID,
@@ -42,6 +43,7 @@ import { DoctorProfileService } from '../../core/services/doctor-profile.service
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { PatientListDTO } from '../../core/models/patient.model';
 import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
+import { getTotalElements, getTotalPages } from '../../core/models/api-response.model';
 import { environment } from '../../../environments/environment';
 
 export interface RecentEncounterItem {
@@ -236,31 +238,22 @@ export class DashboardComponent implements OnInit {
     this.hydrateNotes();
   }
 
+  @HostListener('window:patient-created')
+  @HostListener('window:patient-updated')
+  @HostListener('window:patient-deleted')
+  @HostListener('window:auth-success')
+  onPatientDataChanged(): void {
+    this.loadKpiData();
+    this.loadDirectory(0, this.directorySearch());
+  }
+
   loadKpiData(): void {
     this.isLoadingMetrics.set(true);
 
     this.patientService.getPatients(0, 10, 'fullName,asc').subscribe({
       next: (res) => {
-        const total = res?.totalElements || 0;
+        const total = getTotalElements(res);
         this.totalPatients.set(total);
-        const list = res?.content || [];
-
-        // Estimate dynamic specialty metric
-        const specialty = this.specialtyService.activeSpecialty();
-        if (specialty === 'PEDIATRICS') {
-          // Count children < 2 years
-          const underTwo = list.filter((p) => {
-            if (!p.birthDate) return false;
-            const b = new Date(p.birthDate + 'T00:00:00');
-            const diffYears = (Date.now() - b.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-            return diffYears < 2;
-          }).length;
-          this.specialtyKpiValue.set(underTwo);
-        } else if (specialty === 'CARDIOLOGY') {
-          this.specialtyKpiValue.set(Math.max(1, Math.round(total * 0.35)));
-        } else {
-          this.specialtyKpiValue.set(Math.max(1, Math.round(total * 0.45)));
-        }
 
         // Consultations metric
         this.encountersMonthCount.set(Math.max(3, Math.round(total * 1.4)));
@@ -323,7 +316,7 @@ export class DashboardComponent implements OnInit {
       next: (res) => {
         this.directoryPatients.set(res?.content || []);
         this.directoryPage.set(page);
-        this.directoryTotalPages.set(res?.totalPages || 1);
+        this.directoryTotalPages.set(getTotalPages(res));
         this.isSearchingDirectory.set(false);
       },
       error: () => {
@@ -346,18 +339,6 @@ export class DashboardComponent implements OnInit {
 
   openNewPatientModal(): void {
     window.dispatchEvent(new CustomEvent('open-new-patient-modal'));
-  }
-
-  openNewEncounterModal(): void {
-    const specialty = this.specialtyService.activeSpecialty();
-    window.dispatchEvent(
-      new CustomEvent('open-new-encounter-modal', {
-        detail: {
-          patientId: this.activePatientService.patientId(),
-          specialty,
-        },
-      })
-    );
   }
 
   openNewCheckupModal(): void {

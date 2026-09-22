@@ -39,7 +39,7 @@ describe('AgendaComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AgendaComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([{ path: 'pacientes/:id', component: AgendaComponent }]),
         { provide: PatientService, useValue: patientServiceMock },
         { provide: ActivePatientService, useValue: activePatientServiceMock },
         { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },

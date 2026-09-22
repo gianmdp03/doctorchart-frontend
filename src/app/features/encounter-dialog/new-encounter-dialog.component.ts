@@ -30,6 +30,8 @@ import {
   SpecialtySchema,
 } from '../../core/models/specialty.model';
 import { DynamicSpecialtyFormComponent } from '../dynamic-specialty-form/dynamic-specialty-form.component';
+import { MedicationAutocompleteComponent } from './medication-autocomplete/medication-autocomplete.component';
+import { Medication } from '../../core/models/medication.model';
 
 export interface SpecialtyOption {
   value: MedicalSpecialty;
@@ -91,6 +93,7 @@ export const COMMON_DIAGNOSES: DiagnosisPreset[] = [
     ReactiveFormsModule,
     FormsModule,
     DynamicSpecialtyFormComponent,
+    MedicationAutocompleteComponent,
   ],
   templateUrl: './new-encounter-dialog.component.html',
   styleUrl: './new-encounter-dialog.component.css',
@@ -253,6 +256,16 @@ export class NewEncounterDialogComponent implements OnInit {
     this.selectedSpecialty.set(targetSpec);
     this.loadSchemaForSpecialty(targetSpec);
     this.applyDefaultDiagnosisForSpecialty(targetSpec);
+    if (detail?.chiefComplaint || detail?.reason) {
+      this.encounterForm.patchValue({
+        chiefComplaint: detail.chiefComplaint || detail.reason,
+      });
+    }
+    if (detail?.consultationType) {
+      this.encounterForm.patchValue({
+        consultationType: detail.consultationType,
+      });
+    }
     this.isOpen.set(true);
     this.errorMessage.set(null);
     this.isSubmitting.set(false);
@@ -359,6 +372,22 @@ export class NewEncounterDialogComponent implements OnInit {
 
   removeSecondaryDiagnosis(index: number): void {
     this.secondaryDiagnoses.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  onMedicationSelected(med: Medication): void {
+    this.newRxDrug.set(med.name);
+    if (med.defaultDose) {
+      this.newRxDose.set(med.defaultDose);
+    }
+    if (med.administrationRoute) {
+      this.newRxRoute.set(med.administrationRoute);
+    }
+    if (med.typicalFrequency) {
+      this.newRxFreq.set(med.typicalFrequency);
+    }
+    if (med.typicalDurationDays) {
+      this.newRxDuration.set(med.typicalDurationDays);
+    }
   }
 
   // Prescriptions management

@@ -1,7 +1,7 @@
 export const baseEnvironment = {
   appUrl: 'http://localhost:4202',
-  apiUrl: 'https://converted-stations-waters-jade.trycloudflare.com/api/doctorchart',
-  aiGatewayUrl: 'https://converted-stations-waters-jade.trycloudflare.com/api/ai/chat',
+  apiUrl: 'https://documents-compliance-seasonal-solaris.trycloudflare.com/api/doctorchart',
+  aiGatewayUrl: 'https://documents-compliance-seasonal-solaris.trycloudflare.com/api/ai/chat',
   syntahPlansUrl: 'http://localhost:4200/company-panel#plans-catalog',
   supabase: {
     url: 'https://jpwwsfkwwsxtmwjvzyva.supabase.co',

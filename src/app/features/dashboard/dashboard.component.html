@@ -23,15 +23,15 @@
       <button
         type="button"
         class="cta-primary-btn"
-        (click)="openNewEncounterModal()"
+        (click)="openNewPatientModal()"
       >
-        <ng-icon name="lucidePlus" />
-        <span>+ Nueva Consulta SOAP</span>
+        <ng-icon name="lucideUserPlus" />
+        <span>+ Nuevo Paciente</span>
       </button>
     </div>
   </header>
 
-  <!-- 2. KPI Cards Grid (4 columns) -->
+  <!-- 2. KPI Cards Grid (3 columns) -->
   <section class="kpi-grid" aria-label="Métricas Principales">
     <!-- KPI 1: Pacientes Registrados -->
     <div class="kpi-card" role="region" aria-label="Total de pacientes">
@@ -98,43 +98,6 @@
           Ver turnos de la jornada
           <ng-icon name="lucideArrowRight" />
         </a>
-      </div>
-    </div>
-
-    <!-- KPI 4: Métrica Dinámica según Especialidad -->
-    <div class="kpi-card specialty-kpi" role="region" aria-label="Métrica de especialidad">
-      <div class="kpi-header">
-        @if (specialtyService.isPediatricMode()) {
-          <span class="kpi-title">Controles &lt; 2 Años</span>
-          <div class="kpi-icon-wrap bg-amber-50 text-amber-600">
-            <ng-icon name="lucideBaby" />
-          </div>
-        } @else if (specialtyService.activeSpecialty() === 'CARDIOLOGY') {
-          <span class="kpi-title">Monitoreo Cardiovascular</span>
-          <div class="kpi-icon-wrap bg-rose-50 text-rose-600">
-            <ng-icon name="lucideHeartPulse" />
-          </div>
-        } @else {
-          <span class="kpi-title">Controles Preventivos</span>
-          <div class="kpi-icon-wrap bg-cyan-50 text-cyan-600">
-            <ng-icon name="lucideActivity" />
-          </div>
-        }
-      </div>
-      <div class="kpi-value-row">
-        @if (isLoadingMetrics()) {
-          <span class="kpi-loading-skeleton"></span>
-        } @else {
-          <span class="kpi-number">{{ specialtyKpiValue() }}</span>
-          <span class="kpi-badge-pill">Prioritario</span>
-        }
-      </div>
-      <div class="kpi-footer">
-        @if (specialtyService.isPediatricMode()) {
-          <span class="kpi-subtext">Niños en edad de somatometría</span>
-        } @else {
-          <span class="kpi-subtext">Pacientes en seguimiento activo</span>
-        }
       </div>
     </div>
   </section>
@@ -234,13 +197,13 @@
             <p class="empty-desc">
               Comience la jornada médica registrando la primera atención o seleccionando un paciente del directorio.
             </p>
-            <button
-              type="button"
+            <a
+              routerLink="/pacientes"
               class="cta-primary-btn btn-sm"
-              (click)="openNewEncounterModal()"
             >
-              + Iniciar Primera Consulta
-            </button>
+              <ng-icon name="lucideUsers" />
+              <span>Ver Directorio de Pacientes</span>
+            </a>
           </div>
         }
       </div>
@@ -362,20 +325,6 @@
           <button
             type="button"
             class="quick-action-btn primary-tint"
-            (click)="openNewEncounterModal()"
-          >
-            <div class="qa-icon-wrap bg-teal-100 text-teal-700">
-              <ng-icon name="lucideStethoscope" />
-            </div>
-            <div class="qa-text">
-              <span class="qa-title">Evolución SOAP Rápida</span>
-              <span class="qa-desc">Registrar consulta médica</span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            class="quick-action-btn"
             (click)="openNewPatientModal()"
           >
             <div class="qa-icon-wrap bg-blue-100 text-blue-700">

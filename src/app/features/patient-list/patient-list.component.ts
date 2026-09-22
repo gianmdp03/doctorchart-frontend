@@ -20,6 +20,7 @@ import {
   PatientDetailDTO,
   PatientListDTO,
 } from '../../core/models/patient.model';
+import { getTotalElements, getTotalPages } from '../../core/models/api-response.model';
 
 export type PatientDirectoryFilter =
   | 'ALL'
@@ -268,8 +269,8 @@ export class PatientListComponent implements OnInit {
         } else {
           this.patients.set([]);
         }
-        this.totalPages.set(response?.totalPages || 1);
-        this.totalElements.set(response?.totalElements || 0);
+        this.totalPages.set(getTotalPages(response));
+        this.totalElements.set(getTotalElements(response));
         this.isLoading.set(false);
       },
       error: (err) => {
@@ -303,8 +304,8 @@ export class PatientListComponent implements OnInit {
           });
         }
         this.currentPage.set(nextPage);
-        this.totalPages.set(response?.totalPages || 1);
-        this.totalElements.set(response?.totalElements || 0);
+        this.totalPages.set(getTotalPages(response));
+        this.totalElements.set(getTotalElements(response));
         this.isLoadingMore.set(false);
       },
       error: (err) => {

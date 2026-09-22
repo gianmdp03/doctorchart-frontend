@@ -12,6 +12,7 @@ import {
 } from '../../core/models/clinical-encounter.model';
 import { PatientDetailDTO } from '../../core/models/patient.model';
 import { PatientService } from '../../core/services/patient.service';
+import { MedicationCatalogService } from '../../core/services/medication-catalog.service';
 
 describe('NewEncounterDialogComponent', () => {
   let component: NewEncounterDialogComponent;
@@ -84,6 +85,10 @@ describe('NewEncounterDialogComponent', () => {
         },
         { provide: ClinicalEncounterService, useValue: encounterServiceSpy },
         { provide: SpecialtySchemaService, useValue: specialtySchemaServiceSpy },
+        {
+          provide: MedicationCatalogService,
+          useValue: { search: vi.fn().mockReturnValue(of([])) },
+        },
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],
     }).compileComponents();

@@ -142,4 +142,41 @@ describe('DashboardComponent', () => {
     component.onNotesInput('Recordar pedir laboratorio de control a Mateo');
     expect(component.quickNotes()).toBe('Recordar pedir laboratorio de control a Mateo');
   });
+
+  it('should not render the "Controles < 2 Años" KPI card in the DOM', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.specialty-kpi')).toBeNull();
+    expect(compiled.textContent).not.toContain('Controles < 2 Años');
+  });
+
+  it('should resolve totalPatients correctly when backend returns nested pageable structure', () => {
+    patientServiceMock.getPatients.mockReturnValue(
+      of({
+        content: [
+          { id: 1, fullName: 'Mateo Rossi' },
+          { id: 2, fullName: 'Lucía Fernández' },
+          { id: 3, fullName: 'Carlos Gómez' },
+        ],
+        page: {
+          totalElements: 3,
+          totalPages: 1,
+          size: 10,
+          number: 0,
+        },
+      } as any)
+    );
+
+    component.loadKpiData();
+    expect(component.totalPatients()).toBe(3);
+  });
+
+  it('should reload KPIs when patient-created event is dispatched', () => {
+    const kpiSpy = vi.spyOn(component, 'loadKpiData');
+    const dirSpy = vi.spyOn(component, 'loadDirectory');
+
+    window.dispatchEvent(new CustomEvent('patient-created', { detail: { id: 99, fullName: 'Nuevo Paciente' } }));
+
+    expect(kpiSpy).toHaveBeenCalled();
+    expect(dirSpy).toHaveBeenCalledWith(0, '');
+  });
 });

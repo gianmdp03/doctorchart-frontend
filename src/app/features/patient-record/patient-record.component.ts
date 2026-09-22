@@ -42,6 +42,8 @@ import { ClinicalEncounterList } from '../../core/models/clinical-encounter.mode
 import { MedicalSpecialty } from '../../core/models/specialty.model';
 import { SPECIALTY_OPTIONS, SpecialtyOption } from '../encounter-dialog/new-encounter-dialog.component';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
+import { PatientBannerComponent } from './patient-banner/patient-banner.component';
+import { ClinicalTimelineComponent } from './clinical-timeline/clinical-timeline.component';
 
 export type PatientRecordTab = 'resumen' | 'historia' | 'herramientas' | 'recetas';
 
@@ -81,7 +83,7 @@ export interface ComplicationChip {
 
 @Component({
   selector: 'app-patient-record',
-  imports: [FormsModule, NgIcon],
+  imports: [FormsModule, NgIcon, PatientBannerComponent, ClinicalTimelineComponent],
   providers: [
     provideIcons({
       lucideChevronLeft,
@@ -341,7 +343,40 @@ export class PatientRecordComponent implements OnInit {
   printRecord(): void {
     this.isMoreMenuOpen.set(false);
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.print();
+      const latestEnc = this.encounters()[0];
+      window.dispatchEvent(
+        new CustomEvent('open-prescription-print-modal', {
+          detail: {
+            id: latestEnc?.id,
+            type: 'PRESCRIPTION',
+            encounterDate: latestEnc?.encounterDate || new Date().toISOString(),
+            primaryDiagnosisCode: latestEnc?.primaryDiagnosisCode,
+            primaryDiagnosisDescription: latestEnc?.primaryDiagnosisDescription,
+            prescriptions: latestEnc?.prescriptions || [],
+            diagnosticOrders: [],
+            followUpInstructions: latestEnc?.followUpInstructions,
+          },
+        })
+      );
+    }
+  }
+
+  onPrintPrescription(enc: ClinicalEncounterList): void {
+    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('open-prescription-print-modal', {
+          detail: {
+            id: enc.id,
+            type: 'PRESCRIPTION',
+            encounterDate: enc.encounterDate,
+            primaryDiagnosisCode: enc.primaryDiagnosisCode,
+            primaryDiagnosisDescription: enc.primaryDiagnosisDescription,
+            prescriptions: enc.prescriptions || [],
+            diagnosticOrders: [],
+            followUpInstructions: enc.followUpInstructions,
+          },
+        })
+      );
     }
   }
 

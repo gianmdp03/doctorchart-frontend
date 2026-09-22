@@ -6,122 +6,14 @@
       <p>Sincronizando información del paciente con el servidor clínico.</p>
     </div>
   } @else if (activePatientService.activePatient(); as patient) {
-    <!-- 1. COMPACT STICKY PATIENT BANNER -->
-    <header class="patient-sticky-banner" role="banner">
-      <div class="banner-left">
-        <button
-          type="button"
-          class="btn-back-dir"
-          (click)="navigateToPatients()"
-          title="Volver al Directorio de Pacientes"
-        >
-          <ng-icon name="lucideChevronLeft" />
-          <span>Directorio</span>
-        </button>
-
-        <div class="banner-avatar">
-          {{ activePatientService.patientInitials() }}
-        </div>
-
-        <div class="banner-identity">
-          <div class="banner-name-row">
-            <h1 class="banner-patient-name">{{ patient.fullName }}</h1>
-            <span class="banner-hc-tag">HC #{{ patient.id }}</span>
-          </div>
-          <div class="banner-meta-row">
-            <span><strong>DNI:</strong> {{ patientNationalId() }}</span>
-            <span class="meta-dot">•</span>
-            <span><strong>Edad:</strong> {{ activePatientService.ageDisplay() }}</span>
-            <span class="meta-dot">•</span>
-            <span><strong>Sexo:</strong> {{ biologicalSex() }}</span>
-            @if (bloodType() !== 'Sin registrar') {
-              <span class="meta-dot">•</span>
-              <span><strong>Grupo:</strong> {{ bloodType() }}</span>
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- Center: Prominent Red Allergy Chip -->
-      <div class="banner-center">
-        @if (hasAllergies()) {
-          <div class="allergy-badge-chip" title="Alergias conocidas del paciente">
-            <span class="allergy-pulse-dot"></span>
-            <span><strong>Alergias:</strong> {{ allergies() }}</span>
-          </div>
-        } @else {
-          <div class="no-allergy-chip" title="Sin alergias reportadas">
-            <ng-icon name="lucideCheckCircle2" class="text-emerald-600" />
-            <span>Sin alergias reportadas</span>
-          </div>
-        }
-      </div>
-
-      <!-- Right: Primary CTA and Dropdown -->
-      <div class="banner-right">
-        <button
-          type="button"
-          class="cta-primary-btn"
-          (click)="openNewEncounterModal()"
-          title="Iniciar nueva consulta médica SOAP"
-        >
-          <ng-icon name="lucidePlus" />
-          <span>+ Nueva Consulta SOAP</span>
-        </button>
-
-        <div class="more-menu-wrapper">
-          <button
-            type="button"
-            class="btn-more-options"
-            (click)="toggleMoreMenu($event)"
-            title="Más opciones de la ficha"
-          >
-            •••
-          </button>
-
-          @if (isMoreMenuOpen()) {
-            <div class="more-dropdown" (click)="$event.stopPropagation()">
-              <button
-                type="button"
-                class="more-dropdown-item"
-                (click)="openNewPatientModal($event)"
-              >
-                <ng-icon name="lucideUser" />
-                <span>Editar Datos del Paciente</span>
-              </button>
-
-              @if (doctorSpecialtyService.isPediatricMode() && isChild()) {
-                <button
-                  type="button"
-                  class="more-dropdown-item"
-                  (click)="openNewCheckupModal($event)"
-                >
-                  <ng-icon name="lucideBaby" />
-                  <span>+ Control Somatométrico</span>
-                </button>
-                <button
-                  type="button"
-                  class="more-dropdown-item"
-                  (click)="navigateToGrowthCurves()"
-                >
-                  <ng-icon name="lucideTrendingUp" />
-                  <span>Ver Curvas de Crecimiento OMS</span>
-                </button>
-              }
-
-              <button
-                type="button"
-                class="more-dropdown-item"
-                (click)="printRecord()"
-              >
-                <ng-icon name="lucidePrinter" />
-                <span>Imprimir Resumen Clínico</span>
-              </button>
-            </div>
-          }
-        </div>
-      </div>
-    </header>
+    <!-- 1. COMPACT CLINICAL PATIENT BANNER -->
+    <app-patient-banner
+      [patient]="patient"
+      (newEncounter)="openNewEncounterModal()"
+      (editPatient)="openNewPatientModal()"
+      (newCheckup)="openNewCheckupModal()"
+      (printSummary)="printRecord()"
+    />
 
     <!-- 2. FLATTENED HORIZONTAL TABS -->
     <nav class="flattened-tabs-nav" aria-label="Secciones de la ficha clínica">
@@ -294,158 +186,21 @@
       <!-- TAB 2: HISTORIA CLÍNICA (CONSULTAS SOAP) -->
       @if (selectedTab() === 'historia') {
         <section class="tab-panel animate-fade-in" aria-label="Historia Clínica SOAP">
-          <div class="clinical-section-card">
-            <div class="soap-toolbar-header">
-              <div class="soap-title-wrap">
-                <h3 class="sec-card-title">
-                  <ng-icon name="lucideStethoscope" class="text-teal-600" />
-                  Evoluciones Clínicas y Consultas SOAP
-                </h3>
-                <p class="text-xs text-slate-500">Historial longitudinal de atención médica estructurado bajo estándar SOAP</p>
-              </div>
-
-              <div class="soap-header-actions">
-                <!-- Specialty Filter -->
-                <div class="filter-select-wrap">
-                  <label for="soap-spec-filter" class="text-xs font-semibold text-slate-600">Filtrar:</label>
-                  <select
-                    id="soap-spec-filter"
-                    class="filter-select"
-                    [ngModel]="selectedSpecialtyFilter()"
-                    (ngModelChange)="selectedSpecialtyFilter.set($event)"
-                  >
-                    <option value="ALL">Todas las Especialidades ({{ encounters().length }})</option>
-                    @for (opt of specialtyOptions; track opt.value) {
-                      <option [value]="opt.value">{{ opt.label }}</option>
-                    }
-                  </select>
-                </div>
-
-                <!-- Migration Button if applicable -->
-                <button
-                  type="button"
-                  class="secondary-outline-btn btn-sm"
-                  (click)="migratePediatricCheckups()"
-                  [disabled]="isMigrating()"
-                  title="Sincronizar controles previos como consultas SOAP"
-                >
-                  @if (isMigrating()) {
-                    <span>Sincronizando...</span>
-                  } @else {
-                    <span>Migrar Controles Previos</span>
-                  }
-                </button>
-
-                <!-- New Encounter CTA -->
-                <button
-                  type="button"
-                  class="cta-primary-btn btn-sm"
-                  (click)="openNewEncounterModal()"
-                >
-                  <ng-icon name="lucidePlus" />
-                  <span>+ Nueva Consulta SOAP</span>
-                </button>
-              </div>
+          @if (migrationMessage()) {
+            <div class="migration-alert-box mb-3">
+              <ng-icon name="lucideCheckCircle2" class="text-teal-600 text-base" />
+              <span>{{ migrationMessage() }}</span>
             </div>
+          }
 
-            <!-- Migration Alert Feedback -->
-            @if (migrationMessage()) {
-              <div class="migration-alert-box">
-                <ng-icon name="lucideCheckCircle2" class="text-teal-600 text-base" />
-                <span>{{ migrationMessage() }}</span>
-              </div>
-            }
-
-            <!-- Table of Encounters -->
-            @if (isLoadingEncounters()) {
-              <div class="soap-loading-state">
-                <div class="mini-spinner"></div>
-                <span>Cargando evoluciones SOAP...</span>
-              </div>
-            } @else if (encounters().length === 0) {
-              <div class="soap-empty-state">
-                <ng-icon name="lucideStethoscope" class="soap-empty-icon" />
-                <h4>Sin consultas registradas para este paciente</h4>
-                <p>Este paciente aún no posee notas evolutivas registradas en el sistema.</p>
-                <button
-                  type="button"
-                  class="cta-primary-btn mt-2"
-                  (click)="openNewEncounterModal()"
-                >
-                  + Iniciar Primera Consulta SOAP
-                </button>
-              </div>
-            } @else {
-              <div class="encounters-table-wrap">
-                <table class="clinical-table">
-                  <thead>
-                    <tr>
-                      <th>N° Consulta</th>
-                      <th>Fecha</th>
-                      <th>Especialidad</th>
-                      <th>Tipo</th>
-                      <th>Motivo de Consulta (S)</th>
-                      <th>Diagnóstico Principal (A)</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (enc of filteredEncounters(); track enc.id) {
-                      <tr>
-                        <td><strong>#E-{{ enc.id }}</strong></td>
-                        <td><span class="text-slate-600">{{ enc.encounterDate?.split('T')?.[0] || enc.encounterDate }}</span></td>
-                        <td>
-                          <span class="specialty-badge-cell {{ getSpecialtyBadgeClass(enc.specialty) }}">
-                            {{ getSpecialtyLabel(enc.specialty) }}
-                          </span>
-                        </td>
-                        <td><span class="text-xs text-slate-600">{{ getConsultationTypeLabel(enc.consultationType) }}</span></td>
-                        <td>
-                          <span class="complaint-cell-text" [title]="enc.chiefComplaint">
-                            {{ enc.chiefComplaint }}
-                          </span>
-                        </td>
-                        <td>
-                          <div class="diag-cell">
-                            @if (enc.primaryDiagnosisCode) {
-                              <span class="diag-code-badge">{{ enc.primaryDiagnosisCode }}</span>
-                            }
-                            <span class="diag-desc-text">{{ enc.primaryDiagnosisDescription }}</span>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="table-actions-row">
-                            <button
-                              type="button"
-                              class="btn-detail-sm"
-                              (click)="openEncounterDetail(enc.id)"
-                              title="Ver evolución completa"
-                            >
-                              Ver Detalle
-                            </button>
-                            <button
-                              type="button"
-                              class="btn-delete-sm"
-                              (click)="deleteEncounter(enc.id, $event)"
-                              title="Eliminar consulta"
-                            >
-                              <ng-icon name="lucideTrash2" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    } @empty {
-                      <tr>
-                        <td colspan="7" class="text-center py-6 text-slate-500">
-                          No se encontraron consultas para la especialidad filtrada.
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-          </div>
+          <app-clinical-timeline
+            [encounters]="encounters()"
+            [isLoading]="isLoadingEncounters()"
+            (newEncounter)="openNewEncounterModal()"
+            (viewDetail)="openEncounterDetail($event)"
+            (deleteEncounter)="deleteEncounter($event)"
+            (printPrescription)="onPrintPrescription($event)"
+          />
         </section>
       }
 

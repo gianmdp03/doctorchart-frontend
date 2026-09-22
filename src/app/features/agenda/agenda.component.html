@@ -1,14 +1,73 @@
 <div class="agenda-page">
+  <!-- 1. Header with Period Navigator & Actions -->
   <header class="agenda-header">
     <div class="agenda-title-wrap">
-      <h1 class="agenda-title">Agenda de Turnos</h1>
-      <p class="agenda-subtitle">
-        <span>{{ todayFormatted() }}</span>
-        <span class="bullet-separator">•</span>
-        <span class="text-teal-700 font-semibold">{{ waitingCount() }} pacientes en espera</span>
-      </p>
+      <div class="title-row">
+        <h1 class="agenda-title">Agenda de Turnos</h1>
+        <!-- View Mode Switcher: DAY vs WEEK -->
+        <div class="view-mode-toggle">
+          <button
+            type="button"
+            class="mode-btn"
+            [class.active]="viewMode() === 'DAY'"
+            (click)="setViewMode('DAY')"
+          >
+            Día
+          </button>
+          <button
+            type="button"
+            class="mode-btn"
+            [class.active]="viewMode() === 'WEEK'"
+            (click)="setViewMode('WEEK')"
+          >
+            Semana
+          </button>
+        </div>
+      </div>
+
+      <!-- Date Navigation Row -->
+      <div class="date-nav-row">
+        <div class="nav-arrows">
+          <button
+            type="button"
+            class="btn-nav-icon"
+            (click)="prevPeriod()"
+            title="Período anterior"
+          >
+            <ng-icon name="lucideChevronLeft" />
+          </button>
+          <button
+            type="button"
+            class="btn-nav-today"
+            (click)="goToToday()"
+            title="Ir al día de hoy"
+          >
+            Hoy
+          </button>
+          <button
+            type="button"
+            class="btn-nav-icon"
+            (click)="nextPeriod()"
+            title="Período siguiente"
+          >
+            <ng-icon name="lucideChevronRight" />
+          </button>
+        </div>
+
+        <p class="agenda-subtitle">
+          <ng-icon name="lucideCalendar" class="text-slate-400" />
+          <span class="period-text font-bold">{{ periodHeading() }}</span>
+          <span class="bullet-separator">•</span>
+          <span class="text-teal-700 font-semibold">{{ waitingCount() }} en espera</span>
+          @if (inConsultationCount() > 0) {
+            <span class="bullet-separator">•</span>
+            <span class="text-blue-700 font-semibold">{{ inConsultationCount() }} en atención</span>
+          }
+        </p>
+      </div>
     </div>
 
+    <!-- Actions & Filter Pills -->
     <div class="agenda-filters-bar">
       <div class="filter-pills-group">
         <button
@@ -36,9 +95,53 @@
           Atendidos ({{ completedCount() }})
         </button>
       </div>
+
+      <button
+        type="button"
+        class="btn-create-appointment"
+        (click)="openNewAppointmentModal()"
+      >
+        <ng-icon name="lucidePlus" />
+        <span>+ Agendar Turno</span>
+      </button>
     </div>
   </header>
 
+  <!-- 2. Week View Grid (Visible when viewMode === 'WEEK') -->
+  @if (viewMode() === 'WEEK') {
+    <section class="week-calendar-grid" aria-label="Vista Semanal">
+      @for (d of weekDays(); track d.dateStr) {
+        <div
+          class="week-day-col"
+          [class.is-today]="d.isToday"
+          [class.is-selected]="d.isSelected"
+          (click)="selectDay(d.date)"
+        >
+          <div class="day-header">
+            <span class="day-name">{{ d.dayName }}</span>
+            <span class="day-num">{{ d.dayNumber }}</span>
+            <span class="day-month">{{ d.monthName }}</span>
+          </div>
+
+          <div class="day-body">
+            @if (d.count > 0) {
+              <div class="day-badge-count">
+                <span>{{ d.count }} {{ d.count === 1 ? 'turno' : 'turnos' }}</span>
+              </div>
+            } @else {
+              <span class="day-empty-hint">Sin citas</span>
+            }
+          </div>
+
+          <button type="button" class="btn-select-day">
+            Ver día →
+          </button>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- 3. Day View / Appointments List -->
   <div class="agenda-content-card">
     @if (isLoading()) {
       <div class="agenda-loading">
@@ -48,7 +151,7 @@
     } @else if (filteredAppointments().length > 0) {
       <div class="agenda-list">
         @for (item of filteredAppointments(); track item.id) {
-          <div class="appointment-row">
+          <div class="appointment-row" [class.is-consulting]="item.status === 'IN_CONSULTATION'">
             <div class="time-box">
               <ng-icon name="lucideClock" class="text-slate-400" />
               <span class="time-text">{{ item.time }}</span>
@@ -61,6 +164,9 @@
                 <span class="status-pill {{ getStatusClass(item.status) }}">
                   {{ getStatusLabel(item.status) }}
                 </span>
+                @if (item.durationMinutes) {
+                  <span class="duration-badge">{{ item.durationMinutes }} min</span>
+                }
               </div>
               <div class="patient-sub-line">
                 <span class="reason-text"><strong>Motivo:</strong> {{ item.reason }}</span>
@@ -74,22 +180,59 @@
             </div>
 
             <div class="appointment-actions">
-              <button
-                type="button"
-                class="btn-action-primary"
-                (click)="startConsultation(item)"
-                title="Abrir formulario SOAP para este paciente"
-              >
-                <ng-icon name="lucideStethoscope" />
-                <span>Atender</span>
-              </button>
+              <!-- Primary: Iniciar Consulta SOAP -->
+              @if (item.status !== 'COMPLETED') {
+                <button
+                  type="button"
+                  class="btn-action-primary"
+                  (click)="startConsultation(item)"
+                  title="Abrir formulario SOAP y comenzar atención médica"
+                >
+                  <ng-icon name="lucideStethoscope" />
+                  <span>Iniciar Consulta</span>
+                </button>
+              }
+
+              <!-- Status Transition Quick Action -->
+              @if (item.status === 'WAITING' || item.status === 'WAITING_ROOM') {
+                <button
+                  type="button"
+                  class="btn-status-quick"
+                  (click)="updateStatus(item, 'COMPLETED', $event)"
+                  title="Marcar como atendido"
+                >
+                  <ng-icon name="lucideCheck" />
+                  <span>Finalizar</span>
+                </button>
+              } @else if (item.status === 'IN_CONSULTATION') {
+                <button
+                  type="button"
+                  class="btn-status-quick btn-finish"
+                  (click)="updateStatus(item, 'COMPLETED', $event)"
+                  title="Finalizar consulta"
+                >
+                  <ng-icon name="lucideCheckCircle2" />
+                  <span>Completar</span>
+                </button>
+              } @else if (item.status === 'SCHEDULED') {
+                <button
+                  type="button"
+                  class="btn-status-quick"
+                  (click)="updateStatus(item, 'WAITING_ROOM', $event)"
+                  title="Paciente ingresó a sala de espera"
+                >
+                  <span>En Sala</span>
+                </button>
+              }
+
+              <!-- Open Patient Chart -->
               <button
                 type="button"
                 class="btn-action-secondary"
                 (click)="openPatientRecord(item.patientId)"
-                title="Ver ficha del paciente"
+                title="Ver ficha integral del paciente"
               >
-                Ficha
+                Ficha →
               </button>
             </div>
           </div>
@@ -99,8 +242,114 @@
       <div class="agenda-empty">
         <ng-icon name="lucideCalendar" class="empty-calendar-icon" />
         <h3>Sin turnos para el filtro seleccionado</h3>
-        <p>No hay pacientes registrados en este estado para la jornada de hoy.</p>
+        <p>No hay pacientes registrados en este estado para la jornada seleccionada.</p>
+        <button
+          type="button"
+          class="btn-create-appointment mt-2"
+          (click)="openNewAppointmentModal()"
+        >
+          <ng-icon name="lucidePlus" />
+          <span>Agendar Primera Cita</span>
+        </button>
       </div>
     }
   </div>
+
+  <!-- 4. Modal: Nuevo Turno / Cita Médica -->
+  @if (isNewModalOpen()) {
+    <div class="modal-backdrop" (click)="closeNewAppointmentModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="flex items-center gap-2">
+            <ng-icon name="lucideCalendar" class="text-teal-600 text-xl" />
+            <h3 class="modal-title">Nuevo Turno Médico</h3>
+          </div>
+          <button type="button" class="btn-close" (click)="closeNewAppointmentModal()">
+            <ng-icon name="lucideX" />
+          </button>
+        </header>
+
+        <div class="modal-body">
+          <!-- Patient Selector -->
+          <div class="form-group">
+            <label for="new-app-patient" class="form-label">Paciente (*)</label>
+            <select
+              id="new-app-patient"
+              class="form-select"
+              [ngModel]="selectedPatientId()"
+              (ngModelChange)="selectedPatientId.set(+$event)"
+            >
+              @for (p of availablePatients(); track p.id) {
+                <option [value]="p.id">{{ p.fullName }} (DNI: {{ p.nationalId || '—' }})</option>
+              }
+            </select>
+          </div>
+
+          <!-- Time & Duration Row -->
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="new-app-time" class="form-label">Horario (*)</label>
+              <input
+                id="new-app-time"
+                type="time"
+                class="form-input"
+                [ngModel]="newAppointmentTime()"
+                (ngModelChange)="newAppointmentTime.set($event)"
+              />
+            </div>
+
+            <div class="form-group flex-1">
+              <label for="new-app-duration" class="form-label">Duración estimada</label>
+              <select
+                id="new-app-duration"
+                class="form-select"
+                [ngModel]="newAppointmentDuration()"
+                (ngModelChange)="newAppointmentDuration.set(+$event)"
+              >
+                <option [value]="15">15 minutos</option>
+                <option [value]="30">30 minutos</option>
+                <option [value]="45">45 minutos</option>
+                <option [value]="60">60 minutos</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Reason -->
+          <div class="form-group">
+            <label for="new-app-reason" class="form-label">Motivo de consulta</label>
+            <input
+              id="new-app-reason"
+              type="text"
+              class="form-input"
+              placeholder="Ej: Control evolutivo, revisión de estudios..."
+              [ngModel]="newAppointmentReason()"
+              (ngModelChange)="newAppointmentReason.set($event)"
+            />
+          </div>
+        </div>
+
+        <footer class="modal-footer">
+          <button
+            type="button"
+            class="btn-cancel"
+            (click)="closeNewAppointmentModal()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-confirm"
+            [disabled]="isSavingAppointment() || !selectedPatientId()"
+            (click)="saveNewAppointment()"
+          >
+            @if (isSavingAppointment()) {
+              <span>Guardando...</span>
+            } @else {
+              <span>Confirmar Cita</span>
+            }
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
 </div>

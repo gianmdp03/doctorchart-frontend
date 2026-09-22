@@ -534,13 +534,10 @@
                 <fieldset class="section-box mt-2">
                   <legend>Prescripción Farmacológica Estructurada</legend>
                   <div class="rx-add-grid">
-                    <input
-                      type="text"
-                      class="mini-input"
-                      placeholder="Fármaco / Principio activo (*)"
-                      [ngModel]="newRxDrug()"
-                      (ngModelChange)="newRxDrug.set($event)"
-                      [ngModelOptions]="{ standalone: true }"
+                    <app-medication-autocomplete
+                      [value]="newRxDrug()"
+                      (valueChange)="newRxDrug.set($event)"
+                      (medicationSelected)="onMedicationSelected($event)"
                     />
                     <input
                       type="text"
