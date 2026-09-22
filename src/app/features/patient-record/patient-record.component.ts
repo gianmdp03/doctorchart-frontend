@@ -44,8 +44,10 @@ import { SPECIALTY_OPTIONS, SpecialtyOption } from '../encounter-dialog/new-enco
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { PatientBannerComponent } from './patient-banner/patient-banner.component';
 import { ClinicalTimelineComponent } from './clinical-timeline/clinical-timeline.component';
+import { GrowthCurvesComponent } from '../growth-curves/growth-curves.component';
+import { MilestonesComponent } from '../milestones/milestones.component';
 
-export type PatientRecordTab = 'resumen' | 'historia' | 'herramientas' | 'recetas';
+export type PatientRecordTab = 'resumen' | 'historia' | 'herramientas' | 'curvas' | 'hitos' | 'recetas';
 
 export interface RecordTabItem {
   id: PatientRecordTab;
@@ -83,7 +85,14 @@ export interface ComplicationChip {
 
 @Component({
   selector: 'app-patient-record',
-  imports: [FormsModule, NgIcon, PatientBannerComponent, ClinicalTimelineComponent],
+  imports: [
+    FormsModule,
+    NgIcon,
+    PatientBannerComponent,
+    ClinicalTimelineComponent,
+    GrowthCurvesComponent,
+    MilestonesComponent,
+  ],
   providers: [
     provideIcons({
       lucideChevronLeft,
@@ -128,6 +137,16 @@ export class PatientRecordComponent implements OnInit {
   });
 
   readonly tabs = computed<RecordTabItem[]>(() => {
+    if (this.doctorSpecialtyService.isPediatricMode() || this.isChild()) {
+      return [
+        { id: 'resumen', label: '1. Resumen & Antecedentes' },
+        { id: 'historia', label: '2. Historia Clínica (SOAP)', badge: this.filteredEncounters().length },
+        { id: 'curvas', label: '3. Curvas OMS' },
+        { id: 'hitos', label: '4. Hitos (0-15 años)' },
+        { id: 'herramientas', label: '5. Herramientas' },
+        { id: 'recetas', label: '6. Recetas y Estudios' },
+      ];
+    }
     return [
       { id: 'resumen', label: '1. Resumen & Antecedentes' },
       { id: 'historia', label: '2. Historia Clínica (SOAP)', badge: this.filteredEncounters().length },
@@ -181,6 +200,13 @@ export class PatientRecordComponent implements OnInit {
         if (!isNaN(id) && id > 0) {
           this.activePatientService.loadPatient(id);
         }
+      }
+    });
+
+    this.route.queryParamMap.subscribe((queryParams) => {
+      const tabParam = queryParams.get('tab') as PatientRecordTab | null;
+      if (tabParam && ['resumen', 'historia', 'herramientas', 'curvas', 'hitos', 'recetas'].includes(tabParam)) {
+        this.selectedTab.set(tabParam);
       }
     });
 
@@ -385,11 +411,11 @@ export class PatientRecordComponent implements OnInit {
   }
 
   navigateToGrowthCurves(): void {
-    this.router.navigate(['/curvas']);
+    this.setTab('curvas');
   }
 
   navigateToMilestones(): void {
-    this.router.navigate(['/hitos']);
+    this.setTab('hitos');
   }
 
   getSpecialtyBadgeClass(specialty: MedicalSpecialty): string {

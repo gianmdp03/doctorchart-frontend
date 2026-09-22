@@ -60,6 +60,8 @@ export class PatientBannerComponent {
   @Output() editPatient = new EventEmitter<void>();
   @Output() newCheckup = new EventEmitter<void>();
   @Output() printSummary = new EventEmitter<void>();
+  @Output() viewCurves = new EventEmitter<void>();
+  @Output() viewMilestones = new EventEmitter<void>();
 
   readonly isMenuOpen = signal<boolean>(false);
 
@@ -195,6 +197,19 @@ export class PatientBannerComponent {
 
   goToCurves(): void {
     this.isMenuOpen.set(false);
-    this.router.navigate(['/curvas']);
+    if (this.viewCurves.observed) {
+      this.viewCurves.emit();
+    } else {
+      this.router.navigate(['/curvas']);
+    }
+  }
+
+  goToMilestones(): void {
+    this.isMenuOpen.set(false);
+    if (this.viewMilestones.observed) {
+      this.viewMilestones.emit();
+    } else {
+      this.router.navigate(['/hitos']);
+    }
   }
 }

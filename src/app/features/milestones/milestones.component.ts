@@ -9,7 +9,16 @@ import {
 import { Router } from '@angular/router';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 
-export type MilestoneStage = '0-3' | '4-6' | '7-9' | '10-12' | '12-24';
+export type MilestoneStage =
+  | '0-3'
+  | '4-6'
+  | '7-9'
+  | '10-12'
+  | '12-24'
+  | '2-3a'
+  | '3-5a'
+  | '6-11a'
+  | '12-15a';
 
 export interface StageTab {
   id: MilestoneStage;
@@ -52,7 +61,28 @@ export class MilestonesComponent {
     if (months <= 9) return '7-9';
     if (months <= 12) return '10-12';
     if (months <= 24) return '12-24';
+    if (months <= 36) return '2-3a';
+    if (months <= 60) return '3-5a';
+    if (months <= 132) return '6-11a';
+    if (months <= 180) return '12-15a';
     return null;
+  });
+
+  readonly patientStageLabel = computed<string>(() => {
+    const stage = this.patientStage();
+    if (!stage) return '';
+    const map: Record<MilestoneStage, string> = {
+      '0-3': '0 a 3 meses',
+      '4-6': '4 a 6 meses',
+      '7-9': '7 a 9 meses',
+      '10-12': '10 a 12 meses',
+      '12-24': '1 a 2 años',
+      '2-3a': '2 a 3 años',
+      '3-5a': '3 a 5 años',
+      '6-11a': '6 a 11 años',
+      '12-15a': '12 a 15 años',
+    };
+    return map[stage] || stage;
   });
 
   readonly stages = computed<StageTab[]>(() => {
@@ -63,6 +93,10 @@ export class MilestonesComponent {
       { id: '7-9', baseLabel: '7 a 9 Meses' },
       { id: '10-12', baseLabel: '10 a 12 Meses' },
       { id: '12-24', baseLabel: '1 a 2 Años' },
+      { id: '2-3a', baseLabel: '2 a 3 Años' },
+      { id: '3-5a', baseLabel: '3 a 5 Años' },
+      { id: '6-11a', baseLabel: '6 a 11 Años' },
+      { id: '12-15a', baseLabel: '12 a 15 Años' },
     ];
 
     return stageDefinitions.map((def) => {

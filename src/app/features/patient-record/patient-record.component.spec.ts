@@ -142,7 +142,10 @@ describe('PatientRecordComponent', () => {
         { provide: Router, useValue: routerSpy },
         {
           provide: ActivatedRoute,
-          useValue: { paramMap: of(new Map([['id', '10492']])) },
+          useValue: {
+            paramMap: of(new Map([['id', '10492']])),
+            queryParamMap: of(new Map()),
+          },
         },
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],
@@ -164,6 +167,10 @@ describe('PatientRecordComponent', () => {
     expect(component.selectedTab()).toBe('resumen');
     component.setTab('historia');
     expect(component.selectedTab()).toBe('historia');
+    component.setTab('curvas');
+    expect(component.selectedTab()).toBe('curvas');
+    component.setTab('hitos');
+    expect(component.selectedTab()).toBe('hitos');
     component.setTab('herramientas');
     expect(component.selectedTab()).toBe('herramientas');
     component.setTab('recetas');
@@ -209,14 +216,14 @@ describe('PatientRecordComponent', () => {
     expect(component.filteredEncounters().length).toBe(2);
   });
 
-  it('should navigate to growth curves when requested', () => {
+  it('should switch to growth curves tab when requested', () => {
     component.navigateToGrowthCurves();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/curvas']);
+    expect(component.selectedTab()).toBe('curvas');
   });
 
-  it('should navigate to milestones when requested', () => {
+  it('should switch to milestones tab when requested', () => {
     component.navigateToMilestones();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/hitos']);
+    expect(component.selectedTab()).toBe('hitos');
   });
 
   it('should navigate to patient directory when back button is clicked', () => {

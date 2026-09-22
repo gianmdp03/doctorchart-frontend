@@ -336,22 +336,6 @@
             </div>
           </button>
 
-          @if (specialtyService.isPediatricMode()) {
-            <button
-              type="button"
-              class="quick-action-btn"
-              (click)="openNewCheckupModal()"
-            >
-              <div class="qa-icon-wrap bg-amber-100 text-amber-700">
-                <ng-icon name="lucideBaby" />
-              </div>
-              <div class="qa-text">
-                <span class="qa-title">Control Pediátrico</span>
-                <span class="qa-desc">Somatometría e hitos</span>
-              </div>
-            </button>
-          }
-
           <a
             routerLink="/agenda"
             class="quick-action-btn"
@@ -362,6 +346,19 @@
             <div class="qa-text">
               <span class="qa-title">Ver Agenda de Turnos</span>
               <span class="qa-desc">Consultar pacientes citados</span>
+            </div>
+          </a>
+
+          <a
+            routerLink="/pacientes"
+            class="quick-action-btn"
+          >
+            <div class="qa-icon-wrap bg-teal-100 text-teal-700">
+              <ng-icon name="lucideUsers" />
+            </div>
+            <div class="qa-text">
+              <span class="qa-title">Directorio de Pacientes</span>
+              <span class="qa-desc">Consultar fichas y evoluciones</span>
             </div>
           </a>
         </div>
@@ -377,27 +374,23 @@
         </div>
 
         @if (specialtyService.isPediatricMode()) {
-          <!-- Pediatric Tools -->
+          <!-- Pediatric Tools Clinical Guidance -->
           <div class="specialty-tool-body">
-            <p class="tool-intro">Acceso directo a herramientas de evaluación del desarrollo:</p>
-            <div class="tool-actions-col">
-              <a routerLink="/curvas" class="tool-action-card">
-                <ng-icon name="lucideTrendingUp" class="text-emerald-600 text-xl" />
-                <div class="tool-card-text">
-                  <span class="tool-card-title">Curvas de Crecimiento OMS</span>
-                  <span class="tool-card-sub">Percentiles de Peso, Talla y P. Cefálico</span>
-                </div>
-                <ng-icon name="lucideArrowRight" class="text-slate-400" />
-              </a>
-
-              <a routerLink="/hitos" class="tool-action-card">
-                <ng-icon name="lucideBaby" class="text-amber-600 text-xl" />
-                <div class="tool-card-text">
-                  <span class="tool-card-title">Hitos Madurativos (0-2 años)</span>
-                  <span class="tool-card-sub">Pautas del desarrollo psicomotor</span>
-                </div>
-                <ng-icon name="lucideArrowRight" class="text-slate-400" />
-              </a>
+            <p class="tool-intro">Evaluación Somatométrica y Neurodesarrollo:</p>
+            <div class="p-3 bg-teal-50/60 rounded-xl border border-teal-100/80">
+              <div class="flex items-center gap-2 text-teal-800 font-semibold text-xs mb-1.5">
+                <ng-icon name="lucideTrendingUp" class="text-teal-600 text-base" />
+                <span>Curvas OMS e Hitos (0 a 15 Años)</span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Las curvas percentiladas OMS y la pesquisa de hitos psicomotores se calculan automáticamente dentro de la ficha de cada paciente en base al historial de todas sus consultas y controles.
+              </p>
+              <div class="mt-3">
+                <a routerLink="/pacientes" class="secondary-outline-btn btn-xs inline-flex items-center gap-1">
+                  <span>Ir al Directorio de Pacientes</span>
+                  <ng-icon name="lucideArrowRight" />
+                </a>
+              </div>
             </div>
           </div>
         } @else if (specialtyService.activeSpecialty() === 'GYNECOLOGY') {

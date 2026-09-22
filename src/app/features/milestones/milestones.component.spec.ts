@@ -64,15 +64,19 @@ describe('MilestonesComponent', () => {
       expect(component.patientStage()).toBeNull();
     });
 
-    it('should display standard labels for all 5 stages without patient range tag', () => {
+    it('should display standard labels for all 9 stages without patient range tag', () => {
       const stages = component.stages();
-      expect(stages.length).toBe(5);
+      expect(stages.length).toBe(9);
       expect(stages.map((s) => s.label)).toEqual([
         '0 a 3 Meses',
         '4 a 6 Meses',
         '7 a 9 Meses',
         '10 a 12 Meses',
         '1 a 2 Años',
+        '2 a 3 Años',
+        '3 a 5 Años',
+        '6 a 11 Años',
+        '12 a 15 Años',
       ]);
       expect(stages.every((s) => !s.isPatientStage)).toBe(true);
     });
@@ -80,13 +84,13 @@ describe('MilestonesComponent', () => {
     it('should render the title and subtitle in the header', () => {
       const headerEl = fixture.nativeElement.querySelector('.milestone-header');
       expect(headerEl).toBeTruthy();
-      expect(headerEl.textContent).toContain('Ayuda Memoria Pediátrica: Hitos Madurativos y Pautas de Alarma');
-      expect(headerEl.textContent).toContain('Guía clínica rápida de pesquisa psicomotora');
+      expect(headerEl.textContent).toContain('Guía de Hitos del Desarrollo y Pautas de Alarma (0 a 15 Años)');
+      expect(headerEl.textContent).toContain('Guía clínica de pesquisa psicomotora');
     });
 
-    it('should render 5 buttons in the segmented age bar', () => {
+    it('should render 9 buttons in the segmented age bar', () => {
       const buttons = fixture.nativeElement.querySelectorAll('.milestone-age-bar button');
-      expect(buttons.length).toBe(5);
+      expect(buttons.length).toBe(9);
       expect(buttons[1].classList.contains('active')).toBe(true);
     });
   });
@@ -159,12 +163,29 @@ describe('MilestonesComponent', () => {
       expect(stage1224?.label).toBe('1 a 2 Años (Rango del Paciente)');
     });
 
-    it('should return null stage if patient is older than 24 months', () => {
-      const p = createPatient(getDateMonthsAgo(36));
+    it('should detect stages for older pediatric ages (2 to 15 years)', () => {
+      const p3yo = createPatient(getDateMonthsAgo(48));
+      activePatientService.setActivePatient(p3yo);
+      fixture.detectChanges();
+      expect(component.patientStage()).toBe('3-5a');
+
+      const p8yo = createPatient(getDateMonthsAgo(96));
+      activePatientService.setActivePatient(p8yo);
+      fixture.detectChanges();
+      expect(component.patientStage()).toBe('6-11a');
+
+      const p13yo = createPatient(getDateMonthsAgo(156));
+      activePatientService.setActivePatient(p13yo);
+      fixture.detectChanges();
+      expect(component.patientStage()).toBe('12-15a');
+    });
+
+    it('should return null stage if patient is older than 180 months (15 years)', () => {
+      const p = createPatient(getDateMonthsAgo(195));
       activePatientService.setActivePatient(p);
       fixture.detectChanges();
 
-      expect(component.patientAgeInMonths()).toBe(36);
+      expect(component.patientAgeInMonths()).toBe(195);
       expect(component.patientStage()).toBeNull();
       expect(component.stages().every((s) => !s.isPatientStage)).toBe(true);
     });
@@ -287,6 +308,54 @@ describe('MilestonesComponent', () => {
       expect(alarmCard).toBeTruthy();
       expect(alarmCard.textContent).toContain('Banderas Rojas (1 a 2 Años)');
       expect(alarmCard.textContent).toContain('No camina a los 18 meses cumplidos');
+    });
+
+    it('should render stage 2-3a with cards including alarm card', () => {
+      component.selectStage('2-3a');
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector('#stage-2-3a');
+      expect(panel).toBeTruthy();
+
+      const alarmCard = panel.querySelector('.alarm-card');
+      expect(alarmCard).toBeTruthy();
+      expect(alarmCard.textContent).toContain('Banderas Rojas (2 a 3 Años)');
+    });
+
+    it('should render stage 3-5a with cards including alarm card', () => {
+      component.selectStage('3-5a');
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector('#stage-3-5a');
+      expect(panel).toBeTruthy();
+
+      const alarmCard = panel.querySelector('.alarm-card');
+      expect(alarmCard).toBeTruthy();
+      expect(alarmCard.textContent).toContain('Banderas Rojas (3 a 5 Años)');
+    });
+
+    it('should render stage 6-11a with cards including alarm card', () => {
+      component.selectStage('6-11a');
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector('#stage-6-11a');
+      expect(panel).toBeTruthy();
+
+      const alarmCard = panel.querySelector('.alarm-card');
+      expect(alarmCard).toBeTruthy();
+      expect(alarmCard.textContent).toContain('Banderas Rojas y Alarma Escolar');
+    });
+
+    it('should render stage 12-15a with Tanner and alarm cards', () => {
+      component.selectStage('12-15a');
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector('#stage-12-15a');
+      expect(panel).toBeTruthy();
+
+      const alarmCard = panel.querySelector('.alarm-card');
+      expect(alarmCard).toBeTruthy();
+      expect(alarmCard.textContent).toContain('Banderas Rojas y Salud Mental');
     });
   });
 

@@ -341,10 +341,6 @@ export class DashboardComponent implements OnInit {
     window.dispatchEvent(new CustomEvent('open-new-patient-modal'));
   }
 
-  openNewCheckupModal(): void {
-    window.dispatchEvent(new CustomEvent('open-new-checkup-modal'));
-  }
-
   hydrateNotes(): void {
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       try {

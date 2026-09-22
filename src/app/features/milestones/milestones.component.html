@@ -2,10 +2,10 @@
   <div class="milestone-header">
     <div class="milestone-title-wrapper">
       <h2 class="milestone-title">
-        Ayuda Memoria Pediátrica: Hitos Madurativos y Pautas de Alarma
+        Guía de Hitos del Desarrollo y Pautas de Alarma (0 a 15 Años)
       </h2>
       <p class="milestone-subtitle">
-        Guía clínica rápida de pesquisa psicomotora, nutricional y banderas rojas según franja etaria:
+        Guía clínica de pesquisa psicomotora, nutricional, escolar y banderas rojas según franja etaria:
       </p>
     </div>
 
@@ -19,7 +19,7 @@
         </span>
         @if (patientStage(); as pStage) {
           <span class="patient-stage-badge">
-            Etapa sugerida: {{ pStage }} meses
+            Etapa sugerida: {{ patientStageLabel() }}
           </span>
         }
         <button
@@ -248,5 +248,191 @@
       </section>
     }
 
+    <!-- STAGE 2-3 AÑOS -->
+    @if (selectedStage() === '2-3a') {
+      <section id="stage-2-3a" class="milestone-stage-panel">
+        <div class="milestone-card-grid">
+          <article class="milestone-card">
+            <h3 class="m3-card-title">1. Motor Grueso y Fino</h3>
+            <ul class="milestone-list">
+              <li>Salta en dos pies sobre el mismo lugar y patea una pelota sin caerse.</li>
+              <li>Sube y baja escaleras alternando pies sosteniéndose de la baranda.</li>
+              <li>Construye torres de 6 a 8 cubos y desenrosca tapas de recipientes.</li>
+              <li>Come solo con cuchara derramando poco; se desviste parcialmente (medias y zapatos).</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">2. Lenguaje y Cognición</h3>
+            <ul class="milestone-list">
+              <li>Frases estructuradas de 3 a 4 palabras con sujeto y verbo ("quiero más agua", "vamos auto").</li>
+              <li>Uso frecuente de pronombres ("yo", "mío", "tú") y responde a su nombre y género.</li>
+              <li>Comprende consignas complejas de dos pasos sucesivos ("buscá la pelota y dásela a mamá").</li>
+              <li>Identifica y señala partes del cuerpo y figuras comunes en libros.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">3. Social, Autonomía y Conducta</h3>
+            <ul class="milestone-list">
+              <li>Inicio del control de esfínteres diurno: avisa necesidad de orinar o evacuar.</li>
+              <li>"Negativismo fisiológico" / etapa del "no" como afirmación de su propia individualidad.</li>
+              <li>Juego simbólico incipiente (hace como que habla por teléfono o da de comer a muñecos).</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card alarm-card">
+            <h3 class="m3-card-title" [style.color]="'var(--md-sys-color-error)'">4. Banderas Rojas (2 a 3 Años)</h3>
+            <ul class="milestone-list">
+              <li>No junta dos palabras con significado o no comprende órdenes simples.</li>
+              <li>Falta de control postural, caídas constantes o dificultad marcada para correr.</li>
+              <li>Falta de contacto visual, aislamiento extremo o pérdida de pautas del lenguaje.</li>
+              <li>Incapacidad para manipular objetos pequeños con pinza o babeo constante diurno.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    }
+
+    <!-- STAGE 3-5 AÑOS (PREESCOLAR) -->
+    @if (selectedStage() === '3-5a') {
+      <section id="stage-3-5a" class="milestone-stage-panel">
+        <div class="milestone-card-grid">
+          <article class="milestone-card">
+            <h3 class="m3-card-title">1. Motricidad y Destreza Manual</h3>
+            <ul class="milestone-list">
+              <li>Se sostiene y salta en un solo pie; pedalea en triciclo o bicicleta con rueditas.</li>
+              <li>Atrapa pelotas medianas con ambas manos y brazos semi-extendidos.</li>
+              <li>Dibuja una figura humana reconocible (cabeza y al menos 3 partes del cuerpo); copia cruces y círculos.</li>
+              <li>Uso diestro de tijeras de punta roma para recortar papel; se lava y seca las manos solo.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">2. Lenguaje y Razonamiento</h3>
+            <ul class="milestone-list">
+              <li>Discurso 100% inteligible para personas fuera del ámbito familiar directo.</li>
+              <li>Preguntas constantes de causalidad ("¿por qué?", "¿cómo?", "¿dónde?").</li>
+              <li>Reconoce y nombra al menos 4 colores primarios y cuenta de memoria hasta 10.</li>
+              <li>Comprende nociones temporales ("hoy", "ayer", "mañana") y espaciales ("arriba/abajo").</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">3. Socialización, Juego y Hábitos</h3>
+            <ul class="milestone-list">
+              <li>Juego cooperativo y reglado con otros niños (comparte y respeta turnos con guía).</li>
+              <li>Control de esfínteres diurno y nocturno consolidado en la gran mayoría.</li>
+              <li>Se viste y desviste casi sin ayuda; expresa un amplio rango de emociones y empatía.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card alarm-card">
+            <h3 class="m3-card-title" [style.color]="'var(--md-sys-color-error)'">4. Banderas Rojas (3 a 5 Años)</h3>
+            <ul class="milestone-list">
+              <li>Habla incomprensible o incapacidad para estructurar oraciones de 4 o más palabras.</li>
+              <li>Aislamiento persistente o incapacidad marcada para interactuar con pares.</li>
+              <li>Enuresis o encopresis secundaria tras haber logrado control previo.</li>
+              <li>Torpeza motriz extrema con imposibilidad para saltar o subir escalones.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    }
+
+    <!-- STAGE 6-11 AÑOS (ESCOLAR) -->
+    @if (selectedStage() === '6-11a') {
+      <section id="stage-6-11a" class="milestone-stage-panel">
+        <div class="milestone-card-grid">
+          <article class="milestone-card">
+            <h3 class="m3-card-title">1. Cognición, Aprendizaje y Razonamiento</h3>
+            <ul class="milestone-list">
+              <li>Pensamiento operatorio concreto: noción de conservación, clasificación y seriación lógica.</li>
+              <li>Adquisición fluida de lectoescritura, cálculo matemático y razonamiento deductivo.</li>
+              <li>Atención sostenida en tareas escolares guiadas (30 a 45 minutos continuos).</li>
+              <li>Comprensión cabal de reglas morales, sentido de justicia y normas compartidas.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">2. Coordinación Motriz y Salud General</h3>
+            <ul class="milestone-list">
+              <li>Coordinación motriz madura: bicicleta sin rueditas, deportes de equipo, natación o danza.</li>
+              <li>Grafomotricidad precisa: escritura cursiva o imprenta fluida y legible.</li>
+              <li>Evaluación anual de agudeza visual con optotipos y control odontológico (dentición mixta a permanente).</li>
+              <li>Salud postural: evaluación del peso de la mochila escolar (&lt; 10% del peso corporal).</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">3. Psicosocial y Vínculo con Pares</h3>
+            <ul class="milestone-list">
+              <li>Consolidación del autoconcepto, autoestima y sentido de competencia escolar/deportiva.</li>
+              <li>Importancia predominante del grupo de pares y amistades; respeto de acuerdos grupales.</li>
+              <li>Mayor autonomía respecto de las figuras parentales en actividades cotidianas.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card alarm-card">
+            <h3 class="m3-card-title" [style.color]="'var(--md-sys-color-error)'">4. Banderas Rojas y Alarma Escolar</h3>
+            <ul class="milestone-list">
+              <li>Dificultades específicas de aprendizaje no evaluadas (dislexia, discalculia, TDAH).</li>
+              <li>Acoso escolar (bullying) o somatizaciones frecuentes (cefaleas, dolor abdominal recurrente matinal).</li>
+              <li>Retraimiento social severo, cambios bruscos de conducta o agresividad desmedida.</li>
+              <li>Sedentarismo extremo con uso de pantallas &gt; 2 horas/día o incremento ponderal acelerado (riesgo de obesidad).</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    }
+
+    <!-- STAGE 12-15 AÑOS (ADOLESCENCIA TEMPRANA) -->
+    @if (selectedStage() === '12-15a') {
+      <section id="stage-12-15a" class="milestone-stage-panel">
+        <div class="milestone-card-grid">
+          <article class="milestone-card">
+            <h3 class="m3-card-title">1. Maduración Biológica y Puberal (Tanner)</h3>
+            <ul class="milestone-list">
+              <li>Mujeres: Telarca (botón mamario), pubarca, estirón puberal y menarca (promedio 12.5 años).</li>
+              <li>Varones: Aumento de volumen testicular (&gt; 4 ml), pubarca, cambio en tono de voz y espermarquía.</li>
+              <li>Pesquisa ortopédica obligatoria: maniobra de Adams para detección precoz de escoliosis idiopática.</li>
+              <li>Monitoreo de presión arterial percentilada y somatometría (estirón puberal).</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">2. Neurodesarrollo y Pensamiento Abstracto</h3>
+            <ul class="milestone-list">
+              <li>Transición al pensamiento formal abstracto: hipótesis, proyecciones a futuro y metacognición.</li>
+              <li>Maduración cerebral diferencial: reactividad emocional límbica con corteza prefrontal en consolidación.</li>
+              <li>Reevaluación reflexiva de límites parentales y búsqueda de identidad valórica propia.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card">
+            <h3 class="m3-card-title">3. Psicosocial, Confidencialidad y Hábitos</h3>
+            <ul class="milestone-list">
+              <li>Consulta médica con espacio a solas garantizado (derecho a la confidencialidad y autonomía progresiva).</li>
+              <li>Grupo de pares como principal marco de referencia y socialización digital.</li>
+              <li>Educación sexual integral: asesoramiento en salud reproductiva y prevención de ITS.</li>
+              <li>Higiene del sueño: descanso mínimo recomendado de 8 a 9 horas diarias.</li>
+            </ul>
+          </article>
+
+          <article class="milestone-card alarm-card">
+            <h3 class="m3-card-title" [style.color]="'var(--md-sys-color-error)'">4. Banderas Rojas y Salud Mental (Alarma Crítica)</h3>
+            <ul class="milestone-list">
+              <li>Signos de depresión, anhedonia, verbalizaciones de desesperanza o conductas autolesivas ("cutting").</li>
+              <li>Trastornos de la conducta alimentaria (TCA): dietas extremas, vómitos autoinducidos, dismorfia corporal.</li>
+              <li>Consumo problemático de alcohol, tabaco/vapeo o sustancias psicoactivas.</li>
+              <li>Aislamiento social completo con encierro en habitación o situaciones de ciberacoso/grooming.</li>
+              <li>Descenso abrupto e injustificado del rendimiento escolar o ausentismo reiterado.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    }
+
   </div>
 </div>
+

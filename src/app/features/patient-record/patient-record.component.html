@@ -13,6 +13,8 @@
       (editPatient)="openNewPatientModal()"
       (newCheckup)="openNewCheckupModal()"
       (printSummary)="printRecord()"
+      (viewCurves)="navigateToGrowthCurves()"
+      (viewMilestones)="navigateToMilestones()"
     />
 
     <!-- 2. FLATTENED HORIZONTAL TABS -->
@@ -223,7 +225,7 @@
                   </button>
                   <button type="button" class="secondary-outline-btn btn-sm" (click)="navigateToMilestones()">
                     <ng-icon name="lucideBaby" />
-                    <span>Ver Hitos Madurativos (0-2 años)</span>
+                    <span>Ver Hitos del Desarrollo (0-15 años)</span>
                   </button>
                   <button type="button" class="cta-primary-btn btn-sm" (click)="openNewCheckupModal($event)">
                     <ng-icon name="lucidePlus" />
@@ -391,7 +393,21 @@
         </section>
       }
 
-      <!-- TAB 4: RECETAS Y ESTUDIOS -->
+      <!-- TAB: CURVAS DE CRECIMIENTO OMS -->
+      @if (selectedTab() === 'curvas') {
+        <section class="tab-panel animate-fade-in" aria-label="Curvas OMS">
+          <app-growth-curves />
+        </section>
+      }
+
+      <!-- TAB: HITOS DEL DESARROLLO (0-15 AÑOS) -->
+      @if (selectedTab() === 'hitos') {
+        <section class="tab-panel animate-fade-in" aria-label="Hitos del Desarrollo">
+          <app-milestones />
+        </section>
+      }
+
+      <!-- TAB: RECETAS Y ESTUDIOS -->
       @if (selectedTab() === 'recetas') {
         <section class="tab-panel animate-fade-in" aria-label="Recetas y Estudios">
           <div class="clinical-section-card">

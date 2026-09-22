@@ -3,6 +3,7 @@ import { GrowthCurvesComponent } from './growth-curves.component';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { PatientService } from '../../core/services/patient.service';
 import { CheckupService } from '../../core/services/checkup.service';
+import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { Router } from '@angular/router';
 import { PLATFORM_ID } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -13,6 +14,7 @@ describe('GrowthCurvesComponent', () => {
   let component: GrowthCurvesComponent;
   let fixture: ComponentFixture<GrowthCurvesComponent>;
   let checkupServiceSpy: { getCheckupsByPatientId: ReturnType<typeof vi.fn> };
+  let clinicalEncounterServiceSpy: { getByPatient: ReturnType<typeof vi.fn> };
   let patientServiceSpy: { getPatientById: ReturnType<typeof vi.fn> };
   let routerSpy: { navigate: ReturnType<typeof vi.fn> };
   let activePatientService: ActivePatientService;
@@ -84,6 +86,9 @@ describe('GrowthCurvesComponent', () => {
     checkupServiceSpy = {
       getCheckupsByPatientId: vi.fn().mockReturnValue(of(mockCheckupList)),
     };
+    clinicalEncounterServiceSpy = {
+      getByPatient: vi.fn().mockReturnValue(of([])),
+    };
     patientServiceSpy = {
       getPatientById: vi.fn().mockReturnValue(of(mockPatient)),
     };
@@ -97,6 +102,7 @@ describe('GrowthCurvesComponent', () => {
         ActivePatientService,
         { provide: PatientService, useValue: patientServiceSpy },
         { provide: CheckupService, useValue: checkupServiceSpy },
+        { provide: ClinicalEncounterService, useValue: clinicalEncounterServiceSpy },
         { provide: Router, useValue: routerSpy },
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],
@@ -267,6 +273,29 @@ describe('GrowthCurvesComponent', () => {
       expect(p50).toBeTruthy();
       expect(p15).toBeTruthy();
       expect(p3).toBeTruthy();
+    });
+
+    it('should include measurements from both checkups and clinical encounters in unifiedMeasurements', () => {
+      component.encounters.set([
+        {
+          id: 55,
+          encounterNumber: 'EV-00055',
+          encounterDate: '2026-08-10',
+          reasonForConsultation: 'Fiebre y tos',
+          diagnosis: 'Bronquiolitis leve',
+          specialty: 'PEDIATRICS',
+          vitalSigns: {
+            weightKg: 7.2,
+            heightCm: 65.0,
+            bodyMassIndex: 17.0,
+          },
+        } as any,
+      ]);
+      fixture.detectChanges();
+
+      const unified = component.unifiedMeasurements();
+      expect(unified.some((m) => m.source === 'SOAP' && m.weightKg === 7.2)).toBe(true);
+      expect(unified.some((m) => m.source === 'CHECKUP' && m.weightKg === 7.95)).toBe(true);
     });
   });
 });
