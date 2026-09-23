@@ -60,9 +60,6 @@ export interface ClinicalEncounterRequest {
   diagnosticOrders?: string[];
   followUpInstructions?: string;
   followUpDate?: string;
-
-  // 20% Dynamic Specialty Payload
-  specialtyData?: Record<string, any>;
 }
 
 export interface ClinicalEncounterDetail extends ClinicalEncounterRequest {

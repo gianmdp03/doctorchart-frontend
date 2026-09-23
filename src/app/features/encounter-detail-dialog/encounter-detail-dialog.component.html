@@ -288,22 +288,6 @@
             </div>
           </div>
 
-          <!-- 20% DYNAMIC SPECIALTY SECTION (READ-ONLY) -->
-          @if (enc.specialtyData && schema()) {
-            <div class="soap-detail-card card-specialty">
-              <div class="soap-card-header">
-                <span class="soap-letter badge-specialty">20%</span>
-                <h3>Evaluación Específica: {{ schema()?.displayName || enc.specialty }}</h3>
-              </div>
-              <div class="soap-card-content">
-                <app-dynamic-specialty-form
-                  [schema]="schema()"
-                  [specialtyData]="enc.specialtyData"
-                  [readOnly]="true"
-                />
-              </div>
-            </div>
-          }
         </div>
 
         <!-- Modal Footer -->

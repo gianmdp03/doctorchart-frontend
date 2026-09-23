@@ -18,18 +18,13 @@ import {
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
-import { SpecialtySchemaService } from '../../core/services/specialty-schema.service';
 import {
   ClinicalEncounterRequest,
   ConsultationType,
   DiagnosisItem,
   PrescriptionItem,
 } from '../../core/models/clinical-encounter.model';
-import {
-  MedicalSpecialty,
-  SpecialtySchema,
-} from '../../core/models/specialty.model';
-import { DynamicSpecialtyFormComponent } from '../dynamic-specialty-form/dynamic-specialty-form.component';
+import { MedicalSpecialty } from '../../core/models/specialty.model';
 import { MedicationAutocompleteComponent } from './medication-autocomplete/medication-autocomplete.component';
 import { Medication } from '../../core/models/medication.model';
 
@@ -92,7 +87,6 @@ export const COMMON_DIAGNOSES: DiagnosisPreset[] = [
   imports: [
     ReactiveFormsModule,
     FormsModule,
-    DynamicSpecialtyFormComponent,
     MedicationAutocompleteComponent,
   ],
   templateUrl: './new-encounter-dialog.component.html',
@@ -102,14 +96,13 @@ export class NewEncounterDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   readonly activePatientService = inject(ActivePatientService);
   private readonly encounterService = inject(ClinicalEncounterService);
-  private readonly specialtySchemaService = inject(SpecialtySchemaService);
   readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly isOpen = signal<boolean>(false);
   readonly isSubmitting = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly activeSoapTab = signal<'S' | 'O' | 'A' | 'P' | 'SPECIALTY'>('S');
+  readonly activeSoapTab = signal<'S' | 'O' | 'A' | 'P'>('S');
 
   readonly specialtyOptions = SPECIALTY_OPTIONS;
   readonly consultationTypes = CONSULTATION_TYPES;
@@ -120,8 +113,6 @@ export class NewEncounterDialogComponent implements OnInit {
     const opt = this.specialtyOptions.find((o) => o.value === this.selectedSpecialty());
     return opt?.label || this.doctorSpecialtyService.specialtyLabel();
   });
-  readonly currentSchema = signal<SpecialtySchema | null>(null);
-  readonly specialtyDataModel = signal<Record<string, any>>({});
 
   readonly secondaryDiagnoses = signal<DiagnosisItem[]>([]);
   readonly prescriptions = signal<PrescriptionItem[]>([]);
@@ -236,7 +227,6 @@ export class NewEncounterDialogComponent implements OnInit {
     if (docSpec && docSpec !== 'GENERAL_MEDICINE') {
       this.selectedSpecialty.set(docSpec);
     }
-    this.loadSchemaForSpecialty(this.selectedSpecialty());
     this.applyDefaultDiagnosisForSpecialty(this.selectedSpecialty());
   }
 
@@ -254,7 +244,6 @@ export class NewEncounterDialogComponent implements OnInit {
     const docSpec = this.doctorSpecialtyService.activeSpecialty();
     const targetSpec = detail?.specialty || docSpec || this.selectedSpecialty();
     this.selectedSpecialty.set(targetSpec);
-    this.loadSchemaForSpecialty(targetSpec);
     this.applyDefaultDiagnosisForSpecialty(targetSpec);
     if (detail?.chiefComplaint || detail?.reason) {
       this.encounterForm.patchValue({
@@ -298,7 +287,7 @@ export class NewEncounterDialogComponent implements OnInit {
     this.backdropMouseDown = false;
   }
 
-  setSoapTab(tab: 'S' | 'O' | 'A' | 'P' | 'SPECIALTY'): void {
+  setSoapTab(tab: 'S' | 'O' | 'A' | 'P'): void {
     this.activeSoapTab.set(tab);
   }
 
@@ -334,17 +323,6 @@ export class NewEncounterDialogComponent implements OnInit {
         primaryDiagnosisDescription: 'Examen médico general de rutina del adulto',
       });
     }
-  }
-
-  loadSchemaForSpecialty(specialty: MedicalSpecialty): void {
-    this.specialtySchemaService.getSchema(specialty).subscribe({
-      next: (schema) => {
-        this.currentSchema.set(schema);
-      },
-      error: () => {
-        this.currentSchema.set(null);
-      },
-    });
   }
 
   selectDiagnosisPreset(preset: DiagnosisPreset): void {
@@ -467,7 +445,6 @@ export class NewEncounterDialogComponent implements OnInit {
     this.secondaryDiagnoses.set([]);
     this.prescriptions.set([]);
     this.diagnosticOrders.set([]);
-    this.specialtyDataModel.set({});
     this.errorMessage.set(null);
     this.isSubmitting.set(false);
   }
@@ -554,12 +531,6 @@ export class NewEncounterDialogComponent implements OnInit {
         this.diagnosticOrders().length > 0 ? this.diagnosticOrders() : undefined,
       followUpInstructions: formVal.followUpInstructions?.trim() || undefined,
       followUpDate: formVal.followUpDate || undefined,
-
-      // 20% Dynamic Specialty Payload
-      specialtyData:
-        Object.keys(this.specialtyDataModel()).length > 0
-          ? this.specialtyDataModel()
-          : undefined,
     };
 
     this.encounterService.create(payload).subscribe({

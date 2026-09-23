@@ -4,8 +4,6 @@ import { of, throwError } from 'rxjs';
 import { NewEncounterDialogComponent } from './new-encounter-dialog.component';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
-import { SpecialtySchemaService } from '../../core/services/specialty-schema.service';
-import { SpecialtySchema } from '../../core/models/specialty.model';
 import {
   ClinicalEncounterDetail,
   ClinicalEncounterRequest,
@@ -21,9 +19,6 @@ describe('NewEncounterDialogComponent', () => {
   let encounterServiceSpy: {
     create: ReturnType<typeof vi.fn>;
   };
-  let specialtySchemaServiceSpy: {
-    getSchema: ReturnType<typeof vi.fn>;
-  };
 
   const mockPatient: PatientDetailDTO = {
     id: 10492,
@@ -34,25 +29,6 @@ describe('NewEncounterDialogComponent', () => {
       height: 70.0,
       headCircumference: 44.0,
     },
-  };
-
-  const mockSchema: SpecialtySchema = {
-    specialty: 'GENERAL_MEDICINE',
-    displayName: 'Medicina General',
-    description: 'Protocolo de medicina familiar',
-    version: '1.0',
-    fields: [
-      {
-        key: 'cardiovascularRisk',
-        label: 'Riesgo Cardiovascular Global',
-        type: 'SELECT',
-        required: true,
-        options: [
-          { label: 'Bajo', value: 'LOW' },
-          { label: 'Moderado', value: 'MODERATE' },
-        ],
-      },
-    ],
   };
 
   const mockCreatedEncounter: ClinicalEncounterDetail = {
@@ -71,9 +47,6 @@ describe('NewEncounterDialogComponent', () => {
     encounterServiceSpy = {
       create: vi.fn().mockReturnValue(of(mockCreatedEncounter)),
     };
-    specialtySchemaServiceSpy = {
-      getSchema: vi.fn().mockReturnValue(of(mockSchema)),
-    };
 
     await TestBed.configureTestingModule({
       imports: [NewEncounterDialogComponent],
@@ -84,7 +57,6 @@ describe('NewEncounterDialogComponent', () => {
           useValue: { getPatientById: vi.fn().mockReturnValue(of(mockPatient)) },
         },
         { provide: ClinicalEncounterService, useValue: encounterServiceSpy },
-        { provide: SpecialtySchemaService, useValue: specialtySchemaServiceSpy },
         {
           provide: MedicationCatalogService,
           useValue: { search: vi.fn().mockReturnValue(of([])) },
@@ -233,7 +205,6 @@ describe('NewEncounterDialogComponent', () => {
       weightKg: 70,
       heightCm: 175,
     });
-    component.specialtyDataModel.set({ cardiovascularRisk: 'LOW' });
 
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
 
@@ -243,7 +214,6 @@ describe('NewEncounterDialogComponent', () => {
     const sentPayload: ClinicalEncounterRequest = encounterServiceSpy.create.mock.calls[0][0];
     expect(sentPayload.patientId).toBe(10492);
     expect(sentPayload.chiefComplaint).toBe('Consulta clínica por chequeo');
-    expect(sentPayload.specialtyData).toEqual({ cardiovascularRisk: 'LOW' });
     expect(dispatchSpy).toHaveBeenCalled();
     expect(component.isOpen()).toBe(false);
   });

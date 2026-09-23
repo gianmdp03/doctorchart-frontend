@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { SpecialtySchemaService } from '../../../core/services/specialty-schema.service';
+import { SpecialtyService } from '../../../core/services/specialty.service';
 import { DoctorProfileService } from '../../../core/services/doctor-profile.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { MedicalSpecialty, SpecialtySummary } from '../../../core/models/specialty.model';
@@ -13,7 +13,7 @@ import { MedicalSpecialty, SpecialtySummary } from '../../../core/models/special
   styleUrl: './specialty-selection.component.css',
 })
 export class SpecialtySelectionComponent implements OnInit {
-  private readonly specialtySchemaService = inject(SpecialtySchemaService);
+  private readonly specialtyService = inject(SpecialtyService);
   private readonly doctorProfileService = inject(DoctorProfileService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -35,7 +35,7 @@ export class SpecialtySelectionComponent implements OnInit {
       return;
     }
 
-    this.specialtySchemaService.getSpecialties().subscribe({
+    this.specialtyService.getSpecialties().subscribe({
       next: (list) => {
         this.specialties.set(list);
         this.isLoading.set(false);

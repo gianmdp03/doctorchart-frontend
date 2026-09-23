@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { signal } from '@angular/core';
 import { SpecialtySelectionComponent } from './specialty-selection.component';
-import { SpecialtySchemaService } from '../../../core/services/specialty-schema.service';
+import { SpecialtyService } from '../../../core/services/specialty.service';
 import { DoctorProfileService } from '../../../core/services/doctor-profile.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { SpecialtySummary } from '../../../core/models/specialty.model';
@@ -11,7 +11,7 @@ import { SpecialtySummary } from '../../../core/models/specialty.model';
 describe('SpecialtySelectionComponent', () => {
   let component: SpecialtySelectionComponent;
   let fixture: ComponentFixture<SpecialtySelectionComponent>;
-  let specialtySchemaServiceMock: {
+  let specialtyServiceMock: {
     getSpecialties: ReturnType<typeof vi.fn>;
   };
   let doctorProfileServiceMock: {
@@ -25,12 +25,12 @@ describe('SpecialtySelectionComponent', () => {
   let router: Router;
 
   const mockSpecialties: SpecialtySummary[] = [
-    { specialty: 'PEDIATRICS', displayName: 'Pediatría y Neonatología', description: 'Atención pediátrica', fieldCount: 12 },
-    { specialty: 'CARDIOLOGY', displayName: 'Cardiología', description: 'Salud cardiovascular', fieldCount: 10 },
+    { specialty: 'PEDIATRICS', displayName: 'Pediatría y Neonatología', description: 'Atención pediátrica' },
+    { specialty: 'CARDIOLOGY', displayName: 'Cardiología', description: 'Salud cardiovascular' },
   ];
 
   beforeEach(async () => {
-    specialtySchemaServiceMock = {
+    specialtyServiceMock = {
       getSpecialties: vi.fn().mockReturnValue(of(mockSpecialties)),
     };
     doctorProfileServiceMock = {
@@ -45,7 +45,7 @@ describe('SpecialtySelectionComponent', () => {
     await TestBed.configureTestingModule({
       imports: [SpecialtySelectionComponent],
       providers: [
-        { provide: SpecialtySchemaService, useValue: specialtySchemaServiceMock },
+        { provide: SpecialtyService, useValue: specialtyServiceMock },
         { provide: DoctorProfileService, useValue: doctorProfileServiceMock },
         { provide: AuthService, useValue: authServiceMock },
       ],

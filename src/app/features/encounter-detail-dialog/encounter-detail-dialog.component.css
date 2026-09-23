@@ -137,7 +137,6 @@
 .card-o { border-left: 5px solid #0d9488; }
 .card-a { border-left: 5px solid #d97706; }
 .card-p { border-left: 5px solid #7c3aed; }
-.card-specialty { border-left: 5px solid #e11d48; }
 
 .soap-card-header {
   display: flex;
@@ -171,12 +170,6 @@
 .badge-o { background-color: #0d9488; }
 .badge-a { background-color: #d97706; }
 .badge-p { background-color: #7c3aed; }
-.badge-specialty {
-  width: auto;
-  padding: 0 0.4rem;
-  border-radius: 10px;
-  background-color: #e11d48;
-}
 
 .soap-card-content {
   padding: 1rem 1.15rem;

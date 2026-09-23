@@ -3,18 +3,13 @@ import { PLATFORM_ID } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { EncounterDetailDialogComponent } from './encounter-detail-dialog.component';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
-import { SpecialtySchemaService } from '../../core/services/specialty-schema.service';
 import { ClinicalEncounterDetail } from '../../core/models/clinical-encounter.model';
-import { SpecialtySchema } from '../../core/models/specialty.model';
 
 describe('EncounterDetailDialogComponent', () => {
   let component: EncounterDetailDialogComponent;
   let fixture: ComponentFixture<EncounterDetailDialogComponent>;
   let encounterServiceSpy: {
     getById: ReturnType<typeof vi.fn>;
-  };
-  let specialtySchemaServiceSpy: {
-    getSchema: ReturnType<typeof vi.fn>;
   };
 
   const mockEncounter: ClinicalEncounterDetail = {
@@ -53,33 +48,17 @@ describe('EncounterDetailDialogComponent', () => {
     diagnosticOrders: ['Pesquisa metabólica neonatal confirmada'],
     followUpInstructions: 'Control en 1 mes.',
     followUpDate: '2026-10-15',
-    specialtyData: {
-      pediatricFeedingType: 'EXCLUSIVE_BREASTFEEDING',
-      numberOfTeeth: 2,
-    },
-  };
-
-  const mockSchema: SpecialtySchema = {
-    specialty: 'PEDIATRICS',
-    displayName: 'Pediatría y Puericultura',
-    description: 'Protocolo de seguimiento infantil',
-    version: '1.0',
-    fields: [],
   };
 
   beforeEach(async () => {
     encounterServiceSpy = {
       getById: vi.fn().mockReturnValue(of(mockEncounter)),
     };
-    specialtySchemaServiceSpy = {
-      getSchema: vi.fn().mockReturnValue(of(mockSchema)),
-    };
 
     await TestBed.configureTestingModule({
       imports: [EncounterDetailDialogComponent],
       providers: [
         { provide: ClinicalEncounterService, useValue: encounterServiceSpy },
-        { provide: SpecialtySchemaService, useValue: specialtySchemaServiceSpy },
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],
     }).compileComponents();
@@ -105,7 +84,6 @@ describe('EncounterDetailDialogComponent', () => {
 
     expect(component.isOpen()).toBe(true);
     expect(component.encounter()).toEqual(mockEncounter);
-    expect(specialtySchemaServiceSpy.getSchema).toHaveBeenCalledWith('PEDIATRICS');
   });
 
   it('should open and fetch encounter by id from service if only id is passed', () => {

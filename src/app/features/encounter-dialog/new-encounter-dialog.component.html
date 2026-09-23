@@ -116,15 +116,6 @@
           <span class="soap-badge soap-badge-p">P</span>
           <span class="tab-label">Plan & Prescripciones</span>
         </button>
-        <button
-          type="button"
-          class="soap-tab-btn"
-          [class.active]="activeSoapTab() === 'SPECIALTY'"
-          (click)="setSoapTab('SPECIALTY')"
-        >
-          <span class="soap-badge soap-badge-spec">20%</span>
-          <span class="tab-label">Especialidad ({{ specialtyLabel() }})</span>
-        </button>
       </nav>
 
       <!-- Modal Body (Scrollable Content) -->
@@ -712,25 +703,6 @@
             </div>
           }
 
-          <!-- TAB SPECIALTY: 20% DYNAMIC JSONB PAYLOAD -->
-          @if (activeSoapTab() === 'SPECIALTY') {
-            <div class="soap-panel">
-              <div class="panel-intro">
-                <h3>
-                  20% Dinámico — Protocolo Específico:
-                  <span class="specialty-highlight">{{ currentSchema()?.displayName || selectedSpecialty() }}</span>
-                </h3>
-                <p>
-                  {{ currentSchema()?.description || 'Formulario dinámico adaptado a las necesidades de la especialidad.' }}
-                </p>
-              </div>
-
-              <app-dynamic-specialty-form
-                [schema]="currentSchema()"
-                [(specialtyData)]="specialtyDataModel"
-              />
-            </div>
-          }
         </form>
       </div>
 
@@ -741,16 +713,16 @@
             <button
               type="button"
               class="m3-button m3-button-tonal"
-              (click)="setSoapTab(activeSoapTab() === 'SPECIALTY' ? 'P' : activeSoapTab() === 'P' ? 'A' : activeSoapTab() === 'A' ? 'O' : 'S')"
+              (click)="setSoapTab(activeSoapTab() === 'P' ? 'A' : activeSoapTab() === 'A' ? 'O' : 'S')"
             >
               ← Anterior
             </button>
           }
-          @if (activeSoapTab() !== 'SPECIALTY') {
+          @if (activeSoapTab() !== 'P') {
             <button
               type="button"
               class="m3-button m3-button-tonal"
-              (click)="setSoapTab(activeSoapTab() === 'S' ? 'O' : activeSoapTab() === 'O' ? 'A' : activeSoapTab() === 'A' ? 'P' : 'SPECIALTY')"
+              (click)="setSoapTab(activeSoapTab() === 'S' ? 'O' : activeSoapTab() === 'O' ? 'A' : 'P')"
             >
               Siguiente →
             </button>

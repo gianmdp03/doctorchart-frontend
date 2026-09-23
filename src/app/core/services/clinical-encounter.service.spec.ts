@@ -23,7 +23,6 @@ describe('ClinicalEncounterService', () => {
     chiefComplaint: 'Chest pain',
     primaryDiagnosisCode: 'I20.9',
     primaryDiagnosisDescription: 'Angina pectoris',
-    specialtyData: { nyhaClass: 'CLASS_II' },
   };
 
   const mockList: ClinicalEncounterList[] = [

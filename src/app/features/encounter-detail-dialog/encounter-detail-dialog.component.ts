@@ -8,24 +8,18 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
-import { SpecialtySchemaService } from '../../core/services/specialty-schema.service';
 import { ClinicalEncounterDetail } from '../../core/models/clinical-encounter.model';
-import {
-  MedicalSpecialty,
-  SpecialtySchema,
-} from '../../core/models/specialty.model';
-import { DynamicSpecialtyFormComponent } from '../dynamic-specialty-form/dynamic-specialty-form.component';
+import { MedicalSpecialty } from '../../core/models/specialty.model';
 
 @Component({
   selector: 'app-encounter-detail-dialog',
   standalone: true,
-  imports: [CommonModule, DynamicSpecialtyFormComponent],
+  imports: [CommonModule],
   templateUrl: './encounter-detail-dialog.component.html',
   styleUrl: './encounter-detail-dialog.component.css',
 })
 export class EncounterDetailDialogComponent {
   private readonly encounterService = inject(ClinicalEncounterService);
-  private readonly specialtySchemaService = inject(SpecialtySchemaService);
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly isOpen = signal<boolean>(false);
@@ -33,7 +27,6 @@ export class EncounterDetailDialogComponent {
   readonly errorMessage = signal<string | null>(null);
 
   readonly encounter = signal<ClinicalEncounterDetail | null>(null);
-  readonly schema = signal<SpecialtySchema | null>(null);
 
   private openedAt = 0;
   private backdropMouseDown = false;
@@ -64,7 +57,6 @@ export class EncounterDetailDialogComponent {
   closeModal(): void {
     this.isOpen.set(false);
     this.encounter.set(null);
-    this.schema.set(null);
     this.errorMessage.set(null);
     this.isLoading.set(false);
   }
@@ -101,12 +93,6 @@ export class EncounterDetailDialogComponent {
 
   displayEncounter(enc: ClinicalEncounterDetail): void {
     this.encounter.set(enc);
-    if (enc.specialty) {
-      this.specialtySchemaService.getSchema(enc.specialty).subscribe({
-        next: (s) => this.schema.set(s),
-        error: () => this.schema.set(null),
-      });
-    }
   }
 
   printEncounter(): void {
