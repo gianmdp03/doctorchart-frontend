@@ -27,8 +27,7 @@ import {
   lucideFilter,
 } from '@ng-icons/lucide';
 import { ClinicalEncounterList } from '../../../core/models/clinical-encounter.model';
-import { MedicalSpecialty } from '../../../core/models/specialty.model';
-import { SPECIALTY_OPTIONS, SpecialtyOption } from '../../encounter-dialog/new-encounter-dialog.component';
+import { MedicalSpecialty, SPECIALTY_OPTIONS, SpecialtyOption } from '../../../core/models/specialty.model';
 
 @Component({
   selector: 'app-clinical-timeline',

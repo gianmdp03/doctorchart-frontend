@@ -403,25 +403,5 @@ export class GrowthCurvesComponent implements OnInit {
   navigateToPatients(): void {
     this.router.navigate(['/pacientes']);
   }
-
-  openNewPatientModal(event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('open-new-patient-modal'));
-    }
-  }
-
-  openNewEncounterModal(): void {
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      const patientId = this.activePatientService.patientId();
-      window.dispatchEvent(
-        new CustomEvent('open-new-encounter-modal', {
-          detail: { patientId, specialty: 'PEDIATRICS' },
-        })
-      );
-    }
-  }
 }
 

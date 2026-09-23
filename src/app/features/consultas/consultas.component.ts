@@ -5,7 +5,6 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideStethoscope,
   lucideSearch,
-  lucidePlus,
   lucideEye,
   lucideChevronRight,
   lucideCalendar,
@@ -15,7 +14,7 @@ import {
 import { PatientService } from '../../core/services/patient.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
-import { SPECIALTY_OPTIONS } from '../encounter-dialog/new-encounter-dialog.component';
+import { SPECIALTY_OPTIONS } from '../../core/models/specialty.model';
 
 export interface ConsultationExplorerItem {
   id: number;
@@ -36,7 +35,6 @@ export interface ConsultationExplorerItem {
     provideIcons({
       lucideStethoscope,
       lucideSearch,
-      lucidePlus,
       lucideEye,
       lucideChevronRight,
       lucideCalendar,
@@ -140,18 +138,6 @@ export class ConsultasComponent implements OnInit {
   openPatientRecord(patientId: number): void {
     this.activePatientService.loadPatient(patientId);
     this.router.navigate(['/pacientes', patientId]);
-  }
-
-  openNewEncounterModal(): void {
-    const specialty = this.specialtyService.activeSpecialty();
-    window.dispatchEvent(
-      new CustomEvent('open-new-encounter-modal', {
-        detail: {
-          patientId: this.activePatientService.patientId(),
-          specialty,
-        },
-      })
-    );
   }
 
   openEncounterDetail(id: number): void {

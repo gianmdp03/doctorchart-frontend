@@ -39,8 +39,7 @@ import { CheckupService } from '../../core/services/checkup.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { MedicalCheckupDetailDTO } from '../../core/models/checkup.model';
 import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
-import { MedicalSpecialty } from '../../core/models/specialty.model';
-import { SPECIALTY_OPTIONS, SpecialtyOption } from '../encounter-dialog/new-encounter-dialog.component';
+import { MedicalSpecialty, SPECIALTY_OPTIONS, SpecialtyOption } from '../../core/models/specialty.model';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { PatientBannerComponent } from './patient-banner/patient-banner.component';
 import { ClinicalTimelineComponent } from './clinical-timeline/clinical-timeline.component';
@@ -289,30 +288,16 @@ export class PatientRecordComponent implements OnInit {
   openNewPatientModal(event?: Event): void {
     if (event) event.stopPropagation();
     this.isMoreMenuOpen.set(false);
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('open-new-patient-modal'));
-    }
   }
 
   openNewCheckupModal(event?: Event): void {
     if (event) event.stopPropagation();
     this.isMoreMenuOpen.set(false);
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('open-new-checkup-modal'));
-    }
   }
 
   openNewEncounterModal(specialty?: MedicalSpecialty, event?: Event): void {
     if (event) event.stopPropagation();
     this.isMoreMenuOpen.set(false);
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      const patientId = this.activePatientService.patientId();
-      window.dispatchEvent(
-        new CustomEvent('open-new-encounter-modal', {
-          detail: { patientId, specialty },
-        })
-      );
-    }
   }
 
   openEncounterDetail(encounterId: number): void {

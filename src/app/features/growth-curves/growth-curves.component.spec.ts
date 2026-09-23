@@ -141,12 +141,6 @@ describe('GrowthCurvesComponent', () => {
       component.navigateToPatients();
       expect(routerSpy.navigate).toHaveBeenCalledWith(['/pacientes']);
     });
-
-    it('should dispatch open-new-patient-modal event on openNewPatientModal call', () => {
-      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-      component.openNewPatientModal();
-      expect(dispatchSpy).toHaveBeenCalled();
-    });
   });
 
   describe('Metric Switching', () => {

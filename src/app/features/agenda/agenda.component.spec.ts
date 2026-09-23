@@ -66,13 +66,8 @@ describe('AgendaComponent', () => {
     expect(component.filterStatus()).toBe('WAITING');
   });
 
-  it('should dispatch encounter event on startConsultation', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+  it('should load active patient on startConsultation', () => {
     component.startConsultation(component.appointments()[0]);
     expect(activePatientServiceMock.loadPatient).toHaveBeenCalledWith(1);
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'open-new-encounter-modal' })
-    );
-    dispatchSpy.mockRestore();
   });
 });

@@ -334,21 +334,6 @@ export class AgendaComponent implements OnInit {
 
     // 3. Navigate into patient record context
     this.router.navigate(['/pacientes', item.patientId]).catch(() => {});
-
-    // 4. Preload and trigger SOAP modal
-    const specialty = item.specialty || this.specialtyService.activeSpecialty();
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('open-new-encounter-modal', {
-          detail: {
-            patientId: item.patientId,
-            specialty,
-            reason: item.reason,
-            chiefComplaint: item.reason,
-          },
-        })
-      );
-    }
   }
 
   openPatientRecord(patientId: number): void {

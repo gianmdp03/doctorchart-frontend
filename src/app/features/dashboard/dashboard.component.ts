@@ -337,10 +337,6 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/pacientes', patientId]);
   }
 
-  openNewPatientModal(): void {
-    window.dispatchEvent(new CustomEvent('open-new-patient-modal'));
-  }
-
   hydrateNotes(): void {
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       try {

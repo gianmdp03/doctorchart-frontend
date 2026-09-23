@@ -124,24 +124,6 @@ describe('HeaderComponent', () => {
     expect(component.isProfileMenuOpen()).toBe(true);
   });
 
-  it('should dispatch open-new-patient-modal event on new patient action', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-    component.handleNewPatientClick();
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'open-new-patient-modal' })
-    );
-    dispatchSpy.mockRestore();
-  });
-
-  it('should dispatch open-new-encounter-modal event on new encounter action', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-    component.handleNewEncounterClick();
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'open-new-encounter-modal' })
-    );
-    dispatchSpy.mockRestore();
-  });
-
   it('should focus search input on Ctrl+K shortcut', () => {
     const event = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true });
     const preventDefaultSpy = vi.spyOn(event, 'preventDefault');

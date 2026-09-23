@@ -92,18 +92,6 @@
           Menores (< 18 años)
         </button>
       }
-
-      <!-- CTA Registrar Paciente Button -->
-      <button
-        type="button"
-        class="m3-button m3-button-filled"
-        (click)="openNewPatientModal($event)"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-        </svg>
-        <span>+ Registrar Paciente</span>
-      </button>
     </div>
   </div>
 
@@ -179,9 +167,6 @@
             <div class="empty-state-actions">
               <button type="button" class="m3-button m3-button-tonal" (click)="resetFilters()">
                 Restablecer Filtros
-              </button>
-              <button type="button" class="m3-button m3-button-filled" (click)="openNewPatientModal($event)">
-                + Registrar Paciente
               </button>
             </div>
           </div>

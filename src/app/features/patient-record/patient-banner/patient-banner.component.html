@@ -94,17 +94,6 @@
 
   <!-- Right: Streamlined Contextual Actions -->
   <div class="banner-actions-block">
-    <!-- Primary Contextual Action Button -->
-    <button
-      type="button"
-      class="btn-primary-soap"
-      (click)="onNewEncounter()"
-      title="Iniciar nueva evolución médica bajo estándar SOAP"
-    >
-      <ng-icon name="lucidePlus" class="text-base" />
-      <span>+ Nueva Evolución SOAP</span>
-    </button>
-
     <!-- Secondary Actions Dropdown Menu -->
     <div class="more-menu-container">
       <button
@@ -125,10 +114,6 @@
           </button>
 
           @if (doctorSpecialtyService.isPediatricMode() && isChild()) {
-            <button type="button" class="dropdown-menu-item" (click)="onNewCheckup()">
-              <ng-icon name="lucideBaby" class="text-amber-500" />
-              <span>+ Control Somatométrico Pediátrico</span>
-            </button>
             <button type="button" class="dropdown-menu-item" (click)="goToCurves()">
               <ng-icon name="lucideTrendingUp" class="text-indigo-500" />
               <span>Ver Curvas de Crecimiento OMS</span>

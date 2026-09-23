@@ -74,14 +74,6 @@
           } @else {
             <div class="search-dropdown-empty">
               <p>No se encontraron pacientes para "<strong>{{ searchQuery() }}</strong>"</p>
-              <button
-                type="button"
-                class="btn-register-quick"
-                (click)="handleNewPatientClick($event)"
-              >
-                <ng-icon name="lucideUserPlus" />
-                Registrar Nuevo Paciente
-              </button>
             </div>
           }
         </div>
@@ -112,44 +104,6 @@
 
       @if (isCreateMenuOpen()) {
         <div class="create-dropdown-menu" (click)="$event.stopPropagation()">
-          <button
-            type="button"
-            class="dropdown-menu-item item-primary-highlight"
-            (click)="handleNewEncounterClick($event)"
-          >
-            <ng-icon name="lucideStethoscope" class="item-icon text-teal-600" />
-            <div class="item-text">
-              <span class="item-title">Nueva Consulta SOAP</span>
-              <span class="item-desc">Evolución clínica estructurada</span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            class="dropdown-menu-item"
-            (click)="handleNewPatientClick($event)"
-          >
-            <ng-icon name="lucideUserPlus" class="item-icon text-blue-600" />
-            <div class="item-text">
-              <span class="item-title">Nuevo Paciente</span>
-              <span class="item-desc">Alta y ficha médica en el directorio</span>
-            </div>
-          </button>
-
-          @if (doctorSpecialtyService.isPediatricMode()) {
-            <button
-              type="button"
-              class="dropdown-menu-item"
-              (click)="handleNewCheckupClick($event)"
-            >
-              <ng-icon name="lucideCalendarPlus" class="item-icon text-amber-600" />
-              <div class="item-text">
-                <span class="item-title">Control Pediátrico</span>
-                <span class="item-desc">Somatometría e hitos</span>
-              </div>
-            </button>
-          }
-
           <button
             type="button"
             class="dropdown-menu-item"

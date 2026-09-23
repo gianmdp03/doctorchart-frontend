@@ -193,33 +193,6 @@ export class HeaderComponent {
     }
   }
 
-  handleNewPatientClick(event?: Event): void {
-    if (event) event.stopPropagation();
-    this.isCreateMenuOpen.set(false);
-    this.isSearchOpen.set(false);
-    window.dispatchEvent(new CustomEvent('open-new-patient-modal'));
-  }
-
-  handleNewEncounterClick(event?: Event): void {
-    if (event) event.stopPropagation();
-    this.isCreateMenuOpen.set(false);
-    const specialty = this.doctorSpecialtyService.activeSpecialty();
-    window.dispatchEvent(
-      new CustomEvent('open-new-encounter-modal', {
-        detail: {
-          patientId: this.activePatientService.patientId(),
-          specialty,
-        },
-      })
-    );
-  }
-
-  handleNewCheckupClick(event?: Event): void {
-    if (event) event.stopPropagation();
-    this.isCreateMenuOpen.set(false);
-    window.dispatchEvent(new CustomEvent('open-new-checkup-modal'));
-  }
-
   handleNewAppointmentClick(event?: Event): void {
     if (event) event.stopPropagation();
     this.isCreateMenuOpen.set(false);

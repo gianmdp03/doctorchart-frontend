@@ -4,9 +4,6 @@ import { HeaderComponent } from './layout/header/header.component';
 import { SidebarComponent } from './layout/sidebar/sidebar.component';
 import { AuthService } from './core/services/auth.service';
 import { DoctorProfileService } from './core/services/doctor-profile.service';
-import { NewPatientDialogComponent } from './features/patient-dialog/new-patient-dialog.component';
-import { NewCheckupDialogComponent } from './features/checkup-dialog/new-checkup-dialog.component';
-import { NewEncounterDialogComponent } from './features/encounter-dialog/new-encounter-dialog.component';
 import { EncounterDetailDialogComponent } from './features/encounter-detail-dialog/encounter-detail-dialog.component';
 import { LoginPageComponent } from './features/auth/login-page.component';
 import { UserProfileDialogComponent } from './features/auth/user-profile-dialog.component';
@@ -20,9 +17,6 @@ import { PrescriptionPrintLayoutComponent } from './features/prescription-print-
     RouterOutlet,
     SidebarComponent,
     HeaderComponent,
-    NewPatientDialogComponent,
-    NewCheckupDialogComponent,
-    NewEncounterDialogComponent,
     EncounterDetailDialogComponent,
     LoginPageComponent,
     UserProfileDialogComponent,

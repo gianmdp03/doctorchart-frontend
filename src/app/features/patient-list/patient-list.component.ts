@@ -372,9 +372,6 @@ export class PatientListComponent implements OnInit {
     if (event) {
       event.stopPropagation();
     }
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('open-new-patient-modal'));
-    }
   }
 }
 
