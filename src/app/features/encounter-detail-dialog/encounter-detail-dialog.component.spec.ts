@@ -3,6 +3,7 @@ import { PLATFORM_ID } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { EncounterDetailDialogComponent } from './encounter-detail-dialog.component';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
+import { WorkspaceService } from '../../core/services/workspace.service';
 import { ClinicalEncounterDetail } from '../../core/models/clinical-encounter.model';
 
 describe('EncounterDetailDialogComponent', () => {
@@ -59,6 +60,12 @@ describe('EncounterDetailDialogComponent', () => {
       imports: [EncounterDetailDialogComponent],
       providers: [
         { provide: ClinicalEncounterService, useValue: encounterServiceSpy },
+        {
+          provide: WorkspaceService,
+          useValue: {
+            getTemplateById: vi.fn().mockReturnValue(of(null)),
+          },
+        },
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],
     }).compileComponents();
@@ -155,4 +162,30 @@ describe('EncounterDetailDialogComponent', () => {
     component.printEncounter();
     expect(printSpy).toHaveBeenCalled();
   });
+
+  it('should render dynamic clinical encounter data and historical snapshot fields', () => {
+    const encWithDynamicData: ClinicalEncounterDetail = {
+      ...mockEncounter,
+      templateId: 5,
+      dynamicData: {
+        presionArterial: '120/80',
+        reflejoMoro: 'Presente',
+      },
+      snapshotFieldLabels: {
+        presionArterial: 'Presión Arterial',
+        reflejoMoro: 'Reflejo de Moro',
+      },
+    };
+
+    component.isOpen.set(true);
+    component.displayEncounter(encWithDynamicData);
+    fixture.detectChanges();
+
+    expect(component.encounter()?.dynamicData).toEqual(encWithDynamicData.dynamicData);
+    expect(component.encounter()?.snapshotFieldLabels).toEqual(encWithDynamicData.snapshotFieldLabels);
+
+    const dynamicCard = fixture.nativeElement.querySelector('.card-dynamic');
+    expect(dynamicCard).toBeTruthy();
+  });
 });
+

@@ -1,0 +1,407 @@
+<div class="field-editor-container">
+  @if (!workingTemplate()) {
+    <div class="empty-state-notice">
+      <p class="text-sm text-slate-500 italic">No hay plantilla seleccionada para editar.</p>
+    </div>
+  } @else {
+    <!-- Editor Header -->
+    <header class="editor-header">
+      <div>
+        <h3 class="editor-title">{{ workingTemplate()?.name }}</h3>
+        <p class="editor-subtitle">Configura los campos y categorías clínicas de tu plantilla de atención.</p>
+      </div>
+      @if (!readonly()) {
+        <button
+          type="button"
+          class="btn-save-template"
+          (click)="saveTemplate()"
+        >
+          <ng-icon name="lucideCheck" class="w-4 h-4"></ng-icon>
+          Guardar Cambios
+        </button>
+      }
+    </header>
+
+    <div class="editor-layout">
+      <!-- Categories Sidebar / Tabs -->
+      <aside class="categories-sidebar">
+        <h4 class="sidebar-heading">Categorías Clínicas</h4>
+        <div class="categories-list">
+          @for (cat of categories(); track cat.categoryKey; let i = $index) {
+            <div
+              class="category-nav-item"
+              [class.active]="selectedCategoryIndex() === i"
+              (click)="selectCategory(i)"
+              role="button"
+              tabindex="0"
+              (keydown.enter)="selectCategory(i)"
+            >
+              <div class="flex items-center justify-between w-full">
+                <span class="category-nav-label" [class.opacity-50]="!cat.enabled">
+                  {{ cat.title }}
+                </span>
+                <span class="category-count-badge">
+                  {{ cat.fields ? cat.fields.length : 0 }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </aside>
+
+      <!-- Category Fields Panel -->
+      <main class="fields-content-panel">
+        @if (selectedCategory(); as cat) {
+          <div class="panel-header">
+            <div class="flex items-center gap-3">
+              <h4 class="panel-title">{{ cat.title }}</h4>
+              <button
+                type="button"
+                class="category-toggle-chip"
+                [class.enabled]="cat.enabled"
+                (click)="toggleCategoryEnabled(selectedCategoryIndex())"
+                [disabled]="readonly()"
+              >
+                {{ cat.enabled ? 'Activa en consulta' : 'Desactivada' }}
+              </button>
+            </div>
+
+            @if (!readonly() && cat.enabled) {
+              <button
+                type="button"
+                class="btn-add-field"
+                (click)="openAddFieldModal()"
+              >
+                <ng-icon name="lucidePlus" class="w-4 h-4"></ng-icon>
+                Agregar Campo
+              </button>
+            }
+          </div>
+
+          <!-- Fields List -->
+          @if (!cat.fields || cat.fields.length === 0) {
+            <div class="empty-fields-notice">
+              <p>Esta categoría no contiene campos clínicos aún.</p>
+              @if (!readonly()) {
+                <button
+                  type="button"
+                  class="btn-add-field mt-3 inline-flex"
+                  (click)="openAddFieldModal()"
+                >
+                  <ng-icon name="lucidePlus" class="w-4 h-4"></ng-icon>
+                  Agregar primer campo
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="fields-list">
+              @for (field of cat.fields; track field.key; let fi = $index) {
+                <div class="field-card" [attr.data-field-key]="field.key">
+                  <!-- Reorder buttons -->
+                  <div class="reorder-column">
+                    <button
+                      type="button"
+                      class="btn-icon-reorder"
+                      [disabled]="readonly() || fi === 0"
+                      (click)="moveFieldUp(selectedCategoryIndex(), fi)"
+                      title="Mover arriba"
+                      aria-label="Mover campo arriba"
+                    >
+                      <ng-icon name="lucideArrowUp" class="w-3.5 h-3.5"></ng-icon>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-icon-reorder"
+                      [disabled]="readonly() || fi === cat.fields.length - 1"
+                      (click)="moveFieldDown(selectedCategoryIndex(), fi)"
+                      title="Mover abajo"
+                      aria-label="Mover campo abajo"
+                    >
+                      <ng-icon name="lucideArrowDown" class="w-3.5 h-3.5"></ng-icon>
+                    </button>
+                  </div>
+
+                  <!-- Field Content / Config -->
+                  <div class="field-main">
+                    <div class="field-top-row">
+                      <div class="flex items-center gap-2">
+                        <span class="field-type-pill">{{ field.type }}</span>
+                        <code class="field-key-code">{{ field.key }}</code>
+                      </div>
+
+                      @if (!readonly()) {
+                        <button
+                          type="button"
+                          class="btn-delete-field"
+                          (click)="requestDeleteField(selectedCategoryIndex(), fi, field)"
+                          title="Eliminar o desactivar campo"
+                          aria-label="Eliminar campo"
+                        >
+                          <ng-icon name="lucideTrash2" class="w-4 h-4"></ng-icon>
+                        </button>
+                      }
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                      <!-- Label -->
+                      <div class="input-group">
+                        <label class="input-label">Etiqueta visible</label>
+                        <input
+                          type="text"
+                          [ngModel]="field.label"
+                          (ngModelChange)="updateFieldProperty(selectedCategoryIndex(), fi, 'label', $event)"
+                          [disabled]="readonly()"
+                          class="input-control"
+                        />
+                      </div>
+
+                      <!-- Placeholder -->
+                      <div class="input-group">
+                        <label class="input-label">Texto de ayuda (placeholder)</label>
+                        <input
+                          type="text"
+                          [ngModel]="field.placeholder || ''"
+                          (ngModelChange)="updateFieldProperty(selectedCategoryIndex(), fi, 'placeholder', $event)"
+                          [disabled]="readonly()"
+                          placeholder="Ej: Ingrese valor..."
+                          class="input-control"
+                        />
+                      </div>
+
+                      <!-- Unit or Options count -->
+                      @if (field.type === 'NUMBER' || field.type === 'TEXT') {
+                        <div class="input-group">
+                          <label class="input-label">Unidad de medida (opcional)</label>
+                          <input
+                            type="text"
+                            [ngModel]="field.unit || ''"
+                            (ngModelChange)="updateFieldProperty(selectedCategoryIndex(), fi, 'unit', $event)"
+                            [disabled]="readonly()"
+                            placeholder="Ej: mmHg, kg, cm"
+                            class="input-control"
+                          />
+                        </div>
+                      } @else if (field.type === 'SELECT') {
+                        <div class="input-group">
+                          <label class="input-label">Opciones ({{ field.options?.length || 0 }})</label>
+                          <div class="text-xs text-slate-600 truncate py-1.5">
+                            {{ field.options ? field.options.map(o => o.label).join(', ') : 'Sin opciones' }}
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Required toggle -->
+                    <div class="mt-2.5">
+                      <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
+                        <input
+                          type="checkbox"
+                          [ngModel]="field.required || false"
+                          (ngModelChange)="updateFieldProperty(selectedCategoryIndex(), fi, 'required', $event)"
+                          [disabled]="readonly()"
+                          class="form-checkbox"
+                        />
+                        <span>Campo obligatorio</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        }
+      </main>
+    </div>
+  }
+
+  <!-- Modal: Advertencia de Impacto al Desactivar/Eliminar Campo -->
+  @if (deleteTarget(); as target) {
+    <div class="modal-backdrop" (click)="cancelDelete()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-icon-wrap warning">
+          <ng-icon name="lucideAlertTriangle" class="w-6 h-6 text-amber-600"></ng-icon>
+        </div>
+        <h3 class="modal-title">¿Desactivar campo médico?</h3>
+        <p class="modal-body-text">
+          Está a punto de eliminar el campo <strong>{{ target.field.label }}</strong> (<code>{{ target.field.key }}</code>) de la plantilla activa.
+        </p>
+        <div class="impact-alert-box">
+          <p class="impact-text">
+            <strong>Importante:</strong> Desactivar este campo no borrará los datos históricos de consultas pasadas. Se mantendrán visibles en el historial clínico del paciente bajo la sección de datos previos.
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-modal-cancel"
+            (click)="cancelDelete()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-modal-confirm-delete"
+            (click)="confirmDelete()"
+          >
+            Desactivar Campo
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Agregar Nuevo Campo Clínico -->
+  @if (isAddingField()) {
+    <div class="modal-backdrop" (click)="closeAddFieldModal()">
+      <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h3 class="modal-title">Agregar Nuevo Campo Clínico</h3>
+          <button type="button" class="btn-close-modal" (click)="closeAddFieldModal()">
+            <ng-icon name="lucideX" class="w-5 h-5"></ng-icon>
+          </button>
+        </div>
+
+        <div class="modal-form-body space-y-4 mt-4">
+          <!-- Tipo de campo -->
+          <div>
+            <label class="input-label">Tipo de Dato Clínico *</label>
+            <select
+              [ngModel]="newFieldType()"
+              (ngModelChange)="newFieldType.set($event)"
+              class="input-control"
+            >
+              @for (t of fieldTypes; track t.value) {
+                <option [value]="t.value">{{ t.label }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Label y Key -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="input-label">Nombre / Etiqueta del Campo *</label>
+              <input
+                type="text"
+                [ngModel]="newFieldLabel()"
+                (ngModelChange)="onLabelInput($event)"
+                placeholder="Ej: Frecuencia Respiratoria"
+                class="input-control"
+              />
+            </div>
+            <div>
+              <label class="input-label">Clave Interna (slug) *</label>
+              <input
+                type="text"
+                [ngModel]="newFieldKey()"
+                (ngModelChange)="newFieldKey.set($event)"
+                placeholder="frecuenciaRespiratoria"
+                class="input-control"
+              />
+            </div>
+          </div>
+
+          <!-- Placeholder y Unidad -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="input-label">Texto de ayuda (placeholder)</label>
+              <input
+                type="text"
+                [ngModel]="newFieldPlaceholder()"
+                (ngModelChange)="newFieldPlaceholder.set($event)"
+                placeholder="Ej: Ingrese valor numérico"
+                class="input-control"
+              />
+            </div>
+            <div>
+              <label class="input-label">Unidad de medida (opcional)</label>
+              <input
+                type="text"
+                [ngModel]="newFieldUnit()"
+                (ngModelChange)="newFieldUnit.set($event)"
+                placeholder="Ej: rpm, mmHg, mg/dL"
+                class="input-control"
+              />
+            </div>
+          </div>
+
+          <!-- Required -->
+          <div>
+            <label class="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                [ngModel]="newFieldRequired()"
+                (ngModelChange)="newFieldRequired.set($event)"
+                class="form-checkbox"
+              />
+              <span>Campo obligatorio en la consulta</span>
+            </label>
+          </div>
+
+          <!-- SELECT Options Editor if SELECT type -->
+          @if (newFieldType() === 'SELECT') {
+            <div class="border border-slate-200 rounded-lg p-3 bg-slate-50">
+              <label class="input-label">Opciones del Desplegable</label>
+              <div class="flex gap-2 mt-2">
+                <input
+                  type="text"
+                  [ngModel]="newOptionLabel()"
+                  (ngModelChange)="newOptionLabel.set($event)"
+                  placeholder="Etiqueta visible (ej: Positivo)"
+                  class="input-control text-xs"
+                />
+                <input
+                  type="text"
+                  [ngModel]="newOptionValue()"
+                  (ngModelChange)="newOptionValue.set($event)"
+                  placeholder="Valor interno (ej: POS)"
+                  class="input-control text-xs"
+                />
+                <button
+                  type="button"
+                  class="btn-add-option"
+                  (click)="addOption()"
+                >
+                  Agregar
+                </button>
+              </div>
+
+              <!-- List of configured options -->
+              <div class="mt-2 space-y-1">
+                @for (opt of newFieldOptions(); track opt.value; let oi = $index) {
+                  <div class="flex items-center justify-between text-xs bg-white px-2 py-1 rounded border border-slate-200">
+                    <span><strong>{{ opt.label }}</strong> (<code>{{ opt.value }}</code>)</span>
+                    <button
+                      type="button"
+                      class="text-red-500 hover:text-red-700"
+                      (click)="removeOption(oi)"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="modal-actions mt-6">
+          <button
+            type="button"
+            class="btn-modal-cancel"
+            (click)="closeAddFieldModal()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-modal-confirm-add"
+            [disabled]="!newFieldLabel().trim()"
+            (click)="submitAddField()"
+          >
+            Añadir a la Plantilla
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

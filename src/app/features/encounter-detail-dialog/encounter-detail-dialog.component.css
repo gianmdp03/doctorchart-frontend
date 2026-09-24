@@ -137,6 +137,7 @@
 .card-o { border-left: 5px solid #0d9488; }
 .card-a { border-left: 5px solid #d97706; }
 .card-p { border-left: 5px solid #7c3aed; }
+.card-dynamic { border-left: 5px solid #2563eb; }
 
 .soap-card-header {
   display: flex;

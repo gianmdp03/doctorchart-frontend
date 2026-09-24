@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { DoctorProfileService } from '../../../core/services/doctor-profile.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -8,7 +9,7 @@ import { MedicalSpecialty, SpecialtySummary } from '../../../core/models/special
 
 @Component({
   selector: 'app-specialty-selection',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './specialty-selection.component.html',
   styleUrl: './specialty-selection.component.css',
 })
@@ -19,10 +20,17 @@ export class SpecialtySelectionComponent implements OnInit {
   private readonly router = inject(Router);
 
   readonly specialties = signal<SpecialtySummary[]>([]);
-  readonly selectedSpecialty = signal<MedicalSpecialty | null>(null);
+  readonly selectedSpecialty = signal<MedicalSpecialty | string | null>(null);
   readonly isLoading = signal<boolean>(true);
   readonly isSubmitting = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
+
+  // Custom Specialty Modal State
+  readonly isCustomModalOpen = signal<boolean>(false);
+  readonly customName = signal<string>('');
+  readonly customDescription = signal<string>('');
+  readonly isCreatingCustom = signal<boolean>(false);
+  readonly customError = signal<string | null>(null);
 
   async handleSignOut(): Promise<void> {
     this.doctorProfileService.clearProfile();
@@ -35,6 +43,10 @@ export class SpecialtySelectionComponent implements OnInit {
       return;
     }
 
+    this.loadSpecialties();
+  }
+
+  loadSpecialties(): void {
     this.specialtyService.getSpecialties().subscribe({
       next: (list) => {
         this.specialties.set(list);
@@ -48,10 +60,49 @@ export class SpecialtySelectionComponent implements OnInit {
     });
   }
 
-  select(spec: MedicalSpecialty): void {
+  select(spec: MedicalSpecialty | string): void {
     if (this.isSubmitting()) return;
     this.selectedSpecialty.set(spec);
     this.errorMessage.set(null);
+  }
+
+  openCustomSpecialtyModal(): void {
+    this.customName.set('');
+    this.customDescription.set('');
+    this.customError.set(null);
+    this.isCustomModalOpen.set(true);
+  }
+
+  closeCustomSpecialtyModal(): void {
+    this.isCustomModalOpen.set(false);
+  }
+
+  createCustomSpecialty(): void {
+    const name = this.customName().trim();
+    const description = this.customDescription().trim();
+
+    if (!name) {
+      this.customError.set('El nombre de la especialidad es obligatorio.');
+      return;
+    }
+
+    this.isCreatingCustom.set(true);
+    this.customError.set(null);
+
+    this.specialtyService.createCustomSpecialty({ name, description }).subscribe({
+      next: (created) => {
+        this.isCreatingCustom.set(false);
+        this.specialties.update((list) => [...list, created]);
+        this.selectedSpecialty.set(created.code || null);
+        this.closeCustomSpecialtyModal();
+      },
+      error: (err) => {
+        this.isCreatingCustom.set(false);
+        this.customError.set(
+          err?.error?.message || 'Error al crear la especialidad personalizada.'
+        );
+      },
+    });
   }
 
   async confirmSpecialty(): Promise<void> {
@@ -64,11 +115,15 @@ export class SpecialtySelectionComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      await this.doctorProfileService.assignSpecialty(specialty);
+      await this.doctorProfileService.assignSpecialty(specialty as MedicalSpecialty);
       await this.router.navigate(['/pacientes']);
     } catch (err: unknown) {
       console.error('Failed to assign specialty:', err);
-      const isConflict = typeof err === 'object' && err !== null && 'status' in err && (err as { status: number }).status === 409;
+      const isConflict =
+        typeof err === 'object' &&
+        err !== null &&
+        'status' in err &&
+        (err as { status: number }).status === 409;
       if (isConflict) {
         this.errorMessage.set('La especialidad ya fue configurada previamente y es inmutable.');
         setTimeout(() => this.router.navigate(['/pacientes']), 1500);

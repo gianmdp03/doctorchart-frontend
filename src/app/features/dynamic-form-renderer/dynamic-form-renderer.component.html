@@ -1,0 +1,188 @@
+<div class="dynamic-form-container">
+  @if (!template()) {
+    <div class="empty-state-notice">
+      <p class="text-sm text-slate-500 italic">No hay plantilla clínica seleccionada.</p>
+    </div>
+  } @else {
+    <form [formGroup]="form()" class="space-y-6">
+      <!-- Active Categories in Template -->
+      @for (category of enabledCategories(); track category.categoryKey) {
+        <section class="category-card">
+          <div class="category-header">
+            <h4 class="category-title">{{ category.title }}</h4>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+            @for (field of category.fields; track field.key) {
+              <div
+                class="field-item"
+                [class.col-span-full]="field.type === 'TEXTAREA'"
+              >
+                <!-- Label -->
+                @if (field.type !== 'BOOLEAN') {
+                  <label [for]="field.key" class="field-label">
+                    {{ field.label }}
+                    @if (field.required) {
+                      <span class="required-mark" aria-hidden="true">*</span>
+                    }
+                  </label>
+                }
+
+                <!-- Inputs based on type -->
+                @switch (field.type) {
+                  @case ('TEXT') {
+                    <div class="input-wrapper">
+                      <input
+                        type="text"
+                        [id]="field.key"
+                        [formControlName]="field.key"
+                        [placeholder]="field.placeholder || ''"
+                        class="form-input"
+                        [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
+                      />
+                      @if (field.unit) {
+                        <span class="input-unit">{{ field.unit }}</span>
+                      }
+                    </div>
+                  }
+
+                  @case ('NUMBER') {
+                    <div class="input-wrapper">
+                      <input
+                        type="number"
+                        step="any"
+                        [id]="field.key"
+                        [formControlName]="field.key"
+                        [placeholder]="field.placeholder || ''"
+                        class="form-input"
+                        [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
+                      />
+                      @if (field.unit) {
+                        <span class="input-unit">{{ field.unit }}</span>
+                      }
+                    </div>
+                  }
+
+                  @case ('DATE') {
+                    <div class="input-wrapper">
+                      <input
+                        type="date"
+                        [id]="field.key"
+                        [formControlName]="field.key"
+                        class="form-input"
+                        [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
+                      />
+                    </div>
+                  }
+
+                  @case ('SELECT') {
+                    <div class="input-wrapper">
+                      <select
+                        [id]="field.key"
+                        [formControlName]="field.key"
+                        class="form-select"
+                        [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
+                      >
+                        <option value="">Seleccionar una opción...</option>
+                        @for (opt of field.options || []; track opt.value) {
+                          <option [value]="opt.value">{{ opt.label }}</option>
+                        }
+                      </select>
+                    </div>
+                  }
+
+                  @case ('TEXTAREA') {
+                    <div class="input-wrapper">
+                      <textarea
+                        [id]="field.key"
+                        [formControlName]="field.key"
+                        [placeholder]="field.placeholder || ''"
+                        rows="3"
+                        class="form-textarea"
+                        [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
+                      ></textarea>
+                    </div>
+                  }
+
+                  @case ('BOOLEAN') {
+                    <div class="checkbox-wrapper">
+                      <label [for]="field.key" class="checkbox-label">
+                        <input
+                          type="checkbox"
+                          [id]="field.key"
+                          [formControlName]="field.key"
+                          class="form-checkbox"
+                        />
+                        <span class="checkbox-text">
+                          {{ field.label }}
+                          @if (field.required) {
+                            <span class="required-mark">*</span>
+                          }
+                        </span>
+                      </label>
+                    </div>
+                  }
+                }
+
+                <!-- Validation error feedback -->
+                @if (form().get(field.key)?.invalid && form().get(field.key)?.touched) {
+                  <p class="error-feedback">
+                    Este campo es requerido.
+                  </p>
+                }
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Historical Tolerance Section (Orphaned Fields from Previous Encounters) -->
+      @if (orphanedFields().length > 0) {
+        <section class="historical-card" data-testid="historical-section">
+          <div
+            class="historical-header"
+            (click)="toggleHistoricalExpanded()"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="toggleHistoricalExpanded()"
+            (keydown.space)="toggleHistoricalExpanded()"
+          >
+            <div class="flex items-center gap-2">
+              <span class="historical-badge">Histórico</span>
+              <h4 class="historical-title">
+                Datos Adicionales Registrados Previamente ({{ orphanedFields().length }})
+              </h4>
+            </div>
+            <button
+              type="button"
+              class="historical-toggle-btn"
+              [attr.aria-expanded]="isHistoricalExpanded()"
+            >
+              {{ isHistoricalExpanded() ? 'Ocultar ▲' : 'Mostrar ▼' }}
+            </button>
+          </div>
+
+          @if (isHistoricalExpanded()) {
+            <div class="historical-body">
+              <p class="historical-notice">
+                Estos datos fueron registrados en consultas anteriores bajo una versión previa de la
+                plantilla médica. Se conservan intactos en el historial del paciente para referencia clínica.
+              </p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                @for (item of orphanedFields(); track item.key) {
+                  <div class="historical-item" [attr.data-field-key]="item.key">
+                    <span class="historical-item-label">{{ item.label }}</span>
+                    <div class="historical-item-value">
+                      {{ formatHistoricalValue(item.value) }}
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </section>
+      }
+    </form>
+  }
+</div>

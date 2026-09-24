@@ -505,4 +505,13 @@
       </div>
     </div>
   }
+
+  <!-- New Encounter Clinical Modal Dialog -->
+  <app-new-encounter-dialog
+    [isOpen]="isNewEncounterModalOpen()"
+    [patientId]="activePatientService.patientId()"
+    [patientName]="activePatientService.activePatient()?.fullName || ''"
+    (closeDialog)="closeNewEncounterModal()"
+    (encounterCreated)="onEncounterCreated()"
+  />
 </div>

@@ -46,6 +46,8 @@ import { ClinicalTimelineComponent } from './clinical-timeline/clinical-timeline
 import { GrowthCurvesComponent } from '../growth-curves/growth-curves.component';
 import { MilestonesComponent } from '../milestones/milestones.component';
 
+import { NewEncounterDialogComponent } from '../new-encounter-dialog/new-encounter-dialog.component';
+
 export type PatientRecordTab = 'resumen' | 'historia' | 'herramientas' | 'curvas' | 'hitos' | 'recetas';
 
 export interface RecordTabItem {
@@ -91,6 +93,7 @@ export interface ComplicationChip {
     ClinicalTimelineComponent,
     GrowthCurvesComponent,
     MilestonesComponent,
+    NewEncounterDialogComponent,
   ],
   providers: [
     provideIcons({
@@ -130,6 +133,7 @@ export class PatientRecordComponent implements OnInit {
   // Flattened 4-Tab Hierarchy
   readonly selectedTab = signal<PatientRecordTab>('resumen');
   readonly isMoreMenuOpen = signal<boolean>(false);
+  readonly isNewEncounterModalOpen = signal<boolean>(false);
 
   readonly isChild = computed(() => {
     return this.activePatientService.ageInYears() < 16;
@@ -298,6 +302,11 @@ export class PatientRecordComponent implements OnInit {
   openNewEncounterModal(specialty?: MedicalSpecialty, event?: Event): void {
     if (event) event.stopPropagation();
     this.isMoreMenuOpen.set(false);
+    this.isNewEncounterModalOpen.set(true);
+  }
+
+  closeNewEncounterModal(): void {
+    this.isNewEncounterModalOpen.set(false);
   }
 
   openEncounterDetail(encounterId: number): void {

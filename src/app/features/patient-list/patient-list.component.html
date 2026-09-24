@@ -92,6 +92,16 @@
           Menores (< 18 años)
         </button>
       }
+
+      <!-- Columns configuration trigger -->
+      <button
+        type="button"
+        class="m3-chip btn-columns-trigger"
+        (click)="openColumnsModal()"
+        title="Personalizar campos visibles en el directorio"
+      >
+        ⚙ Columnas
+      </button>
     </div>
   </div>
 
@@ -115,7 +125,9 @@
             </div>
             <div>
               <div class="patient-card-name">{{ patient.fullName }} (ID #{{ patient.id }})</div>
-              <div class="patient-card-age">{{ patient.ageDisplay }} • F. Nac: {{ patient.birthDateDisplay }}</div>
+              @if (workspaceStore.isColumnVisible('birthDate')) {
+                <div class="patient-card-age">{{ patient.ageDisplay }} • F. Nac: {{ patient.birthDateDisplay }}</div>
+              }
             </div>
             <span
               class="m3-badge"
@@ -127,9 +139,15 @@
           </div>
 
           <div class="patient-card-body">
-            <p><strong>DNI:</strong> {{ patient.dni }}</p>
-            <p><strong>Contacto:</strong> {{ patient.tutor }}</p>
-            <p><strong>Último Control:</strong> {{ patient.lastCheckup }}</p>
+            @if (workspaceStore.isColumnVisible('nationalId')) {
+              <p><strong>DNI:</strong> {{ patient.dni }}</p>
+            }
+            @if (workspaceStore.isColumnVisible('phone')) {
+              <p><strong>Contacto:</strong> {{ patient.tutor }}</p>
+            }
+            @if (workspaceStore.isColumnVisible('lastCheckup')) {
+              <p><strong>Último Control:</strong> {{ patient.lastCheckup }}</p>
+            }
           </div>
         </div>
 
@@ -191,5 +209,11 @@
       }
     </div>
   }
+
+  <!-- Patient Columns Configuration Modal -->
+  <app-patient-columns-config
+    [isOpen]="isColumnsModalOpen()"
+    (closeDialog)="closeColumnsModal()"
+  />
 
 </div>

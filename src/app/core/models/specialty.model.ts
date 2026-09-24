@@ -17,9 +17,20 @@ export type MedicalSpecialty =
   | 'GASTROENTEROLOGY';
 
 export interface SpecialtySummary {
-  specialty: MedicalSpecialty;
-  displayName: string;
-  description: string;
+  id?: number;
+  code?: string;
+  name?: string;
+  description?: string;
+  isSystem?: boolean;
+  active?: boolean;
+  specialty?: MedicalSpecialty | string;
+  displayName?: string;
+}
+
+export interface CreateSpecialtyRequest {
+  code?: string;
+  name: string;
+  description?: string;
 }
 
 export interface SpecialtyOption {

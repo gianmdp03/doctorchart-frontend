@@ -54,6 +54,10 @@ export interface ClinicalEncounterRequest {
   secondaryDiagnoses?: DiagnosisItem[];
   clinicalImpression?: string;
 
+  templateId?: number | null;
+  dynamicData?: Record<string, unknown>;
+  snapshotFieldLabels?: Record<string, string>;
+
   // P - Plan
   treatmentPlan?: string;
   prescriptions?: PrescriptionItem[];

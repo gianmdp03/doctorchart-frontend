@@ -151,8 +151,12 @@ function mapDtoToCardItem(dto: PatientListDTO): PatientCardItem {
   };
 }
 
+import { WorkspaceStore } from '../../core/services/workspace.store';
+import { PatientColumnsConfigComponent } from '../patient-columns-config/patient-columns-config.component';
+
 @Component({
   selector: 'app-patient-list',
+  imports: [PatientColumnsConfigComponent],
   templateUrl: './patient-list.component.html',
   styleUrl: './patient-list.component.css',
 })
@@ -160,6 +164,7 @@ export class PatientListComponent implements OnInit {
   private readonly patientService = inject(PatientService);
   readonly activePatientService = inject(ActivePatientService);
   readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
+  readonly workspaceStore = inject(WorkspaceStore);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
@@ -171,6 +176,7 @@ export class PatientListComponent implements OnInit {
   readonly searchQuery = signal<string>('');
   readonly isLoading = signal<boolean>(false);
   readonly isLoadingMore = signal<boolean>(false);
+  readonly isColumnsModalOpen = signal<boolean>(false);
 
   readonly currentPage = signal<number>(0);
   readonly pageSize = 20;
@@ -185,7 +191,7 @@ export class PatientListComponent implements OnInit {
   constructor() {
     effect(() => {
       const el = this.sentinelRef()?.nativeElement;
-      if (!isPlatformBrowser(this.platformId) || !el) {
+      if (!isPlatformBrowser(this.platformId) || !el || typeof IntersectionObserver === 'undefined') {
         return;
       }
       if (this.observer) {
@@ -230,6 +236,14 @@ export class PatientListComponent implements OnInit {
       return true;
     });
   });
+
+  openColumnsModal(): void {
+    this.isColumnsModalOpen.set(true);
+  }
+
+  closeColumnsModal(): void {
+    this.isColumnsModalOpen.set(false);
+  }
 
   ngOnInit(): void {
     this.loadInitial();

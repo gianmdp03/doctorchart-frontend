@@ -45,22 +45,42 @@
       </div>
     } @else {
       <section class="specialty-grid" aria-label="Catálogo de especialidades">
-        @for (item of specialties(); track item.specialty) {
+        @for (item of specialties(); track item.code || item.specialty) {
           <button
             type="button"
             class="specialty-card"
-            [class.selected]="selectedSpecialty() === item.specialty"
-            (click)="select(item.specialty)"
+            [class.selected]="selectedSpecialty() === (item.code || item.specialty)"
+            (click)="select(item.code || item.specialty || '')"
           >
             <div class="card-radio" aria-hidden="true">
               <span class="radio-circle"></span>
             </div>
             <div class="card-body">
-              <h3 class="card-title">{{ item.displayName }}</h3>
-              <p class="card-desc">{{ item.description }}</p>
+              <div class="flex items-center gap-2">
+                <h3 class="card-title">{{ item.name || item.displayName }}</h3>
+                @if (item.isSystem === false) {
+                  <span class="custom-badge">Personalizada</span>
+                }
+              </div>
+              <p class="card-desc">{{ item.description || 'Especialidad adaptada para tu práctica médica' }}</p>
             </div>
           </button>
         }
+
+        <!-- Tarjeta para crear Especialidad Personalizada -->
+        <button
+          type="button"
+          class="specialty-card custom-create-card"
+          (click)="openCustomSpecialtyModal()"
+        >
+          <div class="card-radio-icon">
+            <span class="plus-icon">+</span>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title text-blue-600">+ Otra / Personalizada</h3>
+            <p class="card-desc">Crea tu propia especialidad médica con formularios y campos a medida.</p>
+          </div>
+        </button>
       </section>
 
       <footer class="onboarding-footer">
@@ -91,4 +111,68 @@
       </footer>
     }
   </div>
+
+  <!-- Modal: Crear Especialidad Personalizada -->
+  @if (isCustomModalOpen()) {
+    <div class="modal-backdrop" (click)="closeCustomSpecialtyModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header-row">
+          <h3 class="modal-title">Nueva Especialidad Médica</h3>
+          <button type="button" class="btn-close-modal" (click)="closeCustomSpecialtyModal()">✕</button>
+        </div>
+
+        @if (customError()) {
+          <div class="modal-error-banner">
+            <span>{{ customError() }}</span>
+          </div>
+        }
+
+        <div class="modal-form-content">
+          <div class="form-group">
+            <label class="form-label">Nombre de la Especialidad *</label>
+            <input
+              type="text"
+              [ngModel]="customName()"
+              (ngModelChange)="customName.set($event)"
+              placeholder="Ej: Medicina Integrativa, Otorrinolaringología..."
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Descripción o Enfoque Clínico</label>
+            <textarea
+              [ngModel]="customDescription()"
+              (ngModelChange)="customDescription.set($event)"
+              placeholder="Describe el ámbito clínico de atención..."
+              rows="3"
+              class="form-textarea"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-modal-cancel"
+            (click)="closeCustomSpecialtyModal()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-modal-submit"
+            [disabled]="!customName().trim() || isCreatingCustom()"
+            (click)="createCustomSpecialty()"
+          >
+            @if (isCreatingCustom()) {
+              <span>Creando...</span>
+            } @else {
+              <span>Crear y Seleccionar</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

@@ -13,6 +13,7 @@ describe('SpecialtySelectionComponent', () => {
   let fixture: ComponentFixture<SpecialtySelectionComponent>;
   let specialtyServiceMock: {
     getSpecialties: ReturnType<typeof vi.fn>;
+    createCustomSpecialty: ReturnType<typeof vi.fn>;
   };
   let doctorProfileServiceMock: {
     hasSpecialty: ReturnType<typeof signal<boolean>>;
@@ -32,6 +33,7 @@ describe('SpecialtySelectionComponent', () => {
   beforeEach(async () => {
     specialtyServiceMock = {
       getSpecialties: vi.fn().mockReturnValue(of(mockSpecialties)),
+      createCustomSpecialty: vi.fn(),
     };
     doctorProfileServiceMock = {
       hasSpecialty: signal<boolean>(false),
@@ -94,4 +96,29 @@ describe('SpecialtySelectionComponent', () => {
 
     expect(component.errorMessage()).toContain('inmutable');
   });
+
+  it('should open modal and create custom specialty', () => {
+    specialtyServiceMock.createCustomSpecialty = vi.fn().mockReturnValue(
+      of({
+        code: 'MEDICINA_INTEGRATIVA',
+        name: 'Medicina Integrativa',
+        displayName: 'Medicina Integrativa',
+        description: 'Enfoque holístico',
+        isSystem: false,
+      })
+    );
+
+    component.openCustomSpecialtyModal();
+    expect(component.isCustomModalOpen()).toBe(true);
+
+    component.customName.set('Medicina Integrativa');
+    component.customDescription.set('Enfoque holístico');
+
+    component.createCustomSpecialty();
+
+    expect(component.isCustomModalOpen()).toBe(false);
+    expect(component.specialties().length).toBe(3);
+    expect(component.selectedSpecialty()).toBe('MEDICINA_INTEGRATIVA');
+  });
 });
+

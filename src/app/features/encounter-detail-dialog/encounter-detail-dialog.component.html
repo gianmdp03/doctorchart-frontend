@@ -288,6 +288,24 @@
             </div>
           </div>
 
+          <!-- DYNAMIC FORM TEMPLATE & HISTORICAL SNAPSHOT -->
+          @if (enc.dynamicData && (enc.templateId || enc.snapshotFieldLabels || encounterTemplate())) {
+            <div class="soap-detail-card card-dynamic mt-4">
+              <div class="soap-card-header">
+                <span class="soap-letter badge-dynamic">📋</span>
+                <h3>Datos Clínicos Especializados (Formulario Dinámico)</h3>
+              </div>
+              <div class="soap-card-content">
+                <app-dynamic-form-renderer
+                  [template]="encounterTemplate()"
+                  [values]="enc.dynamicData"
+                  [historicalSnapshot]="enc.snapshotFieldLabels || null"
+                  [readonly]="true"
+                />
+              </div>
+            </div>
+          }
+
         </div>
 
         <!-- Modal Footer -->

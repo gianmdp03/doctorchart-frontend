@@ -8,18 +8,21 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
+import { WorkspaceService } from '../../core/services/workspace.service';
 import { ClinicalEncounterDetail } from '../../core/models/clinical-encounter.model';
+import { FormTemplate } from '../../core/models/workspace.model';
 import { MedicalSpecialty } from '../../core/models/specialty.model';
+import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
 
 @Component({
   selector: 'app-encounter-detail-dialog',
-  standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DynamicFormRendererComponent],
   templateUrl: './encounter-detail-dialog.component.html',
   styleUrl: './encounter-detail-dialog.component.css',
 })
 export class EncounterDetailDialogComponent {
   private readonly encounterService = inject(ClinicalEncounterService);
+  private readonly workspaceService = inject(WorkspaceService);
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly isOpen = signal<boolean>(false);
@@ -27,6 +30,7 @@ export class EncounterDetailDialogComponent {
   readonly errorMessage = signal<string | null>(null);
 
   readonly encounter = signal<ClinicalEncounterDetail | null>(null);
+  readonly encounterTemplate = signal<FormTemplate | null>(null);
 
   private openedAt = 0;
   private backdropMouseDown = false;
@@ -57,6 +61,7 @@ export class EncounterDetailDialogComponent {
   closeModal(): void {
     this.isOpen.set(false);
     this.encounter.set(null);
+    this.encounterTemplate.set(null);
     this.errorMessage.set(null);
     this.isLoading.set(false);
   }
@@ -93,6 +98,14 @@ export class EncounterDetailDialogComponent {
 
   displayEncounter(enc: ClinicalEncounterDetail): void {
     this.encounter.set(enc);
+    if (enc.templateId) {
+      this.workspaceService.getTemplateById(enc.templateId).subscribe({
+        next: (tmpl) => this.encounterTemplate.set(tmpl),
+        error: () => this.encounterTemplate.set(null),
+      });
+    } else {
+      this.encounterTemplate.set(null);
+    }
   }
 
   printEncounter(): void {

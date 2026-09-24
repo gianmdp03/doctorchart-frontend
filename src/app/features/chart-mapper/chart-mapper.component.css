@@ -1,0 +1,303 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modal-card {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 540px;
+  padding: 1.5rem;
+}
+
+.modal-card.modal-xl {
+  max-width: 780px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.modal-icon-badge {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  background-color: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.modal-subtitle {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin-top: 0.125rem;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.btn-close-modal:hover {
+  color: #475569;
+}
+
+.alert-banner {
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.alert-error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.alert-success {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.loading-state-box {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.charts-body-scroll {
+  margin-top: 1rem;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.empty-state-notice {
+  padding: 2.5rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.chart-card {
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: all 0.15s ease;
+}
+
+.chart-card.active-chart {
+  border-color: #bfdbfe;
+  background-color: #f8fafc;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.05);
+}
+
+.chart-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.chart-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 0.375rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.chart-card-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.chart-card-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.125rem;
+  line-height: 1.35;
+}
+
+.toggle-switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.toggle-checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.toggle-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Slots */
+.slot-mappings-panel {
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.slot-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.slot-mapping-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+}
+
+.slot-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slot-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.slot-code {
+  font-size: 0.6875rem;
+  color: #64748b;
+}
+
+.slot-type-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  background-color: #f1f5f9;
+  color: #475569;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+}
+
+.slot-select-control {
+  width: 100%;
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+.slot-select-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  margin-top: 1.25rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-cancel {
+  padding: 0.5rem 1rem;
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1.25rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-save:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
