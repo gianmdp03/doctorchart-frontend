@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -21,6 +21,15 @@ export class SpecialtySelectionComponent implements OnInit {
 
   readonly specialties = signal<SpecialtySummary[]>([]);
   readonly selectedSpecialty = signal<MedicalSpecialty | string | null>(null);
+  readonly selectedSpecialtyItem = computed(() => {
+    const sel = this.selectedSpecialty();
+    if (!sel) return null;
+    return (
+      this.specialties().find(
+        (s) => s.code === sel || s.specialty === sel || (s.code && s.code.toUpperCase() === sel.toUpperCase())
+      ) || null
+    );
+  });
   readonly isLoading = signal<boolean>(true);
   readonly isSubmitting = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
@@ -115,7 +124,8 @@ export class SpecialtySelectionComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      await this.doctorProfileService.assignSpecialty(specialty as MedicalSpecialty);
+      const normalizedSpecialty = specialty.trim().toUpperCase().replace(/-/g, '_') as MedicalSpecialty;
+      await this.doctorProfileService.assignSpecialty(normalizedSpecialty);
       await this.router.navigate(['/pacientes']);
     } catch (err: unknown) {
       console.error('Failed to assign specialty:', err);

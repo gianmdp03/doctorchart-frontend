@@ -85,8 +85,8 @@
 
       <footer class="onboarding-footer">
         <div class="footer-status">
-          @if (selectedSpecialty()) {
-            <span>Especialidad seleccionada: <strong>{{ selectedSpecialty() }}</strong></span>
+          @if (selectedSpecialtyItem(); as selected) {
+            <span>Especialidad seleccionada: <strong>{{ selected.displayName || selected.name }}</strong></span>
           } @else {
             <span class="prompt-text">Por favor, haz clic en una de las especialidades para continuar.</span>
           }

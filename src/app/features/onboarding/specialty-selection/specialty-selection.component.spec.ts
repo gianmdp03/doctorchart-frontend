@@ -88,6 +88,22 @@ describe('SpecialtySelectionComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/pacientes']);
   });
 
+  it('should normalize lowercase snake_case specialty to uppercase on confirm', async () => {
+    component.select('general_medicine');
+    doctorProfileServiceMock.assignSpecialty.mockResolvedValue({
+      id: 1,
+      userId: 'doc-1',
+      specialty: 'GENERAL_MEDICINE',
+      isSpecialtyLocked: true,
+      createdAt: '2026-09-18T12:00:00Z',
+    });
+
+    await component.confirmSpecialty();
+
+    expect(doctorProfileServiceMock.assignSpecialty).toHaveBeenCalledWith('GENERAL_MEDICINE');
+    expect(router.navigate).toHaveBeenCalledWith(['/pacientes']);
+  });
+
   it('should handle conflict (409) error if specialty was already chosen', async () => {
     component.select('PEDIATRICS');
     doctorProfileServiceMock.assignSpecialty.mockRejectedValue({ status: 409 });
