@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ConsultasComponent } from './consultas.component';
-import { PatientService } from '../../core/services/patient.service';
+import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { signal } from '@angular/core';
@@ -11,17 +11,35 @@ describe('ConsultasComponent', () => {
   let component: ConsultasComponent;
   let fixture: ComponentFixture<ConsultasComponent>;
 
-  let patientServiceMock: any;
+  let clinicalEncounterServiceMock: any;
   let activePatientServiceMock: any;
   let specialtyServiceMock: any;
 
   beforeEach(async () => {
-    patientServiceMock = {
-      getPatients: vi.fn().mockReturnValue(
+    clinicalEncounterServiceMock = {
+      getAll: vi.fn().mockReturnValue(
         of({
           content: [
-            { id: 1, fullName: 'Mateo Rossi' },
-            { id: 2, fullName: 'Lucía Fernández' },
+            {
+              id: 1,
+              patientId: 10,
+              patientFullName: 'Mateo Rossi',
+              encounterDate: '2026-09-24T10:00:00Z',
+              consultationType: 'SOAP_ROUTINE',
+              chiefComplaint: 'Control de rutina',
+              primaryDiagnosisDescription: 'Rinitis alérgica',
+              primaryDiagnosisCode: 'J30.1',
+            },
+            {
+              id: 2,
+              patientId: 11,
+              patientFullName: 'Lucía Fernández',
+              encounterDate: '2026-09-23T14:30:00Z',
+              consultationType: 'SOAP_FIRST_TIME',
+              chiefComplaint: 'Fiebre persistente',
+              primaryDiagnosisDescription: 'Faringitis aguda',
+              primaryDiagnosisCode: 'J02.9',
+            },
           ],
           totalElements: 2,
         })
@@ -47,7 +65,7 @@ describe('ConsultasComponent', () => {
       imports: [ConsultasComponent],
       providers: [
         provideRouter([]),
-        { provide: PatientService, useValue: patientServiceMock },
+        { provide: ClinicalEncounterService, useValue: clinicalEncounterServiceMock },
         { provide: ActivePatientService, useValue: activePatientServiceMock },
         { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },
       ],
@@ -63,7 +81,7 @@ describe('ConsultasComponent', () => {
   });
 
   it('should load consultations on init', () => {
-    expect(patientServiceMock.getPatients).toHaveBeenCalled();
+    expect(clinicalEncounterServiceMock.getAll).toHaveBeenCalled();
     expect(component.consultations().length).toBe(2);
   });
 
@@ -83,6 +101,5 @@ describe('ConsultasComponent', () => {
         detail: { encounterId: 201 },
       })
     );
-    dispatchSpy.mockRestore();
   });
 });

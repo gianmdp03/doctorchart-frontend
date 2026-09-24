@@ -3,18 +3,12 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideLayoutDashboard,
-  lucideCalendar,
   lucideUsers,
   lucideStethoscope,
-  lucideTrendingUp,
-  lucideBaby,
-  lucideHeartPulse,
   lucideChevronLeft,
   lucideChevronRight,
-  lucideActivity,
-  lucideSparkles,
-  lucidePill,
   lucideShield,
+  lucideSliders,
 } from '@ng-icons/lucide';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { DoctorProfileService } from '../../core/services/doctor-profile.service';
@@ -26,18 +20,12 @@ import { AuthService } from '../../core/services/auth.service';
   providers: [
     provideIcons({
       lucideLayoutDashboard,
-      lucideCalendar,
       lucideUsers,
       lucideStethoscope,
-      lucideTrendingUp,
-      lucideBaby,
-      lucideHeartPulse,
       lucideChevronLeft,
       lucideChevronRight,
-      lucideActivity,
-      lucideSparkles,
-      lucidePill,
       lucideShield,
+      lucideSliders,
     }),
   ],
   templateUrl: './sidebar.component.html',
@@ -49,10 +37,6 @@ export class SidebarComponent {
   readonly authService = inject(AuthService);
 
   readonly isCollapsed = signal<boolean>(false);
-
-  readonly isPediatrics = computed(() => this.specialtyService.activeSpecialty() === 'PEDIATRICS');
-  readonly isCardiology = computed(() => this.specialtyService.activeSpecialty() === 'CARDIOLOGY');
-  readonly isGynecology = computed(() => this.specialtyService.activeSpecialty() === 'GYNECOLOGY');
 
   readonly clinicianInitials = computed(() => {
     const name = this.authService.userName();

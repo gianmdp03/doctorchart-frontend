@@ -11,6 +11,7 @@ describe('WorkspaceStore', () => {
     getCurrentSetup: ReturnType<typeof vi.fn>;
     updateWorkspace: ReturnType<typeof vi.fn>;
     saveDoctorChartConfigs: ReturnType<typeof vi.fn>;
+    resetToDefaults: ReturnType<typeof vi.fn>;
   };
 
   const mockSetup: WorkspaceSetup = {
@@ -20,6 +21,7 @@ describe('WorkspaceStore', () => {
     specialtyCode: 'PEDIATRICS',
     specialtyDisplayName: 'Pediatría y Neonatología',
     onboardingCompleted: true,
+    onboardingStep: 'COMPLETED',
     patientColumnsConfig: {
       nationalId: true,
       phone: false,
@@ -43,6 +45,7 @@ describe('WorkspaceStore', () => {
       getCurrentSetup: vi.fn().mockReturnValue(of(mockSetup)),
       updateWorkspace: vi.fn(),
       saveDoctorChartConfigs: vi.fn(),
+      resetToDefaults: vi.fn().mockReturnValue(of(mockSetup)),
     };
 
     TestBed.configureTestingModule({
@@ -116,5 +119,23 @@ describe('WorkspaceStore', () => {
     expect(workspaceServiceMock.saveDoctorChartConfigs).toHaveBeenCalledWith(newConfigs);
     expect(saved).toEqual(newConfigs);
     expect(store.chartConfigs()).toEqual(newConfigs);
+  });
+
+  it('should reset workspace to defaults and update current setup', async () => {
+    store.setSetup(mockSetup);
+    const resetSetup: WorkspaceSetup = {
+      ...mockSetup,
+      defaultPatientTemplate: null,
+      defaultEncounterTemplate: null,
+      chartConfigs: [],
+      onboardingDraft: null,
+    };
+    workspaceServiceMock.resetToDefaults = vi.fn().mockReturnValue(of(resetSetup));
+
+    const result = await store.resetToDefaults();
+
+    expect(workspaceServiceMock.resetToDefaults).toHaveBeenCalled();
+    expect(result.chartConfigs).toEqual([]);
+    expect(store.currentSetup()).toEqual(resetSetup);
   });
 });

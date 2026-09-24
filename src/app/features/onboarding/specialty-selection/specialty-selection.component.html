@@ -2,9 +2,9 @@
   <div class="onboarding-card">
     <header class="onboarding-header">
       <div class="header-top-row">
-        <div class="brand-pill">
-          <span class="icon-lock">🔒</span>
-          <span>Configuración Inicial de Cuenta Médica</span>
+      <div class="brand-pill">
+        <span class="icon-lock">🔒</span>
+        <span>Configuración inicial · Paso 1 de 6</span>
         </div>
         <button type="button" class="btn-signout-onboarding" (click)="handleSignOut()" title="Cerrar sesión">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -26,8 +26,8 @@
           </svg>
         </div>
         <div class="warning-content">
-          <strong>Atención: Esta selección es permanente y definirá tus formularios clínicos.</strong>
-          <span>Una vez confirmada, tu perfil quedará blindado en el backend y no podrá ser modificado.</span>
+          <strong>Esta especialidad definirá las sugerencias para tus formularios clínicos.</strong>
+          <span>Podrás revisarla mientras completes la configuración inicial. Se confirmará al finalizar el wizard.</span>
         </div>
       </div>
     </header>
@@ -100,9 +100,9 @@
         >
           @if (isSubmitting()) {
             <span class="spinner-sm"></span>
-            <span>Confirmando y Bloqueando Especialidad...</span>
+            <span>Guardando especialidad...</span>
           } @else {
-            <span>Confirmar Especialidad Definitiva</span>
+            <span>Siguiente: configurar formulario</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
             </svg>

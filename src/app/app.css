@@ -1,9 +1,11 @@
 /* Layout Shell Architecture */
 .app-layout-shell {
   display: flex;
+  flex: 1;
   min-height: 100vh;
   width: 100%;
   background-color: #f8fafc;
+  align-items: stretch;
 }
 
 .app-main-viewport {
@@ -17,6 +19,8 @@
 
 .app-main-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 1.5rem;
   width: 100%;
   max-width: 1600px;

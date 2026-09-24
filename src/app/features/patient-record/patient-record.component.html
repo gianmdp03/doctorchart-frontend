@@ -14,7 +14,6 @@
       (newCheckup)="openNewCheckupModal()"
       (printSummary)="printRecord()"
       (viewCurves)="navigateToGrowthCurves()"
-      (viewMilestones)="navigateToMilestones()"
     />
 
     <!-- 2. FLATTENED HORIZONTAL TABS -->
@@ -38,6 +37,15 @@
     <div class="tab-content-area">
       <!-- TAB 1: RESUMEN & ANTECEDENTES -->
       @if (selectedTab() === 'resumen') {
+        @if (patientFormTemplate(); as template) {
+          <section class="tab-panel animate-fade-in" aria-label="Datos del paciente">
+            <app-dynamic-form-renderer
+              [template]="template"
+              [values]="patientFormValues()"
+              [readonly]="true"
+            />
+          </section>
+        } @else {
         <section class="tab-panel animate-fade-in" aria-label="Resumen & Antecedentes">
           <div class="panel-grid-cards">
             <!-- Card 1: Identificación y Contacto -->
@@ -183,6 +191,7 @@
             </div>
           </div>
         </section>
+        }
       }
 
       <!-- TAB 2: HISTORIA CLÍNICA (CONSULTAS SOAP) -->
@@ -206,204 +215,10 @@
         </section>
       }
 
-      <!-- TAB 3: HERRAMIENTAS DE ESPECIALIDAD -->
-      @if (selectedTab() === 'herramientas') {
-        <section class="tab-panel animate-fade-in" aria-label="Herramientas de Especialidad">
-          @if (doctorSpecialtyService.isPediatricMode() || isChild()) {
-            <!-- Pediatric Specialty Tools -->
-            <div class="clinical-section-card">
-              <div class="sec-card-header">
-                <ng-icon name="lucideBaby" class="text-amber-600" />
-                <h3 class="sec-card-title">Seguimiento Somatométrico & Curvas OMS</h3>
-              </div>
-
-              <div class="sec-card-body">
-                <div class="pediatric-nav-strip">
-                  <button type="button" class="secondary-outline-btn btn-sm" (click)="navigateToGrowthCurves()">
-                    <ng-icon name="lucideTrendingUp" />
-                    <span>Ver Curvas de Crecimiento OMS</span>
-                  </button>
-                  <button type="button" class="secondary-outline-btn btn-sm" (click)="navigateToMilestones()">
-                    <ng-icon name="lucideBaby" />
-                    <span>Ver Hitos del Desarrollo (0-15 años)</span>
-                  </button>
-                  <button type="button" class="cta-primary-btn btn-sm" (click)="openNewCheckupModal($event)">
-                    <ng-icon name="lucidePlus" />
-                    <span>+ Registrar Control Somatométrico</span>
-                  </button>
-                </div>
-
-                <!-- Antropometría comparativa resumida -->
-                <div class="metrics-grid-summary mt-4">
-                  <div class="metric-box">
-                    <span class="metric-box-title">Ganancia Ponderal Total</span>
-                    <strong class="metric-box-val">{{ totalWeightGain() }}</strong>
-                    <span class="metric-box-sub">Desde peso de nacimiento</span>
-                  </div>
-                  <div class="metric-box">
-                    <span class="metric-box-title">Crecimiento Longitudinal</span>
-                    <strong class="metric-box-val">{{ totalHeightGain() }}</strong>
-                    <span class="metric-box-sub">Incremento en talla</span>
-                  </div>
-                  <div class="metric-box">
-                    <span class="metric-box-title">Crecimiento Craneal</span>
-                    <strong class="metric-box-val">{{ totalHeadCircGain() }}</strong>
-                    <span class="metric-box-sub">Perímetro cefálico</span>
-                  </div>
-                </div>
-
-                <!-- Somatometric Table -->
-                <div class="encounters-table-wrap mt-4">
-                  <table class="clinical-table">
-                    <thead>
-                      <tr>
-                        <th>N° Control</th>
-                        <th>Fecha</th>
-                        <th>Edad</th>
-                        <th>Motivo</th>
-                        <th>Peso</th>
-                        <th>Talla</th>
-                        <th>P. Cefálico</th>
-                        <th>Percentil</th>
-                        <th>Observaciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (c of checkupTableData(); track c.code) {
-                        <tr [class.latest-checkup-row]="c.isLatest">
-                          <td><strong>{{ c.code }}</strong></td>
-                          <td>{{ c.date }}</td>
-                          <td>{{ c.age }}</td>
-                          <td><span class="reason-pill">{{ c.reason }}</span></td>
-                          <td><strong>{{ c.weight }}</strong></td>
-                          <td>{{ c.height }}</td>
-                          <td>{{ c.headCircumference }}</td>
-                          <td><span class="percentile-pill">{{ c.percentile }}</span></td>
-                          <td><span class="text-xs text-slate-600">{{ c.observations }}</span></td>
-                        </tr>
-                      } @empty {
-                        <tr>
-                          <td colspan="9" class="text-center py-6 text-slate-500">
-                            Sin controles somatométricos registrados.
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          } @else if (doctorSpecialtyService.activeSpecialty() === 'CARDIOLOGY') {
-            <!-- Cardiology Specialty Tools -->
-            <div class="clinical-section-card">
-              <div class="sec-card-header">
-                <ng-icon name="lucideHeartPulse" class="text-rose-600" />
-                <h3 class="sec-card-title">Estratificación de Riesgo Cardiovascular</h3>
-              </div>
-              <div class="sec-card-body">
-                <div class="panel-grid-cards">
-                  <div class="info-item">
-                    <span class="item-label">Tabaquismo:</span>
-                    <span class="item-value">{{ smokingDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Actividad Física:</span>
-                    <span class="item-value">{{ physicalActivityDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Presión Arterial Basal:</span>
-                    <span class="item-value font-bold">{{ bloodPressureBaselineDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Score de Riesgo:</span>
-                    <span class="item-value font-bold text-teal-800">{{ cardioRiskScoreDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Índice de Masa Corporal (IMC):</span>
-                    <span class="item-value font-bold">{{ activePatientService.bmiDisplay() }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          } @else if (doctorSpecialtyService.activeSpecialty() === 'GYNECOLOGY') {
-            <!-- Gynecology Specialty Tools -->
-            <div class="clinical-section-card">
-              <div class="sec-card-header">
-                <ng-icon name="lucideSparkles" class="text-fuchsia-600" />
-                <h3 class="sec-card-title">Salud Gineco-Obstétrica y Cribado</h3>
-              </div>
-              <div class="sec-card-body">
-                <div class="panel-grid-cards">
-                  <div class="info-item">
-                    <span class="item-label">Fecha Última Menstruación (FUM):</span>
-                    <span class="item-value font-bold">{{ fumDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Fórmula Obstétrica:</span>
-                    <span class="item-value font-bold">{{ obstetricFormulaDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Ciclo Menstrual:</span>
-                    <span class="item-value">{{ menstrualCycleDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Anticoncepción:</span>
-                    <span class="item-value">{{ contraceptionDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Último PAP:</span>
-                    <span class="item-value">{{ papDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Última Mamografía:</span>
-                    <span class="item-value">{{ mammographyDisplay() }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          } @else {
-            <!-- General Medicine Specialty Tools -->
-            <div class="clinical-section-card">
-              <div class="sec-card-header">
-                <ng-icon name="lucideActivity" class="text-cyan-600" />
-                <h3 class="sec-card-title">Cribado Preventivo y Estado Antropométrico</h3>
-              </div>
-              <div class="sec-card-body">
-                <div class="panel-grid-cards">
-                  <div class="info-item">
-                    <span class="item-label">Índice de Masa Corporal (IMC):</span>
-                    <span class="item-value font-bold">{{ activePatientService.bmiDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Último Peso:</span>
-                    <span class="item-value">{{ activePatientService.formattedWeight() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Última Talla:</span>
-                    <span class="item-value">{{ activePatientService.formattedHeight() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Presión Arterial Basal:</span>
-                    <span class="item-value">{{ bloodPressureBaselineDisplay() }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          }
-        </section>
-      }
-
       <!-- TAB: CURVAS DE CRECIMIENTO OMS -->
       @if (selectedTab() === 'curvas') {
         <section class="tab-panel animate-fade-in" aria-label="Curvas OMS">
           <app-growth-curves />
-        </section>
-      }
-
-      <!-- TAB: HITOS DEL DESARROLLO (0-15 AÑOS) -->
-      @if (selectedTab() === 'hitos') {
-        <section class="tab-panel animate-fade-in" aria-label="Hitos del Desarrollo">
-          <app-milestones />
         </section>
       }
 
@@ -511,6 +326,7 @@
     [isOpen]="isNewEncounterModalOpen()"
     [patientId]="activePatientService.patientId()"
     [patientName]="activePatientService.activePatient()?.fullName || ''"
+    [previousEncountersCount]="encounters().length"
     (closeDialog)="closeNewEncounterModal()"
     (encounterCreated)="onEncounterCreated()"
   />

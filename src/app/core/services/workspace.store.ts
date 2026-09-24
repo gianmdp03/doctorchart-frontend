@@ -8,6 +8,8 @@ import {
   FormTemplate,
   ModuleConfig,
   PatientColumnsConfig,
+  QuickNotesUpdateRequest,
+  SaveOnboardingDraftRequest,
   WorkspaceSetup,
   WorkspaceUpdateRequest,
 } from '../models/workspace.model';
@@ -39,6 +41,10 @@ export class WorkspaceStore {
 
   readonly defaultTemplate = computed<FormTemplate | null>(() => {
     return this.currentSetup()?.defaultEncounterTemplate ?? null;
+  });
+
+  readonly defaultPatientTemplate = computed<FormTemplate | null>(() => {
+    return this.currentSetup()?.defaultPatientTemplate ?? null;
   });
 
   readonly chartConfigs = computed<DoctorChartConfig[]>(() => {
@@ -119,6 +125,32 @@ export class WorkspaceStore {
   }
 
   /**
+   * Persists the current wizard checkpoint without granting access to clinical modules.
+   */
+  async saveOnboardingDraft(payload: SaveOnboardingDraftRequest): Promise<WorkspaceSetup> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      const result = await firstValueFrom(this.workspaceService.saveOnboardingDraft(payload));
+      this.currentSetup.set(result);
+      return result;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar el avance del onboarding';
+      this.error.set(msg);
+      throw err;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async updateQuickNotes(content: string): Promise<WorkspaceSetup> {
+    const payload: QuickNotesUpdateRequest = { content };
+    const result = await firstValueFrom(this.workspaceService.updateQuickNotes(payload));
+    this.currentSetup.set(result);
+    return result;
+  }
+
+  /**
    * Updates workspace configuration in EDIT mode.
    */
   async updateWorkspace(payload: WorkspaceUpdateRequest): Promise<WorkspaceSetup> {
@@ -130,6 +162,25 @@ export class WorkspaceStore {
       return result;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al actualizar workspace';
+      this.error.set(msg);
+      throw err;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  /**
+   * Resets workspace configuration, custom templates and chart mappings to factory defaults.
+   */
+  async resetToDefaults(): Promise<WorkspaceSetup> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      const result = await firstValueFrom(this.workspaceService.resetToDefaults());
+      this.currentSetup.set(result);
+      return result;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al restablecer valores de fábrica';
       this.error.set(msg);
       throw err;
     } finally {

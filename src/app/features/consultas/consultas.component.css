@@ -1,8 +1,16 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+}
+
 .consultas-page {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   width: 100%;
+  flex: 1;
 }
 
 .consultas-header {
@@ -92,28 +100,6 @@
   border-color: #006874;
 }
 
-.specialty-filter-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.filter-icon {
-  position: absolute;
-  left: 0.75rem;
-  color: #94a3b8;
-  font-size: 0.95rem;
-}
-
-.specialty-select {
-  padding: 0.45rem 1rem 0.45rem 2.2rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  background-color: #ffffff;
-  color: #334155;
-  outline: none;
-}
 
 .consultas-table-card {
   background: #ffffff;
@@ -163,15 +149,6 @@
 
 .patient-link:hover {
   text-decoration: underline;
-}
-
-.specialty-pill {
-  font-size: 0.72rem;
-  font-weight: 600;
-  background-color: #e6f6f8;
-  color: #006874;
-  padding: 2px 7px;
-  border-radius: 6px;
 }
 
 .complaint-text {

@@ -65,9 +65,4 @@ describe('SidebarComponent', () => {
     component.toggleCollapse();
     expect(component.isCollapsed()).toBe(false);
   });
-
-  it('should detect pediatric specialty tools', () => {
-    expect(component.isPediatrics()).toBe(true);
-    expect(component.isCardiology()).toBe(false);
-  });
 });

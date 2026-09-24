@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { DoctorProfileService } from '../services/doctor-profile.service';
+import { WorkspaceStore } from '../services/workspace.store';
 
 /**
  * Functional Guard that forces authenticated clinicians to select their immutable medical specialty
@@ -10,6 +11,7 @@ import { DoctorProfileService } from '../services/doctor-profile.service';
 export const doctorOnboardingGuard: CanActivateFn = async (route, state) => {
   const authService = inject(AuthService);
   const doctorProfileService = inject(DoctorProfileService);
+  const workspaceStore = inject(WorkspaceStore);
   const router = inject(Router);
 
   await authService.authReady;
@@ -18,17 +20,22 @@ export const doctorOnboardingGuard: CanActivateFn = async (route, state) => {
     return true; // doctorchartPlanGuard handles redirect to login
   }
 
-  // Ensure profile is loaded
+  const setup = await workspaceStore.loadSetup();
+  if (setup?.onboardingCompleted) {
+    return true;
+  }
+
+  // Legacy accounts completed specialty selection before the workspace wizard existed.
+  // Keep their access intact when they do not yet have a workspace record.
   if (!doctorProfileService.loaded()) {
     await doctorProfileService.loadProfile();
   }
 
-  if (doctorProfileService.hasSpecialty()) {
+  if (!setup?.id && doctorProfileService.hasSpecialty()) {
     return true;
   }
 
-  // Specialty not yet selected -> redirect to onboarding selection screen
-  return router.createUrlTree(['/onboarding/select-specialty']);
+  return router.createUrlTree([setup?.specialtyId ? '/onboarding/setup' : '/onboarding/select-specialty']);
 };
 
 /**
@@ -37,6 +44,7 @@ export const doctorOnboardingGuard: CanActivateFn = async (route, state) => {
 export const preventCompletedOnboardingGuard: CanActivateFn = async (route, state) => {
   const authService = inject(AuthService);
   const doctorProfileService = inject(DoctorProfileService);
+  const workspaceStore = inject(WorkspaceStore);
   const router = inject(Router);
 
   await authService.authReady;
@@ -45,11 +53,16 @@ export const preventCompletedOnboardingGuard: CanActivateFn = async (route, stat
     return true;
   }
 
+  const setup = await workspaceStore.loadSetup();
+  if (setup?.onboardingCompleted) {
+    return router.createUrlTree(['/dashboard']);
+  }
+
   if (!doctorProfileService.loaded()) {
     await doctorProfileService.loadProfile();
   }
 
-  if (doctorProfileService.hasSpecialty()) {
+  if (!setup?.id && doctorProfileService.hasSpecialty()) {
     return router.createUrlTree(['/dashboard']);
   }
 

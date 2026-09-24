@@ -7,16 +7,44 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import {
+  lucideStethoscope,
+  lucideCalendar,
+  lucideClock,
+  lucideUser,
+  lucidePrinter,
+  lucideX,
+  lucideFileText,
+  lucideActivity,
+  lucidePill,
+  lucideClipboardList,
+  lucideCheckCircle2,
+} from '@ng-icons/lucide';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { WorkspaceService } from '../../core/services/workspace.service';
-import { ClinicalEncounterDetail } from '../../core/models/clinical-encounter.model';
+import { ClinicalEncounterDetail, VitalSigns } from '../../core/models/clinical-encounter.model';
 import { FormTemplate } from '../../core/models/workspace.model';
 import { MedicalSpecialty } from '../../core/models/specialty.model';
-import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
 
 @Component({
   selector: 'app-encounter-detail-dialog',
-  imports: [CommonModule, DynamicFormRendererComponent],
+  imports: [CommonModule, NgIcon],
+  providers: [
+    provideIcons({
+      lucideStethoscope,
+      lucideCalendar,
+      lucideClock,
+      lucideUser,
+      lucidePrinter,
+      lucideX,
+      lucideFileText,
+      lucideActivity,
+      lucidePill,
+      lucideClipboardList,
+      lucideCheckCircle2,
+    }),
+  ],
   templateUrl: './encounter-detail-dialog.component.html',
   styleUrl: './encounter-detail-dialog.component.css',
 })
@@ -98,6 +126,7 @@ export class EncounterDetailDialogComponent {
 
   displayEncounter(enc: ClinicalEncounterDetail): void {
     this.encounter.set(enc);
+
     if (enc.templateId) {
       this.workspaceService.getTemplateById(enc.templateId).subscribe({
         next: (tmpl) => this.encounterTemplate.set(tmpl),
@@ -158,5 +187,41 @@ export class EncounterDetailDialogComponent {
     if (bmi < 25.0) return { label: 'Peso Normal / Eutrófico', badgeClass: 'badge-success' };
     if (bmi < 30.0) return { label: 'Sobrepeso', badgeClass: 'badge-warning' };
     return { label: 'Obesidad', badgeClass: 'badge-danger' };
+  }
+
+  getDynamicEntries(enc: ClinicalEncounterDetail): { key: string; label: string; value: string }[] {
+    if (!enc.dynamicData) return [];
+    const labels = enc.snapshotFieldLabels || {};
+    return Object.entries(enc.dynamicData).map(([key, val]) => {
+      const label = labels[key] || this.formatKeyToLabel(key);
+      let valueStr = '—';
+      if (typeof val === 'boolean') {
+        valueStr = val ? 'Sí' : 'No';
+      } else if (val !== null && val !== undefined) {
+        valueStr = String(val);
+      }
+      return { key, label, value: valueStr };
+    });
+  }
+
+  hasVitals(vitals?: VitalSigns): boolean {
+    if (!vitals) return false;
+    return !!(
+      vitals.systolicBloodPressure ||
+      vitals.diastolicBloodPressure ||
+      vitals.heartRate ||
+      vitals.respiratoryRate ||
+      vitals.temperatureCelsius ||
+      vitals.oxygenSaturationPercent ||
+      vitals.weightKg ||
+      vitals.heightCm
+    );
+  }
+
+  private formatKeyToLabel(key: string): string {
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim();
   }
 }

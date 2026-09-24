@@ -7,6 +7,8 @@ import {
   DoctorChartConfig,
   FinishOnboardingRequest,
   FormTemplate,
+  QuickNotesUpdateRequest,
+  SaveOnboardingDraftRequest,
   WorkspaceSetup,
   WorkspaceUpdateRequest,
 } from '../models/workspace.model';
@@ -26,8 +28,20 @@ export class WorkspaceService {
     return this.http.post<WorkspaceSetup>(`${this.baseUrl}/workspace/finish-onboarding`, payload);
   }
 
+  saveOnboardingDraft(payload: SaveOnboardingDraftRequest): Observable<WorkspaceSetup> {
+    return this.http.put<WorkspaceSetup>(`${this.baseUrl}/workspace/onboarding-draft`, payload);
+  }
+
+  updateQuickNotes(payload: QuickNotesUpdateRequest): Observable<WorkspaceSetup> {
+    return this.http.put<WorkspaceSetup>(`${this.baseUrl}/workspace/quick-notes`, payload);
+  }
+
   updateWorkspace(payload: WorkspaceUpdateRequest): Observable<WorkspaceSetup> {
     return this.http.put<WorkspaceSetup>(`${this.baseUrl}/workspace`, payload);
+  }
+
+  resetToDefaults(): Observable<WorkspaceSetup> {
+    return this.http.post<WorkspaceSetup>(`${this.baseUrl}/workspace/reset-to-defaults`, {});
   }
 
   getTemplates(specialtyId?: number): Observable<FormTemplate[]> {

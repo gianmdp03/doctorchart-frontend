@@ -22,220 +22,198 @@
           <div class="m3-alert-error">
             <span>{{ errorMessage() }}</span>
           </div>
-          <button type="button" class="m3-button m3-button-tonal" (click)="closeModal()">
+          <button type="button" class="btn-primary-action" (click)="closeModal()">
             Cerrar
           </button>
         </div>
       } @else if (encounter(); as enc) {
-        <!-- Modal Header -->
-        <div class="m3-modal-header">
-          <div class="modal-title-wrap">
-            <span class="m3-badge specialty-badge" [class]="getSpecialtyBadgeClass(enc.specialty)">
-              {{ enc.specialty }}
-            </span>
+        <!-- Header Moderno -->
+        <header class="modal-header-modern">
+          <div class="header-main-info">
+            <div class="encounter-avatar-icon">
+              <ng-icon name="lucideStethoscope" />
+            </div>
             <div>
-              <h2 id="modal-encounter-detail-title" class="m3-modal-title">
-                Consulta Médica #{{ enc.id }} • {{ enc.patientFullName }}
+              <div class="header-tags-row">
+                <span class="type-pill">{{ getConsultationTypeLabel(enc.consultationType) }}</span>
+                <span class="encounter-number">#C-{{ enc.id }}</span>
+                @if (enc.specialty) {
+                  <span class="specialty-pill" [class]="getSpecialtyBadgeClass(enc.specialty)">
+                    {{ enc.specialty }}
+                  </span>
+                }
+              </div>
+              <h2 id="modal-encounter-detail-title" class="encounter-patient-title">
+                {{ enc.patientFullName }}
               </h2>
-              <div class="modal-subtitle-row">
-                <span>Fecha: <strong>{{ enc.encounterDate?.split('T')?.[0] || enc.encounterDate }}</strong></span>
-                <span>•</span>
-                <span>Tipo: <strong>{{ getConsultationTypeLabel(enc.consultationType) }}</strong></span>
+              <div class="encounter-meta-row">
+                <span class="meta-item">
+                  <ng-icon name="lucideCalendar" />
+                  <strong>{{ enc.encounterDate?.split('T')?.[0] || enc.encounterDate }}</strong>
+                </span>
+                @if (enc.encounterDate?.includes('T')) {
+                  <span class="meta-item">
+                    <ng-icon name="lucideClock" />
+                    {{ enc.encounterDate.split('T')[1].slice(0, 5) }} hs
+                  </span>
+                }
               </div>
             </div>
           </div>
 
-          <div class="header-actions">
+          <div class="header-action-btns">
             <button
               type="button"
-              class="m3-button m3-button-tonal btn-print"
+              class="btn-icon-action"
               (click)="printEncounter()"
               title="Imprimir resumen clínico"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>
-              </svg>
-              Imprimir
+              <ng-icon name="lucidePrinter" />
+              <span>Imprimir</span>
             </button>
             <button
               type="button"
-              class="m3-icon-button modal-close-btn"
+              class="btn-close-circle"
               aria-label="Cerrar modal"
               (click)="closeModal()"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-              </svg>
+              <ng-icon name="lucideX" />
             </button>
           </div>
-        </div>
+        </header>
 
-        <!-- Modal Body (SOAP Cards) -->
-        <div class="m3-modal-body">
-          <!-- S: SUBJETIVO -->
-          <div class="soap-detail-card card-s">
-            <div class="soap-card-header">
-              <span class="soap-letter badge-s">S</span>
-              <h3>Subjetivo (Anamnesis & Relato)</h3>
-            </div>
-            <div class="soap-card-content">
-              <div class="chief-complaint-callout">
-                <span class="callout-label">Motivo Principal:</span>
-                <p class="callout-text">{{ enc.chiefComplaint }}</p>
+        <!-- Cuerpo del Modal -->
+        <div class="modal-body-scrollable" [class.dynamic-only]="!!enc.dynamicData">
+
+          <!-- 1. DATOS REGISTRADOS DE LA CONSULTA (Campos Dinámicos del Wizard) -->
+          @if (enc.dynamicData && getDynamicEntries(enc).length > 0) {
+            <section class="clinical-card card-dynamic">
+              <div class="card-section-header">
+                <ng-icon name="lucideClipboardList" class="text-teal-600" />
+                <h3>Datos clínicos registrados</h3>
               </div>
-              @if (enc.historyOfPresentIllness) {
-                <div class="detail-field-group">
-                  <span class="field-title">Historia de la Enfermedad Actual:</span>
-                  <p class="field-text">{{ enc.historyOfPresentIllness }}</p>
-                </div>
-              }
-            </div>
-          </div>
+              <div class="dynamic-fields-grid">
+                @for (item of getDynamicEntries(enc); track item.key) {
+                  <div class="dynamic-field-box">
+                    <span class="field-box-label">{{ item.label }}</span>
+                    <span class="field-box-value">{{ item.value }}</span>
+                  </div>
+                }
+              </div>
+            </section>
+          }
 
-          <!-- O: OBJETIVO -->
-          <div class="soap-detail-card card-o">
-            <div class="soap-card-header">
-              <span class="soap-letter badge-o">O</span>
-              <h3>Objetivo (Signos Vitales & Examen Físico)</h3>
-            </div>
-            <div class="soap-card-content">
-              @if (enc.vitalSigns; as vitals) {
-                <div class="vitals-display-grid">
-                  <div class="vital-item">
-                    <span class="vital-label">Presión Arterial</span>
-                    <strong class="vital-val">
-                      @if (vitals.systolicBloodPressure && vitals.diastolicBloodPressure) {
-                        {{ vitals.systolicBloodPressure }}/{{ vitals.diastolicBloodPressure }} <small>mmHg</small>
-                      } @else {
-                        —
+          <!-- 2. DIAGNÓSTICO Y MOTIVO (Si no está en los datos dinámicos) -->
+          @if (enc.primaryDiagnosisDescription || enc.chiefComplaint) {
+            <section class="clinical-card">
+              <div class="card-section-header">
+                <ng-icon name="lucideFileText" class="text-blue-600" />
+                <h3>Motivo y Diagnóstico</h3>
+              </div>
+              <div class="card-section-body">
+                @if (enc.chiefComplaint) {
+                  <div class="summary-line">
+                    <span class="summary-label">Motivo de Consulta:</span>
+                    <p class="summary-text">{{ enc.chiefComplaint }}</p>
+                  </div>
+                }
+                @if (enc.primaryDiagnosisDescription) {
+                  <div class="summary-line mt-2">
+                    <span class="summary-label">Diagnóstico Principal:</span>
+                    <p class="summary-text font-semibold text-slate-900">
+                      @if (enc.primaryDiagnosisCode) {
+                        <span class="diag-code-tag">{{ enc.primaryDiagnosisCode }}</span>
                       }
-                    </strong>
+                      {{ enc.primaryDiagnosisDescription }}
+                    </p>
                   </div>
-                  <div class="vital-item">
-                    <span class="vital-label">Frecuencia Cardíaca</span>
-                    <strong class="vital-val">
-                      {{ vitals.heartRate != null ? vitals.heartRate + ' lpm' : '—' }}
-                    </strong>
+                }
+                @if (enc.clinicalImpression) {
+                  <div class="summary-line mt-2">
+                    <span class="summary-label">Juicio Clínico / Evolución:</span>
+                    <p class="summary-text">{{ enc.clinicalImpression }}</p>
                   </div>
-                  <div class="vital-item">
-                    <span class="vital-label">Frec. Respiratoria</span>
-                    <strong class="vital-val">
-                      {{ vitals.respiratoryRate != null ? vitals.respiratoryRate + ' rpm' : '—' }}
-                    </strong>
-                  </div>
-                  <div class="vital-item">
-                    <span class="vital-label">Temperatura</span>
-                    <strong class="vital-val">
-                      {{ vitals.temperatureCelsius != null ? vitals.temperatureCelsius + ' °C' : '—' }}
-                    </strong>
-                  </div>
-                  <div class="vital-item">
-                    <span class="vital-label">SatO2</span>
-                    <strong class="vital-val">
-                      {{ vitals.oxygenSaturationPercent != null ? vitals.oxygenSaturationPercent + ' %' : '—' }}
-                    </strong>
-                  </div>
-                  <div class="vital-item">
-                    <span class="vital-label">Peso Corporal</span>
-                    <strong class="vital-val">
-                      {{ vitals.weightKg != null ? vitals.weightKg + ' kg' : '—' }}
-                    </strong>
-                  </div>
-                  <div class="vital-item">
-                    <span class="vital-label">Talla / Estatura</span>
-                    <strong class="vital-val">
-                      {{ vitals.heightCm != null ? vitals.heightCm + ' cm' : '—' }}
-                    </strong>
-                  </div>
-                  <div class="vital-item bmi-item">
-                    <span class="vital-label">Índice Masa Corporal</span>
-                    <strong class="vital-val">
-                      {{ vitals.bodyMassIndex != null ? vitals.bodyMassIndex + ' kg/m²' : '—' }}
-                    </strong>
-                    @if (vitals.bodyMassIndex) {
-                      <span class="m3-badge" [class]="getBmiStatus(vitals.bodyMassIndex).badgeClass">
-                        {{ getBmiStatus(vitals.bodyMassIndex).label }}
-                      </span>
-                    }
-                  </div>
-                </div>
-              }
-
-              @if (enc.physicalExamination) {
-                <div class="detail-field-group mt-3">
-                  <span class="field-title">Examen Físico:</span>
-                  <p class="field-text">{{ enc.physicalExamination }}</p>
-                </div>
-              }
-            </div>
-          </div>
-
-          <!-- A: APRECIACIÓN -->
-          <div class="soap-detail-card card-a">
-            <div class="soap-card-header">
-              <span class="soap-letter badge-a">A</span>
-              <h3>Apreciación (Diagnósticos & Juicio Clínico)</h3>
-            </div>
-            <div class="soap-card-content">
-              <div class="primary-diag-box">
-                <span class="diag-tag">Diagnóstico Principal</span>
-                <div class="diag-code-desc">
-                  @if (enc.primaryDiagnosisCode) {
-                    <span class="code-badge">{{ enc.primaryDiagnosisCode }}</span>
-                  }
-                  <strong class="desc-text">{{ enc.primaryDiagnosisDescription }}</strong>
-                </div>
+                }
               </div>
+            </section>
+          }
 
-              @if (enc.secondaryDiagnoses && enc.secondaryDiagnoses.length > 0) {
-                <div class="detail-field-group mt-3">
-                  <span class="field-title">Diagnósticos Secundarios / Comorbilidades:</span>
-                  <div class="chips-wrap mt-1">
-                    @for (sec of enc.secondaryDiagnoses; track sec.code) {
-                      <span class="m3-chip filter-active">
-                        <strong>{{ sec.code }}</strong>: {{ sec.description }}
-                        @if (sec.isChronic) {
-                          <span class="chronic-tag-sm">Crónico</span>
-                        }
-                      </span>
-                    }
+          <!-- 3. SIGNOS VITALES (Solo si existen datos cargados) -->
+          @if (enc.vitalSigns && hasVitals(enc.vitalSigns)) {
+            <section class="clinical-card">
+              <div class="card-section-header">
+                <ng-icon name="lucideActivity" class="text-emerald-600" />
+                <h3>Signos Vitales y Mediciones</h3>
+              </div>
+              <div class="vitals-chips-grid">
+                @if (enc.vitalSigns.systolicBloodPressure && enc.vitalSigns.diastolicBloodPressure) {
+                  <div class="vital-chip-box">
+                    <span class="vital-chip-label">Presión Arterial</span>
+                    <strong class="vital-chip-val">{{ enc.vitalSigns.systolicBloodPressure }}/{{ enc.vitalSigns.diastolicBloodPressure }} mmHg</strong>
                   </div>
-                </div>
-              }
+                }
+                @if (enc.vitalSigns.heartRate) {
+                  <div class="vital-chip-box">
+                    <span class="vital-chip-label">Frecuencia Cardíaca</span>
+                    <strong class="vital-chip-val">{{ enc.vitalSigns.heartRate }} lpm</strong>
+                  </div>
+                }
+                @if (enc.vitalSigns.temperatureCelsius) {
+                  <div class="vital-chip-box">
+                    <span class="vital-chip-label">Temperatura</span>
+                    <strong class="vital-chip-val">{{ enc.vitalSigns.temperatureCelsius }} °C</strong>
+                  </div>
+                }
+                @if (enc.vitalSigns.oxygenSaturationPercent) {
+                  <div class="vital-chip-box">
+                    <span class="vital-chip-label">SatO2</span>
+                    <strong class="vital-chip-val">{{ enc.vitalSigns.oxygenSaturationPercent }} %</strong>
+                  </div>
+                }
+                @if (enc.vitalSigns.weightKg) {
+                  <div class="vital-chip-box">
+                    <span class="vital-chip-label">Peso</span>
+                    <strong class="vital-chip-val">{{ enc.vitalSigns.weightKg }} kg</strong>
+                  </div>
+                }
+                @if (enc.vitalSigns.heightCm) {
+                  <div class="vital-chip-box">
+                    <span class="vital-chip-label">Estatura</span>
+                    <strong class="vital-chip-val">{{ enc.vitalSigns.heightCm }} cm</strong>
+                  </div>
+                }
+                @if (enc.vitalSigns.bodyMassIndex) {
+                  <div class="vital-chip-box">
+                    <span class="vital-chip-label">IMC</span>
+                    <strong class="vital-chip-val">{{ enc.vitalSigns.bodyMassIndex }} kg/m²</strong>
+                  </div>
+                }
+              </div>
+            </section>
+          }
 
-              @if (enc.clinicalImpression) {
-                <div class="detail-field-group mt-3">
-                  <span class="field-title">Impresión Diagnóstica / Juicio Clínico:</span>
-                  <p class="field-text">{{ enc.clinicalImpression }}</p>
-                </div>
-              }
-            </div>
-          </div>
+          <!-- 4. PLAN Y PRESCRIPCIONES (Si existen) -->
+          @if (enc.treatmentPlan || (enc.prescriptions && enc.prescriptions.length > 0)) {
+            <section class="clinical-card">
+              <div class="card-section-header">
+                <ng-icon name="lucidePill" class="text-purple-600" />
+                <h3>Plan y Prescripciones Farmacológicas</h3>
+              </div>
+              <div class="card-section-body">
+                @if (enc.treatmentPlan) {
+                  <div class="summary-line">
+                    <span class="summary-label">Indicaciones Terapéuticas:</span>
+                    <p class="summary-text">{{ enc.treatmentPlan }}</p>
+                  </div>
+                }
 
-          <!-- P: PLAN -->
-          <div class="soap-detail-card card-p">
-            <div class="soap-card-header">
-              <span class="soap-letter badge-p">P</span>
-              <h3>Plan (Tratamiento, Prescripciones & Seguimiento)</h3>
-            </div>
-            <div class="soap-card-content">
-              @if (enc.treatmentPlan) {
-                <div class="detail-field-group">
-                  <span class="field-title">Plan Terapéutico y Conducta:</span>
-                  <p class="field-text">{{ enc.treatmentPlan }}</p>
-                </div>
-              }
-
-              @if (enc.prescriptions && enc.prescriptions.length > 0) {
-                <div class="detail-field-group mt-3">
-                  <span class="field-title">Prescripciones Farmacológicas:</span>
-                  <div class="table-wrap mt-1">
-                    <table class="detail-table">
+                @if (enc.prescriptions && enc.prescriptions.length > 0) {
+                  <div class="rx-table-wrap mt-3">
+                    <table class="rx-table">
                       <thead>
                         <tr>
                           <th>Medicamento</th>
                           <th>Dosis</th>
-                          <th>Vía</th>
                           <th>Frecuencia</th>
                           <th>Duración</th>
                           <th>Indicaciones</th>
@@ -246,7 +224,6 @@
                           <tr>
                             <td><strong>{{ rx.medicationName }}</strong></td>
                             <td>{{ rx.dosage }}</td>
-                            <td>{{ rx.administrationRoute }}</td>
                             <td>{{ rx.frequency }}</td>
                             <td>{{ rx.durationDays ? rx.durationDays + ' días' : 'Continuo' }}</td>
                             <td>{{ rx.instructions || '—' }}</td>
@@ -255,65 +232,19 @@
                       </tbody>
                     </table>
                   </div>
-                </div>
-              }
-
-              @if (enc.diagnosticOrders && enc.diagnosticOrders.length > 0) {
-                <div class="detail-field-group mt-3">
-                  <span class="field-title">Estudios Solicitados:</span>
-                  <div class="chips-wrap mt-1">
-                    @for (order of enc.diagnosticOrders; track order) {
-                      <span class="m3-chip">{{ order }}</span>
-                    }
-                  </div>
-                </div>
-              }
-
-              @if (enc.followUpDate || enc.followUpInstructions) {
-                <div class="follow-up-box mt-3">
-                  @if (enc.followUpDate) {
-                    <div class="follow-item">
-                      <span class="field-title">Próximo Control:</span>
-                      <strong>{{ enc.followUpDate }}</strong>
-                    </div>
-                  }
-                  @if (enc.followUpInstructions) {
-                    <div class="follow-item">
-                      <span class="field-title">Pautas de Alarma:</span>
-                      <p class="field-text">{{ enc.followUpInstructions }}</p>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          </div>
-
-          <!-- DYNAMIC FORM TEMPLATE & HISTORICAL SNAPSHOT -->
-          @if (enc.dynamicData && (enc.templateId || enc.snapshotFieldLabels || encounterTemplate())) {
-            <div class="soap-detail-card card-dynamic mt-4">
-              <div class="soap-card-header">
-                <span class="soap-letter badge-dynamic">📋</span>
-                <h3>Datos Clínicos Especializados (Formulario Dinámico)</h3>
+                }
               </div>
-              <div class="soap-card-content">
-                <app-dynamic-form-renderer
-                  [template]="encounterTemplate()"
-                  [values]="enc.dynamicData"
-                  [historicalSnapshot]="enc.snapshotFieldLabels || null"
-                  [readonly]="true"
-                />
-              </div>
-            </div>
+            </section>
           }
 
         </div>
 
-        <!-- Modal Footer -->
-        <div class="m3-modal-footer">
-          <button type="button" class="m3-button m3-button-filled" (click)="closeModal()">
+        <!-- Footer -->
+        <footer class="modal-footer-clean">
+          <button type="button" class="btn-close-dialog" (click)="closeModal()">
             Cerrar
           </button>
-        </div>
+        </footer>
       }
     </div>
   </div>

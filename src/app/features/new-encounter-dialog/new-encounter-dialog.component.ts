@@ -1,13 +1,13 @@
 import {
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideStethoscope,
@@ -30,7 +30,7 @@ import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-f
 
 @Component({
   selector: 'app-new-encounter-dialog',
-  imports: [CommonModule, FormsModule, NgIcon, DynamicFormRendererComponent],
+  imports: [CommonModule, NgIcon, DynamicFormRendererComponent],
   providers: [
     provideIcons({
       lucideStethoscope,
@@ -53,18 +53,12 @@ export class NewEncounterDialogComponent {
   readonly isOpen = input<boolean>(false);
   readonly patientId = input<number | null>(null);
   readonly patientName = input<string>('');
+  readonly previousEncountersCount = input<number>(0);
   readonly closeDialog = output<void>();
   readonly encounterCreated = output<ClinicalEncounterDetail>();
 
-  // Form State
+  // Consultation metadata. Clinical fields are defined exclusively by the workspace template.
   readonly consultationType = signal<ConsultationType>('FIRST_VISIT');
-  readonly chiefComplaint = signal<string>('');
-  readonly historyOfPresentIllness = signal<string>('');
-  readonly physicalExamination = signal<string>('');
-  readonly primaryDiagnosis = signal<string>('');
-  readonly primaryDiagnosisCode = signal<string>('');
-  readonly treatmentPlan = signal<string>('');
-  readonly followUpDate = signal<string>('');
 
   // Dynamic Data & Status
   readonly dynamicFormData = signal<Record<string, unknown>>({});
@@ -77,13 +71,33 @@ export class NewEncounterDialogComponent {
     return this.workspaceStore.defaultTemplate();
   });
 
-  readonly consultationTypes: { value: ConsultationType; label: string }[] = [
-    { value: 'FIRST_VISIT', label: 'Primera Consulta' },
-    { value: 'FOLLOW_UP', label: 'Control / Seguimiento' },
-    { value: 'ROUTINE_CHECKUP', label: 'Chequeo de Rutina' },
-    { value: 'EMERGENCY', label: 'Urgencia' },
-    { value: 'INTERCONSULTATION', label: 'Interconsulta' },
-  ];
+  readonly consultationTypes = computed<{ value: ConsultationType; label: string }[]>(() => {
+    if (this.previousEncountersCount() === 0) {
+      return [{ value: 'FIRST_VISIT', label: 'Primera Consulta' }];
+    }
+    return [
+      { value: 'FOLLOW_UP', label: 'Control / Seguimiento' },
+      { value: 'ROUTINE_CHECKUP', label: 'Chequeo de Rutina' },
+      { value: 'EMERGENCY', label: 'Urgencia' },
+      { value: 'INTERCONSULTATION', label: 'Interconsulta' },
+    ];
+  });
+
+  constructor() {
+    effect(() => {
+      const count = this.previousEncountersCount();
+      const current = this.consultationType();
+      if (count === 0) {
+        if (current !== 'FIRST_VISIT') {
+          this.consultationType.set('FIRST_VISIT');
+        }
+      } else {
+        if (current === 'FIRST_VISIT') {
+          this.consultationType.set('FOLLOW_UP');
+        }
+      }
+    });
+  }
 
   onDynamicDataChange(values: Record<string, unknown>): void {
     this.dynamicFormData.set(values);
@@ -100,15 +114,9 @@ export class NewEncounterDialogComponent {
       return;
     }
 
-    const complaint = this.chiefComplaint().trim();
-    if (!complaint) {
-      this.errorMessage.set('El motivo de consulta es obligatorio.');
-      return;
-    }
-
-    const diagnosis = this.primaryDiagnosis().trim();
-    if (!diagnosis) {
-      this.errorMessage.set('El diagnóstico principal es obligatorio.');
+    const tmpl = this.activeTemplate();
+    if (!tmpl) {
+      this.errorMessage.set('No hay un formulario de consulta configurado para esta cuenta.');
       return;
     }
 
@@ -121,7 +129,6 @@ export class NewEncounterDialogComponent {
     this.errorMessage.set(null);
 
     // Build historical label snapshot from active template
-    const tmpl = this.activeTemplate();
     const snapshot: Record<string, string> = {};
     if (tmpl?.schemaDefinition?.categories) {
       for (const cat of tmpl.schemaDefinition.categories) {
@@ -135,19 +142,18 @@ export class NewEncounterDialogComponent {
 
     const currentSpec =
       (this.specialtyService.activeSpecialty() as MedicalSpecialty) || 'GENERAL_MEDICINE';
+    const summary = this.getCompatibilitySummary(this.dynamicFormData());
 
     const payload: ClinicalEncounterRequest = {
       patientId: pid,
-      encounterDate: new Date().toISOString().split('T')[0],
+      encounterDate: new Date().toISOString(),
       specialty: currentSpec,
       consultationType: this.consultationType(),
-      chiefComplaint: complaint,
-      historyOfPresentIllness: this.historyOfPresentIllness().trim() || undefined,
-      physicalExamination: this.physicalExamination().trim() || undefined,
-      primaryDiagnosisDescription: diagnosis,
-      primaryDiagnosisCode: this.primaryDiagnosisCode().trim() || null,
-      treatmentPlan: this.treatmentPlan().trim() || undefined,
-      followUpDate: this.followUpDate().trim() || undefined,
+      // Legacy storage columns remain populated for database compatibility;
+      // the visible consultation is entirely driven by dynamicData.
+      chiefComplaint: summary,
+      primaryDiagnosisDescription: summary,
+      primaryDiagnosisCode: null,
       templateId: tmpl?.id || null,
       dynamicData: this.dynamicFormData(),
       snapshotFieldLabels: snapshot,
@@ -170,14 +176,7 @@ export class NewEncounterDialogComponent {
   }
 
   resetForm(): void {
-    this.consultationType.set('FIRST_VISIT');
-    this.chiefComplaint.set('');
-    this.historyOfPresentIllness.set('');
-    this.physicalExamination.set('');
-    this.primaryDiagnosis.set('');
-    this.primaryDiagnosisCode.set('');
-    this.treatmentPlan.set('');
-    this.followUpDate.set('');
+    this.consultationType.set(this.previousEncountersCount() === 0 ? 'FIRST_VISIT' : 'FOLLOW_UP');
     this.dynamicFormData.set({});
     this.errorMessage.set(null);
   }
@@ -185,4 +184,12 @@ export class NewEncounterDialogComponent {
   close(): void {
     this.closeDialog.emit();
   }
+
+  private getCompatibilitySummary(values: Record<string, unknown>): string {
+    const firstValue = Object.values(values).find(
+      (value) => value !== null && value !== undefined && value !== '',
+    );
+    return firstValue === undefined ? 'Consulta registrada' : String(firstValue);
+  }
+
 }

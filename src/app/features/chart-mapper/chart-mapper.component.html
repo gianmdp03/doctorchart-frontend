@@ -121,7 +121,7 @@
                               [attr.data-testid]="'slot-select-' + chart.chartCode + '-' + slot.slot"
                             >
                               <option value="">-- Sin mapear --</option>
-                              @for (field of availableTemplateFields(); track field.key) {
+                              @for (field of availableFieldsForSlot(slot); track field.key) {
                                 <option [value]="field.key">
                                   {{ field.label }} ({{ field.key }})
                                 </option>

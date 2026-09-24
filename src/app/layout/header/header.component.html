@@ -89,36 +89,6 @@
       <span class="specialty-name">{{ doctorSpecialtyService.currentSpecialtyOption().shortLabel }}</span>
     </div>
 
-    <!-- Primary Action Dropdown: + Crear -->
-    <div class="create-menu-container">
-      <button
-        type="button"
-        class="primary-create-btn"
-        (click)="toggleCreateMenu($event)"
-        title="Crear nuevo registro clínico"
-      >
-        <ng-icon name="lucidePlus" />
-        <span>Crear</span>
-        <ng-icon name="lucideChevronDown" class="chevron-icon" [class.rotate]="isCreateMenuOpen()" />
-      </button>
-
-      @if (isCreateMenuOpen()) {
-        <div class="create-dropdown-menu" (click)="$event.stopPropagation()">
-          <button
-            type="button"
-            class="dropdown-menu-item"
-            (click)="handleNewAppointmentClick($event)"
-          >
-            <ng-icon name="lucideCalendarPlus" class="item-icon text-purple-600" />
-            <div class="item-text">
-              <span class="item-title">Agendar Turno</span>
-              <span class="item-desc">Programar cita en la agenda</span>
-            </div>
-          </button>
-        </div>
-      }
-    </div>
-
     <!-- User Profile Dropdown Button -->
     <div class="profile-menu-container">
       <button
@@ -160,6 +130,15 @@
           >
             <ng-icon name="lucideUser" class="menu-action-icon" />
             <span>Perfil Profesional</span>
+          </button>
+
+          <button
+            type="button"
+            class="dropdown-action-item"
+            (click)="openWizardConfig()"
+          >
+            <ng-icon name="lucideSliders" class="menu-action-icon" />
+            <span>Personalizar Fichas y Consultas</span>
           </button>
 
           <div class="profile-menu-divider"></div>

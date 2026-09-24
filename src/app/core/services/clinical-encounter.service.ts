@@ -1,12 +1,14 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   ClinicalEncounterDetail,
+  ClinicalEncounterDashboard,
   ClinicalEncounterList,
   ClinicalEncounterRequest,
 } from '../models/clinical-encounter.model';
+import { PagedResponse } from '../models/api-response.model';
 import { MedicalSpecialty } from '../models/specialty.model';
 
 @Injectable({
@@ -31,6 +33,22 @@ export class ClinicalEncounterService {
         error: () => this.loading.set(false),
       })
     );
+  }
+
+  getAll(
+    page = 0,
+    size = 50,
+    sort = 'encounterDate,desc',
+  ): Observable<PagedResponse<ClinicalEncounterList>> {
+    const params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('sort', sort);
+    return this.http.get<PagedResponse<ClinicalEncounterList>>(this.baseUrl, { params });
+  }
+
+  getDashboard(): Observable<ClinicalEncounterDashboard> {
+    return this.http.get<ClinicalEncounterDashboard>(`${this.baseUrl}/dashboard`);
   }
 
   getByPatient(patientId: number): Observable<ClinicalEncounterList[]> {

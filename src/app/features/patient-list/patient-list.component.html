@@ -102,6 +102,9 @@
       >
         ⚙ Columnas
       </button>
+      <button type="button" class="m3-button m3-button-tonal" (click)="openNewPatientModal()">
+        + Nuevo paciente
+      </button>
     </div>
   </div>
 
@@ -145,9 +148,16 @@
             @if (workspaceStore.isColumnVisible('phone')) {
               <p><strong>Contacto:</strong> {{ patient.tutor }}</p>
             }
-            @if (workspaceStore.isColumnVisible('lastCheckup')) {
-              <p><strong>Último Control:</strong> {{ patient.lastCheckup }}</p>
-            }
+            <p class='patient-controls-row'>
+              <strong>Controles previos:</strong>
+              <span
+                class='controls-status-pill'
+                [class.has-controls]='patient.totalEncounters > 0'
+                [class.no-controls]='patient.totalEncounters === 0'
+              >
+                {{ patient.lastCheckup }}
+              </span>
+            </p>
           </div>
         </div>
 
@@ -214,6 +224,12 @@
   <app-patient-columns-config
     [isOpen]="isColumnsModalOpen()"
     (closeDialog)="closeColumnsModal()"
+  />
+
+  <app-new-patient-dialog
+    [isOpen]="isNewPatientModalOpen()"
+    (closeDialog)="closeNewPatientModal()"
+    (patientCreated)="onPatientCreated()"
   />
 
 </div>

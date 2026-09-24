@@ -8,8 +8,8 @@ import { EncounterDetailDialogComponent } from './features/encounter-detail-dial
 import { LoginPageComponent } from './features/auth/login-page.component';
 import { UserProfileDialogComponent } from './features/auth/user-profile-dialog.component';
 import { AiAssistantWidgetComponent } from './features/ai-assistant/ai-assistant-widget.component';
-import { SpecialtySelectionComponent } from './features/onboarding/specialty-selection/specialty-selection.component';
 import { PrescriptionPrintLayoutComponent } from './features/prescription-print-layout/prescription-print-layout.component';
+import { WorkspaceStore } from './core/services/workspace.store';
 
 @Component({
   selector: 'app-root',
@@ -21,7 +21,6 @@ import { PrescriptionPrintLayoutComponent } from './features/prescription-print-
     LoginPageComponent,
     UserProfileDialogComponent,
     AiAssistantWidgetComponent,
-    SpecialtySelectionComponent,
     PrescriptionPrintLayoutComponent,
   ],
   templateUrl: './app.html',
@@ -30,11 +29,13 @@ import { PrescriptionPrintLayoutComponent } from './features/prescription-print-
 export class App {
   readonly authService = inject(AuthService);
   readonly doctorProfileService = inject(DoctorProfileService);
+  readonly workspaceStore = inject(WorkspaceStore);
 
   constructor() {
     effect(() => {
       if (this.authService.isLoggedIn()) {
         this.doctorProfileService.loadProfile();
+        this.workspaceStore.loadSetup();
       }
     });
   }

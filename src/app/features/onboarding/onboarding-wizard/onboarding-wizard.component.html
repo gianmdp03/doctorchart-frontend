@@ -1,0 +1,138 @@
+<main class="wizard-container">
+  <section class="wizard-card" aria-labelledby="wizard-title">
+    <header class="wizard-header">
+      <div class="header-row">
+        <span class="brand-pill">
+          @if (isEditMode()) {
+            ⚙️ Personalización de Fichas y Consultas
+          } @else {
+            🔒 Configuración inicial de Cuenta Médica
+          }
+        </span>
+        <div class="header-actions">
+          <button
+            type="button"
+            class="btn-reset-defaults"
+            (click)="confirmResetToDefaults()"
+            [disabled]="isSaving()"
+            title="Restablecer plantillas y gráficos al estado de fábrica de la especialidad"
+          >
+            ↺ Restablecer de fábrica
+          </button>
+          @if (isEditMode()) {
+            <button type="button" class="signout-button" (click)="exitWizard()">Volver al Dashboard</button>
+          } @else {
+            <button type="button" class="signout-button" (click)="handleSignOut()">Cerrar sesión</button>
+          }
+        </div>
+      </div>
+
+      <div class="progress-copy">
+        <span>Paso {{ activeStepIndex() + 1 }} de {{ steps.length }}</span>
+        <span>{{ activeStep().title }}</span>
+      </div>
+      <ol class="progress-bar" aria-label="Progreso de configuración">
+        @for (step of steps; track step.id; let index = $index) {
+          <li
+            [class.completed]="index < activeStepIndex()"
+            [class.active]="index === activeStepIndex()"
+            [class.clickable]="!isEditMode() || index > 0"
+            (click)="goToStep(index)"
+            [title]="step.title"
+          >
+            <span>{{ index + 1 }}</span>
+          </li>
+        }
+      </ol>
+    </header>
+
+    @if (errorMessage()) {
+      <div class="error-banner" role="alert">{{ errorMessage() }}</div>
+    }
+
+    @if (successMessage()) {
+      <div class="success-banner" role="status">{{ successMessage() }}</div>
+    }
+
+    <section class="wizard-content">
+      <span class="section-kicker">Configuración de formularios</span>
+      <h1 id="wizard-title">{{ activeStep().title }}</h1>
+      <p>{{ activeStep().description }}</p>
+
+      @if (isPatientFormStep()) {
+        <app-form-field-editor
+          [template]="patientTemplate()"
+          [selectedCategoryKey]="activePatientCategoryKey()"
+          [hideCategoryNavigation]="true"
+          [hideHeader]="true"
+          [showCategoryToggle]="false"
+          (templateChange)="onPatientTemplateChange($event)"
+        />
+      } @else if (isEncounterFormStep()) {
+        <app-form-field-editor
+          [template]="encounterTemplate()"
+          [hideHeader]="true"
+          (templateChange)="onEncounterTemplateChange($event)"
+        />
+      } @else if (isLastStep()) {
+        <div class="chart-summary-card">
+          <div>
+            <h2>Gráficos configurados</h2>
+            <p>
+              @if (activeChartCount() > 0) {
+                {{ activeChartCount() }} gráfico(s) habilitado(s) para tus consultas.
+              } @else {
+                Todavía no seleccionaste gráficos. Podés finalizar sin habilitarlos.
+              }
+            </p>
+          </div>
+          <button type="button" class="primary-button" [disabled]="isSaving()" (click)="openChartMapper()">
+            Configurar gráficos
+          </button>
+        </div>
+        <app-chart-mapper
+          [isOpen]="isChartMapperOpen()"
+          [template]="encounterTemplate()"
+          [onboardingMode]="true"
+          [initialConfigs]="chartConfigs()"
+          (configsSaved)="onChartConfigsSelected($event)"
+          (closeDialog)="closeChartMapper()"
+        />
+      } @else {
+      <div class="coming-soon-card">
+        <span class="placeholder-icon">✦</span>
+        <div>
+          <h2>Sección preparada</h2>
+          <p>En la próxima fase se incorporará aquí el editor específico de esta sección, manteniendo este avance guardado.</p>
+        </div>
+      </div>
+      }
+    </section>
+
+    <footer class="wizard-footer">
+      <div class="footer-left">
+        @if (!isFirstStep()) {
+          <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="goPrevious()">
+            Anterior
+          </button>
+        }
+      </div>
+      <div class="footer-right">
+        @if (isEditMode()) {
+          <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="exitWizard()">
+            Cancelar
+          </button>
+        }
+        @if (isLastStep()) {
+          <button type="button" class="primary-button" [disabled]="isSaving()" (click)="finishOnboarding()">
+            @if (isSaving()) { Guardando... } @else { {{ isEditMode() ? 'Guardar cambios' : 'Finalizar configuración' }} }
+          </button>
+        } @else {
+          <button type="button" class="primary-button" [disabled]="isSaving()" (click)="goNext()">
+            @if (isSaving()) { Guardando... } @else { Siguiente }
+          </button>
+        }
+      </div>
+    </footer>
+  </section>
+</main>

@@ -6,6 +6,8 @@ import { SpecialtyService } from '../../../core/services/specialty.service';
 import { DoctorProfileService } from '../../../core/services/doctor-profile.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { MedicalSpecialty, SpecialtySummary } from '../../../core/models/specialty.model';
+import { WorkspaceStore } from '../../../core/services/workspace.store';
+import { createDefaultPatientFormSchema } from '../../../core/config/onboarding-form-definitions';
 
 @Component({
   selector: 'app-specialty-selection',
@@ -17,6 +19,7 @@ export class SpecialtySelectionComponent implements OnInit {
   private readonly specialtyService = inject(SpecialtyService);
   private readonly doctorProfileService = inject(DoctorProfileService);
   private readonly authService = inject(AuthService);
+  private readonly workspaceStore = inject(WorkspaceStore);
   private readonly router = inject(Router);
 
   readonly specialties = signal<SpecialtySummary[]>([]);
@@ -46,12 +49,19 @@ export class SpecialtySelectionComponent implements OnInit {
     await this.authService.signOut();
   }
 
-  ngOnInit(): void {
-    if (this.doctorProfileService.hasSpecialty()) {
-      this.router.navigate(['/pacientes']);
+  async ngOnInit(): Promise<void> {
+    const setup = await this.workspaceStore.loadSetup();
+    if (setup?.onboardingCompleted) {
+      await this.router.navigate(['/dashboard']);
       return;
     }
-
+    if (setup?.id && setup.specialtyId && setup.onboardingStep !== 'SPECIALTY') {
+      await this.router.navigate(['/onboarding/setup']);
+      return;
+    }
+    if (setup?.id && setup.onboardingStep === 'SPECIALTY' && setup.specialtyCode) {
+      this.selectedSpecialty.set(setup.specialtyCode);
+    }
     this.loadSpecialties();
   }
 
@@ -115,8 +125,11 @@ export class SpecialtySelectionComponent implements OnInit {
   }
 
   async confirmSpecialty(): Promise<void> {
-    const specialty = this.selectedSpecialty();
-    if (!specialty || this.isSubmitting()) {
+    const specialty = this.selectedSpecialtyItem();
+    if (!specialty?.id || this.isSubmitting()) {
+      if (!specialty?.id) {
+        this.errorMessage.set('La especialidad seleccionada no tiene un identificador válido. Recargá e intentá nuevamente.');
+      }
       return;
     }
 
@@ -124,22 +137,17 @@ export class SpecialtySelectionComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      const normalizedSpecialty = specialty.trim().toUpperCase().replace(/-/g, '_') as MedicalSpecialty;
-      await this.doctorProfileService.assignSpecialty(normalizedSpecialty);
-      await this.router.navigate(['/pacientes']);
+      await this.workspaceStore.saveOnboardingDraft({
+        specialtyId: specialty.id,
+        onboardingStep: 'PATIENT_PERSONAL_DATA',
+        onboardingDraft: {
+          patientTemplateSchema: createDefaultPatientFormSchema(),
+        },
+      });
+      await this.router.navigate(['/onboarding/setup']);
     } catch (err: unknown) {
       console.error('Failed to assign specialty:', err);
-      const isConflict =
-        typeof err === 'object' &&
-        err !== null &&
-        'status' in err &&
-        (err as { status: number }).status === 409;
-      if (isConflict) {
-        this.errorMessage.set('La especialidad ya fue configurada previamente y es inmutable.');
-        setTimeout(() => this.router.navigate(['/pacientes']), 1500);
-      } else {
-        this.errorMessage.set('Ocurrió un error al registrar la especialidad. Verifique su conexión y reintente.');
-      }
+      this.errorMessage.set('Ocurrió un error al guardar la especialidad. Verificá tu conexión y reintentá.');
     } finally {
       this.isSubmitting.set(false);
     }

@@ -42,6 +42,8 @@ export interface PatientCardItem {
   tutor: string;
   lastCheckup: string;
   nextCheckupOrNote: string;
+  totalEncounters: number;
+  lastEncounterDate?: string | null;
   badgeText: string;
   badgeClass: string;
   hasPendingVaccine: boolean;
@@ -143,8 +145,13 @@ function mapDtoToCardItem(dto: PatientListDTO): PatientCardItem {
     birthDateDisplay: formatBirthDateDisplay(dto.birthDate),
     dni: dto.nationalId ? `DNI: ${dto.nationalId}` : `ID #${dto.id}`,
     tutor: dto.phone ? `Tel: ${dto.phone}` : 'Contacto registrado',
-    lastCheckup: 'Sin controles registrados',
-    nextCheckupOrNote: 'Control periódico',
+    lastCheckup:
+      (dto.totalEncounters ?? 0) > 0
+        ? `${dto.totalEncounters} ${(dto.totalEncounters ?? 0) === 1 ? 'control previo' : 'controles previos'}${dto.lastEncounterDate ? ' • Último: ' + dto.lastEncounterDate : ''}`
+        : 'Sin controles previos',
+    nextCheckupOrNote: (dto.totalEncounters ?? 0) === 0 ? '1ª Consulta Pendiente' : 'Control periódico',
+    totalEncounters: dto.totalEncounters ?? 0,
+    lastEncounterDate: dto.lastEncounterDate ?? null,
     badgeText,
     badgeClass,
     hasPendingVaccine: false,
@@ -153,10 +160,11 @@ function mapDtoToCardItem(dto: PatientListDTO): PatientCardItem {
 
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { PatientColumnsConfigComponent } from '../patient-columns-config/patient-columns-config.component';
+import { NewPatientDialogComponent } from '../new-patient-dialog/new-patient-dialog.component';
 
 @Component({
   selector: 'app-patient-list',
-  imports: [PatientColumnsConfigComponent],
+  imports: [PatientColumnsConfigComponent, NewPatientDialogComponent],
   templateUrl: './patient-list.component.html',
   styleUrl: './patient-list.component.css',
 })
@@ -177,6 +185,7 @@ export class PatientListComponent implements OnInit {
   readonly isLoading = signal<boolean>(false);
   readonly isLoadingMore = signal<boolean>(false);
   readonly isColumnsModalOpen = signal<boolean>(false);
+  readonly isNewPatientModalOpen = signal<boolean>(false);
 
   readonly currentPage = signal<number>(0);
   readonly pageSize = 20;
@@ -386,6 +395,16 @@ export class PatientListComponent implements OnInit {
     if (event) {
       event.stopPropagation();
     }
+    this.isNewPatientModalOpen.set(true);
+  }
+
+  closeNewPatientModal(): void {
+    this.isNewPatientModalOpen.set(false);
+  }
+
+  onPatientCreated(): void {
+    this.closeNewPatientModal();
+    this.loadInitial();
   }
 }
 

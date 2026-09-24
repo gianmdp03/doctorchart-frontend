@@ -56,6 +56,10 @@ export class FormFieldEditorComponent {
   // Inputs & Outputs
   readonly template = input<FormTemplate | null>(null);
   readonly readonly = input<boolean>(false);
+  readonly selectedCategoryKey = input<string | null>(null);
+  readonly hideCategoryNavigation = input<boolean>(false);
+  readonly hideHeader = input<boolean>(false);
+  readonly showCategoryToggle = input<boolean>(true);
   readonly templateChange = output<FormTemplate>();
   readonly save = output<FormTemplate>();
 
@@ -108,6 +112,17 @@ export class FormFieldEditorComponent {
           this.workingTemplate.set(null);
         }
       });
+    });
+
+    effect(() => {
+      const categoryKey = this.selectedCategoryKey();
+      const categories = this.workingTemplate()?.schemaDefinition?.categories ?? [];
+      if (!categoryKey) return;
+
+      const categoryIndex = categories.findIndex((category) => category.categoryKey === categoryKey);
+      if (categoryIndex >= 0) {
+        this.selectedCategoryIndex.set(categoryIndex);
+      }
     });
   }
 

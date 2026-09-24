@@ -35,21 +35,7 @@
       }
     </a>
 
-    <!-- 2. Agenda de Turnos -->
-    <a
-      routerLink="/agenda"
-      routerLinkActive="active"
-      class="nav-item"
-      title="Agenda de Turnos"
-    >
-      <ng-icon name="lucideCalendar" class="nav-icon" />
-      @if (!isCollapsed()) {
-        <span class="nav-label">Agenda de Turnos</span>
-        <span class="nav-badge">Hoy</span>
-      }
-    </a>
-
-    <!-- 3. Directorio de Pacientes -->
+    <!-- 2. Directorio de Pacientes -->
     <a
       routerLink="/pacientes"
       routerLinkActive="active"
@@ -62,73 +48,18 @@
       }
     </a>
 
-    <!-- 4. Consultas Clínicas -->
+    <!-- 4. Personalizar Fichas y Consultas (Wizard) -->
     <a
-      routerLink="/consultas"
+      routerLink="/onboarding/setup"
       routerLinkActive="active"
       class="nav-item"
-      title="Consultas Clínicas SOAP"
+      title="Personalizar Fichas y Consultas"
     >
-      <ng-icon name="lucideStethoscope" class="nav-icon" />
+      <ng-icon name="lucideSliders" class="nav-icon" />
       @if (!isCollapsed()) {
-        <span class="nav-label">Consultas Clínicas</span>
+        <span class="nav-label">Personalizar Fichas</span>
       }
     </a>
-
-    <!-- Herramientas de Especialidad (Contextuales) -->
-    <div class="nav-divider"></div>
-    <div class="nav-group-label" [class.sr-only]="isCollapsed()">
-      @if (!isCollapsed()) {
-        <span>Herramientas de {{ specialtyService.currentSpecialtyOption().shortLabel }}</span>
-      }
-    </div>
-
-    @if (isPediatrics()) {
-      <a
-        routerLink="/curvas"
-        routerLinkActive="active"
-        class="nav-item specialty-item"
-        title="Curvas de Crecimiento OMS"
-      >
-        <ng-icon name="lucideTrendingUp" class="nav-icon text-emerald-600" />
-        @if (!isCollapsed()) {
-          <span class="nav-label">Curvas OMS</span>
-        }
-      </a>
-
-      <a
-        routerLink="/hitos"
-        routerLinkActive="active"
-        class="nav-item specialty-item"
-        title="Hitos del Desarrollo (0-15 años)"
-      >
-        <ng-icon name="lucideBaby" class="nav-icon text-amber-600" />
-        @if (!isCollapsed()) {
-          <span class="nav-label">Hitos 0-15 años</span>
-        }
-      </a>
-    } @else if (isCardiology()) {
-      <div class="nav-item specialty-item static-nav-item" title="Estratificación de Riesgo Cardiovascular">
-        <ng-icon name="lucideHeartPulse" class="nav-icon text-rose-600" />
-        @if (!isCollapsed()) {
-          <span class="nav-label">Riesgo Cardiovascular</span>
-        }
-      </div>
-    } @else if (isGynecology()) {
-      <div class="nav-item specialty-item static-nav-item" title="Salud Reproductiva y Calculador FUM">
-        <ng-icon name="lucideSparkles" class="nav-icon text-fuchsia-600" />
-        @if (!isCollapsed()) {
-          <span class="nav-label">Calculadora Obstétrica</span>
-        }
-      </div>
-    } @else {
-      <div class="nav-item specialty-item static-nav-item" title="Cribado Preventivo Integral">
-        <ng-icon name="lucideActivity" class="nav-icon text-cyan-600" />
-        @if (!isCollapsed()) {
-          <span class="nav-label">Cribado Preventivo</span>
-        }
-      </div>
-    }
   </nav>
 
   <!-- Sidebar Footer: Profile info & Collapse Toggle -->

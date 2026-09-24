@@ -56,6 +56,8 @@ export class ChartMapperComponent {
   // Inputs & Outputs
   readonly isOpen = input<boolean>(false);
   readonly template = input<FormTemplate | null>(null);
+  readonly onboardingMode = input<boolean>(false);
+  readonly initialConfigs = input<DoctorChartConfig[]>([]);
   readonly closeDialog = output<void>();
   readonly configsSaved = output<DoctorChartConfig[]>();
 
@@ -83,6 +85,10 @@ export class ChartMapperComponent {
     return fields;
   });
 
+  readonly contextualFields: FormFieldDefinition[] = [
+    { key: 'encounterDate', label: 'Fecha de la consulta', type: 'DATE' },
+  ];
+
   constructor() {
     effect(() => {
       const open = this.isOpen();
@@ -102,6 +108,11 @@ export class ChartMapperComponent {
     this.workspaceService.getChartsCatalog().subscribe({
       next: (catalogList) => {
         this.catalog.set(catalogList || []);
+        if (this.onboardingMode()) {
+          this.isLoading.set(false);
+          this.initializeConfigs(catalogList || [], this.initialConfigs());
+          return;
+        }
         this.loadDoctorConfigs(catalogList || []);
       },
       error: (err) => {
@@ -117,41 +128,12 @@ export class ChartMapperComponent {
     this.workspaceService.getDoctorChartConfigs().subscribe({
       next: (existingConfigs) => {
         this.isLoading.set(false);
-        const map: Record<string, DoctorChartConfig> = {};
-
-        // Initialize with existing configs
-        for (const cfg of existingConfigs || []) {
-          map[cfg.chartCode] = {
-            ...cfg,
-            fieldMappings: { ...(cfg.fieldMappings || {}) },
-          };
-        }
-
-        // Ensure every catalog item has an entry
-        for (const item of catalogList) {
-          if (!map[item.chartCode]) {
-            map[item.chartCode] = {
-              chartCode: item.chartCode,
-              isActive: false,
-              fieldMappings: {},
-            };
-          }
-        }
-
-        this.localConfigs.set(map);
+        this.initializeConfigs(catalogList, existingConfigs || []);
       },
       error: () => {
         // Fallback: initialize empty configs for all catalog items
         this.isLoading.set(false);
-        const map: Record<string, DoctorChartConfig> = {};
-        for (const item of catalogList) {
-          map[item.chartCode] = {
-            chartCode: item.chartCode,
-            isActive: false,
-            fieldMappings: {},
-          };
-        }
-        this.localConfigs.set(map);
+        this.initializeConfigs(catalogList, []);
       },
     });
   }
@@ -195,6 +177,11 @@ export class ChartMapperComponent {
     });
   }
 
+  availableFieldsForSlot(slot: ChartSlotDefinition): FormFieldDefinition[] {
+    return [...this.contextualFields, ...this.availableTemplateFields()]
+      .filter((field) => field.type === slot.type);
+  }
+
   async save(): Promise<void> {
     this.isSaving.set(true);
     this.errorMessage.set(null);
@@ -202,6 +189,11 @@ export class ChartMapperComponent {
     const payload = Object.values(this.localConfigs());
 
     try {
+      if (this.onboardingMode()) {
+        this.configsSaved.emit(payload);
+        this.close();
+        return;
+      }
       const saved = await this.workspaceStore.saveChartConfigs(payload);
       this.saveSuccess.set(true);
       this.configsSaved.emit(saved);
@@ -218,5 +210,28 @@ export class ChartMapperComponent {
 
   close(): void {
     this.closeDialog.emit();
+  }
+
+  private initializeConfigs(catalogList: ChartDefinition[], existingConfigs: DoctorChartConfig[]): void {
+    const map: Record<string, DoctorChartConfig> = {};
+
+    for (const cfg of existingConfigs) {
+      map[cfg.chartCode] = {
+        ...cfg,
+        fieldMappings: { ...(cfg.fieldMappings || {}) },
+      };
+    }
+
+    for (const item of catalogList) {
+      if (!map[item.chartCode]) {
+        map[item.chartCode] = {
+          chartCode: item.chartCode,
+          isActive: false,
+          fieldMappings: {},
+        };
+      }
+    }
+
+    this.localConfigs.set(map);
   }
 }

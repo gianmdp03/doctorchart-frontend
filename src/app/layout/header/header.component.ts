@@ -11,16 +11,14 @@ import { Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideSearch,
-  lucidePlus,
-  lucideChevronDown,
   lucideUser,
   lucideLogOut,
   lucideExternalLink,
   lucideShield,
   lucideStethoscope,
   lucideUserPlus,
-  lucideCalendarPlus,
   lucideX,
+  lucideSliders,
 } from '@ng-icons/lucide';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
@@ -36,16 +34,14 @@ import { environment } from '../../../environments/environment';
   providers: [
     provideIcons({
       lucideSearch,
-      lucidePlus,
-      lucideChevronDown,
       lucideUser,
       lucideLogOut,
       lucideExternalLink,
       lucideShield,
       lucideStethoscope,
       lucideUserPlus,
-      lucideCalendarPlus,
       lucideX,
+      lucideSliders,
     }),
   ],
   templateUrl: './header.component.html',
@@ -66,7 +62,6 @@ export class HeaderComponent {
   readonly searchResults = signal<PatientListDTO[]>([]);
   readonly isSearching = signal(false);
   readonly isSearchOpen = signal(false);
-  readonly isCreateMenuOpen = signal(false);
   readonly isProfileMenuOpen = signal(false);
 
   readonly syntahPlansUrl = environment.syntahPlansUrl;
@@ -112,7 +107,6 @@ export class HeaderComponent {
       }
     } else if (event.key === 'Escape') {
       this.isSearchOpen.set(false);
-      this.isCreateMenuOpen.set(false);
       this.isProfileMenuOpen.set(false);
     }
   }
@@ -171,16 +165,9 @@ export class HeaderComponent {
     this.isSearchOpen.set(false);
   }
 
-  toggleCreateMenu(event: Event): void {
-    event.stopPropagation();
-    this.isCreateMenuOpen.update((v) => !v);
-    this.isProfileMenuOpen.set(false);
-  }
-
   toggleProfileMenu(event: Event): void {
     event.stopPropagation();
     this.isProfileMenuOpen.update((v) => !v);
-    this.isCreateMenuOpen.set(false);
   }
 
   @HostListener('document:click', ['$event'])
@@ -188,21 +175,19 @@ export class HeaderComponent {
     const target = event.target as HTMLElement;
     if (!this.elementRef.nativeElement.contains(target)) {
       this.isSearchOpen.set(false);
-      this.isCreateMenuOpen.set(false);
       this.isProfileMenuOpen.set(false);
     }
-  }
-
-  handleNewAppointmentClick(event?: Event): void {
-    if (event) event.stopPropagation();
-    this.isCreateMenuOpen.set(false);
-    this.router.navigate(['/agenda']);
   }
 
   handleProfileClick(): void {
     this.isProfileMenuOpen.set(false);
     this.authService.openProfileModal();
     window.dispatchEvent(new CustomEvent('open-profile-modal'));
+  }
+
+  openWizardConfig(): void {
+    this.isProfileMenuOpen.set(false);
+    this.router.navigate(['/onboarding/setup']);
   }
 
   async handleSignOut(): Promise<void> {

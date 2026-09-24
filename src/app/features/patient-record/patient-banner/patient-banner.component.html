@@ -82,18 +82,14 @@
         }
       </div>
     }
-
-    <!-- Neutral State: No Allergies Reported -->
-    @if (allergyList().length === 0 && chronicConditionList().length === 0) {
-      <div class="safety-badge neutral" title="Sin antecedentes ni alergias reportadas">
-        <ng-icon name="lucideCheckCircle2" class="safety-icon text-emerald-600" />
-        <span class="safety-text text-emerald-700">Sin alergias conocidas</span>
-      </div>
-    }
   </div>
 
   <!-- Right: Streamlined Contextual Actions -->
   <div class="banner-actions-block">
+    <button type="button" class="btn-primary-soap" (click)="onNewEncounter()">
+      <ng-icon name="lucidePlus" />
+      <span>Nueva consulta</span>
+    </button>
     <!-- Secondary Actions Dropdown Menu -->
     <div class="more-menu-container">
       <button
@@ -117,10 +113,6 @@
             <button type="button" class="dropdown-menu-item" (click)="goToCurves()">
               <ng-icon name="lucideTrendingUp" class="text-indigo-500" />
               <span>Ver Curvas de Crecimiento OMS</span>
-            </button>
-            <button type="button" class="dropdown-menu-item" (click)="goToMilestones()">
-              <ng-icon name="lucideCheckCircle2" class="text-emerald-500" />
-              <span>Ver Hitos del Desarrollo (0-15 años)</span>
             </button>
           }
 

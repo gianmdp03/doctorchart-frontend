@@ -1,5 +1,4 @@
 <div class="dashboard-page">
-  <!-- 1. Contextual Welcome Header -->
   <header class="dashboard-welcome-header">
     <div class="welcome-text-group">
       <div class="welcome-title-row">
@@ -9,502 +8,118 @@
           {{ specialtyService.currentSpecialtyOption().label }}
         </span>
       </div>
-      <p class="welcome-subtitle">
-        <span>{{ todayDateString() }}</span>
-        <span class="bullet-separator">•</span>
-        <span class="sync-indicator">
-          <span class="sync-dot"></span>
-          Sincronizado con Syntah Cloud
-        </span>
-      </p>
+      <p class="welcome-subtitle">{{ todayDateString() }}</p>
     </div>
   </header>
 
-  <!-- 2. KPI Cards Grid (3 columns) -->
-  <section class="kpi-grid" aria-label="Métricas Principales">
-    <!-- KPI 1: Pacientes Registrados -->
+  <section class="kpi-grid" aria-label="Métricas principales">
     <div class="kpi-card" role="region" aria-label="Total de pacientes">
       <div class="kpi-header">
-        <span class="kpi-title">Pacientes Registrados</span>
-        <div class="kpi-icon-wrap bg-blue-50 text-blue-600">
-          <ng-icon name="lucideUsers" />
-        </div>
+        <span class="kpi-title">Pacientes registrados</span>
+        <div class="kpi-icon-wrap bg-blue-50 text-blue-600"><ng-icon name="lucideUsers" /></div>
       </div>
       <div class="kpi-value-row">
-        @if (isLoadingMetrics()) {
-          <span class="kpi-loading-skeleton"></span>
-        } @else {
-          <span class="kpi-number">{{ totalPatients() }}</span>
-        }
+        @if (isLoadingMetrics()) { <span class="kpi-loading-skeleton"></span> } @else { <span class="kpi-number">{{ totalPatients() }}</span> }
       </div>
-      <div class="kpi-footer">
-        <a routerLink="/pacientes" class="kpi-link">
-          Ver directorio unificado
-          <ng-icon name="lucideArrowRight" />
-        </a>
-      </div>
+      <div class="kpi-footer"><a routerLink="/pacientes" class="kpi-link">Ver directorio <ng-icon name="lucideArrowRight" /></a></div>
     </div>
 
-    <!-- KPI 2: Consultas del Mes -->
     <div class="kpi-card" role="region" aria-label="Consultas del mes">
       <div class="kpi-header">
-        <span class="kpi-title">Consultas este Mes</span>
-        <div class="kpi-icon-wrap bg-teal-50 text-teal-600">
-          <ng-icon name="lucideStethoscope" />
-        </div>
+        <span class="kpi-title">Consultas este mes</span>
+        <div class="kpi-icon-wrap bg-teal-50 text-teal-600"><ng-icon name="lucideStethoscope" /></div>
       </div>
       <div class="kpi-value-row">
-        @if (isLoadingMetrics()) {
-          <span class="kpi-loading-skeleton"></span>
-        } @else {
-          <span class="kpi-number">{{ encountersMonthCount() }}</span>
-          <span class="kpi-badge-trend positive">+12% vs mes anterior</span>
-        }
+        @if (isLoadingMetrics()) { <span class="kpi-loading-skeleton"></span> } @else { <span class="kpi-number">{{ encountersMonthCount() }}</span> }
       </div>
-      <div class="kpi-footer">
-        <span class="kpi-subtext">Atenciones SOAP completadas</span>
-      </div>
+      <div class="kpi-footer"><span class="kpi-subtext">Atenciones SOAP registradas</span></div>
     </div>
 
-    <!-- KPI 3: Consultas de Hoy -->
     <div class="kpi-card" role="region" aria-label="Consultas de hoy">
       <div class="kpi-header">
-        <span class="kpi-title">Atenciones Hoy</span>
-        <div class="kpi-icon-wrap bg-purple-50 text-purple-600">
-          <ng-icon name="lucideClock" />
-        </div>
+        <span class="kpi-title">Atenciones hoy</span>
+        <div class="kpi-icon-wrap bg-purple-50 text-purple-600"><ng-icon name="lucideClock" /></div>
       </div>
       <div class="kpi-value-row">
-        @if (isLoadingMetrics()) {
-          <span class="kpi-loading-skeleton"></span>
-        } @else {
-          <span class="kpi-number">{{ encountersTodayCount() }}</span>
-          <span class="kpi-status-tag">Activo</span>
-        }
+        @if (isLoadingMetrics()) { <span class="kpi-loading-skeleton"></span> } @else { <span class="kpi-number">{{ encountersTodayCount() }}</span> }
       </div>
-      <div class="kpi-footer">
-        <a routerLink="/agenda" class="kpi-link">
-          Ver turnos de la jornada
-          <ng-icon name="lucideArrowRight" />
-        </a>
-      </div>
+      <div class="kpi-footer"><span class="kpi-subtext">Consultas registradas en la fecha actual</span></div>
     </div>
   </section>
 
-  <!-- 3. Main Split Row (65% / 35%) -->
   <div class="dashboard-main-split">
-    <!-- Left Column (65%): Consultations & Rapid Directory -->
     <div class="dashboard-primary-col">
-      <!-- Section: Consultas Recientes / Últimos Pacientes Atendidos -->
       <div class="content-card">
         <div class="card-header-row">
           <div class="header-title-wrap">
-            <h2 class="card-title">
-              <ng-icon name="lucideClock" class="title-icon text-teal-600" />
-              Últimos Pacientes Atendidos
-            </h2>
-            <p class="card-subtitle">Registro cronológico de consultas clínicas recientes</p>
+            <h2 class="card-title"><ng-icon name="lucideClock" class="title-icon text-teal-600" /> Últimos pacientes atendidos</h2>
+            <p class="card-subtitle">Consultas clínicas registradas más recientemente</p>
           </div>
-          <button
-            type="button"
-            class="secondary-outline-btn btn-sm"
-            routerLink="/consultas"
-          >
-            Ver todas las consultas
-          </button>
+          
         </div>
 
         @if (isLoadingRecent()) {
-          <div class="card-loading-state">
-            <div class="mini-spinner"></div>
-            <span>Cargando actividad clínica reciente...</span>
-          </div>
+          <div class="card-loading-state"><div class="mini-spinner"></div><span>Cargando actividad clínica reciente...</span></div>
         } @else if (recentEncounters().length > 0) {
           <div class="encounters-table-wrap">
             <table class="clinical-table">
-              <thead>
-                <tr>
-                  <th>Paciente</th>
-                  <th>Fecha y Hora</th>
-                  <th>Motivo de Consulta</th>
-                  <th>Diagnóstico Principal</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Paciente</th><th>Fecha y hora</th><th>Motivo de consulta</th><th>Diagnóstico principal</th><th>Acción</th></tr></thead>
               <tbody>
-                @for (enc of recentEncounters(); track enc.id) {
+                @for (encounter of recentEncounters(); track encounter.id) {
                   <tr>
-                    <td>
-                      <div class="patient-cell">
-                        <div class="patient-cell-avatar">
-                          {{ enc.patientName.slice(0, 2).toUpperCase() }}
-                        </div>
-                        <div class="patient-cell-info">
-                          <span class="patient-cell-name">{{ enc.patientName }}</span>
-                          <span class="patient-cell-meta">{{ enc.ageDisplay }}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span class="cell-datetime">{{ enc.encounterDate }}</span>
-                    </td>
-                    <td>
-                      <span class="cell-complaint" [title]="enc.chiefComplaint">
-                        {{ enc.chiefComplaint }}
-                      </span>
-                    </td>
-                    <td>
-                      <div class="diag-cell">
-                        @if (enc.diagnosisCode) {
-                          <span class="diag-code-badge">{{ enc.diagnosisCode }}</span>
-                        }
-                        <span class="diag-desc">{{ enc.diagnosis }}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        class="btn-open-record"
-                        (click)="openPatient(enc.patientId)"
-                        title="Abrir ficha clínica completa"
-                      >
-                        Abrir Ficha
-                      </button>
-                    </td>
+                    <td><div class="patient-cell"><div class="patient-cell-avatar">{{ encounter.patientName.slice(0, 2).toUpperCase() }}</div><div class="patient-cell-info"><span class="patient-cell-name">{{ encounter.patientName }}</span></div></div></td>
+                    <td><span class="cell-datetime">{{ encounter.encounterDate }}</span></td>
+                    <td><span class="cell-complaint" [title]="encounter.chiefComplaint">{{ encounter.chiefComplaint }}</span></td>
+                    <td><div class="diag-cell">@if (encounter.diagnosisCode) { <span class="diag-code-badge">{{ encounter.diagnosisCode }}</span> }<span class="diag-desc">{{ encounter.diagnosis }}</span></div></td>
+                    <td><button type="button" class="btn-open-record" (click)="openPatient(encounter.patientId)">Abrir ficha</button></td>
                   </tr>
                 }
               </tbody>
             </table>
           </div>
         } @else {
-          <!-- Empty State -->
-          <div class="empty-state-wrap">
-            <div class="empty-icon-circle">
-              <ng-icon name="lucideStethoscope" />
-            </div>
-            <h3 class="empty-title">Sin consultas registradas hoy</h3>
-            <p class="empty-desc">
-              Comience la jornada médica registrando la primera atención o seleccionando un paciente del directorio.
-            </p>
-            <a
-              routerLink="/pacientes"
-              class="cta-primary-btn btn-sm"
-            >
-              <ng-icon name="lucideUsers" />
-              <span>Ver Directorio de Pacientes</span>
-            </a>
-          </div>
+          <div class="empty-state-wrap"><div class="empty-icon-circle"><ng-icon name="lucideStethoscope" /></div><h3 class="empty-title">Sin consultas registradas</h3><p class="empty-desc">Los pacientes aparecen aquí únicamente después de registrar una consulta.</p></div>
         }
       </div>
 
-      <!-- Section: Acceso Rápido al Directorio de Pacientes -->
-      <div class="content-card">
+      <div class="content-card patients-directory-card">
         <div class="card-header-row">
-          <div class="header-title-wrap">
-            <h2 class="card-title">
-              <ng-icon name="lucideUsers" class="title-icon text-blue-600" />
-              Acceso Rápido a Pacientes
-            </h2>
-            <p class="card-subtitle">Búsqueda reactiva instantánea en el padrón</p>
-          </div>
-
-          <div class="directory-search-box">
-            <ng-icon name="lucideSearch" class="search-box-icon" />
-            <input
-              type="search"
-              class="directory-search-input"
-              placeholder="Filtrar por nombre..."
-              [value]="directorySearch()"
-              (input)="onDirectorySearchInput($event)"
-            />
-          </div>
+          <div class="header-title-wrap"><h2 class="card-title"><ng-icon name="lucideUsers" class="title-icon text-blue-600" /> Acceso rápido a pacientes</h2><p class="card-subtitle">Búsqueda en el padrón de pacientes</p></div>
+          <div class="directory-search-box"><ng-icon name="lucideSearch" class="search-box-icon" /><input type="search" class="directory-search-input" placeholder="Buscar paciente..." [value]="directorySearch()" (input)="onDirectorySearchInput($event)" /></div>
         </div>
-
         @if (isSearchingDirectory()) {
-          <div class="card-loading-state">
-            <div class="mini-spinner"></div>
-            <span>Filtrando pacientes...</span>
-          </div>
+          <div class="card-loading-state"><div class="mini-spinner"></div><span>Buscando pacientes...</span></div>
         } @else if (directoryPatients().length > 0) {
           <div class="encounters-table-wrap">
-            <table class="clinical-table">
-              <thead>
-                <tr>
-                  <th>Nombre Completo</th>
-                  <th>DNI</th>
-                  <th>Fecha Nac.</th>
-                  <th>Contacto</th>
-                  <th>Ficha Clínica</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (p of directoryPatients(); track p.id) {
-                  <tr>
-                    <td>
-                      <div class="patient-cell">
-                        <div class="patient-cell-avatar">
-                          {{ p.fullName.slice(0, 2).toUpperCase() }}
-                        </div>
-                        <span class="patient-cell-name font-semibold">{{ p.fullName }}</span>
-                      </div>
-                    </td>
-                    <td>{{ p.nationalId || '—' }}</td>
-                    <td>{{ p.birthDate || '—' }}</td>
-                    <td>{{ p.phone || '—' }}</td>
-                    <td>
-                      <button
-                        type="button"
-                        class="secondary-outline-btn btn-xs"
-                        (click)="openPatient(p.id)"
-                      >
-                        Ver Ficha →
-                      </button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+            <table class="clinical-table"><thead><tr><th>Paciente</th><th>Fecha de nacimiento</th><th>Acción</th></tr></thead><tbody>
+              @for (patient of directoryPatients(); track patient.id) { <tr><td><span class="patient-cell-name">{{ patient.fullName }}</span></td><td><span class="cell-datetime">{{ patient.birthDate || '—' }}</span></td><td><button type="button" class="btn-open-record" (click)="openPatient(patient.id)">Abrir ficha</button></td></tr> }
+            </tbody></table>
           </div>
-
-          <div class="table-pagination-row">
-            <span class="pagination-info">
-              Página {{ directoryPage() + 1 }} de {{ directoryTotalPages() }}
-            </span>
-            <div class="pagination-btns">
-              <button
-                type="button"
-                class="btn-page"
-                [disabled]="directoryPage() === 0"
-                (click)="loadDirectory(directoryPage() - 1, directorySearch())"
-              >
-                <ng-icon name="lucideChevronLeft" />
-                Anterior
-              </button>
-              <button
-                type="button"
-                class="btn-page"
-                [disabled]="directoryPage() + 1 >= directoryTotalPages()"
-                (click)="loadDirectory(directoryPage() + 1, directorySearch())"
-              >
-                Siguiente
-                <ng-icon name="lucideChevronRight" />
-              </button>
-            </div>
-          </div>
+          <div class="table-pagination-row"><span class="pagination-info">Página {{ directoryPage() + 1 }} de {{ directoryTotalPages() }}</span><div class="pagination-btns"><button type="button" class="btn-page" [disabled]="directoryPage() === 0" (click)="loadDirectory(directoryPage() - 1, directorySearch())"><ng-icon name="lucideChevronLeft" /> Anterior</button><button type="button" class="btn-page" [disabled]="directoryPage() + 1 >= directoryTotalPages()" (click)="loadDirectory(directoryPage() + 1, directorySearch())">Siguiente <ng-icon name="lucideChevronRight" /></button></div></div>
         } @else {
-          <div class="empty-state-wrap p-6">
-            <p class="text-slate-500 text-sm">No se encontraron pacientes para el término buscado.</p>
-          </div>
+          <div class="empty-state-wrap"><p class="empty-desc">No se encontraron pacientes.</p></div>
         }
       </div>
     </div>
 
-    <!-- Right Column (35%): Productivity & Specialty Widgets -->
     <div class="dashboard-side-col">
-      <!-- Widget 1: Acciones Rápidas -->
       <div class="content-card">
-        <div class="widget-header">
-          <h3 class="widget-title">
-            <ng-icon name="lucideSparkles" class="text-amber-500" />
-            Acciones Rápidas
-          </h3>
-        </div>
-
-        <div class="quick-actions-list">
-          <a
-            routerLink="/agenda"
-            class="quick-action-btn"
-          >
-            <div class="qa-icon-wrap bg-purple-100 text-purple-700">
-              <ng-icon name="lucideCalendar" />
-            </div>
-            <div class="qa-text">
-              <span class="qa-title">Ver Agenda de Turnos</span>
-              <span class="qa-desc">Consultar pacientes citados</span>
-            </div>
-          </a>
-
-          <a
-            routerLink="/pacientes"
-            class="quick-action-btn"
-          >
-            <div class="qa-icon-wrap bg-teal-100 text-teal-700">
-              <ng-icon name="lucideUsers" />
-            </div>
-            <div class="qa-text">
-              <span class="qa-title">Directorio de Pacientes</span>
-              <span class="qa-desc">Consultar fichas y evoluciones</span>
-            </div>
-          </a>
-        </div>
+        <div class="widget-header"><h3 class="widget-title"><ng-icon name="lucideSparkles" class="text-amber-500" /> Acciones rápidas</h3></div>
+        <div class="quick-actions-list"><a routerLink="/pacientes" class="quick-action-btn"><div class="qa-icon-wrap bg-teal-100 text-teal-700"><ng-icon name="lucideUsers" /></div><div class="qa-text"><span class="qa-title">Directorio de pacientes</span><span class="qa-desc">Consultar fichas y evoluciones</span></div></a></div>
       </div>
 
-      <!-- Widget 2: Herramientas Dinámicas de Especialidad -->
-      <div class="content-card specialty-widget">
-        <div class="widget-header">
-          <h3 class="widget-title">
-            <ng-icon name="lucideCalculator" class="text-teal-600" />
-            Herramientas de {{ specialtyService.currentSpecialtyOption().shortLabel }}
-          </h3>
-        </div>
-
-        @if (specialtyService.isPediatricMode()) {
-          <!-- Pediatric Tools Clinical Guidance -->
-          <div class="specialty-tool-body">
-            <p class="tool-intro">Evaluación Somatométrica y Neurodesarrollo:</p>
-            <div class="p-3 bg-teal-50/60 rounded-xl border border-teal-100/80">
-              <div class="flex items-center gap-2 text-teal-800 font-semibold text-xs mb-1.5">
-                <ng-icon name="lucideTrendingUp" class="text-teal-600 text-base" />
-                <span>Curvas OMS e Hitos (0 a 15 Años)</span>
-              </div>
-              <p class="text-xs text-slate-600 leading-relaxed">
-                Las curvas percentiladas OMS y la pesquisa de hitos psicomotores se calculan automáticamente dentro de la ficha de cada paciente en base al historial de todas sus consultas y controles.
-              </p>
-              <div class="mt-3">
-                <a routerLink="/pacientes" class="secondary-outline-btn btn-xs inline-flex items-center gap-1">
-                  <span>Ir al Directorio de Pacientes</span>
-                  <ng-icon name="lucideArrowRight" />
-                </a>
-              </div>
-            </div>
-          </div>
-        } @else if (specialtyService.activeSpecialty() === 'GYNECOLOGY') {
-          <!-- Gynecology / Obstetrics Calculator -->
-          <div class="specialty-tool-body">
-            <span class="calc-label">Calculador de FUM y Edad Gestacional</span>
-            <div class="calc-input-row mt-2">
-              <label for="fum-input" class="text-xs text-slate-600">Fecha de Última Menstruación (FUM):</label>
-              <input
-                id="fum-input"
-                type="date"
-                class="calc-input"
-                [ngModel]="calcLmpDate()"
-                (ngModelChange)="calcLmpDate.set($event)"
-              />
-            </div>
-
-            @if (obstetricCalc(); as obs) {
-              <div class="calc-result-box mt-3">
-                <div class="result-row">
-                  <span class="text-xs text-slate-600">Edad Gestacional:</span>
-                  <strong class="text-teal-800 text-sm font-bold">
-                    {{ obs.gestationalWeeks }} sem + {{ obs.gestationalDays }} d
-                  </strong>
-                </div>
-                <div class="result-row mt-1">
-                  <span class="text-xs text-slate-600">Fecha Probable de Parto (FPP):</span>
-                  <strong class="text-slate-800 text-xs">{{ obs.eddFormatted }}</strong>
-                </div>
-              </div>
-            }
-          </div>
-        } @else {
-          <!-- Cardiology / General Medicine: Quick BMI & BP Calculator -->
-          <div class="specialty-tool-body">
-            <span class="calc-label">Calculador Rápido de IMC y Presión Arterial</span>
-            <div class="calc-grid-inputs mt-2">
-              <div class="calc-field">
-                <label class="calc-tiny-label">Peso (kg)</label>
-                <input
-                  type="number"
-                  class="calc-input"
-                  placeholder="ej: 75"
-                  [ngModel]="calcWeight()"
-                  (ngModelChange)="calcWeight.set($event)"
-                />
-              </div>
-              <div class="calc-field">
-                <label class="calc-tiny-label">Talla (cm)</label>
-                <input
-                  type="number"
-                  class="calc-input"
-                  placeholder="ej: 175"
-                  [ngModel]="calcHeight()"
-                  (ngModelChange)="calcHeight.set($event)"
-                />
-              </div>
-              <div class="calc-field">
-                <label class="calc-tiny-label">TA Sistólica</label>
-                <input
-                  type="number"
-                  class="calc-input"
-                  placeholder="ej: 120"
-                  [ngModel]="calcSystolic()"
-                  (ngModelChange)="calcSystolic.set($event)"
-                />
-              </div>
-              <div class="calc-field">
-                <label class="calc-tiny-label">TA Diastólica</label>
-                <input
-                  type="number"
-                  class="calc-input"
-                  placeholder="ej: 80"
-                  [ngModel]="calcDiastolic()"
-                  (ngModelChange)="calcDiastolic.set($event)"
-                />
-              </div>
-            </div>
-
-            @if (calculatedBmi(); as bmi) {
-              <div class="calc-result-box mt-3">
-                <div class="result-row">
-                  <span class="text-xs text-slate-600">Índice de Masa Corporal:</span>
-                  <span class="badge-result {{ bmi.class }}">
-                    {{ bmi.value }} kg/m² • {{ bmi.label }}
-                  </span>
-                </div>
-              </div>
-            }
-
-            @if (bpClassification(); as bp) {
-              <div class="calc-result-box mt-2">
-                <div class="result-row">
-                  <span class="text-xs text-slate-600">Categorización TA:</span>
-                  <span class="badge-result {{ bp.class }}">
-                    {{ bp.label }}
-                  </span>
-                </div>
-              </div>
-            }
-          </div>
-        }
-      </div>
-
-      <!-- Widget 3: Borradores / Notas Clínicas Rápidas -->
-      <div class="content-card">
-        <div class="widget-header">
-          <div class="flex items-center gap-1.5">
-            <ng-icon name="lucideFileText" class="text-slate-500" />
-            <h3 class="widget-title">Notas Rápidas</h3>
-          </div>
-          <div class="flex items-center gap-2">
-            @if (isNotesSaved()) {
-              <span class="text-xs text-emerald-600 flex items-center gap-1">
-                <ng-icon name="lucideCheckCircle2" /> Guardado
-              </span>
-            }
-            @if (quickNotes()) {
-              <button
-                type="button"
-                class="btn-clear-notes"
-                (click)="clearNotes()"
-                title="Borrar notas"
-              >
-                <ng-icon name="lucideTrash2" />
+      <div class="content-card quick-notes-card">
+        <div class="widget-header"><div class="flex items-center gap-1.5"><ng-icon name="lucideFileText" class="text-slate-500" /><h3 class="widget-title">Notas rápidas</h3></div>@if (isNotesSaved()) { <span class="text-xs text-emerald-600 flex items-center gap-1"><ng-icon name="lucideCheckCircle2" /> Guardado</span> }</div>
+        <div class="notes-widget-body">
+          <textarea class="notes-textarea" placeholder="Escribí recordatorios rápidos o pendientes..." [ngModel]="quickNotes()" (ngModelChange)="onNotesInput($event)" rows="4"></textarea>
+          <div class="notes-actions">
+            <span class="notes-footer-hint">Estas notas se guardan en tu cuenta.</span>
+            @if (isNotesDirty()) {
+              <button type="button" class="save-notes-button" [disabled]="isSavingNotes()" (click)="saveNotes()">
+                @if (isSavingNotes()) { Guardando... } @else { Guardar }
               </button>
             }
           </div>
-        </div>
-
-        <div class="notes-widget-body">
-          <textarea
-            class="notes-textarea"
-            placeholder="Escriba recordatorios rápidos, pendientes de firma o notas de llamadas clínicas..."
-            [ngModel]="quickNotes()"
-            (ngModelChange)="onNotesInput($event)"
-            rows="4"
-          ></textarea>
-          <span class="notes-footer-hint">Las notas se guardan automáticamente en su navegador.</span>
         </div>
       </div>
     </div>

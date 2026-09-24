@@ -87,19 +87,15 @@ describe('NewEncounterDialogComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should validate required chief complaint and diagnosis before submitting', async () => {
+  it('should validate the configured form before submitting', async () => {
     fixture.componentRef.setInput('isOpen', true);
     fixture.componentRef.setInput('patientId', 10);
     fixture.detectChanges();
 
+    component.onDynamicFormValidityChange(false);
     await component.submitEncounter();
-
-    expect(component.errorMessage()).toContain('motivo de consulta es obligatorio');
+    expect(component.errorMessage()).toContain('campos obligatorios');
     expect(encounterServiceMock.create).not.toHaveBeenCalled();
-
-    component.chiefComplaint.set('Fiebre');
-    await component.submitEncounter();
-    expect(component.errorMessage()).toContain('diagnóstico principal es obligatorio');
   });
 
   it('should submit encounter with templateId, dynamicData, and snapshotFieldLabels', async () => {
@@ -113,8 +109,6 @@ describe('NewEncounterDialogComponent', () => {
     fixture.componentRef.setInput('patientName', 'Juan Pérez');
     fixture.detectChanges();
 
-    component.chiefComplaint.set('Dolor torácico');
-    component.primaryDiagnosis.set('Sospecha de reflujo');
     component.onDynamicDataChange({ pesoKg: 78.5 });
 
     await component.submitEncounter();
@@ -122,8 +116,9 @@ describe('NewEncounterDialogComponent', () => {
     expect(encounterServiceMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         patientId: 10,
-        chiefComplaint: 'Dolor torácico',
-        primaryDiagnosisDescription: 'Sospecha de reflujo',
+        encounterDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
+        chiefComplaint: '78.5',
+        primaryDiagnosisDescription: '78.5',
         templateId: 99,
         dynamicData: { pesoKg: 78.5 },
         snapshotFieldLabels: {
@@ -135,5 +130,30 @@ describe('NewEncounterDialogComponent', () => {
 
     expect(createdResult).toBeTruthy();
     expect(createdResult.id).toBe(501);
+  });
+  it('should only show FIRST_VISIT when previousEncountersCount is 0', () => {
+    fixture.componentRef.setInput('previousEncountersCount', 0);
+    fixture.detectChanges();
+
+    const types = component.consultationTypes();
+    expect(types.length).toBe(1);
+    expect(types[0].value).toBe('FIRST_VISIT');
+    expect(component.consultationType()).toBe('FIRST_VISIT');
+  });
+
+  it('should show all other consultation types except FIRST_VISIT when previousEncountersCount > 0', () => {
+    fixture.componentRef.setInput('previousEncountersCount', 3);
+    fixture.detectChanges();
+
+    const types = component.consultationTypes();
+    expect(types.length).toBe(4);
+    expect(types.some((t) => t.value === 'FIRST_VISIT')).toBe(false);
+    expect(types.map((t) => t.value)).toEqual([
+      'FOLLOW_UP',
+      'ROUTINE_CHECKUP',
+      'EMERGENCY',
+      'INTERCONSULTATION',
+    ]);
+    expect(component.consultationType()).toBe('FOLLOW_UP');
   });
 });

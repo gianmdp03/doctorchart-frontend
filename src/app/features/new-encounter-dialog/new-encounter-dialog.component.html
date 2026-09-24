@@ -1,219 +1,47 @@
 @if (isOpen()) {
   <div class="modal-backdrop" (click)="close()">
     <div class="modal-card modal-encounter" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-      <!-- Header -->
       <header class="modal-header">
         <div class="flex items-center gap-3">
-          <div class="modal-icon-badge">
-            <ng-icon name="lucideStethoscope" class="w-5 h-5 text-blue-600"></ng-icon>
-          </div>
+          <div class="modal-icon-badge"><ng-icon name="lucideStethoscope" class="w-5 h-5 text-blue-600" /></div>
           <div>
-            <h3 class="modal-title">Nueva Consulta Médica</h3>
-            <p class="modal-subtitle">
-              Paciente: <strong>{{ patientName() || ('ID #' + patientId()) }}</strong>
-            </p>
+            <h3 class="modal-title">Nueva consulta</h3>
+            <p class="modal-subtitle">Paciente: <strong>{{ patientName() || ('ID #' + patientId()) }}</strong></p>
           </div>
         </div>
-        <button
-          type="button"
-          class="btn-close-modal"
-          (click)="close()"
-          aria-label="Cerrar modal"
-        >
-          <ng-icon name="lucideX" class="w-5 h-5"></ng-icon>
-        </button>
+        <button type="button" class="btn-close-modal" (click)="close()" aria-label="Cerrar modal"><ng-icon name="lucideX" class="w-5 h-5" /></button>
       </header>
 
-      <!-- Feedback alert -->
       @if (errorMessage()) {
-        <div class="alert-banner alert-error" role="alert">
-          <ng-icon name="lucideAlertCircle" class="w-4 h-4"></ng-icon>
-          <span>{{ errorMessage() }}</span>
-        </div>
+        <div class="alert-banner alert-error" role="alert"><ng-icon name="lucideAlertCircle" class="w-4 h-4" /><span>{{ errorMessage() }}</span></div>
       }
 
-      <!-- Form Body Scrollable -->
       <div class="encounter-form-scroll">
-        <!-- Tipo de Consulta -->
         <section class="form-section">
-          <label class="form-section-label">Tipo de Atención / Consulta *</label>
+          <label class="form-section-label">Tipo de consulta</label>
           <div class="consultation-type-chips">
-            @for (t of consultationTypes; track t.value) {
-              <button
-                type="button"
-                class="type-chip"
-                [class.selected]="consultationType() === t.value"
-                (click)="consultationType.set(t.value)"
-              >
-                {{ t.label }}
-              </button>
+            @for (type of consultationTypes(); track type.value) {
+              <button type="button" class="type-chip" [class.selected]="consultationType() === type.value" (click)="consultationType.set(type.value)">{{ type.label }}</button>
             }
           </div>
         </section>
 
-        <!-- S: Subjetivo -->
-        <section class="soap-block card-s">
-          <div class="soap-heading">
-            <span class="soap-pill pill-s">S</span>
-            <h4 class="soap-title">Subjetivo (Anamnesis)</h4>
-          </div>
-
-          <div class="space-y-3 mt-3">
-            <div class="form-field-group">
-              <label for="chiefComplaint" class="field-label">Motivo Principal de Consulta *</label>
-              <input
-                type="text"
-                id="chiefComplaint"
-                [ngModel]="chiefComplaint()"
-                (ngModelChange)="chiefComplaint.set($event)"
-                placeholder="Ej: Fiebre de 48hs de evolución, cefalea..."
-                class="form-control"
-              />
-            </div>
-
-            <div class="form-field-group">
-              <label for="historyOfIllness" class="field-label">Historia de la Enfermedad Actual</label>
-              <textarea
-                id="historyOfIllness"
-                [ngModel]="historyOfPresentIllness()"
-                (ngModelChange)="historyOfPresentIllness.set($event)"
-                placeholder="Detalles cronológicos y sintomáticos del cuadro..."
-                rows="2"
-                class="form-control"
-              ></textarea>
-            </div>
-          </div>
-        </section>
-
-        <!-- O: Objetivo & Examen Físico -->
-        <section class="soap-block card-o">
-          <div class="soap-heading">
-            <span class="soap-pill pill-o">O</span>
-            <h4 class="soap-title">Objetivo (Examen Físico)</h4>
-          </div>
-
-          <div class="mt-3">
-            <div class="form-field-group">
-              <label for="physicalExam" class="field-label">Hallazgos al Examen Físico</label>
-              <textarea
-                id="physicalExam"
-                [ngModel]="physicalExamination()"
-                (ngModelChange)="physicalExamination.set($event)"
-                placeholder="Examen físico general y segmentario..."
-                rows="2"
-                class="form-control"
-              ></textarea>
-            </div>
-          </div>
-        </section>
-
-        <!-- Plantilla Clínica Dinámica -->
-        @if (activeTemplate()) {
+        @if (activeTemplate(); as template) {
           <section class="soap-block card-dynamic">
-            <div class="soap-heading">
-              <span class="soap-pill pill-dynamic">📋</span>
-              <h4 class="soap-title">Formulario Clínico: {{ activeTemplate()?.name }}</h4>
-            </div>
-
+            <div class="soap-heading"><span class="soap-pill pill-dynamic">📋</span><h4 class="soap-title">{{ template.name }}</h4></div>
             <div class="mt-3">
-              <app-dynamic-form-renderer
-                [template]="activeTemplate()"
-                (valuesChange)="onDynamicDataChange($event)"
-                (valid)="onDynamicFormValidityChange($event)"
-              />
+              <app-dynamic-form-renderer [template]="template" (valuesChange)="onDynamicDataChange($event)" (valid)="onDynamicFormValidityChange($event)" />
             </div>
           </section>
+        } @else {
+          <p class="text-sm text-rose-700">No hay formulario de consulta configurado.</p>
         }
-
-        <!-- A: Evaluación & Diagnóstico -->
-        <section class="soap-block card-a">
-          <div class="soap-heading">
-            <span class="soap-pill pill-a">A</span>
-            <h4 class="soap-title">Evaluación (Diagnóstico)</h4>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-            <div class="md:col-span-2 form-field-group">
-              <label for="primaryDiagnosis" class="field-label">Diagnóstico Principal *</label>
-              <input
-                type="text"
-                id="primaryDiagnosis"
-                [ngModel]="primaryDiagnosis()"
-                (ngModelChange)="primaryDiagnosis.set($event)"
-                placeholder="Ej: Rinofaringitis aguda, Hipertensión arterial..."
-                class="form-control"
-              />
-            </div>
-
-            <div class="form-field-group">
-              <label for="diagnosisCode" class="field-label">Código CIE-10 (opcional)</label>
-              <input
-                type="text"
-                id="diagnosisCode"
-                [ngModel]="primaryDiagnosisCode()"
-                (ngModelChange)="primaryDiagnosisCode.set($event)"
-                placeholder="Ej: J00, I10"
-                class="form-control"
-              />
-            </div>
-          </div>
-        </section>
-
-        <!-- P: Plan & Seguimiento -->
-        <section class="soap-block card-p">
-          <div class="soap-heading">
-            <span class="soap-pill pill-p">P</span>
-            <h4 class="soap-title">Plan (Tratamiento & Conducta)</h4>
-          </div>
-
-          <div class="space-y-3 mt-3">
-            <div class="form-field-group">
-              <label for="treatmentPlan" class="field-label">Plan Terapéutico e Indicaciones</label>
-              <textarea
-                id="treatmentPlan"
-                [ngModel]="treatmentPlan()"
-                (ngModelChange)="treatmentPlan.set($event)"
-                placeholder="Indicaciones médicas, reposo, medidas higiénico-dietéticas..."
-                rows="2"
-                class="form-control"
-              ></textarea>
-            </div>
-
-            <div class="form-field-group">
-              <label for="followUpDate" class="field-label">Fecha de Próximo Control (opcional)</label>
-              <input
-                type="date"
-                id="followUpDate"
-                [ngModel]="followUpDate()"
-                (ngModelChange)="followUpDate.set($event)"
-                class="form-control max-w-xs"
-              />
-            </div>
-          </div>
-        </section>
       </div>
 
-      <!-- Footer Actions -->
       <footer class="modal-footer">
-        <button
-          type="button"
-          class="btn-cancel"
-          (click)="close()"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="btn-submit"
-          [disabled]="isSubmitting() || !chiefComplaint().trim() || !primaryDiagnosis().trim()"
-          (click)="submitEncounter()"
-        >
-          @if (isSubmitting()) {
-            <span>Guardando Consulta...</span>
-          } @else {
-            <ng-icon name="lucideCheck" class="w-4 h-4"></ng-icon>
-            <span>Guardar Consulta Clínica</span>
-          }
+        <button type="button" class="btn-cancel" (click)="close()">Cancelar</button>
+        <button type="button" class="btn-submit" [disabled]="isSubmitting() || !activeTemplate() || !isDynamicFormValid()" (click)="submitEncounter()">
+          @if (isSubmitting()) { <span>Guardando consulta...</span> } @else { <ng-icon name="lucideCheck" class="w-4 h-4" /><span>Guardar consulta</span> }
         </button>
       </footer>
     </div>

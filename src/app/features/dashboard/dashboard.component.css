@@ -1,8 +1,16 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+}
+
 .dashboard-page {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
+  flex: 1;
 }
 
 /* --- 1. Welcome Header --- */
@@ -235,6 +243,8 @@
   display: grid;
   grid-template-columns: 65% 35%;
   gap: 1.5rem;
+  flex: 1;
+  align-items: stretch;
 }
 
 @media (max-width: 1024px) {
@@ -247,12 +257,26 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  height: 100%;
+}
+
+.patients-directory-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard-side-col {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  height: 100%;
+}
+
+.quick-notes-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- Content Card Base --- */
@@ -529,6 +553,7 @@
 }
 
 .table-pagination-row {
+  margin-top: auto;
   padding: 0.65rem 1rem;
   background-color: #f8fafc;
   border-top: 1px solid #e2e8f0;
@@ -650,134 +675,30 @@
   color: #64748b;
 }
 
-/* Specialty Tool Widget */
-.specialty-tool-body {
-  padding: 1rem 1.25rem;
-}
-
-.tool-intro {
-  font-size: 0.78rem;
-  color: #64748b;
-  margin-bottom: 0.75rem;
-}
-
-.tool-actions-col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.tool-action-card {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  text-decoration: none;
-  background-color: #ffffff;
-  transition: all 0.15s ease;
-}
-
-.tool-action-card:hover {
-  background-color: #f8fafc;
-  border-color: #006874;
-}
-
-.tool-card-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.tool-card-title {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.tool-card-sub {
-  font-size: 0.7rem;
-  color: #64748b;
-}
-
-.calc-label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.calc-grid-inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
-
-.calc-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.calc-tiny-label {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.calc-input {
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 0.35rem 0.5rem;
-  font-size: 0.82rem;
-  width: 100%;
-  outline: none;
-}
-
-.calc-input:focus {
-  border-color: #006874;
-}
-
-.calc-result-box {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.55rem 0.75rem;
-}
-
-.result-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.badge-result {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 6px;
-}
-
 /* Quick Notes */
 .notes-widget-body {
   padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.75rem;
+  flex: 1;
 }
 
 .notes-textarea {
   width: 100%;
+  flex: 1;
+  min-height: 140px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 0.65rem;
-  font-size: 0.82rem;
+  padding: 0.75rem;
+  font-size: 0.85rem;
   font-family: inherit;
   color: #0f172a;
   background-color: #fbfcfd;
   resize: vertical;
   outline: none;
   transition: border-color 0.15s ease;
+  box-sizing: border-box;
 }
 
 .notes-textarea:focus {
@@ -790,18 +711,27 @@
   color: #94a3b8;
 }
 
-.btn-clear-notes {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 2px;
+.notes-actions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
-.btn-clear-notes:hover {
-  color: #ef4444;
+.save-notes-button {
+  background: #006874;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+}
+
+.save-notes-button:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
 }
 
 .card-loading-state {

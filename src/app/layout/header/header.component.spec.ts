@@ -16,57 +16,41 @@ describe('HeaderComponent', () => {
   let authServiceMock: any;
   let activePatientServiceMock: any;
   let patientServiceMock: any;
-  let doctorSpecialtyServiceMock: any;
-  let doctorProfileServiceMock: any;
+  let specialtyServiceMock: any;
+  let profileServiceMock: any;
 
   beforeEach(async () => {
     authServiceMock = {
-      currentUser: signal(null),
       isLoggedIn: signal(true),
-      userName: signal('Dra. Sofía Mendoza'),
-      userEmail: signal('sofia@doctorchart.com'),
-      userRole: signal('DOCTOR'),
-      isSuperAdmin: signal(false),
+      userName: signal('Dr. Santiago'),
+      userEmail: signal('santiago@syntah.io'),
       hasDoctorchartPlan: signal(true),
       doctorchartPlanTier: signal('PROFESSIONAL'),
-      daysRemaining: signal(30),
-      openLoginModal: vi.fn(),
+      signOut: vi.fn(),
       openProfileModal: vi.fn(),
-      signOut: vi.fn().mockResolvedValue(undefined),
     };
 
     activePatientServiceMock = {
-      patientId: signal(101),
-      patientName: signal('Mateo Benítez'),
+      patientId: signal(1),
       loadPatient: vi.fn(),
     };
 
     patientServiceMock = {
-      getPatients: vi.fn().mockReturnValue(
-        of({
-          content: [
-            { id: 101, fullName: 'Mateo Benítez', birthDate: '2024-05-10', nationalId: '54123456' },
-          ],
-          totalElements: 1,
-          totalPages: 1,
-          size: 8,
-          number: 0,
-        })
-      ),
+      getPatients: vi.fn().mockReturnValue(of({ content: [] })),
     };
 
-    doctorSpecialtyServiceMock = {
+    specialtyServiceMock = {
       activeSpecialty: signal('PEDIATRICS'),
-      isPediatricMode: signal(true),
       currentSpecialtyOption: signal({
         value: 'PEDIATRICS',
         label: 'Pediatría y Neonatología',
         shortLabel: 'Pediatría',
         icon: 'baby',
       }),
+      isPediatricMode: signal(true),
     };
 
-    doctorProfileServiceMock = {
+    profileServiceMock = {
       profile: signal({ specialty: 'PEDIATRICS' }),
       hasSpecialty: signal(true),
     };
@@ -78,8 +62,8 @@ describe('HeaderComponent', () => {
         { provide: AuthService, useValue: authServiceMock },
         { provide: ActivePatientService, useValue: activePatientServiceMock },
         { provide: PatientService, useValue: patientServiceMock },
-        { provide: DoctorSpecialtyService, useValue: doctorSpecialtyServiceMock },
-        { provide: DoctorProfileService, useValue: doctorProfileServiceMock },
+        { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },
+        { provide: DoctorProfileService, useValue: profileServiceMock },
       ],
     }).compileComponents();
 
@@ -92,27 +76,18 @@ describe('HeaderComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render specialty badge and omnibox search input', () => {
-    const el: HTMLElement = fixture.nativeElement;
-    const omnibox = el.querySelector('.omnibox-input');
-    expect(omnibox).toBeTruthy();
+  it('should compute plan badge correctly', () => {
+    expect(component.planBadgeLabel()).toBe('Plan PROFESSIONAL');
+  });
 
+  it('should display specialty label', () => {
+    const el = fixture.nativeElement as HTMLElement;
     const badge = el.querySelector('.specialty-badge');
     expect(badge?.textContent).toContain('Pediatría');
   });
 
   it('should compute clinician initials correctly', () => {
     expect(component.clinicianInitials()).toBe('DS');
-  });
-
-  it('should toggle create menu when button is clicked', () => {
-    const stopPropagationSpy = vi.fn();
-    const event = { stopPropagation: stopPropagationSpy } as unknown as Event;
-
-    expect(component.isCreateMenuOpen()).toBe(false);
-    component.toggleCreateMenu(event);
-    expect(component.isCreateMenuOpen()).toBe(true);
-    expect(stopPropagationSpy).toHaveBeenCalled();
   });
 
   it('should toggle profile menu when profile button is clicked', () => {

@@ -39,16 +39,17 @@ import { CheckupService } from '../../core/services/checkup.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { MedicalCheckupDetailDTO } from '../../core/models/checkup.model';
 import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
-import { MedicalSpecialty, SPECIALTY_OPTIONS, SpecialtyOption } from '../../core/models/specialty.model';
+import { MedicalSpecialty } from '../../core/models/specialty.model';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { PatientBannerComponent } from './patient-banner/patient-banner.component';
 import { ClinicalTimelineComponent } from './clinical-timeline/clinical-timeline.component';
 import { GrowthCurvesComponent } from '../growth-curves/growth-curves.component';
-import { MilestonesComponent } from '../milestones/milestones.component';
-
 import { NewEncounterDialogComponent } from '../new-encounter-dialog/new-encounter-dialog.component';
+import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
+import { WorkspaceStore } from '../../core/services/workspace.store';
+import { FormTemplate } from '../../core/models/workspace.model';
 
-export type PatientRecordTab = 'resumen' | 'historia' | 'herramientas' | 'curvas' | 'hitos' | 'recetas';
+export type PatientRecordTab = 'resumen' | 'historia' | 'curvas' | 'recetas';
 
 export interface RecordTabItem {
   id: PatientRecordTab;
@@ -92,8 +93,8 @@ export interface ComplicationChip {
     PatientBannerComponent,
     ClinicalTimelineComponent,
     GrowthCurvesComponent,
-    MilestonesComponent,
     NewEncounterDialogComponent,
+    DynamicFormRendererComponent,
   ],
   providers: [
     provideIcons({
@@ -129,6 +130,7 @@ export class PatientRecordComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly workspaceStore = inject(WorkspaceStore);
 
   // Flattened 4-Tab Hierarchy
   readonly selectedTab = signal<PatientRecordTab>('resumen');
@@ -139,22 +141,62 @@ export class PatientRecordComponent implements OnInit {
     return this.activePatientService.ageInYears() < 16;
   });
 
+  /**
+   * New patients carry the exact wizard schema used when they were registered.
+   * Legacy patients fall back to the doctor's current template instead.
+   */
+  readonly patientFormTemplate = computed<FormTemplate | null>(() => {
+    const patient = this.activePatientService.activePatient();
+    const baseTemplate = this.workspaceStore.defaultPatientTemplate();
+    const schema = patient?.patientTemplateSnapshot ?? baseTemplate?.schemaDefinition;
+    if (!schema) return null;
+
+    return {
+      ...(baseTemplate ?? {
+        name: 'Formulario del paciente',
+        templateType: 'PATIENT_EXTRA' as const,
+        isDefault: true,
+      }),
+      name: baseTemplate?.name ?? 'Formulario del paciente',
+      templateType: 'PATIENT_EXTRA',
+      isDefault: true,
+      schemaDefinition: schema,
+    };
+  });
+
+  readonly patientFormValues = computed<Record<string, unknown>>(() => {
+    const patient = this.activePatientService.activePatient();
+    if (!patient) return {};
+    const nameParts = patient.fullName.trim().split(/\s+/);
+    return {
+      ...(patient.patientExtraData ?? {}),
+      ...(patient.patientFormData ?? {}),
+      firstName: patient.patientFormData?.['firstName'] ?? nameParts[0] ?? '',
+      lastName: patient.patientFormData?.['lastName'] ?? nameParts.slice(1).join(' '),
+      fullName: patient.fullName,
+      birthDate: patient.birthDate,
+      nationalId: patient.nationalId ?? '',
+      phone: patient.phone ?? '',
+      address: patient.address ?? '',
+      email: patient.email ?? '',
+      gender: patient.gender ?? '',
+      bloodType: patient.bloodType ?? '',
+    };
+  });
+
   readonly tabs = computed<RecordTabItem[]>(() => {
     if (this.doctorSpecialtyService.isPediatricMode() || this.isChild()) {
       return [
-        { id: 'resumen', label: '1. Resumen & Antecedentes' },
-        { id: 'historia', label: '2. Historia Clínica (SOAP)', badge: this.filteredEncounters().length },
+        { id: 'resumen', label: '1. Datos del paciente' },
+        { id: 'historia', label: '2. Consultas', badge: this.encounters().length },
         { id: 'curvas', label: '3. Curvas OMS' },
-        { id: 'hitos', label: '4. Hitos (0-15 años)' },
-        { id: 'herramientas', label: '5. Herramientas' },
-        { id: 'recetas', label: '6. Recetas y Estudios' },
+        { id: 'recetas', label: '4. Recetas y Estudios' },
       ];
     }
     return [
-      { id: 'resumen', label: '1. Resumen & Antecedentes' },
-      { id: 'historia', label: '2. Historia Clínica (SOAP)', badge: this.filteredEncounters().length },
-      { id: 'herramientas', label: '3. Herramientas de Especialidad' },
-      { id: 'recetas', label: '4. Recetas y Estudios' },
+      { id: 'resumen', label: '1. Datos del paciente' },
+      { id: 'historia', label: '2. Consultas', badge: this.encounters().length },
+      { id: 'recetas', label: '3. Recetas y Estudios' },
     ];
   });
 
@@ -164,21 +206,9 @@ export class PatientRecordComponent implements OnInit {
   // Universal SOAP Encounters state
   readonly encounters = signal<ClinicalEncounterList[]>([]);
   readonly isLoadingEncounters = signal<boolean>(false);
-  readonly selectedSpecialtyFilter = signal<MedicalSpecialty | 'ALL'>('ALL');
   readonly isMigrating = signal<boolean>(false);
   readonly migrationMessage = signal<string | null>(null);
   readonly isPediatricToolsExpanded = signal<boolean>(true);
-
-  readonly specialtyOptions = SPECIALTY_OPTIONS;
-
-  readonly filteredEncounters = computed<ClinicalEncounterList[]>(() => {
-    const list = this.encounters();
-    const filter = this.selectedSpecialtyFilter();
-    if (filter === 'ALL') {
-      return list;
-    }
-    return list.filter((enc) => enc.specialty === filter);
-  });
 
   constructor() {
     effect(() => {
@@ -208,7 +238,7 @@ export class PatientRecordComponent implements OnInit {
 
     this.route.queryParamMap.subscribe((queryParams) => {
       const tabParam = queryParams.get('tab') as PatientRecordTab | null;
-      if (tabParam && ['resumen', 'historia', 'herramientas', 'curvas', 'hitos', 'recetas'].includes(tabParam)) {
+      if (tabParam && ['resumen', 'historia', 'curvas', 'recetas'].includes(tabParam)) {
         this.selectedTab.set(tabParam);
       }
     });
@@ -292,6 +322,7 @@ export class PatientRecordComponent implements OnInit {
   openNewPatientModal(event?: Event): void {
     if (event) event.stopPropagation();
     this.isMoreMenuOpen.set(false);
+    this.router.navigate(['/pacientes']);
   }
 
   openNewCheckupModal(event?: Event): void {
@@ -408,35 +439,6 @@ export class PatientRecordComponent implements OnInit {
     this.setTab('curvas');
   }
 
-  navigateToMilestones(): void {
-    this.setTab('hitos');
-  }
-
-  getSpecialtyBadgeClass(specialty: MedicalSpecialty): string {
-    switch (specialty) {
-      case 'PEDIATRICS':
-        return 'badge-pediatrics';
-      case 'CARDIOLOGY':
-        return 'badge-cardiology';
-      case 'OPHTHALMOLOGY':
-        return 'badge-ophthalmology';
-      case 'GYNECOLOGY':
-        return 'badge-gynecology';
-      case 'PSYCHIATRY':
-        return 'badge-psychiatry';
-      case 'DERMATOLOGY':
-        return 'badge-dermatology';
-      case 'TRAUMATOLOGY':
-        return 'badge-traumatology';
-      default:
-        return 'badge-general';
-    }
-  }
-
-  getSpecialtyLabel(specialty: MedicalSpecialty): string {
-    const found = this.specialtyOptions.find((opt) => opt.value === specialty);
-    return found ? found.label : specialty;
-  }
 
   getConsultationTypeLabel(type: string): string {
     switch (type) {
@@ -644,9 +646,6 @@ export class PatientRecordComponent implements OnInit {
     return this.activePatientService.activePatient()?.immunizationAndNutrition?.feedingDiet || null;
   });
 
-  readonly developmentalMilestones = computed(() => {
-    return this.activePatientService.activePatient()?.immunizationAndNutrition?.developmentalMilestones || '';
-  });
 
   // Table Data for Checkups
   readonly checkupTableData = computed<CheckupTableRow[]>(() => {

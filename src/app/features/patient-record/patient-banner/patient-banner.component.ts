@@ -19,7 +19,6 @@ import {
   lucideMoreHorizontal,
   lucideChevronLeft,
   lucideUser,
-  lucideBaby,
   lucideTrendingUp,
   lucidePrinter,
   lucideCreditCard,
@@ -41,7 +40,6 @@ import { DoctorSpecialtyService } from '../../../core/services/doctor-specialty.
       lucideMoreHorizontal,
       lucideChevronLeft,
       lucideUser,
-      lucideBaby,
       lucideTrendingUp,
       lucidePrinter,
       lucideCreditCard,
@@ -61,7 +59,6 @@ export class PatientBannerComponent {
   @Output() newCheckup = new EventEmitter<void>();
   @Output() printSummary = new EventEmitter<void>();
   @Output() viewCurves = new EventEmitter<void>();
-  @Output() viewMilestones = new EventEmitter<void>();
 
   readonly isMenuOpen = signal<boolean>(false);
 
@@ -80,96 +77,113 @@ export class PatientBannerComponent {
     return p?.nationalId || p?.guardianInfo?.firstGuardianNationalId || '—';
   });
 
-  readonly sexLabel = computed(() => {
+  readonly isChild = computed(() => {
     const p = this.patient || this.activePatientService.activePatient();
-    if (p?.gender === 'FEMALE') return 'Femenino';
-    if (p?.gender === 'MALE') return 'Masculino';
-    if (p?.gender === 'OTHER') return 'Otro';
-    return 'No especificado';
+    if (!p?.birthDate) return false;
+    const birth = new Date(p.birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age < 18;
   });
 
   readonly dynamicAge = computed(() => {
     const p = this.patient || this.activePatientService.activePatient();
-    if (!p?.birthDate) return '—';
-    const birth = new Date(p.birthDate + 'T00:00:00');
-    if (isNaN(birth.getTime())) return '—';
+    if (!p?.birthDate) return 'Edad desconocida';
 
-    const now = new Date();
-    let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-    if (now.getDate() < birth.getDate()) {
+    const birth = new Date(p.birthDate);
+    const today = new Date();
+
+    let years = today.getFullYear() - birth.getFullYear();
+    let months = today.getMonth() - birth.getMonth();
+    let days = today.getDate() - birth.getDate();
+
+    if (days < 0) {
       months--;
+      const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      days += prevMonth.getDate();
     }
 
-    if (months < 0) return 'Recién nacido';
-    if (months === 0) {
-      const diffTime = Math.abs(now.getTime() - birth.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return `${diffDays} días`;
+    if (months < 0) {
+      years--;
+      months += 12;
     }
-    if (months < 24) {
-      return `${months} meses`;
+
+    if (years === 0) {
+      if (months === 0) {
+        return `${days} ${days === 1 ? 'día' : 'días'}`;
+      }
+      return `${months} ${months === 1 ? 'mes' : 'meses'}${days > 0 ? ` y ${days} d` : ''}`;
     }
-    const years = Math.floor(months / 12);
-    const remMonths = months % 12;
-    return remMonths > 0 ? `${years} años (${remMonths}m)` : `${years} años`;
+
+    if (years < 5) {
+      return `${years}a ${months}m`;
+    }
+
+    return `${years} años`;
   });
 
-  readonly isChild = computed(() => {
+  readonly sexLabel = computed(() => {
     const p = this.patient || this.activePatientService.activePatient();
-    if (!p?.birthDate) return false;
-    const birth = new Date(p.birthDate + 'T00:00:00');
-    if (isNaN(birth.getTime())) return false;
-    const now = new Date();
-    const ageYears = now.getFullYear() - birth.getFullYear();
-    return ageYears < 16;
+    const g = p?.gender;
+    if (g === 'MALE' || g === 'M') return 'Masculino';
+    if (g === 'FEMALE' || g === 'F') return 'Femenino';
+    return g || 'No especificado';
   });
 
-  // Insurance / Cobertura
-  readonly coverageInfo = computed<{ isParticular: boolean; label: string; affiliate?: string | null }>(() => {
+  readonly coverageInfo = computed(() => {
     const p = this.patient || this.activePatientService.activePatient();
     const ins = p?.insuranceInfo;
-    if (!ins || !ins.providerName || ins.providerName.trim() === '') {
-      return { isParticular: true, label: 'Particular' };
+    const provider = ins?.providerName || '';
+    const plan = ins?.planName || '';
+    const label = [provider, plan].filter(Boolean).join(' ').trim();
+    if (!label || label.toLowerCase() === 'particular') {
+      return { isParticular: true, label: 'Particular', affiliate: null };
     }
-    const plan = ins.planName ? ` ${ins.planName}` : '';
-    const label = `${ins.providerName}${plan}`;
     return {
       isParticular: false,
       label,
-      affiliate: ins.affiliateNumber || null,
+      affiliate: ins?.affiliateNumber || null,
     };
   });
 
-  // Critical Safety Alerts: Allergies (Red)
   readonly allergyList = computed<string[]>(() => {
     const p = this.patient || this.activePatientService.activePatient();
-    const directAllergies = p?.allergies || [];
-    const historyAllergies = p?.personalHistory?.allergies || [];
-    const combined = Array.from(new Set([...directAllergies, ...historyAllergies]))
-      .map((a) => a.trim())
-      .filter((a) => a.length > 0);
-    return combined;
+    const allergies: string[] = [];
+    if (p?.allergies && p.allergies.length > 0) {
+      allergies.push(...p.allergies);
+    }
+    if (p?.personalHistory?.allergies && p.personalHistory.allergies.length > 0) {
+      allergies.push(...p.personalHistory.allergies);
+    }
+    return [...new Set(allergies.filter(Boolean))];
   });
 
-  // Chronic Conditions (Amber)
   readonly chronicConditionList = computed<string[]>(() => {
     const p = this.patient || this.activePatientService.activePatient();
-    const directChronic = p?.chronicConditions || [];
-    const historyChronic = p?.personalHistory?.chronicOrPreviousDiseases || [];
-    const combined = Array.from(new Set([...directChronic, ...historyChronic]))
-      .map((c) => c.trim())
-      .filter((c) => c.length > 0);
-    return combined;
+    const list: string[] = [];
+    if (p?.chronicConditions && p.chronicConditions.length > 0) {
+      list.push(...p.chronicConditions);
+    }
+    if (p?.personalHistory?.chronicOrPreviousDiseases && p.personalHistory.chronicOrPreviousDiseases.length > 0) {
+      list.push(...p.personalHistory.chronicOrPreviousDiseases);
+    }
+    return [...new Set(list.filter(Boolean))];
   });
 
-  toggleMenu(event?: Event): void {
-    if (event) event.stopPropagation();
+  toggleMenu(event: Event): void {
+    event.stopPropagation();
     this.isMenuOpen.update((v) => !v);
   }
 
   @HostListener('document:click')
-  closeMenu(): void {
-    this.isMenuOpen.set(false);
+  onDocumentClick(): void {
+    if (this.isMenuOpen()) {
+      this.isMenuOpen.set(false);
+    }
   }
 
   goBack(): void {
@@ -185,11 +199,6 @@ export class PatientBannerComponent {
     this.editPatient.emit();
   }
 
-  onNewCheckup(): void {
-    this.isMenuOpen.set(false);
-    this.newCheckup.emit();
-  }
-
   onPrintSummary(): void {
     this.isMenuOpen.set(false);
     this.printSummary.emit();
@@ -201,15 +210,6 @@ export class PatientBannerComponent {
       this.viewCurves.emit();
     } else {
       this.router.navigate(['/curvas']);
-    }
-  }
-
-  goToMilestones(): void {
-    this.isMenuOpen.set(false);
-    if (this.viewMilestones.observed) {
-      this.viewMilestones.emit();
-    } else {
-      this.router.navigate(['/hitos']);
     }
   }
 }

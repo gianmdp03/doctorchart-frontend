@@ -80,29 +80,19 @@ describe('PatientBannerComponent', () => {
     expect(component.chronicConditionList()).toEqual(['Asma bronquial']);
   });
 
-  it('should emit viewCurves and viewMilestones events', () => {
+  it('should emit viewCurves event', () => {
     const curvesSpy = vi.spyOn(component.viewCurves, 'emit');
-    const milestonesSpy = vi.spyOn(component.viewMilestones, 'emit');
-
-    // Subscribe so that observed is true
     component.viewCurves.subscribe();
-    component.viewMilestones.subscribe();
 
     component.goToCurves();
     expect(curvesSpy).toHaveBeenCalled();
-
-    component.goToMilestones();
-    expect(milestonesSpy).toHaveBeenCalled();
   });
 
-  it('should navigate to /curvas or /hitos when viewCurves/viewMilestones have no listeners', () => {
+  it('should navigate to /curvas when viewCurves has no listeners', () => {
     const unobservedComponent = TestBed.createComponent(PatientBannerComponent).componentInstance;
     unobservedComponent.patient = mockPatient;
 
     unobservedComponent.goToCurves();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/curvas']);
-
-    unobservedComponent.goToMilestones();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/hitos']);
   });
 });

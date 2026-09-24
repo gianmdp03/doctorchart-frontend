@@ -7,6 +7,7 @@ import { SpecialtyService } from '../../../core/services/specialty.service';
 import { DoctorProfileService } from '../../../core/services/doctor-profile.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { SpecialtySummary } from '../../../core/models/specialty.model';
+import { WorkspaceStore } from '../../../core/services/workspace.store';
 
 describe('SpecialtySelectionComponent', () => {
   let component: SpecialtySelectionComponent;
@@ -16,9 +17,11 @@ describe('SpecialtySelectionComponent', () => {
     createCustomSpecialty: ReturnType<typeof vi.fn>;
   };
   let doctorProfileServiceMock: {
-    hasSpecialty: ReturnType<typeof signal<boolean>>;
-    assignSpecialty: ReturnType<typeof vi.fn>;
     clearProfile: ReturnType<typeof vi.fn>;
+  };
+  let workspaceStoreMock: {
+    loadSetup: ReturnType<typeof vi.fn>;
+    saveOnboardingDraft: ReturnType<typeof vi.fn>;
   };
   let authServiceMock: {
     signOut: ReturnType<typeof vi.fn>;
@@ -26,8 +29,8 @@ describe('SpecialtySelectionComponent', () => {
   let router: Router;
 
   const mockSpecialties: SpecialtySummary[] = [
-    { specialty: 'PEDIATRICS', displayName: 'Pediatría y Neonatología', description: 'Atención pediátrica' },
-    { specialty: 'CARDIOLOGY', displayName: 'Cardiología', description: 'Salud cardiovascular' },
+    { id: 4, specialty: 'PEDIATRICS', displayName: 'Pediatría y Neonatología', description: 'Atención pediátrica' },
+    { id: 7, specialty: 'CARDIOLOGY', displayName: 'Cardiología', description: 'Salud cardiovascular' },
   ];
 
   beforeEach(async () => {
@@ -36,9 +39,11 @@ describe('SpecialtySelectionComponent', () => {
       createCustomSpecialty: vi.fn(),
     };
     doctorProfileServiceMock = {
-      hasSpecialty: signal<boolean>(false),
-      assignSpecialty: vi.fn(),
       clearProfile: vi.fn(),
+    };
+    workspaceStoreMock = {
+      loadSetup: vi.fn().mockResolvedValue(null),
+      saveOnboardingDraft: vi.fn().mockResolvedValue({}),
     };
     authServiceMock = {
       signOut: vi.fn().mockResolvedValue({ error: null }),
@@ -50,6 +55,7 @@ describe('SpecialtySelectionComponent', () => {
         { provide: SpecialtyService, useValue: specialtyServiceMock },
         { provide: DoctorProfileService, useValue: doctorProfileServiceMock },
         { provide: AuthService, useValue: authServiceMock },
+        { provide: WorkspaceStore, useValue: workspaceStoreMock },
       ],
     }).compileComponents();
 
@@ -58,6 +64,8 @@ describe('SpecialtySelectionComponent', () => {
 
     fixture = TestBed.createComponent(SpecialtySelectionComponent);
     component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
   });
 
@@ -72,50 +80,42 @@ describe('SpecialtySelectionComponent', () => {
     expect(component.selectedSpecialty()).toBe('CARDIOLOGY');
   });
 
-  it('should assign specialty and navigate to /pacientes on confirm', async () => {
+  it('should save the selected specialty as the first wizard checkpoint', async () => {
     component.select('CARDIOLOGY');
-    doctorProfileServiceMock.assignSpecialty.mockResolvedValue({
-      id: 1,
-      userId: 'doc-1',
-      specialty: 'CARDIOLOGY',
-      isSpecialtyLocked: true,
-      createdAt: '2026-09-18T12:00:00Z',
-    });
 
     await component.confirmSpecialty();
 
-    expect(doctorProfileServiceMock.assignSpecialty).toHaveBeenCalledWith('CARDIOLOGY');
-    expect(router.navigate).toHaveBeenCalledWith(['/pacientes']);
+    expect(workspaceStoreMock.saveOnboardingDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        specialtyId: 7,
+        onboardingStep: 'PATIENT_PERSONAL_DATA',
+      })
+    );
+    expect(router.navigate).toHaveBeenCalledWith(['/onboarding/setup']);
   });
 
-  it('should normalize lowercase snake_case specialty to uppercase on confirm', async () => {
+  it('should show an error when a specialty is missing its persisted identifier', async () => {
+    component.specialties.set([{ code: 'general_medicine', displayName: 'Medicina general' }]);
     component.select('general_medicine');
-    doctorProfileServiceMock.assignSpecialty.mockResolvedValue({
-      id: 1,
-      userId: 'doc-1',
-      specialty: 'GENERAL_MEDICINE',
-      isSpecialtyLocked: true,
-      createdAt: '2026-09-18T12:00:00Z',
-    });
 
     await component.confirmSpecialty();
 
-    expect(doctorProfileServiceMock.assignSpecialty).toHaveBeenCalledWith('GENERAL_MEDICINE');
-    expect(router.navigate).toHaveBeenCalledWith(['/pacientes']);
+    expect(component.errorMessage()).toContain('identificador válido');
   });
 
-  it('should handle conflict (409) error if specialty was already chosen', async () => {
+  it('should show a save error and keep the user on the selection step', async () => {
     component.select('PEDIATRICS');
-    doctorProfileServiceMock.assignSpecialty.mockRejectedValue({ status: 409 });
+    workspaceStoreMock.saveOnboardingDraft.mockRejectedValue({ status: 500 });
 
     await component.confirmSpecialty();
 
-    expect(component.errorMessage()).toContain('inmutable');
+    expect(component.errorMessage()).toContain('guardar la especialidad');
   });
 
   it('should open modal and create custom specialty', () => {
     specialtyServiceMock.createCustomSpecialty = vi.fn().mockReturnValue(
       of({
+        id: 12,
         code: 'MEDICINA_INTEGRATIVA',
         name: 'Medicina Integrativa',
         displayName: 'Medicina Integrativa',

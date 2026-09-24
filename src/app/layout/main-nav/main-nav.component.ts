@@ -1,6 +1,5 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 
 @Component({
   selector: 'app-main-nav',
@@ -8,9 +7,4 @@ import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.ser
   templateUrl: './main-nav.component.html',
   styleUrl: './main-nav.component.css',
 })
-export class MainNavComponent {
-  private readonly specialtyService = inject(DoctorSpecialtyService);
-
-  readonly isPediatrics = computed(() => this.specialtyService.activeSpecialty() === 'PEDIATRICS');
-  readonly isCardiology = computed(() => this.specialtyService.activeSpecialty() === 'CARDIOLOGY');
-}
+export class MainNavComponent {}

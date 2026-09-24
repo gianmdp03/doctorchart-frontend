@@ -7,6 +7,7 @@ import {
   PersonalHistory,
 } from './clinical-records.model';
 import { MedicalCheckupListDTO } from './checkup.model';
+import { FormTemplateSchema } from './workspace.model';
 
 export interface InsuranceInfo {
   providerName?: string | null;
@@ -28,6 +29,8 @@ export interface PatientRequestDTO {
   allergies?: string[] | null;
   chronicConditions?: string[] | null;
   patientExtraData?: Record<string, any> | null;
+  patientFormData?: Record<string, any> | null;
+  patientTemplateSnapshot?: FormTemplateSchema | null;
   guardianInfo?: GuardianInfo | null;
   perinatalHistory?: PerinatalHistory | null;
   personalHistory?: PersonalHistory | null;
@@ -51,6 +54,8 @@ export interface PatientDetailDTO {
   allergies?: string[] | null;
   chronicConditions?: string[] | null;
   patientExtraData?: Record<string, any> | null;
+  patientFormData?: Record<string, any> | null;
+  patientTemplateSnapshot?: FormTemplateSchema | null;
   guardianInfo?: GuardianInfo | null;
   perinatalHistory?: PerinatalHistory | null;
   personalHistory?: PersonalHistory | null;
@@ -67,5 +72,7 @@ export interface PatientListDTO {
   nationalId?: string | null;
   phone?: string | null;
   gender?: string | null;
+  totalEncounters?: number | null;
+  lastEncounterDate?: string | null;
 }
 

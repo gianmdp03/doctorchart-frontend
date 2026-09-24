@@ -150,4 +150,32 @@ describe('ChartMapperComponent', () => {
     expect(workspaceStoreMock.saveChartConfigs).toHaveBeenCalled();
     expect(emittedConfigs).toBeTruthy();
   });
+
+  it('should keep onboarding mappings as a draft instead of saving them to the workspace', async () => {
+    const emitted = { configs: null as DoctorChartConfig[] | null };
+    component.configsSaved.subscribe((configs) => emitted.configs = configs);
+
+    fixture.componentRef.setInput('onboardingMode', true);
+    fixture.componentRef.setInput('initialConfigs', mockConfigs);
+    fixture.componentRef.setInput('isOpen', true);
+    fixture.detectChanges();
+
+    await component.save();
+
+    expect(workspaceServiceMock.getDoctorChartConfigs).not.toHaveBeenCalled();
+    expect(workspaceStoreMock.saveChartConfigs).not.toHaveBeenCalled();
+    expect(emitted.configs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ chartCode: 'WEIGHT_EVOLUTION' }),
+    ]));
+  });
+
+  it('offers only fields compatible with a chart slot type', () => {
+    fixture.componentRef.setInput('isOpen', true);
+    fixture.detectChanges();
+
+    expect(component.availableFieldsForSlot({ slot: 'date', label: 'Fecha', type: 'DATE' }))
+      .toEqual([expect.objectContaining({ key: 'encounterDate' })]);
+    expect(component.availableFieldsForSlot({ slot: 'weight', label: 'Peso', type: 'NUMBER' }))
+      .toEqual(expect.arrayContaining([expect.objectContaining({ key: 'pesoKg' })]));
+  });
 });

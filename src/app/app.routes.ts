@@ -17,14 +17,6 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'agenda',
-    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
-    loadComponent: () =>
-      import('./features/agenda/agenda.component').then(
-        (m) => m.AgendaComponent
-      ),
-  },
-  {
     path: 'pacientes',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () =>
@@ -73,19 +65,11 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'curvas',
-    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    path: 'onboarding/setup',
+    canActivate: [doctorchartPlanGuard],
     loadComponent: () =>
-      import('./features/growth-curves/growth-curves.component').then(
-        (m) => m.GrowthCurvesComponent
-      ),
-  },
-  {
-    path: 'hitos',
-    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
-    loadComponent: () =>
-      import('./features/milestones/milestones.component').then(
-        (m) => m.MilestonesComponent
+      import('./features/onboarding/onboarding-wizard/onboarding-wizard.component').then(
+        (m) => m.OnboardingWizardComponent
       ),
   },
   {

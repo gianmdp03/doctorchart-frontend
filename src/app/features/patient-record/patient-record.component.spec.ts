@@ -58,7 +58,6 @@ describe('PatientRecordComponent', () => {
     },
     immunizationAndNutrition: {
       feedingDiet: 'Lactancia materna exclusiva',
-      developmentalMilestones: 'Sostiene la cabeza firmemente a los 3 meses',
     },
     latestMeasurements: {
       weight: 7.95,
@@ -169,10 +168,6 @@ describe('PatientRecordComponent', () => {
     expect(component.selectedTab()).toBe('historia');
     component.setTab('curvas');
     expect(component.selectedTab()).toBe('curvas');
-    component.setTab('hitos');
-    expect(component.selectedTab()).toBe('hitos');
-    component.setTab('herramientas');
-    expect(component.selectedTab()).toBe('herramientas');
     component.setTab('recetas');
     expect(component.selectedTab()).toBe('recetas');
   });
@@ -200,30 +195,14 @@ describe('PatientRecordComponent', () => {
     expect(tableData[1].code).toBe('CP-101');
   });
 
-  it('should load encounters on init and support filtering by specialty', () => {
+  it('should load encounters on init', () => {
     expect(encounterServiceSpy.getByPatient).toHaveBeenCalledWith(10492);
-    expect(component.filteredEncounters().length).toBe(2);
-
-    component.selectedSpecialtyFilter.set('PEDIATRICS');
-    expect(component.filteredEncounters().length).toBe(1);
-    expect(component.filteredEncounters()[0].specialty).toBe('PEDIATRICS');
-
-    component.selectedSpecialtyFilter.set('CARDIOLOGY');
-    expect(component.filteredEncounters().length).toBe(1);
-    expect(component.filteredEncounters()[0].specialty).toBe('CARDIOLOGY');
-
-    component.selectedSpecialtyFilter.set('ALL');
-    expect(component.filteredEncounters().length).toBe(2);
+    expect(component.encounters().length).toBe(2);
   });
 
   it('should switch to growth curves tab when requested', () => {
     component.navigateToGrowthCurves();
     expect(component.selectedTab()).toBe('curvas');
-  });
-
-  it('should switch to milestones tab when requested', () => {
-    component.navigateToMilestones();
-    expect(component.selectedTab()).toBe('hitos');
   });
 
   it('should navigate to patient directory when back button is clicked', () => {

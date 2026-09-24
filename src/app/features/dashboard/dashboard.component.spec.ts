@@ -6,6 +6,7 @@ import { ActivePatientService } from '../../core/services/active-patient.service
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { DoctorProfileService } from '../../core/services/doctor-profile.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
+import { WorkspaceStore } from '../../core/services/workspace.store';
 import { signal } from '@angular/core';
 import { of } from 'rxjs';
 import { provideRouter } from '@angular/router';
@@ -20,6 +21,7 @@ describe('DashboardComponent', () => {
   let specialtyServiceMock: any;
   let profileServiceMock: any;
   let clinicalEncounterServiceMock: any;
+  let workspaceStoreMock: any;
 
   beforeEach(async () => {
     authServiceMock = {
@@ -66,7 +68,31 @@ describe('DashboardComponent', () => {
     };
 
     clinicalEncounterServiceMock = {
+      getDashboard: vi.fn().mockReturnValue(
+        of({
+          encountersThisMonth: 12,
+          encountersToday: 3,
+          recentEncounters: [
+            {
+              id: 101,
+              patientId: 1,
+              patientFullName: 'Mateo Rossi',
+              encounterDate: '2026-09-24T10:00:00Z',
+              chiefComplaint: 'Control clínico',
+              primaryDiagnosisDescription: 'Rinitis alérgica',
+              primaryDiagnosisCode: 'J30.1',
+            },
+          ],
+        })
+      ),
       getByPatient: vi.fn().mockReturnValue(of([])),
+    };
+
+    workspaceStoreMock = {
+      currentSetup: signal({
+        quickNotes: 'Mis notas guardadas',
+      }),
+      updateQuickNotes: vi.fn().mockResolvedValue(undefined),
     };
 
     await TestBed.configureTestingModule({
@@ -79,6 +105,7 @@ describe('DashboardComponent', () => {
         { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },
         { provide: DoctorProfileService, useValue: profileServiceMock },
         { provide: ClinicalEncounterService, useValue: clinicalEncounterServiceMock },
+        { provide: WorkspaceStore, useValue: workspaceStoreMock },
       ],
     }).compileComponents();
 
@@ -97,56 +124,28 @@ describe('DashboardComponent', () => {
 
   it('should load KPIs and directory on init', () => {
     expect(patientServiceMock.getPatients).toHaveBeenCalled();
+    expect(clinicalEncounterServiceMock.getDashboard).toHaveBeenCalled();
     expect(component.totalPatients()).toBe(2);
+    expect(component.encountersMonthCount()).toBe(12);
+    expect(component.encountersTodayCount()).toBe(3);
+    expect(component.recentEncounters().length).toBe(1);
     expect(component.directoryPatients().length).toBe(2);
   });
 
-  it('should calculate BMI and category when inputs are provided', () => {
-    component.calcWeight.set(70);
-    component.calcHeight.set(175);
-    fixture.detectChanges();
-
-    const bmi = component.calculatedBmi();
-    expect(bmi).toBeTruthy();
-    expect(bmi?.value).toBe('22.9');
-    expect(bmi?.label).toBe('Normopeso');
+  it('should hydrate quick notes from workspace store', () => {
+    expect(component.quickNotes()).toBe('Mis notas guardadas');
+    expect(component.isNotesDirty()).toBe(false);
   });
 
-  it('should classify blood pressure correctly', () => {
-    component.calcSystolic.set(120);
-    component.calcDiastolic.set(80);
-    fixture.detectChanges();
+  it('should mark notes as dirty when typing and save to backend', async () => {
+    component.onNotesInput('Nueva nota importante');
+    expect(component.quickNotes()).toBe('Nueva nota importante');
+    expect(component.isNotesDirty()).toBe(true);
 
-    const bp = component.bpClassification();
-    expect(bp).toBeTruthy();
-    expect(bp?.label).toContain('HTA Grado 1');
-  });
-
-  it('should calculate obstetric gestational age based on LMP', () => {
-    const twoWeeksAgo = new Date();
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 15);
-    const year = twoWeeksAgo.getFullYear();
-    const month = String(twoWeeksAgo.getMonth() + 1).padStart(2, '0');
-    const day = String(twoWeeksAgo.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-
-    component.calcLmpDate.set(dateStr);
-    fixture.detectChanges();
-
-    const obs = component.obstetricCalc();
-    expect(obs).toBeTruthy();
-    expect(obs?.gestationalWeeks).toBeGreaterThanOrEqual(2);
-  });
-
-  it('should save quick notes to localStorage', () => {
-    component.onNotesInput('Recordar pedir laboratorio de control a Mateo');
-    expect(component.quickNotes()).toBe('Recordar pedir laboratorio de control a Mateo');
-  });
-
-  it('should not render the "Controles < 2 Años" KPI card in the DOM', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.specialty-kpi')).toBeNull();
-    expect(compiled.textContent).not.toContain('Controles < 2 Años');
+    await component.saveNotes();
+    expect(workspaceStoreMock.updateQuickNotes).toHaveBeenCalledWith('Nueva nota importante');
+    expect(component.isNotesDirty()).toBe(false);
+    expect(component.isNotesSaved()).toBe(true);
   });
 
   it('should resolve totalPatients correctly when backend returns nested pageable structure', () => {

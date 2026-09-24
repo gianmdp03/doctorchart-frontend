@@ -41,7 +41,7 @@ export interface ClinicalEncounterRequest {
   consultationType: ConsultationType;
 
   // S - Subjective
-  chiefComplaint: string;
+  chiefComplaint?: string | null;
   historyOfPresentIllness?: string;
 
   // O - Objective
@@ -50,7 +50,7 @@ export interface ClinicalEncounterRequest {
 
   // A - Assessment
   primaryDiagnosisCode?: string | null;
-  primaryDiagnosisDescription: string;
+  primaryDiagnosisDescription?: string | null;
   secondaryDiagnoses?: DiagnosisItem[];
   clinicalImpression?: string;
 
@@ -74,16 +74,25 @@ export interface ClinicalEncounterDetail extends ClinicalEncounterRequest {
 export interface ClinicalEncounterList {
   id: number;
   patientId: number;
+  patientFullName?: string | null;
   encounterDate: string;
   specialty: MedicalSpecialty;
   consultationType: ConsultationType;
-  chiefComplaint: string;
+  chiefComplaint?: string | null;
   primaryDiagnosisCode?: string | null;
-  primaryDiagnosisDescription: string;
+  primaryDiagnosisDescription?: string | null;
   vitalSigns?: VitalSigns | null;
   prescriptions?: PrescriptionItem[] | null;
   historyOfPresentIllness?: string | null;
   treatmentPlan?: string | null;
   followUpInstructions?: string | null;
   followUpDate?: string | null;
+  dynamicData?: Record<string, unknown> | null;
+  snapshotFieldLabels?: Record<string, string> | null;
+}
+
+export interface ClinicalEncounterDashboard {
+  encountersThisMonth: number;
+  encountersToday: number;
+  recentEncounters: ClinicalEncounterList[];
 }

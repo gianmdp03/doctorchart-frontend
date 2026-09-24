@@ -566,3 +566,96 @@
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Date Filter Styling */
+.timeline-date-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.date-preset-chips {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.preset-chip {
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-chip:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.preset-chip.active {
+  background-color: #006874;
+  color: #ffffff;
+  border-color: #006874;
+}
+
+.date-inputs-range {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.date-input-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.timeline-date-input {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #1e293b;
+  background-color: #ffffff;
+  outline: none;
+}
+
+.timeline-date-input:focus {
+  border-color: #006874;
+}
+
+.btn-clear-date-filter {
+  background: transparent;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #dc2626;
+  padding: 0.2rem 0.45rem;
+  cursor: pointer;
+}
+
+.btn-clear-date-filter:hover {
+  background-color: #fef2f2;
+  border-color: #f87171;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.timeline-count-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}

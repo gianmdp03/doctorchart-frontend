@@ -1,5 +1,8 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
 }
 
 .directory-subtitle {
@@ -251,3 +254,32 @@
   border-radius: var(--md-shape-full, 9999px);
 }
 
+
+
+.patient-controls-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.controls-status-pill {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.controls-status-pill.has-controls {
+  background-color: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.controls-status-pill.no-controls {
+  background-color: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}

@@ -20,6 +20,7 @@ export interface FormFieldDefinition {
 
 export type FormCategoryKey =
   | 'CORE_DEMOGRAPHICS'
+  | 'PATIENT_GUARDIANS'
   | 'CONTACT_AND_LOGISTICS'
   | 'BACKGROUND_FAMILY'
   | 'BACKGROUND_PERSONAL'
@@ -43,6 +44,15 @@ export interface FormTemplateSchema {
 }
 
 export type TemplateType = 'PATIENT_EXTRA' | 'ENCOUNTER';
+
+export type OnboardingStep =
+  | 'SPECIALTY'
+  | 'PATIENT_PERSONAL_DATA'
+  | 'PATIENT_FAMILY_HISTORY'
+  | 'PATIENT_GUARDIANS'
+  | 'ENCOUNTER_FORM'
+  | 'CHARTS'
+  | 'COMPLETED';
 
 export interface FormTemplate {
   id?: number;
@@ -84,7 +94,6 @@ export interface DoctorChartConfig {
 }
 
 export interface ModuleConfig {
-  APPOINTMENTS?: boolean;
   MEDICATION_CATALOG?: boolean;
   AI_ASSISTANT?: boolean;
   GROWTH_CHARTS?: boolean;
@@ -100,8 +109,12 @@ export interface WorkspaceSetup {
   specialtyCode?: string | null;
   specialtyDisplayName?: string | null;
   onboardingCompleted: boolean;
+  onboardingStep: OnboardingStep;
+  onboardingDraft?: Record<string, unknown> | null;
   patientColumnsConfig: PatientColumnsConfig;
   modulesConfig: ModuleConfig;
+  quickNotes?: string | null;
+  defaultPatientTemplate?: FormTemplate | null;
   defaultEncounterTemplate?: FormTemplate | null;
   chartConfigs: DoctorChartConfig[];
   createdAt?: string | null;
@@ -113,12 +126,23 @@ export interface FinishOnboardingRequest {
   patientColumnsConfig?: PatientColumnsConfig;
   modulesConfig?: ModuleConfig;
   defaultTemplateId?: number;
+  patientTemplateSchema?: FormTemplateSchema;
   customTemplateSchema?: FormTemplateSchema;
   chartConfigs?: DoctorChartConfig[];
+}
+
+export interface SaveOnboardingDraftRequest {
+  specialtyId: number;
+  onboardingStep: Exclude<OnboardingStep, 'COMPLETED'>;
+  onboardingDraft?: Record<string, unknown>;
 }
 
 export interface WorkspaceUpdateRequest {
   specialtyId?: number;
   patientColumnsConfig?: PatientColumnsConfig;
   modulesConfig?: ModuleConfig;
+}
+
+export interface QuickNotesUpdateRequest {
+  content: string;
 }

@@ -37,5 +37,4 @@ export interface FamilyHistory {
 export interface ImmunizationAndNutrition {
   vaccinationHistory?: string[];
   feedingDiet?: string;
-  developmentalMilestones?: string;
 }

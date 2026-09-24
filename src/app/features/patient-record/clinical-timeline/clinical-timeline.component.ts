@@ -4,6 +4,8 @@ import {
   EventEmitter,
   inject,
   Input,
+  OnChanges,
+  SimpleChanges,
   Output,
   signal,
 } from '@angular/core';
@@ -24,10 +26,8 @@ import {
   lucideTrash2,
   lucidePlus,
   lucideAlertCircle,
-  lucideFilter,
 } from '@ng-icons/lucide';
 import { ClinicalEncounterList } from '../../../core/models/clinical-encounter.model';
-import { MedicalSpecialty, SPECIALTY_OPTIONS, SpecialtyOption } from '../../../core/models/specialty.model';
 
 @Component({
   selector: 'app-clinical-timeline',
@@ -48,13 +48,12 @@ import { MedicalSpecialty, SPECIALTY_OPTIONS, SpecialtyOption } from '../../../c
       lucideTrash2,
       lucidePlus,
       lucideAlertCircle,
-      lucideFilter,
     }),
   ],
   templateUrl: './clinical-timeline.component.html',
   styleUrl: './clinical-timeline.component.css',
 })
-export class ClinicalTimelineComponent {
+export class ClinicalTimelineComponent implements OnChanges {
   @Input() encounters: ClinicalEncounterList[] = [];
   @Input() isLoading = false;
   @Output() newEncounter = new EventEmitter<void>();
@@ -62,36 +61,107 @@ export class ClinicalTimelineComponent {
   @Output() deleteEncounter = new EventEmitter<number>();
   @Output() printPrescription = new EventEmitter<ClinicalEncounterList>();
 
-  readonly specialtyOptions = SPECIALTY_OPTIONS;
-  readonly selectedSpecialtyFilter = signal<MedicalSpecialty | 'ALL'>('ALL');
-
   // Track which timeline card accordions are expanded (default: top 2 expanded)
   readonly expandedCardIds = signal<Set<number>>(new Set());
+  private hasInitializedExpanded = false;
+
+  readonly fromDate = signal<string>('');
+  readonly toDate = signal<string>('');
+  readonly datePreset = signal<'ALL' | 'LAST_30' | 'LAST_90' | 'THIS_YEAR' | 'CUSTOM'>('ALL');
+
+  readonly hasActiveDateFilter = computed(() => {
+    return !!this.fromDate() || !!this.toDate() || this.datePreset() !== 'ALL';
+  });
 
   readonly filteredEncounters = computed<ClinicalEncounterList[]>(() => {
     const list = this.encounters || [];
-    const filter = this.selectedSpecialtyFilter();
-    if (filter === 'ALL') {
+    const from = this.fromDate();
+    const to = this.toDate();
+
+    if (!from && !to) {
       return list;
     }
-    return list.filter((enc) => enc.specialty === filter);
+
+    return list.filter((enc) => {
+      if (!enc.encounterDate) return false;
+      const encDateStr = enc.encounterDate.slice(0, 10);
+      if (from && encDateStr < from) return false;
+      if (to && encDateStr > to) return false;
+      return true;
+    });
   });
 
-  isCardExpanded(id: number): boolean {
-    // If not set, expand the first 2 by default
-    if (this.expandedCardIds().size === 0 && this.encounters.length > 0) {
-      return this.encounters.slice(0, 2).some((e) => e.id === id);
+  setPreset(preset: 'ALL' | 'LAST_30' | 'LAST_90' | 'THIS_YEAR'): void {
+    this.datePreset.set(preset);
+    const today = new Date();
+    const toStr = today.toISOString().slice(0, 10);
+
+    if (preset === 'ALL') {
+      this.fromDate.set('');
+      this.toDate.set('');
+      return;
     }
+
+    if (preset === 'LAST_30') {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      this.fromDate.set(d.toISOString().slice(0, 10));
+      this.toDate.set(toStr);
+      return;
+    }
+
+    if (preset === 'LAST_90') {
+      const d = new Date();
+      d.setDate(d.getDate() - 90);
+      this.fromDate.set(d.toISOString().slice(0, 10));
+      this.toDate.set(toStr);
+      return;
+    }
+
+    if (preset === 'THIS_YEAR') {
+      const year = today.getFullYear();
+      this.fromDate.set(year + '-01-01');
+      this.toDate.set(toStr);
+      return;
+    }
+  }
+
+  onFromDateChange(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.datePreset.set('CUSTOM');
+    this.fromDate.set(val);
+  }
+
+  onToDateChange(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.datePreset.set('CUSTOM');
+    this.toDate.set(val);
+  }
+
+  clearDateFilter(): void {
+    this.fromDate.set('');
+    this.toDate.set('');
+    this.datePreset.set('ALL');
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['encounters'] && this.encounters && this.encounters.length > 0) {
+      const current = this.expandedCardIds();
+      const hasAny = this.encounters.some((e) => current.has(e.id));
+      if (!this.hasInitializedExpanded || !hasAny) {
+        this.expandedCardIds.set(new Set(this.encounters.slice(0, 2).map((e) => e.id)));
+        this.hasInitializedExpanded = true;
+      }
+    }
+  }
+
+  isCardExpanded(id: number): boolean {
     return this.expandedCardIds().has(id);
   }
 
   toggleCard(id: number): void {
     this.expandedCardIds.update((current) => {
       const next = new Set(current);
-      if (next.size === 0 && this.encounters.length > 0) {
-        // Initialize with default state first
-        this.encounters.slice(0, 2).forEach((e) => next.add(e.id));
-      }
       if (next.has(id)) {
         next.delete(id);
       } else {
@@ -102,7 +172,7 @@ export class ClinicalTimelineComponent {
   }
 
   expandAll(): void {
-    const allIds = new Set(this.filteredEncounters().map((e) => e.id));
+    const allIds = new Set((this.encounters || []).map((e) => e.id));
     this.expandedCardIds.set(allIds);
   }
 
@@ -139,32 +209,6 @@ export class ClinicalTimelineComponent {
     }
   }
 
-  getSpecialtyLabel(specialty: MedicalSpecialty): string {
-    const found = this.specialtyOptions.find((opt) => opt.value === specialty);
-    return found ? found.label : specialty;
-  }
-
-  getSpecialtyBadgeClass(specialty: MedicalSpecialty): string {
-    switch (specialty) {
-      case 'PEDIATRICS':
-        return 'badge-pediatrics';
-      case 'CARDIOLOGY':
-        return 'badge-cardiology';
-      case 'OPHTHALMOLOGY':
-        return 'badge-ophthalmology';
-      case 'GYNECOLOGY':
-        return 'badge-gynecology';
-      case 'PSYCHIATRY':
-        return 'badge-psychiatry';
-      case 'DERMATOLOGY':
-        return 'badge-dermatology';
-      case 'TRAUMATOLOGY':
-        return 'badge-traumatology';
-      default:
-        return 'badge-general';
-    }
-  }
-
   getConsultationTypeLabel(type: string): string {
     switch (type) {
       case 'FIRST_VISIT':
@@ -191,6 +235,34 @@ export class ClinicalTimelineComponent {
       default:
         return 'chip-routine';
     }
+  }
+
+
+  getEncounterSummary(encounter: ClinicalEncounterList): string {
+    const firstValue = Object.values(encounter.dynamicData ?? {}).find(
+      (value) => value !== null && value !== undefined && value !== '',
+    );
+    if (firstValue !== undefined) return this.formatValue(firstValue);
+    return encounter.chiefComplaint || encounter.primaryDiagnosisDescription || 'Consulta registrada';
+  }
+
+  getDynamicEntries(encounter: ClinicalEncounterList): { label: string; value: string }[] {
+    return Object.entries(encounter.dynamicData ?? {})
+      .filter(([, value]) => value !== null && value !== undefined && value !== '')
+      .map(([key, value]) => ({
+        label: encounter.snapshotFieldLabels?.[key] || this.formatFieldKey(key),
+        value: this.formatValue(value),
+      }));
+  }
+
+  private formatFieldKey(key: string): string {
+    return key.replace(/([A-Z])/g, ' $1').replace(/^./, (char) => char.toUpperCase()).trim();
+  }
+
+  private formatValue(value: unknown): string {
+    if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+    if (Array.isArray(value)) return value.join(', ');
+    return String(value);
   }
 
   getBmiStatus(bmi?: number | null): { label: string; badgeClass: string } {
