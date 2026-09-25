@@ -1,0 +1,215 @@
+<section class="vaccination-calendar">
+  @if (calendar(); as calendar) {
+    <header class="header-card">
+      <div class="header-copy">
+        <h1>{{ calendar.metadata.titulo }}</h1>
+        <p>{{ calendar.metadata.bajada }}</p>
+        <div class="header-meta" aria-label="Información del calendario">
+          <span>{{ calendar.metadata.organismo }}</span>
+          <span>Línea gratuita: {{ calendar.metadata.telefono }}</span>
+          <span>{{ calendar.metadata.sitio_web }}</span>
+        </div>
+      </div>
+
+      <button
+        class="theme-toggle"
+        type="button"
+        (click)="toggleTheme()"
+        [attr.aria-pressed]="isDarkMode()"
+        [attr.aria-label]="isDarkMode() ? 'Activar modo claro' : 'Activar modo oscuro'"
+      >
+        {{ isDarkMode() ? 'Modo claro' : 'Modo oscuro' }}
+      </button>
+    </header>
+
+    <div class="table-scrollbar-container" aria-label="Desplazamiento horizontal de la tabla">
+      <span class="scrollbar-label">Deslizar columnas</span>
+      <div
+        #topScroller
+        class="top-scrollbar"
+        (scroll)="syncTableScroll(topScroller, tableScroller)"
+      >
+        <div class="top-scrollbar-content" [style.width.px]="tableMinWidth()"></div>
+      </div>
+    </div>
+
+    <div
+      #tableScroller
+      class="table-wrapper"
+      tabindex="0"
+      aria-label="Tabla del calendario nacional de vacunación"
+      (scroll)="syncTableScroll(tableScroller, topScroller)"
+    >
+      <table [style.min-width.px]="tableMinWidth()">
+        <thead>
+          <tr>
+            <th class="col-vaccine" rowspan="2" scope="col">Vacunas</th>
+            @for (group of calendar.grupos_etarios_columnas; track group.grupo) {
+              <th class="group-header" [attr.colspan]="group.columnas.length" scope="colgroup">
+                {{ group.grupo }}
+              </th>
+            }
+          </tr>
+          <tr>
+            @for (column of flatColumns(); track column.id) {
+              <th scope="col">
+                {{ column.nombre }}
+                @if (column.subtitulo) {
+                  <small>{{ column.subtitulo }}</small>
+                }
+              </th>
+            }
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (vaccine of regularVaccines(); track vaccine.id) {
+            <tr>
+              <th class="col-vaccine" scope="row">
+                {{ vaccine.nombre }}
+                @if (vaccine.referencia_patologia; as reference) {
+                  <button
+                    type="button"
+                    class="ref-num"
+                    [attr.aria-label]="reference.descripcion"
+                    (mouseenter)="showTooltip($event, 'Patología prevenida', reference.descripcion)"
+                    (mouseleave)="hideTooltip()"
+                    (focus)="showTooltip($event, 'Patología prevenida', reference.descripcion)"
+                    (blur)="hideTooltip()"
+                  >
+                    ({{ reference.numero }})
+                  </button>
+                }
+              </th>
+              @for (cell of cellsFor(vaccine); track cell.columnaId) {
+                <td [attr.colspan]="cell.colspan > 1 ? cell.colspan : null">
+                  @if (cell.aplicacion; as application) {
+                    <span
+                      [class]="'badge badge-' + (cell.tipoBadge ?? 'default') + (cell.colspan > 1 ? ' badge-span' : '')"
+                    >
+                      {{ cell.contenido }}
+                      @for (note of cell.notas; track note.letra) {
+                        <button
+                          type="button"
+                          class="badge-reference"
+                          [attr.aria-label]="note.condicion"
+                          (mouseenter)="showTooltip($event, 'Condición de aplicación', note.condicion)"
+                          (mouseleave)="hideTooltip()"
+                          (focus)="showTooltip($event, 'Condición de aplicación', note.condicion)"
+                          (blur)="hideTooltip()"
+                        >
+                          ({{ note.letra }})
+                        </button>
+                      }
+                    </span>
+                  } @else {
+                    <span class="empty" aria-label="Sin aplicación">–</span>
+                  }
+                </td>
+              }
+            </tr>
+          }
+
+          @if (riskVaccines().length) {
+            <tr class="risk-separator">
+              <td [attr.colspan]="flatColumns().length + 1">Exclusivo zonas de riesgo</td>
+            </tr>
+
+            @for (vaccine of riskVaccines(); track vaccine.id) {
+              <tr>
+                <th class="col-vaccine" scope="row">
+                {{ vaccine.nombre }}
+                @if (vaccine.referencia_patologia; as reference) {
+                  <button
+                    type="button"
+                    class="ref-num"
+                    [attr.aria-label]="reference.descripcion"
+                    (mouseenter)="showTooltip($event, 'Patología prevenida', reference.descripcion)"
+                    (mouseleave)="hideTooltip()"
+                    (focus)="showTooltip($event, 'Patología prevenida', reference.descripcion)"
+                    (blur)="hideTooltip()"
+                  >
+                    ({{ reference.numero }})
+                  </button>
+                  }
+                </th>
+                @for (cell of cellsFor(vaccine); track cell.columnaId) {
+                  <td [attr.colspan]="cell.colspan > 1 ? cell.colspan : null">
+                    @if (cell.aplicacion) {
+                      <span
+                        [class]="'badge badge-' + (cell.tipoBadge ?? 'default') + (cell.colspan > 1 ? ' badge-span' : '')"
+                      >
+                        {{ cell.contenido }}
+                        @for (note of cell.notas; track note.letra) {
+                          <button
+                            type="button"
+                            class="badge-reference"
+                            [attr.aria-label]="note.condicion"
+                            (mouseenter)="showTooltip($event, 'Condición de aplicación', note.condicion)"
+                            (mouseleave)="hideTooltip()"
+                            (focus)="showTooltip($event, 'Condición de aplicación', note.condicion)"
+                            (blur)="hideTooltip()"
+                          >
+                            ({{ note.letra }})
+                          </button>
+                        }
+                      </span>
+                    } @else {
+                      <span class="empty" aria-label="Sin aplicación">–</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <section class="notes-container" aria-labelledby="clinical-notes-title">
+      <h2 id="clinical-notes-title">Referencias y especificaciones clínicas</h2>
+      <div class="notes-grid">
+        <div>
+          <h3>Patologías prevenidas</h3>
+          <ul class="notes-list">
+            @for (reference of pathologyReferences(); track reference.numero) {
+              <li
+                [id]="'patologia-' + reference.numero"
+              >
+                <strong>({{ reference.numero }})</strong> {{ reference.descripcion }}
+              </li>
+            }
+          </ul>
+        </div>
+        <div>
+          <h3>Notas y condiciones de aplicación</h3>
+          <ul class="notes-list">
+            @for (note of applicationNotes(); track note.letra) {
+              <li
+                [id]="'nota-' + note.letra"
+              >
+                <strong>({{ note.letra }})</strong> {{ note.condicion }}
+              </li>
+            }
+          </ul>
+        </div>
+      </div>
+    </section>
+  } @else if (loading()) {
+    <div class="status-card" role="status">Cargando calendario nacional de vacunación…</div>
+  } @else if (error(); as error) {
+    <div class="status-card status-error" role="alert">{{ error }}</div>
+  }
+
+  @if (activeTooltip(); as tooltip) {
+    <div
+      class="reference-tooltip"
+      [class.is-below]="tooltip.placement === 'below'"
+      [style.left.px]="tooltip.left"
+      [style.top.px]="tooltip.top"
+      role="tooltip"
+    >
+      <strong>{{ tooltip.title }}</strong>{{ tooltip.content }}
+    </div>
+  }
+</section>

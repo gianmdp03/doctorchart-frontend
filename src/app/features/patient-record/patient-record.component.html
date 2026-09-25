@@ -215,6 +215,13 @@
         </section>
       }
 
+      <!-- TAB: VACUNAS -->
+      @if (selectedTab() === 'vacunas') {
+        <section class="tab-panel animate-fade-in" aria-label="Vacunas">
+          <app-patient-vaccinations [patient]="patient" />
+        </section>
+      }
+
       <!-- TAB: CURVAS DE CRECIMIENTO OMS -->
       @if (selectedTab() === 'curvas') {
         <section class="tab-panel animate-fade-in" aria-label="Curvas OMS">

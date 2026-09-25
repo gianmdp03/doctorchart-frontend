@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideCalendarDays,
   lucideLayoutDashboard,
   lucideUsers,
   lucideStethoscope,
@@ -19,6 +20,7 @@ import { AuthService } from '../../core/services/auth.service';
   imports: [RouterLink, RouterLinkActive, NgIcon],
   providers: [
     provideIcons({
+      lucideCalendarDays,
       lucideLayoutDashboard,
       lucideUsers,
       lucideStethoscope,

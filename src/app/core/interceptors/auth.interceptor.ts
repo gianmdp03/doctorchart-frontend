@@ -13,7 +13,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   // Exclude external third-party APIs (e.g., Google APIs)
   const isExcluded =
     req.url.includes('googleapis.com') ||
-    req.url.includes('google.com');
+    req.url.includes('google.com') ||
+    req.url.includes('gist.githubusercontent.com');
 
   if (isExcluded) {
     return next(req);
