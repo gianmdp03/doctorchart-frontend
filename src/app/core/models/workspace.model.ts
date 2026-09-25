@@ -1,7 +1,30 @@
 /**
  * Supported field input types for dynamic clinical templates.
  */
-export type FormFieldType = 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT' | 'BOOLEAN' | 'TEXTAREA';
+export type FormFieldType =
+  | 'TEXT'
+  | 'NUMBER'
+  | 'DATE'
+  | 'SELECT'
+  | 'BOOLEAN'
+  | 'TEXTAREA'
+  | 'FORMULA';
+
+export type ClinicalFormulaType =
+  | 'IMC'
+  | 'BSA'
+  | 'TFGE'
+  | 'COCKCROFT'
+  | 'CHADS_VASC'
+  | 'CALCIO_CORREGIDO'
+  | 'CUSTOM';
+
+export type FormulaOperationType =
+  | 'ADD'
+  | 'SUBTRACT'
+  | 'MULTIPLY'
+  | 'DIVIDE'
+  | 'AVERAGE';
 
 export interface FormFieldOption {
   value: string;
@@ -16,6 +39,13 @@ export interface FormFieldDefinition {
   placeholder?: string;
   options?: FormFieldOption[];
   unit?: string;
+  formulaType?: ClinicalFormulaType | string;
+  formulaOperation?: FormulaOperationType;
+  formulaVariableA?: string;
+  formulaVariableB?: string;
+  formulaConstantB?: number;
+  formulaVariables?: string[];
+  formulaExpression?: string;
 }
 
 export type FormCategoryKey =

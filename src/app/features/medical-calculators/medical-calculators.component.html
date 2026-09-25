@@ -1,0 +1,734 @@
+<div class="calculators-container">
+  <!-- Top Header -->
+  <header class="calculators-header">
+    <div class="header-left">
+      <div class="header-icon-wrap">
+        <ng-icon name="lucideCalculator" class="header-icon" />
+      </div>
+      <div>
+        <h1 class="header-title">Calculadoras Médicas Clínicas</h1>
+        <p class="header-subtitle">
+          Herramientas de decisión clínica con precisión matemática, rangos normativos y exportación directa a evolución SOAP.
+        </p>
+      </div>
+    </div>
+
+    <!-- Tab navigation -->
+    <div class="header-actions">
+      <div class="tab-pill-group">
+        <button
+          type="button"
+          class="tab-pill-btn"
+          [class.active]="activeTab() === 'calculator'"
+          (click)="activeTab.set('calculator')"
+        >
+          <ng-icon name="lucideCalculator" class="tab-icon" />
+          <span>Calculadoras</span>
+        </button>
+        <button
+          type="button"
+          class="tab-pill-btn"
+          [class.active]="activeTab() === 'history'"
+          (click)="activeTab.set('history')"
+        >
+          <ng-icon name="lucideHistory" class="tab-icon" />
+          <span>Historial ({{ calcService.savedHistory().length }})</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Active Patient Auto-Fill Banner (if patient loaded) -->
+  @if (activePatient()) {
+    <div class="patient-context-banner">
+      <div class="patient-context-info">
+        <div class="patient-avatar-badge">
+          <ng-icon name="lucideUserCheck" />
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="patient-name">{{ activePatient()?.fullName }}</span>
+            <span class="patient-tag">Paciente Activo</span>
+          </div>
+          <div class="patient-meta-row">
+            @if (activePatientAgeYears() !== null) {
+              <span>{{ activePatientAgeYears() }} años</span>
+              <span class="meta-dot">•</span>
+            }
+            @if (activePatientGender()) {
+              <span>{{ activePatientGender() === 'FEMALE' ? 'Femenino' : 'Masculino' }}</span>
+              <span class="meta-dot">•</span>
+            }
+            @if (activePatientWeight()) {
+              <span>Peso: {{ activePatientWeight() }} kg</span>
+              <span class="meta-dot">•</span>
+            }
+            @if (activePatientHeight()) {
+              <span>Talla: {{ activePatientHeight() }} cm</span>
+            }
+          </div>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="autofill-action-btn"
+        (click)="autofillFromPatient()"
+        title="Cargar automáticamente los parámetros del paciente activo en esta calculadora"
+      >
+        <ng-icon name="lucideUserCheck" class="btn-icon" />
+        <span>Autocompletar datos del paciente</span>
+      </button>
+    </div>
+  }
+
+  <!-- View: CALCULATOR MODE -->
+  @if (activeTab() === 'calculator') {
+    <div class="calculators-grid-layout">
+      <!-- Left Sidebar: Calculator Selector -->
+      <aside class="calc-selector-sidebar">
+        <!-- Search bar -->
+        <div class="sidebar-search-wrap">
+          <ng-icon name="lucideSearch" class="search-icon" />
+          <input
+            type="search"
+            class="sidebar-search-input"
+            placeholder="Buscar calculadora..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
+        </div>
+
+        <!-- Category Filter Chips -->
+        <div class="category-chips-row">
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="categoryFilter() === 'all'"
+            (click)="categoryFilter.set('all')"
+          >
+            Todas
+          </button>
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="categoryFilter() === 'antropometria'"
+            (click)="categoryFilter.set('antropometria')"
+          >
+            Antropometría
+          </button>
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="categoryFilter() === 'nefrologia'"
+            (click)="categoryFilter.set('nefrologia')"
+          >
+            Nefrología
+          </button>
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="categoryFilter() === 'cardiologia'"
+            (click)="categoryFilter.set('cardiologia')"
+          >
+            Cardiología
+          </button>
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="categoryFilter() === 'metabolismo'"
+            (click)="categoryFilter.set('metabolismo')"
+          >
+            Metabolismo
+          </button>
+        </div>
+
+        <!-- Calculator Items List -->
+        <nav class="calc-nav-list" aria-label="Lista de calculadoras">
+          @for (item of filteredCalculators(); track item.id) {
+            <button
+              type="button"
+              class="calc-nav-card"
+              [class.active]="selectedId() === item.id"
+              (click)="selectCalculator(item.id)"
+            >
+              <div class="calc-card-main">
+                <span class="calc-card-title">{{ item.name }}</span>
+                <span class="calc-card-category">{{ item.categoryLabel }}</span>
+              </div>
+              <ng-icon name="lucideArrowRight" class="calc-nav-chevron" />
+            </button>
+          } @empty {
+            <div class="empty-search-state">
+              <ng-icon name="lucideInfo" class="empty-icon" />
+              <p>No se encontraron calculadoras con ese término.</p>
+            </div>
+          }
+        </nav>
+      </aside>
+
+      <!-- Main Calculator Workspace: Inputs + Live Results Card -->
+      <section class="calc-workspace-panel">
+        <!-- Calculator Header Card -->
+        <div class="calc-details-header">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="calc-category-badge">{{ currentMetadata().categoryLabel }}</span>
+                <span class="calc-evidence-badge">{{ currentMetadata().evidenceReference }}</span>
+              </div>
+              <h2 class="calc-workspace-title">{{ currentMetadata().name }}</h2>
+              <p class="calc-workspace-desc">{{ currentMetadata().description }}</p>
+            </div>
+            <button
+              type="button"
+              class="reset-btn"
+              (click)="resetCurrentInputs()"
+              title="Limpiar campos"
+            >
+              <ng-icon name="lucideRotateCcw" />
+              <span>Limpiar</span>
+            </button>
+          </div>
+          <div class="calc-formula-bar">
+            <span class="formula-label">Fórmula:</span>
+            <code class="formula-code">{{ currentMetadata().summaryFormula }}</code>
+          </div>
+        </div>
+
+        <div class="calc-body-grid">
+          <!-- FORM INPUTS SECTION -->
+          <div class="inputs-card">
+            <h3 class="card-section-title">Parámetros de Entrada</h3>
+
+            <!-- 1. IMC & BSA Inputs -->
+            @if (selectedId() === 'imc') {
+              <div class="form-fields-stack">
+                <div class="field-group">
+                  <label for="bmiWeightInput" class="field-label">Peso corporal (kg)</label>
+                  <div class="input-with-unit">
+                    <input
+                      id="bmiWeightInput"
+                      type="number"
+                      min="1"
+                      max="400"
+                      step="0.1"
+                      class="field-input"
+                      placeholder="Ej. 70"
+                      [ngModel]="bmiWeight()"
+                      (ngModelChange)="bmiWeight.set($event)"
+                    />
+                    <span class="input-unit">kg</span>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label for="bmiHeightInput" class="field-label">Estatura (cm)</label>
+                  <div class="input-with-unit">
+                    <input
+                      id="bmiHeightInput"
+                      type="number"
+                      min="30"
+                      max="260"
+                      step="0.5"
+                      class="field-input"
+                      placeholder="Ej. 175"
+                      [ngModel]="bmiHeight()"
+                      (ngModelChange)="bmiHeight.set($event)"
+                    />
+                    <span class="input-unit">cm</span>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- 2. TFGe (CKD-EPI 2021) Inputs -->
+            @if (selectedId() === 'tfge') {
+              <div class="form-fields-stack">
+                <div class="field-group">
+                  <label for="tfgeCrInput" class="field-label">Creatinina Sérica (mg/dL)</label>
+                  <div class="input-with-unit">
+                    <input
+                      id="tfgeCrInput"
+                      type="number"
+                      min="0.1"
+                      max="20"
+                      step="0.05"
+                      class="field-input"
+                      placeholder="Ej. 1.05"
+                      [ngModel]="tfgeCreatinine()"
+                      (ngModelChange)="tfgeCreatinine.set($event)"
+                    />
+                    <span class="input-unit">mg/dL</span>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label for="tfgeAgeInput" class="field-label">Edad (años cumplidos, ≥ 18)</label>
+                  <div class="input-with-unit">
+                    <input
+                      id="tfgeAgeInput"
+                      type="number"
+                      min="18"
+                      max="125"
+                      step="1"
+                      class="field-input"
+                      placeholder="Ej. 60"
+                      [ngModel]="tfgeAge()"
+                      (ngModelChange)="tfgeAge.set($event)"
+                    />
+                    <span class="input-unit">años</span>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <span class="field-label">Sexo Biológico</span>
+                  <div class="segmented-control">
+                    <button
+                      type="button"
+                      class="segment-btn"
+                      [class.active]="tfgeGender() === 'MALE'"
+                      (click)="tfgeGender.set('MALE')"
+                    >
+                      Masculino
+                    </button>
+                    <button
+                      type="button"
+                      class="segment-btn"
+                      [class.active]="tfgeGender() === 'FEMALE'"
+                      (click)="tfgeGender.set('FEMALE')"
+                    >
+                      Femenino
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- 3. Cockcroft-Gault Inputs -->
+            @if (selectedId() === 'cockcroft') {
+              <div class="form-fields-stack">
+                <div class="field-row-2">
+                  <div class="field-group">
+                    <label for="cockWeightInput" class="field-label">Peso (kg)</label>
+                    <div class="input-with-unit">
+                      <input
+                        id="cockWeightInput"
+                        type="number"
+                        min="1"
+                        max="350"
+                        step="0.1"
+                        class="field-input"
+                        placeholder="70"
+                        [ngModel]="cockcroftWeight()"
+                        (ngModelChange)="cockcroftWeight.set($event)"
+                      />
+                      <span class="input-unit">kg</span>
+                    </div>
+                  </div>
+
+                  <div class="field-group">
+                    <label for="cockAgeInput" class="field-label">Edad (años)</label>
+                    <div class="input-with-unit">
+                      <input
+                        id="cockAgeInput"
+                        type="number"
+                        min="18"
+                        max="120"
+                        step="1"
+                        class="field-input"
+                        placeholder="65"
+                        [ngModel]="cockcroftAge()"
+                        (ngModelChange)="cockcroftAge.set($event)"
+                      />
+                      <span class="input-unit">años</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label for="cockCrInput" class="field-label">Creatinina Sérica (mg/dL)</label>
+                  <div class="input-with-unit">
+                    <input
+                      id="cockCrInput"
+                      type="number"
+                      min="0.1"
+                      max="20"
+                      step="0.05"
+                      class="field-input"
+                      placeholder="1.2"
+                      [ngModel]="cockcroftCreatinine()"
+                      (ngModelChange)="cockcroftCreatinine.set($event)"
+                    />
+                    <span class="input-unit">mg/dL</span>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <span class="field-label">Sexo Biológico</span>
+                  <div class="segmented-control">
+                    <button
+                      type="button"
+                      class="segment-btn"
+                      [class.active]="cockcroftGender() === 'MALE'"
+                      (click)="cockcroftGender.set('MALE')"
+                    >
+                      Masculino (Factor 1.0)
+                    </button>
+                    <button
+                      type="button"
+                      class="segment-btn"
+                      [class.active]="cockcroftGender() === 'FEMALE'"
+                      (click)="cockcroftGender.set('FEMALE')"
+                    >
+                      Femenino (Factor 0.85)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- 4. CHA2DS2-VASc Inputs -->
+            @if (selectedId() === 'chads_vasc') {
+              <div class="form-fields-stack">
+                <div class="field-group">
+                  <label for="chadsAgeInput" class="field-label">Edad del Paciente (años)</label>
+                  <div class="input-with-unit">
+                    <input
+                      id="chadsAgeInput"
+                      type="number"
+                      min="1"
+                      max="120"
+                      step="1"
+                      class="field-input"
+                      placeholder="Ej. 70"
+                      [ngModel]="chadsAge()"
+                      (ngModelChange)="chadsAge.set($event)"
+                    />
+                    <span class="input-unit">años</span>
+                  </div>
+                  <span class="field-hint">
+                    ≥75 años suma +2 puntos | 65-74 años suma +1 punto.
+                  </span>
+                </div>
+
+                <div class="checkbox-options-stack">
+                  <label class="check-option-label">
+                    <input
+                      type="checkbox"
+                      class="check-box"
+                      [checked]="chadsFemale()"
+                      (change)="chadsFemale.set($any($event.target).checked)"
+                    />
+                    <div class="check-text-group">
+                      <span class="check-title">Sexo Femenino (Sc)</span>
+                      <span class="check-desc">+1 punto</span>
+                    </div>
+                  </label>
+
+                  <label class="check-option-label">
+                    <input
+                      type="checkbox"
+                      class="check-box"
+                      [checked]="chadsHeartFailure()"
+                      (change)="chadsHeartFailure.set($any($event.target).checked)"
+                    />
+                    <div class="check-text-group">
+                      <span class="check-title">Insuficiencia Cardíaca Congestiva (C)</span>
+                      <span class="check-desc">Signos clínicos o disfunción VI FEVI ≤ 40% (+1 pto)</span>
+                    </div>
+                  </label>
+
+                  <label class="check-option-label">
+                    <input
+                      type="checkbox"
+                      class="check-box"
+                      [checked]="chadsHypertension()"
+                      (change)="chadsHypertension.set($any($event.target).checked)"
+                    />
+                    <div class="check-text-group">
+                      <span class="check-title">Hipertensión Arterial (H)</span>
+                      <span class="check-desc">Antecedente de HTA o tratamiento antihipertensivo (+1 pto)</span>
+                    </div>
+                  </label>
+
+                  <label class="check-option-label">
+                    <input
+                      type="checkbox"
+                      class="check-box"
+                      [checked]="chadsDiabetes()"
+                      (change)="chadsDiabetes.set($any($event.target).checked)"
+                    />
+                    <div class="check-text-group">
+                      <span class="check-title">Diabetes Mellitus (D)</span>
+                      <span class="check-desc">Glucemia en ayunas >126 mg/dL o antidiabéticos orales/insulina (+1 pto)</span>
+                    </div>
+                  </label>
+
+                  <label class="check-option-label">
+                    <input
+                      type="checkbox"
+                      class="check-box"
+                      [checked]="chadsStroke()"
+                      (change)="chadsStroke.set($any($event.target).checked)"
+                    />
+                    <div class="check-text-group">
+                      <span class="check-title">Ictus / AIT / Tromboembolismo previo (S₂)</span>
+                      <span class="check-desc">Accidente cerebrovascular isquémico o embolismo sistémico (+2 ptos)</span>
+                    </div>
+                  </label>
+
+                  <label class="check-option-label">
+                    <input
+                      type="checkbox"
+                      class="check-box"
+                      [checked]="chadsVascular()"
+                      (change)="chadsVascular.set($any($event.target).checked)"
+                    />
+                    <div class="check-text-group">
+                      <span class="check-title">Enfermedad Vascular Previa (V)</span>
+                      <span class="check-desc">Infarto de miocardio previo, arteriopatía periférica o placa aórtica (+1 pto)</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            }
+
+            <!-- 5. Calcio Corregido Inputs -->
+            @if (selectedId() === 'calcio_corregido') {
+              <div class="form-fields-stack">
+                <div class="field-group">
+                  <label for="caTotalInput" class="field-label">Calcio Total Sérico (mg/dL)</label>
+                  <div class="input-with-unit">
+                    <input
+                      id="caTotalInput"
+                      type="number"
+                      min="1"
+                      max="25"
+                      step="0.1"
+                      class="field-input"
+                      placeholder="Ej. 8.4"
+                      [ngModel]="calciumValue()"
+                      (ngModelChange)="calciumValue.set($event)"
+                    />
+                    <span class="input-unit">mg/dL</span>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label for="albInput" class="field-label">Albúmina Sérica (g/dL)</label>
+                  <div class="input-with-unit">
+                    <input
+                      id="albInput"
+                      type="number"
+                      min="0.5"
+                      max="8"
+                      step="0.1"
+                      class="field-input"
+                      placeholder="Ej. 3.2"
+                      [ngModel]="albuminValue()"
+                      (ngModelChange)="albuminValue.set($event)"
+                    />
+                    <span class="input-unit">g/dL</span>
+                  </div>
+                  <span class="field-hint">Valor normal fisiológico de referencia: 4.0 g/dL.</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- DYNAMIC RESULTS CARD SECTION -->
+          <div class="results-card">
+            <h3 class="card-section-title">Resultado e Interpretación Clínica</h3>
+
+            @if (currentResult(); as res) {
+              <div class="result-box-container" [ngClass]="res.interpretation.cardBorderClass">
+                <!-- Big Metric Header -->
+                <div class="result-metric-header">
+                  <div>
+                    <span class="result-number-val">{{ res.formattedValue }}</span>
+                    <span class="result-unit-val">{{ res.unit }}</span>
+                  </div>
+                  <span class="result-severity-pill" [ngClass]="res.interpretation.badgeClass">
+                    {{ res.interpretation.label }}
+                  </span>
+                </div>
+
+                <!-- Secondary Outputs (if any) -->
+                @if (res.secondaryOutputs && res.secondaryOutputs.length > 0) {
+                  <div class="secondary-metrics-grid">
+                    @for (sec of res.secondaryOutputs; track sec.label) {
+                      <div class="secondary-metric-card">
+                        <span class="sec-label">{{ sec.label }}</span>
+                        <div class="sec-value-wrap">
+                          <span class="sec-value">{{ sec.value }}</span>
+                          @if (sec.unit) {
+                            <span class="sec-unit">{{ sec.unit }}</span>
+                          }
+                        </div>
+                        @if (sec.description) {
+                          <span class="sec-desc">{{ sec.description }}</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Recommended Clinical Action -->
+                @if (res.clinicalAction) {
+                  <div class="clinical-action-box">
+                    <div class="flex items-start gap-2">
+                      <ng-icon name="lucideInfo" class="action-info-icon" />
+                      <div>
+                        <span class="action-heading">Conducta Clínica Sugerida:</span>
+                        <p class="action-body">{{ res.clinicalAction }}</p>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                <!-- Clinical Notes -->
+                @if (res.clinicalNotes && res.clinicalNotes.length > 0) {
+                  <div class="notes-wrap">
+                    <span class="notes-heading">Consideraciones Médicas:</span>
+                    <ul class="notes-list">
+                      @for (n of res.clinicalNotes; track n) {
+                        <li>{{ n }}</li>
+                      }
+                    </ul>
+                  </div>
+                }
+
+                <!-- Action Buttons: Copy Evolution & Save to Record -->
+                <div class="result-action-buttons">
+                  <button
+                    type="button"
+                    class="action-btn copy-btn"
+                    [class.copied]="copyFeedback()"
+                    (click)="copyResultText()"
+                    title="Copiar texto con formato clínico listo para pegar en la evolución"
+                  >
+                    @if (copyFeedback()) {
+                      <ng-icon name="lucideCheck" class="btn-icon text-emerald-600" />
+                      <span>¡Copiado al portapapeles!</span>
+                    } @else {
+                      <ng-icon name="lucideCopy" class="btn-icon" />
+                      <span>Copiar para Evolución Clínica</span>
+                    }
+                  </button>
+
+                  <button
+                    type="button"
+                    class="action-btn save-btn"
+                    [class.saved]="saveFeedback()"
+                    (click)="saveResultToRecord()"
+                    title="Guardar este resultado en el historial clínico del paciente"
+                  >
+                    @if (saveFeedback()) {
+                      <ng-icon name="lucideCheck" class="btn-icon text-emerald-600" />
+                      <span>¡Guardado con éxito!</span>
+                    } @else {
+                      <ng-icon name="lucideSave" class="btn-icon" />
+                      <span>Guardar en Historial</span>
+                    }
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <!-- Incomplete inputs state -->
+              <div class="incomplete-inputs-state">
+                <ng-icon name="lucideInfo" class="incomplete-icon" />
+                <h4 class="incomplete-title">Parámetros incompletos</h4>
+                <p class="incomplete-text">
+                  Ingresa valores numéricos válidos en los campos de la izquierda para obtener el cálculo clínico y su estadificación automática.
+                </p>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+    </div>
+  }
+
+  <!-- View: HISTORY MODE -->
+  @if (activeTab() === 'history') {
+    <section class="history-view-card">
+      <div class="history-header-row">
+        <div>
+          <h2 class="history-title">Historial de Cálculos Realizados</h2>
+          <p class="history-subtitle">
+            Registro cronológico de cálculos médicos ejecutados en tus sesiones. Puedes copiar de nuevo el formato clínico o guardarlos en las notas del paciente.
+          </p>
+        </div>
+        @if (calcService.savedHistory().length > 0) {
+          <button
+            type="button"
+            class="clear-history-btn"
+            (click)="clearAllHistory()"
+            title="Vaciar todo el historial guardado"
+          >
+            <ng-icon name="lucideTrash2" class="btn-icon" />
+            <span>Vaciar historial</span>
+          </button>
+        }
+      </div>
+
+      <div class="history-list-wrap">
+        @for (item of calcService.savedHistory(); track item.id) {
+          <article class="history-item-card">
+            <div class="history-item-top">
+              <div class="flex items-center gap-2">
+                <span class="history-calc-badge">{{ item.calculatorName }}</span>
+                @if (item.patientName) {
+                  <span class="history-patient-badge">
+                    <ng-icon name="lucideUserCheck" class="inline mr-1" />
+                    {{ item.patientName }}
+                  </span>
+                }
+              </div>
+              <span class="history-date">
+                {{ item.calculatedAt | date: 'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+
+            <div class="history-item-content">
+              <div class="history-res-group">
+                <span class="history-headline">{{ item.resultHeadline }}</span>
+                <span class="history-interpretation">{{ item.interpretationLabel }}</span>
+              </div>
+
+              <div class="history-actions-row">
+                <button
+                  type="button"
+                  class="history-copy-btn"
+                  (click)="copyHistoryItem(item)"
+                  title="Copiar texto de evolución clínica"
+                >
+                  <ng-icon name="lucideCopy" class="btn-icon" />
+                  <span>Copiar texto</span>
+                </button>
+                <button
+                  type="button"
+                  class="history-del-btn"
+                  (click)="deleteHistoryItem(item)"
+                  title="Eliminar del historial"
+                >
+                  <ng-icon name="lucideTrash2" class="btn-icon" />
+                </button>
+              </div>
+            </div>
+
+            <pre class="history-preview-box">{{ item.plainTextEvolution }}</pre>
+          </article>
+        } @empty {
+          <div class="empty-history-state">
+            <ng-icon name="lucideHistory" class="empty-hist-icon" />
+            <h4 class="empty-hist-title">Sin cálculos guardados</h4>
+            <p class="empty-hist-desc">
+              Cuando ejecutes cálculos médicos y presiones "Guardar en Historial", aparecerán organizados cronológicamente aquí.
+            </p>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

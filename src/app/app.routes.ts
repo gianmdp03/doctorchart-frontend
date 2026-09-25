@@ -57,6 +57,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'calculadoras',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () =>
+      import('./features/medical-calculators/medical-calculators.component').then(
+        (m) => m.MedicalCalculatorsComponent
+      ),
+  },
+  {
     path: 'onboarding/select-specialty',
     canActivate: [doctorchartPlanGuard, preventCompletedOnboardingGuard],
     loadComponent: () =>

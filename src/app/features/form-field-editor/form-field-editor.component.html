@@ -131,7 +131,14 @@
                   <div class="field-main">
                     <div class="field-top-row">
                       <div class="flex items-center gap-2">
-                        <span class="field-type-pill">{{ field.type }}</span>
+                        @if (field.type === 'FORMULA') {
+                          <span class="field-type-pill bg-teal-100 text-teal-800 border-teal-300">
+                            <ng-icon name="lucideCalculator" class="inline mr-1" />
+                            FÓRMULA{{ field.formulaType ? ' · ' + field.formulaType : '' }}
+                          </span>
+                        } @else {
+                          <span class="field-type-pill">{{ field.type }}</span>
+                        }
                         <code class="field-key-code">{{ field.key }}</code>
                       </div>
 
@@ -193,6 +200,18 @@
                           <div class="text-xs text-slate-600 truncate py-1.5">
                             {{ field.options ? field.options.map(o => o.label).join(', ') : 'Sin opciones' }}
                           </div>
+                        </div>
+                      } @else if (field.type === 'FORMULA') {
+                        <div class="input-group">
+                          <label class="input-label">Unidad de la Fórmula</label>
+                          <input
+                            type="text"
+                            [ngModel]="field.unit || ''"
+                            (ngModelChange)="updateFieldProperty(selectedCategoryIndex(), fi, 'unit', $event)"
+                            [disabled]="readonly()"
+                            placeholder="Ej: kg/m², mL/min"
+                            class="input-control"
+                          />
                         </div>
                       }
                     </div>
@@ -260,20 +279,20 @@
   @if (isAddingField()) {
     <div class="modal-backdrop" (click)="closeAddFieldModal()">
       <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
           <h3 class="modal-title">Agregar Nuevo Campo Clínico</h3>
-          <button type="button" class="btn-close-modal" (click)="closeAddFieldModal()">
-            <ng-icon name="lucideX" class="w-5 h-5"></ng-icon>
+          <button type="button" class="btn-close-modal p-1 hover:bg-slate-100 rounded-lg transition-colors" (click)="closeAddFieldModal()">
+            <ng-icon name="lucideX" class="w-5 h-5 text-slate-400 hover:text-slate-600"></ng-icon>
           </button>
         </div>
 
-        <div class="modal-form-body space-y-4 mt-4">
+        <div class="modal-form-body space-y-5 mt-5">
           <!-- Tipo de campo -->
           <div>
             <label class="input-label">Tipo de Dato Clínico *</label>
             <select
               [ngModel]="newFieldType()"
-              (ngModelChange)="newFieldType.set($event)"
+              (ngModelChange)="onFieldTypeChange($event)"
               class="input-control"
             >
               @for (t of fieldTypes; track t.value) {
@@ -282,8 +301,123 @@
             </select>
           </div>
 
+          <!-- Configuración de Fórmula si el tipo es FORMULA -->
+          @if (newFieldType() === 'FORMULA') {
+            <div class="border border-teal-200 bg-teal-50/70 rounded-2xl p-4.5 space-y-4 my-2.5 shadow-xs">
+              <div class="flex items-center gap-2 mb-1">
+                <ng-icon name="lucideCalculator" class="text-teal-700 text-lg"></ng-icon>
+                <span class="text-xs font-bold uppercase tracking-wider text-teal-800">
+                  Configuración de la Fórmula Clínica
+                </span>
+              </div>
+
+              <div>
+                <label class="input-label text-teal-900">Seleccionar Tipo de Fórmula *</label>
+                <select
+                  [ngModel]="newFieldFormulaType()"
+                  (ngModelChange)="onFormulaTypeSelect($event)"
+                  class="input-control bg-white border-teal-300"
+                >
+                  @for (f of formulaOptions; track f.value) {
+                    <option [value]="f.value">{{ f.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Descripción contextual de la fórmula -->
+              @for (f of formulaOptions; track f.value) {
+                @if (f.value === newFieldFormulaType()) {
+                  <p class="text-xs text-teal-800 bg-white/95 p-3 rounded-xl border border-teal-200/90 shadow-xs leading-relaxed my-1">
+                    <strong>Parámetros:</strong> {{ f.description }}
+                  </p>
+                }
+              }
+
+              <!-- Configuración visual interactiva de variables si es CUSTOM -->
+              @if (newFieldFormulaType() === 'CUSTOM') {
+                <div class="space-y-4 bg-white/95 p-4 rounded-xl border border-teal-200/90 shadow-xs mt-3">
+                  <!-- 1. Tipo de Operación -->
+                  <div>
+                    <label class="input-label text-teal-900">Tipo de Operación *</label>
+                    <select
+                      [ngModel]="newFieldFormulaOperation()"
+                      (ngModelChange)="onCustomOperationChange($event)"
+                      class="input-control bg-teal-50/40 border-teal-300 font-medium"
+                    >
+                      @for (op of operationOptions; track op.value) {
+                        <option [value]="op.value">{{ op.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- 2. Selectores de Operandos (Variable A y Variable B) -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                    <!-- Variable A -->
+                    <div>
+                      <label class="input-label text-teal-900">Primer Valor (Variable A) *</label>
+                      <select
+                        [ngModel]="newFieldFormulaVariableA()"
+                        (ngModelChange)="onCustomVariableAChange($event)"
+                        class="input-control bg-white border-slate-300 text-xs"
+                      >
+                        <option value="">Seleccionar variable...</option>
+                        @for (v of availableVariables(); track v.key) {
+                          <option [value]="v.key">{{ v.label }} {{ v.unit ? '(' + v.unit + ')' : '' }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    <!-- Variable B / Constante -->
+                    <div>
+                      <div class="flex items-center justify-between mb-1.5">
+                        <label class="input-label text-teal-900 mb-0">Segundo Valor (B) *</label>
+                        <button
+                          type="button"
+                          class="text-[11px] font-medium text-teal-700 underline hover:text-teal-900 transition-colors"
+                          (click)="newFieldFormulaUseConstant.set(!newFieldFormulaUseConstant())"
+                        >
+                          {{ newFieldFormulaUseConstant() ? 'Usar campo del formulario' : 'Usar número fijo' }}
+                        </button>
+                      </div>
+
+                      @if (!newFieldFormulaUseConstant()) {
+                        <select
+                          [ngModel]="newFieldFormulaVariableB()"
+                          (ngModelChange)="onCustomVariableBChange($event)"
+                          class="input-control bg-white border-slate-300 text-xs"
+                        >
+                          <option value="">Seleccionar variable...</option>
+                          @for (v of availableVariables(); track v.key) {
+                            <option [value]="v.key">{{ v.label }} {{ v.unit ? '(' + v.unit + ')' : '' }}</option>
+                          }
+                        </select>
+                      } @else {
+                        <input
+                          type="number"
+                          step="any"
+                          [ngModel]="newFieldFormulaConstantB()"
+                          (ngModelChange)="newFieldFormulaConstantB.set($event)"
+                          placeholder="Ej: 100, 35, 1.5"
+                          class="input-control bg-white border-slate-300 text-xs"
+                        />
+                      }
+                    </div>
+                  </div>
+
+                  <!-- 3. Previsualización dinámica de la operación -->
+                  <div class="p-3 bg-teal-50 border border-teal-200 rounded-xl text-xs flex items-center justify-between gap-3 mt-1">
+                    <span class="font-semibold text-teal-900">Operación resultante:</span>
+                    <code class="font-bold text-teal-800 font-mono text-xs bg-white px-2.5 py-1 rounded-md border border-teal-200 shadow-xs">
+                      {{ customFormulaPreview() }}
+                    </code>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
           <!-- Label y Key -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
             <div>
               <label class="input-label">Nombre / Etiqueta del Campo *</label>
               <input
@@ -307,7 +441,7 @@
           </div>
 
           <!-- Placeholder y Unidad -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="input-label">Texto de ayuda (placeholder)</label>
               <input
@@ -331,13 +465,13 @@
           </div>
 
           <!-- Required -->
-          <div>
-            <label class="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
+          <div class="pt-1.5">
+            <label class="inline-flex items-center gap-2.5 cursor-pointer text-sm font-medium text-slate-700 select-none">
               <input
                 type="checkbox"
                 [ngModel]="newFieldRequired()"
                 (ngModelChange)="newFieldRequired.set($event)"
-                class="form-checkbox"
+                class="form-checkbox w-4 h-4 text-blue-600 rounded border-slate-300"
               />
               <span>Campo obligatorio en la consulta</span>
             </label>

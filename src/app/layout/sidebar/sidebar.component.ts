@@ -9,6 +9,7 @@ import {
   lucideChevronRight,
   lucideShield,
   lucideSliders,
+  lucideCalculator,
 } from '@ng-icons/lucide';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { DoctorProfileService } from '../../core/services/doctor-profile.service';
@@ -26,6 +27,7 @@ import { AuthService } from '../../core/services/auth.service';
       lucideChevronRight,
       lucideShield,
       lucideSliders,
+      lucideCalculator,
     }),
   ],
   templateUrl: './sidebar.component.html',
