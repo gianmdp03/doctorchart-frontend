@@ -17,6 +17,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'calendario-vacunacion',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () =>
+      import('./features/vaccination-calendar/calendario-vacunacion.component').then(
+        (m) => m.VaccinationCalendarComponent,
+      ),
+  },
+  {
     path: 'pacientes',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () =>

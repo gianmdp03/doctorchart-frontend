@@ -70,4 +70,17 @@ describe('authInterceptor', () => {
     expect(req.request.headers.has('Authorization')).toBe(false);
     req.flush({});
   });
+
+  it('should not add gateway or authorization headers to the public vaccination Gist', () => {
+    authServiceMock.getAccessToken.mockReturnValue('mocked-supabase-jwt-token');
+    const gistUrl =
+      'https://gist.githubusercontent.com/gianmdp03/8cc442cce33c3fd2485de18a2aa89638/raw/cal_vacunacion.json';
+
+    httpClient.get(gistUrl).subscribe();
+
+    const req = httpTestingController.expectOne(gistUrl);
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    expect(req.request.headers.has('X-Gateway-Secret')).toBe(false);
+    req.flush({});
+  });
 });

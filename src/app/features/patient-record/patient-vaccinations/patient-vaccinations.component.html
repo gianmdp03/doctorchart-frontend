@@ -1,0 +1,63 @@
+<section class="vaccines-panel" aria-label="Vacunas del paciente">
+  <header class="vaccines-header">
+    <div>
+      <p class="eyebrow">Calendario Nacional de Vacunación</p>
+      <h3>Vacunas de {{ patient().fullName }}</h3>
+      <p>Edad al día de hoy: <strong>{{ ageLabel(ageInMonths()) }}</strong>. El estado se calcula a partir del calendario oficial.</p>
+    </div>
+    @if (isSaving()) { <span class="saving">Guardando…</span> }
+  </header>
+
+  @if (saveError(); as error) { <p class="save-error" role="alert">{{ error }}</p> }
+
+  @if (calendarService.loading()) {
+    <p class="empty-state">Cargando calendario de vacunación…</p>
+  } @else if (calendarService.error(); as error) {
+    <p class="save-error" role="alert">{{ error }}</p>
+  } @else {
+    <div class="vaccines-summary">
+      <span class="summary pending">{{ overdueDoses().length }} pendientes</span>
+      <span class="summary current">{{ currentDoses().length }} para revisar hoy</span>
+      <span class="summary applied">{{ appliedDoses().length }} aplicadas</span>
+    </div>
+
+    <section class="dose-group" aria-labelledby="pending-title">
+      <h4 id="pending-title">Pendientes</h4>
+      @if (overdueDoses().length) {
+        @for (dose of overdueDoses(); track dose.key) {
+          <article class="dose-card pending-card">
+            <div class="dose-copy"><strong>{{ dose.vaccine.nombre }}</strong><span>{{ dose.application.dosis }} · correspondía a los {{ ageLabel(dose.dueFrom) }}</span></div>
+            <label class="apply-control"><input type="checkbox" [checked]="false" (change)="markApplied(dose, $any($event.target).checked)" /> Aplicada</label>
+          </article>
+        }
+      } @else { <p class="empty-state">No hay dosis vencidas sin registrar.</p> }
+    </section>
+
+    <section class="dose-group" aria-labelledby="current-title">
+      <h4 id="current-title">Corresponden ahora</h4>
+      @if (currentDoses().length) {
+        @for (dose of currentDoses(); track dose.key) {
+          <article class="dose-card current-card">
+            <div class="dose-copy"><strong>{{ dose.vaccine.nombre }}</strong><span>{{ dose.application.dosis }}</span></div>
+            <label class="apply-control"><input type="checkbox" [checked]="false" (change)="markApplied(dose, $any($event.target).checked)" /> Aplicada</label>
+          </article>
+        }
+      } @else { <p class="empty-state">No hay dosis previstas para este momento.</p> }
+    </section>
+
+    <section class="dose-group" aria-labelledby="applied-title">
+      <h4 id="applied-title">Registradas como aplicadas</h4>
+      @if (appliedDoses().length) {
+        @for (dose of appliedDoses(); track dose.key) {
+          <article class="dose-card applied-card">
+            <div class="dose-copy"><strong>{{ dose.vaccine.nombre }}</strong><span>{{ dose.application.dosis }}</span></div>
+            <label class="date-control">Fecha <input type="date" [value]="dose.record?.appliedAt ?? ''" (change)="updateDate(dose, $any($event.target).value)" /></label>
+            <label class="apply-control"><input type="checkbox" [checked]="true" (change)="markApplied(dose, $any($event.target).checked)" /> Aplicada</label>
+          </article>
+        }
+      } @else { <p class="empty-state">Todavía no se registraron aplicaciones detalladas.</p> }
+    </section>
+
+    <details class="future-doses"><summary>Próximas dosis ({{ futureDoses().length }})</summary><ul>@for (dose of futureDoses(); track dose.key) { <li><strong>{{ dose.vaccine.nombre }}</strong> · {{ dose.application.dosis }} · {{ ageLabel(dose.dueFrom) }}</li> }</ul></details>
+  }
+</section>

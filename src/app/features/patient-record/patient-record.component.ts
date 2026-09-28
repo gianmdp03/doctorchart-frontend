@@ -46,10 +46,11 @@ import { ClinicalTimelineComponent } from './clinical-timeline/clinical-timeline
 import { GrowthCurvesComponent } from '../growth-curves/growth-curves.component';
 import { NewEncounterDialogComponent } from '../new-encounter-dialog/new-encounter-dialog.component';
 import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
+import { PatientVaccinationsComponent } from './patient-vaccinations/patient-vaccinations.component';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { FormTemplate } from '../../core/models/workspace.model';
 
-export type PatientRecordTab = 'resumen' | 'historia' | 'curvas' | 'recetas';
+export type PatientRecordTab = 'resumen' | 'historia' | 'vacunas' | 'curvas' | 'recetas';
 
 export interface RecordTabItem {
   id: PatientRecordTab;
@@ -95,6 +96,7 @@ export interface ComplicationChip {
     GrowthCurvesComponent,
     NewEncounterDialogComponent,
     DynamicFormRendererComponent,
+    PatientVaccinationsComponent,
   ],
   providers: [
     provideIcons({
@@ -189,14 +191,16 @@ export class PatientRecordComponent implements OnInit {
       return [
         { id: 'resumen', label: '1. Datos del paciente' },
         { id: 'historia', label: '2. Consultas', badge: this.encounters().length },
-        { id: 'curvas', label: '3. Curvas OMS' },
-        { id: 'recetas', label: '4. Recetas y Estudios' },
+        { id: 'vacunas', label: '3. Vacunas' },
+        { id: 'curvas', label: '4. Curvas OMS' },
+        { id: 'recetas', label: '5. Recetas y Estudios' },
       ];
     }
     return [
       { id: 'resumen', label: '1. Datos del paciente' },
       { id: 'historia', label: '2. Consultas', badge: this.encounters().length },
-      { id: 'recetas', label: '3. Recetas y Estudios' },
+      { id: 'vacunas', label: '3. Vacunas' },
+      { id: 'recetas', label: '4. Recetas y Estudios' },
     ];
   });
 
@@ -238,7 +242,7 @@ export class PatientRecordComponent implements OnInit {
 
     this.route.queryParamMap.subscribe((queryParams) => {
       const tabParam = queryParams.get('tab') as PatientRecordTab | null;
-      if (tabParam && ['resumen', 'historia', 'curvas', 'recetas'].includes(tabParam)) {
+      if (tabParam && ['resumen', 'historia', 'vacunas', 'curvas', 'recetas'].includes(tabParam)) {
         this.selectedTab.set(tabParam);
       }
     });
