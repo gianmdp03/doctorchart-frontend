@@ -60,6 +60,9 @@ describe('FormFieldEditorComponent', () => {
 
     const fieldCards = fixture.debugElement.queryAll(By.css('.field-card'));
     expect(fieldCards.length).toBe(2);
+    expect(fieldCards[0].nativeElement.textContent).toContain('Texto corto');
+    expect(fieldCards[0].nativeElement.textContent).not.toContain('TEXT');
+    expect(fixture.debugElement.query(By.css('.field-key-code'))).toBeNull();
   });
 
   it('should reorder fields down and up', () => {
@@ -111,7 +114,6 @@ describe('FormFieldEditorComponent', () => {
 
     component.newFieldType.set('NUMBER');
     component.newFieldLabel.set('Temperatura Axilar');
-    component.newFieldKey.set('temperaturaAxilar');
     component.newFieldUnit.set('°C');
     component.newFieldRequired.set(true);
 
@@ -124,5 +126,17 @@ describe('FormFieldEditorComponent', () => {
     expect(added?.key).toBe('temperaturaAxilar');
     expect(added?.unit).toBe('°C');
     expect(added?.required).toBe(true);
+  });
+
+  it('should generate a unique internal key from the visible label', () => {
+    fixture.componentRef.setInput('template', initialTemplate);
+    fixture.detectChanges();
+
+    component.openAddFieldModal();
+    component.onLabelInput('Presión Arterial');
+    component.submitAddField();
+
+    const added = component.selectedCategory()?.fields[2];
+    expect(added?.key).toBe('presionArterial2');
   });
 });

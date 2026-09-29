@@ -109,8 +109,7 @@
                             <div class="slot-info">
                               <span class="slot-label">{{ slot.label }}</span>
                               <div class="flex items-center gap-1.5">
-                                <code class="slot-code">{{ slot.slot }}</code>
-                                <span class="slot-type-badge">{{ slot.type }}</span>
+                                <span class="slot-type-badge">{{ getFieldTypeLabel(slot.type) }}</span>
                               </div>
                             </div>
 
@@ -128,7 +127,7 @@
                                   [value]="field.key"
                                   [selected]="getSelectedMapping(chart.chartCode, slot.slot) === field.key"
                                 >
-                                  {{ field.label }} ({{ field.key }})
+                                  {{ field.label }}
                                 </option>
                               }
                             </select>

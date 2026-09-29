@@ -134,12 +134,11 @@
                         @if (field.type === 'FORMULA') {
                           <span class="field-type-pill bg-teal-100 text-teal-800 border-teal-300">
                             <ng-icon name="lucideCalculator" class="inline mr-1" />
-                            FÓRMULA{{ field.formulaType ? ' · ' + field.formulaType : '' }}
+                            {{ getFormulaLabel(field.formulaType) }}
                           </span>
                         } @else {
-                          <span class="field-type-pill">{{ field.type }}</span>
+                          <span class="field-type-pill">{{ getFieldTypeLabel(field.type) }}</span>
                         }
-                        <code class="field-key-code">{{ field.key }}</code>
                       </div>
 
                       @if (!readonly()) {
@@ -248,7 +247,7 @@
         </div>
         <h3 class="modal-title">¿Desactivar campo médico?</h3>
         <p class="modal-body-text">
-          Está a punto de eliminar el campo <strong>{{ target.field.label }}</strong> (<code>{{ target.field.key }}</code>) de la plantilla activa.
+          Está a punto de eliminar el campo <strong>{{ target.field.label }}</strong> de la plantilla activa.
         </p>
         <div class="impact-alert-box">
           <p class="impact-text">
@@ -416,8 +415,8 @@
             </div>
           }
 
-          <!-- Label y Key -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          <!-- Nombre visible; la clave interna se genera automáticamente. -->
+          <div class="pt-1">
             <div>
               <label class="input-label">Nombre / Etiqueta del Campo *</label>
               <input
@@ -425,16 +424,6 @@
                 [ngModel]="newFieldLabel()"
                 (ngModelChange)="onLabelInput($event)"
                 placeholder="Ej: Frecuencia Respiratoria"
-                class="input-control"
-              />
-            </div>
-            <div>
-              <label class="input-label">Clave Interna (slug) *</label>
-              <input
-                type="text"
-                [ngModel]="newFieldKey()"
-                (ngModelChange)="newFieldKey.set($event)"
-                placeholder="frecuenciaRespiratoria"
                 class="input-control"
               />
             </div>

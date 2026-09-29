@@ -33,6 +33,7 @@ import {
   DoctorChartConfig,
   FormFieldDefinition,
   FormTemplate,
+  getFormFieldTypeLabel,
 } from '../../core/models/workspace.model';
 import { ClinicalChartComponent } from '../clinical-chart/clinical-chart.component';
 import { ClinicalChartService } from '../../core/services/clinical-chart.service';
@@ -223,6 +224,10 @@ export class ChartMapperComponent {
         }
         return field.type === slot.type;
       });
+  }
+
+  getFieldTypeLabel(type: ChartSlotDefinition['type']): string {
+    return getFormFieldTypeLabel(type);
   }
 
   togglePreview(chartCode: string): void {

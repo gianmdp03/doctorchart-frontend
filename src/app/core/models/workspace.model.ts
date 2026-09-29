@@ -10,6 +10,21 @@ export type FormFieldType =
   | 'TEXTAREA'
   | 'FORMULA';
 
+/** User-facing names for the field types stored in the template schema. */
+export const FORM_FIELD_TYPE_LABELS: Record<FormFieldType, string> = {
+  TEXT: 'Texto corto',
+  NUMBER: 'Número',
+  DATE: 'Fecha',
+  SELECT: 'Lista de opciones',
+  BOOLEAN: 'Sí / No',
+  TEXTAREA: 'Texto amplio',
+  FORMULA: 'Cálculo automático',
+};
+
+export function getFormFieldTypeLabel(type: FormFieldType): string {
+  return FORM_FIELD_TYPE_LABELS[type];
+}
+
 export type ClinicalFormulaType =
   | 'IMC'
   | 'BSA'

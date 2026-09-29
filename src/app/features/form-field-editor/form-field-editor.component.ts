@@ -28,6 +28,7 @@ import {
   FormFieldOption,
   FormFieldType,
   FormTemplate,
+  getFormFieldTypeLabel,
   FormulaOperationType,
 } from '../../core/models/workspace.model';
 
@@ -67,6 +68,8 @@ export interface FormulaConfigOption {
   styleUrl: './form-field-editor.component.css',
 })
 export class FormFieldEditorComponent {
+  readonly getFieldTypeLabel = getFormFieldTypeLabel;
+
   // Inputs & Outputs
   readonly template = input<FormTemplate | null>(null);
   readonly readonly = input<boolean>(false);
@@ -261,14 +264,19 @@ export class FormFieldEditorComponent {
   ];
 
   readonly fieldTypes: { value: FormFieldType; label: string }[] = [
-    { value: 'TEXT', label: 'Texto Corto' },
-    { value: 'NUMBER', label: 'Numérico' },
-    { value: 'DATE', label: 'Fecha' },
-    { value: 'SELECT', label: 'Selección Desplegable' },
-    { value: 'BOOLEAN', label: 'Casilla Sí/No' },
-    { value: 'TEXTAREA', label: 'Área de Texto Amplia' },
-    { value: 'FORMULA', label: 'Fórmula Clínica / Calculada' },
+    { value: 'TEXT', label: getFormFieldTypeLabel('TEXT') },
+    { value: 'NUMBER', label: getFormFieldTypeLabel('NUMBER') },
+    { value: 'DATE', label: getFormFieldTypeLabel('DATE') },
+    { value: 'SELECT', label: getFormFieldTypeLabel('SELECT') },
+    { value: 'BOOLEAN', label: getFormFieldTypeLabel('BOOLEAN') },
+    { value: 'TEXTAREA', label: getFormFieldTypeLabel('TEXTAREA') },
+    { value: 'FORMULA', label: getFormFieldTypeLabel('FORMULA') },
   ];
+
+  getFormulaLabel(formulaType?: string): string {
+    return this.formulaOptions.find((option) => option.value === formulaType)?.label
+      || getFormFieldTypeLabel('FORMULA');
+  }
 
   readonly categories = computed<FormCategoryGroup[]>(() => {
     return this.workingTemplate()?.schemaDefinition?.categories || [];
@@ -488,9 +496,7 @@ export class FormFieldEditorComponent {
 
   onLabelInput(label: string): void {
     this.newFieldLabel.set(label);
-    if (!this.newFieldKey() || this.newFieldKey() === this.toCamelCase(label.slice(0, -1))) {
-      this.newFieldKey.set(this.toCamelCase(label));
-    }
+    this.newFieldKey.set(this.toCamelCase(label));
   }
 
   addOption(): void {
@@ -509,7 +515,7 @@ export class FormFieldEditorComponent {
 
   submitAddField(): void {
     const label = this.newFieldLabel().trim();
-    const key = (this.newFieldKey().trim() || this.toCamelCase(label)).replace(/[^a-zA-Z0-9_]/g, '');
+    const key = this.generateUniqueFieldKey(this.newFieldKey() || this.toCamelCase(label));
 
     if (!label || !key) return;
 
@@ -569,6 +575,21 @@ export class FormFieldEditorComponent {
       .split(' ')
       .map((word, idx) => (idx === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)))
       .join('');
+  }
+
+  private generateUniqueFieldKey(value: string): string {
+    const baseKey = value.replace(/[^a-zA-Z0-9_]/g, '');
+    if (!baseKey) return '';
+
+    const existingKeys = new Set(
+      this.categories().flatMap((category) => category.fields?.map((field) => field.key) || [])
+    );
+    let key = baseKey;
+    let suffix = 2;
+    while (existingKeys.has(key)) {
+      key = `${baseKey}${suffix++}`;
+    }
+    return key;
   }
 
   private toSnakeUpper(str: string): string {
