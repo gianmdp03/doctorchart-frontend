@@ -25,6 +25,7 @@
     "@ng-icons/lucide": "^36.0.0",
     "@spartan-ng/brain": "^1.4.1",
     "@supabase/supabase-js": "^2.116.0",
+    "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel": "^8.6.0",

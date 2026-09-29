@@ -222,10 +222,13 @@
         </section>
       }
 
-      <!-- TAB: CURVAS DE CRECIMIENTO OMS -->
+      <!-- TAB: CURVAS Y GRÁFICOS DE EVOLUCIÓN -->
       @if (selectedTab() === 'curvas') {
-        <section class="tab-panel animate-fade-in" aria-label="Curvas OMS">
-          <app-growth-curves />
+        <section class="tab-panel animate-fade-in" aria-label="Evolución y Gráficos">
+          <app-patient-charts
+            [encounters]="encounters()"
+            [isChild]="isChild()"
+          />
         </section>
       }
 

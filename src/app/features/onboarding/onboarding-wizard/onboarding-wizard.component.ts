@@ -192,6 +192,11 @@ export class OnboardingWizardComponent implements OnInit {
   async onChartConfigsSelected(configs: DoctorChartConfig[]): Promise<void> {
     this.chartConfigs.set(configs);
     this.isChartMapperOpen.set(false);
+    try {
+      await this.workspaceStore.saveChartConfigs(configs);
+    } catch {
+      // Si falla la persistencia directa en base de datos, continúa guardando el draft del wizard
+    }
     await this.saveCurrentChartsStep();
   }
 

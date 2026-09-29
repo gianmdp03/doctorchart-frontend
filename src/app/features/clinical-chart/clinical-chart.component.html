@@ -1,0 +1,14 @@
+<div class="clinical-chart-box">
+  @if (title()) {
+    <div class="chart-header">
+      <h4 class="chart-title">{{ title() }}</h4>
+      @if (description()) {
+        <p class="chart-description">{{ description() }}</p>
+      }
+    </div>
+  }
+
+  <div class="canvas-wrapper" [style.height.px]="height()">
+    <canvas #chartCanvas></canvas>
+  </div>
+</div>

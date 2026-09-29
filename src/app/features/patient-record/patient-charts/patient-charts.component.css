@@ -1,0 +1,75 @@
+.patient-charts-view {
+  width: 100%;
+}
+
+.charts-subnav-bar {
+  display: flex;
+  gap: 0.5rem;
+  background-color: #f1f5f9;
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+  width: fit-content;
+}
+
+.charts-subnav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748b;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.charts-subnav-btn:hover {
+  color: #0f172a;
+}
+
+.charts-subnav-btn.active {
+  background-color: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.chart-card-wrapper {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.chart-card-wrapper:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+}
+
+.pending-chart-card {
+  background-color: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 0.875rem;
+  transition: all 0.15s ease;
+}
+
+.pending-chart-card:hover {
+  border-color: #94a3b8;
+  background-color: #f8fafc;
+}
+
+.pending-icon-box {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  background-color: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}

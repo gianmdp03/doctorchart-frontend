@@ -120,9 +120,14 @@
                               class="slot-select-control"
                               [attr.data-testid]="'slot-select-' + chart.chartCode + '-' + slot.slot"
                             >
-                              <option value="">-- Sin mapear --</option>
+                              <option value="" [selected]="!getSelectedMapping(chart.chartCode, slot.slot)">
+                                -- Sin mapear --
+                              </option>
                               @for (field of availableFieldsForSlot(slot); track field.key) {
-                                <option [value]="field.key">
+                                <option
+                                  [value]="field.key"
+                                  [selected]="getSelectedMapping(chart.chartCode, slot.slot) === field.key"
+                                >
                                   {{ field.label }} ({{ field.key }})
                                 </option>
                               }
@@ -130,6 +135,49 @@
                           </div>
                         }
                       </div>
+                    </div>
+                  }
+
+                  <!-- Action bar: Previsualizar Gráfico -->
+                  <div class="chart-card-footer mt-3 pt-2.5 flex items-center justify-between border-t border-slate-100">
+                    <button
+                      type="button"
+                      class="btn-preview-toggle"
+                      (click)="togglePreview(chart.chartCode)"
+                    >
+                      @if (previewChartCode() === chart.chartCode) {
+                        <ng-icon name="lucideEyeOff" class="w-4 h-4 text-slate-600"></ng-icon>
+                        <span>Ocultar previsualización</span>
+                      } @else {
+                        <ng-icon name="lucideEye" class="w-4 h-4 text-blue-600"></ng-icon>
+                        <span>Previsualizar gráfico</span>
+                      }
+                    </button>
+
+                    @if (isChartActive(chart.chartCode)) {
+                      <span class="text-xs text-slate-500">
+                        {{ isChartActive(chart.chartCode) ? 'Gráfico habilitado para consultas' : '' }}
+                      </span>
+                    }
+                  </div>
+
+                  <!-- Previsualización interactiva con Chart.js -->
+                  @if (previewChartCode() === chart.chartCode) {
+                    <div class="chart-preview-container mt-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                      <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                          <ng-icon name="lucideActivity" class="text-blue-600"></ng-icon>
+                          Simulación de Curva Clínica (Datos de Ejemplo)
+                        </span>
+                        <span class="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full font-semibold border border-blue-200">
+                          Interactivo Chart.js
+                        </span>
+                      </div>
+                      <app-clinical-chart
+                        [labels]="getMockData(chart.chartCode, chart.title).labels"
+                        [datasets]="getMockData(chart.chartCode, chart.title).datasets"
+                        [height]="220"
+                      />
                     </div>
                   }
                 </div>

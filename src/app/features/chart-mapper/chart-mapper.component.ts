@@ -20,6 +20,10 @@ import {
   lucideCheckCircle2,
   lucideAlertCircle,
   lucideInfo,
+  lucideEye,
+  lucideEyeOff,
+  lucideActivity,
+  lucideSparkles,
 } from '@ng-icons/lucide';
 import { WorkspaceService } from '../../core/services/workspace.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
@@ -30,10 +34,13 @@ import {
   FormFieldDefinition,
   FormTemplate,
 } from '../../core/models/workspace.model';
+import { ClinicalChartComponent } from '../clinical-chart/clinical-chart.component';
+import { ClinicalChartService } from '../../core/services/clinical-chart.service';
+import { ClinicalChartData } from '../../core/models/clinical-chart.model';
 
 @Component({
   selector: 'app-chart-mapper',
-  imports: [CommonModule, FormsModule, NgIcon],
+  imports: [CommonModule, FormsModule, NgIcon, ClinicalChartComponent],
   providers: [
     provideIcons({
       lucideBarChart3,
@@ -44,6 +51,10 @@ import {
       lucideCheckCircle2,
       lucideAlertCircle,
       lucideInfo,
+      lucideEye,
+      lucideEyeOff,
+      lucideActivity,
+      lucideSparkles,
     }),
   ],
   templateUrl: './chart-mapper.component.html',
@@ -51,6 +62,7 @@ import {
 })
 export class ChartMapperComponent {
   private readonly workspaceService = inject(WorkspaceService);
+  private readonly clinicalChartService = inject(ClinicalChartService);
   readonly workspaceStore = inject(WorkspaceStore);
 
   // Inputs & Outputs
@@ -68,6 +80,7 @@ export class ChartMapperComponent {
   readonly isSaving = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
   readonly saveSuccess = signal<boolean>(false);
+  readonly previewChartCode = signal<string | null>(null);
 
   // Active template fields available for slot mapping
   readonly availableTemplateFields = computed<FormFieldDefinition[]>(() => {
@@ -108,11 +121,28 @@ export class ChartMapperComponent {
     this.workspaceService.getChartsCatalog().subscribe({
       next: (catalogList) => {
         this.catalog.set(catalogList || []);
-        if (this.onboardingMode()) {
+
+        // Priority 1: Check initialConfigs input (from wizard) if it has active charts or configured mappings
+        const fromInput = this.initialConfigs();
+        const hasInputConfigs = fromInput && fromInput.some((c) => c.isActive || (c.fieldMappings && Object.keys(c.fieldMappings).length > 0));
+        if (hasInputConfigs) {
           this.isLoading.set(false);
-          this.initializeConfigs(catalogList || [], this.initialConfigs());
+          this.initializeConfigs(catalogList || [], fromInput);
           return;
         }
+
+        // Priority 2: Check currentSetup in workspaceStore if it has chartConfigs
+        const fromStore = typeof this.workspaceStore?.currentSetup === 'function'
+          ? this.workspaceStore.currentSetup()?.chartConfigs
+          : null;
+        const hasStoreConfigs = fromStore && fromStore.some((c) => c.isActive || (c.fieldMappings && Object.keys(c.fieldMappings).length > 0));
+        if (hasStoreConfigs) {
+          this.isLoading.set(false);
+          this.initializeConfigs(catalogList || [], fromStore);
+          return;
+        }
+
+        // Priority 3: Fetch directly from backend GET /workspace/charts
         this.loadDoctorConfigs(catalogList || []);
       },
       error: (err) => {
@@ -131,7 +161,6 @@ export class ChartMapperComponent {
         this.initializeConfigs(catalogList, existingConfigs || []);
       },
       error: () => {
-        // Fallback: initialize empty configs for all catalog items
         this.isLoading.set(false);
         this.initializeConfigs(catalogList, []);
       },
@@ -144,8 +173,11 @@ export class ChartMapperComponent {
 
   toggleChartActive(chartCode: string): void {
     this.localConfigs.update((configs) => {
-      const current = configs[chartCode];
-      if (!current) return configs;
+      const current = configs[chartCode] || {
+        chartCode,
+        isActive: false,
+        fieldMappings: {},
+      };
       return {
         ...configs,
         [chartCode]: {
@@ -162,16 +194,22 @@ export class ChartMapperComponent {
 
   updateMapping(chartCode: string, slotKey: string, fieldKey: string): void {
     this.localConfigs.update((configs) => {
-      const current = configs[chartCode];
-      if (!current) return configs;
+      const current = configs[chartCode] || {
+        chartCode,
+        isActive: true,
+        fieldMappings: {},
+      };
+      const updatedMappings = { ...(current.fieldMappings || {}) };
+      if (!fieldKey || fieldKey.trim() === '') {
+        delete updatedMappings[slotKey];
+      } else {
+        updatedMappings[slotKey] = fieldKey;
+      }
       return {
         ...configs,
         [chartCode]: {
           ...current,
-          fieldMappings: {
-            ...current.fieldMappings,
-            [slotKey]: fieldKey,
-          },
+          fieldMappings: updatedMappings,
         },
       };
     });
@@ -179,19 +217,52 @@ export class ChartMapperComponent {
 
   availableFieldsForSlot(slot: ChartSlotDefinition): FormFieldDefinition[] {
     return [...this.contextualFields, ...this.availableTemplateFields()]
-      .filter((field) => field.type === slot.type);
+      .filter((field) => {
+        if (slot.type === 'NUMBER') {
+          return field.type === 'NUMBER' || field.type === 'FORMULA';
+        }
+        return field.type === slot.type;
+      });
+  }
+
+  togglePreview(chartCode: string): void {
+    if (this.previewChartCode() === chartCode) {
+      this.previewChartCode.set(null);
+    } else {
+      this.previewChartCode.set(chartCode);
+    }
+  }
+
+  getMockData(chartCode: string, title?: string): ClinicalChartData {
+    return this.clinicalChartService.getMockDataForChart(chartCode, title);
   }
 
   async save(): Promise<void> {
     this.isSaving.set(true);
     this.errorMessage.set(null);
 
-    const payload = Object.values(this.localConfigs());
+    const rawConfigs = Object.values(this.localConfigs());
+    const payload: DoctorChartConfig[] = rawConfigs.map((cfg) => {
+      const cleanedMappings: Record<string, string> = {};
+      for (const [k, v] of Object.entries(cfg.fieldMappings || {})) {
+        if (v && typeof v === 'string' && v.trim() !== '') {
+          cleanedMappings[k] = v;
+        }
+      }
+      return {
+        chartCode: cfg.chartCode,
+        isActive: cfg.isActive,
+        fieldMappings: cleanedMappings,
+      };
+    });
 
     try {
       if (this.onboardingMode()) {
+        this.saveSuccess.set(true);
         this.configsSaved.emit(payload);
-        this.close();
+        setTimeout(() => {
+          this.close();
+        }, 500);
         return;
       }
       const saved = await this.workspaceStore.saveChartConfigs(payload);
@@ -199,7 +270,7 @@ export class ChartMapperComponent {
       this.configsSaved.emit(saved);
       setTimeout(() => {
         this.close();
-      }, 500);
+      }, 700);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al guardar configuración de gráficos.';
       this.errorMessage.set(msg);
