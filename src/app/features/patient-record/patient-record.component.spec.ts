@@ -217,4 +217,62 @@ describe('PatientRecordComponent', () => {
     component.closeMoreMenu();
     expect(component.isMoreMenuOpen()).toBe(false);
   });
+
+  it('should allow adding medications to draft and dispatching print modal', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    dispatchSpy.mockClear();
+    localStorage.clear();
+
+    component.setTab('recetas');
+    component.setRxFormMode('MEDICATION');
+
+    component.rxMedicationName.set('Ibuprofeno 400mg');
+    component.rxDosage.set('1 comprimido');
+    component.rxFrequency.set('Cada 8 horas');
+    component.rxAdministrationRoute.set('Vía Oral');
+    component.rxDurationDays.set(5);
+    component.rxDiagnosis.set('Cefalea tensional');
+
+    component.addMedicationToDraft();
+
+    expect(component.draftPrescriptions().length).toBe(1);
+    expect(component.draftPrescriptions()[0].medicationName).toBe('Ibuprofeno 400mg');
+
+    component.printRecord();
+
+    expect(dispatchSpy).toHaveBeenCalled();
+    const customEvent = dispatchSpy.mock.calls[0][0] as CustomEvent;
+    expect(customEvent.type).toBe('open-prescription-print-modal');
+    expect(customEvent.detail.type).toBe('PRESCRIPTION');
+    expect(customEvent.detail.prescriptions.length).toBe(1);
+    expect(customEvent.detail.primaryDiagnosisDescription).toBe('Cefalea tensional');
+  });
+
+  it('should allow ordering diagnostic studies like Tomografía and dispatching print modal in STUDY_ORDERS mode', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    dispatchSpy.mockClear();
+    localStorage.clear();
+
+    component.setTab('recetas');
+    component.setRxFormMode('STUDY');
+
+    component.selectQuickStudy('Tomografía Axial Computada (TAC)');
+    component.rxStudySpecification.set('De cerebro sin contraste');
+    component.rxDiagnosis.set('Control neurológico');
+
+    // Calling printRecord directly auto-commits the pending study input
+    component.printRecord();
+
+    expect(component.draftStudies().length).toBe(1);
+    expect(component.draftStudies()[0]).toBe('Tomografía Axial Computada (TAC) — De cerebro sin contraste');
+
+    expect(dispatchSpy).toHaveBeenCalled();
+    const customEvent = dispatchSpy.mock.calls[0][0] as CustomEvent;
+    expect(customEvent.type).toBe('open-prescription-print-modal');
+    expect(customEvent.detail.type).toBe('STUDY_ORDERS');
+    expect(customEvent.detail.diagnosticOrders).toContain(
+      'Tomografía Axial Computada (TAC) — De cerebro sin contraste'
+    );
+  });
 });
+

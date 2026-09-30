@@ -194,9 +194,9 @@
         }
       }
 
-      <!-- TAB 2: HISTORIA CLÍNICA (CONSULTAS SOAP) -->
+      <!-- TAB 2: HISTORIA CLÍNICA (CONSULTAS) -->
       @if (selectedTab() === 'historia') {
-        <section class="tab-panel animate-fade-in" aria-label="Historia Clínica SOAP">
+        <section class="tab-panel animate-fade-in" aria-label="Historia Clínica de Consultas">
           @if (migrationMessage()) {
             <div class="migration-alert-box mb-3">
               <ng-icon name="lucideCheckCircle2" class="text-teal-600 text-base" />
@@ -235,65 +235,480 @@
       <!-- TAB: RECETAS Y ESTUDIOS -->
       @if (selectedTab() === 'recetas') {
         <section class="tab-panel animate-fade-in" aria-label="Recetas y Estudios">
-          <div class="clinical-section-card">
-            <div class="sec-card-header">
-              <div class="flex items-center gap-2">
-                <ng-icon name="lucidePill" class="text-teal-600" />
-                <h3 class="sec-card-title">Prescripciones Farmacológicas e Indicaciones</h3>
+          <!-- TARJETA PRINCIPAL: CONFECCIÓN DE RECETA MÉDICA U ORDEN DE ESTUDIOS -->
+          <div class="clinical-section-card rx-builder-card">
+            <div class="sec-card-header rx-card-header">
+              <div class="rx-header-title-group">
+                <div class="rx-header-icon-badge">
+                  <ng-icon [name]="rxFormMode() === 'MEDICATION' ? 'lucidePill' : 'lucideFileText'" />
+                </div>
+                <div>
+                  <h3 class="sec-card-title">Confeccionar Receta u Orden de Estudios</h3>
+                  <p class="rx-header-subtitle">
+                    Paciente: <strong>{{ patient.fullName }}</strong> (DNI {{ patientNationalId() }}) · Profesional: <strong>{{ authService.userName() }}</strong>
+                  </p>
+                </div>
               </div>
-              <button type="button" class="secondary-outline-btn btn-sm" (click)="printRecord()">
-                <ng-icon name="lucidePrinter" />
-                <span>Imprimir Receta Médica</span>
-              </button>
+
+              <div class="rx-header-actions">
+                <button
+                  type="button"
+                  class="cta-primary-btn btn-sm"
+                  (click)="printRecord()"
+                >
+                  <ng-icon name="lucidePrinter" />
+                  <span>
+                    {{ rxFormMode() === 'STUDY' ? 'Imprimir Orden de Estudios' : 'Imprimir Receta Médica' }}
+                  </span>
+                </button>
+              </div>
             </div>
 
-            <div class="sec-card-body">
-              <div class="prescriptions-summary-box">
-                <div class="prescription-header-info">
-                  <div>
-                    <span class="text-xs text-slate-500">Paciente:</span>
-                    <strong class="block text-sm text-slate-900">{{ patient.fullName }} (DNI: {{ patientNationalId() }})</strong>
+            <div class="sec-card-body rx-builder-body">
+              <!-- Selector de modo: Medicación vs Estudios Diagnósticos -->
+              <div class="rx-mode-selector" role="tablist" aria-label="Tipo de indicación médica">
+                <button
+                  type="button"
+                  role="tab"
+                  class="rx-mode-tab"
+                  [class.active]="rxFormMode() === 'MEDICATION'"
+                  [attr.aria-selected]="rxFormMode() === 'MEDICATION'"
+                  (click)="setRxFormMode('MEDICATION')"
+                >
+                  <ng-icon name="lucidePill" />
+                  <span>Recetar Medicación</span>
+                  @if (draftPrescriptions().length > 0) {
+                    <span class="rx-mode-count">{{ draftPrescriptions().length }}</span>
+                  }
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  class="rx-mode-tab"
+                  [class.active]="rxFormMode() === 'STUDY'"
+                  [attr.aria-selected]="rxFormMode() === 'STUDY'"
+                  (click)="setRxFormMode('STUDY')"
+                >
+                  <ng-icon name="lucideFileText" />
+                  <span>Solicitar Estudios / Prácticas</span>
+                  @if (draftStudies().length > 0) {
+                    <span class="rx-mode-count">{{ draftStudies().length }}</span>
+                  }
+                </button>
+              </div>
+
+              @if (rxErrorMessage()) {
+                <div class="rx-feedback-banner rx-error" role="alert">
+                  <ng-icon name="lucideAlertCircle" />
+                  <span>{{ rxErrorMessage() }}</span>
+                </div>
+              }
+
+              @if (rxSuccessMessage()) {
+                <div class="rx-feedback-banner rx-success" role="status">
+                  <ng-icon name="lucideCheckCircle2" />
+                  <span>{{ rxSuccessMessage() }}</span>
+                </div>
+              }
+
+              <!-- MODO 1: FORMULARIO DE MEDICACIÓN -->
+              @if (rxFormMode() === 'MEDICATION') {
+                <div class="rx-form-section animate-fade-in">
+                  <div class="rx-form-grid-med">
+                    <div class="rx-field rx-field-wide">
+                      <label class="rx-label" for="rx-med-name">Medicamento / Principio Activo y Concentración *</label>
+                      <input
+                        id="rx-med-name"
+                        type="text"
+                        class="rx-input"
+                        placeholder="Ej: Amoxicilina 500 mg, Ibuprofeno 600 mg, Losartán 50 mg..."
+                        [ngModel]="rxMedicationName()"
+                        (ngModelChange)="rxMedicationName.set($event)"
+                        (keydown.enter)="addMedicationToDraft()"
+                      />
+                    </div>
+
+                    <div class="rx-field">
+                      <label class="rx-label" for="rx-med-dosage">Dosis / Presentación</label>
+                      <input
+                        id="rx-med-dosage"
+                        type="text"
+                        class="rx-input"
+                        placeholder="Ej: 1 comprimido, 5 ml, 20 gotas..."
+                        [ngModel]="rxDosage()"
+                        (ngModelChange)="rxDosage.set($event)"
+                        (keydown.enter)="addMedicationToDraft()"
+                      />
+                    </div>
+
+                    <div class="rx-field">
+                      <label class="rx-label" for="rx-med-freq">Frecuencia</label>
+                      <select
+                        id="rx-med-freq"
+                        class="rx-input"
+                        [ngModel]="rxFrequency()"
+                        (ngModelChange)="rxFrequency.set($event)"
+                      >
+                        @for (freq of commonFrequencies; track freq) {
+                          <option [value]="freq">{{ freq }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    <div class="rx-field">
+                      <label class="rx-label" for="rx-med-route">Vía de administración</label>
+                      <select
+                        id="rx-med-route"
+                        class="rx-input"
+                        [ngModel]="rxAdministrationRoute()"
+                        (ngModelChange)="rxAdministrationRoute.set($event)"
+                      >
+                        @for (route of commonRoutes; track route) {
+                          <option [value]="route">{{ route }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    <div class="rx-field">
+                      <label class="rx-label" for="rx-med-days">Duración en días (opcional)</label>
+                      <input
+                        id="rx-med-days"
+                        type="number"
+                        min="1"
+                        class="rx-input"
+                        placeholder="Ej: 7, 10, 30..."
+                        [ngModel]="rxDurationDays()"
+                        (ngModelChange)="rxDurationDays.set($event)"
+                      />
+                    </div>
+
+                    <div class="rx-field rx-field-wide">
+                      <label class="rx-label" for="rx-med-notes">Indicaciones de toma (opcional)</label>
+                      <input
+                        id="rx-med-notes"
+                        type="text"
+                        class="rx-input"
+                        placeholder="Ej: Tomar después de las comidas, no suspender antes de finalizar..."
+                        [ngModel]="rxMedInstructions()"
+                        (ngModelChange)="rxMedInstructions.set($event)"
+                        (keydown.enter)="addMedicationToDraft()"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <span class="text-xs text-slate-500">Médico Actuante:</span>
-                    <strong class="block text-sm text-slate-900">{{ authService.userName() }} ({{ doctorSpecialtyService.currentSpecialtyOption().label }})</strong>
+
+                  <div class="rx-add-row">
+                    <button
+                      type="button"
+                      class="rx-btn-add-item"
+                      (click)="addMedicationToDraft()"
+                    >
+                      <ng-icon name="lucidePlus" />
+                      <span>Agregar medicamento a la receta</span>
+                    </button>
                   </div>
+
+                  <!-- Lista de medicamentos cargados en la receta actual -->
+                  @if (draftPrescriptions().length > 0) {
+                    <div class="rx-draft-items-box">
+                      <span class="rx-draft-box-title">Medicamentos cargados en la receta actual ({{ draftPrescriptions().length }})</span>
+                      <ul class="rx-draft-list">
+                        @for (med of draftPrescriptions(); track $index; let i = $index) {
+                          <li class="rx-draft-item">
+                            <div class="rx-draft-item-main">
+                              <span class="rx-item-index">{{ i + 1 }}.</span>
+                              <div>
+                                <div class="rx-item-title-row">
+                                  <strong class="rx-item-name">{{ med.medicationName }}</strong>
+                                  @if (med.dosage) {
+                                    <span class="rx-item-badge">{{ med.dosage }}</span>
+                                  }
+                                  @if (med.administrationRoute) {
+                                    <span class="rx-item-route">{{ med.administrationRoute }}</span>
+                                  }
+                                </div>
+                                <div class="rx-item-sub">
+                                  @if (med.frequency) {
+                                    <span>{{ med.frequency }}</span>
+                                  }
+                                  @if (med.durationDays) {
+                                    <span>· Durante {{ med.durationDays }} días</span>
+                                  }
+                                  @if (med.instructions) {
+                                    <span>· {{ med.instructions }}</span>
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              class="rx-btn-remove"
+                              (click)="removeMedicationFromDraft(i)"
+                              title="Quitar medicamento"
+                              aria-label="Quitar medicamento"
+                            >
+                              <ng-icon name="lucideTrash2" />
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- MODO 2: FORMULARIO DE ESTUDIOS Y PRÁCTICAS (EJ: TOMOGRAFÍA) -->
+              @if (rxFormMode() === 'STUDY') {
+                <div class="rx-form-section animate-fade-in">
+                  <!-- Sugerencias rápidas de estudios frecuentes -->
+                  <div class="rx-quick-studies-bar">
+                    <span class="rx-quick-label">Estudios frecuentes (clic para completar):</span>
+                    <div class="rx-quick-chips">
+                      @for (sug of commonStudySuggestions; track sug) {
+                        <button
+                          type="button"
+                          class="rx-quick-chip"
+                          (click)="selectQuickStudy(sug)"
+                        >
+                          + {{ sug }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="rx-form-grid-study">
+                    <div class="rx-field">
+                      <label class="rx-label" for="rx-study-name">Estudio o Práctica Médica a Solicitar *</label>
+                      <input
+                        id="rx-study-name"
+                        type="text"
+                        class="rx-input"
+                        placeholder="Ej: Tomografía Axial Computada de Cerebro, Resonancia Magnética, Ecografía..."
+                        [ngModel]="rxStudyName()"
+                        (ngModelChange)="rxStudyName.set($event)"
+                        (keydown.enter)="addStudyToDraft()"
+                      />
+                    </div>
+
+                    <div class="rx-field">
+                      <label class="rx-label" for="rx-study-spec">Especificación / Región / Preparación (opcional)</label>
+                      <input
+                        id="rx-study-spec"
+                        type="text"
+                        class="rx-input"
+                        placeholder="Ej: Sin contraste, Con contraste endovenoso, Ayuno de 8 horas..."
+                        [ngModel]="rxStudySpecification()"
+                        (ngModelChange)="rxStudySpecification.set($event)"
+                        (keydown.enter)="addStudyToDraft()"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="rx-add-row">
+                    <button
+                      type="button"
+                      class="rx-btn-add-item"
+                      (click)="addStudyToDraft()"
+                    >
+                      <ng-icon name="lucidePlus" />
+                      <span>Agregar estudio a la orden</span>
+                    </button>
+                  </div>
+
+                  <!-- Lista de estudios cargados en la orden actual -->
+                  @if (draftStudies().length > 0) {
+                    <div class="rx-draft-items-box">
+                      <span class="rx-draft-box-title">Estudios solicitados en la orden actual ({{ draftStudies().length }})</span>
+                      <ul class="rx-draft-list">
+                        @for (study of draftStudies(); track $index; let i = $index) {
+                          <li class="rx-draft-item">
+                            <div class="rx-draft-item-main">
+                              <span class="rx-item-index">{{ i + 1 }}.</span>
+                              <strong class="rx-item-name">{{ study }}</strong>
+                            </div>
+                            <button
+                              type="button"
+                              class="rx-btn-remove"
+                              (click)="removeStudyFromDraft(i)"
+                              title="Quitar estudio"
+                              aria-label="Quitar estudio"
+                            >
+                              <ng-icon name="lucideTrash2" />
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                </div>
+              }
+
+              <div class="sec-subdivider"></div>
+
+              <!-- DATOS CLÍNICOS COMPLEMENTARIOS DE LA RECETA / ORDEN -->
+              <div class="rx-form-grid-footer">
+                <div class="rx-field">
+                  <label class="rx-label" for="rx-diagnosis">Diagnóstico Presuntivo o Motivo Clínico (opcional)</label>
+                  <input
+                    id="rx-diagnosis"
+                    type="text"
+                    class="rx-input"
+                    placeholder="Ej: Cefalea en estudio, Control clínico, Cuadro respiratorio agudo..."
+                    [ngModel]="rxDiagnosis()"
+                    (ngModelChange)="rxDiagnosis.set($event)"
+                  />
                 </div>
 
-                <div class="sec-subdivider"></div>
+                <div class="rx-field">
+                  <label class="rx-label" for="rx-general-notes">Indicaciones generales para el paciente (opcional)</label>
+                  <input
+                    id="rx-general-notes"
+                    type="text"
+                    class="rx-input"
+                    placeholder="Ej: Concurrir con estudios anteriores, reposo por 48 hs..."
+                    [ngModel]="rxGeneralInstructions()"
+                    (ngModelChange)="rxGeneralInstructions.set($event)"
+                  />
+                </div>
+              </div>
 
-                <h4 class="subheading-title">Medicación Habitual Registrada</h4>
-                @if (habitualMedication().length > 0) {
-                  <ul class="med-prescriptions-list">
-                    @for (med of habitualMedication(); track $index) {
-                      <li class="med-prescription-card">
-                        <ng-icon name="lucidePill" class="text-teal-600 text-lg" />
-                        <div class="med-details">
-                          <strong class="med-name">{{ med }}</strong>
-                          <span class="med-instructions">Tratamiento crónico / de base del paciente</span>
+              <!-- BARRA DE ACCIONES FINALES -->
+              <div class="rx-bottom-actions">
+                <button
+                  type="button"
+                  class="secondary-outline-btn btn-sm"
+                  (click)="clearRxForm()"
+                >
+                  Limpiar formulario
+                </button>
+
+                <div class="rx-bottom-right-btns">
+                  <button
+                    type="button"
+                    class="secondary-outline-btn btn-sm"
+                    (click)="saveCurrentRxToHistory()"
+                  >
+                    <ng-icon name="lucideCheckCircle2" />
+                    <span>Guardar en Historial</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="cta-primary-btn btn-sm"
+                    (click)="printRecord()"
+                  >
+                    <ng-icon name="lucidePrinter" />
+                    <span>
+                      {{ rxFormMode() === 'STUDY' ? 'Emitir e Imprimir Orden de Estudios' : 'Emitir e Imprimir Receta Médica' }}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TARJETAS INFERIORES: HISTORIAL DE RECETAS EMITIDAS Y MEDICACIÓN HABITUAL -->
+          <div class="panel-grid-cards">
+            <!-- Historial de Recetas y Estudios Emitidos -->
+            <div class="clinical-section-card">
+              <div class="sec-card-header">
+                <div class="flex items-center gap-2">
+                  <ng-icon name="lucideClock" class="text-teal-600" />
+                  <h3 class="sec-card-title">Recetas y Estudios Emitidos ({{ savedPrescriptionRecords().length }})</h3>
+                </div>
+              </div>
+              <div class="sec-card-body">
+                @if (savedPrescriptionRecords().length > 0) {
+                  <ul class="rx-history-list">
+                    @for (rec of savedPrescriptionRecords(); track rec.id) {
+                      <li class="rx-history-card">
+                        <div class="rx-history-info">
+                          <div class="rx-history-top">
+                            <span class="rx-history-type-badge" [class.study]="rec.type === 'STUDY_ORDERS'">
+                              {{ rec.type === 'STUDY_ORDERS' ? 'Orden de Estudios' : 'Receta Médica' }}
+                            </span>
+                            <span class="rx-history-date">{{ formatRxDate(rec.createdAt) }}</span>
+                          </div>
+                          @if (rec.prescriptions.length > 0) {
+                            <p class="rx-history-items">
+                              @for (m of rec.prescriptions; track $index; let last = $last) {
+                                <strong>{{ m.medicationName }}</strong> ({{ m.dosage }} · {{ m.frequency }}){{ !last ? ', ' : '' }}
+                              }
+                            </p>
+                          }
+                          @if (rec.diagnosticOrders.length > 0) {
+                            <p class="rx-history-items">
+                              <strong>Estudios:</strong> {{ rec.diagnosticOrders.join(' · ') }}
+                            </p>
+                          }
+                          @if (rec.diagnosisDescription) {
+                            <span class="rx-history-diag">Diagnóstico: {{ rec.diagnosisDescription }}</span>
+                          }
+                        </div>
+
+                        <div class="rx-history-actions">
+                          <button
+                            type="button"
+                            class="secondary-outline-btn btn-xs"
+                            (click)="reprintSavedRecord(rec)"
+                            title="Reimprimir documento"
+                          >
+                            <ng-icon name="lucidePrinter" />
+                            <span>Imprimir</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="rx-btn-remove"
+                            (click)="deleteSavedRecord(rec.id)"
+                            title="Eliminar registro"
+                            aria-label="Eliminar registro"
+                          >
+                            <ng-icon name="lucideTrash2" />
+                          </button>
                         </div>
                       </li>
                     }
                   </ul>
                 } @else {
-                  <p class="text-xs text-slate-500 py-3">Sin medicación habitual registrada en la ficha.</p>
-                }
-
-                <div class="sec-subdivider"></div>
-
-                <div class="quick-rx-cta">
-                  <p class="text-xs text-slate-600">
-                    Para emitir una nueva receta digital o solicitar estudios de laboratorio/imágenes, inicie una nueva evolución SOAP.
+                  <p class="text-xs text-slate-500 py-3">
+                    Todavía no se registraron recetas ni órdenes de estudios para este paciente. Completá el formulario superior para emitir e imprimir la primera.
                   </p>
-                  <button
-                    type="button"
-                    class="cta-primary-btn btn-sm mt-2"
-                    (click)="openNewEncounterModal()"
-                  >
-                    <ng-icon name="lucidePlus" />
-                    <span>+ Nueva Prescripción en Consulta SOAP</span>
-                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Medicación Habitual Registrada -->
+            <div class="clinical-section-card">
+              <div class="sec-card-header">
+                <div class="flex items-center gap-2">
+                  <ng-icon name="lucidePill" class="text-teal-600" />
+                  <h3 class="sec-card-title">Medicación Habitual del Paciente</h3>
                 </div>
+              </div>
+              <div class="sec-card-body">
+                @if (habitualMedication().length > 0) {
+                  <ul class="med-prescriptions-list">
+                    @for (med of habitualMedication(); track $index) {
+                      <li class="med-prescription-card justify-between">
+                        <div class="flex items-center gap-3">
+                          <ng-icon name="lucidePill" class="text-teal-600 text-lg" />
+                          <div class="med-details">
+                            <strong class="med-name">{{ med }}</strong>
+                            <span class="med-instructions">Tratamiento crónico / de base del paciente</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          class="secondary-outline-btn btn-xs"
+                          (click)="prescribeHabitualMedication(med)"
+                        >
+                          <ng-icon name="lucidePlus" />
+                          <span>Agregar a receta</span>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="text-xs text-slate-500 py-3">Sin medicación crónica o habitual registrada en la ficha del paciente.</p>
+                }
               </div>
             </div>
           </div>

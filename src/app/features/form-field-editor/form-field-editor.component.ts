@@ -145,13 +145,13 @@ export class FormFieldEditorComponent {
       value: 'ADD',
       label: 'Suma (A + B)',
       symbol: '+',
-      example: 'Ej: Variable A + Variable B',
+      example: 'Ej: Campo A + Campo B',
     },
     {
       value: 'DIVIDE',
       label: 'División / Ratio (A ÷ B)',
       symbol: '÷',
-      example: 'Ej: Relación A / B',
+      example: 'Ej: Relación Campo A / Campo B',
     },
     {
       value: 'MULTIPLY',
@@ -161,7 +161,7 @@ export class FormFieldEditorComponent {
     },
     {
       value: 'AVERAGE',
-      label: 'Promedio (media entre variables)',
+      label: 'Promedio (media entre campos)',
       symbol: 'promedio',
       example: 'Ej: (A + B) / 2',
     },
@@ -175,12 +175,12 @@ export class FormFieldEditorComponent {
     const constVal = this.newFieldFormulaConstantB();
     const op = this.newFieldFormulaOperation();
 
-    const labelA = vars.find((v) => v.key === keyA)?.label || (keyA ? `[${keyA}]` : '[Variable 1]');
+    const labelA = vars.find((v) => v.key === keyA)?.label || (keyA ? `[${keyA}]` : '[Dato 1]');
     const labelB = useConst
       ? constVal !== null && constVal !== undefined
         ? `${constVal}`
         : '[Número fijo]'
-      : vars.find((v) => v.key === keyB)?.label || (keyB ? `[${keyB}]` : '[Variable 2]');
+      : vars.find((v) => v.key === keyB)?.label || (keyB ? `[${keyB}]` : '[Dato 2]');
 
     const opSymbols: Record<FormulaOperationType, string> = {
       SUBTRACT: '−',
@@ -200,11 +200,11 @@ export class FormFieldEditorComponent {
   readonly formulaOptions: FormulaConfigOption[] = [
     {
       value: 'CUSTOM',
-      label: 'Operación entre Variables del Formulario',
+      label: 'Cálculo personalizado entre datos de la consulta',
       defaultLabel: 'Resultado Calculado',
       defaultKey: 'resultadoCalculado',
       defaultUnit: '',
-      description: 'Elige las variables que existen en la consulta y la operación matemática a realizar.',
+      description: 'Elige los campos de la consulta y la operación clínica o matemática a realizar.',
       suggestedPlaceholder: 'Calculado automáticamente',
     },
     {
@@ -276,6 +276,15 @@ export class FormFieldEditorComponent {
   getFormulaLabel(formulaType?: string): string {
     return this.formulaOptions.find((option) => option.value === formulaType)?.label
       || getFormFieldTypeLabel('FORMULA');
+  }
+
+  isThreeColumnField(field: FormFieldDefinition): boolean {
+    return (
+      field.type === 'NUMBER' ||
+      field.type === 'FORMULA' ||
+      field.type === 'SELECT' ||
+      Boolean(field.unit && field.unit.trim().length > 0)
+    );
   }
 
   readonly categories = computed<FormCategoryGroup[]>(() => {

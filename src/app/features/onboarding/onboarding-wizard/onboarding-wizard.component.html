@@ -15,12 +15,12 @@
             class="btn-reset-defaults"
             (click)="confirmResetToDefaults()"
             [disabled]="isSaving()"
-            title="Restablecer plantillas y gráficos al estado de fábrica de la especialidad"
+            title="Restablecer plantillas y gráficos a la configuración recomendada de la especialidad"
           >
-            ↺ Restablecer de fábrica
+            ↺ Restablecer valores iniciales
           </button>
           @if (isEditMode()) {
-            <button type="button" class="signout-button" (click)="exitWizard()">Volver al Dashboard</button>
+            <button type="button" class="signout-button" (click)="exitWizard()">Volver al Panel Principal</button>
           } @else {
             <button type="button" class="signout-button" (click)="handleSignOut()">Cerrar sesión</button>
           }
@@ -55,7 +55,7 @@
     }
 
     <section class="wizard-content">
-      <span class="section-kicker">Configuración de formularios</span>
+      <span class="section-kicker">Configuración de campos clínicos</span>
       <h1 id="wizard-title">{{ activeStep().title }}</h1>
       <p>{{ activeStep().description }}</p>
 

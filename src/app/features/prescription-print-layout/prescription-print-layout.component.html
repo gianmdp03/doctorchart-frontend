@@ -265,15 +265,22 @@
             </div>
           }
 
-          @if (encounterData()?.primaryDiagnosisDescription) {
+          @if (encounterData()?.primaryDiagnosisDescription || encounterData()?.patientInstructions) {
             <div class="clinical-footnotes mt-4">
-              <p class="diag-note">
-                <strong>Diagnóstico presuntivo:</strong>
-                @if (encounterData()?.primaryDiagnosisCode) {
-                  [{{ encounterData()?.primaryDiagnosisCode }}]
-                }
-                {{ encounterData()?.primaryDiagnosisDescription }}
-              </p>
+              @if (encounterData()?.primaryDiagnosisDescription) {
+                <p class="diag-note">
+                  <strong>Diagnóstico presuntivo:</strong>
+                  @if (encounterData()?.primaryDiagnosisCode) {
+                    [{{ encounterData()?.primaryDiagnosisCode }}]
+                  }
+                  {{ encounterData()?.primaryDiagnosisDescription }}
+                </p>
+              }
+              @if (encounterData()?.patientInstructions) {
+                <p class="instructions-note">
+                  <strong>Preparación / Indicaciones:</strong> {{ encounterData()?.patientInstructions }}
+                </p>
+              }
             </div>
           }
         </div>

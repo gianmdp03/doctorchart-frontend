@@ -38,7 +38,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { CheckupService } from '../../core/services/checkup.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { MedicalCheckupDetailDTO } from '../../core/models/checkup.model';
-import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
+import { ClinicalEncounterList, PrescriptionItem } from '../../core/models/clinical-encounter.model';
 import { MedicalSpecialty } from '../../core/models/specialty.model';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { PatientBannerComponent } from './patient-banner/patient-banner.component';
@@ -51,6 +51,17 @@ import { WorkspaceStore } from '../../core/services/workspace.store';
 import { FormTemplate } from '../../core/models/workspace.model';
 
 export type PatientRecordTab = 'resumen' | 'historia' | 'vacunas' | 'curvas' | 'recetas';
+export type PrescriptionOrderFormMode = 'MEDICATION' | 'STUDY';
+
+export interface SavedPrescriptionRecord {
+  id: number;
+  createdAt: string;
+  type: 'PRESCRIPTION' | 'STUDY_ORDERS';
+  diagnosisDescription: string;
+  generalInstructions: string;
+  prescriptions: PrescriptionItem[];
+  diagnosticOrders: string[];
+}
 
 export interface RecordTabItem {
   id: PatientRecordTab;
@@ -209,12 +220,61 @@ export class PatientRecordComponent implements OnInit {
   readonly checkups = signal<MedicalCheckupDetailDTO[]>([]);
   readonly isLoadingCheckups = signal<boolean>(false);
 
-  // Universal SOAP Encounters state
+  // Universal Encounters state
   readonly encounters = signal<ClinicalEncounterList[]>([]);
   readonly isLoadingEncounters = signal<boolean>(false);
   readonly isMigrating = signal<boolean>(false);
   readonly migrationMessage = signal<string | null>(null);
   readonly isPediatricToolsExpanded = signal<boolean>(true);
+
+  // --- Recetas y Estudios Form State ---
+  readonly rxFormMode = signal<PrescriptionOrderFormMode>('MEDICATION');
+  readonly rxMedicationName = signal<string>('');
+  readonly rxDosage = signal<string>('');
+  readonly rxFrequency = signal<string>('Cada 8 horas');
+  readonly rxAdministrationRoute = signal<string>('Vía Oral');
+  readonly rxDurationDays = signal<number | null>(null);
+  readonly rxMedInstructions = signal<string>('');
+
+  readonly rxStudyName = signal<string>('');
+  readonly rxStudySpecification = signal<string>('');
+
+  readonly rxDiagnosis = signal<string>('');
+  readonly rxGeneralInstructions = signal<string>('');
+
+  readonly draftPrescriptions = signal<PrescriptionItem[]>([]);
+  readonly draftStudies = signal<string[]>([]);
+  readonly savedPrescriptionRecords = signal<SavedPrescriptionRecord[]>([]);
+  readonly rxErrorMessage = signal<string | null>(null);
+  readonly rxSuccessMessage = signal<string | null>(null);
+
+  readonly commonStudySuggestions: readonly string[] = [
+    'Tomografía Axial Computada (TAC)',
+    'Resonancia Magnética Nuclear (RMN)',
+    'Radiografía (Rx) de Tórax Frente y Perfil',
+    'Ecografía Abdominal / General',
+    'Laboratorio Completo (Hemograma, Glucemia, Función Renal y Hepática)',
+    'Electrocardiograma (ECG)',
+  ];
+
+  readonly commonFrequencies: readonly string[] = [
+    'Cada 8 horas',
+    'Cada 12 horas',
+    'Cada 24 horas (1 vez por día)',
+    'Cada 6 horas',
+    'En ayunas',
+    'Según dolor o necesidad',
+  ];
+
+  readonly commonRoutes: readonly string[] = [
+    'Vía Oral',
+    'Sublingual',
+    'Intramuscular',
+    'Endovenosa',
+    'Tópica / Dérmica',
+    'Inhalatoria',
+    'Oftálmica / Ótica',
+  ];
 
   constructor() {
     effect(() => {
@@ -223,9 +283,11 @@ export class PatientRecordComponent implements OnInit {
         if (patient?.id) {
           this.loadCheckups(patient.id);
           this.loadEncounters(patient.id);
+          this.loadSavedPrescriptions(patient.id);
         } else {
           this.checkups.set([]);
           this.encounters.set([]);
+          this.savedPrescriptionRecords.set([]);
         }
       });
     });
@@ -253,6 +315,7 @@ export class PatientRecordComponent implements OnInit {
     if (patient?.id) {
       this.loadCheckups(patient.id);
       this.loadEncounters(patient.id);
+      this.loadSavedPrescriptions(patient.id);
     }
   }
 
@@ -397,25 +460,269 @@ export class PatientRecordComponent implements OnInit {
     });
   }
 
-  printRecord(): void {
-    this.isMoreMenuOpen.set(false);
+  // --- Métodos para Formulario de Recetas y Estudios ---
+  loadSavedPrescriptions(patientId: number): void {
+    if (!isPlatformBrowser(this.platformId) || typeof localStorage === 'undefined') {
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(`dc_rx_records_${patientId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as SavedPrescriptionRecord[];
+        if (Array.isArray(parsed)) {
+          this.savedPrescriptionRecords.set(parsed);
+          return;
+        }
+      }
+    } catch {}
+    this.savedPrescriptionRecords.set([]);
+  }
+
+  private persistSavedPrescriptions(records: SavedPrescriptionRecord[]): void {
+    const patientId = this.activePatientService.patientId();
+    if (!patientId || !isPlatformBrowser(this.platformId) || typeof localStorage === 'undefined') {
+      return;
+    }
+    try {
+      localStorage.setItem(`dc_rx_records_${patientId}`, JSON.stringify(records));
+    } catch {}
+  }
+
+  setRxFormMode(mode: PrescriptionOrderFormMode): void {
+    this.rxFormMode.set(mode);
+    this.rxErrorMessage.set(null);
+    this.rxSuccessMessage.set(null);
+  }
+
+  addMedicationToDraft(): void {
+    const name = this.rxMedicationName().trim();
+    if (!name) {
+      this.rxErrorMessage.set('Ingresá el nombre del medicamento o principio activo.');
+      return;
+    }
+
+    const newItem: PrescriptionItem = {
+      medicationName: name,
+      dosage: this.rxDosage().trim() || 'Según indicación',
+      frequency: this.rxFrequency().trim() || 'Cada 24 horas',
+      administrationRoute: this.rxAdministrationRoute().trim() || 'Vía Oral',
+      durationDays: this.rxDurationDays() && Number(this.rxDurationDays()) > 0 ? Number(this.rxDurationDays()) : null,
+      instructions: this.rxMedInstructions().trim() || undefined,
+    };
+
+    this.draftPrescriptions.update((list) => [...list, newItem]);
+    this.rxMedicationName.set('');
+    this.rxDosage.set('');
+    this.rxDurationDays.set(null);
+    this.rxMedInstructions.set('');
+    this.rxErrorMessage.set(null);
+    this.rxSuccessMessage.set(null);
+  }
+
+  removeMedicationFromDraft(index: number): void {
+    this.draftPrescriptions.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  selectQuickStudy(studyTemplate: string): void {
+    this.rxStudyName.set(studyTemplate);
+    this.rxErrorMessage.set(null);
+  }
+
+  addStudyToDraft(): void {
+    const name = this.rxStudyName().trim();
+    if (!name) {
+      this.rxErrorMessage.set('Ingresá el nombre del estudio o práctica a solicitar (por ej. Tomografía).');
+      return;
+    }
+
+    const spec = this.rxStudySpecification().trim();
+    const formattedStudy = spec ? `${name} — ${spec}` : name;
+
+    this.draftStudies.update((list) => [...list, formattedStudy]);
+    this.rxStudyName.set('');
+    this.rxStudySpecification.set('');
+    this.rxErrorMessage.set(null);
+    this.rxSuccessMessage.set(null);
+  }
+
+  removeStudyFromDraft(index: number): void {
+    this.draftStudies.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  prescribeHabitualMedication(medName: string): void {
+    this.rxFormMode.set('MEDICATION');
+    const item: PrescriptionItem = {
+      medicationName: medName,
+      dosage: 'Dosis habitual',
+      frequency: 'Cada 24 horas (1 vez por día)',
+      administrationRoute: 'Vía Oral',
+      instructions: 'Continuar tratamiento de base',
+    };
+    this.draftPrescriptions.update((list) => [...list, item]);
+    this.rxErrorMessage.set(null);
+    this.rxSuccessMessage.set(`Se agregó "${medName}" a la receta actual.`);
+  }
+
+  clearRxForm(): void {
+    this.rxMedicationName.set('');
+    this.rxDosage.set('');
+    this.rxDurationDays.set(null);
+    this.rxMedInstructions.set('');
+    this.rxStudyName.set('');
+    this.rxStudySpecification.set('');
+    this.rxDiagnosis.set('');
+    this.rxGeneralInstructions.set('');
+    this.draftPrescriptions.set([]);
+    this.draftStudies.set([]);
+    this.rxErrorMessage.set(null);
+    this.rxSuccessMessage.set(null);
+  }
+
+  private commitPendingRxInputs(): void {
+    if (this.rxMedicationName().trim()) {
+      this.addMedicationToDraft();
+    }
+    if (this.rxStudyName().trim()) {
+      this.addStudyToDraft();
+    }
+  }
+
+  saveCurrentRxToHistory(): SavedPrescriptionRecord | null {
+    this.commitPendingRxInputs();
+
+    const meds = this.draftPrescriptions();
+    const studies = this.draftStudies();
+
+    if (meds.length === 0 && studies.length === 0) {
+      this.rxErrorMessage.set('Agregá al menos un medicamento o estudio médico (ej. Tomografía) para guardar o imprimir.');
+      return null;
+    }
+
+    const docType: 'PRESCRIPTION' | 'STUDY_ORDERS' =
+      this.rxFormMode() === 'STUDY' && studies.length > 0
+        ? 'STUDY_ORDERS'
+        : meds.length > 0
+          ? 'PRESCRIPTION'
+          : 'STUDY_ORDERS';
+
+    const newRecord: SavedPrescriptionRecord = {
+      id: Date.now(),
+      createdAt: new Date().toISOString(),
+      type: docType,
+      diagnosisDescription: this.rxDiagnosis().trim(),
+      generalInstructions: this.rxGeneralInstructions().trim(),
+      prescriptions: [...meds],
+      diagnosticOrders: [...studies],
+    };
+
+    const updated = [newRecord, ...this.savedPrescriptionRecords()];
+    this.savedPrescriptionRecords.set(updated);
+    this.persistSavedPrescriptions(updated);
+    this.rxErrorMessage.set(null);
+    this.rxSuccessMessage.set('Receta / orden registrada en el historial del paciente.');
+    return newRecord;
+  }
+
+  reprintSavedRecord(record: SavedPrescriptionRecord): void {
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      const latestEnc = this.encounters()[0];
       window.dispatchEvent(
         new CustomEvent('open-prescription-print-modal', {
           detail: {
-            id: latestEnc?.id,
-            type: 'PRESCRIPTION',
-            encounterDate: latestEnc?.encounterDate || new Date().toISOString(),
-            primaryDiagnosisCode: latestEnc?.primaryDiagnosisCode,
-            primaryDiagnosisDescription: latestEnc?.primaryDiagnosisDescription,
-            prescriptions: latestEnc?.prescriptions || [],
-            diagnosticOrders: [],
-            followUpInstructions: latestEnc?.followUpInstructions,
+            id: record.id,
+            type: record.type,
+            encounterDate: record.createdAt,
+            primaryDiagnosisCode: null,
+            primaryDiagnosisDescription: record.diagnosisDescription,
+            prescriptions: record.prescriptions,
+            diagnosticOrders: record.diagnosticOrders,
+            followUpInstructions: record.generalInstructions,
           },
         })
       );
     }
+  }
+
+  deleteSavedRecord(recordId: number): void {
+    const updated = this.savedPrescriptionRecords().filter((r) => r.id !== recordId);
+    this.savedPrescriptionRecords.set(updated);
+    this.persistSavedPrescriptions(updated);
+  }
+
+  formatRxDate(isoString: string): string {
+    try {
+      const d = new Date(isoString);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      }
+    } catch {}
+    return isoString;
+  }
+
+  printRecord(forcedType?: 'PRESCRIPTION' | 'STUDY_ORDERS'): void {
+    this.isMoreMenuOpen.set(false);
+    if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined') {
+      return;
+    }
+
+    this.commitPendingRxInputs();
+    const currentMeds = this.draftPrescriptions();
+    const currentStudies = this.draftStudies();
+
+    if (currentMeds.length > 0 || currentStudies.length > 0) {
+      const saved = this.saveCurrentRxToHistory();
+      const docType: 'PRESCRIPTION' | 'STUDY_ORDERS' =
+        forcedType ||
+        saved?.type ||
+        (this.rxFormMode() === 'STUDY' && currentStudies.length > 0 ? 'STUDY_ORDERS' : 'PRESCRIPTION');
+
+      window.dispatchEvent(
+        new CustomEvent('open-prescription-print-modal', {
+          detail: {
+            id: saved?.id || Date.now(),
+            type: docType,
+            encounterDate: new Date().toISOString(),
+            primaryDiagnosisCode: null,
+            primaryDiagnosisDescription: this.rxDiagnosis().trim() || undefined,
+            prescriptions: currentMeds,
+            diagnosticOrders: currentStudies,
+            followUpInstructions: this.rxGeneralInstructions().trim() || undefined,
+          },
+        })
+      );
+      return;
+    }
+
+    const latestSaved = this.savedPrescriptionRecords()[0];
+    if (latestSaved) {
+      this.reprintSavedRecord(latestSaved);
+      return;
+    }
+
+    const latestEnc = this.encounters()[0];
+    const fallbackMeds: PrescriptionItem[] =
+      latestEnc?.prescriptions && latestEnc.prescriptions.length > 0
+        ? latestEnc.prescriptions
+        : this.habitualMedication().map((med) => ({
+            medicationName: med,
+            dosage: 'Según indicación habitual',
+            frequency: 'Cada 24 horas',
+            administrationRoute: 'Vía Oral',
+          }));
+
+    window.dispatchEvent(
+      new CustomEvent('open-prescription-print-modal', {
+        detail: {
+          id: latestEnc?.id || Date.now(),
+          type: forcedType || (this.rxFormMode() === 'STUDY' ? 'STUDY_ORDERS' : 'PRESCRIPTION'),
+          encounterDate: latestEnc?.encounterDate || new Date().toISOString(),
+          primaryDiagnosisCode: latestEnc?.primaryDiagnosisCode,
+          primaryDiagnosisDescription: this.rxDiagnosis().trim() || latestEnc?.primaryDiagnosisDescription,
+          prescriptions: fallbackMeds,
+          diagnosticOrders: [],
+          followUpInstructions: this.rxGeneralInstructions().trim() || latestEnc?.followUpInstructions,
+        },
+      })
+    );
   }
 
   onPrintPrescription(enc: ClinicalEncounterList): void {

@@ -34,7 +34,7 @@
       @if (saveSuccess()) {
         <div class="alert-banner alert-success" role="status">
           <ng-icon name="lucideCheckCircle2" class="w-4 h-4"></ng-icon>
-          <span>Mapeos de gráficos guardados exitosamente.</span>
+          <span>Configuración de gráficos guardada exitosamente.</span>
         </div>
       }
 
@@ -100,7 +100,7 @@
                     <div class="slot-mappings-panel">
                       <div class="slot-panel-heading">
                         <ng-icon name="lucideInfo" class="w-3.5 h-3.5 text-blue-500"></ng-icon>
-                        <span>Mapeo de slots requeridos con campos de tu formulario:</span>
+                        <span>Asociación de datos requeridos para este gráfico:</span>
                       </div>
 
                       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
@@ -120,7 +120,7 @@
                               [attr.data-testid]="'slot-select-' + chart.chartCode + '-' + slot.slot"
                             >
                               <option value="" [selected]="!getSelectedMapping(chart.chartCode, slot.slot)">
-                                -- Sin mapear --
+                                -- Seleccionar dato clínico --
                               </option>
                               @for (field of availableFieldsForSlot(slot); track field.key) {
                                 <option
@@ -160,7 +160,7 @@
                     }
                   </div>
 
-                  <!-- Previsualización interactiva con Chart.js -->
+                  <!-- Previsualización interactiva -->
                   @if (previewChartCode() === chart.chartCode) {
                     <div class="chart-preview-container mt-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
                       <div class="flex items-center justify-between mb-2">
@@ -168,8 +168,8 @@
                           <ng-icon name="lucideActivity" class="text-blue-600"></ng-icon>
                           Simulación de Curva Clínica (Datos de Ejemplo)
                         </span>
-                        <span class="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full font-semibold border border-blue-200">
-                          Interactivo Chart.js
+                        <span class="text-[11px] text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full font-semibold border border-blue-200">
+                          Visualización interactiva
                         </span>
                       </div>
                       <app-clinical-chart
@@ -205,7 +205,7 @@
             <span>Guardando...</span>
           } @else {
             <ng-icon name="lucideCheck" class="w-4 h-4"></ng-icon>
-            <span>Guardar Mapeos Analíticos</span>
+            <span>Guardar configuración de gráficos</span>
           }
         </button>
       </footer>

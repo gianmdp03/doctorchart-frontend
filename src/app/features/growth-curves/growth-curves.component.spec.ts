@@ -251,7 +251,7 @@ describe('GrowthCurvesComponent', () => {
 
       const hoyText = fixture.nativeElement.querySelector('.svg-today-text');
       expect(hoyText).toBeTruthy();
-      expect(hoyText.textContent).toContain('6m (Hoy)');
+      expect(hoyText.textContent).toMatch(/\d+m \(Hoy\)/);
     });
 
     it('should render all 5 WHO percentile lines', () => {

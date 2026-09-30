@@ -89,3 +89,11 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+@media print {
+  .app-layout-shell,
+  .app-splash-screen {
+    display: none !important;
+  }
+}
+
