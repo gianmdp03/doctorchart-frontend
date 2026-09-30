@@ -41,16 +41,38 @@ export class DoctorSpecialtyService {
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly activeSpecialty = signal<ClinicianSpecialtyMode | null>(null);
+  readonly customSpecialtyLabel = signal<string | null>(null);
 
   readonly isPediatricMode = computed(() => this.activeSpecialty() === 'PEDIATRICS');
   readonly isMultiSpecialty = computed(() => false);
 
-  readonly currentSpecialtyOption = computed(() => {
+  readonly currentSpecialtyOption = computed<SpecialtyModeOption>(() => {
     const current = this.activeSpecialty();
+    const customLabel = this.customSpecialtyLabel();
     if (!current) {
+      if (customLabel) {
+        return {
+          value: 'GENERAL_MEDICINE',
+          label: customLabel,
+          shortLabel: customLabel,
+          icon: 'activity',
+        };
+      }
       return DEFAULT_SPECIALTY_OPTION;
     }
-    return CLINICIAN_SPECIALTY_MODES.find((s) => s.value === current) || DEFAULT_SPECIALTY_OPTION;
+    const found = CLINICIAN_SPECIALTY_MODES.find((s) => s.value === current);
+    if (found) {
+      return customLabel ? { ...found, label: customLabel } : found;
+    }
+    if (customLabel) {
+      return {
+        value: current,
+        label: customLabel,
+        shortLabel: customLabel,
+        icon: 'activity',
+      };
+    }
+    return DEFAULT_SPECIALTY_OPTION;
   });
 
   readonly specialtyLabel = computed(() => this.currentSpecialtyOption().label);
@@ -58,7 +80,7 @@ export class DoctorSpecialtyService {
   readonly headerBrandTitle = computed(() => {
     const s = this.activeSpecialty();
     const opt = this.currentSpecialtyOption();
-    return s ? `DoctorChart • ${opt.shortLabel}` : 'DoctorChart';
+    return s || this.customSpecialtyLabel() ? `DoctorChart • ${opt.shortLabel}` : 'DoctorChart';
   });
 
   readonly headerBrandSubtitle = computed(() => {
@@ -77,12 +99,22 @@ export class DoctorSpecialtyService {
     }
   }
 
-  setSpecialty(specialty: ClinicianSpecialtyMode): void {
-    this.activeSpecialty.set(specialty);
+  setSpecialty(specialty: ClinicianSpecialtyMode | string, displayName?: string | null): void {
+    const normalized = String(specialty || '')
+      .trim()
+      .toUpperCase()
+      .replace(/-/g, '_')
+      .replace(/\s+/g, '_') as ClinicianSpecialtyMode;
+    const known = CLINICIAN_SPECIALTY_MODES.find((s) => s.value === normalized);
+    this.activeSpecialty.set(known ? known.value : normalized || 'GENERAL_MEDICINE');
+    if (displayName !== undefined) {
+      this.customSpecialtyLabel.set(displayName || null);
+    }
   }
 
   clearSpecialty(): void {
     this.activeSpecialty.set(null);
+    this.customSpecialtyLabel.set(null);
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       try {
         localStorage.removeItem('doctorchart_active_specialty');
@@ -92,3 +124,4 @@ export class DoctorSpecialtyService {
     }
   }
 }
+

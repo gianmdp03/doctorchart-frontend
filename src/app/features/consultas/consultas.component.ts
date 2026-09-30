@@ -1,11 +1,14 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideSearch, lucideStethoscope } from '@ng-icons/lucide';
+import { catchError, forkJoin, of, switchMap } from 'rxjs';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
+import { PatientService } from '../../core/services/patient.service';
+import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
 
 export interface ConsultationExplorerItem {
   id: number;
@@ -27,6 +30,7 @@ export interface ConsultationExplorerItem {
 })
 export class ConsultasComponent implements OnInit {
   private readonly clinicalEncounterService = inject(ClinicalEncounterService);
+  private readonly patientService = inject(PatientService, { optional: true });
   readonly activePatientService = inject(ActivePatientService);
   readonly specialtyService = inject(DoctorSpecialtyService);
   private readonly router = inject(Router);
@@ -44,7 +48,7 @@ export class ConsultasComponent implements OnInit {
         consultation.patientName.toLowerCase().includes(query) ||
         consultation.chiefComplaint.toLowerCase().includes(query) ||
         consultation.primaryDiagnosis.toLowerCase().includes(query) ||
-        consultation.primaryDiagnosisCode?.toLowerCase().includes(query),
+        consultation.primaryDiagnosisCode?.toLowerCase().includes(query)
     );
   });
 
@@ -52,27 +56,91 @@ export class ConsultasComponent implements OnInit {
     this.loadConsultations();
   }
 
+  @HostListener('window:encounter-created')
+  onEncounterCreated(): void {
+    this.loadConsultations();
+  }
+
   loadConsultations(): void {
     this.isLoading.set(true);
-    this.clinicalEncounterService.getAll(0, 100).subscribe({
-      next: (response) => {
-        this.consultations.set((response.content || []).map((encounter) => ({
-          id: encounter.id,
-          patientId: encounter.patientId,
-          patientName: encounter.patientFullName || 'Paciente sin nombre',
-          encounterDate: this.formatEncounterDate(encounter.encounterDate),
-          consultationType: this.getConsultationTypeLabel(encounter.consultationType),
-          chiefComplaint: encounter.chiefComplaint || '—',
-          primaryDiagnosis: encounter.primaryDiagnosisDescription || '—',
-          primaryDiagnosisCode: encounter.primaryDiagnosisCode,
-        })));
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.consultations.set([]);
-        this.isLoading.set(false);
-      },
-    });
+    const all$ = this.clinicalEncounterService.getAll(0, 100).pipe(catchError(() => of(null)));
+    const patients$ =
+      this.patientService && typeof this.clinicalEncounterService.getByPatient === 'function'
+        ? this.patientService.getPatients(0, 50, 'id,desc').pipe(catchError(() => of(null)))
+        : of(null);
+
+    forkJoin({ allPage: all$, patientsPage: patients$ })
+      .pipe(
+        switchMap(({ allPage, patientsPage }) => {
+          const baseList = allPage?.content ?? [];
+          const patientList = patientsPage?.content ?? [];
+          if (
+            typeof this.clinicalEncounterService.getByPatient !== 'function' ||
+            patientList.length === 0
+          ) {
+            return of({ baseList, perPatient: [] as ClinicalEncounterList[] });
+          }
+          const calls = patientList.slice(0, 20).map((p) =>
+            this.clinicalEncounterService.getByPatient(p.id).pipe(
+              catchError(() => of([] as ClinicalEncounterList[]))
+            )
+          );
+          return forkJoin(calls).pipe(
+            switchMap((lists) => {
+              const flattened: ClinicalEncounterList[] = [];
+              lists.forEach((list, idx) => {
+                const owner = patientList[idx];
+                for (const item of list || []) {
+                  flattened.push({
+                    ...item,
+                    patientId: item.patientId ?? owner.id,
+                    patientFullName: item.patientFullName || owner.fullName,
+                  });
+                }
+              });
+              return of({ baseList, perPatient: flattened });
+            })
+          );
+        })
+      )
+      .subscribe({
+        next: ({ baseList, perPatient }) => {
+          const map = new Map<number, ClinicalEncounterList>();
+          for (const item of [...baseList, ...perPatient]) {
+            if (!item || item.id == null) continue;
+            const prev = map.get(item.id);
+            map.set(item.id, {
+              ...prev,
+              ...item,
+              patientFullName: item.patientFullName || prev?.patientFullName || null,
+            });
+          }
+
+          const merged = Array.from(map.values()).sort((a, b) => {
+            const tA = new Date(a.encounterDate).getTime() || 0;
+            const tB = new Date(b.encounterDate).getTime() || 0;
+            return tB !== tA ? tB - tA : (b.id || 0) - (a.id || 0);
+          });
+
+          this.consultations.set(
+            merged.map((encounter) => ({
+              id: encounter.id,
+              patientId: encounter.patientId,
+              patientName: encounter.patientFullName || 'Paciente sin nombre',
+              encounterDate: this.formatEncounterDate(encounter.encounterDate),
+              consultationType: this.getConsultationTypeLabel(encounter.consultationType),
+              chiefComplaint: encounter.chiefComplaint || '—',
+              primaryDiagnosis: encounter.primaryDiagnosisDescription || '—',
+              primaryDiagnosisCode: encounter.primaryDiagnosisCode,
+            }))
+          );
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.consultations.set([]);
+          this.isLoading.set(false);
+        },
+      });
   }
 
   openPatientRecord(patientId: number): void {
@@ -82,7 +150,7 @@ export class ConsultasComponent implements OnInit {
 
   openEncounterDetail(id: number): void {
     window.dispatchEvent(
-      new CustomEvent('open-encounter-detail-modal', { detail: { encounterId: id } }),
+      new CustomEvent('open-encounter-detail-modal', { detail: { encounterId: id } })
     );
   }
 
@@ -104,3 +172,4 @@ export class ConsultasComponent implements OnInit {
     return labels[type] || type;
   }
 }
+

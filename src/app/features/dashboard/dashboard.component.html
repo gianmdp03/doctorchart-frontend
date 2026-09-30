@@ -32,7 +32,7 @@
       <div class="kpi-value-row">
         @if (isLoadingMetrics()) { <span class="kpi-loading-skeleton"></span> } @else { <span class="kpi-number">{{ encountersMonthCount() }}</span> }
       </div>
-      <div class="kpi-footer"><span class="kpi-subtext">Atenciones SOAP registradas</span></div>
+      <div class="kpi-footer"><span class="kpi-subtext">Consultas registradas en el mes actual</span></div>
     </div>
 
     <div class="kpi-card" role="region" aria-label="Consultas de hoy">
@@ -41,9 +41,16 @@
         <div class="kpi-icon-wrap bg-purple-50 text-purple-600"><ng-icon name="lucideClock" /></div>
       </div>
       <div class="kpi-value-row">
-        @if (isLoadingMetrics()) { <span class="kpi-loading-skeleton"></span> } @else { <span class="kpi-number">{{ encountersTodayCount() }}</span> }
+        @if (isLoadingMetrics()) {
+          <span class="kpi-loading-skeleton"></span>
+        } @else {
+          <span class="kpi-number">{{ encountersTodayCount() }}</span>
+          @if (encountersTodayCount() > 0) {
+            <span class="kpi-badge-trend positive">Actividad del día</span>
+          }
+        }
       </div>
-      <div class="kpi-footer"><span class="kpi-subtext">Consultas registradas en la fecha actual</span></div>
+      <div class="kpi-footer"><span class="kpi-subtext">Consultas realizadas en la fecha actual</span></div>
     </div>
   </section>
 
@@ -53,9 +60,14 @@
         <div class="card-header-row">
           <div class="header-title-wrap">
             <h2 class="card-title"><ng-icon name="lucideClock" class="title-icon text-teal-600" /> Últimos pacientes atendidos</h2>
-            <p class="card-subtitle">Consultas clínicas registradas más recientemente</p>
+            <p class="card-subtitle">Historial de las consultas médicas más recientes con resumen clínico</p>
           </div>
-          
+          @if (recentEncounters().length > 0) {
+            <a routerLink="/consultas" class="secondary-outline-btn btn-xs">
+              <span>Ver todas</span>
+              <ng-icon name="lucideArrowRight" />
+            </a>
+          }
         </div>
 
         @if (isLoadingRecent()) {
@@ -63,22 +75,90 @@
         } @else if (recentEncounters().length > 0) {
           <div class="encounters-table-wrap">
             <table class="clinical-table">
-              <thead><tr><th>Paciente</th><th>Fecha y hora</th><th>Motivo de consulta</th><th>Diagnóstico principal</th><th>Acción</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Paciente</th>
+                  <th>Fecha y hora</th>
+                  <th>Tipo de atención</th>
+                  <th>Resumen clínico de la consulta</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
               <tbody>
                 @for (encounter of recentEncounters(); track encounter.id) {
                   <tr>
-                    <td><div class="patient-cell"><div class="patient-cell-avatar">{{ encounter.patientName.slice(0, 2).toUpperCase() }}</div><div class="patient-cell-info"><span class="patient-cell-name">{{ encounter.patientName }}</span></div></div></td>
-                    <td><span class="cell-datetime">{{ encounter.encounterDate }}</span></td>
-                    <td><span class="cell-complaint" [title]="encounter.chiefComplaint">{{ encounter.chiefComplaint }}</span></td>
-                    <td><div class="diag-cell">@if (encounter.diagnosisCode) { <span class="diag-code-badge">{{ encounter.diagnosisCode }}</span> }<span class="diag-desc">{{ encounter.diagnosis }}</span></div></td>
-                    <td><button type="button" class="btn-open-record" (click)="openPatient(encounter.patientId)">Abrir ficha</button></td>
+                    <td>
+                      <div class="patient-cell">
+                        <div class="patient-cell-avatar">{{ encounter.patientName.slice(0, 2).toUpperCase() }}</div>
+                        <div class="patient-cell-info">
+                          <span class="patient-cell-name">{{ encounter.patientName }}</span>
+                          <span class="patient-cell-meta">{{ encounter.patientMeta }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="datetime-cell-stack">
+                        <div class="datetime-top-row">
+                          @if (encounter.isToday) {
+                            <span class="today-pill-badge">Hoy</span>
+                          }
+                          <span class="cell-date-strong">{{ encounter.encounterDateOnly }}</span>
+                        </div>
+                        @if (encounter.encounterTimeOnly) {
+                          <span class="cell-time-sub">{{ encounter.encounterTimeOnly }}</span>
+                        }
+                      </div>
+                    </td>
+                    <td>
+                      <span
+                        class="consultation-type-pill"
+                        [class.type-emergency]="encounter.consultationTypeKey === 'EMERGENCY'"
+                        [class.type-first]="encounter.consultationTypeKey === 'FIRST_VISIT'"
+                      >
+                        {{ encounter.consultationTypeLabel }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (encounter.clinicalHighlights.length > 0) {
+                        <div class="highlights-stack">
+                          @for (item of encounter.clinicalHighlights; track $index) {
+                            <div class="highlight-row">
+                              <span class="highlight-label">{{ item.label }}:</span>
+                              <span class="highlight-val" [title]="item.value">{{ item.value }}</span>
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <span class="cell-complaint">{{ encounter.chiefComplaint }}</span>
+                      }
+                    </td>
+                    <td>
+                      <div class="row-actions-group">
+                        <button
+                          type="button"
+                          class="btn-view-encounter"
+                          (click)="openEncounterDetail(encounter.id, $event)"
+                          title="Ver detalle de la consulta"
+                        >
+                          <ng-icon name="lucideEye" />
+                          <span>Ver consulta</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-open-record"
+                          (click)="openPatient(encounter.patientId)"
+                        >
+                          Abrir ficha
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 }
               </tbody>
             </table>
           </div>
         } @else {
-          <div class="empty-state-wrap"><div class="empty-icon-circle"><ng-icon name="lucideStethoscope" /></div><h3 class="empty-title">Sin consultas registradas</h3><p class="empty-desc">Los pacientes aparecen aquí únicamente después de registrar una consulta.</p></div>
+          <div class="empty-state-wrap"><div class="empty-icon-circle"><ng-icon name="lucideStethoscope" /></div><h3 class="empty-title">Sin consultas registradas</h3><p class="empty-desc">Los pacientes atendidos aparecerán aquí con su fecha, tipo de consulta y resumen clínico apenas registres una atención.</p></div>
         }
       </div>
 

@@ -2,6 +2,7 @@ import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core
 import { isPlatformBrowser } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { WorkspaceService } from './workspace.service';
+import { DoctorSpecialtyService } from './doctor-specialty.service';
 import {
   DoctorChartConfig,
   FinishOnboardingRequest,
@@ -19,6 +20,7 @@ import {
 })
 export class WorkspaceStore {
   private readonly workspaceService = inject(WorkspaceService);
+  private readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
   private readonly platformId = inject(PLATFORM_ID);
 
   // State Signals
@@ -59,6 +61,12 @@ export class WorkspaceStore {
     return this.currentSetup()?.specialtyDisplayName ?? null;
   });
 
+  private syncSpecialtyState(setup: WorkspaceSetup | null): void {
+    if (setup?.specialtyCode) {
+      this.doctorSpecialtyService.setSpecialty(setup.specialtyCode, setup.specialtyDisplayName);
+    }
+  }
+
   /**
    * Evaluates if a given operational module is active in the doctor's workspace.
    */
@@ -88,6 +96,7 @@ export class WorkspaceStore {
     try {
       const setup = await firstValueFrom(this.workspaceService.getCurrentSetup());
       this.currentSetup.set(setup);
+      this.syncSpecialtyState(setup);
       return setup;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al cargar workspace';
@@ -103,6 +112,7 @@ export class WorkspaceStore {
    */
   setSetup(setup: WorkspaceSetup): void {
     this.currentSetup.set(setup);
+    this.syncSpecialtyState(setup);
   }
 
   /**
@@ -114,6 +124,7 @@ export class WorkspaceStore {
     try {
       const result = await firstValueFrom(this.workspaceService.finishOnboarding(payload));
       this.currentSetup.set(result);
+      this.syncSpecialtyState(result);
       return result;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al finalizar onboarding';

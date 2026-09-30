@@ -140,19 +140,32 @@ export class NewEncounterDialogComponent {
       }
     }
 
-    const currentSpec =
-      (this.specialtyService.activeSpecialty() as MedicalSpecialty) || 'GENERAL_MEDICINE';
-    const summary = this.getCompatibilitySummary(this.dynamicFormData());
+    const wsCode =
+      typeof this.workspaceStore.specialtyCode === 'function'
+        ? this.workspaceStore.specialtyCode()
+        : null;
+    const rawSpec =
+      wsCode ||
+      this.specialtyService.activeSpecialty() ||
+      'GENERAL_MEDICINE';
+    const currentSpec = rawSpec
+      .trim()
+      .toUpperCase()
+      .replace(/-/g, '_')
+      .replace(/\s+/g, '_') as MedicalSpecialty;
+
+    const { chiefComplaint, diagnosis } = this.extractClinicalSummary(
+      this.dynamicFormData(),
+      snapshot
+    );
 
     const payload: ClinicalEncounterRequest = {
       patientId: pid,
       encounterDate: new Date().toISOString(),
       specialty: currentSpec,
       consultationType: this.consultationType(),
-      // Legacy storage columns remain populated for database compatibility;
-      // the visible consultation is entirely driven by dynamicData.
-      chiefComplaint: summary,
-      primaryDiagnosisDescription: summary,
+      chiefComplaint,
+      primaryDiagnosisDescription: diagnosis,
       primaryDiagnosisCode: null,
       templateId: tmpl?.id || null,
       dynamicData: this.dynamicFormData(),
@@ -164,6 +177,9 @@ export class NewEncounterDialogComponent {
         this.isSubmitting.set(false);
         this.resetForm();
         this.encounterCreated.emit(created);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('encounter-created', { detail: created }));
+        }
         this.close();
       },
       error: (err) => {
@@ -185,11 +201,42 @@ export class NewEncounterDialogComponent {
     this.closeDialog.emit();
   }
 
-  private getCompatibilitySummary(values: Record<string, unknown>): string {
-    const firstValue = Object.values(values).find(
-      (value) => value !== null && value !== undefined && value !== '',
-    );
-    return firstValue === undefined ? 'Consulta registrada' : String(firstValue);
-  }
+  private extractClinicalSummary(
+    values: Record<string, unknown>,
+    labels: Record<string, string>
+  ): { chiefComplaint: string; diagnosis: string } {
+    const entries = Object.entries(values)
+      .filter(([, val]) => val !== null && val !== undefined && String(val).trim() !== '')
+      .map(([key, val]) => ({
+        key,
+        label: labels[key] || key,
+        text: typeof val === 'boolean' ? (val ? 'Sí' : 'No') : String(val).trim(),
+      }));
 
+    if (entries.length === 0) {
+      return { chiefComplaint: 'Consulta registrada', diagnosis: 'Evaluación clínica' };
+    }
+
+    const complaintEntry = entries.find((e) =>
+      /motivo|consulta|sintoma|síntoma|evolucion|evolución|razon|razón/i.test(`${e.key} ${e.label}`)
+    );
+    const diagnosisEntry = entries.find((e) =>
+      /diagnostico|diagnóstico|conclusion|conclusión|impresion|impresión|evaluacion|evaluación|hallazgo|indicacion|indicación|plan/i.test(
+        `${e.key} ${e.label}`
+      )
+    );
+
+    const first = complaintEntry ?? entries[0];
+    const second =
+      diagnosisEntry && diagnosisEntry.key !== first.key
+        ? diagnosisEntry
+        : entries.find((e) => e.key !== first.key);
+
+    const chiefComplaint = first.text;
+    const diagnosis = second ? second.text : chiefComplaint;
+
+    return { chiefComplaint, diagnosis };
+  }
 }
+
+

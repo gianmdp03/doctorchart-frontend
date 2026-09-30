@@ -178,4 +178,53 @@ describe('DashboardComponent', () => {
     expect(kpiSpy).toHaveBeenCalled();
     expect(dirSpy).toHaveBeenCalledWith(0, '');
   });
+
+  it('should aggregate per-patient consultations into recentEncounters and encountersTodayCount even when getDashboard returns 0', () => {
+    const nowIso = new Date().toISOString();
+    clinicalEncounterServiceMock.getDashboard.mockReturnValue(
+      of({
+        encountersThisMonth: 0,
+        encountersToday: 0,
+        recentEncounters: [],
+      })
+    );
+    clinicalEncounterServiceMock.getByPatient.mockImplementation((patientId: number) => {
+      if (patientId === 1) {
+        return of([
+          {
+            id: 501,
+            patientId: 1,
+            encounterDate: nowIso,
+            consultationType: 'FIRST_VISIT',
+            chiefComplaint: 'Control inicial',
+            primaryDiagnosisDescription: 'Paciente sano',
+            dynamicData: { motivoConsulta: 'Control inicial', peso: 12.4 },
+            snapshotFieldLabels: { motivoConsulta: 'Motivo Principal', peso: 'Peso (kg)' },
+          },
+          {
+            id: 502,
+            patientId: 1,
+            encounterDate: nowIso,
+            consultationType: 'FOLLOW_UP',
+            chiefComplaint: 'Seguimiento evolutivo',
+            primaryDiagnosisDescription: 'Evolución favorable',
+            dynamicData: { motivoConsulta: 'Seguimiento evolutivo' },
+            snapshotFieldLabels: { motivoConsulta: 'Motivo Principal' },
+          },
+        ]);
+      }
+      return of([]);
+    });
+
+    component.loadKpiData();
+
+    expect(component.encountersTodayCount()).toBe(2);
+    expect(component.encountersMonthCount()).toBe(2);
+    expect(component.recentEncounters().length).toBe(2);
+    expect(component.recentEncounters()[0].patientName).toBe('Mateo Rossi');
+    expect(component.recentEncounters()[0].isToday).toBe(true);
+    expect(component.recentEncounters()[0].patientMeta).toContain('DNI 50123456');
+    expect(component.recentEncounters()[0].clinicalHighlights.length).toBeGreaterThan(0);
+  });
 });
+
