@@ -1,24 +1,25 @@
-<div class="growth-chart-card">
-  <!-- Header: Title, Sex badge, and Age Range Selector -->
+<div class="growth-chart-card" [class.theme-boy]="sex() === 'MALE'" [class.theme-girl]="sex() === 'FEMALE'">
+  <!-- WHO Official Header Ribbon -->
   <header class="chart-header">
     <div class="chart-title-group">
       <div class="chart-icon-box">
         @if (metric() === 'WEIGHT') {
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 3h12l4 8-10 10L2 11l4-8z" />
           </svg>
         } @else if (metric() === 'HEIGHT') {
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2v20M8 5l4-3 4 3M8 19l4 3 4-3" />
           </svg>
         } @else {
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="9" />
             <path d="M12 7v5l3 3" />
           </svg>
         }
       </div>
       <div>
+        <div class="chart-who-banner-title">{{ officialOmsTitle() }}</div>
         <h3 class="chart-title">{{ metricConfig().title }}</h3>
         <p class="chart-subtitle">
           Patrones de Crecimiento Infantil OMS &bull;
@@ -86,17 +87,17 @@
         <line x1="12" y1="16" x2="12.01" y2="16" />
       </svg>
       <span>
-        No hay registros somatométricos de <strong>{{ metricConfig().shortTitle }}</strong> para este paciente en el rango de edad seleccionado. Las curvas de la OMS se muestran como referencia estándar y se trazarán automáticamente al guardar consultas.
+        No hay registros somatométricos de <strong>{{ metricConfig().shortTitle }}</strong> para este paciente en el rango de edad seleccionado. Las curvas oficiales de la OMS se encuentran activas y se trazarán automáticamente al guardar consultas.
       </span>
     </div>
   }
 
-  <!-- Chart Canvas Area -->
-  <div class="chart-canvas-wrapper">
+  <!-- Technical Millimeter Grid Canvas Area -->
+  <div class="chart-canvas-wrapper millimeter-bg">
     <canvas #chartCanvas></canvas>
   </div>
 
-  <!-- Legend & Medical Interpretations -->
+  <!-- Legend & Official WHO Annotations -->
   <footer class="chart-footer">
     <div class="legend-container">
       <div class="legend-item legend-patient">
@@ -105,19 +106,19 @@
       </div>
       <div class="legend-item">
         <span class="legend-symbol symbol-p50"></span>
-        <span class="legend-text"><strong>P50</strong> (Mediana OMS)</span>
+        <span class="legend-text"><strong>P50</strong> (Mediana OMS - Verde)</span>
       </div>
       <div class="legend-item">
         <span class="legend-symbol symbol-p85-p15"></span>
-        <span class="legend-text"><strong>P85 / P15</strong> (&plusmn;1 DE)</span>
+        <span class="legend-text"><strong>P85 / P15</strong> (&plusmn;1 DE - Naranja)</span>
       </div>
       <div class="legend-item">
         <span class="legend-symbol symbol-p97-p3"></span>
-        <span class="legend-text"><strong>P97 / P3</strong> (&plusmn;2 DE Rango Normal)</span>
+        <span class="legend-text"><strong>P97 / P3</strong> (&plusmn;2 DE - Rojo)</span>
       </div>
     </div>
     <div class="chart-disclaimer">
-      Fuente: <em>World Health Organization (WHO) Child Growth Standards</em>. Valores calibrados para población pediátrica.
+      <strong>Patrones de crecimiento infantil de la OMS.</strong> Referencia oficial: <em>World Health Organization (WHO) Child Growth Standards</em>.
     </div>
   </footer>
 </div>

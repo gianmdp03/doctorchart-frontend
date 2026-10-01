@@ -136,4 +136,29 @@ describe('GrowthChartComponent', () => {
 
     expect(() => fixture.destroy()).not.toThrow();
   });
+
+  it('should render official WHO banner title and apply sex theme classes', () => {
+    fixture.componentRef.setInput('metric', 'WEIGHT');
+    fixture.componentRef.setInput('sex', 'FEMALE');
+    fixture.componentRef.setInput('measurements', []);
+    fixture.detectChanges();
+
+    const bannerEl = fixture.nativeElement.querySelector('.chart-who-banner-title');
+    expect(bannerEl.textContent).toContain('Peso para la edad niñas');
+
+    const cardEl = fixture.nativeElement.querySelector('.growth-chart-card');
+    expect(cardEl.classList.contains('theme-girl')).toBe(true);
+
+    fixture.componentRef.setInput('metric', 'HEIGHT');
+    fixture.componentRef.setInput('sex', 'MALE');
+    fixture.detectChanges();
+
+    expect(bannerEl.textContent).toContain('Longitud / estatura para la edad niños');
+    expect(cardEl.classList.contains('theme-boy')).toBe(true);
+
+    fixture.componentRef.setInput('metric', 'HEAD_CIRCUMFERENCE');
+    fixture.detectChanges();
+
+    expect(bannerEl.textContent).toContain('Perímetro cefálico para la edad niños');
+  });
 });

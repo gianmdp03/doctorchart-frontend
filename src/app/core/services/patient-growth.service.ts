@@ -1,8 +1,12 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import {
   BiologicalSex,
   GrowthMetricType,
   PatientGrowthMeasurement,
+  BackendGrowthMeasurement,
 } from '../models/growth-chart.model';
 import { ClinicalEncounterList } from '../models/clinical-encounter.model';
 import { MedicalCheckupDetailDTO } from '../models/checkup.model';
@@ -19,6 +23,8 @@ export interface PatientGrowthSourceInfo {
   providedIn: 'root',
 })
 export class PatientGrowthService {
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiUrl}/patients`;
   /**
    * Normalizes gender strings into 'MALE' | 'FEMALE'.
    * Defaults to 'MALE' if unrecognized or missing.
@@ -157,13 +163,63 @@ export class PatientGrowthService {
   }
 
   /**
-   * Extracts chronological growth measurements for a given metric across clinical encounters and checkups.
+   * Fetches patient growth measurements historically persisted in the backend.
+   */
+  getPatientGrowthCurves(patientId: number): Observable<BackendGrowthMeasurement[]> {
+    return this.http.get<BackendGrowthMeasurement[]>(`${this.baseUrl}/${patientId}/curvas`);
+  }
+
+  /**
+   * Transforms raw backend measurements into PatientGrowthMeasurement items.
+   */
+  transformBackendMeasurements(
+    backendData: BackendGrowthMeasurement[],
+    metric: GrowthMetricType,
+    sex: BiologicalSex
+  ): PatientGrowthMeasurement[] {
+    const unit = OMS_METRIC_CONFIGS[metric].unit;
+    const measurements: PatientGrowthMeasurement[] = [];
+
+    for (const item of backendData) {
+      let value: number | null = null;
+      switch (metric) {
+        case 'WEIGHT':
+          value = item.peso ?? null;
+          break;
+        case 'HEIGHT':
+          value = item.talla ?? null;
+          break;
+        case 'HEAD_CIRCUMFERENCE':
+          value = item.perimetroEncefalico ?? null;
+          break;
+      }
+
+      if (value !== null && value > 0) {
+        measurements.push({
+          encounterId: item.consultaId,
+          date: item.fechaConsulta,
+          dateFormatted: this.formatDate(item.fechaConsulta),
+          ageMonths: item.edadMeses,
+          ageFormatted: item.edadLegible || `${item.edadMeses} meses`,
+          value,
+          unit,
+          approximatePercentile: this.estimatePercentile(item.edadMeses, value, sex, metric),
+        });
+      }
+    }
+
+    return measurements.sort((a, b) => a.ageMonths - b.ageMonths);
+  }
+
+  /**
+   * Extracts chronological growth measurements for a given metric across backend curves, encounters, and checkups.
    */
   extractPatientMeasurements(
     patient: PatientGrowthSourceInfo,
     encounters: ClinicalEncounterList[] = [],
     metric: GrowthMetricType,
-    checkups: MedicalCheckupDetailDTO[] = []
+    checkups: MedicalCheckupDetailDTO[] = [],
+    backendCurves: BackendGrowthMeasurement[] = []
   ): PatientGrowthMeasurement[] {
     if (!patient || !patient.birthDate) {
       return [];
@@ -188,45 +244,75 @@ export class PatientGrowthService {
       });
     }
 
-    // 2. Clinical encounters
-    for (const encounter of encounters) {
-      if (!encounter.encounterDate) continue;
-      const value = this.extractFromEncounter(encounter, metric);
-      if (value !== null && value > 0) {
-        const ageMonths = this.calculateExactAgeInMonths(birthDate, encounter.encounterDate);
-        measurements.push({
-          encounterId: encounter.id,
-          date: encounter.encounterDate,
-          dateFormatted: this.formatDate(encounter.encounterDate),
-          ageMonths,
-          ageFormatted: this.formatAge(birthDate, encounter.encounterDate),
-          value,
-          unit,
-          approximatePercentile: this.estimatePercentile(ageMonths, value, sex, metric),
-        });
-      }
-    }
-
-    // 3. Optional medical checkups
-    for (const checkup of checkups) {
-      if (!checkup.checkupDate) continue;
-      const value = this.extractFromCheckup(checkup, metric);
-      if (value !== null && value > 0) {
-        const ageMonths = this.calculateExactAgeInMonths(birthDate, checkup.checkupDate);
-        // Avoid duplicate measurement if an encounter was on the same date with same value
-        const alreadyExists = measurements.some(
-          (m) => m.date.startsWith(checkup.checkupDate) && Math.abs(m.value - value) < 0.01
-        );
-        if (!alreadyExists) {
+    // 2. If backend curves are provided, prefer persisted measurements from database
+    if (backendCurves && backendCurves.length > 0) {
+      for (const item of backendCurves) {
+        let value: number | null = null;
+        switch (metric) {
+          case 'WEIGHT':
+            value = item.peso ?? null;
+            break;
+          case 'HEIGHT':
+            value = item.talla ?? null;
+            break;
+          case 'HEAD_CIRCUMFERENCE':
+            value = item.perimetroEncefalico ?? null;
+            break;
+        }
+        if (value !== null && value > 0) {
           measurements.push({
-            date: checkup.checkupDate,
-            dateFormatted: this.formatDate(checkup.checkupDate),
+            encounterId: item.consultaId,
+            date: item.fechaConsulta,
+            dateFormatted: this.formatDate(item.fechaConsulta),
+            ageMonths: item.edadMeses,
+            ageFormatted: item.edadLegible || this.formatAge(birthDate, item.fechaConsulta),
+            value,
+            unit,
+            approximatePercentile: this.estimatePercentile(item.edadMeses, value, sex, metric),
+          });
+        }
+      }
+    } else {
+      // 3. Fallback: extract from clinical encounters
+      for (const encounter of encounters) {
+        if (!encounter.encounterDate) continue;
+        const value = this.extractFromEncounter(encounter, metric);
+        if (value !== null && value > 0) {
+          const ageMonths = this.calculateExactAgeInMonths(birthDate, encounter.encounterDate);
+          measurements.push({
+            encounterId: encounter.id,
+            date: encounter.encounterDate,
+            dateFormatted: this.formatDate(encounter.encounterDate),
             ageMonths,
-            ageFormatted: this.formatAge(birthDate, checkup.checkupDate),
+            ageFormatted: this.formatAge(birthDate, encounter.encounterDate),
             value,
             unit,
             approximatePercentile: this.estimatePercentile(ageMonths, value, sex, metric),
           });
+        }
+      }
+
+      // 4. Fallback: extract from optional medical checkups
+      for (const checkup of checkups) {
+        if (!checkup.checkupDate) continue;
+        const value = this.extractFromCheckup(checkup, metric);
+        if (value !== null && value > 0) {
+          const ageMonths = this.calculateExactAgeInMonths(birthDate, checkup.checkupDate);
+          // Avoid duplicate measurement if an encounter was on the same date with same value
+          const alreadyExists = measurements.some(
+            (m) => m.date.startsWith(checkup.checkupDate) && Math.abs(m.value - value) < 0.01
+          );
+          if (!alreadyExists) {
+            measurements.push({
+              date: checkup.checkupDate,
+              dateFormatted: this.formatDate(checkup.checkupDate),
+              ageMonths,
+              ageFormatted: this.formatAge(birthDate, checkup.checkupDate),
+              value,
+              unit,
+              approximatePercentile: this.estimatePercentile(ageMonths, value, sex, metric),
+            });
+          }
         }
       }
     }
@@ -268,11 +354,13 @@ export class PatientGrowthService {
     switch (metric) {
       case 'WEIGHT':
         return (
+          this.parseNumeric(encounter.peso) ??
           this.parseNumeric(vs?.weightKg) ??
           this.findDynamicValue(dyn, ['peso', 'weight', 'weightKg', 'pesoKg', 'peso_kg'])
         );
       case 'HEIGHT':
         return (
+          this.parseNumeric(encounter.talla) ??
           this.parseNumeric(vs?.heightCm) ??
           this.findDynamicValue(dyn, [
             'talla',
@@ -285,17 +373,21 @@ export class PatientGrowthService {
           ])
         );
       case 'HEAD_CIRCUMFERENCE':
-        return this.findDynamicValue(dyn, [
-          'perimetroCefalico',
-          'perimetro_cefalico',
-          'perimetroEncefalico',
-          'perimetro_encefalico',
-          'perimetroCraneal',
-          'perimetro_craneal',
-          'headCircumference',
-          'head_circumference',
-          'pc',
-        ]);
+        return (
+          this.parseNumeric(encounter.perimetroEncefalico) ??
+          this.parseNumeric(vs?.headCircumferenceCm) ??
+          this.findDynamicValue(dyn, [
+            'perimetroCefalico',
+            'perimetro_cefalico',
+            'perimetroEncefalico',
+            'perimetro_encefalico',
+            'perimetroCraneal',
+            'perimetro_craneal',
+            'headCircumference',
+            'head_circumference',
+            'pc',
+          ])
+        );
       default:
         return null;
     }

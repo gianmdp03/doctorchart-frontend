@@ -159,6 +159,8 @@ export class NewEncounterDialogComponent {
       snapshot
     );
 
+    const { peso, talla, perimetroEncefalico } = this.extractSomatometrics(this.dynamicFormData());
+
     const payload: ClinicalEncounterRequest = {
       patientId: pid,
       encounterDate: new Date().toISOString(),
@@ -167,6 +169,17 @@ export class NewEncounterDialogComponent {
       chiefComplaint,
       primaryDiagnosisDescription: diagnosis,
       primaryDiagnosisCode: null,
+      peso,
+      talla,
+      perimetroEncefalico,
+      vitalSigns:
+        peso !== null || talla !== null || perimetroEncefalico !== null
+          ? {
+              weightKg: peso,
+              heightCm: talla,
+              headCircumferenceCm: perimetroEncefalico,
+            }
+          : undefined,
       templateId: tmpl?.id || null,
       dynamicData: this.dynamicFormData(),
       snapshotFieldLabels: snapshot,
@@ -236,6 +249,65 @@ export class NewEncounterDialogComponent {
     const diagnosis = second ? second.text : chiefComplaint;
 
     return { chiefComplaint, diagnosis };
+  }
+
+  private extractSomatometrics(values: Record<string, unknown>): {
+    peso: number | null;
+    talla: number | null;
+    perimetroEncefalico: number | null;
+  } {
+    const parseNum = (val: unknown): number | null => {
+      if (val === null || val === undefined || val === '') return null;
+      if (typeof val === 'number') return isNaN(val) ? null : val;
+      if (typeof val === 'string') {
+        const clean = val.replace(/,/g, '.').replace(/[^\d.-]/g, '').trim();
+        const n = parseFloat(clean);
+        return isNaN(n) ? null : n;
+      }
+      return null;
+    };
+
+    const findVal = (keys: string[]): number | null => {
+      for (const k of keys) {
+        if (k in values) {
+          const v = parseNum(values[k]);
+          if (v !== null) return v;
+        }
+      }
+      const lowerKeys = Object.keys(values).reduce<Record<string, unknown>>((acc, k) => {
+        acc[k.toLowerCase()] = values[k];
+        return acc;
+      }, {});
+      for (const k of keys) {
+        const v = parseNum(lowerKeys[k.toLowerCase()]);
+        if (v !== null) return v;
+      }
+      return null;
+    };
+
+    return {
+      peso: findVal(['peso', 'weight', 'weightKg', 'pesoKg', 'peso_kg']),
+      talla: findVal([
+        'talla',
+        'height',
+        'heightCm',
+        'tallaCm',
+        'talla_cm',
+        'estatura',
+        'longitud',
+      ]),
+      perimetroEncefalico: findVal([
+        'perimetroEncefalico',
+        'perimetro_encefalico',
+        'perimetroCefalico',
+        'perimetro_cefalico',
+        'perimetroCraneal',
+        'perimetro_craneal',
+        'headCircumference',
+        'head_circumference',
+        'pc',
+      ]),
+    };
   }
 }
 

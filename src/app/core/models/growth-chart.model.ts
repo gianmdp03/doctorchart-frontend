@@ -21,6 +21,16 @@ export interface PatientGrowthMeasurement {
   approximatePercentile?: string; // e.g. "~P50", "P15-P50", ">P97", "<P3"
 }
 
+export interface BackendGrowthMeasurement {
+  consultaId: number;
+  fechaConsulta: string;
+  edadMeses: number;
+  edadLegible: string;
+  peso: number | null;
+  talla: number | null;
+  perimetroEncefalico: number | null;
+}
+
 export interface GrowthMetricConfig {
   type: GrowthMetricType;
   title: string;

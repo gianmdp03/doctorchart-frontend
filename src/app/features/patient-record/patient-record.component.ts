@@ -50,7 +50,11 @@ import { WorkspaceStore } from '../../core/services/workspace.store';
 import { FormTemplate } from '../../core/models/workspace.model';
 import { GrowthChartComponent } from './growth-chart/growth-chart.component';
 import { PatientGrowthService } from '../../core/services/patient-growth.service';
-import { BiologicalSex, GrowthMetricType } from '../../core/models/growth-chart.model';
+import {
+  BackendGrowthMeasurement,
+  BiologicalSex,
+  GrowthMetricType,
+} from '../../core/models/growth-chart.model';
 
 export type PatientRecordTab = 'resumen' | 'historia' | 'vacunas' | 'curvas' | 'recetas';
 export type PrescriptionOrderFormMode = 'MEDICATION' | 'STUDY';
@@ -150,6 +154,8 @@ export class PatientRecordComponent implements OnInit {
 
   // Growth Curves & Somatometry State
   readonly selectedGrowthMetric = signal<GrowthMetricType | 'ALL'>('WEIGHT');
+  readonly backendGrowthMeasurements = signal<BackendGrowthMeasurement[]>([]);
+  readonly isLoadingGrowthCurves = signal<boolean>(false);
 
   readonly patientSex = computed<BiologicalSex>(() =>
     this.growthService.normalizeGender(this.activePatientService.activePatient()?.gender)
@@ -160,7 +166,8 @@ export class PatientRecordComponent implements OnInit {
       this.activePatientService.activePatient() || {},
       this.encounters(),
       'WEIGHT',
-      this.checkups()
+      this.checkups(),
+      this.backendGrowthMeasurements()
     )
   );
 
@@ -169,7 +176,8 @@ export class PatientRecordComponent implements OnInit {
       this.activePatientService.activePatient() || {},
       this.encounters(),
       'HEIGHT',
-      this.checkups()
+      this.checkups(),
+      this.backendGrowthMeasurements()
     )
   );
 
@@ -178,7 +186,8 @@ export class PatientRecordComponent implements OnInit {
       this.activePatientService.activePatient() || {},
       this.encounters(),
       'HEAD_CIRCUMFERENCE',
-      this.checkups()
+      this.checkups(),
+      this.backendGrowthMeasurements()
     )
   );
 
@@ -322,10 +331,12 @@ export class PatientRecordComponent implements OnInit {
           this.loadCheckups(patient.id);
           this.loadEncounters(patient.id);
           this.loadSavedPrescriptions(patient.id);
+          this.loadGrowthCurves(patient.id);
         } else {
           this.checkups.set([]);
           this.encounters.set([]);
           this.savedPrescriptionRecords.set([]);
+          this.backendGrowthMeasurements.set([]);
         }
       });
     });
@@ -354,6 +365,7 @@ export class PatientRecordComponent implements OnInit {
       this.loadCheckups(patient.id);
       this.loadEncounters(patient.id);
       this.loadSavedPrescriptions(patient.id);
+      this.loadGrowthCurves(patient.id);
     }
   }
 
@@ -365,6 +377,7 @@ export class PatientRecordComponent implements OnInit {
         this.activePatientService.loadPatient(patient.id);
         this.loadCheckups(patient.id);
         this.loadEncounters(patient.id);
+        this.loadGrowthCurves(patient.id);
       }
     }
   }
@@ -376,6 +389,7 @@ export class PatientRecordComponent implements OnInit {
       if (patient?.id) {
         this.loadEncounters(patient.id);
         this.loadCheckups(patient.id);
+        this.loadGrowthCurves(patient.id);
       }
     }
   }
@@ -404,6 +418,20 @@ export class PatientRecordComponent implements OnInit {
       error: () => {
         this.encounters.set([]);
         this.isLoadingEncounters.set(false);
+      },
+    });
+  }
+
+  loadGrowthCurves(patientId: number): void {
+    this.isLoadingGrowthCurves.set(true);
+    this.growthService.getPatientGrowthCurves(patientId).subscribe({
+      next: (data) => {
+        this.backendGrowthMeasurements.set(data || []);
+        this.isLoadingGrowthCurves.set(false);
+      },
+      error: () => {
+        this.backendGrowthMeasurements.set([]);
+        this.isLoadingGrowthCurves.set(false);
       },
     });
   }

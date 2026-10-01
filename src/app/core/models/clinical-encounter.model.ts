@@ -16,6 +16,7 @@ export interface VitalSigns {
   oxygenSaturationPercent?: number | null;
   weightKg?: number | null;
   heightCm?: number | null;
+  headCircumferenceCm?: number | null;
   bodyMassIndex?: number | null;
 }
 
@@ -47,6 +48,9 @@ export interface ClinicalEncounterRequest {
   // O - Objective
   vitalSigns?: VitalSigns;
   physicalExamination?: string;
+  peso?: number | null;
+  talla?: number | null;
+  perimetroEncefalico?: number | null;
 
   // A - Assessment
   primaryDiagnosisCode?: string | null;
@@ -81,6 +85,9 @@ export interface ClinicalEncounterList {
   chiefComplaint?: string | null;
   primaryDiagnosisCode?: string | null;
   primaryDiagnosisDescription?: string | null;
+  peso?: number | null;
+  talla?: number | null;
+  perimetroEncefalico?: number | null;
   vitalSigns?: VitalSigns | null;
   prescriptions?: PrescriptionItem[] | null;
   historyOfPresentIllness?: string | null;

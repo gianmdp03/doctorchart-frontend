@@ -1,16 +1,29 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { PatientGrowthService } from './patient-growth.service';
 import { ClinicalEncounterList } from '../models/clinical-encounter.model';
 import { MedicalCheckupDetailDTO } from '../models/checkup.model';
+import { BackendGrowthMeasurement } from '../models/growth-chart.model';
 
 describe('PatientGrowthService', () => {
   let service: PatientGrowthService;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [PatientGrowthService],
+      providers: [
+        PatientGrowthService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
     service = TestBed.inject(PatientGrowthService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
   });
 
   describe('normalizeGender', () => {
@@ -220,6 +233,92 @@ describe('PatientGrowthService', () => {
       const weights = service.extractPatientMeasurements(mockPatient, mockEncounters, 'WEIGHT', checkups);
       expect(weights.length).toBe(4); // birth + 2 encounters + 1 new checkup (duplicate skipped)
       expect(weights[3].value).toBe(7.2);
+    });
+
+    it('should prefer backend curves when provided', () => {
+      const backendCurves: BackendGrowthMeasurement[] = [
+        {
+          consultaId: 101,
+          fechaConsulta: '2024-03-01',
+          edadMeses: 2.0,
+          edadLegible: '2 meses exactos',
+          peso: 5.6,
+          talla: 59.0,
+          perimetroEncefalico: 39.5,
+        },
+      ];
+
+      const weights = service.extractPatientMeasurements(
+        mockPatient,
+        mockEncounters,
+        'WEIGHT',
+        [],
+        backendCurves
+      );
+
+      expect(weights.length).toBe(2); // birth + backend measurement
+      expect(weights[0].ageMonths).toBe(0);
+      expect(weights[0].value).toBe(3.3);
+      expect(weights[1].encounterId).toBe(101);
+      expect(weights[1].value).toBe(5.6);
+      expect(weights[1].ageFormatted).toBe('2 meses exactos');
+      expect(weights[1].ageMonths).toBe(2.0);
+    });
+  });
+
+  describe('getPatientGrowthCurves', () => {
+    it('should perform GET request to /patients/{patientId}/curvas', () => {
+      const mockBackendData: BackendGrowthMeasurement[] = [
+        {
+          consultaId: 1,
+          fechaConsulta: '2024-02-15',
+          edadMeses: 1.5,
+          edadLegible: '1 mes y 15 días',
+          peso: 4.8,
+          talla: 56.0,
+          perimetroEncefalico: 38.0,
+        },
+      ];
+
+      service.getPatientGrowthCurves(42).subscribe((data) => {
+        expect(data).toEqual(mockBackendData);
+      });
+
+      const req = httpMock.expectOne((r) => r.url.endsWith('/patients/42/curvas'));
+      expect(req.request.method).toBe('GET');
+      req.flush(mockBackendData);
+    });
+  });
+
+  describe('transformBackendMeasurements', () => {
+    it('should transform backend measurements to PatientGrowthMeasurement format', () => {
+      const mockBackendData: BackendGrowthMeasurement[] = [
+        {
+          consultaId: 99,
+          fechaConsulta: '2024-03-01',
+          edadMeses: 2.0,
+          edadLegible: '2 meses',
+          peso: 5.5,
+          talla: 58.5,
+          perimetroEncefalico: 39.0,
+        },
+      ];
+
+      const weights = service.transformBackendMeasurements(mockBackendData, 'WEIGHT', 'MALE');
+      expect(weights.length).toBe(1);
+      expect(weights[0].value).toBe(5.5);
+      expect(weights[0].unit).toBe('kg');
+      expect(weights[0].encounterId).toBe(99);
+
+      const heights = service.transformBackendMeasurements(mockBackendData, 'HEIGHT', 'MALE');
+      expect(heights.length).toBe(1);
+      expect(heights[0].value).toBe(58.5);
+      expect(heights[0].unit).toBe('cm');
+
+      const hcs = service.transformBackendMeasurements(mockBackendData, 'HEAD_CIRCUMFERENCE', 'MALE');
+      expect(hcs.length).toBe(1);
+      expect(hcs[0].value).toBe(39.0);
+      expect(hcs[0].unit).toBe('cm');
     });
   });
 });
