@@ -56,12 +56,6 @@ export const ONBOARDING_WIZARD_STEPS: readonly OnboardingWizardStepDefinition[] 
     title: 'Formulario de consulta',
     description: 'Personalizá la información clínica que registrarás en cada consulta.',
   },
-  {
-    id: 'charts',
-    onboardingStep: 'CHARTS',
-    title: 'Gráficos',
-    description: 'Conectá los campos numéricos con los gráficos disponibles.',
-  },
 ];
 
 /**

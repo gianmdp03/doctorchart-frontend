@@ -3,8 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  ChartDefinition,
-  DoctorChartConfig,
   FinishOnboardingRequest,
   FormTemplate,
   QuickNotesUpdateRequest,
@@ -69,17 +67,5 @@ export class WorkspaceService {
 
   duplicateTemplate(id: number): Observable<FormTemplate> {
     return this.http.post<FormTemplate>(`${this.baseUrl}/templates/${id}/duplicate`, {});
-  }
-
-  getChartsCatalog(): Observable<ChartDefinition[]> {
-    return this.http.get<ChartDefinition[]>(`${this.baseUrl}/charts`);
-  }
-
-  getDoctorChartConfigs(): Observable<DoctorChartConfig[]> {
-    return this.http.get<DoctorChartConfig[]>(`${this.baseUrl}/workspace/charts`);
-  }
-
-  saveDoctorChartConfigs(configs: DoctorChartConfig[]): Observable<DoctorChartConfig[]> {
-    return this.http.put<DoctorChartConfig[]>(`${this.baseUrl}/workspace/charts`, configs);
   }
 }

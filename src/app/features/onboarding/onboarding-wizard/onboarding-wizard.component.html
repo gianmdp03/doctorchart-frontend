@@ -83,38 +83,14 @@
           [hideHeader]="true"
           (templateChange)="onEncounterTemplateChange($event)"
         />
-      } @else if (isLastStep()) {
-        <div class="chart-summary-card">
-          <div>
-            <h2>Gráficos configurados</h2>
-            <p>
-              @if (activeChartCount() > 0) {
-                {{ activeChartCount() }} gráfico(s) habilitado(s) para tus consultas.
-              } @else {
-                Todavía no seleccionaste gráficos. Podés finalizar sin habilitarlos.
-              }
-            </p>
-          </div>
-          <button type="button" class="primary-button" [disabled]="isSaving()" (click)="openChartMapper()">
-            Configurar gráficos
-          </button>
-        </div>
-        <app-chart-mapper
-          [isOpen]="isChartMapperOpen()"
-          [template]="encounterTemplate()"
-          [onboardingMode]="true"
-          [initialConfigs]="chartConfigs()"
-          (configsSaved)="onChartConfigsSelected($event)"
-          (closeDialog)="closeChartMapper()"
-        />
       } @else {
-      <div class="coming-soon-card">
-        <span class="placeholder-icon">✦</span>
-        <div>
-          <h2>Sección preparada</h2>
-          <p>En la próxima fase se incorporará aquí el editor específico de esta sección, manteniendo este avance guardado.</p>
+        <div class="coming-soon-card">
+          <span class="placeholder-icon">✦</span>
+          <div>
+            <h2>Sección preparada</h2>
+            <p>En la próxima fase se incorporará aquí el editor específico de esta sección, manteniendo este avance guardado.</p>
+          </div>
         </div>
-      </div>
       }
     </section>
 

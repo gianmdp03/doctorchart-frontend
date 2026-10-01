@@ -7,14 +7,13 @@ import {
 } from './onboarding-form-definitions';
 
 describe('onboarding form definitions', () => {
-  it('provides the six configured wizard steps in their intended order', () => {
+  it('provides the five configured wizard steps in their intended order', () => {
     expect(ONBOARDING_WIZARD_STEPS.map((step) => step.onboardingStep)).toEqual([
       'SPECIALTY',
       'PATIENT_PERSONAL_DATA',
       'PATIENT_FAMILY_HISTORY',
       'PATIENT_GUARDIANS',
       'ENCOUNTER_FORM',
-      'CHARTS',
     ]);
   });
 

@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PatientRecordComponent } from './patient-record.component';
 import { ActivePatientService } from '../../core/services/active-patient.service';

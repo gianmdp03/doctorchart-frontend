@@ -14,12 +14,10 @@ import {
   PATIENT_FORM_SECTIONS,
 } from '../../../core/config/onboarding-form-definitions';
 import { FormTemplate, FormTemplateSchema } from '../../../core/models/workspace.model';
-import { ChartMapperComponent } from '../../chart-mapper/chart-mapper.component';
-import { DoctorChartConfig } from '../../../core/models/workspace.model';
 
 @Component({
   selector: 'app-onboarding-wizard',
-  imports: [CommonModule, FormFieldEditorComponent, ChartMapperComponent],
+  imports: [CommonModule, FormFieldEditorComponent],
   templateUrl: './onboarding-wizard.component.html',
   styleUrl: './onboarding-wizard.component.css',
 })
@@ -35,8 +33,6 @@ export class OnboardingWizardComponent implements OnInit {
   readonly successMessage = signal<string | null>(null);
   readonly patientTemplate = signal<FormTemplate | null>(null);
   readonly encounterTemplate = signal<FormTemplate | null>(null);
-  readonly chartConfigs = signal<DoctorChartConfig[]>([]);
-  readonly isChartMapperOpen = signal(false);
 
   readonly isEditMode = computed(() => this.workspaceStore.isOnboardingCompleted());
 
@@ -44,7 +40,6 @@ export class OnboardingWizardComponent implements OnInit {
   readonly activeStep = computed<OnboardingWizardStepDefinition>(() => this.steps[this.activeStepIndex()]);
   readonly isLastStep = computed(() => this.activeStepIndex() === this.steps.length - 1);
   readonly isFirstStep = computed(() => this.isEditMode() ? this.activeStepIndex() <= 1 : this.activeStepIndex() === 0);
-  readonly activeChartCount = computed(() => this.chartConfigs().filter((config) => config.isActive).length);
   readonly isPatientFormStep = computed(() =>
     ['PATIENT_PERSONAL_DATA', 'PATIENT_FAMILY_HISTORY', 'PATIENT_GUARDIANS'].includes(this.activeStep().onboardingStep)
   );
@@ -79,11 +74,6 @@ export class OnboardingWizardComponent implements OnInit {
       setup.specialtyDisplayName,
       setup.onboardingDraft,
     ));
-
-    const savedCharts = setup.chartConfigs && setup.chartConfigs.length > 0 ? setup.chartConfigs : [];
-    const draftCharts = this.readChartConfigs(setup.onboardingDraft);
-    this.chartConfigs.set(draftCharts.length > 0 ? draftCharts : savedCharts);
-    this.isChartMapperOpen.set(setup.onboardingStep === 'CHARTS');
   }
 
   async goToStep(index: number): Promise<void> {
@@ -93,9 +83,6 @@ export class OnboardingWizardComponent implements OnInit {
     this.activeStepIndex.set(index);
     const targetStep = this.steps[index];
     await this.saveStep(targetStep.onboardingStep);
-    if (targetStep.onboardingStep === 'CHARTS' && !this.errorMessage()) {
-      this.isChartMapperOpen.set(true);
-    }
   }
 
   async goNext(): Promise<void> {
@@ -106,9 +93,6 @@ export class OnboardingWizardComponent implements OnInit {
 
     this.activeStepIndex.set(nextIndex);
     await this.saveStep(nextStep);
-    if (nextStep === 'CHARTS' && !this.errorMessage()) {
-      this.isChartMapperOpen.set(true);
-    }
   }
 
   async goPrevious(): Promise<void> {
@@ -170,8 +154,7 @@ export class OnboardingWizardComponent implements OnInit {
           setup.specialtyDisplayName,
           null,
         ));
-        this.chartConfigs.set([]);
-        this.successMessage.set('Plantillas y gráficos restablecidos a los valores de fábrica.');
+        this.successMessage.set('Plantillas restablecidas a los valores de fábrica.');
       }
     } catch {
       this.errorMessage.set('No pudimos restablecer los valores de fábrica. Intentá nuevamente.');
@@ -186,25 +169,6 @@ export class OnboardingWizardComponent implements OnInit {
 
   onEncounterTemplateChange(template: FormTemplate): void {
     this.encounterTemplate.set(template);
-  }
-
-  openChartMapper(): void {
-    this.isChartMapperOpen.set(true);
-  }
-
-  closeChartMapper(): void {
-    this.isChartMapperOpen.set(false);
-  }
-
-  async onChartConfigsSelected(configs: DoctorChartConfig[]): Promise<void> {
-    this.chartConfigs.set(configs);
-    this.isChartMapperOpen.set(false);
-    try {
-      await this.workspaceStore.saveChartConfigs(configs);
-    } catch {
-      // Si falla la persistencia directa en base de datos, continúa guardando el draft del wizard
-    }
-    await this.saveCurrentChartsStep();
   }
 
   async finishOnboarding(): Promise<void> {
@@ -223,7 +187,6 @@ export class OnboardingWizardComponent implements OnInit {
         modulesConfig: setup.modulesConfig,
         patientTemplateSchema: patientTemplate.schemaDefinition,
         customTemplateSchema: encounterTemplate.schemaDefinition,
-        chartConfigs: this.chartConfigs(),
       });
       await this.router.navigate(['/dashboard']);
     } catch {
@@ -249,7 +212,6 @@ export class OnboardingWizardComponent implements OnInit {
           modulesConfig: setup.modulesConfig,
           patientTemplateSchema: patientTemplate?.schemaDefinition,
           customTemplateSchema: encounterTemplate?.schemaDefinition,
-          chartConfigs: this.chartConfigs(),
         });
       } else {
         await this.workspaceStore.saveOnboardingDraft({
@@ -307,7 +269,6 @@ export class OnboardingWizardComponent implements OnInit {
       ...setupDraft,
       ...(patientTemplate ? { patientTemplateSchema: patientTemplate.schemaDefinition } : {}),
       ...(encounterTemplate ? { customTemplateSchema: encounterTemplate.schemaDefinition } : {}),
-      chartConfigs: this.chartConfigs(),
     };
   }
 
@@ -350,37 +311,5 @@ export class OnboardingWizardComponent implements OnInit {
       && value !== null
       && 'categories' in value
       && Array.isArray((value as FormTemplateSchema).categories);
-  }
-
-  private readChartConfigs(draft: Record<string, unknown> | null | undefined): DoctorChartConfig[] {
-    const chartConfigs = draft?.['chartConfigs'];
-    return Array.isArray(chartConfigs)
-      ? chartConfigs.filter((config): config is DoctorChartConfig =>
-        typeof config === 'object'
-        && config !== null
-        && 'chartCode' in config
-        && 'fieldMappings' in config
-        && 'isActive' in config
-      )
-      : [];
-  }
-
-  private async saveCurrentChartsStep(): Promise<void> {
-    const setup = this.workspaceStore.currentSetup();
-    if (!setup?.specialtyId) return;
-
-    this.isSaving.set(true);
-    this.errorMessage.set(null);
-    try {
-      await this.workspaceStore.saveOnboardingDraft({
-        specialtyId: setup.specialtyId,
-        onboardingStep: 'CHARTS',
-        onboardingDraft: this.createDraft(),
-      });
-    } catch {
-      this.errorMessage.set('No pudimos guardar los gráficos seleccionados. Intentá nuevamente.');
-    } finally {
-      this.isSaving.set(false);
-    }
   }
 }

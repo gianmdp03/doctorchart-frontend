@@ -4,7 +4,6 @@ import { firstValueFrom } from 'rxjs';
 import { WorkspaceService } from './workspace.service';
 import { DoctorSpecialtyService } from './doctor-specialty.service';
 import {
-  DoctorChartConfig,
   FinishOnboardingRequest,
   FormTemplate,
   ModuleConfig,
@@ -47,10 +46,6 @@ export class WorkspaceStore {
 
   readonly defaultPatientTemplate = computed<FormTemplate | null>(() => {
     return this.currentSetup()?.defaultPatientTemplate ?? null;
-  });
-
-  readonly chartConfigs = computed<DoctorChartConfig[]>(() => {
-    return this.currentSetup()?.chartConfigs ?? [];
   });
 
   readonly specialtyCode = computed<string | null>(() => {
@@ -194,26 +189,6 @@ export class WorkspaceStore {
       const msg = err instanceof Error ? err.message : 'Error al restablecer valores de fábrica';
       this.error.set(msg);
       throw err;
-    } finally {
-      this.isLoading.set(false);
-    }
-  }
-
-  /**
-   * Saves doctor chart slot mappings.
-   */
-  async saveChartConfigs(configs: DoctorChartConfig[]): Promise<DoctorChartConfig[]> {
-    this.isLoading.set(true);
-    try {
-      const saved = await firstValueFrom(this.workspaceService.saveDoctorChartConfigs(configs));
-      this.currentSetup.update((current) => {
-        if (!current) return null;
-        return {
-          ...current,
-          chartConfigs: saved,
-        };
-      });
-      return saved;
     } finally {
       this.isLoading.set(false);
     }

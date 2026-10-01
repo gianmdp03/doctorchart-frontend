@@ -46,7 +46,6 @@ import { ClinicalTimelineComponent } from './clinical-timeline/clinical-timeline
 import { NewEncounterDialogComponent } from '../new-encounter-dialog/new-encounter-dialog.component';
 import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
 import { PatientVaccinationsComponent } from './patient-vaccinations/patient-vaccinations.component';
-import { PatientChartsComponent } from './patient-charts/patient-charts.component';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { FormTemplate } from '../../core/models/workspace.model';
 
@@ -107,7 +106,6 @@ export interface ComplicationChip {
     NewEncounterDialogComponent,
     DynamicFormRendererComponent,
     PatientVaccinationsComponent,
-    PatientChartsComponent,
   ],
   providers: [
     provideIcons({
@@ -199,20 +197,11 @@ export class PatientRecordComponent implements OnInit {
 
   readonly tabs = computed<RecordTabItem[]>(() => {
     const isPediatric = this.doctorSpecialtyService.isPediatricMode() || this.isChild();
-    if (isPediatric) {
-      return [
-        { id: 'resumen', label: '1. Datos del paciente' },
-        { id: 'historia', label: '2. Consultas', badge: this.encounters().length },
-        { id: 'vacunas', label: '3. Vacunas' },
-        { id: 'curvas', label: '4. Evolución y Curvas' },
-        { id: 'recetas', label: '5. Recetas y Estudios' },
-      ];
-    }
     return [
       { id: 'resumen', label: '1. Datos del paciente' },
       { id: 'historia', label: '2. Consultas', badge: this.encounters().length },
       { id: 'vacunas', label: '3. Vacunas' },
-      { id: 'curvas', label: '4. Evolución y Gráficos' },
+      { id: 'curvas', label: '4. Evolución y Curvas' },
       { id: 'recetas', label: '5. Recetas y Estudios' },
     ];
   });

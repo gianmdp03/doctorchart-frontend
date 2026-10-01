@@ -1,7 +1,8 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { WorkspaceStore } from './workspace.store';
 import { WorkspaceService } from './workspace.service';
-import { WorkspaceSetup, DoctorChartConfig } from '../models/workspace.model';
+import { WorkspaceSetup } from '../models/workspace.model';
 import { of } from 'rxjs';
 import { PLATFORM_ID } from '@angular/core';
 
@@ -10,7 +11,6 @@ describe('WorkspaceStore', () => {
   let workspaceServiceMock: {
     getCurrentSetup: ReturnType<typeof vi.fn>;
     updateWorkspace: ReturnType<typeof vi.fn>;
-    saveDoctorChartConfigs: ReturnType<typeof vi.fn>;
     resetToDefaults: ReturnType<typeof vi.fn>;
   };
 
@@ -31,20 +31,12 @@ describe('WorkspaceStore', () => {
       GROWTH_CHARTS: true,
       AI_ASSISTANT: false,
     },
-    chartConfigs: [
-      {
-        chartCode: 'WEIGHT_EVOLUTION',
-        isActive: true,
-        fieldMappings: { WEIGHT_SERIES: 'pesoKg' },
-      },
-    ],
   };
 
   beforeEach(() => {
     workspaceServiceMock = {
       getCurrentSetup: vi.fn().mockReturnValue(of(mockSetup)),
       updateWorkspace: vi.fn(),
-      saveDoctorChartConfigs: vi.fn(),
       resetToDefaults: vi.fn().mockReturnValue(of(mockSetup)),
     };
 
@@ -102,32 +94,12 @@ describe('WorkspaceStore', () => {
     expect(store.isColumnVisible('phone')).toBe(true);
   });
 
-  it('should save doctor chart configs and update state', async () => {
-    store.setSetup(mockSetup);
-
-    const newConfigs: DoctorChartConfig[] = [
-      {
-        chartCode: 'BLOOD_PRESSURE_EVOLUTION',
-        isActive: true,
-        fieldMappings: { BP_SYSTOLIC: 'pas', BP_DIASTOLIC: 'pad' },
-      },
-    ];
-    workspaceServiceMock.saveDoctorChartConfigs.mockReturnValue(of(newConfigs));
-
-    const saved = await store.saveChartConfigs(newConfigs);
-
-    expect(workspaceServiceMock.saveDoctorChartConfigs).toHaveBeenCalledWith(newConfigs);
-    expect(saved).toEqual(newConfigs);
-    expect(store.chartConfigs()).toEqual(newConfigs);
-  });
-
   it('should reset workspace to defaults and update current setup', async () => {
     store.setSetup(mockSetup);
     const resetSetup: WorkspaceSetup = {
       ...mockSetup,
       defaultPatientTemplate: null,
       defaultEncounterTemplate: null,
-      chartConfigs: [],
       onboardingDraft: null,
     };
     workspaceServiceMock.resetToDefaults = vi.fn().mockReturnValue(of(resetSetup));
@@ -135,7 +107,6 @@ describe('WorkspaceStore', () => {
     const result = await store.resetToDefaults();
 
     expect(workspaceServiceMock.resetToDefaults).toHaveBeenCalled();
-    expect(result.chartConfigs).toEqual([]);
     expect(store.currentSetup()).toEqual(resetSetup);
   });
 });

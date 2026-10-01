@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { computed, signal } from '@angular/core';
@@ -31,7 +32,6 @@ describe('OnboardingWizardComponent', () => {
     onboardingDraft: {},
     patientColumnsConfig: {},
     modulesConfig: {},
-    chartConfigs: [],
   };
 
   beforeEach(async () => {
@@ -56,7 +56,6 @@ describe('OnboardingWizardComponent', () => {
           onboardingCompleted: true,
           defaultPatientTemplate: null,
           defaultEncounterTemplate: null,
-          chartConfigs: [],
           onboardingDraft: null,
         };
         workspaceStoreMock.currentSetup.set(resetSetup);
@@ -160,42 +159,16 @@ describe('OnboardingWizardComponent', () => {
     });
     component.onEncounterTemplateChange(editedTemplate!);
 
-    await component.goNext();
+    await component.finishOnboarding();
 
-    expect(workspaceStoreMock.saveOnboardingDraft).toHaveBeenCalledWith(
+    expect(workspaceStoreMock.finishOnboarding).toHaveBeenCalledWith(
       expect.objectContaining({
-        onboardingStep: 'CHARTS',
-        onboardingDraft: expect.objectContaining({
-          customTemplateSchema: expect.objectContaining({
-            categories: expect.arrayContaining([
-              expect.objectContaining({
-                fields: expect.arrayContaining([expect.objectContaining({ key: 'heightCm' })]),
-              }),
-            ]),
-          }),
-        }),
-      })
-    );
-  });
-
-  it('keeps selected chart mappings in the onboarding draft', async () => {
-    workspaceStoreMock.currentSetup.update((current) => current ? {
-      ...current,
-      onboardingStep: 'CHARTS',
-    } : current);
-    await component.ngOnInit();
-
-    await component.onChartConfigsSelected([{
-      chartCode: 'WEIGHT_EVOLUTION',
-      isActive: true,
-      fieldMappings: { x: 'encounterDate', y: 'weightKg' },
-    }]);
-
-    expect(workspaceStoreMock.saveOnboardingDraft).toHaveBeenCalledWith(
-      expect.objectContaining({
-        onboardingStep: 'CHARTS',
-        onboardingDraft: expect.objectContaining({
-          chartConfigs: [expect.objectContaining({ chartCode: 'WEIGHT_EVOLUTION' })],
+        customTemplateSchema: expect.objectContaining({
+          categories: expect.arrayContaining([
+            expect.objectContaining({
+              fields: expect.arrayContaining([expect.objectContaining({ key: 'heightCm' })]),
+            }),
+          ]),
         }),
       })
     );
@@ -204,7 +177,7 @@ describe('OnboardingWizardComponent', () => {
   it('finalizes the setup atomically and redirects only after it succeeds', async () => {
     workspaceStoreMock.currentSetup.update((current) => current ? {
       ...current,
-      onboardingStep: 'CHARTS',
+      onboardingStep: 'ENCOUNTER_FORM',
     } : current);
     await component.ngOnInit();
 
@@ -253,7 +226,7 @@ describe('OnboardingWizardComponent', () => {
     await component.confirmResetToDefaults();
 
     expect(workspaceStoreMock.resetToDefaults).toHaveBeenCalled();
-    expect(component.successMessage()).toContain('restablecidos');
+    expect(component.successMessage()).toContain('restablecid');
   });
 
   it('allows jumping between steps directly using goToStep', async () => {

@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of } from 'rxjs';
@@ -39,7 +40,13 @@ describe('NewPatientDialogComponent', () => {
       imports: [NewPatientDialogComponent],
       providers: [
         { provide: PatientService, useValue: patientServiceMock },
-        { provide: WorkspaceStore, useValue: { defaultPatientTemplate: signal(patientTemplate) } },
+        {
+          provide: WorkspaceStore,
+          useValue: {
+            defaultPatientTemplate: signal(patientTemplate),
+            loadSetup: vi.fn().mockResolvedValue(null),
+          },
+        },
       ],
     }).compileComponents();
 

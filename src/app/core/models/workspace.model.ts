@@ -96,7 +96,6 @@ export type OnboardingStep =
   | 'PATIENT_FAMILY_HISTORY'
   | 'PATIENT_GUARDIANS'
   | 'ENCOUNTER_FORM'
-  | 'CHARTS'
   | 'COMPLETED';
 
 export interface FormTemplate {
@@ -112,30 +111,6 @@ export interface FormTemplate {
   version?: number;
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface ChartSlotDefinition {
-  slot: string;
-  label: string;
-  type: 'DATE' | 'NUMBER' | 'TEXT';
-  suggestions?: string[];
-}
-
-export interface ChartDefinition {
-  id: number;
-  chartCode: string;
-  title: string;
-  chartType: 'LINE' | 'BAR' | 'PIE';
-  description?: string;
-  requiredSlots: ChartSlotDefinition[];
-  isSystem: boolean;
-}
-
-export interface DoctorChartConfig {
-  id?: number;
-  chartCode: string;
-  fieldMappings: Record<string, string>;
-  isActive: boolean;
 }
 
 export interface ModuleConfig {
@@ -161,7 +136,6 @@ export interface WorkspaceSetup {
   quickNotes?: string | null;
   defaultPatientTemplate?: FormTemplate | null;
   defaultEncounterTemplate?: FormTemplate | null;
-  chartConfigs: DoctorChartConfig[];
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -173,7 +147,6 @@ export interface FinishOnboardingRequest {
   defaultTemplateId?: number;
   patientTemplateSchema?: FormTemplateSchema;
   customTemplateSchema?: FormTemplateSchema;
-  chartConfigs?: DoctorChartConfig[];
 }
 
 export interface SaveOnboardingDraftRequest {
