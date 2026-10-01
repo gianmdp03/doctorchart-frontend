@@ -5,6 +5,7 @@ import { VaccinationRecord } from '../../../core/models/clinical-records.model';
 import { PatientService } from '../../../core/services/patient.service';
 import { VaccinationCalendarService } from '../../vaccination-calendar/calendario.service';
 import { AplicacionDosis, ColumnaEtaria, Vacuna } from '../../vaccination-calendar/calendario.types';
+import { DatePickerComponent } from '../../../shared/date-picker/date-picker.component';
 
 type ScheduleStatus = 'APLICADA' | 'PENDIENTE' | 'ACTUAL' | 'FUTURA';
 
@@ -20,7 +21,7 @@ interface PatientDose {
 
 @Component({
   selector: 'app-patient-vaccinations',
-  imports: [FormsModule],
+  imports: [FormsModule, DatePickerComponent],
   templateUrl: './patient-vaccinations.component.html',
   styleUrl: './patient-vaccinations.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,9 +61,24 @@ export class PatientVaccinationsComponent {
     }));
   });
 
-  readonly overdueDoses = computed(() => this.doses().filter((dose) => dose.status === 'PENDIENTE'));
-  readonly currentDoses = computed(() => this.doses().filter((dose) => dose.status === 'ACTUAL'));
-  readonly futureDoses = computed(() => this.doses().filter((dose) => dose.status === 'FUTURA'));
+  readonly overdueDoses = computed(() =>
+    this.doses()
+      .filter((dose) => dose.status === 'PENDIENTE')
+      .sort((a, b) => a.dueFrom - b.dueFrom || a.dueTo - b.dueTo)
+  );
+
+  readonly currentDoses = computed(() =>
+    this.doses()
+      .filter((dose) => dose.status === 'ACTUAL')
+      .sort((a, b) => a.dueFrom - b.dueFrom || a.dueTo - b.dueTo)
+  );
+
+  readonly futureDoses = computed(() =>
+    this.doses()
+      .filter((dose) => dose.status === 'FUTURA')
+      .sort((a, b) => a.dueFrom - b.dueFrom || a.dueTo - b.dueTo)
+  );
+
   readonly appliedDoses = computed(() => this.doses().filter((dose) => dose.status === 'APLICADA'));
 
   constructor() {

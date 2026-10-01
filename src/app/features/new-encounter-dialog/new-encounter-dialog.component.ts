@@ -116,7 +116,7 @@ export class NewEncounterDialogComponent {
 
     const tmpl = this.activeTemplate();
     if (!tmpl) {
-      this.errorMessage.set('No hay un formulario de consulta configurado para esta cuenta.');
+      this.errorMessage.set('No hay una plantilla de Historia Clínica configurada para esta cuenta.');
       return;
     }
 

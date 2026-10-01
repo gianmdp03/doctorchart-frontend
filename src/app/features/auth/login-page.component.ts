@@ -1,6 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -13,6 +14,7 @@ export class LoginPageComponent {
   private readonly fb = inject(FormBuilder);
   readonly authService = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly router = inject(Router);
 
   readonly isSubmitting = signal<boolean>(false);
   readonly mode = signal<'login' | 'register'>('login');
@@ -86,6 +88,9 @@ export class LoginPageComponent {
           new CustomEvent('auth-success', { detail: { user: response.data.user } })
         );
       }
+
+      const targetUrl = (!this.router.url || this.router.url === '/') ? '/dashboard' : this.router.url;
+      await this.router.navigateByUrl(targetUrl);
     } catch (err: unknown) {
       this.isSubmitting.set(false);
       const msg = err instanceof Error ? err.message : 'Error inesperado al iniciar sesión.';
@@ -139,6 +144,8 @@ export class LoginPageComponent {
 
       if (response.data.session) {
         this.successMessage.set('¡Cuenta creada e inicio de sesión exitoso!');
+        const targetUrl = (!this.router.url || this.router.url === '/') ? '/dashboard' : this.router.url;
+        await this.router.navigateByUrl(targetUrl);
       } else {
         this.successMessage.set('¡Cuenta creada con éxito! Por favor inicia sesión.');
         this.mode.set('login');

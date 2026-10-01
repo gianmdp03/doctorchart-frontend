@@ -19,12 +19,14 @@ import {
   lucideUserPlus,
   lucideX,
   lucideSliders,
+  lucideType,
 } from '@ng-icons/lucide';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { PatientService } from '../../core/services/patient.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { DoctorProfileService } from '../../core/services/doctor-profile.service';
+import { AccessibilityService } from '../../core/services/accessibility.service';
 import { PatientListDTO } from '../../core/models/patient.model';
 import { environment } from '../../../environments/environment';
 
@@ -42,6 +44,7 @@ import { environment } from '../../../environments/environment';
       lucideUserPlus,
       lucideX,
       lucideSliders,
+      lucideType,
     }),
   ],
   templateUrl: './header.component.html',
@@ -53,6 +56,7 @@ export class HeaderComponent {
   private readonly patientService = inject(PatientService);
   readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
   readonly doctorProfileService = inject(DoctorProfileService);
+  readonly accessibilityService = inject(AccessibilityService);
   private readonly router = inject(Router);
   private readonly elementRef = inject(ElementRef);
 

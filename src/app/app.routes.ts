@@ -11,6 +11,7 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    data: { preload: true },
     loadComponent: () =>
       import('./features/dashboard/dashboard.component').then(
         (m) => m.DashboardComponent
@@ -27,6 +28,7 @@ export const routes: Routes = [
   {
     path: 'pacientes',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    data: { preload: true },
     loadComponent: () =>
       import('./features/patient-list/patient-list.component').then(
         (m) => m.PatientListComponent
@@ -35,6 +37,7 @@ export const routes: Routes = [
   {
     path: 'pacientes/:id',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    data: { preload: true },
     loadComponent: () =>
       import('./features/patient-record/patient-record.component').then(
         (m) => m.PatientRecordComponent
@@ -43,6 +46,7 @@ export const routes: Routes = [
   {
     path: 'ficha',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    data: { preload: true },
     loadComponent: () =>
       import('./features/patient-record/patient-record.component').then(
         (m) => m.PatientRecordComponent
@@ -51,6 +55,7 @@ export const routes: Routes = [
   {
     path: 'ficha/:id',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    data: { preload: true },
     loadComponent: () =>
       import('./features/patient-record/patient-record.component').then(
         (m) => m.PatientRecordComponent
@@ -59,6 +64,7 @@ export const routes: Routes = [
   {
     path: 'consultas',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    data: { preload: true },
     loadComponent: () =>
       import('./features/consultas/consultas.component').then(
         (m) => m.ConsultasComponent

@@ -98,9 +98,9 @@ describe('DynamicFormRendererComponent', () => {
     const options = select.queryAll(By.css('option'));
     expect(options.length).toBe(4); // 1 placeholder + 3 options
 
-    const checkbox = fixture.debugElement.query(By.css('#alimentacionMaterna'));
-    expect(checkbox).toBeTruthy();
-    expect(checkbox.nativeElement.getAttribute('type')).toBe('checkbox');
+    const radioYes = fixture.debugElement.query(By.css('input[name="alimentacionMaterna"]'));
+    expect(radioYes).toBeTruthy();
+    expect(radioYes.nativeElement.getAttribute('type')).toBe('radio');
 
     const textarea = fixture.debugElement.query(By.css('#observacionesGenerales'));
     expect(textarea).toBeTruthy();
@@ -175,12 +175,20 @@ describe('DynamicFormRendererComponent', () => {
     expect(pcItem.nativeElement.textContent).toContain('42 cm');
   });
 
-  it('should handle readonly mode by disabling controls', () => {
+  it('should handle readonly mode by disabling controls and locking boolean radios', () => {
     fixture.componentRef.setInput('template', mockTemplate);
     fixture.componentRef.setInput('readonly', true);
     fixture.detectChanges();
 
     const pesoInput = fixture.debugElement.query(By.css('#pesoKg'));
     expect(pesoInput.nativeElement.disabled).toBe(true);
+
+    const radioYes = fixture.debugElement.query(By.css('input[name="alimentacionMaterna"]'));
+    expect(radioYes.nativeElement.disabled).toBe(true);
+
+    // Ensure setBooleanValue does not mutate form when readonly
+    component.form().get('alimentacionMaterna')?.setValue(true);
+    component.setBooleanValue('alimentacionMaterna', false);
+    expect(component.form().get('alimentacionMaterna')?.value).toBe(true);
   });
 });

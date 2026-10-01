@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map, Observable } from 'rxjs';
+import { map, Observable, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CreateSpecialtyRequest, SpecialtySummary } from '../models/specialty.model';
 
@@ -16,6 +16,7 @@ export class SpecialtyService {
    */
   getSpecialties(): Observable<SpecialtySummary[]> {
     return this.http.get<SpecialtySummary[]>(this.baseUrl).pipe(
+      timeout(6000),
       map((list) =>
         (list || []).map((s) => ({
           ...s,
@@ -37,6 +38,7 @@ export class SpecialtyService {
       code: request.code || this.toSlug(request.name),
     };
     return this.http.post<SpecialtySummary>(this.baseUrl, payload).pipe(
+      timeout(6000),
       map((s) => ({
         ...s,
         code: s.code || (s as any).specialty || '',

@@ -47,21 +47,19 @@
         <div class="date-inputs-range">
           <label class="date-input-label">
             <span>Desde</span>
-            <input
-              type="date"
+            <app-date-picker
               class="timeline-date-input"
               [value]="fromDate()"
-              (input)="onFromDateChange($event)"
+              (valueChange)="onFromDateValueChange($event)"
               aria-label="Filtrar consultas desde fecha"
             />
           </label>
           <label class="date-input-label">
             <span>Hasta</span>
-            <input
-              type="date"
+            <app-date-picker
               class="timeline-date-input"
               [value]="toDate()"
-              (input)="onToDateChange($event)"
+              (valueChange)="onToDateValueChange($event)"
               aria-label="Filtrar consultas hasta fecha"
             />
           </label>

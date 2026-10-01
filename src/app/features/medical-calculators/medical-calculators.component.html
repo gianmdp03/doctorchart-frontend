@@ -979,21 +979,19 @@
 
           <div class="filter-group">
             <label class="filter-label">Desde:</label>
-            <input
-              type="date"
+            <app-date-picker
               class="filter-date-input"
-              [ngModel]="historyDateFrom()"
-              (ngModelChange)="historyDateFrom.set($event); loadPatientHistory()"
+              [value]="historyDateFrom()"
+              (valueChange)="historyDateFrom.set($event); loadPatientHistory()"
             />
           </div>
 
           <div class="filter-group">
             <label class="filter-label">Hasta:</label>
-            <input
-              type="date"
+            <app-date-picker
               class="filter-date-input"
-              [ngModel]="historyDateTo()"
-              (ngModelChange)="historyDateTo.set($event); loadPatientHistory()"
+              [value]="historyDateTo()"
+              (valueChange)="historyDateTo.set($event); loadPatientHistory()"
             />
           </div>
 

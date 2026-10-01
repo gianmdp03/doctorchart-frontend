@@ -36,6 +36,9 @@ export class App {
       if (this.authService.isLoggedIn()) {
         this.doctorProfileService.loadProfile();
         this.workspaceStore.loadSetup();
+      } else {
+        this.doctorProfileService.clearProfile();
+        this.workspaceStore.clearSetup();
       }
     });
   }

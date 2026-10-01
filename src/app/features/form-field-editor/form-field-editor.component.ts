@@ -87,6 +87,12 @@ export class FormFieldEditorComponent {
   // Deletion modal state
   readonly deleteTarget = signal<FieldDeleteTarget | null>(null);
 
+  // Category management modal state
+  readonly isAddingCategory = signal<boolean>(false);
+  readonly newCategoryTitle = signal<string>('');
+  readonly newCategoryError = signal<string | null>(null);
+  readonly deleteCategoryTarget = signal<{ index: number; category: FormCategoryGroup } | null>(null);
+
   // Add field modal state
   readonly isAddingField = signal<boolean>(false);
   readonly newFieldType = signal<FormFieldType>('TEXT');
@@ -334,6 +340,92 @@ export class FormFieldEditorComponent {
       !tmpl.schemaDefinition.categories[categoryIndex].enabled;
 
     this.notifyTemplateUpdated(tmpl);
+  }
+
+  // Category Addition & Removal
+  openAddCategoryModal(): void {
+    this.newCategoryTitle.set('');
+    this.newCategoryError.set(null);
+    this.isAddingCategory.set(true);
+  }
+
+  closeAddCategoryModal(): void {
+    this.isAddingCategory.set(false);
+    this.newCategoryError.set(null);
+  }
+
+  onCategoryTitleInput(title: string): void {
+    this.newCategoryTitle.set(title);
+    if (this.newCategoryError()) {
+      this.newCategoryError.set(null);
+    }
+  }
+
+  submitAddCategory(): void {
+    const title = this.newCategoryTitle().trim();
+    if (!title) {
+      this.newCategoryError.set('Ingresá el nombre de la categoría.');
+      return;
+    }
+
+    const tmpl = this.workingTemplate();
+    if (!tmpl?.schemaDefinition) return;
+
+    if (!Array.isArray(tmpl.schemaDefinition.categories)) {
+      tmpl.schemaDefinition.categories = [];
+    }
+
+    const categories = tmpl.schemaDefinition.categories;
+    const exists = categories.some(
+      (c) => c.title.trim().toLowerCase() === title.toLowerCase()
+    );
+    if (exists) {
+      this.newCategoryError.set('Ya existe una categoría con ese nombre.');
+      return;
+    }
+
+    const slug = this.toSnakeUpper(title);
+    const categoryKey = `CUSTOM_${slug || 'CATEGORY'}_${Date.now()}`;
+
+    const newCategory: FormCategoryGroup = {
+      categoryKey,
+      title,
+      enabled: true,
+      fields: [],
+    };
+
+    categories.push(newCategory);
+    this.notifyTemplateUpdated(tmpl);
+    this.selectedCategoryIndex.set(categories.length - 1);
+    this.closeAddCategoryModal();
+  }
+
+  isCustomCategory(cat: FormCategoryGroup | null): boolean {
+    if (!cat) return false;
+    return typeof cat.categoryKey === 'string' && cat.categoryKey.startsWith('CUSTOM_');
+  }
+
+  requestDeleteCategory(index: number, category: FormCategoryGroup): void {
+    this.deleteCategoryTarget.set({ index, category });
+  }
+
+  cancelDeleteCategory(): void {
+    this.deleteCategoryTarget.set(null);
+  }
+
+  confirmDeleteCategory(): void {
+    const target = this.deleteCategoryTarget();
+    if (!target) return;
+
+    const tmpl = this.workingTemplate();
+    if (!tmpl?.schemaDefinition?.categories) return;
+
+    tmpl.schemaDefinition.categories.splice(target.index, 1);
+    this.notifyTemplateUpdated(tmpl);
+
+    const nextIndex = Math.max(0, Math.min(target.index, tmpl.schemaDefinition.categories.length - 1));
+    this.selectedCategoryIndex.set(nextIndex);
+    this.deleteCategoryTarget.set(null);
   }
 
   // Field Reordering

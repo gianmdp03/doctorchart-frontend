@@ -50,6 +50,19 @@
             </div>
           }
         </div>
+
+        @if (!readonly()) {
+          <div class="sidebar-footer">
+            <button
+              type="button"
+              class="btn-add-category"
+              (click)="openAddCategoryModal()"
+            >
+              <ng-icon name="lucidePlus" class="w-4 h-4"></ng-icon>
+              <span>Nueva Categoría</span>
+            </button>
+          </div>
+        }
       </aside>
       }
 
@@ -69,6 +82,17 @@
               >
                 {{ cat.enabled ? 'Activa en consulta' : 'Desactivada' }}
               </button>
+              }
+              @if (!readonly() && isCustomCategory(cat)) {
+                <button
+                  type="button"
+                  class="btn-delete-category"
+                  (click)="requestDeleteCategory(selectedCategoryIndex(), cat)"
+                  title="Eliminar esta categoría personalizada"
+                >
+                  <ng-icon name="lucideTrash2" class="w-3.5 h-3.5"></ng-icon>
+                  <span>Eliminar Categoría</span>
+                </button>
               }
             </div>
 
@@ -536,6 +560,86 @@
             (click)="submitAddField()"
           >
             Guardar y añadir campo
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Add Category Modal -->
+  @if (isAddingCategory()) {
+    <div class="modal-backdrop" (click)="closeAddCategoryModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="add-category-title">
+        <div class="modal-header flex items-center justify-between pb-3 border-b border-slate-100">
+          <h3 id="add-category-title" class="modal-title">Nueva Categoría Clínica</h3>
+          <button type="button" class="btn-close-modal" (click)="closeAddCategoryModal()" aria-label="Cerrar modal">
+            <ng-icon name="lucideX" class="w-5 h-5"></ng-icon>
+          </button>
+        </div>
+
+        <div class="modal-body mt-4">
+          <label for="newCategoryTitleInput" class="form-label font-semibold text-slate-700 text-sm block mb-1.5">Nombre de la categoría *</label>
+          <input
+            id="newCategoryTitleInput"
+            type="text"
+            class="form-input w-full"
+            placeholder="Ej: Evaluación Neurológica, Hábitos y Sueño..."
+            [ngModel]="newCategoryTitle()"
+            (ngModelChange)="onCategoryTitleInput($event)"
+            (keydown.enter)="submitAddCategory()"
+            autofocus
+          />
+          @if (newCategoryError()) {
+            <p class="text-xs text-rose-600 mt-1.5 font-medium">{{ newCategoryError() }}</p>
+          }
+          <p class="text-xs text-slate-500 mt-2">
+            Esta categoría agrupará campos clínicos específicos durante la consulta médica y la historia clínica.
+          </p>
+        </div>
+
+        <div class="modal-actions mt-6 flex justify-end gap-2">
+          <button type="button" class="btn-modal-cancel" (click)="closeAddCategoryModal()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-modal-confirm-add"
+            [disabled]="!newCategoryTitle().trim()"
+            (click)="submitAddCategory()"
+          >
+            Crear Categoría
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Category Modal -->
+  @if (deleteCategoryTarget(); as target) {
+    <div class="modal-backdrop" (click)="cancelDeleteCategory()">
+      <div class="modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="delete-category-title">
+        <div class="modal-icon-wrap warning">
+          <ng-icon name="lucideAlertTriangle" class="w-6 h-6 text-amber-600"></ng-icon>
+        </div>
+        <h3 id="delete-category-title" class="modal-title">¿Eliminar categoría clínica?</h3>
+        <p class="modal-body-text">
+          Estás a punto de eliminar la categoría <strong>{{ target.category.title }}</strong> de tu plantilla.
+        </p>
+
+        @if (target.category.fields && target.category.fields.length > 0) {
+          <div class="impact-alert-box">
+            <p class="impact-text">
+              ⚠️ Esta categoría contiene {{ target.category.fields.length }} campo(s) clínico(s) que también serán eliminados de la plantilla.
+            </p>
+          </div>
+        }
+
+        <div class="modal-actions mt-6 flex justify-end gap-2">
+          <button type="button" class="btn-modal-cancel" (click)="cancelDeleteCategory()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-modal-confirm-delete" (click)="confirmDeleteCategory()">
+            Sí, eliminar categoría
           </button>
         </div>
       </div>

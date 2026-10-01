@@ -49,14 +49,17 @@ import { PatientVaccinationsComponent } from './patient-vaccinations/patient-vac
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { FormTemplate } from '../../core/models/workspace.model';
 import { GrowthChartComponent } from './growth-chart/growth-chart.component';
+import { PatientStudiesComponent } from './patient-studies/patient-studies.component';
 import { PatientGrowthService } from '../../core/services/patient-growth.service';
+import { NewPatientDialogComponent } from '../new-patient-dialog/new-patient-dialog.component';
+import { PatientDetailDTO } from '../../core/models/patient.model';
 import {
   BackendGrowthMeasurement,
   BiologicalSex,
   GrowthMetricType,
 } from '../../core/models/growth-chart.model';
 
-export type PatientRecordTab = 'resumen' | 'historia' | 'vacunas' | 'curvas' | 'recetas';
+export type PatientRecordTab = 'resumen' | 'historia' | 'vacunas' | 'curvas' | 'recetas' | 'estudios';
 export type PrescriptionOrderFormMode = 'MEDICATION' | 'STUDY';
 
 export interface SavedPrescriptionRecord {
@@ -114,6 +117,8 @@ export interface ComplicationChip {
     DynamicFormRendererComponent,
     PatientVaccinationsComponent,
     GrowthChartComponent,
+    PatientStudiesComponent,
+    NewPatientDialogComponent,
   ],
   providers: [
     provideIcons({
@@ -201,6 +206,7 @@ export class PatientRecordComponent implements OnInit {
   readonly selectedTab = signal<PatientRecordTab>('resumen');
   readonly isMoreMenuOpen = signal<boolean>(false);
   readonly isNewEncounterModalOpen = signal<boolean>(false);
+  readonly isEditPatientModalOpen = signal<boolean>(false);
 
   readonly isChild = computed(() => {
     return this.activePatientService.ageInYears() < 16;
@@ -233,12 +239,11 @@ export class PatientRecordComponent implements OnInit {
     const patient = this.activePatientService.activePatient();
     if (!patient) return {};
     const nameParts = patient.fullName.trim().split(/\s+/);
-    return {
+    const values: Record<string, unknown> = {
       ...(patient.patientExtraData ?? {}),
       ...(patient.patientFormData ?? {}),
       firstName: patient.patientFormData?.['firstName'] ?? nameParts[0] ?? '',
       lastName: patient.patientFormData?.['lastName'] ?? nameParts.slice(1).join(' '),
-      fullName: patient.fullName,
       birthDate: patient.birthDate,
       nationalId: patient.nationalId ?? '',
       phone: patient.phone ?? '',
@@ -247,6 +252,8 @@ export class PatientRecordComponent implements OnInit {
       gender: patient.gender ?? '',
       bloodType: patient.bloodType ?? '',
     };
+    delete values['fullName'];
+    return values;
   });
 
   readonly tabs = computed<RecordTabItem[]>(() => {
@@ -260,7 +267,8 @@ export class PatientRecordComponent implements OnInit {
         label: '4. Evolución y Curvas',
         badge: this.totalMeasurementsCount() > 0 ? this.totalMeasurementsCount() : undefined,
       },
-      { id: 'recetas', label: '5. Recetas y Estudios' },
+      { id: 'recetas', label: '5. Recetas y Órdenes' },
+      { id: 'estudios', label: '6. Estudios realizados' },
     ];
   });
 
@@ -355,7 +363,7 @@ export class PatientRecordComponent implements OnInit {
 
     this.route.queryParamMap.subscribe((queryParams) => {
       const tabParam = queryParams.get('tab') as PatientRecordTab | null;
-      if (tabParam && ['resumen', 'historia', 'vacunas', 'curvas', 'recetas'].includes(tabParam)) {
+      if (tabParam && ['resumen', 'historia', 'vacunas', 'curvas', 'recetas', 'estudios'].includes(tabParam)) {
         this.selectedTab.set(tabParam);
       }
     });
@@ -454,10 +462,26 @@ export class PatientRecordComponent implements OnInit {
     this.router.navigate(['/pacientes']);
   }
 
-  openNewPatientModal(event?: Event): void {
+  openEditPatientModal(event?: Event): void {
     if (event) event.stopPropagation();
     this.isMoreMenuOpen.set(false);
-    this.router.navigate(['/pacientes']);
+    this.isEditPatientModalOpen.set(true);
+  }
+
+  closeEditPatientModal(): void {
+    this.isEditPatientModalOpen.set(false);
+  }
+
+  onPatientUpdated(updatedPatient: PatientDetailDTO): void {
+    this.isEditPatientModalOpen.set(false);
+    if (updatedPatient.id) {
+      this.activePatientService.setActivePatient(updatedPatient);
+      this.activePatientService.loadPatient(updatedPatient.id);
+    }
+  }
+
+  openNewPatientModal(event?: Event): void {
+    this.openEditPatientModal(event);
   }
 
   openNewCheckupModal(event?: Event): void {
@@ -869,13 +893,74 @@ export class PatientRecordComponent implements OnInit {
     return p?.address || '—';
   });
 
-  // Guardians
-  readonly guardian1Name = computed(() => this.activePatientService.activePatient()?.guardianInfo?.firstGuardianFullName || '—');
+  // Guardians & Parents
+  readonly fatherName = computed(() => {
+    const g = this.activePatientService.activePatient()?.guardianInfo;
+    const formVal = this.activePatientService.activePatient()?.patientFormData?.['fatherFullName'];
+    return g?.fatherFullName || (typeof formVal === 'string' ? formVal : null) || g?.firstGuardianFullName || '—';
+  });
+
+  readonly motherName = computed(() => {
+    const g = this.activePatientService.activePatient()?.guardianInfo;
+    const formVal = this.activePatientService.activePatient()?.patientFormData?.['motherFullName'];
+    return g?.motherFullName || (typeof formVal === 'string' ? formVal : null) || g?.secondGuardianFullName || '—';
+  });
+
+  readonly siblingsCount = computed(() => {
+    const g = this.activePatientService.activePatient()?.guardianInfo;
+    const formVal = this.activePatientService.activePatient()?.patientFormData?.['siblingsCount'];
+    if (g?.siblingsCount != null) return g.siblingsCount;
+    if (formVal != null && formVal !== '') return Number(formVal);
+    return null;
+  });
+
+  readonly siblingsCountDisplay = computed(() => {
+    const count = this.siblingsCount();
+    return count !== null ? String(count) : '0';
+  });
+
+  readonly guardian1Name = computed(() => this.fatherName() !== '—' ? this.fatherName() : this.activePatientService.activePatient()?.guardianInfo?.firstGuardianFullName || '—');
   readonly guardian1Phone = computed(() => this.activePatientService.activePatient()?.guardianInfo?.firstGuardianPhone || '—');
   readonly guardian1Dni = computed(() => this.activePatientService.activePatient()?.guardianInfo?.firstGuardianNationalId || '—');
-  readonly guardian2Name = computed(() => this.activePatientService.activePatient()?.guardianInfo?.secondGuardianFullName || '—');
+  readonly guardian2Name = computed(() => this.motherName() !== '—' ? this.motherName() : this.activePatientService.activePatient()?.guardianInfo?.secondGuardianFullName || '—');
   readonly guardian2Phone = computed(() => this.activePatientService.activePatient()?.guardianInfo?.secondGuardianPhone || '—');
   readonly guardian2Dni = computed(() => this.activePatientService.activePatient()?.guardianInfo?.secondGuardianNationalId || '—');
+
+  readonly primaryGuardian = computed(() => {
+    const g = this.activePatientService.activePatient()?.guardianInfo;
+    const formVal = this.activePatientService.activePatient()?.patientFormData?.['primaryGuardian'];
+    return g?.primaryGuardian || (typeof formVal === 'string' ? formVal : null) || null;
+  });
+
+  readonly primaryContactPhone = computed(() => {
+    const g = this.activePatientService.activePatient()?.guardianInfo;
+    const formVal = this.activePatientService.activePatient()?.patientFormData?.['primaryContactPhone'];
+    return g?.primaryContactPhone || (typeof formVal === 'string' ? formVal : null) || (this.guardian1Phone() !== '—' ? this.guardian1Phone() : null);
+  });
+
+  readonly hasSiblings = computed<boolean | null>(() => {
+    const g = this.activePatientService.activePatient()?.guardianInfo;
+    const formVal = this.activePatientService.activePatient()?.patientFormData?.['hasSiblings'];
+    if (g?.hasSiblings != null) return g.hasSiblings;
+    if (formVal === true || formVal === 'true') return true;
+    if (formVal === false || formVal === 'false') return false;
+    if (this.siblingsCount() !== null && (this.siblingsCount() ?? 0) > 0) return true;
+    return null;
+  });
+
+  readonly siblingOrder = computed(() => {
+    const g = this.activePatientService.activePatient()?.guardianInfo;
+    const formVal = this.activePatientService.activePatient()?.patientFormData?.['siblingOrder'];
+    if (g?.siblingOrder != null) return g.siblingOrder;
+    if (formVal != null && formVal !== '') return Number(formVal);
+    return null;
+  });
+
+  readonly livingArrangement = computed(() => {
+    const g = this.activePatientService.activePatient()?.guardianInfo;
+    const formVal = this.activePatientService.activePatient()?.patientFormData?.['livingArrangement'];
+    return g?.livingArrangement || (typeof formVal === 'string' ? formVal : null) || null;
+  });
 
   // Emergency Contact
   readonly emergencyContactInfo = computed(() => {
@@ -960,7 +1045,13 @@ export class PatientRecordComponent implements OnInit {
     return !!(
       (fh?.familyChronicDiseases && fh.familyChronicDiseases.length > 0) ||
       (fh?.familyAllergies && fh.familyAllergies.length > 0) ||
-      (fh?.geneticDiseases && fh.geneticDiseases.length > 0)
+      (fh?.geneticDiseases && fh.geneticDiseases.length > 0) ||
+      (fh?.paternalDiseases && fh.paternalDiseases.length > 0) ||
+      (fh?.maternalDiseases && fh.maternalDiseases.length > 0) ||
+      (fh?.siblingDiseases && fh.siblingDiseases.length > 0) ||
+      this.paternalDiseases().length > 0 ||
+      this.maternalDiseases().length > 0 ||
+      this.siblingDiseases().length > 0
     );
   });
 
@@ -1019,6 +1110,33 @@ export class PatientRecordComponent implements OnInit {
 
   readonly geneticDiseases = computed(() => {
     return this.activePatientService.activePatient()?.familyHistory?.geneticDiseases?.join(', ') || '';
+  });
+
+  readonly paternalDiseases = computed<string[]>(() => {
+    const fh = this.activePatientService.activePatient()?.familyHistory;
+    if (fh?.paternalDiseases && fh.paternalDiseases.length > 0) return fh.paternalDiseases;
+    const val = this.activePatientService.activePatient()?.patientFormData?.['paternalDiseases'];
+    if (Array.isArray(val)) return val.map(String).filter(Boolean);
+    if (typeof val === 'string' && val.trim()) return [val.trim()];
+    return [];
+  });
+
+  readonly maternalDiseases = computed<string[]>(() => {
+    const fh = this.activePatientService.activePatient()?.familyHistory;
+    if (fh?.maternalDiseases && fh.maternalDiseases.length > 0) return fh.maternalDiseases;
+    const val = this.activePatientService.activePatient()?.patientFormData?.['maternalDiseases'];
+    if (Array.isArray(val)) return val.map(String).filter(Boolean);
+    if (typeof val === 'string' && val.trim()) return [val.trim()];
+    return [];
+  });
+
+  readonly siblingDiseases = computed<string[]>(() => {
+    const fh = this.activePatientService.activePatient()?.familyHistory;
+    if (fh?.siblingDiseases && fh.siblingDiseases.length > 0) return fh.siblingDiseases;
+    const val = this.activePatientService.activePatient()?.patientFormData?.['siblingDiseases'];
+    if (Array.isArray(val)) return val.map(String).filter(Boolean);
+    if (typeof val === 'string' && val.trim()) return [val.trim()];
+    return [];
   });
 
   readonly feedingDietCustom = computed(() => {

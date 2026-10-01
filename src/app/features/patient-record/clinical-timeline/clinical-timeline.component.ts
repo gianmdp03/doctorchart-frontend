@@ -28,11 +28,12 @@ import {
   lucideAlertCircle,
 } from '@ng-icons/lucide';
 import { ClinicalEncounterList } from '../../../core/models/clinical-encounter.model';
+import { DatePickerComponent } from '../../../shared/date-picker/date-picker.component';
 
 @Component({
   selector: 'app-clinical-timeline',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon],
+  imports: [CommonModule, FormsModule, NgIcon, DatePickerComponent],
   providers: [
     provideIcons({
       lucideCalendar,
@@ -126,14 +127,12 @@ export class ClinicalTimelineComponent implements OnChanges {
     }
   }
 
-  onFromDateChange(event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
+  onFromDateValueChange(val: string): void {
     this.datePreset.set('CUSTOM');
     this.fromDate.set(val);
   }
 
-  onToDateChange(event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
+  onToDateValueChange(val: string): void {
     this.datePreset.set('CUSTOM');
     this.toDate.set(val);
   }

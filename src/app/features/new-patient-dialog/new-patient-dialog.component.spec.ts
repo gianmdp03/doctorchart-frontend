@@ -10,7 +10,10 @@ import { FormTemplate } from '../../core/models/workspace.model';
 describe('NewPatientDialogComponent', () => {
   let component: NewPatientDialogComponent;
   let fixture: ComponentFixture<NewPatientDialogComponent>;
-  let patientServiceMock: { createPatient: ReturnType<typeof vi.fn> };
+  let patientServiceMock: {
+    createPatient: ReturnType<typeof vi.fn>;
+    updatePatient: ReturnType<typeof vi.fn>;
+  };
 
   const patientTemplate: FormTemplate = {
     name: 'Formulario de paciente',
@@ -34,6 +37,7 @@ describe('NewPatientDialogComponent', () => {
   beforeEach(async () => {
     patientServiceMock = {
       createPatient: vi.fn().mockReturnValue(of({ id: 8, fullName: 'Ada Lovelace', birthDate: '1990-01-01' })),
+      updatePatient: vi.fn().mockReturnValue(of({ id: 8, fullName: 'Ada Lovelace Updated', birthDate: '1990-01-01' })),
     };
 
     await TestBed.configureTestingModule({
@@ -79,6 +83,34 @@ describe('NewPatientDialogComponent', () => {
       },
       patientTemplateSnapshot: patientTemplate.schemaDefinition,
     }));
+  });
+
+  it('updates an existing patient when patientToEdit is provided', () => {
+    fixture.componentRef.setInput('patientToEdit', {
+      id: 8,
+      fullName: 'Ada Lovelace',
+      birthDate: '1990-01-01',
+      nationalId: '12345678',
+    });
+    fixture.detectChanges();
+
+    expect(component.isEditMode()).toBe(true);
+
+    component.onValuesChange({
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      birthDate: '1990-01-01',
+      nationality: 'Argentina',
+    });
+    component.onFormValidityChange(true);
+
+    component.submit();
+
+    expect(patientServiceMock.updatePatient).toHaveBeenCalledWith(8, expect.objectContaining({
+      fullName: 'Ada Lovelace',
+      birthDate: '1990-01-01',
+    }));
+    expect(patientServiceMock.createPatient).not.toHaveBeenCalled();
   });
 
   it('requires the identifiers needed by the existing patient record model', () => {

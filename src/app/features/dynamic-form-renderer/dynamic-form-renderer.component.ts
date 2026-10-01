@@ -26,8 +26,13 @@ import {
 } from '../../core/models/workspace.model';
 import { MedicalCalculatorsService } from '../../core/services/medical-calculators.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
+import {
+  NormalizeDecimalDirective,
+  normalizeDecimal,
+} from '../../core/directives/normalize-decimal.directive';
 
 import { PatientDetailDTO } from '../../core/models/patient.model';
+import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 
 export interface OrphanedFieldItem {
   key: string;
@@ -44,7 +49,7 @@ export interface ComputedFormulaResult {
 
 @Component({
   selector: 'app-dynamic-form-renderer',
-  imports: [CommonModule, ReactiveFormsModule, NgIcon],
+  imports: [CommonModule, ReactiveFormsModule, NgIcon, NormalizeDecimalDirective, DatePickerComponent],
   providers: [
     provideIcons({
       lucideCalculator,
@@ -74,6 +79,7 @@ export class DynamicFormRendererComponent {
   readonly form = signal<FormGroup>(this.fb.group({}));
   readonly isHistoricalExpanded = signal<boolean>(true);
   readonly formulaResults = signal<Record<string, ComputedFormulaResult>>({});
+  readonly todayIso = new Date().toISOString().slice(0, 10);
 
   // Derived: enabled categories
   readonly enabledCategories = computed<FormCategoryGroup[]>(() => {
@@ -105,8 +111,15 @@ export class DynamicFormRendererComponent {
     const activeKeys = this.activeFieldKeys();
     const snapshot = this.historicalSnapshot() || {};
     const orphaned: OrphanedFieldItem[] = [];
+    const hasNameFields = activeKeys.has('firstName') || activeKeys.has('lastName');
 
     for (const [key, val] of Object.entries(vals)) {
+      if (key === 'fullName' && hasNameFields) {
+        continue;
+      }
+      if (key === 'id' || key === 'patientId') {
+        continue;
+      }
       if (!activeKeys.has(key) && val !== null && val !== undefined && val !== '') {
         orphaned.push({
           key,
@@ -144,14 +157,12 @@ export class DynamicFormRendererComponent {
       if (cat.enabled === false || !cat.fields) continue;
 
       for (const field of cat.fields) {
-        const val = initialValues?.[field.key] ?? (field.type === 'BOOLEAN' ? false : '');
+        const val = initialValues?.[field.key] !== undefined && initialValues?.[field.key] !== null
+          ? initialValues[field.key]
+          : (field.type === 'BOOLEAN' ? null : '');
         const validators = [];
         if (field.required && !isReadonly) {
-          if (field.type === 'BOOLEAN') {
-            validators.push(Validators.requiredTrue);
-          } else {
-            validators.push(Validators.required);
-          }
+          validators.push(Validators.required);
         }
 
         const control = new FormControl(
@@ -184,6 +195,32 @@ export class DynamicFormRendererComponent {
       sub.unsubscribe();
       statusSub.unsubscribe();
     });
+  }
+
+  setBooleanValue(key: string, val: boolean): void {
+    if (this.readonly()) return;
+    const ctrl = this.form().get(key);
+    if (ctrl) {
+      ctrl.setValue(val);
+      ctrl.markAsDirty();
+      ctrl.markAsTouched();
+    }
+  }
+
+  setCumplePautas(val: boolean): void {
+    this.setBooleanValue('cumplePautas', val);
+  }
+
+  isFieldVisible(fieldKey: string): boolean {
+    if (fieldKey === 'justificacionPautas') {
+      const cumple = this.form().get('cumplePautas');
+      return !cumple || cumple.value === false;
+    }
+    if (fieldKey === 'siblingsCount' || fieldKey === 'siblingOrder') {
+      const hasSiblings = this.form().get('hasSiblings');
+      return !hasSiblings || hasSiblings.value === true;
+    }
+    return true;
   }
 
   private evaluateAllFormulas(currentForm: FormGroup, tmpl: FormTemplate | null): void {
@@ -226,8 +263,8 @@ export class DynamicFormRendererComponent {
       for (const k of keys) {
         for (const [vKey, vVal] of Object.entries(values)) {
           if (vKey.toLowerCase() === k.toLowerCase()) {
-            const num = Number(vVal);
-            if (!isNaN(num) && num > 0) return num;
+            const num = normalizeDecimal(vVal);
+            if (num !== null && !isNaN(num) && num > 0) return num;
           }
         }
       }

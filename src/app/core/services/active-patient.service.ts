@@ -102,11 +102,52 @@ export class ActivePatientService {
   readonly primaryGuardian = computed(() => {
     const info = this.activePatient()?.guardianInfo;
     if (!info) return '—';
+    if (info.fatherFullName) {
+      return info.fatherFullName;
+    }
+    if (info.motherFullName) {
+      return info.motherFullName;
+    }
     if (info.firstGuardianFullName) {
       return info.firstGuardianFullName;
     }
     return '—';
   });
+
+  calculateAgeAtDate(targetDate: string | Date | null | undefined): string {
+    const rawBirth = this.activePatient()?.birthDate;
+    if (!rawBirth) return '—';
+    const birth = new Date(rawBirth + 'T00:00:00');
+    if (isNaN(birth.getTime())) return '—';
+
+    let target: Date;
+    if (!targetDate) {
+      target = new Date();
+    } else if (targetDate instanceof Date) {
+      target = targetDate;
+    } else {
+      const parsed = new Date(targetDate.includes('T') ? targetDate : targetDate + 'T00:00:00');
+      target = isNaN(parsed.getTime()) ? new Date() : parsed;
+    }
+
+    let months = (target.getFullYear() - birth.getFullYear()) * 12 + (target.getMonth() - birth.getMonth());
+    if (target.getDate() < birth.getDate()) {
+      months--;
+    }
+
+    if (months < 0) return 'Recién nacido';
+    if (months === 0) {
+      const diffTime = Math.abs(target.getTime() - birth.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return `${diffDays} días`;
+    }
+    if (months < 24) {
+      return `${months} meses`;
+    }
+    const years = Math.floor(months / 12);
+    const remMonths = months % 12;
+    return remMonths > 0 ? `${years} años ${remMonths}m` : `${years} años`;
+  }
 
   readonly latestMeasurements = computed(() => this.activePatient()?.latestMeasurements ?? null);
 

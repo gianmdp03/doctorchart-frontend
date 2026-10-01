@@ -528,3 +528,49 @@
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Accessibility Control */
+.accessibility-ctrl {
+  display: flex;
+  align-items: center;
+}
+
+.accessibility-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.accessibility-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.accessibility-icon {
+  font-size: 0.95rem;
+  color: #006874;
+}
+
+.accessibility-text {
+  font-weight: 700;
+  color: #006874;
+}
+
+.accessibility-badge {
+  font-size: 0.72rem;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+

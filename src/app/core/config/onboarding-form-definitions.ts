@@ -47,14 +47,14 @@ export const ONBOARDING_WIZARD_STEPS: readonly OnboardingWizardStepDefinition[] 
   {
     id: 'guardians',
     onboardingStep: 'PATIENT_GUARDIANS',
-    title: 'Datos del tutor/tutores',
-    description: 'Configurá los datos de las personas responsables del paciente.',
+    title: 'Datos familiares y tutores',
+    description: 'Configurá los datos de los padres, hermanos y responsables del paciente.',
   },
   {
     id: 'encounter-form',
     onboardingStep: 'ENCOUNTER_FORM',
-    title: 'Formulario de consulta',
-    description: 'Personalizá la información clínica que registrarás en cada consulta.',
+    title: 'Historia Clínica',
+    description: 'Personalizá la información clínica que registrarás en cada consulta e historia clínica.',
   },
 ];
 
@@ -92,13 +92,48 @@ export const PATIENT_FORM_SECTIONS: readonly PatientFormSectionDefinition[] = [
     onboardingStep: 'PATIENT_FAMILY_HISTORY',
     categoryKey: 'BACKGROUND_FAMILY',
     title: 'ANTECEDENTES FAMILIARES',
-    fields: [],
+    fields: [
+      { key: 'maternalDiseases', label: 'Enfermedades de la madre', type: 'TEXT' },
+      { key: 'paternalDiseases', label: 'Enfermedades del padre', type: 'TEXT' },
+      { key: 'siblingDiseases', label: 'Enfermedades de hermanos', type: 'TEXT' },
+    ],
   },
   {
     onboardingStep: 'PATIENT_GUARDIANS',
     categoryKey: 'PATIENT_GUARDIANS',
-    title: 'DATOS DEL TUTOR/TUTORES',
-    fields: [],
+    title: 'DATOS FAMILIARES Y TUTORES',
+    fields: [
+      {
+        key: 'primaryGuardian',
+        label: 'Quién es el tutor / responsable principal',
+        type: 'SELECT',
+        options: [
+          { value: 'Madre', label: 'Madre' },
+          { value: 'Padre', label: 'Padre' },
+          { value: 'Ambos', label: 'Ambos' },
+          { value: 'Abuelo/a', label: 'Abuelo/a' },
+          { value: 'Tutor Legal / Otro', label: 'Tutor Legal / Otro' },
+        ],
+      },
+      { key: 'motherFullName', label: 'Nombre de la madre', type: 'TEXT' },
+      { key: 'fatherFullName', label: 'Nombre del padre', type: 'TEXT' },
+      { key: 'primaryContactPhone', label: 'Teléfono de contacto principal', type: 'TEXT' },
+      { key: 'hasSiblings', label: '¿Tiene hermanos?', type: 'BOOLEAN' },
+      { key: 'siblingsCount', label: 'Cantidad de hermanos', type: 'NUMBER' },
+      { key: 'siblingOrder', label: 'Lugar que ocupa entre hermanos', type: 'NUMBER' },
+      {
+        key: 'livingArrangement',
+        label: 'Convivencia / Con quién vive',
+        type: 'SELECT',
+        options: [
+          { value: 'Ambos padres', label: 'Ambos padres' },
+          { value: 'Solo con la madre', label: 'Solo con la madre' },
+          { value: 'Solo con el padre', label: 'Solo con el padre' },
+          { value: 'Cuidado compartido', label: 'Cuidado compartido' },
+          { value: 'Otros familiares', label: 'Otros familiares' },
+        ],
+      },
+    ],
   },
 ];
 

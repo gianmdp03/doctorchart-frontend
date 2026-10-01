@@ -60,10 +60,11 @@ import {
 } from '../../core/services/medical-calculators.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
+import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 
 @Component({
   selector: 'app-medical-calculators',
-  imports: [CommonModule, FormsModule, NgIcon],
+  imports: [CommonModule, FormsModule, NgIcon, DatePickerComponent],
   providers: [
     provideIcons({
       lucideCalculator,

@@ -139,4 +139,61 @@ describe('FormFieldEditorComponent', () => {
     const added = component.selectedCategory()?.fields[2];
     expect(added?.key).toBe('presionArterial2');
   });
+
+  it('should add a new custom category and select it', () => {
+    fixture.componentRef.setInput('template', initialTemplate);
+    fixture.detectChanges();
+
+    component.openAddCategoryModal();
+    fixture.detectChanges();
+
+    expect(component.isAddingCategory()).toBe(true);
+
+    component.onCategoryTitleInput('Evaluación Neurológica');
+    component.submitAddCategory();
+    fixture.detectChanges();
+
+    expect(component.isAddingCategory()).toBe(false);
+    expect(component.categories().length).toBe(2);
+    expect(component.selectedCategory()?.title).toBe('Evaluación Neurológica');
+    expect(component.isCustomCategory(component.selectedCategory())).toBe(true);
+    expect(component.selectedCategory()?.categoryKey).toContain('CUSTOM_EVALUACION_NEUROLOGICA');
+  });
+
+  it('should reject duplicate category titles', () => {
+    fixture.componentRef.setInput('template', initialTemplate);
+    fixture.detectChanges();
+
+    component.openAddCategoryModal();
+    component.onCategoryTitleInput('Signos Vitales');
+    component.submitAddCategory();
+
+    expect(component.newCategoryError()).toBe('Ya existe una categoría con ese nombre.');
+    expect(component.categories().length).toBe(1);
+  });
+
+  it('should delete a custom category', () => {
+    fixture.componentRef.setInput('template', initialTemplate);
+    fixture.detectChanges();
+
+    // First add a custom category
+    component.openAddCategoryModal();
+    component.onCategoryTitleInput('Neurología');
+    component.submitAddCategory();
+    fixture.detectChanges();
+
+    expect(component.categories().length).toBe(2);
+    const customCat = component.selectedCategory()!;
+
+    // Request delete
+    component.requestDeleteCategory(1, customCat);
+    expect(component.deleteCategoryTarget()?.category.title).toBe('Neurología');
+
+    // Confirm delete
+    component.confirmDeleteCategory();
+    fixture.detectChanges();
+
+    expect(component.categories().length).toBe(1);
+    expect(component.selectedCategory()?.title).toBe('Signos Vitales');
+  });
 });

@@ -1,0 +1,215 @@
+<div class="studies-container">
+  <!-- Cabecera de la sección -->
+  <header class="studies-header">
+    <div>
+      <div class="flex items-center gap-2">
+        <ng-icon name="lucideFolderOpen" class="text-teal-600 text-xl" />
+        <h3 class="section-title">Estudios realizados</h3>
+        <span class="count-badge">{{ studies().length }}</span>
+      </div>
+      <p class="section-subtitle">
+        Archivos e imágenes diagnósticas adjuntos a la historia clínica del paciente (PDFs, TAC, RMN, Radiografías, Ecografías).
+      </p>
+    </div>
+  </header>
+
+  <!-- Mensajes de Estado -->
+  @if (errorMessage(); as error) {
+    <div class="alert-box alert-error" role="alert">
+      <ng-icon name="lucideAlertCircle" class="alert-icon" />
+      <span>{{ error }}</span>
+    </div>
+  }
+
+  @if (successMessage(); as success) {
+    <div class="alert-box alert-success" role="status">
+      <ng-icon name="lucideCheckCircle2" class="alert-icon" />
+      <span>{{ success }}</span>
+    </div>
+  }
+
+  <!-- Formulario de Subida de Estudio -->
+  <section class="upload-card" aria-label="Subir nuevo estudio médico">
+    <div class="upload-card-header">
+      <ng-icon name="lucideUpload" class="text-teal-600" />
+      <h4>Adjuntar nuevo estudio médico</h4>
+    </div>
+
+    <form (ngSubmit)="submitUpload()" class="upload-form">
+      <div class="upload-grid">
+        <!-- Selector de Archivo -->
+        <div class="form-group file-picker-group">
+          <label for="studyFileInput" class="form-label">
+            Archivo o Imagen <span class="required-star">*</span>
+          </label>
+          <div class="file-input-wrapper">
+            <input
+              #fileInput
+              id="studyFileInput"
+              type="file"
+              accept=".pdf,image/*,.jpg,.jpeg,.png,.webp"
+              (change)="onFileChange($event)"
+              class="hidden-file-input"
+            />
+            <button
+              type="button"
+              class="file-select-btn"
+              (click)="fileInput.click()"
+            >
+              <ng-icon name="lucideUpload" />
+              <span>{{ selectedFile() ? 'Cambiar archivo' : 'Seleccionar archivo / foto' }}</span>
+            </button>
+            @if (selectedFile(); as file) {
+              <div class="selected-file-info">
+                <span class="selected-file-name" [title]="file.name">{{ file.name }}</span>
+                <span class="selected-file-size">({{ formatFileSize(file.size) }})</span>
+                <button
+                  type="button"
+                  class="clear-file-btn"
+                  (click)="clearSelectedFile()"
+                  title="Quitar archivo"
+                >
+                  ✕
+                </button>
+              </div>
+            } @else {
+              <span class="file-hint">PDF o Imágenes (JPG, PNG, WebP) hasta 25 MB</span>
+            }
+          </div>
+        </div>
+
+        <!-- Descripción o Especificación -->
+        <div class="form-group description-group">
+          <label for="studyDescription" class="form-label">
+            Especificación / Descripción del estudio
+          </label>
+          <input
+            id="studyDescription"
+            type="text"
+            [ngModel]="description()"
+            (ngModelChange)="description.set($event)"
+            name="description"
+            placeholder="Ej: Tomografía de encéfalo con contraste, Ecografía abdominal, etc."
+            class="form-input text-input"
+          />
+        </div>
+      </div>
+
+      <div class="upload-actions">
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="!selectedFile() || isUploading()"
+        >
+          @if (isUploading()) {
+            <span class="spinner-small"></span>
+            <span>Subiendo estudio…</span>
+          } @else {
+            <ng-icon name="lucideUpload" />
+            <span>Subir y Guardar Estudio</span>
+          }
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Listado de Estudios Realizados -->
+  <section class="studies-list-section" aria-label="Historial de estudios médicos">
+    <div class="list-section-header">
+      <h4>Estudios registrados en la ficha</h4>
+      @if (isLoading()) {
+        <span class="loading-label">Cargando estudios…</span>
+      }
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner-small"></div>
+        <p>Cargando archivos del paciente…</p>
+      </div>
+    } @else if (!hasStudies()) {
+      <div class="empty-studies-state">
+        <ng-icon name="lucideFileText" class="empty-icon" />
+        <h5>No hay estudios médicos registrados</h5>
+        <p>
+          Utilizá el formulario superior para subir los informes diagnósticos, imágenes o fotos de estudios realizados al paciente.
+        </p>
+      </div>
+    } @else {
+      <div class="studies-grid">
+        @for (study of studies(); track study.id) {
+          <article class="study-card">
+            <div class="study-card-main">
+              <div class="study-icon-wrapper" [class.is-image]="isImage(study.contentType)" [class.is-pdf]="isPdf(study.contentType)">
+                @if (isImage(study.contentType)) {
+                  <ng-icon name="lucideImage" class="study-type-icon" />
+                } @else if (isPdf(study.contentType)) {
+                  <ng-icon name="lucideFileText" class="study-type-icon" />
+                } @else {
+                  <ng-icon name="lucideFile" class="study-type-icon" />
+                }
+              </div>
+
+              <div class="study-details">
+                <div class="study-title-row">
+                  <h5 class="study-filename" [title]="study.originalFileName">
+                    {{ study.originalFileName }}
+                  </h5>
+                  <span class="study-format-badge">
+                    {{ isPdf(study.contentType) ? 'PDF' : isImage(study.contentType) ? 'IMAGEN' : 'ARCHIVO' }}
+                  </span>
+                </div>
+
+                @if (study.description) {
+                  <p class="study-description">
+                    <strong>Especificación:</strong> {{ study.description }}
+                  </p>
+                } @else {
+                  <p class="study-no-desc">Sin descripción especificada</p>
+                }
+
+                <div class="study-meta">
+                  <span class="meta-item">Fecha: {{ formatDate(study.createdAt) }}</span>
+                  <span class="meta-dot">•</span>
+                  <span class="meta-item">Tamaño: {{ formatFileSize(study.fileSize) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="study-card-actions">
+              <button
+                type="button"
+                class="btn-action btn-preview"
+                (click)="openStudyPreview(study)"
+                title="Abrir en pestaña nueva"
+              >
+                <ng-icon name="lucideExternalLink" />
+                <span>Ver</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-action btn-download"
+                (click)="downloadStudy(study)"
+                title="Descargar archivo a tu equipo"
+              >
+                <ng-icon name="lucideDownload" />
+                <span>Descargar</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-action btn-delete"
+                (click)="deleteStudy(study)"
+                title="Eliminar estudio"
+                aria-label="Eliminar estudio"
+              >
+                <ng-icon name="lucideTrash2" />
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>

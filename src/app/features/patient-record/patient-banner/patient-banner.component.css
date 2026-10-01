@@ -229,6 +229,29 @@
   flex-shrink: 0;
 }
 
+.btn-secondary-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.85rem;
+  background-color: #ffffff;
+  color: #334155;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-secondary-edit:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
 .btn-primary-soap {
   display: inline-flex;
   align-items: center;

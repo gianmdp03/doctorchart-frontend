@@ -5,6 +5,9 @@ export interface AnthropometricMeasurements {
 }
 
 export interface GuardianInfo {
+  fatherFullName?: string;
+  motherFullName?: string;
+  siblingsCount?: number | null;
   firstGuardianFullName?: string;
   secondGuardianFullName?: string;
   firstGuardianPhone?: string;
@@ -12,6 +15,11 @@ export interface GuardianInfo {
   firstGuardianNationalId?: string;
   secondGuardianNationalId?: string;
   address?: string;
+  primaryGuardian?: string;
+  primaryContactPhone?: string;
+  hasSiblings?: boolean | null;
+  siblingOrder?: number | null;
+  livingArrangement?: string;
 }
 
 export interface PerinatalHistory {
@@ -32,6 +40,9 @@ export interface FamilyHistory {
   familyChronicDiseases?: string[];
   familyAllergies?: string[];
   geneticDiseases?: string[];
+  paternalDiseases?: string[];
+  maternalDiseases?: string[];
+  siblingDiseases?: string[];
 }
 
 export interface ImmunizationAndNutrition {

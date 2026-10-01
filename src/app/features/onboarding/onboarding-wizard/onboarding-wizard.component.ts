@@ -283,7 +283,7 @@ export class OnboardingWizardComponent implements OnInit {
       : {
           specialtyId,
           specialtyDisplayName: specialtyDisplayName ?? null,
-          name: `Formulario de consulta${specialtyDisplayName ? ` - ${specialtyDisplayName}` : ''}`,
+          name: `Historia Clínica${specialtyDisplayName ? ` - ${specialtyDisplayName}` : ''}`,
           templateType: 'ENCOUNTER',
           isDefault: true,
           isSystem: false,

@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { WorkspaceService } from './workspace.service';
 import { DoctorSpecialtyService } from './doctor-specialty.service';
 import {
@@ -25,7 +25,10 @@ export class WorkspaceStore {
   // State Signals
   readonly currentSetup = signal<WorkspaceSetup | null>(null);
   readonly isLoading = signal<boolean>(false);
+  readonly loaded = signal<boolean>(false);
   readonly error = signal<string | null>(null);
+
+  private setupPromise: Promise<WorkspaceSetup | null> | null = null;
 
   // Computed Signals
   readonly isOnboardingCompleted = computed<boolean>(() => {
@@ -81,25 +84,44 @@ export class WorkspaceStore {
   /**
    * Loads or refreshes the current setup from the backend.
    */
-  async loadSetup(): Promise<WorkspaceSetup | null> {
+  async loadSetup(force = false): Promise<WorkspaceSetup | null> {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
 
-    this.isLoading.set(true);
-    this.error.set(null);
-    try {
-      const setup = await firstValueFrom(this.workspaceService.getCurrentSetup());
-      this.currentSetup.set(setup);
-      this.syncSpecialtyState(setup);
-      return setup;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al cargar workspace';
-      this.error.set(msg);
-      return null;
-    } finally {
-      this.isLoading.set(false);
+    if (this.setupPromise && !force) {
+      return this.setupPromise;
     }
+
+    this.setupPromise = (async () => {
+      this.isLoading.set(true);
+      this.error.set(null);
+      try {
+        const setup = await firstValueFrom(
+          this.workspaceService.getCurrentSetup().pipe(timeout(6000))
+        );
+        this.currentSetup.set(setup);
+        this.syncSpecialtyState(setup);
+        return setup;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Error al cargar workspace';
+        this.error.set(msg);
+        return null;
+      } finally {
+        this.isLoading.set(false);
+        this.loaded.set(true);
+        this.setupPromise = null;
+      }
+    })();
+
+    return this.setupPromise;
+  }
+
+  clearSetup(): void {
+    this.currentSetup.set(null);
+    this.loaded.set(false);
+    this.error.set(null);
+    this.setupPromise = null;
   }
 
   /**
@@ -107,6 +129,7 @@ export class WorkspaceStore {
    */
   setSetup(setup: WorkspaceSetup): void {
     this.currentSetup.set(setup);
+    this.loaded.set(true);
     this.syncSpecialtyState(setup);
   }
 
@@ -119,6 +142,7 @@ export class WorkspaceStore {
     try {
       const result = await firstValueFrom(this.workspaceService.finishOnboarding(payload));
       this.currentSetup.set(result);
+      this.loaded.set(true);
       this.syncSpecialtyState(result);
       return result;
     } catch (err) {
@@ -139,6 +163,7 @@ export class WorkspaceStore {
     try {
       const result = await firstValueFrom(this.workspaceService.saveOnboardingDraft(payload));
       this.currentSetup.set(result);
+      this.loaded.set(true);
       return result;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al guardar el avance del onboarding';
@@ -153,6 +178,7 @@ export class WorkspaceStore {
     const payload: QuickNotesUpdateRequest = { content };
     const result = await firstValueFrom(this.workspaceService.updateQuickNotes(payload));
     this.currentSetup.set(result);
+    this.loaded.set(true);
     return result;
   }
 
@@ -165,6 +191,7 @@ export class WorkspaceStore {
     try {
       const result = await firstValueFrom(this.workspaceService.updateWorkspace(payload));
       this.currentSetup.set(result);
+      this.loaded.set(true);
       return result;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al actualizar workspace';
@@ -184,6 +211,7 @@ export class WorkspaceStore {
     try {
       const result = await firstValueFrom(this.workspaceService.resetToDefaults());
       this.currentSetup.set(result);
+      this.loaded.set(true);
       return result;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al restablecer valores de fábrica';

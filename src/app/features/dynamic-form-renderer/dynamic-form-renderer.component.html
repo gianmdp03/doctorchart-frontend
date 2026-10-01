@@ -14,155 +14,177 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
             @for (field of category.fields; track field.key) {
-              <div
-                class="field-item"
-                [class.col-span-full]="field.type === 'TEXTAREA'"
-              >
-                <!-- Label -->
-                @if (field.type !== 'BOOLEAN') {
+              @if (isFieldVisible(field.key)) {
+                <div
+                  class="field-item"
+                  [class.col-span-full]="field.type === 'TEXTAREA' || field.key === 'justificacionPautas'"
+                >
+                  <!-- Label -->
                   <label [for]="field.key" class="field-label">
                     {{ field.label }}
                     @if (field.required) {
                       <span class="required-mark" aria-hidden="true">*</span>
                     }
                   </label>
-                }
 
-                <!-- Inputs based on type -->
-                @switch (field.type) {
-                  @case ('TEXT') {
-                    <div class="input-wrapper">
-                      <input
-                        type="text"
-                        [id]="field.key"
-                        [formControlName]="field.key"
-                        [placeholder]="field.placeholder || ''"
-                        class="form-input"
-                        [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
-                      />
-                      @if (field.unit) {
-                        <span class="input-unit">{{ field.unit }}</span>
-                      }
-                    </div>
-                  }
-
-                  @case ('NUMBER') {
-                    <div class="input-wrapper">
-                      <input
-                        type="number"
-                        step="any"
-                        [id]="field.key"
-                        [formControlName]="field.key"
-                        [placeholder]="field.placeholder || ''"
-                        class="form-input"
-                        [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
-                      />
-                      @if (field.unit) {
-                        <span class="input-unit">{{ field.unit }}</span>
-                      }
-                    </div>
-                  }
-
-                  @case ('DATE') {
-                    <div class="input-wrapper">
-                      <input
-                        type="date"
-                        [id]="field.key"
-                        [formControlName]="field.key"
-                        class="form-input"
-                        [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
-                      />
-                    </div>
-                  }
-
-                  @case ('SELECT') {
-                    <div class="input-wrapper">
-                      <select
-                        [id]="field.key"
-                        [formControlName]="field.key"
-                        class="form-select"
-                        [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
-                      >
-                        <option value="">Seleccionar una opción...</option>
-                        @for (opt of field.options || []; track opt.value) {
-                          <option [value]="opt.value">{{ opt.label }}</option>
-                        }
-                      </select>
-                    </div>
-                  }
-
-                  @case ('TEXTAREA') {
-                    <div class="input-wrapper">
-                      <textarea
-                        [id]="field.key"
-                        [formControlName]="field.key"
-                        [placeholder]="field.placeholder || ''"
-                        rows="3"
-                        class="form-textarea"
-                        [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
-                      ></textarea>
-                    </div>
-                  }
-
-                  @case ('BOOLEAN') {
-                    <div class="checkbox-wrapper">
-                      <label [for]="field.key" class="checkbox-label">
+                  <!-- Inputs based on type -->
+                  @switch (field.type) {
+                    @case ('TEXT') {
+                      <div class="input-wrapper">
                         <input
-                          type="checkbox"
+                          type="text"
                           [id]="field.key"
                           [formControlName]="field.key"
-                          class="form-checkbox"
+                          [placeholder]="field.placeholder || ''"
+                          class="form-input"
+                          [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
                         />
-                        <span class="checkbox-text">
-                          {{ field.label }}
-                          @if (field.required) {
-                            <span class="required-mark">*</span>
-                          }
-                        </span>
-                      </label>
-                    </div>
-                  }
-
-                  @case ('FORMULA') {
-                    <div class="formula-calculated-field">
-                      @let fRes = formulaResults()[field.key];
-                      <div class="flex items-center justify-between gap-2 p-2.5 bg-teal-50/70 border border-teal-200 rounded-lg">
-                        <div class="flex items-center gap-2.5">
-                          <div class="w-8 h-8 rounded-lg bg-teal-600 text-white flex items-center justify-center flex-shrink-0 text-sm shadow-xs">
-                            <ng-icon name="lucideCalculator" class="text-base"></ng-icon>
-                          </div>
-                          <div>
-                            <div class="flex items-baseline gap-1.5">
-                              <span class="text-lg font-bold text-slate-900 leading-tight">
-                                {{ fRes ? fRes.value : (form().get(field.key)?.value || '—') }}
-                              </span>
-                              @if (field.unit) {
-                                <span class="text-xs font-semibold text-teal-800">{{ field.unit }}</span>
-                              }
-                            </div>
-                            <span class="text-[11px] text-slate-500 block">
-                              Calculado automáticamente
-                            </span>
-                          </div>
-                        </div>
-
-                        @if (fRes && fRes.badge) {
-                          <span class="text-xs font-semibold px-2 py-1 rounded-md border text-center shadow-xs" [class]="fRes.badgeClass || 'bg-teal-100 text-teal-800 border-teal-300'">
-                            {{ fRes.badge }}
-                          </span>
+                        @if (field.unit) {
+                          <span class="input-unit">{{ field.unit }}</span>
                         }
                       </div>
-                    </div>
-                  }
-                }
+                    }
 
-                <!-- Validation error feedback -->
-                @if (form().get(field.key)?.invalid && form().get(field.key)?.touched) {
-                  <p class="error-feedback">
-                    Este campo es requerido.
-                  </p>
-                }
-              </div>
+                    @case ('NUMBER') {
+                      <div class="input-wrapper">
+                        <input
+                          type="number"
+                          step="any"
+                          appNormalizeDecimal
+                          [id]="field.key"
+                          [formControlName]="field.key"
+                          [placeholder]="field.placeholder || ''"
+                          class="form-input"
+                          [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
+                        />
+                        @if (field.unit) {
+                          <span class="input-unit">{{ field.unit }}</span>
+                        }
+                      </div>
+                    }
+
+                    @case ('DATE') {
+                      <div class="input-wrapper">
+                        <app-date-picker
+                          [formControlName]="field.key"
+                          [startView]="field.key === 'birthDate' ? 'multi-year' : 'month'"
+                          [max]="field.key === 'birthDate' ? todayIso : null"
+                          [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
+                        />
+                      </div>
+                    }
+
+                    @case ('SELECT') {
+                      <div class="input-wrapper">
+                        <select
+                          [id]="field.key"
+                          [formControlName]="field.key"
+                          class="form-select"
+                          [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
+                        >
+                          <option value="">Seleccionar una opción...</option>
+                          @for (opt of field.options || []; track opt.value) {
+                            <option [value]="opt.value">{{ opt.label }}</option>
+                          }
+                        </select>
+                      </div>
+                    }
+
+                    @case ('TEXTAREA') {
+                      <div class="input-wrapper">
+                        <textarea
+                          [id]="field.key"
+                          [formControlName]="field.key"
+                          [placeholder]="field.placeholder || (field.key === 'justificacionPautas' ? 'Especificación del porqué no cumple pautas...' : '')"
+                          rows="3"
+                          class="form-textarea"
+                          [class.input-error]="form().get(field.key)?.invalid && form().get(field.key)?.touched"
+                        ></textarea>
+                      </div>
+                    }
+
+                    @case ('BOOLEAN') {
+                      <div
+                        class="flex items-center gap-6 mt-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-lg"
+                        [class.opacity-75]="readonly()"
+                        [class.bg-slate-100]="readonly()"
+                      >
+                        <label
+                          class="inline-flex items-center gap-2 text-sm font-medium text-slate-700"
+                          [class.cursor-pointer]="!readonly()"
+                          [class.hover:text-teal-700]="!readonly()"
+                          [class.cursor-not-allowed]="readonly()"
+                        >
+                          <input
+                            type="radio"
+                            [name]="field.key"
+                            [disabled]="readonly()"
+                            [checked]="form().get(field.key)?.value === true"
+                            (change)="setBooleanValue(field.key, true)"
+                            class="w-4 h-4 text-teal-600 border-slate-300 focus:ring-teal-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                          />
+                          <span>Sí</span>
+                        </label>
+                        <label
+                          class="inline-flex items-center gap-2 text-sm font-medium text-slate-700"
+                          [class.cursor-pointer]="!readonly()"
+                          [class.hover:text-rose-700]="!readonly()"
+                          [class.cursor-not-allowed]="readonly()"
+                        >
+                          <input
+                            type="radio"
+                            [name]="field.key"
+                            [disabled]="readonly()"
+                            [checked]="form().get(field.key)?.value === false"
+                            (change)="setBooleanValue(field.key, false)"
+                            class="w-4 h-4 text-teal-600 border-slate-300 focus:ring-teal-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                          />
+                          <span>No</span>
+                        </label>
+                      </div>
+                    }
+
+                    @case ('FORMULA') {
+                      <div class="formula-calculated-field">
+                        @let fRes = formulaResults()[field.key];
+                        <div class="flex items-center justify-between gap-2 p-2.5 bg-teal-50/70 border border-teal-200 rounded-lg">
+                          <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-teal-600 text-white flex items-center justify-center flex-shrink-0 text-sm shadow-xs">
+                              <ng-icon name="lucideCalculator" class="text-base"></ng-icon>
+                            </div>
+                            <div>
+                              <div class="flex items-baseline gap-1.5">
+                                <span class="text-lg font-bold text-slate-900 leading-tight">
+                                  {{ fRes ? fRes.value : (form().get(field.key)?.value || '—') }}
+                                </span>
+                                @if (field.unit) {
+                                  <span class="text-xs font-semibold text-teal-800">{{ field.unit }}</span>
+                                }
+                              </div>
+                              <span class="text-[11px] text-slate-500 block">
+                                Calculado automáticamente
+                              </span>
+                            </div>
+                          </div>
+
+                          @if (fRes && fRes.badge) {
+                            <span class="text-xs font-semibold px-2 py-1 rounded-md border text-center shadow-xs" [class]="fRes.badgeClass || 'bg-teal-100 text-teal-800 border-teal-300'">
+                              {{ fRes.badge }}
+                            </span>
+                          }
+                        </div>
+                      </div>
+                    }
+                  }
+
+                  <!-- Validation error feedback -->
+                  @if (form().get(field.key)?.invalid && form().get(field.key)?.touched) {
+                    <p class="error-feedback">
+                      Este campo es requerido.
+                    </p>
+                  }
+                </div>
+              }
             }
           </div>
         </section>

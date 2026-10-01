@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { DoctorProfile } from '../models/doctor-profile.model';
 import { MedicalSpecialty } from '../models/specialty.model';
@@ -24,32 +24,43 @@ export class DoctorProfileService {
   readonly specialty = computed(() => this.profile()?.specialty ?? null);
   readonly isSpecialtyLocked = computed(() => !!this.profile()?.isSpecialtyLocked);
 
-  async loadProfile(): Promise<DoctorProfile | null> {
+  private profilePromise: Promise<DoctorProfile | null> | null = null;
+
+  async loadProfile(force = false): Promise<DoctorProfile | null> {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
 
-    this.loading.set(true);
-    try {
-      const result = await firstValueFrom(
-        this.http.get<DoctorProfile>(`${this.apiUrl}/profile`)
-      );
-      this.profile.set(result);
-      if (result?.specialty) {
-        this.doctorSpecialtyService.setSpecialty(result.specialty);
-      } else {
-        this.doctorSpecialtyService.clearSpecialty();
-      }
-      this.loaded.set(true);
-      return result;
-    } catch (err: unknown) {
-      this.profile.set(null);
-      this.doctorSpecialtyService.clearSpecialty();
-      this.loaded.set(true);
-      return null;
-    } finally {
-      this.loading.set(false);
+    if (this.profilePromise && !force) {
+      return this.profilePromise;
     }
+
+    this.profilePromise = (async () => {
+      this.loading.set(true);
+      try {
+        const result = await firstValueFrom(
+          this.http.get<DoctorProfile>(`${this.apiUrl}/profile`).pipe(timeout(6000))
+        );
+        this.profile.set(result);
+        if (result?.specialty) {
+          this.doctorSpecialtyService.setSpecialty(result.specialty);
+        } else {
+          this.doctorSpecialtyService.clearSpecialty();
+        }
+        this.loaded.set(true);
+        return result;
+      } catch (err: unknown) {
+        this.profile.set(null);
+        this.doctorSpecialtyService.clearSpecialty();
+        this.loaded.set(true);
+        return null;
+      } finally {
+        this.loading.set(false);
+        this.profilePromise = null;
+      }
+    })();
+
+    return this.profilePromise;
   }
 
   async assignSpecialty(specialty: MedicalSpecialty): Promise<DoctorProfile> {
@@ -72,6 +83,7 @@ export class DoctorProfileService {
   clearProfile(): void {
     this.profile.set(null);
     this.loaded.set(false);
+    this.profilePromise = null;
     this.doctorSpecialtyService.clearSpecialty();
   }
 }

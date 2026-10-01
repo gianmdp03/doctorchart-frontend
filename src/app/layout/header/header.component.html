@@ -83,6 +83,21 @@
 
   <!-- Right: Actions, Specialty Badge & Profile -->
   <div class="header-right">
+    <!-- Visual Accessibility Font Switcher -->
+    <div class="accessibility-ctrl">
+      <button
+        type="button"
+        class="accessibility-btn"
+        (click)="accessibilityService.toggleFontSize()"
+        [title]="'Accesibilidad visual: Fuente ' + accessibilityService.fontSizeLabel() + ' (Clic para cambiar tamaño)'"
+        aria-label="Ajustar tamaño de letra de la plataforma"
+      >
+        <ng-icon name="lucideType" class="accessibility-icon" />
+        <span class="accessibility-text">A+</span>
+        <span class="accessibility-badge">{{ accessibilityService.fontSizeLabel() }}</span>
+      </button>
+    </div>
+
     <!-- Subtle Specialty Badge -->
     <div class="specialty-badge" title="Especialidad médica asignada">
       <span class="specialty-icon-dot"></span>

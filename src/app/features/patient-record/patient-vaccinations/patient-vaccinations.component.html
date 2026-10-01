@@ -51,13 +51,22 @@
         @for (dose of appliedDoses(); track dose.key) {
           <article class="dose-card applied-card">
             <div class="dose-copy"><strong>{{ dose.vaccine.nombre }}</strong><span>{{ dose.application.dosis }}</span></div>
-            <label class="date-control">Fecha <input type="date" [value]="dose.record?.appliedAt ?? ''" (change)="updateDate(dose, $any($event.target).value)" /></label>
+            <label class="date-control">Fecha <app-date-picker [value]="dose.record?.appliedAt ?? ''" (valueChange)="updateDate(dose, $event)" /></label>
             <label class="apply-control"><input type="checkbox" [checked]="true" (change)="markApplied(dose, $any($event.target).checked)" /> Aplicada</label>
           </article>
         }
       } @else { <p class="empty-state">Todavía no se registraron aplicaciones detalladas.</p> }
     </section>
 
-    <details class="future-doses"><summary>Próximas dosis ({{ futureDoses().length }})</summary><ul>@for (dose of futureDoses(); track dose.key) { <li><strong>{{ dose.vaccine.nombre }}</strong> · {{ dose.application.dosis }} · {{ ageLabel(dose.dueFrom) }}</li> }</ul></details>
+    <details class="future-doses" [open]="true">
+      <summary>Próximas vacunas (orden cronológico) ({{ futureDoses().length }})</summary>
+      <ul>
+        @for (dose of futureDoses(); track dose.key) {
+          <li>
+            <strong>{{ dose.vaccine.nombre }}</strong> · {{ dose.application.dosis }} · <span>Edad prevista: {{ ageLabel(dose.dueFrom) }}</span>
+          </li>
+        }
+      </ul>
+    </details>
   }
 </section>

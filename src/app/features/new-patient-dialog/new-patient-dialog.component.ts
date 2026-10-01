@@ -21,9 +21,24 @@ export class NewPatientDialogComponent {
   private readonly workspaceStore = inject(WorkspaceStore);
 
   readonly isOpen = input(false);
+  readonly patientToEdit = input<PatientDetailDTO | null>(null);
   readonly closeDialog = output<void>();
   readonly patientCreated = output<PatientDetailDTO>();
+  readonly patientUpdated = output<PatientDetailDTO>();
+
+  readonly isEditMode = computed(() => !!this.patientToEdit());
+
   readonly activeTemplate = computed(() => {
+    const patient = this.patientToEdit();
+    if (patient?.patientTemplateSnapshot) {
+      return {
+        id: 0,
+        name: 'Formulario del paciente',
+        templateType: 'PATIENT_EXTRA' as const,
+        isDefault: true,
+        schemaDefinition: patient.patientTemplateSnapshot,
+      };
+    }
     const defaultTmpl = this.workspaceStore.defaultPatientTemplate();
     if (defaultTmpl) {
       return defaultTmpl;
@@ -42,9 +57,40 @@ export class NewPatientDialogComponent {
   constructor() {
     effect(() => {
       if (this.isOpen()) {
-        this.values.set({});
         this.errorMessage.set(null);
         this.workspaceStore.loadSetup();
+        const patient = this.patientToEdit();
+        if (patient) {
+          const nameParts = patient.fullName ? patient.fullName.trim().split(/\s+/) : [];
+          const initialValues: Record<string, unknown> = {
+            ...(patient.patientExtraData ?? {}),
+            ...(patient.patientFormData ?? {}),
+            firstName: patient.patientFormData?.['firstName'] ?? nameParts[0] ?? '',
+            lastName: patient.patientFormData?.['lastName'] ?? nameParts.slice(1).join(' '),
+            birthDate: patient.birthDate,
+            nationalId: patient.nationalId ?? '',
+            phone: patient.phone ?? '',
+            address: patient.address ?? '',
+            email: patient.email ?? '',
+            gender: patient.gender ?? '',
+            bloodType: patient.bloodType ?? '',
+            fatherFullName: patient.patientFormData?.['fatherFullName'] ?? patient.guardianInfo?.fatherFullName ?? '',
+            motherFullName: patient.patientFormData?.['motherFullName'] ?? patient.guardianInfo?.motherFullName ?? '',
+            siblingsCount: patient.patientFormData?.['siblingsCount'] ?? patient.guardianInfo?.siblingsCount ?? null,
+            hasSiblings: patient.patientFormData?.['hasSiblings'] ?? patient.guardianInfo?.hasSiblings ?? null,
+            primaryGuardian: patient.patientFormData?.['primaryGuardian'] ?? patient.guardianInfo?.primaryGuardian ?? '',
+            primaryContactPhone: patient.patientFormData?.['primaryContactPhone'] ?? patient.guardianInfo?.primaryContactPhone ?? '',
+            siblingOrder: patient.patientFormData?.['siblingOrder'] ?? patient.guardianInfo?.siblingOrder ?? null,
+            livingArrangement: patient.patientFormData?.['livingArrangement'] ?? patient.guardianInfo?.livingArrangement ?? '',
+            paternalDiseases: patient.patientFormData?.['paternalDiseases'] ?? patient.familyHistory?.paternalDiseases ?? [],
+            maternalDiseases: patient.patientFormData?.['maternalDiseases'] ?? patient.familyHistory?.maternalDiseases ?? [],
+            siblingDiseases: patient.patientFormData?.['siblingDiseases'] ?? patient.familyHistory?.siblingDiseases ?? [],
+          };
+          delete initialValues['fullName'];
+          this.values.set(initialValues);
+        } else {
+          this.values.set({});
+        }
       }
     });
   }
@@ -73,9 +119,31 @@ export class NewPatientDialogComponent {
       return;
     }
 
+    const fatherFullName = this.asTrimmedText(values['fatherFullName']);
+    const motherFullName = this.asTrimmedText(values['motherFullName']);
+    const primaryGuardian = this.asTrimmedText(values['primaryGuardian']);
+    const primaryContactPhone = this.asTrimmedText(values['primaryContactPhone']);
+    const hasSiblings = typeof values['hasSiblings'] === 'boolean'
+      ? values['hasSiblings']
+      : (values['hasSiblings'] === 'true' ? true : (values['hasSiblings'] === 'false' ? false : null));
+    const siblingsCountVal = values['siblingsCount'];
+    const siblingsCount = siblingsCountVal !== undefined && siblingsCountVal !== null && siblingsCountVal !== '' && !isNaN(Number(siblingsCountVal))
+      ? Number(siblingsCountVal)
+      : null;
+    const siblingOrderVal = values['siblingOrder'];
+    const siblingOrder = siblingOrderVal !== undefined && siblingOrderVal !== null && siblingOrderVal !== '' && !isNaN(Number(siblingOrderVal))
+      ? Number(siblingOrderVal)
+      : null;
+    const livingArrangement = this.asTrimmedText(values['livingArrangement']);
+
+    const paternalDiseases = this.asStringArray(values['paternalDiseases']);
+    const maternalDiseases = this.asStringArray(values['maternalDiseases']);
+    const siblingDiseases = this.asStringArray(values['siblingDiseases']);
+
     const extraData = Object.fromEntries(
       Object.entries(values).filter(([key, value]) => !STANDARD_PATIENT_KEYS.has(key) && value !== '' && value !== null && value !== undefined),
     );
+    const hasAnyGuardianData = fatherFullName || motherFullName || siblingsCount !== null || primaryGuardian || primaryContactPhone || hasSiblings !== null || siblingOrder !== null || livingArrangement;
     const payload: PatientRequestDTO = {
       fullName,
       birthDate,
@@ -85,6 +153,22 @@ export class NewPatientDialogComponent {
       email: this.asTrimmedText(values['email']) || null,
       gender: this.asTrimmedText(values['gender']) || null,
       bloodType: this.asTrimmedText(values['bloodType']) || null,
+      guardianInfo: hasAnyGuardianData ? {
+        fatherFullName: fatherFullName || undefined,
+        motherFullName: motherFullName || undefined,
+        siblingsCount: siblingsCount,
+        address: this.asTrimmedText(values['address']) || undefined,
+        primaryGuardian: primaryGuardian || undefined,
+        primaryContactPhone: primaryContactPhone || undefined,
+        hasSiblings: hasSiblings,
+        siblingOrder: siblingOrder,
+        livingArrangement: livingArrangement || undefined,
+      } : null,
+      familyHistory: (paternalDiseases.length > 0 || maternalDiseases.length > 0 || siblingDiseases.length > 0) ? {
+        paternalDiseases: paternalDiseases.length > 0 ? paternalDiseases : undefined,
+        maternalDiseases: maternalDiseases.length > 0 ? maternalDiseases : undefined,
+        siblingDiseases: siblingDiseases.length > 0 ? siblingDiseases : undefined,
+      } : null,
       patientExtraData: Object.keys(extraData).length > 0 ? extraData : null,
       patientFormData: values,
       patientTemplateSnapshot: this.activeTemplate()?.schemaDefinition ?? null,
@@ -92,17 +176,34 @@ export class NewPatientDialogComponent {
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
-    this.patientService.createPatient(payload).subscribe({
-      next: (patient) => {
-        this.isSubmitting.set(false);
-        this.patientCreated.emit(patient);
-        this.close();
-      },
-      error: (error) => {
-        this.isSubmitting.set(false);
-        this.errorMessage.set(error?.error?.message || 'No pudimos crear el paciente. Intentá nuevamente.');
-      },
-    });
+
+    const existingPatient = this.patientToEdit();
+    if (existingPatient && existingPatient.id) {
+      this.patientService.updatePatient(existingPatient.id, payload).subscribe({
+        next: (patient) => {
+          this.isSubmitting.set(false);
+          this.patientUpdated.emit(patient);
+          this.patientCreated.emit(patient);
+          this.close();
+        },
+        error: (error) => {
+          this.isSubmitting.set(false);
+          this.errorMessage.set(error?.error?.message || 'No pudimos actualizar el paciente. Intentá nuevamente.');
+        },
+      });
+    } else {
+      this.patientService.createPatient(payload).subscribe({
+        next: (patient) => {
+          this.isSubmitting.set(false);
+          this.patientCreated.emit(patient);
+          this.close();
+        },
+        error: (error) => {
+          this.isSubmitting.set(false);
+          this.errorMessage.set(error?.error?.message || 'No pudimos crear el paciente. Intentá nuevamente.');
+        },
+      });
+    }
   }
 
   close(): void {
@@ -113,5 +214,15 @@ export class NewPatientDialogComponent {
 
   private asTrimmedText(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private asStringArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value.map((v) => String(v).trim()).filter(Boolean);
+    }
+    if (typeof value === 'string' && value.trim()) {
+      return value.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    return [];
   }
 }

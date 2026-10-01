@@ -86,6 +86,15 @@
 
   <!-- Right: Streamlined Contextual Actions -->
   <div class="banner-actions-block">
+    <button
+      type="button"
+      class="btn-secondary-edit"
+      (click)="onEditPatient()"
+      title="Editar datos filiatorios y clínicos del paciente"
+    >
+      <ng-icon name="lucideUser" />
+      <span>Editar datos</span>
+    </button>
     <button type="button" class="btn-primary-soap" (click)="onNewEncounter()">
       <ng-icon name="lucidePlus" />
       <span>Nueva consulta</span>
@@ -106,7 +115,7 @@
         <div class="dropdown-actions-menu" (click)="$event.stopPropagation()">
           <button type="button" class="dropdown-menu-item" (click)="onEditPatient()">
             <ng-icon name="lucideUser" class="text-slate-500" />
-            <span>Editar Datos de Filiación y Cobertura</span>
+            <span>Editar datos del paciente</span>
           </button>
 
           @if (doctorSpecialtyService.isPediatricMode() && isChild()) {

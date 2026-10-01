@@ -3,8 +3,8 @@
     <section class="modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="new-patient-title">
       <header class="modal-header">
         <div>
-          <h2 id="new-patient-title">Nuevo paciente</h2>
-          <p>Completá los datos definidos en tu configuración inicial.</p>
+          <h2 id="new-patient-title">{{ isEditMode() ? 'Editar datos del paciente' : 'Nuevo paciente' }}</h2>
+          <p>{{ isEditMode() ? 'Actualizá la información filiatoria y antecedentes del paciente.' : 'Completá los datos definidos en tu configuración inicial.' }}</p>
         </div>
         <button type="button" class="close-button" (click)="close()" aria-label="Cerrar">×</button>
       </header>
@@ -29,7 +29,7 @@
       <footer class="modal-footer">
         <button type="button" class="secondary-button" [disabled]="isSubmitting()" (click)="close()">Cancelar</button>
         <button type="button" class="primary-button" [disabled]="isSubmitting() || !activeTemplate()" (click)="submit()">
-          @if (isSubmitting()) { Guardando... } @else { Crear paciente }
+          @if (isSubmitting()) { Guardando... } @else if (isEditMode()) { Guardar cambios } @else { Crear paciente }
         </button>
       </footer>
     </section>

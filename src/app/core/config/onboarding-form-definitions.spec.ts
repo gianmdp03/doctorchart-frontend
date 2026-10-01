@@ -17,7 +17,7 @@ describe('onboarding form definitions', () => {
     ]);
   });
 
-  it('creates the requested default patient fields and intentionally empty optional sections', () => {
+  it('creates the requested default patient fields and configured sections', () => {
     const categories = createDefaultPatientFormSchema().categories;
 
     expect(categories[0].fields.map((field) => field.key)).toEqual([
@@ -30,8 +30,21 @@ describe('onboarding form definitions', () => {
       'phone',
       'nationality',
     ]);
-    expect(categories[1].fields).toHaveLength(0);
-    expect(categories[2].fields).toHaveLength(0);
+    expect(categories[1].fields.map((field) => field.key)).toEqual([
+      'maternalDiseases',
+      'paternalDiseases',
+      'siblingDiseases',
+    ]);
+    expect(categories[2].fields.map((field) => field.key)).toEqual([
+      'primaryGuardian',
+      'motherFullName',
+      'fatherFullName',
+      'primaryContactPhone',
+      'hasSiblings',
+      'siblingsCount',
+      'siblingOrder',
+      'livingArrangement',
+    ]);
     expect(PATIENT_FORM_SECTIONS).toHaveLength(3);
   });
 
