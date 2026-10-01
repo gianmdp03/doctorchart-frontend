@@ -1,15 +1,26 @@
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import {
   BmiCalculatorInputs,
+  BsaMostellerInputs,
+  CalculationExecutionRequestDTO,
   CalculationResult,
   CalculatorCategory,
   CalculatorId,
   CalculatorMetadata,
   CalciumCorrectionInputs,
   ChadsVascCalculatorInputs,
+  ClinicalCalculationDefinitionDTO,
   CockcroftCalculatorInputs,
+  DoctorCalculatorPreferenceDTO,
+  HollidaySegarInputs,
   InterpretationRange,
+  PatientAutofillDataDTO,
+  PatientCalculationLogDetailDTO,
+  PediatricDosageInputs,
   SavedCalculationItem,
   SeverityLevel,
   TfgeCalculatorInputs,
@@ -78,6 +89,42 @@ export const MEDICAL_CALCULATORS_CATALOG: readonly CalculatorMetadata[] = [
     evidenceReference: 'Payne RB et al. Br Med J 1973.',
     summaryFormula: 'Ca Corregido = Ca Total + 0.8 × (4.0 - Albúmina)',
   },
+  {
+    id: 'holliday_segar',
+    name: 'Requerimiento Hídrico Basal Pediátrico (Holliday-Segar)',
+    shortName: 'Holliday-Segar',
+    category: 'pediatria',
+    categoryLabel: 'Pediatría',
+    icon: 'lucideDroplets',
+    description:
+      'Cálculo de necesidades de mantenimiento de líquidos y electrolitos según peso en pacientes pediátricos.',
+    evidenceReference: 'Holliday MA, Segar WE. Pediatrics 1957; 19(5):823-832.',
+    summaryFormula: '1-10kg: 100mL/kg | 11-20kg: 1000 + 50*(kg-10) | >20kg: 1500 + 20*(kg-20)',
+  },
+  {
+    id: 'bsa_mosteller',
+    name: 'Superficie Corporal Pediátrica y Adulto (Mosteller)',
+    shortName: 'Superficie Corporal (BSA)',
+    category: 'pediatria',
+    categoryLabel: 'Pediatría / Onco',
+    icon: 'lucideSparkles',
+    description:
+      'Estimación de área de superficie corporal (BSA) mediante Mosteller para dosificación en quimioterapia y fluidos.',
+    evidenceReference: 'Mosteller RD. N Engl J Med 1987; 317:1098.',
+    summaryFormula: 'BSA (m²) = √[(Peso (kg) × Talla (cm)) / 3600]',
+  },
+  {
+    id: 'pediatric_dosage',
+    name: 'Dosificación Pediátrica por Peso (mg/kg)',
+    shortName: 'Dosis Pediátrica',
+    category: 'pediatria',
+    categoryLabel: 'Pediatría / Farma',
+    icon: 'lucidePill',
+    description:
+      'Calcula la dosis terapéutica en mg y volumen en mL por toma a partir del peso del niño, dosis objetivo y presentación.',
+    evidenceReference: 'AAP / Nelson Textbook of Pediatrics 21a Ed.',
+    summaryFormula: 'Dosis = Peso × Dosis objetivo | Volumen (mL) = Dosis / Concentración',
+  },
 ] as const;
 
 @Injectable({
@@ -85,6 +132,8 @@ export const MEDICAL_CALCULATORS_CATALOG: readonly CalculatorMetadata[] = [
 })
 export class MedicalCalculatorsService {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiUrl}/calculators`;
 
   readonly calculators = signal<readonly CalculatorMetadata[]>(MEDICAL_CALCULATORS_CATALOG);
   readonly savedHistory = signal<SavedCalculationItem[]>(this.loadStoredCalculations());
@@ -700,6 +749,315 @@ Recomendación clínica: ${interpretation.clinicalAction}`;
       calculatedAt: dateStr,
       plainTextEvolution: plainText,
     };
+  }
+
+  // -------------------------------------------------------------
+  // 6. Requerimiento Hídrico Basal Pediátrico (Holliday-Segar)
+  // -------------------------------------------------------------
+  calculateHollidaySegar(inputs: HollidaySegarInputs): CalculationResult | null {
+    const { weightKg } = inputs;
+    if (!weightKg || weightKg <= 0) {
+      return null;
+    }
+
+    let totalMlDay = 0;
+    if (weightKg <= 10) {
+      totalMlDay = weightKg * 100;
+    } else if (weightKg <= 20) {
+      totalMlDay = 1000 + (weightKg - 10) * 50;
+    } else {
+      totalMlDay = 1500 + (weightKg - 20) * 20;
+    }
+
+    const mlPerHour = totalMlDay / 24;
+    const naMeqDay = (totalMlDay / 100) * 3;
+    const kMeqDay = (totalMlDay / 100) * 2;
+    const eightHourVolume = totalMlDay / 3;
+
+    const interpretation: InterpretationRange = {
+      min: 0,
+      max: 99999,
+      label: 'Mantenimiento Hidroelectrolítico Estándar',
+      severity: 'normal',
+      clinicalAction:
+        'Administrar solución basal parenteral (p. ej. Sol. Glucosada 5% con electrolitos) o enteral fraccionada.',
+      badgeClass: 'badge-success',
+      cardBorderClass: 'border-l-emerald-500',
+      bgHighlightClass: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300',
+    };
+
+    const dateStr = new Date().toISOString();
+    const plainText = [
+      `CALCULADORA CLÍNICA: Requerimiento Hídrico Basal (Holliday-Segar)`,
+      `Fecha: ${new Date().toLocaleString('es-AR')}`,
+      `Peso del Paciente: ${weightKg.toFixed(1)} kg`,
+      `Requerimiento Total: ${Math.round(totalMlDay)} mL/día (${mlPerHour.toFixed(1)} mL/h)`,
+      `Aporte de Sodio estimado (3 mEq/100mL): ${naMeqDay.toFixed(1)} mEq/día`,
+      `Aporte de Potasio estimado (2 mEq/100mL): ${kMeqDay.toFixed(1)} mEq/día`,
+      `Fraccionamiento cada 8h: ${Math.round(eightHourVolume)} mL por turno`,
+      `Interpretación: Mantenimiento Hidroelectrolítico Estándar`,
+    ].join('\n');
+
+    return {
+      calculatorId: 'holliday_segar',
+      rawValue: Math.round(totalMlDay),
+      formattedValue: `${Math.round(totalMlDay)}`,
+      unit: 'mL/día',
+      interpretation,
+      secondaryOutputs: [
+        {
+          label: 'Goteo Horario / Bomba',
+          value: `${mlPerHour.toFixed(1)}`,
+          unit: 'mL/h (microgotas/min)',
+          description: 'Flujo continuo para 24 horas',
+        },
+        {
+          label: 'Fraccionado c/8 hrs',
+          value: `${Math.round(eightHourVolume)}`,
+          unit: 'mL',
+          description: 'Volumen a infundir en cada turno de enfermería',
+        },
+        {
+          label: 'Sodio sugerido (Na+)',
+          value: `${naMeqDay.toFixed(1)}`,
+          unit: 'mEq/día',
+          description: 'Aporte basal estándar (3 mEq / 100 mL)',
+        },
+        {
+          label: 'Potasio sugerido (K+)',
+          value: `${kMeqDay.toFixed(1)}`,
+          unit: 'mEq/día',
+          description: 'Aporte basal estándar (2 mEq / 100 mL)',
+        },
+      ],
+      clinicalAction: interpretation.clinicalAction,
+      clinicalNotes: [
+        'Ajustar según pérdidas extraordinarias (fiebre, diarrea, drenajes o vómitos).',
+        'En pacientes con cardiopatía o nefropatía considerar restricción hídrica al 60-80% del basal.',
+      ],
+      calculatedAt: dateStr,
+      plainTextEvolution: plainText,
+    };
+  }
+
+  // -------------------------------------------------------------
+  // 7. Superficie Corporal (Mosteller BSA)
+  // -------------------------------------------------------------
+  calculateBsaMosteller(inputs: BsaMostellerInputs): CalculationResult | null {
+    const { weightKg, heightCm } = inputs;
+    if (!weightKg || !heightCm || weightKg <= 0 || heightCm <= 0) {
+      return null;
+    }
+
+    const bsa = Math.sqrt((weightKg * heightCm) / 3600);
+    const interpretation: InterpretationRange = {
+      min: 0,
+      max: 3.5,
+      label: 'Área de Superficie Corporal Calculada',
+      severity: 'normal',
+      clinicalAction:
+        'Utilizar este valor para dosificar quimioterapia, fluidoterapia o indexar parámetros hemodinámicos.',
+      badgeClass: 'badge-info',
+      cardBorderClass: 'border-l-sky-500',
+      bgHighlightClass: 'bg-sky-50 text-sky-800 dark:bg-sky-950/40 dark:text-sky-300',
+    };
+
+    const dateStr = new Date().toISOString();
+    const plainText = [
+      `CALCULADORA CLÍNICA: Superficie Corporal (BSA - Mosteller)`,
+      `Fecha: ${new Date().toLocaleString('es-AR')}`,
+      `Peso: ${weightKg.toFixed(1)} kg | Talla: ${heightCm.toFixed(1)} cm`,
+      `BSA Mosteller: ${bsa.toFixed(2)} m²`,
+      `Fórmula: √[(Peso kg × Talla cm) / 3600]`,
+    ].join('\n');
+
+    return {
+      calculatorId: 'bsa_mosteller',
+      rawValue: Number(bsa.toFixed(2)),
+      formattedValue: bsa.toFixed(2),
+      unit: 'm²',
+      interpretation,
+      secondaryOutputs: [
+        {
+          label: 'Fórmula aplicada',
+          value: 'Mosteller',
+          description: '√[(Peso × Talla) / 3600]',
+        },
+        {
+          label: 'Peso corporal',
+          value: `${weightKg.toFixed(1)}`,
+          unit: 'kg',
+        },
+        {
+          label: 'Talla',
+          value: `${heightCm.toFixed(1)}`,
+          unit: 'cm',
+        },
+      ],
+      clinicalAction: interpretation.clinicalAction,
+      clinicalNotes: [
+        'Fórmula estándar recomendada por la mayoría de protocolos oncológicos y cardiológicos internacionales.',
+      ],
+      calculatedAt: dateStr,
+      plainTextEvolution: plainText,
+    };
+  }
+
+  // -------------------------------------------------------------
+  // 8. Dosificación Pediátrica por Peso (mg/kg)
+  // -------------------------------------------------------------
+  calculatePediatricDosage(inputs: PediatricDosageInputs): CalculationResult | null {
+    const {
+      weightKg,
+      targetDoseMgKg,
+      doseUnit,
+      drugConcentrationMg,
+      drugConcentrationMl,
+      dosesPerDay,
+    } = inputs;
+
+    if (
+      !weightKg ||
+      !targetDoseMgKg ||
+      !drugConcentrationMg ||
+      !drugConcentrationMl ||
+      !dosesPerDay ||
+      weightKg <= 0 ||
+      targetDoseMgKg <= 0 ||
+      drugConcentrationMg <= 0 ||
+      drugConcentrationMl <= 0 ||
+      dosesPerDay <= 0
+    ) {
+      return null;
+    }
+
+    let totalMgDay = 0;
+    let mgPerDose = 0;
+
+    if (doseUnit === 'mg/kg/dia') {
+      totalMgDay = weightKg * targetDoseMgKg;
+      mgPerDose = totalMgDay / dosesPerDay;
+    } else {
+      mgPerDose = weightKg * targetDoseMgKg;
+      totalMgDay = mgPerDose * dosesPerDay;
+    }
+
+    const mlPerDose = (mgPerDose * drugConcentrationMl) / drugConcentrationMg;
+    const totalMlDay = mlPerDose * dosesPerDay;
+    const intervalHours = 24 / dosesPerDay;
+
+    const interpretation: InterpretationRange = {
+      min: 0,
+      max: 99999,
+      label: 'Dosificación Pediátrica Calculada',
+      severity: 'normal',
+      clinicalAction: `Administrar ${mlPerDose.toFixed(2)} mL por vía oral cada ${intervalHours} horas.`,
+      badgeClass: 'badge-success',
+      cardBorderClass: 'border-l-indigo-500',
+      bgHighlightClass: 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300',
+    };
+
+    const dateStr = new Date().toISOString();
+    const plainText = [
+      `CALCULADORA CLÍNICA: Dosificación Pediátrica`,
+      `Fecha: ${new Date().toLocaleString('es-AR')}`,
+      `Peso: ${weightKg.toFixed(1)} kg`,
+      `Dosis Objetivo: ${targetDoseMgKg} ${doseUnit}`,
+      `Presentación: ${drugConcentrationMg} mg / ${drugConcentrationMl} mL`,
+      `Frecuencia: Cada ${intervalHours} horas (${dosesPerDay} veces al día)`,
+      `Dosis por toma: ${mgPerDose.toFixed(1)} mg (${mlPerDose.toFixed(2)} mL)`,
+      `Dosis total diaria: ${totalMgDay.toFixed(1)} mg/día (${totalMlDay.toFixed(1)} mL/día)`,
+    ].join('\n');
+
+    return {
+      calculatorId: 'pediatric_dosage',
+      rawValue: Number(mlPerDose.toFixed(2)),
+      formattedValue: `${mlPerDose.toFixed(2)}`,
+      unit: 'mL/dosis',
+      interpretation,
+      secondaryOutputs: [
+        {
+          label: 'Dosis por toma (mg)',
+          value: `${mgPerDose.toFixed(1)}`,
+          unit: 'mg',
+          description: 'Masa activa en cada administración',
+        },
+        {
+          label: 'Volumen por toma (mL)',
+          value: `${mlPerDose.toFixed(2)}`,
+          unit: 'mL',
+          description: 'Volumen exacto a medir con jeringa dosificadora',
+        },
+        {
+          label: 'Intervalo horario',
+          value: `Cada ${intervalHours} horas`,
+          unit: `(${dosesPerDay} tomas/día)`,
+        },
+        {
+          label: 'Dosis diaria total',
+          value: `${totalMgDay.toFixed(1)}`,
+          unit: 'mg/día',
+          description: `Equivalente a ${totalMlDay.toFixed(1)} mL diarios`,
+        },
+      ],
+      clinicalAction: interpretation.clinicalAction,
+      clinicalNotes: [
+        'Verificar siempre la dosis máxima absoluta para evitar sobrepasar límites del adulto.',
+        'Recomendar a los cuidadores el uso de jeringa oral graduada en lugar de cucharas domésticas.',
+      ],
+      calculatedAt: dateStr,
+      plainTextEvolution: plainText,
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Backend API Integration
+  // -------------------------------------------------------------
+  getCatalogFromBackend(): Observable<ClinicalCalculationDefinitionDTO[]> {
+    return this.http.get<ClinicalCalculationDefinitionDTO[]>(`${this.baseUrl}/catalog`);
+  }
+
+  getDoctorPreferences(): Observable<DoctorCalculatorPreferenceDTO> {
+    return this.http.get<DoctorCalculatorPreferenceDTO>(`${this.baseUrl}/preferences`);
+  }
+
+  updateDoctorPreferences(favoriteCalculationCodes: string[]): Observable<DoctorCalculatorPreferenceDTO> {
+    return this.http.put<DoctorCalculatorPreferenceDTO>(`${this.baseUrl}/preferences`, {
+      favoriteCalculationCodes,
+    });
+  }
+
+  getDefaultsForSpecialty(specialtyCode: string): Observable<ClinicalCalculationDefinitionDTO[]> {
+    return this.http.get<ClinicalCalculationDefinitionDTO[]>(`${this.baseUrl}/defaults/${specialtyCode}`);
+  }
+
+  executeAndSaveToBackend(payload: CalculationExecutionRequestDTO): Observable<PatientCalculationLogDetailDTO> {
+    return this.http.post<PatientCalculationLogDetailDTO>(`${this.baseUrl}/execute`, payload);
+  }
+
+  getPatientHistoryFromBackend(
+    patientId: number,
+    calculationCode?: string,
+    fromDate?: string,
+    toDate?: string
+  ): Observable<PatientCalculationLogDetailDTO[]> {
+    let params = new HttpParams();
+    if (calculationCode && calculationCode !== 'all') {
+      params = params.set('calculationCode', calculationCode);
+    }
+    if (fromDate) {
+      params = params.set('fromDate', fromDate);
+    }
+    if (toDate) {
+      params = params.set('toDate', toDate);
+    }
+    return this.http.get<PatientCalculationLogDetailDTO[]>(`${this.baseUrl}/patients/${patientId}/history`, {
+      params,
+    });
+  }
+
+  getPatientAutofillData(patientId: number): Observable<PatientAutofillDataDTO> {
+    return this.http.get<PatientAutofillDataDTO>(`${this.baseUrl}/patients/${patientId}/autofill`);
   }
 
   // -------------------------------------------------------------

@@ -31,3 +31,17 @@
   font-weight: 600;
 }
 
+.calc-link-pill {
+  text-decoration: none;
+  cursor: pointer;
+  background-color: #f0fdfa;
+  border-color: #99f6e4;
+  transition: all 0.15s ease;
+}
+
+.calc-link-pill:hover {
+  background-color: #ccfbf1;
+  border-color: #0d9488;
+}
+
+

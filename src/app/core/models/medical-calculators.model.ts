@@ -5,13 +5,17 @@ export type CalculatorId =
   | 'tfge'
   | 'cockcroft'
   | 'chads_vasc'
-  | 'calcio_corregido';
+  | 'calcio_corregido'
+  | 'holliday_segar'
+  | 'bsa_mosteller'
+  | 'pediatric_dosage';
 
 export type CalculatorCategory =
   | 'antropometria'
   | 'nefrologia'
   | 'cardiologia'
-  | 'metabolismo';
+  | 'metabolismo'
+  | 'pediatria';
 
 export interface InterpretationRange {
   readonly min: number;
@@ -68,6 +72,9 @@ export interface SavedCalculationItem {
   readonly inputsSummary: Record<string, string | number | boolean>;
 }
 
+// -------------------------------------------------------------
+// Input Models
+// -------------------------------------------------------------
 export interface BmiCalculatorInputs {
   weightKg: number | null;
   heightCm: number | null;
@@ -99,4 +106,96 @@ export interface ChadsVascCalculatorInputs {
 export interface CalciumCorrectionInputs {
   serumCalciumMgDl: number | null;
   serumAlbuminGDl: number | null;
+}
+
+export interface HollidaySegarInputs {
+  weightKg: number | null;
+}
+
+export interface BsaMostellerInputs {
+  weightKg: number | null;
+  heightCm: number | null;
+}
+
+export interface PediatricDosageInputs {
+  weightKg: number | null;
+  targetDoseMgKg: number | null;
+  doseUnit: 'mg/kg/dia' | 'mg/kg/dosis';
+  drugConcentrationMg: number | null;
+  drugConcentrationMl: number | null;
+  dosesPerDay: number;
+}
+
+// -------------------------------------------------------------
+// Backend DTO Models
+// -------------------------------------------------------------
+export interface PatientAutofillDataDTO {
+  readonly patientId: number;
+  readonly fullName: string;
+  readonly birthDate: string | null;
+  readonly ageYears: number | null;
+  readonly gender: 'MALE' | 'FEMALE' | string | null;
+  readonly weightKg: number | null;
+  readonly heightCm: number | null;
+  readonly systolicBloodPressure: number | null;
+  readonly diastolicBloodPressure: number | null;
+  readonly creatinineMgDl: number | null;
+  readonly serumCalciumMgDl: number | null;
+  readonly serumAlbuminGDl: number | null;
+  readonly encounterId: number | null;
+  readonly encounterDate: string | null;
+}
+
+export interface CalculationExecutionRequestDTO {
+  readonly patientId: number;
+  readonly encounterId?: number | null;
+  readonly calculationCode: string;
+  readonly calculationName: string;
+  readonly inputSnapshot: Record<string, unknown>;
+  readonly resultValue?: number | null;
+  readonly formattedResult: string;
+  readonly resultUnit?: string;
+  readonly resultInterpretation?: string;
+  readonly severity?: SeverityLevel | string;
+  readonly plainTextEvolution?: string;
+}
+
+export interface PatientCalculationLogDetailDTO {
+  readonly id: number;
+  readonly patientId: number;
+  readonly patientFullName: string;
+  readonly userId: string;
+  readonly encounterId?: number | null;
+  readonly calculationCode: string;
+  readonly calculationName: string;
+  readonly inputSnapshot: Record<string, unknown>;
+  readonly resultValue?: number | null;
+  readonly formattedResult: string;
+  readonly resultUnit?: string;
+  readonly resultInterpretation?: string;
+  readonly severity?: SeverityLevel | string;
+  readonly plainTextEvolution?: string;
+  readonly createdAt: string;
+}
+
+export interface DoctorCalculatorPreferenceDTO {
+  readonly userId: string;
+  readonly favoriteCalculationCodes: string[];
+  readonly updatedAt: string;
+}
+
+export interface ClinicalCalculationDefinitionDTO {
+  readonly id: number;
+  readonly code: string;
+  readonly name: string;
+  readonly shortName: string;
+  readonly category: string;
+  readonly categoryLabel: string;
+  readonly description: string;
+  readonly evidenceReference: string;
+  readonly summaryFormula: string;
+  readonly requiredParameters: string[];
+  readonly resultUnit: string;
+  readonly defaultSpecialties: string[];
+  readonly isSystem: boolean;
 }
