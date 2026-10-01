@@ -48,6 +48,9 @@ import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-f
 import { PatientVaccinationsComponent } from './patient-vaccinations/patient-vaccinations.component';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { FormTemplate } from '../../core/models/workspace.model';
+import { GrowthChartComponent } from './growth-chart/growth-chart.component';
+import { PatientGrowthService } from '../../core/services/patient-growth.service';
+import { BiologicalSex, GrowthMetricType } from '../../core/models/growth-chart.model';
 
 export type PatientRecordTab = 'resumen' | 'historia' | 'vacunas' | 'curvas' | 'recetas';
 export type PrescriptionOrderFormMode = 'MEDICATION' | 'STUDY';
@@ -106,6 +109,7 @@ export interface ComplicationChip {
     NewEncounterDialogComponent,
     DynamicFormRendererComponent,
     PatientVaccinationsComponent,
+    GrowthChartComponent,
   ],
   providers: [
     provideIcons({
@@ -135,6 +139,7 @@ export class PatientRecordComponent implements OnInit {
   readonly authService = inject(AuthService);
   readonly activePatientService = inject(ActivePatientService);
   readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
+  readonly growthService = inject(PatientGrowthService);
   private readonly checkupService = inject(CheckupService);
   private readonly clinicalEncounterService = inject(ClinicalEncounterService);
   private readonly router = inject(Router);
@@ -142,6 +147,46 @@ export class PatientRecordComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly workspaceStore = inject(WorkspaceStore);
+
+  // Growth Curves & Somatometry State
+  readonly selectedGrowthMetric = signal<GrowthMetricType | 'ALL'>('WEIGHT');
+
+  readonly patientSex = computed<BiologicalSex>(() =>
+    this.growthService.normalizeGender(this.activePatientService.activePatient()?.gender)
+  );
+
+  readonly weightMeasurements = computed(() =>
+    this.growthService.extractPatientMeasurements(
+      this.activePatientService.activePatient() || {},
+      this.encounters(),
+      'WEIGHT',
+      this.checkups()
+    )
+  );
+
+  readonly heightMeasurements = computed(() =>
+    this.growthService.extractPatientMeasurements(
+      this.activePatientService.activePatient() || {},
+      this.encounters(),
+      'HEIGHT',
+      this.checkups()
+    )
+  );
+
+  readonly headCircumferenceMeasurements = computed(() =>
+    this.growthService.extractPatientMeasurements(
+      this.activePatientService.activePatient() || {},
+      this.encounters(),
+      'HEAD_CIRCUMFERENCE',
+      this.checkups()
+    )
+  );
+
+  readonly totalMeasurementsCount = computed(() =>
+    this.weightMeasurements().length +
+    this.heightMeasurements().length +
+    this.headCircumferenceMeasurements().length
+  );
 
   // Flattened 4-Tab Hierarchy
   readonly selectedTab = signal<PatientRecordTab>('resumen');
@@ -201,7 +246,11 @@ export class PatientRecordComponent implements OnInit {
       { id: 'resumen', label: '1. Datos del paciente' },
       { id: 'historia', label: '2. Consultas', badge: this.encounters().length },
       { id: 'vacunas', label: '3. Vacunas' },
-      { id: 'curvas', label: '4. Evolución y Curvas' },
+      {
+        id: 'curvas',
+        label: '4. Evolución y Curvas',
+        badge: this.totalMeasurementsCount() > 0 ? this.totalMeasurementsCount() : undefined,
+      },
       { id: 'recetas', label: '5. Recetas y Estudios' },
     ];
   });

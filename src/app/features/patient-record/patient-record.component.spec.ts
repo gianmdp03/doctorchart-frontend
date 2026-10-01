@@ -110,6 +110,33 @@ describe('PatientRecordComponent', () => {
   ];
 
   beforeEach(async () => {
+    HTMLCanvasElement.prototype.getContext = (() => ({
+      fillRect: () => {},
+      clearRect: () => {},
+      getImageData: (x: number, y: number, w: number, h: number) => ({ data: new Array(w * h * 4) }),
+      putImageData: () => {},
+      createImageData: () => [],
+      setTransform: () => {},
+      drawImage: () => {},
+      save: () => {},
+      fillText: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      closePath: () => {},
+      stroke: () => {},
+      translate: () => {},
+      scale: () => {},
+      rotate: () => {},
+      arc: () => {},
+      fill: () => {},
+      measureText: () => ({ width: 0 }),
+      transform: () => {},
+      rect: () => {},
+      clip: () => {},
+    })) as any;
+
     checkupServiceSpy = {
       getCheckupsByPatientId: vi.fn().mockReturnValue(of(mockCheckupList)),
     };
@@ -274,6 +301,41 @@ describe('PatientRecordComponent', () => {
     expect(customEvent.detail.diagnosticOrders).toContain(
       'Tomografía Axial Computada (TAC) — De cerebro sin contraste'
     );
+  });
+
+  it('should display the growth curves module and allow toggling metrics in tab curvas', () => {
+    component.setTab('curvas');
+    fixture.detectChanges();
+
+    expect(component.selectedTab()).toBe('curvas');
+    expect(component.selectedGrowthMetric()).toBe('WEIGHT');
+
+    // Growth toolbar is rendered
+    const toolbar = fixture.nativeElement.querySelector('.growth-toolbar');
+    expect(toolbar).toBeTruthy();
+
+    // Verify pills
+    const pills = fixture.nativeElement.querySelectorAll('.growth-pill-btn');
+    expect(pills.length).toBe(4);
+
+    // Switch metric to HEIGHT
+    component.selectedGrowthMetric.set('HEIGHT');
+    fixture.detectChanges();
+    expect(component.selectedGrowthMetric()).toBe('HEIGHT');
+
+    // Switch metric to ALL
+    component.selectedGrowthMetric.set('ALL');
+    fixture.detectChanges();
+    const charts = fixture.nativeElement.querySelectorAll('app-growth-chart');
+    expect(charts.length).toBe(3);
+  });
+
+  it('should reactively extract patient growth measurements from birth and consultations', () => {
+    expect(component.patientSex()).toBe('MALE');
+    expect(component.weightMeasurements().length).toBeGreaterThanOrEqual(1);
+    expect(component.heightMeasurements().length).toBeGreaterThanOrEqual(1);
+    expect(component.headCircumferenceMeasurements().length).toBeGreaterThanOrEqual(1);
+    expect(component.totalMeasurementsCount()).toBeGreaterThan(0);
   });
 });
 

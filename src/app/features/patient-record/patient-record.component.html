@@ -222,10 +222,77 @@
         </section>
       }
 
-      <!-- TAB: EVOLUCIÓN Y CURVAS -->
+      <!-- TAB 4: EVOLUCIÓN Y CURVAS DE CRECIMIENTO OMS -->
       @if (selectedTab() === 'curvas') {
-        <section class="tab-panel animate-fade-in" aria-label="Evolución y Curvas">
-          <!-- Aquí se montarán las nuevas curvas OMS -->
+        <section class="tab-panel animate-fade-in" aria-label="Evolución y Curvas de Crecimiento OMS">
+          <div class="growth-toolbar">
+            <div class="growth-selector-pills">
+              <button
+                type="button"
+                class="growth-pill-btn"
+                [class.active]="selectedGrowthMetric() === 'WEIGHT'"
+                (click)="selectedGrowthMetric.set('WEIGHT')"
+              >
+                <span class="pill-icon">⚖️</span>
+                <span>Peso para la Edad</span>
+                <span class="pill-badge">{{ weightMeasurements().length }}</span>
+              </button>
+              <button
+                type="button"
+                class="growth-pill-btn"
+                [class.active]="selectedGrowthMetric() === 'HEIGHT'"
+                (click)="selectedGrowthMetric.set('HEIGHT')"
+              >
+                <span class="pill-icon">📏</span>
+                <span>Talla / Longitud</span>
+                <span class="pill-badge">{{ heightMeasurements().length }}</span>
+              </button>
+              <button
+                type="button"
+                class="growth-pill-btn"
+                [class.active]="selectedGrowthMetric() === 'HEAD_CIRCUMFERENCE'"
+                (click)="selectedGrowthMetric.set('HEAD_CIRCUMFERENCE')"
+              >
+                <span class="pill-icon">🧠</span>
+                <span>Perímetro Cefálico</span>
+                <span class="pill-badge">{{ headCircumferenceMeasurements().length }}</span>
+              </button>
+              <button
+                type="button"
+                class="growth-pill-btn"
+                [class.active]="selectedGrowthMetric() === 'ALL'"
+                (click)="selectedGrowthMetric.set('ALL')"
+              >
+                <span class="pill-icon">📊</span>
+                <span>Ver los 3 Gráficos</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Componentes de Gráficos OMS -->
+          @if (selectedGrowthMetric() === 'WEIGHT' || selectedGrowthMetric() === 'ALL') {
+            <app-growth-chart
+              [metric]="'WEIGHT'"
+              [sex]="patientSex()"
+              [measurements]="weightMeasurements()"
+            />
+          }
+
+          @if (selectedGrowthMetric() === 'HEIGHT' || selectedGrowthMetric() === 'ALL') {
+            <app-growth-chart
+              [metric]="'HEIGHT'"
+              [sex]="patientSex()"
+              [measurements]="heightMeasurements()"
+            />
+          }
+
+          @if (selectedGrowthMetric() === 'HEAD_CIRCUMFERENCE' || selectedGrowthMetric() === 'ALL') {
+            <app-growth-chart
+              [metric]="'HEAD_CIRCUMFERENCE'"
+              [sex]="patientSex()"
+              [measurements]="headCircumferenceMeasurements()"
+            />
+          }
         </section>
       }
 
