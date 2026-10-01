@@ -19,7 +19,6 @@ import { DoctorChartConfig } from '../../../core/models/workspace.model';
 
 @Component({
   selector: 'app-onboarding-wizard',
-  standalone: true,
   imports: [CommonModule, FormFieldEditorComponent, ChartMapperComponent],
   templateUrl: './onboarding-wizard.component.html',
   styleUrl: './onboarding-wizard.component.css',
@@ -140,6 +139,14 @@ export class OnboardingWizardComponent implements OnInit {
   }
 
   async exitWizard(): Promise<void> {
+    if (this.isEditMode() && !this.isSaving()) {
+      await this.finishOnboarding();
+      return;
+    }
+    await this.router.navigate(['/dashboard']);
+  }
+
+  async cancelWizard(): Promise<void> {
     await this.router.navigate(['/dashboard']);
   }
 
@@ -233,11 +240,24 @@ export class OnboardingWizardComponent implements OnInit {
     this.isSaving.set(true);
     this.errorMessage.set(null);
     try {
-      await this.workspaceStore.saveOnboardingDraft({
-        specialtyId: setup.specialtyId,
-        onboardingStep: nextStep,
-        onboardingDraft: this.createDraft(),
-      });
+      if (this.isEditMode()) {
+        const patientTemplate = this.patientTemplate();
+        const encounterTemplate = this.encounterTemplate();
+        await this.workspaceStore.finishOnboarding({
+          specialtyId: setup.specialtyId,
+          patientColumnsConfig: setup.patientColumnsConfig,
+          modulesConfig: setup.modulesConfig,
+          patientTemplateSchema: patientTemplate?.schemaDefinition,
+          customTemplateSchema: encounterTemplate?.schemaDefinition,
+          chartConfigs: this.chartConfigs(),
+        });
+      } else {
+        await this.workspaceStore.saveOnboardingDraft({
+          specialtyId: setup.specialtyId,
+          onboardingStep: nextStep,
+          onboardingDraft: this.createDraft(),
+        });
+      }
     } catch {
       this.errorMessage.set('No pudimos guardar el avance. Revisá tu conexión e intentá nuevamente.');
     } finally {
@@ -259,6 +279,23 @@ export class OnboardingWizardComponent implements OnInit {
     if (this.isFormTemplateSchema(schema)) {
       template.schemaDefinition = schema;
     }
+
+    if (template.schemaDefinition && Array.isArray(template.schemaDefinition.categories)) {
+      for (const section of PATIENT_FORM_SECTIONS) {
+        const exists = template.schemaDefinition.categories.some(
+          (c) => c.categoryKey === section.categoryKey
+        );
+        if (!exists) {
+          template.schemaDefinition.categories.push({
+            categoryKey: section.categoryKey,
+            title: section.title,
+            enabled: true,
+            fields: section.fields.map((f) => ({ ...f })),
+          });
+        }
+      }
+    }
+
     return template;
   }
 

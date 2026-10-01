@@ -20,6 +20,15 @@
             ↺ Restablecer valores iniciales
           </button>
           @if (isEditMode()) {
+            <button
+              type="button"
+              class="primary-button btn-save-header"
+              [disabled]="isSaving()"
+              (click)="finishOnboarding()"
+              title="Guardar todos los cambios realizados en las plantillas y volver al panel"
+            >
+              @if (isSaving()) { Guardando... } @else { 💾 Guardar cambios }
+            </button>
             <button type="button" class="signout-button" (click)="exitWizard()">Volver al Panel Principal</button>
           } @else {
             <button type="button" class="signout-button" (click)="handleSignOut()">Cerrar sesión</button>
@@ -119,18 +128,27 @@
       </div>
       <div class="footer-right">
         @if (isEditMode()) {
-          <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="exitWizard()">
+          <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="cancelWizard()">
             Cancelar
           </button>
-        }
-        @if (isLastStep()) {
           <button type="button" class="primary-button" [disabled]="isSaving()" (click)="finishOnboarding()">
-            @if (isSaving()) { Guardando... } @else { {{ isEditMode() ? 'Guardar cambios' : 'Finalizar configuración' }} }
+            @if (isSaving()) { Guardando... } @else { Guardar cambios }
           </button>
+          @if (!isLastStep()) {
+            <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="goNext()">
+              Siguiente →
+            </button>
+          }
         } @else {
-          <button type="button" class="primary-button" [disabled]="isSaving()" (click)="goNext()">
-            @if (isSaving()) { Guardando... } @else { Siguiente }
-          </button>
+          @if (isLastStep()) {
+            <button type="button" class="primary-button" [disabled]="isSaving()" (click)="finishOnboarding()">
+              @if (isSaving()) { Guardando... } @else { Finalizar configuración }
+            </button>
+          } @else {
+            <button type="button" class="primary-button" [disabled]="isSaving()" (click)="goNext()">
+              @if (isSaving()) { Guardando... } @else { Siguiente }
+            </button>
+          }
         }
       </div>
     </footer>

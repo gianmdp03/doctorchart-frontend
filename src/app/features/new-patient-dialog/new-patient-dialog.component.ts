@@ -4,6 +4,7 @@ import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-f
 import { PatientService } from '../../core/services/patient.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { PatientDetailDTO, PatientRequestDTO } from '../../core/models/patient.model';
+import { createDefaultPatientFormTemplate } from '../../core/config/onboarding-form-definitions';
 
 const STANDARD_PATIENT_KEYS = new Set([
   'firstName', 'lastName', 'fullName', 'birthDate', 'nationalId', 'phone', 'address', 'email', 'gender', 'bloodType',
@@ -22,7 +23,17 @@ export class NewPatientDialogComponent {
   readonly isOpen = input(false);
   readonly closeDialog = output<void>();
   readonly patientCreated = output<PatientDetailDTO>();
-  readonly activeTemplate = computed(() => this.workspaceStore.defaultPatientTemplate());
+  readonly activeTemplate = computed(() => {
+    const defaultTmpl = this.workspaceStore.defaultPatientTemplate();
+    if (defaultTmpl) {
+      return defaultTmpl;
+    }
+    const setup = this.workspaceStore.currentSetup();
+    if (setup?.specialtyId) {
+      return createDefaultPatientFormTemplate(setup.specialtyId, setup.specialtyDisplayName);
+    }
+    return null;
+  });
   readonly values = signal<Record<string, unknown>>({});
   readonly isFormValid = signal(true);
   readonly isSubmitting = signal(false);
@@ -33,6 +44,7 @@ export class NewPatientDialogComponent {
       if (this.isOpen()) {
         this.values.set({});
         this.errorMessage.set(null);
+        this.workspaceStore.loadSetup();
       }
     });
   }
