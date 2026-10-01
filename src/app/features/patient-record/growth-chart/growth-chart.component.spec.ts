@@ -54,6 +54,7 @@ describe('GrowthChartComponent', () => {
       transform: () => {},
       rect: () => {},
       clip: () => {},
+      bezierCurveTo: () => {},
     })) as any;
 
     await TestBed.configureTestingModule({
@@ -72,6 +73,7 @@ describe('GrowthChartComponent', () => {
 
     expect(component).toBeTruthy();
     expect(component.selectedRange()).toBe('0-2');
+    expect(component.maxMonths()).toBe(24);
     expect(component.sexLabel()).toBe('Niño (Varón)');
   });
 
@@ -112,7 +114,7 @@ describe('GrowthChartComponent', () => {
     expect(values[0].textContent).toContain('6.4 kg'); // latest value
   });
 
-  it('should toggle age range between 0-2 and 0-5', () => {
+  it('should lock age range to 0-24 months', () => {
     fixture.componentRef.setInput('metric', 'WEIGHT');
     fixture.componentRef.setInput('sex', 'MALE');
     fixture.componentRef.setInput('measurements', mockMeasurements);
@@ -120,12 +122,6 @@ describe('GrowthChartComponent', () => {
 
     expect(component.selectedRange()).toBe('0-2');
     expect(component.maxMonths()).toBe(24);
-
-    component.setAgeRange('0-5');
-    fixture.detectChanges();
-
-    expect(component.selectedRange()).toBe('0-5');
-    expect(component.maxMonths()).toBe(60);
   });
 
   it('should cleanup chart instance on destroy', () => {
@@ -144,7 +140,7 @@ describe('GrowthChartComponent', () => {
     fixture.detectChanges();
 
     const bannerEl = fixture.nativeElement.querySelector('.chart-who-banner-title');
-    expect(bannerEl.textContent).toContain('Peso para la edad niñas');
+    expect(bannerEl.textContent).toContain('Curvas antropométricas desde el nacimiento hasta los 24 meses');
 
     const cardEl = fixture.nativeElement.querySelector('.growth-chart-card');
     expect(cardEl.classList.contains('theme-girl')).toBe(true);
@@ -153,16 +149,27 @@ describe('GrowthChartComponent', () => {
     fixture.componentRef.setInput('sex', 'MALE');
     fixture.detectChanges();
 
-    expect(bannerEl.textContent).toContain('Longitud para la edad niños');
+    expect(bannerEl.textContent).toContain('Curvas antropométricas desde el nacimiento hasta los 24 meses');
     expect(cardEl.classList.contains('theme-boy')).toBe(true);
-
-    component.setAgeRange('0-5');
-    fixture.detectChanges();
-    expect(bannerEl.textContent).toContain('Longitud / estatura para la edad niños');
 
     fixture.componentRef.setInput('metric', 'HEAD_CIRCUMFERENCE');
     fixture.detectChanges();
 
-    expect(bannerEl.textContent).toContain('Perímetro craneal para la edad niños');
+    expect(bannerEl.textContent).toContain('Curvas antropométricas desde el nacimiento hasta los 24 meses');
+  });
+
+  it('should render star symbol in legend for male and heart symbol for female', () => {
+    fixture.componentRef.setInput('metric', 'WEIGHT');
+    fixture.componentRef.setInput('sex', 'MALE');
+    fixture.detectChanges();
+
+    let legendPatient = fixture.nativeElement.querySelector('.legend-patient');
+    expect(legendPatient.textContent).toContain('Estrella');
+
+    fixture.componentRef.setInput('sex', 'FEMALE');
+    fixture.detectChanges();
+
+    legendPatient = fixture.nativeElement.querySelector('.legend-patient');
+    expect(legendPatient.textContent).toContain('Corazón');
   });
 });

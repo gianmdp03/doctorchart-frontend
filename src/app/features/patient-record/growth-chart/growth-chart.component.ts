@@ -48,6 +48,92 @@ Chart.register(
 
 export type GrowthAgeRange = '0-2' | '0-5';
 
+/**
+ * Creates an offscreen Canvas representing a pediatric heart marker for female consultations
+ */
+function createHeartPointCanvas(fillColor: string, strokeColor: string): HTMLCanvasElement | 'circle' {
+  if (typeof document === 'undefined') return 'circle';
+  try {
+    const size = 48;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return 'circle';
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(24, 40);
+    ctx.bezierCurveTo(21, 37, 6, 26, 6, 15);
+    ctx.bezierCurveTo(6, 7.5, 12, 3, 19, 3);
+    ctx.bezierCurveTo(22, 3, 24, 5.5, 24, 8);
+    ctx.bezierCurveTo(24, 5.5, 26, 3, 29, 3);
+    ctx.bezierCurveTo(36, 3, 42, 7.5, 42, 15);
+    ctx.bezierCurveTo(42, 26, 27, 37, 24, 40);
+    ctx.closePath();
+
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = strokeColor;
+    ctx.stroke();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    ctx.restore();
+
+    return canvas;
+  } catch {
+    return 'circle';
+  }
+}
+
+/**
+ * Creates an offscreen Canvas representing a pediatric star marker for male consultations
+ */
+function createStarPointCanvas(fillColor: string, strokeColor: string): HTMLCanvasElement | 'star' {
+  if (typeof document === 'undefined') return 'star';
+  try {
+    const size = 48;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return 'star';
+
+    ctx.save();
+    ctx.beginPath();
+    const spikes = 5;
+    const outerRadius = 18;
+    const innerRadius = 8;
+    let rot = (Math.PI / 2) * 3;
+    const step = Math.PI / spikes;
+
+    ctx.moveTo(24, 24 - outerRadius);
+    for (let i = 0; i < spikes; i++) {
+      const x = 24 + Math.cos(rot) * outerRadius;
+      const y = 24 + Math.sin(rot) * outerRadius;
+      ctx.lineTo(x, y);
+      rot += step;
+
+      const inX = 24 + Math.cos(rot) * innerRadius;
+      const inY = 24 + Math.sin(rot) * innerRadius;
+      ctx.lineTo(inX, inY);
+      rot += step;
+    }
+    ctx.lineTo(24, 24 - outerRadius);
+    ctx.closePath();
+
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = strokeColor;
+    ctx.stroke();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    ctx.restore();
+
+    return canvas;
+  } catch {
+    return 'star';
+  }
+}
+
 @Component({
   selector: 'app-growth-chart',
   imports: [CommonModule],
@@ -64,7 +150,7 @@ export class GrowthChartComponent {
   readonly measurements = input<PatientGrowthMeasurement[]>([]);
   readonly initialAgeRange = input<GrowthAgeRange>('0-2');
 
-  // Internal state
+  // Internal state: locked to 0-24 months
   readonly selectedRange = signal<GrowthAgeRange>('0-2');
 
   // View child for canvas
@@ -75,87 +161,52 @@ export class GrowthChartComponent {
   // Derived configurations
   readonly metricConfig = computed(() => OMS_METRIC_CONFIGS[this.metric()]);
 
-  readonly maxMonths = computed(() => (this.selectedRange() === '0-2' ? 24 : 60));
+  // Locked permanently to 24 months (0 to 2 years) per clinical requirements
+  readonly maxMonths = computed(() => 24);
 
   readonly sexLabel = computed(() => (this.sex() === 'MALE' ? 'Niño (Varón)' : 'Niña (Mujer)'));
 
-  readonly officialOmsTitle = computed(() => {
-    const isGirl = this.sex() === 'FEMALE';
-    const range = this.selectedRange();
-    switch (this.metric()) {
-      case 'WEIGHT':
-        return isGirl
-          ? 'Peso para la edad niñas. Percentiles (Nacimiento a 5 años)'
-          : 'Peso para la edad niños. Percentiles (Nacimiento a 5 años)';
-      case 'HEIGHT':
-        if (range === '0-2') {
-          return isGirl
-            ? 'Longitud para la edad niñas. Percentiles (Nacimiento a 2 años)'
-            : 'Longitud para la edad niños. Percentiles (Nacimiento a 2 años)';
-        }
-        return isGirl
-          ? 'Longitud / estatura para la edad niñas. Percentiles (Nacimiento a 5 años)'
-          : 'Longitud / estatura para la edad niños. Percentiles (Nacimiento a 5 años)';
-      case 'HEAD_CIRCUMFERENCE':
-        return isGirl
-          ? 'Perímetro craneal para la edad niñas. Percentiles (Nacimiento a 5 años)'
-          : 'Perímetro craneal para la edad niños. Percentiles (Nacimiento a 5 años)';
-    }
-  });
+  // Main banner title as requested: "Curvas antropométricas desde el nacimiento hasta los 24 meses"
+  readonly officialOmsTitle = computed(
+    () => 'Curvas antropométricas desde el nacimiento hasta los 24 meses'
+  );
 
   /**
-   * Exact axis configuration copied 100% faithfully from the WHO PDF document
+   * Exact axis configuration for 0 to 24 months faithfully calibrated from the WHO standard
    */
   readonly exactPdfScales = computed(() => {
     const metric = this.metric();
     const sex = this.sex();
-    const range = this.selectedRange();
 
     switch (metric) {
       case 'WEIGHT':
-        // PDF Page 1 & 2: Exact Y-scale is 2 to 24 kg with step 2
+        // WHO 0 to 24 months: 2 to 18 kg (step 2)
         return {
           minY: 2,
-          maxY: 24,
+          maxY: 18,
           stepY: 2,
           unit: 'kg',
           yAxisLabel: 'Peso (kg)',
           minX: 0,
-          maxX: range === '0-2' ? 24 : 60,
-          stepX: range === '0-2' ? 2 : 3,
+          maxX: 24,
+          stepX: 2,
         };
 
       case 'HEIGHT':
-        if (range === '0-2') {
-          // PDF Page 2 & 3: Longitud nacimiento a 2 años is 45 to 95 cm with step 5
-          return {
-            minY: 45,
-            maxY: 95,
-            stepY: 5,
-            unit: 'cm',
-            yAxisLabel: 'Longitud (cm)',
-            minX: 0,
-            maxX: 24,
-            stepX: 2,
-          };
-        } else {
-          // PDF Page 3 & 4 / Global 0-5 años: 45 to 125 cm with step 10
-          return {
-            minY: 45,
-            maxY: 125,
-            stepY: 10,
-            unit: 'cm',
-            yAxisLabel: 'Longitud / Estatura (cm)',
-            minX: 0,
-            maxX: 60,
-            stepX: 3,
-          };
-        }
+        // WHO 0 to 24 months: Longitud 45 to 95 cm (step 5)
+        return {
+          minY: 45,
+          maxY: 95,
+          stepY: 5,
+          unit: 'cm',
+          yAxisLabel: 'Longitud (cm)',
+          minX: 0,
+          maxX: 24,
+          stepX: 2,
+        };
 
       case 'HEAD_CIRCUMFERENCE':
-        // PDF Page 4 & 5: Perímetro craneal nacimiento a 5 años:
-        // Niños: 32 a 54 cm (step 2)
-        // Niñas: 32 a 52 cm (step 2)
+        // WHO 0 to 24 months: Perímetro craneal 32 to 54 cm (step 2)
         return {
           minY: 32,
           maxY: sex === 'MALE' ? 54 : 52,
@@ -163,8 +214,8 @@ export class GrowthChartComponent {
           unit: 'cm',
           yAxisLabel: 'Perímetro craneal (cm)',
           minX: 0,
-          maxX: range === '0-2' ? 24 : 60,
-          stepX: range === '0-2' ? 2 : 3,
+          maxX: 24,
+          stepX: 2,
         };
     }
   });
@@ -187,28 +238,18 @@ export class GrowthChartComponent {
   });
 
   constructor() {
-    // Default initialAgeRange based on WHO sheet convention:
-    // In PDF, Weight is 0-5 and Head Circumference is 0-5, while Length is 0-2
-    effect(() => {
-      const explicitInitial = this.initialAgeRange();
-      if (explicitInitial) {
-        this.selectedRange.set(explicitInitial);
-      }
-    });
-
-    // Reactive chart redraw when metric, sex, range, or measurements change
+    // Reactive chart redraw when metric, sex, or measurements change
     effect(() => {
       const canvasRef = this.chartCanvas();
       const omsPoints = this.omsData();
       const patientPoints = this.filteredMeasurements();
       const scales = this.exactPdfScales();
-      const range = this.selectedRange();
 
       if (!canvasRef?.nativeElement) {
         return;
       }
 
-      this.renderChart(canvasRef.nativeElement, omsPoints, patientPoints, scales, range);
+      this.renderChart(canvasRef.nativeElement, omsPoints, patientPoints, scales);
     });
 
     this.destroyRef.onDestroy(() => {
@@ -216,6 +257,7 @@ export class GrowthChartComponent {
     });
   }
 
+  // Retained for backward-compatibility
   setAgeRange(range: GrowthAgeRange): void {
     this.selectedRange.set(range);
   }
@@ -231,8 +273,7 @@ export class GrowthChartComponent {
     canvas: HTMLCanvasElement,
     omsPoints: ReturnType<typeof this.omsData>,
     patientPoints: PatientGrowthMeasurement[],
-    scales: ReturnType<typeof this.exactPdfScales>,
-    range: GrowthAgeRange
+    scales: ReturnType<typeof this.exactPdfScales>
   ): void {
     this.cleanupChart();
 
@@ -241,15 +282,21 @@ export class GrowthChartComponent {
       return;
     }
 
-    // Prepare OMS percentile curve points
+    // Prepare OMS percentile curve points (0 to 24 months)
     const p3Data = omsPoints.map((p) => ({ x: p.ageMonths, y: p.p3 }));
     const p15Data = omsPoints.map((p) => ({ x: p.ageMonths, y: p.p15 }));
     const p50Data = omsPoints.map((p) => ({ x: p.ageMonths, y: p.p50 }));
     const p85Data = omsPoints.map((p) => ({ x: p.ageMonths, y: p.p85 }));
     const p97Data = omsPoints.map((p) => ({ x: p.ageMonths, y: p.p97 }));
 
-    // Prepare patient trajectory points (filtered for sanity within chart bounds)
+    // Prepare patient trajectory points
     const patientData = patientPoints.map((p) => ({ x: p.ageMonths, y: p.value }));
+
+    // Configure gender-specific point marker: Star for boys, Heart for girls
+    const isMale = this.sex() === 'MALE';
+    const patientPointStyle = isMale
+      ? createStarPointCanvas('#2563eb', '#ffffff')
+      : createHeartPointCanvas('#db2777', '#ffffff');
 
     // Custom WHO right margin percentile labels plugin (dedicated lane, never covers right Y axis measures)
     const omsRightPercentilePlugin = {
@@ -315,7 +362,7 @@ export class GrowthChartComponent {
       },
     };
 
-    // Custom WHO bottom X-axis plugin (draws Meses row, Años row, and centered title)
+    // Custom WHO bottom X-axis plugin (0 to 24 months: Meses row, Años row, and centered title)
     const omsBottomAxisPlugin = {
       id: 'omsBottomAxis',
       afterDraw: (chart: Chart) => {
@@ -340,22 +387,22 @@ export class GrowthChartComponent {
         chartCtx.fillText('Meses', chartArea.left - 6, yRowMeses);
         chartCtx.fillText('Años', chartArea.left - 6, yRowAnos);
 
-        const is0To2 = scales.maxX <= 24;
-        const maxM = scales.maxX;
-        const step = is0To2 ? 2 : 3;
-
         chartCtx.textAlign = 'center';
 
-        for (let m = 0; m <= maxM; m += step) {
+        // Exact 0 to 24 months intervals
+        for (let m = 0; m <= 24; m += 2) {
           const xPos = xScale.getPixelForValue(m);
           if (xPos < chartArea.left - 2 || xPos > chartArea.right + 2) continue;
 
           if (m === 0) {
             chartCtx.font = 'bold 9.5px sans-serif';
             chartCtx.fillText('0', xPos, yRowAnos);
-          } else if (m % 12 === 0) {
+          } else if (m === 12) {
             chartCtx.font = 'bold 10.5px sans-serif';
-            chartCtx.fillText(`${m / 12}`, xPos, yRowAnos);
+            chartCtx.fillText('1', xPos, yRowAnos);
+          } else if (m === 24) {
+            chartCtx.font = 'bold 10.5px sans-serif';
+            chartCtx.fillText('2', xPos, yRowAnos);
           } else {
             chartCtx.font = '600 9px sans-serif';
             chartCtx.fillText(`${m % 12}`, xPos, yRowMeses);
@@ -435,22 +482,17 @@ export class GrowthChartComponent {
             tension: 0.35,
             fill: false,
           },
-          // Index 5: Patient Growth Trajectory
+          // Index 5: Patient Growth Trajectory (Star for boys, Heart for girls)
           {
             label: 'Consulta del Paciente',
             data: patientData,
-            borderColor: '#3730a3',
-            backgroundColor: '#ffffff',
+            borderColor: isMale ? '#2563eb' : '#db2777',
+            backgroundColor: isMale ? '#2563eb' : '#db2777',
             borderWidth: 2.5,
-            pointRadius: patientData.length === 1 ? 6.5 : 5.5,
-            pointHoverRadius: 8.5,
-            pointHitRadius: 14,
-            pointBackgroundColor: '#ffffff',
-            pointBorderColor: '#3730a3',
-            pointBorderWidth: 2.5,
-            pointHoverBackgroundColor: '#3730a3',
-            pointHoverBorderColor: '#ffffff',
-            pointHoverBorderWidth: 2.5,
+            pointStyle: patientPointStyle,
+            pointRadius: 9,
+            pointHoverRadius: 13,
+            pointHitRadius: 18,
             tension: 0.25,
             fill: false,
             order: -1, // Render always on top
@@ -500,8 +542,8 @@ export class GrowthChartComponent {
                   this.metric() === 'WEIGHT'
                     ? 'Peso'
                     : this.metric() === 'HEIGHT'
-                    ? 'Talla'
-                    : 'Perímetro cefálico';
+                    ? 'Longitud'
+                    : 'Perímetro craneal';
 
                 const lines = [
                   `Edad: ${pt.ageFormatted}`,
@@ -525,7 +567,7 @@ export class GrowthChartComponent {
             },
             ticks: {
               display: false, // Handled cleanly by omsBottomAxisPlugin
-              stepSize: scales.maxX <= 24 ? 2 : 3,
+              stepSize: scales.stepX,
             },
             grid: {
               display: true,

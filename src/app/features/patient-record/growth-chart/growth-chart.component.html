@@ -1,11 +1,11 @@
 <div class="growth-chart-card" [class.theme-boy]="sex() === 'MALE'" [class.theme-girl]="sex() === 'FEMALE'">
-  <!-- Top Banner Ribbon matching user reference image -->
+  <!-- Top Banner Ribbon: Curvas antropométricas desde el nacimiento hasta los 24 meses -->
   <div class="oms-top-banner chart-who-banner-title">
     <span class="banner-title-text">{{ officialOmsTitle() }}</span>
   </div>
 
   <div class="chart-card-content">
-    <!-- Controls Toolbar: Range selector & Sex badge -->
+    <!-- Controls Toolbar: Metric title & Sex indicator -->
     <div class="chart-controls-bar">
       <div class="chart-title-group">
         <h4 class="chart-title">{{ metricConfig().title }}</h4>
@@ -14,34 +14,8 @@
           <span class="indicator-text">{{ sexLabel() }}</span>
         </div>
       </div>
-
-      <div class="range-selector">
-        <button
-          type="button"
-          class="range-btn"
-          [class.active]="selectedRange() === '0-2'"
-          (click)="setAgeRange('0-2')"
-        >
-          @if (metric() === 'HEIGHT') {
-            0 - 24 meses (Longitud 45-95 cm)
-          } @else {
-            0 - 24 meses (Lactantes)
-          }
-        </button>
-        <button
-          type="button"
-          class="range-btn"
-          [class.active]="selectedRange() === '0-5'"
-          (click)="setAgeRange('0-5')"
-        >
-          @if (metric() === 'WEIGHT') {
-            0 - 5 años (2 a 24 kg)
-          } @else if (metric() === 'HEIGHT') {
-            0 - 5 años (45 a 125 cm)
-          } @else {
-            0 - 5 años (32 a 54 cm)
-          }
-        </button>
+      <div class="chart-scope-badge">
+        <span>0 a 24 meses</span>
       </div>
     </div>
 
@@ -81,12 +55,12 @@
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
         <span>
-          No hay registros somatométricos de <strong>{{ metricConfig().shortTitle }}</strong> para este paciente en el rango de edad seleccionado. Las curvas oficiales de la OMS se encuentran activas y se trazarán automáticamente al guardar consultas.
+          No hay registros somatométricos de <strong>{{ metricConfig().shortTitle }}</strong> para este paciente en el rango de 0 a 24 meses. Las curvas oficiales de la OMS se encuentran activas y se trazarán automáticamente al guardar consultas.
         </span>
       </div>
     }
 
-    <!-- Pure Canvas Area without conflicting CSS millimeter grid -->
+    <!-- Pure Canvas Area (Technical canvas with dedicated percentile lane & bottom axis) -->
     <div class="chart-canvas-wrapper">
       <canvas #chartCanvas></canvas>
     </div>
@@ -94,9 +68,20 @@
     <!-- Legend & Official WHO Annotations -->
     <footer class="chart-footer">
       <div class="legend-container">
+        <!-- Patient trajectory legend: Star for boys, Heart for girls -->
         <div class="legend-item legend-patient">
-          <span class="legend-symbol symbol-patient"></span>
-          <span class="legend-text"><strong>Paciente</strong> (Trayectoria real)</span>
+          @if (sex() === 'MALE') {
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.5" class="symbol-patient-icon" aria-hidden="true">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="#db2777" stroke="#be185d" stroke-width="1.5" class="symbol-patient-icon" aria-hidden="true">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+          }
+          <span class="legend-text">
+            <strong>Paciente</strong> ({{ sex() === 'MALE' ? 'Estrella' : 'Corazón' }} - Consulta real)
+          </span>
         </div>
         <div class="legend-item">
           <span class="legend-symbol symbol-p50"></span>
@@ -112,7 +97,7 @@
         </div>
       </div>
       <div class="chart-disclaimer">
-        <strong>Patrones de crecimiento infantil de la OMS.</strong> Referencia oficial: <em>World Health Organization (WHO) Child Growth Standards</em>.
+        <strong>Patrones de crecimiento infantil de la OMS (Nacimiento a 24 meses).</strong> Referencia oficial: <em>World Health Organization (WHO) Child Growth Standards</em>.
       </div>
     </footer>
   </div>
