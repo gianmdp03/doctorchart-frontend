@@ -85,21 +85,21 @@ export class GrowthChartComponent {
     switch (this.metric()) {
       case 'WEIGHT':
         return isGirl
-          ? 'Peso para la edad niñas. Percentiles (nacimiento a 5 años)'
-          : 'Peso para la edad niños. Percentiles (nacimiento a 5 años)';
+          ? 'Peso para la edad niñas. Percentiles (Nacimiento a 5 años)'
+          : 'Peso para la edad niños. Percentiles (Nacimiento a 5 años)';
       case 'HEIGHT':
         if (range === '0-2') {
           return isGirl
-            ? 'Longitud para la edad niñas. Percentiles (nacimiento a 2 años)'
-            : 'Longitud para la edad niños. Percentiles (nacimiento a 2 años)';
+            ? 'Longitud para la edad niñas. Percentiles (Nacimiento a 2 años)'
+            : 'Longitud para la edad niños. Percentiles (Nacimiento a 2 años)';
         }
         return isGirl
-          ? 'Longitud / estatura para la edad niñas. Percentiles (nacimiento a 5 años)'
-          : 'Longitud / estatura para la edad niños. Percentiles (nacimiento a 5 años)';
+          ? 'Longitud / estatura para la edad niñas. Percentiles (Nacimiento a 5 años)'
+          : 'Longitud / estatura para la edad niños. Percentiles (Nacimiento a 5 años)';
       case 'HEAD_CIRCUMFERENCE':
         return isGirl
-          ? 'Perímetro craneal para la edad niñas. Percentiles (nacimiento a 5 años)'
-          : 'Perímetro craneal para la edad niños. Percentiles (nacimiento a 5 años)';
+          ? 'Perímetro craneal para la edad niñas. Percentiles (Nacimiento a 5 años)'
+          : 'Perímetro craneal para la edad niños. Percentiles (Nacimiento a 5 años)';
     }
   });
 
@@ -122,7 +122,7 @@ export class GrowthChartComponent {
           yAxisLabel: 'Peso (kg)',
           minX: 0,
           maxX: range === '0-2' ? 24 : 60,
-          stepX: 2,
+          stepX: range === '0-2' ? 2 : 3,
         };
 
       case 'HEIGHT':
@@ -148,7 +148,7 @@ export class GrowthChartComponent {
             yAxisLabel: 'Longitud / Estatura (cm)',
             minX: 0,
             maxX: 60,
-            stepX: 6,
+            stepX: 3,
           };
         }
 
@@ -164,7 +164,7 @@ export class GrowthChartComponent {
           yAxisLabel: 'Perímetro craneal (cm)',
           minX: 0,
           maxX: range === '0-2' ? 24 : 60,
-          stepX: 2,
+          stepX: range === '0-2' ? 2 : 3,
         };
     }
   });
@@ -251,7 +251,7 @@ export class GrowthChartComponent {
     // Prepare patient trajectory points (filtered for sanity within chart bounds)
     const patientData = patientPoints.map((p) => ({ x: p.ageMonths, y: p.value }));
 
-    // Custom WHO right margin percentile labels plugin
+    // Custom WHO right margin percentile labels plugin (dedicated lane, never covers right Y axis measures)
     const omsRightPercentilePlugin = {
       id: 'omsRightPercentileLabels',
       afterDatasetsDraw: (chart: Chart) => {
@@ -259,6 +259,12 @@ export class GrowthChartComponent {
         if (!chartCtx) return;
         const chartArea = chart.chartArea;
         if (!chartArea) return;
+
+        // Solid crisp outer box border around chart area
+        chartCtx.save();
+        chartCtx.strokeStyle = '#000000';
+        chartCtx.lineWidth = 1.5;
+        chartCtx.strokeRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
 
         const labels = [
           { index: 0, text: '97', color: '#d32f2f' },
@@ -268,33 +274,99 @@ export class GrowthChartComponent {
           { index: 4, text: '3', color: '#d32f2f' },
         ];
 
-        chartCtx.save();
+        const pointsToDraw: { text: string; color: string; bold?: boolean; y: number }[] = [];
         for (const item of labels) {
           const meta = chart.getDatasetMeta(item.index);
           if (!meta || !meta.data || meta.data.length === 0 || meta.hidden) continue;
           const lastPoint = meta.data[meta.data.length - 1];
           if (!lastPoint || typeof lastPoint.y !== 'number' || isNaN(lastPoint.y)) continue;
-
-          const x = chartArea.right + 4;
-          const y = lastPoint.y;
-
-          // Draw pill badge
-          chartCtx.fillStyle = item.color;
-          chartCtx.beginPath();
-          if (typeof chartCtx.roundRect === 'function') {
-            chartCtx.roundRect(x, y - 8, 22, 16, 4);
-          } else {
-            chartCtx.rect(x, y - 8, 22, 16);
-          }
-          chartCtx.fill();
-
-          // Draw text label
-          chartCtx.fillStyle = '#ffffff';
-          chartCtx.font = item.bold ? 'bold 10px sans-serif' : '600 10px sans-serif';
-          chartCtx.textAlign = 'center';
-          chartCtx.textBaseline = 'middle';
-          chartCtx.fillText(item.text, x + 11, y);
+          pointsToDraw.push({ ...item, y: lastPoint.y });
         }
+
+        // Sort by vertical position (top to bottom)
+        pointsToDraw.sort((a, b) => a.y - b.y);
+
+        // Collision avoidance: ensure at least 11px vertical separation
+        for (let i = 1; i < pointsToDraw.length; i++) {
+          if (pointsToDraw[i].y - pointsToDraw[i - 1].y < 11) {
+            pointsToDraw[i].y = pointsToDraw[i - 1].y + 11;
+          }
+        }
+
+        // Dedicated percentile lane at [chartArea.right + 2 ... chartArea.right + 20].
+        // Right Y-axis tick values start at chartArea.right + 24 (padding: 24), so there is 0 overlap!
+        const textX = chartArea.right + 11;
+        chartCtx.textAlign = 'center';
+        chartCtx.textBaseline = 'middle';
+
+        for (const pt of pointsToDraw) {
+          chartCtx.font = pt.bold ? 'bold 11px sans-serif' : '700 11px sans-serif';
+          // Clean white outline around number for razor-sharp legibility
+          chartCtx.strokeStyle = '#ffffff';
+          chartCtx.lineWidth = 3;
+          chartCtx.strokeText(pt.text, textX, pt.y);
+
+          // Bare colored percentile number matching WHO curve
+          chartCtx.fillStyle = pt.color;
+          chartCtx.fillText(pt.text, textX, pt.y);
+        }
+
+        chartCtx.restore();
+      },
+    };
+
+    // Custom WHO bottom X-axis plugin (draws Meses row, Años row, and centered title)
+    const omsBottomAxisPlugin = {
+      id: 'omsBottomAxis',
+      afterDraw: (chart: Chart) => {
+        const chartCtx = chart.ctx;
+        if (!chartCtx) return;
+        const chartArea = chart.chartArea;
+        if (!chartArea) return;
+        const xScale = chart.scales['x'];
+        if (!xScale) return;
+
+        chartCtx.save();
+
+        const yRowMeses = chartArea.bottom + 12;
+        const yRowAnos = chartArea.bottom + 23;
+        const yTitle = chartArea.bottom + 36;
+
+        // Row label headers on the left
+        chartCtx.font = 'bold 9.5px sans-serif';
+        chartCtx.fillStyle = '#000000';
+        chartCtx.textAlign = 'right';
+        chartCtx.textBaseline = 'middle';
+        chartCtx.fillText('Meses', chartArea.left - 6, yRowMeses);
+        chartCtx.fillText('Años', chartArea.left - 6, yRowAnos);
+
+        const is0To2 = scales.maxX <= 24;
+        const maxM = scales.maxX;
+        const step = is0To2 ? 2 : 3;
+
+        chartCtx.textAlign = 'center';
+
+        for (let m = 0; m <= maxM; m += step) {
+          const xPos = xScale.getPixelForValue(m);
+          if (xPos < chartArea.left - 2 || xPos > chartArea.right + 2) continue;
+
+          if (m === 0) {
+            chartCtx.font = 'bold 9.5px sans-serif';
+            chartCtx.fillText('0', xPos, yRowAnos);
+          } else if (m % 12 === 0) {
+            chartCtx.font = 'bold 10.5px sans-serif';
+            chartCtx.fillText(`${m / 12}`, xPos, yRowAnos);
+          } else {
+            chartCtx.font = '600 9px sans-serif';
+            chartCtx.fillText(`${m % 12}`, xPos, yRowMeses);
+          }
+        }
+
+        // Centered title below rows
+        chartCtx.font = 'bold 11px sans-serif';
+        chartCtx.fillStyle = '#000000';
+        chartCtx.fillText('Edad (en meses y años cumplidos)', (chartArea.left + chartArea.right) / 2, yTitle);
+
         chartCtx.restore();
       },
     };
@@ -310,8 +382,8 @@ export class GrowthChartComponent {
             borderColor: '#d32f2f',
             borderWidth: 2,
             pointRadius: 0,
-            pointHoverRadius: 4,
-            pointHoverBackgroundColor: '#d32f2f',
+            pointHoverRadius: 0,
+            pointHitRadius: 0,
             tension: 0.35,
             fill: false,
           },
@@ -319,11 +391,11 @@ export class GrowthChartComponent {
           {
             label: 'OMS P85 (+1 DE)',
             data: p85Data,
-            borderColor: '#f57c00',
+            borderColor: '#ea580c',
             borderWidth: 1.8,
             pointRadius: 0,
-            pointHoverRadius: 4,
-            pointHoverBackgroundColor: '#f57c00',
+            pointHoverRadius: 0,
+            pointHitRadius: 0,
             tension: 0.35,
             fill: false,
           },
@@ -332,10 +404,10 @@ export class GrowthChartComponent {
             label: 'OMS P50 (Mediana)',
             data: p50Data,
             borderColor: '#16a34a',
-            borderWidth: 3,
+            borderWidth: 2.5,
             pointRadius: 0,
-            pointHoverRadius: 5,
-            pointHoverBackgroundColor: '#16a34a',
+            pointHoverRadius: 0,
+            pointHitRadius: 0,
             tension: 0.35,
             fill: false,
           },
@@ -343,11 +415,11 @@ export class GrowthChartComponent {
           {
             label: 'OMS P15 (-1 DE)',
             data: p15Data,
-            borderColor: '#f57c00',
+            borderColor: '#ea580c',
             borderWidth: 1.8,
             pointRadius: 0,
-            pointHoverRadius: 4,
-            pointHoverBackgroundColor: '#f57c00',
+            pointHoverRadius: 0,
+            pointHitRadius: 0,
             tension: 0.35,
             fill: false,
           },
@@ -358,23 +430,24 @@ export class GrowthChartComponent {
             borderColor: '#d32f2f',
             borderWidth: 2,
             pointRadius: 0,
-            pointHoverRadius: 4,
-            pointHoverBackgroundColor: '#d32f2f',
+            pointHoverRadius: 0,
+            pointHitRadius: 0,
             tension: 0.35,
             fill: false,
           },
           // Index 5: Patient Growth Trajectory
           {
-            label: 'Evolución del Paciente',
+            label: 'Consulta del Paciente',
             data: patientData,
             borderColor: '#3730a3',
             backgroundColor: '#ffffff',
-            borderWidth: 3,
-            pointRadius: patientData.length === 1 ? 7 : 5.5,
-            pointHoverRadius: 9,
+            borderWidth: 2.5,
+            pointRadius: patientData.length === 1 ? 6.5 : 5.5,
+            pointHoverRadius: 8.5,
+            pointHitRadius: 14,
             pointBackgroundColor: '#ffffff',
             pointBorderColor: '#3730a3',
-            pointBorderWidth: 3,
+            pointBorderWidth: 2.5,
             pointHoverBackgroundColor: '#3730a3',
             pointHoverBorderColor: '#ffffff',
             pointHoverBorderWidth: 2.5,
@@ -384,60 +457,60 @@ export class GrowthChartComponent {
           },
         ],
       },
-      plugins: [omsRightPercentilePlugin],
+      plugins: [omsRightPercentilePlugin, omsBottomAxisPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
         layout: {
           padding: {
-            top: 10,
-            right: 32, // Room for the right-edge percentile badges
-            bottom: 5,
-            left: 5,
+            top: 14,
+            right: 54, // Clear space for percentile lane and right Y-axis tick values
+            bottom: 44, // Clear space for Meses, Años, and centered title
+            left: 10,
           },
         },
         interaction: {
           mode: 'nearest',
-          intersect: false,
-          axis: 'x',
+          intersect: true,
         },
         plugins: {
           legend: {
-            display: false, // Replaced with custom WHO-styled visual legend below
+            display: false, // Custom WHO-styled visual legend below canvas
           },
           tooltip: {
+            filter: (tooltipItem: TooltipItem<'line'>) => tooltipItem.datasetIndex === 5,
             backgroundColor: '#0f172a',
             titleColor: '#f8fafc',
             bodyColor: '#e2e8f0',
             padding: 12,
             cornerRadius: 8,
             boxPadding: 4,
-            displayColors: true,
+            displayColors: false,
             callbacks: {
               title: (items: TooltipItem<'line'>[]) => {
                 const item = items[0];
-                if (!item) return '';
-                const isPatient = item.datasetIndex === 5;
-                if (isPatient && patientPoints[item.dataIndex]) {
-                  const pt = patientPoints[item.dataIndex];
-                  return `Consulta Médica: ${pt.dateFormatted}`;
-                }
-                return `Edad OMS: ${item.parsed.x} meses`;
+                if (!item || !patientPoints[item.dataIndex]) return '';
+                const pt = patientPoints[item.dataIndex];
+                return `Fecha de consulta: ${pt.dateFormatted}`;
               },
               label: (item: TooltipItem<'line'>) => {
-                const isPatient = item.datasetIndex === 5;
-                if (isPatient && patientPoints[item.dataIndex]) {
-                  const pt = patientPoints[item.dataIndex];
-                  const percentileStr = pt.approximatePercentile
-                    ? ` (OMS: ${pt.approximatePercentile})`
-                    : '';
-                  return [
-                    `• Medición: ${pt.value} ${pt.unit}${percentileStr}`,
-                    `• Edad exacta: ${pt.ageFormatted}`,
-                  ];
+                const pt = patientPoints[item.dataIndex];
+                if (!pt) return '';
+                const metricName =
+                  this.metric() === 'WEIGHT'
+                    ? 'Peso'
+                    : this.metric() === 'HEIGHT'
+                    ? 'Talla'
+                    : 'Perímetro cefálico';
+
+                const lines = [
+                  `Edad: ${pt.ageFormatted}`,
+                  `${metricName}: ${pt.value} ${pt.unit}`,
+                ];
+                if (pt.approximatePercentile) {
+                  lines.push(`Percentil OMS: ${pt.approximatePercentile}`);
                 }
-                const label = item.dataset.label || '';
-                return `${label}: ${item.parsed.y} ${scales.unit}`;
+                return lines;
               },
             },
           },
@@ -448,46 +521,36 @@ export class GrowthChartComponent {
             min: scales.minX,
             max: scales.maxX,
             title: {
-              display: true,
-              text: 'Edad (en meses y años cumplidos)',
-              color: '#334155',
-              font: {
-                weight: 'bold',
-                size: 11,
-              },
-              padding: { top: 8 },
+              display: false, // Handled cleanly by omsBottomAxisPlugin
             },
             ticks: {
-              stepSize: scales.stepX,
-              color: '#475569',
-              callback: (val) => {
-                const num = Number(val);
-                if (num === 0) return 'Nacimiento';
-                if (num === 12) return '1 año';
-                if (num === 24) return '2 años';
-                if (num === 36) return '3 años';
-                if (num === 48) return '4 años';
-                if (num === 60) return '5 años';
-                // Show months between years like the PDF (2, 4, 6, 8, 10)
-                const rem = num % 12;
-                return `${rem}`;
-              },
+              display: false, // Handled cleanly by omsBottomAxisPlugin
+              stepSize: scales.maxX <= 24 ? 2 : 3,
             },
             grid: {
+              display: true,
               color: (context) => {
                 const v = context.tick?.value;
-                if (v === 12 || v === 24 || v === 36 || v === 48 || v === 60) {
-                  return 'rgba(30, 41, 59, 0.45)'; // Heavy marker on annual milestones
+                if (typeof v === 'number' && v % 12 === 0) {
+                  return '#000000'; // Major annual milestone vertical lines
                 }
-                return 'rgba(203, 213, 225, 0.6)'; // Technical millimeter grid
+                return '#475569'; // Crisp fine technical grid
               },
               lineWidth: (context) => {
                 const v = context.tick?.value;
-                if (v === 12 || v === 24 || v === 36 || v === 48 || v === 60) {
-                  return 1.5;
+                if (typeof v === 'number' && v % 12 === 0) {
+                  return 1.25;
                 }
                 return 0.75;
               },
+              drawTicks: true,
+              tickLength: 5,
+              tickColor: '#000000',
+            },
+            border: {
+              display: true,
+              color: '#000000',
+              width: 1.5,
             },
           },
           y: {
@@ -498,21 +561,34 @@ export class GrowthChartComponent {
             title: {
               display: true,
               text: scales.yAxisLabel,
-              color: '#334155',
+              color: '#000000',
               font: {
                 weight: 'bold',
                 size: 11,
               },
-              padding: { bottom: 8 },
+              padding: { bottom: 6 },
             },
             ticks: {
               stepSize: scales.stepY,
-              color: '#475569',
+              color: '#000000',
+              font: {
+                size: 10.5,
+                weight: 'bold',
+              },
+              padding: 4,
               callback: (val) => `${val}`,
             },
             grid: {
-              color: 'rgba(203, 213, 225, 0.6)',
+              color: '#475569',
               lineWidth: 0.75,
+              drawTicks: true,
+              tickLength: 5,
+              tickColor: '#000000',
+            },
+            border: {
+              display: true,
+              color: '#000000',
+              width: 1.5,
             },
           },
           y1: {
@@ -521,22 +597,28 @@ export class GrowthChartComponent {
             min: scales.minY,
             max: scales.maxY,
             title: {
-              display: true,
-              text: scales.yAxisLabel,
-              color: '#334155',
-              font: {
-                weight: 'bold',
-                size: 11,
-              },
-              padding: { bottom: 8 },
+              display: false,
             },
             ticks: {
               stepSize: scales.stepY,
-              color: '#475569',
+              color: '#000000',
+              font: {
+                size: 10.5,
+                weight: 'bold',
+              },
+              padding: 24, // Clear 24px lane for percentile numbers 97, 85, 50, 15, 3
               callback: (val) => `${val}`,
             },
             grid: {
               drawOnChartArea: false, // Dual axis without duplicate grid lines
+              drawTicks: true,
+              tickLength: 5,
+              tickColor: '#000000',
+            },
+            border: {
+              display: true,
+              color: '#000000',
+              width: 1.5,
             },
           },
         },

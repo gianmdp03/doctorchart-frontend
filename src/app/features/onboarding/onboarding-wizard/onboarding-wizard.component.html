@@ -4,9 +4,9 @@
       <div class="header-row">
         <span class="brand-pill">
           @if (isEditMode()) {
-            ⚙️ Personalización de Fichas y Consultas
+            Personalización de Fichas y Consultas
           } @else {
-            🔒 Configuración inicial de Cuenta Médica
+            Configuración inicial de Cuenta Médica
           }
         </span>
         <div class="header-actions">
@@ -17,7 +17,7 @@
             [disabled]="isSaving()"
             title="Restablecer plantillas y gráficos a la configuración recomendada de la especialidad"
           >
-            ↺ Restablecer valores iniciales
+            Restablecer valores iniciales
           </button>
           @if (isEditMode()) {
             <button
@@ -27,7 +27,7 @@
               (click)="finishOnboarding()"
               title="Guardar todos los cambios realizados en las plantillas y volver al panel"
             >
-              @if (isSaving()) { Guardando... } @else { 💾 Guardar cambios }
+              @if (isSaving()) { Guardando... } @else { Guardar cambios }
             </button>
             <button type="button" class="signout-button" (click)="exitWizard()">Volver al Panel Principal</button>
           } @else {
