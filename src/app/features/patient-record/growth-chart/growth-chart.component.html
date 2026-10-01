@@ -38,7 +38,11 @@
         [class.active]="selectedRange() === '0-2'"
         (click)="setAgeRange('0-2')"
       >
-        0 - 24 meses (Lactantes)
+        @if (metric() === 'HEIGHT') {
+          0 - 24 meses (Longitud 45-95 cm)
+        } @else {
+          0 - 24 meses (Lactantes)
+        }
       </button>
       <button
         type="button"
@@ -46,7 +50,13 @@
         [class.active]="selectedRange() === '0-5'"
         (click)="setAgeRange('0-5')"
       >
-        0 - 5 años (Global)
+        @if (metric() === 'WEIGHT') {
+          0 - 5 años (2 a 24 kg - PDF)
+        } @else if (metric() === 'HEIGHT') {
+          0 - 5 años (Global 45-125 cm)
+        } @else {
+          0 - 5 años (32 a 54 cm)
+        }
       </button>
     </div>
   </header>

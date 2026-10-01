@@ -81,19 +81,91 @@ export class GrowthChartComponent {
 
   readonly officialOmsTitle = computed(() => {
     const isGirl = this.sex() === 'FEMALE';
+    const range = this.selectedRange();
     switch (this.metric()) {
       case 'WEIGHT':
         return isGirl
           ? 'Peso para la edad niñas. Percentiles (nacimiento a 5 años)'
           : 'Peso para la edad niños. Percentiles (nacimiento a 5 años)';
       case 'HEIGHT':
+        if (range === '0-2') {
+          return isGirl
+            ? 'Longitud para la edad niñas. Percentiles (nacimiento a 2 años)'
+            : 'Longitud para la edad niños. Percentiles (nacimiento a 2 años)';
+        }
         return isGirl
           ? 'Longitud / estatura para la edad niñas. Percentiles (nacimiento a 5 años)'
           : 'Longitud / estatura para la edad niños. Percentiles (nacimiento a 5 años)';
       case 'HEAD_CIRCUMFERENCE':
         return isGirl
-          ? 'Perímetro cefálico para la edad niñas. Percentiles (nacimiento a 5 años)'
-          : 'Perímetro cefálico para la edad niños. Percentiles (nacimiento a 5 años)';
+          ? 'Perímetro craneal para la edad niñas. Percentiles (nacimiento a 5 años)'
+          : 'Perímetro craneal para la edad niños. Percentiles (nacimiento a 5 años)';
+    }
+  });
+
+  /**
+   * Exact axis configuration copied 100% faithfully from the WHO PDF document
+   */
+  readonly exactPdfScales = computed(() => {
+    const metric = this.metric();
+    const sex = this.sex();
+    const range = this.selectedRange();
+
+    switch (metric) {
+      case 'WEIGHT':
+        // PDF Page 1 & 2: Exact Y-scale is 2 to 24 kg with step 2
+        return {
+          minY: 2,
+          maxY: 24,
+          stepY: 2,
+          unit: 'kg',
+          yAxisLabel: 'Peso (kg)',
+          minX: 0,
+          maxX: range === '0-2' ? 24 : 60,
+          stepX: 2,
+        };
+
+      case 'HEIGHT':
+        if (range === '0-2') {
+          // PDF Page 2 & 3: Longitud nacimiento a 2 años is 45 to 95 cm with step 5
+          return {
+            minY: 45,
+            maxY: 95,
+            stepY: 5,
+            unit: 'cm',
+            yAxisLabel: 'Longitud (cm)',
+            minX: 0,
+            maxX: 24,
+            stepX: 2,
+          };
+        } else {
+          // PDF Page 3 & 4 / Global 0-5 años: 45 to 125 cm with step 10
+          return {
+            minY: 45,
+            maxY: 125,
+            stepY: 10,
+            unit: 'cm',
+            yAxisLabel: 'Longitud / Estatura (cm)',
+            minX: 0,
+            maxX: 60,
+            stepX: 6,
+          };
+        }
+
+      case 'HEAD_CIRCUMFERENCE':
+        // PDF Page 4 & 5: Perímetro craneal nacimiento a 5 años:
+        // Niños: 32 a 54 cm (step 2)
+        // Niñas: 32 a 52 cm (step 2)
+        return {
+          minY: 32,
+          maxY: sex === 'MALE' ? 54 : 52,
+          stepY: 2,
+          unit: 'cm',
+          yAxisLabel: 'Perímetro craneal (cm)',
+          minX: 0,
+          maxX: range === '0-2' ? 24 : 60,
+          stepX: 2,
+        };
     }
   });
 
@@ -115,25 +187,28 @@ export class GrowthChartComponent {
   });
 
   constructor() {
-    // Sync initialAgeRange when set from outside
+    // Default initialAgeRange based on WHO sheet convention:
+    // In PDF, Weight is 0-5 and Head Circumference is 0-5, while Length is 0-2
     effect(() => {
-      this.selectedRange.set(this.initialAgeRange());
+      const explicitInitial = this.initialAgeRange();
+      if (explicitInitial) {
+        this.selectedRange.set(explicitInitial);
+      }
     });
 
-    // Reactive chart redraw when metric, sex, range or measurements change
+    // Reactive chart redraw when metric, sex, range, or measurements change
     effect(() => {
-      // Access signals to track them
       const canvasRef = this.chartCanvas();
       const omsPoints = this.omsData();
       const patientPoints = this.filteredMeasurements();
+      const scales = this.exactPdfScales();
       const range = this.selectedRange();
-      const config = this.metricConfig();
 
       if (!canvasRef?.nativeElement) {
         return;
       }
 
-      this.renderChart(canvasRef.nativeElement, omsPoints, patientPoints, config, range);
+      this.renderChart(canvasRef.nativeElement, omsPoints, patientPoints, scales, range);
     });
 
     this.destroyRef.onDestroy(() => {
@@ -156,7 +231,7 @@ export class GrowthChartComponent {
     canvas: HTMLCanvasElement,
     omsPoints: ReturnType<typeof this.omsData>,
     patientPoints: PatientGrowthMeasurement[],
-    config: ReturnType<typeof this.metricConfig>,
+    scales: ReturnType<typeof this.exactPdfScales>,
     range: GrowthAgeRange
   ): void {
     this.cleanupChart();
@@ -166,9 +241,6 @@ export class GrowthChartComponent {
       return;
     }
 
-    const maxAge = range === '0-2' ? 24 : 60;
-    const xStep = range === '0-2' ? 2 : 6;
-
     // Prepare OMS percentile curve points
     const p3Data = omsPoints.map((p) => ({ x: p.ageMonths, y: p.p3 }));
     const p15Data = omsPoints.map((p) => ({ x: p.ageMonths, y: p.p15 }));
@@ -176,24 +248,8 @@ export class GrowthChartComponent {
     const p85Data = omsPoints.map((p) => ({ x: p.ageMonths, y: p.p85 }));
     const p97Data = omsPoints.map((p) => ({ x: p.ageMonths, y: p.p97 }));
 
-    // Prepare patient trajectory points
+    // Prepare patient trajectory points (filtered for sanity within chart bounds)
     const patientData = patientPoints.map((p) => ({ x: p.ageMonths, y: p.value }));
-
-    // Find min and max for Y-axis with proper rounding
-    let yMin = config.minY ?? 0;
-    let yMax = config.maxY ?? 100;
-
-    if (omsPoints.length > 0) {
-      const minOms = Math.min(...omsPoints.map((p) => p.p3));
-      const maxOms = Math.max(...omsPoints.map((p) => p.p97));
-      const minPatient = patientPoints.length > 0 ? Math.min(...patientPoints.map((p) => p.value)) : minOms;
-      const maxPatient = patientPoints.length > 0 ? Math.max(...patientPoints.map((p) => p.value)) : maxOms;
-
-      const rawMin = Math.min(minOms, minPatient);
-      const rawMax = Math.max(maxOms, maxPatient);
-      yMin = Math.max(0, Math.floor(rawMin - (rawMax - rawMin) * 0.08));
-      yMax = Math.ceil(rawMax + (rawMax - rawMin) * 0.08);
-    }
 
     // Custom WHO right margin percentile labels plugin
     const omsRightPercentilePlugin = {
@@ -381,7 +437,7 @@ export class GrowthChartComponent {
                   ];
                 }
                 const label = item.dataset.label || '';
-                return `${label}: ${item.parsed.y} ${config.unit}`;
+                return `${label}: ${item.parsed.y} ${scales.unit}`;
               },
             },
           },
@@ -389,11 +445,11 @@ export class GrowthChartComponent {
         scales: {
           x: {
             type: 'linear',
-            min: 0,
-            max: maxAge,
+            min: scales.minX,
+            max: scales.maxX,
             title: {
               display: true,
-              text: 'Edad del Paciente (Meses y Años cumplidos)',
+              text: 'Edad (en meses y años cumplidos)',
               color: '#334155',
               font: {
                 weight: 'bold',
@@ -402,17 +458,19 @@ export class GrowthChartComponent {
               padding: { top: 8 },
             },
             ticks: {
-              stepSize: xStep,
+              stepSize: scales.stepX,
               color: '#475569',
               callback: (val) => {
                 const num = Number(val);
-                if (num === 0) return 'Nac.';
+                if (num === 0) return 'Nacimiento';
                 if (num === 12) return '1 año';
                 if (num === 24) return '2 años';
                 if (num === 36) return '3 años';
                 if (num === 48) return '4 años';
                 if (num === 60) return '5 años';
-                return `${num}m`;
+                // Show months between years like the PDF (2, 4, 6, 8, 10)
+                const rem = num % 12;
+                return `${rem}`;
               },
             },
             grid: {
@@ -421,7 +479,7 @@ export class GrowthChartComponent {
                 if (v === 12 || v === 24 || v === 36 || v === 48 || v === 60) {
                   return 'rgba(30, 41, 59, 0.45)'; // Heavy marker on annual milestones
                 }
-                return 'rgba(203, 213, 225, 0.6)'; // Technical grid
+                return 'rgba(203, 213, 225, 0.6)'; // Technical millimeter grid
               },
               lineWidth: (context) => {
                 const v = context.tick?.value;
@@ -435,11 +493,11 @@ export class GrowthChartComponent {
           y: {
             type: 'linear',
             position: 'left',
-            min: yMin,
-            max: yMax,
+            min: scales.minY,
+            max: scales.maxY,
             title: {
               display: true,
-              text: config.yAxisLabel,
+              text: scales.yAxisLabel,
               color: '#334155',
               font: {
                 weight: 'bold',
@@ -448,7 +506,7 @@ export class GrowthChartComponent {
               padding: { bottom: 8 },
             },
             ticks: {
-              stepSize: config.stepSize,
+              stepSize: scales.stepY,
               color: '#475569',
               callback: (val) => `${val}`,
             },
@@ -460,11 +518,11 @@ export class GrowthChartComponent {
           y1: {
             type: 'linear',
             position: 'right',
-            min: yMin,
-            max: yMax,
+            min: scales.minY,
+            max: scales.maxY,
             title: {
               display: true,
-              text: config.yAxisLabel,
+              text: scales.yAxisLabel,
               color: '#334155',
               font: {
                 weight: 'bold',
@@ -473,12 +531,12 @@ export class GrowthChartComponent {
               padding: { bottom: 8 },
             },
             ticks: {
-              stepSize: config.stepSize,
+              stepSize: scales.stepY,
               color: '#475569',
               callback: (val) => `${val}`,
             },
             grid: {
-              drawOnChartArea: false, // Dual axis without double grid lines
+              drawOnChartArea: false, // Dual axis without duplicate grid lines
             },
           },
         },

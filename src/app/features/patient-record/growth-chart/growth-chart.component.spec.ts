@@ -153,12 +153,16 @@ describe('GrowthChartComponent', () => {
     fixture.componentRef.setInput('sex', 'MALE');
     fixture.detectChanges();
 
-    expect(bannerEl.textContent).toContain('Longitud / estatura para la edad niños');
+    expect(bannerEl.textContent).toContain('Longitud para la edad niños');
     expect(cardEl.classList.contains('theme-boy')).toBe(true);
+
+    component.setAgeRange('0-5');
+    fixture.detectChanges();
+    expect(bannerEl.textContent).toContain('Longitud / estatura para la edad niños');
 
     fixture.componentRef.setInput('metric', 'HEAD_CIRCUMFERENCE');
     fixture.detectChanges();
 
-    expect(bannerEl.textContent).toContain('Perímetro cefálico para la edad niños');
+    expect(bannerEl.textContent).toContain('Perímetro craneal para la edad niños');
   });
 });

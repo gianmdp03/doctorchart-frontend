@@ -7,8 +7,8 @@ export const OMS_METRIC_CONFIGS: Record<GrowthMetricType, GrowthMetricConfig> = 
     shortTitle: 'Peso',
     unit: 'kg',
     yAxisLabel: 'Peso (kg)',
-    minY: 1,
-    maxY: 26,
+    minY: 2,
+    maxY: 24,
     stepSize: 2
   },
   HEIGHT: {
@@ -17,7 +17,7 @@ export const OMS_METRIC_CONFIGS: Record<GrowthMetricType, GrowthMetricConfig> = 
     shortTitle: 'Talla',
     unit: 'cm',
     yAxisLabel: 'Longitud / Talla (cm)',
-    minY: 40,
+    minY: 45,
     maxY: 125,
     stepSize: 10
   },
@@ -26,9 +26,9 @@ export const OMS_METRIC_CONFIGS: Record<GrowthMetricType, GrowthMetricConfig> = 
     title: 'Perímetro Cefálico para la Edad (OMS 0 - 5 años)',
     shortTitle: 'Perímetro Cefálico',
     unit: 'cm',
-    yAxisLabel: 'Perímetro Cefálico (cm)',
-    minY: 30,
-    maxY: 56,
+    yAxisLabel: 'Perímetro craneal (cm)',
+    minY: 32,
+    maxY: 54,
     stepSize: 2
   }
 };

@@ -181,18 +181,20 @@ export class PatientGrowthService {
     const measurements: PatientGrowthMeasurement[] = [];
 
     for (const item of backendData) {
-      let value: number | null = null;
+      let rawVal: number | null = null;
       switch (metric) {
         case 'WEIGHT':
-          value = item.peso ?? null;
+          rawVal = item.peso ?? null;
           break;
         case 'HEIGHT':
-          value = item.talla ?? null;
+          rawVal = item.talla ?? null;
           break;
         case 'HEAD_CIRCUMFERENCE':
-          value = item.perimetroEncefalico ?? null;
+          rawVal = item.perimetroEncefalico ?? null;
           break;
       }
+
+      const value = this.parseNumeric(rawVal, metric);
 
       if (value !== null && value > 0) {
         measurements.push({
@@ -247,18 +249,19 @@ export class PatientGrowthService {
     // 2. If backend curves are provided, prefer persisted measurements from database
     if (backendCurves && backendCurves.length > 0) {
       for (const item of backendCurves) {
-        let value: number | null = null;
+        let rawVal: number | null = null;
         switch (metric) {
           case 'WEIGHT':
-            value = item.peso ?? null;
+            rawVal = item.peso ?? null;
             break;
           case 'HEIGHT':
-            value = item.talla ?? null;
+            rawVal = item.talla ?? null;
             break;
           case 'HEAD_CIRCUMFERENCE':
-            value = item.perimetroEncefalico ?? null;
+            rawVal = item.perimetroEncefalico ?? null;
             break;
         }
+        const value = this.parseNumeric(rawVal, metric);
         if (value !== null && value > 0) {
           measurements.push({
             encounterId: item.consultaId,
@@ -334,11 +337,11 @@ export class PatientGrowthService {
     const bm = history.birthMeasurements;
     switch (metric) {
       case 'WEIGHT':
-        return this.parseNumeric(bm.weight);
+        return this.parseNumeric(bm.weight, 'WEIGHT');
       case 'HEIGHT':
-        return this.parseNumeric(bm.height);
+        return this.parseNumeric(bm.height, 'HEIGHT');
       case 'HEAD_CIRCUMFERENCE':
-        return this.parseNumeric(bm.headCircumference);
+        return this.parseNumeric(bm.headCircumference, 'HEAD_CIRCUMFERENCE');
       default:
         return null;
     }
@@ -354,39 +357,47 @@ export class PatientGrowthService {
     switch (metric) {
       case 'WEIGHT':
         return (
-          this.parseNumeric(encounter.peso) ??
-          this.parseNumeric(vs?.weightKg) ??
-          this.findDynamicValue(dyn, ['peso', 'weight', 'weightKg', 'pesoKg', 'peso_kg'])
+          this.parseNumeric(encounter.peso, 'WEIGHT') ??
+          this.parseNumeric(vs?.weightKg, 'WEIGHT') ??
+          this.findDynamicValue(dyn, ['peso', 'weight', 'weightKg', 'pesoKg', 'peso_kg'], 'WEIGHT')
         );
       case 'HEIGHT':
         return (
-          this.parseNumeric(encounter.talla) ??
-          this.parseNumeric(vs?.heightCm) ??
-          this.findDynamicValue(dyn, [
-            'talla',
-            'height',
-            'heightCm',
-            'tallaCm',
-            'talla_cm',
-            'estatura',
-            'longitud',
-          ])
+          this.parseNumeric(encounter.talla, 'HEIGHT') ??
+          this.parseNumeric(vs?.heightCm, 'HEIGHT') ??
+          this.findDynamicValue(
+            dyn,
+            [
+              'talla',
+              'height',
+              'heightCm',
+              'tallaCm',
+              'talla_cm',
+              'estatura',
+              'longitud',
+            ],
+            'HEIGHT'
+          )
         );
       case 'HEAD_CIRCUMFERENCE':
         return (
-          this.parseNumeric(encounter.perimetroEncefalico) ??
-          this.parseNumeric(vs?.headCircumferenceCm) ??
-          this.findDynamicValue(dyn, [
-            'perimetroCefalico',
-            'perimetro_cefalico',
-            'perimetroEncefalico',
-            'perimetro_encefalico',
-            'perimetroCraneal',
-            'perimetro_craneal',
-            'headCircumference',
-            'head_circumference',
-            'pc',
-          ])
+          this.parseNumeric(encounter.perimetroEncefalico, 'HEAD_CIRCUMFERENCE') ??
+          this.parseNumeric(vs?.headCircumferenceCm, 'HEAD_CIRCUMFERENCE') ??
+          this.findDynamicValue(
+            dyn,
+            [
+              'perimetroCefalico',
+              'perimetro_cefalico',
+              'perimetroEncefalico',
+              'perimetro_encefalico',
+              'perimetroCraneal',
+              'perimetro_craneal',
+              'headCircumference',
+              'head_circumference',
+              'pc',
+            ],
+            'HEAD_CIRCUMFERENCE'
+          )
         );
       default:
         return null;
@@ -400,20 +411,24 @@ export class PatientGrowthService {
     if (!checkup.measurements) return null;
     switch (metric) {
       case 'WEIGHT':
-        return this.parseNumeric(checkup.measurements.weight);
+        return this.parseNumeric(checkup.measurements.weight, 'WEIGHT');
       case 'HEIGHT':
-        return this.parseNumeric(checkup.measurements.height);
+        return this.parseNumeric(checkup.measurements.height, 'HEIGHT');
       case 'HEAD_CIRCUMFERENCE':
-        return this.parseNumeric(checkup.measurements.headCircumference);
+        return this.parseNumeric(checkup.measurements.headCircumference, 'HEAD_CIRCUMFERENCE');
       default:
         return null;
     }
   }
 
-  private findDynamicValue(data: Record<string, unknown>, candidateKeys: string[]): number | null {
+  private findDynamicValue(
+    data: Record<string, unknown>,
+    candidateKeys: string[],
+    metric?: GrowthMetricType
+  ): number | null {
     for (const key of candidateKeys) {
       if (key in data) {
-        const val = this.parseNumeric(data[key]);
+        const val = this.parseNumeric(data[key], metric);
         if (val !== null) return val;
       }
     }
@@ -426,23 +441,34 @@ export class PatientGrowthService {
     for (const key of candidateKeys) {
       const lower = key.toLowerCase();
       if (lower in lowerKeys) {
-        const val = this.parseNumeric(lowerKeys[lower]);
+        const val = this.parseNumeric(lowerKeys[lower], metric);
         if (val !== null) return val;
       }
     }
     return null;
   }
 
-  private parseNumeric(val: unknown): number | null {
+  private parseNumeric(val: unknown, metric?: GrowthMetricType): number | null {
     if (val === null || val === undefined || val === '') return null;
+    let n: number | null = null;
     if (typeof val === 'number') {
-      return isNaN(val) ? null : val;
-    }
-    if (typeof val === 'string') {
+      n = isNaN(val) ? null : val;
+    } else if (typeof val === 'string') {
       const cleaned = val.replace(/,/g, '.').replace(/[^\d.-]/g, '').trim();
       const parsed = parseFloat(cleaned);
-      return isNaN(parsed) ? null : parsed;
+      n = isNaN(parsed) ? null : parsed;
     }
-    return null;
+    if (n === null) return null;
+
+    // Pediatric normalization:
+    // If WEIGHT >= 100, it was recorded in grams: convert to kg
+    if (metric === 'WEIGHT' && n >= 100) {
+      return Math.round((n / 1000) * 100) / 100;
+    }
+    // If HEIGHT or HEAD_CIRCUMFERENCE > 250, it was recorded in mm: convert to cm
+    if ((metric === 'HEIGHT' || metric === 'HEAD_CIRCUMFERENCE') && n > 250 && n <= 1500) {
+      return Math.round((n / 10) * 10) / 10;
+    }
+    return n;
   }
 }
