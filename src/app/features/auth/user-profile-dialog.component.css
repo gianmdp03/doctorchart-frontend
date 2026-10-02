@@ -15,26 +15,7 @@
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--md-sys-color-on-surface);
-  margin: 0 0 0.35rem;
-}
-
-.syntah-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background-color: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--md-shape-full);
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--md-sys-color-primary);
+  margin: 0;
 }
 
 .profile-hero {
@@ -78,26 +59,10 @@
 .profile-email {
   font-size: 0.8rem;
   color: var(--md-sys-color-secondary);
-  margin: 0.1rem 0 0.4rem;
+  margin: 0.1rem 0 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.profile-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--md-sys-color-success);
-}
-
-.pulse-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: var(--md-sys-color-success);
 }
 
 .profile-details-card {
@@ -129,11 +94,6 @@
   color: var(--md-sys-color-on-surface);
   font-weight: 500;
   text-align: right;
-}
-
-.text-accent {
-  color: var(--md-sys-color-primary);
-  font-weight: 600;
 }
 
 .m3-button-danger {
@@ -184,25 +144,5 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-.specialty-locked-val {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background-color: var(--md-sys-color-surface-container-high, #e6ecec);
-  padding: 0.25rem 0.65rem;
-  border-radius: var(--md-shape-full, 9999px);
-  border: 1px solid var(--md-sys-color-outline-variant, #b2c9cc);
-}
-
-.lock-badge-icon {
-  font-size: 0.75rem;
-}
-
-.specialty-name {
-  color: var(--md-sys-color-primary, #006874);
-  font-weight: 700;
-  font-size: 0.8rem;
 }
 

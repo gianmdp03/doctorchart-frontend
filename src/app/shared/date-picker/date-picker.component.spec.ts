@@ -1,0 +1,61 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { DatePickerComponent } from './date-picker.component';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
+import { ArgentinaDateAdapter, DATE_INPUT_FORMAT } from '../../core/date/argentina-date-adapter';
+import { By } from '@angular/platform-browser';
+
+describe('DatePickerComponent', () => {
+  let component: DatePickerComponent;
+  let fixture: ComponentFixture<DatePickerComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DatePickerComponent],
+      providers: [
+        provideAnimationsAsync(),
+        { provide: MAT_DATE_LOCALE, useValue: 'es-AR' },
+        { provide: DateAdapter, useClass: ArgentinaDateAdapter },
+        {
+          provide: MAT_DATE_FORMATS,
+          useValue: {
+            parse: { dateInput: DATE_INPUT_FORMAT },
+            display: {
+              dateInput: DATE_INPUT_FORMAT,
+              monthYearLabel: { month: 'long', year: 'numeric' },
+              dateA11yLabel: { day: 'numeric', month: 'long', year: 'numeric' },
+              monthYearA11yLabel: { month: 'long', year: 'numeric' },
+            },
+          },
+        },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(DatePickerComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create DatePickerComponent with Angular Material datepicker', () => {
+    expect(component).toBeTruthy();
+    const inputEl = fixture.debugElement.query(By.css('input.date-picker-input'));
+    expect(inputEl).toBeTruthy();
+    expect(inputEl.nativeElement.getAttribute('type')).toBe('text');
+  });
+
+  it('should parse ISO date on writeValue and format for Angular Material', () => {
+    component.writeValue('2020-05-15');
+    fixture.detectChanges();
+    expect(component.selectedDate()).toBeTruthy();
+    expect(component.selectedDate()?.getFullYear()).toBe(2020);
+    expect(component.selectedDate()?.getMonth()).toBe(4);
+    expect(component.selectedDate()?.getDate()).toBe(15);
+  });
+
+  it('should emit ISO string when a date is selected', () => {
+    let emitted = '';
+    component.valueChange.subscribe((val) => (emitted = val));
+    component.selectDate(new Date(2021, 2, 10)); // 10 Mar 2021
+    expect(emitted).toBe('2021-03-10');
+  });
+});

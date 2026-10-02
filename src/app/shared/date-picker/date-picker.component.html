@@ -1,5 +1,19 @@
 <div class="date-picker-shell">
-  <input class="date-picker-input" [matDatepicker]="picker" [value]="selectedDate()" [max]="maxDate()" [disabled]="isDisabled()" placeholder="dd/MM/aaaa" inputmode="numeric" autocomplete="bday" (dateChange)="selectDate($event.value)" (blur)="markTouched()" />
-  <mat-datepicker-toggle [for]="picker" [disabled]="isDisabled()" />
-  <mat-datepicker #picker [startView]="startView()" [startAt]="calendarStart()" />
+  <input
+    type="text"
+    class="date-picker-input"
+    [matDatepicker]="picker"
+    [value]="selectedDate()"
+    [max]="maxDate()"
+    [disabled]="isDisabled()"
+    placeholder="dd/MM/aaaa"
+    inputmode="numeric"
+    autocomplete="bday"
+    (click)="!isDisabled() && picker.open()"
+    (dateInput)="selectDate($event.value)"
+    (dateChange)="selectDate($event.value)"
+    (blur)="markTouched()"
+  />
+  <mat-datepicker-toggle [for]="picker" [disabled]="isDisabled()"></mat-datepicker-toggle>
+  <mat-datepicker #picker [startView]="startView()" [startAt]="calendarStart()"></mat-datepicker>
 </div>

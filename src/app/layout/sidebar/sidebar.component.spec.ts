@@ -54,8 +54,19 @@ describe('SidebarComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should compute clinician initials correctly', () => {
-    expect(component.clinicianInitials()).toBe('CG');
+  it('should not render redundant profile in the sidebar footer', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const profileRow = el.querySelector('.footer-profile-row');
+    expect(profileRow).toBeNull();
+  });
+
+  it('should render all nav icons including calculator and sliders', () => {
+    const icons = fixture.nativeElement.querySelectorAll('.sidebar-nav ng-icon');
+    expect(icons.length).toBe(5);
+    icons.forEach((ic: HTMLElement) => {
+      const svg = ic.querySelector('svg');
+      expect(svg).toBeTruthy();
+    });
   });
 
   it('should toggle collapse state', () => {

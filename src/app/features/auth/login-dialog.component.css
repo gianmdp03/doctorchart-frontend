@@ -11,26 +11,6 @@
   transform: scale(1);
 }
 
-.auth-brand-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background-color: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--md-shape-full);
-  font-size: 0.7rem;
-  font-weight: 700;
-  margin-bottom: 0.35rem;
-}
-
-.badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--md-sys-color-primary);
-}
-
 .auth-mode-switcher {
   display: flex;
   gap: 0.35rem;

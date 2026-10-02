@@ -80,10 +80,10 @@ describe('HeaderComponent', () => {
     expect(component.planBadgeLabel()).toBe('Plan PROFESSIONAL');
   });
 
-  it('should display specialty label', () => {
+  it('should keep header clean without redundant specialty badge', () => {
     const el = fixture.nativeElement as HTMLElement;
     const badge = el.querySelector('.specialty-badge');
-    expect(badge?.textContent).toContain('Pediatría');
+    expect(badge).toBeNull();
   });
 
   it('should compute clinician initials correctly', () => {

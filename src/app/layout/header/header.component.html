@@ -1,11 +1,6 @@
 <header class="top-app-header">
-  <!-- Left: Context / Workspace Breadcrumb -->
-  <div class="header-left">
-    <div class="workspace-pill" title="Módulo Clínico Activo">
-      <span class="workspace-dot"></span>
-      <span class="workspace-name">{{ doctorSpecialtyService.currentSpecialtyOption().label }}</span>
-    </div>
-  </div>
+  <!-- Left: Header spacing / Navigation anchor -->
+  <div class="header-left"></div>
 
   <!-- Center: Omnibox Global Search (Ctrl + K) -->
   <div class="header-center" role="search">
@@ -81,7 +76,7 @@
     </div>
   </div>
 
-  <!-- Right: Actions, Specialty Badge & Profile -->
+  <!-- Right: Actions & Profile -->
   <div class="header-right">
     <!-- Visual Accessibility Font Switcher -->
     <div class="accessibility-ctrl">
@@ -96,12 +91,6 @@
         <span class="accessibility-text">A+</span>
         <span class="accessibility-badge">{{ accessibilityService.fontSizeLabel() }}</span>
       </button>
-    </div>
-
-    <!-- Subtle Specialty Badge -->
-    <div class="specialty-badge" title="Especialidad médica asignada">
-      <span class="specialty-icon-dot"></span>
-      <span class="specialty-name">{{ doctorSpecialtyService.currentSpecialtyOption().shortLabel }}</span>
     </div>
 
     <!-- User Profile Dropdown Button -->

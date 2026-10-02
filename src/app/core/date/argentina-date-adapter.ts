@@ -1,8 +1,10 @@
+import { Injectable } from '@angular/core';
 import { NativeDateAdapter } from '@angular/material/core';
 
 export const DATE_INPUT_FORMAT = 'dd/MM/yyyy';
 
 /** Makes every Material date input parse and display the clinical Argentine format. */
+@Injectable()
 export class ArgentinaDateAdapter extends NativeDateAdapter {
   override parse(value: unknown): Date | null {
     if (typeof value === 'string') {

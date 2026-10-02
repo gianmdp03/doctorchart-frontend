@@ -12,7 +12,6 @@ import {
   lucideEye,
   lucideFileText,
   lucideSearch,
-  lucideShield,
   lucideSparkles,
   lucideStethoscope,
   lucideUserPlus,
@@ -22,7 +21,6 @@ import { catchError, forkJoin, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
-import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { PatientService } from '../../core/services/patient.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { PatientListDTO } from '../../core/models/patient.model';
@@ -65,7 +63,6 @@ export interface RecentEncounterItem {
       lucideEye,
       lucideFileText,
       lucideSearch,
-      lucideShield,
       lucideSparkles,
       lucideStethoscope,
       lucideUserPlus,
@@ -79,7 +76,6 @@ export class DashboardComponent implements OnInit {
   readonly authService = inject(AuthService);
   readonly patientService = inject(PatientService);
   readonly activePatientService = inject(ActivePatientService);
-  readonly specialtyService = inject(DoctorSpecialtyService);
   private readonly clinicalEncounterService = inject(ClinicalEncounterService);
   private readonly workspaceStore = inject(WorkspaceStore);
   private readonly router = inject(Router);

@@ -24,7 +24,6 @@ import {
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { PatientService } from '../../core/services/patient.service';
-import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { DoctorProfileService } from '../../core/services/doctor-profile.service';
 import { AccessibilityService } from '../../core/services/accessibility.service';
 import { PatientListDTO } from '../../core/models/patient.model';
@@ -54,7 +53,6 @@ export class HeaderComponent {
   readonly authService = inject(AuthService);
   readonly activePatientService = inject(ActivePatientService);
   private readonly patientService = inject(PatientService);
-  readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
   readonly doctorProfileService = inject(DoctorProfileService);
   readonly accessibilityService = inject(AccessibilityService);
   private readonly router = inject(Router);

@@ -44,19 +44,6 @@
   margin: 0;
 }
 
-.specialty-badge-header {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background-color: #e6f6f8;
-  color: #006874;
-  border: 1px solid #cce8ed;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.25rem 0.65rem;
-  border-radius: 9999px;
-}
-
 .welcome-subtitle {
   font-size: 0.85rem;
   color: #64748b;

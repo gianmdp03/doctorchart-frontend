@@ -87,20 +87,8 @@
     </a>
   </nav>
 
-  <!-- Sidebar Footer: Profile info & Collapse Toggle -->
+  <!-- Sidebar Footer: Collapse Toggle -->
   <div class="sidebar-footer">
-    <div class="footer-profile-row" [title]="authService.userName() || 'Profesional Médico'">
-      <div class="profile-avatar">
-        {{ clinicianInitials() }}
-      </div>
-      @if (!isCollapsed()) {
-        <div class="profile-info-text">
-          <span class="profile-name">{{ authService.userName() || 'Médico' }}</span>
-          <span class="profile-status-text">En línea</span>
-        </div>
-      }
-    </div>
-
     <button
       type="button"
       class="collapse-toggle-btn"

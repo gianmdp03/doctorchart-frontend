@@ -1,7 +1,8 @@
 :host { display: block; width: 100%; }
-.date-picker-shell { display: flex; align-items: center; min-height: 2.55rem; border: 1px solid var(--color-outline, #cbd5e1); border-radius: .6rem; background: var(--color-surface, #fff); transition: border-color .15s ease, box-shadow .15s ease; }
-.date-picker-shell:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 3px rgb(59 130 246 / 15%); }
-.date-picker-input { min-width: 0; width: 100%; padding: .5rem 0 .5rem .75rem; border: 0; outline: 0; background: transparent; color: var(--color-on-surface, #0f172a); font: inherit; }
+.date-picker-shell { display: flex; align-items: center; min-height: 2.55rem; border: 1px solid var(--color-outline, #cbd5e1); border-radius: .6rem; background: var(--color-surface, #fff); transition: border-color .15s ease, box-shadow .15s ease; cursor: pointer; }
+.date-picker-shell:hover { border-color: #94a3b8; }
+.date-picker-shell:focus-within { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15); }
+.date-picker-input { min-width: 0; width: 100%; padding: .5rem 0 .5rem .75rem; border: 0; outline: 0; background: transparent; color: var(--color-on-surface, #0f172a); font: inherit; cursor: pointer; }
 .date-picker-input::placeholder { color: #94a3b8; }
 mat-datepicker-toggle { margin-right: .25rem; color: #475569; }
 :host(.input-error) .date-picker-shell { border-color: #ef4444; }

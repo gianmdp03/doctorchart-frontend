@@ -41,30 +41,9 @@
 
 /* Card Header */
 .login-card-header {
-  padding: 2rem 2rem 1rem;
+  padding: 2rem 2rem 1.25rem;
   border-bottom: 1px solid var(--md-sys-color-outline-variant, #eef2f3);
   text-align: center;
-}
-
-.brand-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background-color: var(--md-sys-color-secondary-container, #d5e4e7);
-  color: var(--md-sys-color-on-secondary-container, #051f23);
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--md-shape-full, 9999px);
-  font-size: 0.75rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  letter-spacing: 0.02em;
-}
-
-.brand-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: var(--md-sys-color-primary, #006874);
 }
 
 .brand-logo-row {
