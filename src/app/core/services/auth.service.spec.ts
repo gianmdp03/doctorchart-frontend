@@ -125,6 +125,25 @@ describe('AuthService', () => {
   });
 
   describe('Role and DoctorChart Plan Resolution', () => {
+    it('does not accept a superadmin role supplied through editable user metadata', () => {
+      service.currentUser.set({ id: 'doctor', user_metadata: { role: 'SUPER_ADMIN' }, app_metadata: {} } as unknown as User);
+      expect(service.userRole()).toBe('SUPER_ADMIN');
+      expect(service.isSuperAdmin()).toBe(false);
+      expect(service.hasDoctorchartPlan()).toBe(false);
+      expect(service.doctorchartPlanTier()).toBeNull();
+    });
+
+    it('uses the server managed role despite conflicting editable metadata', () => {
+      service.currentUser.set({ id: 'doctor', user_metadata: { role: 'SUPER_ADMIN' }, app_metadata: { role: 'DOCTOR' } } as unknown as User);
+      expect(service.isSuperAdmin()).toBe(false);
+      service.currentUser.set({ id: 'admin', user_metadata: { role: 'DOCTOR' }, app_metadata: { role: 'super_admin' } } as unknown as User);
+      expect(service.isSuperAdmin()).toBe(true);
+    });
+
+    it('rejects malformed server managed roles instead of coercing them', () => {
+      service.currentUser.set({ id: 'user', app_metadata: { role: ['SUPER_ADMIN'] } } as unknown as User);
+      expect(service.isSuperAdmin()).toBe(false);
+    });
     it('should detect isSuperAdmin correctly', () => {
       service.currentUser.set({
         id: 'super-user',

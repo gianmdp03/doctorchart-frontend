@@ -47,7 +47,7 @@
         Todos
       </button>
 
-      @if (doctorSpecialtyService.isPediatricMode()) {
+      @if (doctorSpecialtyService.supportsGrowthCharts()) {
         <button
           type="button"
           class="m3-chip"

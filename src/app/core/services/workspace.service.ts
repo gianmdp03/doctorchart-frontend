@@ -3,69 +3,39 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  FinishOnboardingRequest,
-  FormTemplate,
-  QuickNotesUpdateRequest,
-  SaveOnboardingDraftRequest,
-  WorkspaceSetup,
-  WorkspaceUpdateRequest,
+  QuickNotesUpdateRequest, SaveOnboardingDraftRequest, SelectSpecialtyRequest,
+  VersionRequest, WorkspacePreferences, WorkspaceSetup, WorkspaceUpdateRequest,
 } from '../models/workspace.model';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class WorkspaceService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
-
-  getCurrentSetup(): Observable<WorkspaceSetup> {
-    return this.http.get<WorkspaceSetup>(`${this.baseUrl}/workspace/current-setup`);
+  getCurrentSetup(): Observable<WorkspaceSetup | null> {
+    return this.http.get<WorkspaceSetup | null>(`${this.baseUrl}/workspace`);
   }
-
-  finishOnboarding(payload: FinishOnboardingRequest): Observable<WorkspaceSetup> {
+  selectSpecialty(payload: SelectSpecialtyRequest): Observable<WorkspaceSetup> {
+    return this.http.put<WorkspaceSetup>(`${this.baseUrl}/workspace/specialty`, payload);
+  }
+  finishOnboarding(payload: VersionRequest): Observable<WorkspaceSetup> {
     return this.http.post<WorkspaceSetup>(`${this.baseUrl}/workspace/finish-onboarding`, payload);
   }
-
   saveOnboardingDraft(payload: SaveOnboardingDraftRequest): Observable<WorkspaceSetup> {
-    return this.http.put<WorkspaceSetup>(`${this.baseUrl}/workspace/onboarding-draft`, payload);
+    return this.http.put<WorkspaceSetup>(`${this.baseUrl}/workspace/wizard/draft`, payload);
   }
-
-  updateQuickNotes(payload: QuickNotesUpdateRequest): Observable<WorkspaceSetup> {
-    return this.http.put<WorkspaceSetup>(`${this.baseUrl}/workspace/quick-notes`, payload);
+  discardDraft(payload: VersionRequest): Observable<WorkspaceSetup> {
+    return this.http.post<WorkspaceSetup>(`${this.baseUrl}/workspace/wizard/discard-draft`, payload);
   }
-
-  updateWorkspace(payload: WorkspaceUpdateRequest): Observable<WorkspaceSetup> {
-    return this.http.put<WorkspaceSetup>(`${this.baseUrl}/workspace`, payload);
+  resetToDefaults(payload: VersionRequest): Observable<WorkspaceSetup> {
+    return this.http.post<WorkspaceSetup>(`${this.baseUrl}/workspace/reset-to-defaults`, payload);
   }
-
-  resetToDefaults(): Observable<WorkspaceSetup> {
-    return this.http.post<WorkspaceSetup>(`${this.baseUrl}/workspace/reset-to-defaults`, {});
+  getPreferences(): Observable<WorkspacePreferences> {
+    return this.http.get<WorkspacePreferences>(`${this.baseUrl}/workspace/preferences`);
   }
-
-  getTemplates(specialtyId?: number): Observable<FormTemplate[]> {
-    const url = specialtyId
-      ? `${this.baseUrl}/templates?specialtyId=${specialtyId}`
-      : `${this.baseUrl}/templates`;
-    return this.http.get<FormTemplate[]>(url);
+  updateQuickNotes(payload: QuickNotesUpdateRequest): Observable<WorkspacePreferences> {
+    return this.http.put<WorkspacePreferences>(`${this.baseUrl}/workspace/quick-notes`, payload);
   }
-
-  getTemplateById(id: number): Observable<FormTemplate> {
-    return this.http.get<FormTemplate>(`${this.baseUrl}/templates/${id}`);
-  }
-
-  createTemplate(template: Partial<FormTemplate>): Observable<FormTemplate> {
-    return this.http.post<FormTemplate>(`${this.baseUrl}/templates`, template);
-  }
-
-  updateTemplate(id: number, template: Partial<FormTemplate>): Observable<FormTemplate> {
-    return this.http.put<FormTemplate>(`${this.baseUrl}/templates/${id}`, template);
-  }
-
-  deleteTemplate(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/templates/${id}`);
-  }
-
-  duplicateTemplate(id: number): Observable<FormTemplate> {
-    return this.http.post<FormTemplate>(`${this.baseUrl}/templates/${id}/duplicate`, {});
+  updateWorkspace(payload: WorkspaceUpdateRequest): Observable<WorkspacePreferences> {
+    return this.http.put<WorkspacePreferences>(`${this.baseUrl}/workspace/preferences`, payload);
   }
 }

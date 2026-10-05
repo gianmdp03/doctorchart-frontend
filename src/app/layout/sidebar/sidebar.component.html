@@ -9,13 +9,20 @@
     @if (!isCollapsed()) {
       <div class="brand-text-wrap">
         <span class="brand-title">DoctorChart</span>
-        <span class="brand-specialty-pill">{{ specialtyService.currentSpecialtyOption().shortLabel }}</span>
+        <span class="brand-specialty-pill">{{ authService.isSuperAdmin() ? 'Administración' : specialtyService.currentSpecialtyOption().shortLabel }}</span>
       </div>
     }
   </div>
 
   <!-- Main Navigation Links -->
   <nav class="sidebar-nav" aria-label="Navegación principal">
+    @if (authService.isSuperAdmin()) {
+      <div class="nav-group-label" [class.sr-only]="isCollapsed()">Administración</div>
+      <a routerLink="/admin/especialidades" routerLinkActive="active" class="nav-item" title="Especialidades y wizards">
+        <ng-icon name="lucideSliders" class="nav-icon" />
+        @if (!isCollapsed()) { <span class="nav-label">Especialidades y wizards</span> }
+      </a>
+    } @else {
     <div class="nav-group-label" [class.sr-only]="isCollapsed()">
       @if (!isCollapsed()) {
         <span>Clínica</span>
@@ -85,6 +92,7 @@
         <span class="nav-label">Personalizar Fichas</span>
       }
     </a>
+    }
   </nav>
 
   <!-- Sidebar Footer: Collapse Toggle -->

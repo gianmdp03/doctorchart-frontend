@@ -1,191 +1,62 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { PLATFORM_ID } from '@angular/core';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { EncounterDetailDialogComponent } from './encounter-detail-dialog.component';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
-import { WorkspaceService } from '../../core/services/workspace.service';
+import { AuthService } from '../../core/services/auth.service';
 import { ClinicalEncounterDetail } from '../../core/models/clinical-encounter.model';
+import { dialogEncounter } from '../dynamic-form-renderer/clinical-dialog.fixture';
 
-describe('EncounterDetailDialogComponent', () => {
-  let component: EncounterDetailDialogComponent;
-  let fixture: ComponentFixture<EncounterDetailDialogComponent>;
-  let encounterServiceSpy: {
-    getById: ReturnType<typeof vi.fn>;
-  };
-
-  const mockEncounter: ClinicalEncounterDetail = {
-    id: 101,
-    patientId: 10492,
-    patientFullName: 'Mateo Rossi',
-    encounterDate: '2026-09-15',
-    specialty: 'PEDIATRICS',
-    consultationType: 'ROUTINE_CHECKUP',
-    chiefComplaint: 'Control de niño sano',
-    historyOfPresentIllness: 'Paciente asintomático, buen apetito y descanso.',
-    vitalSigns: {
-      weightKg: 7.95,
-      heightCm: 67.5,
-      bodyMassIndex: 17.45,
-      heartRate: 110,
-      respiratoryRate: 28,
-      temperatureCelsius: 36.6,
-      oxygenSaturationPercent: 99,
-    },
-    physicalExamination: 'Buen estado general, fontanela anterior normotensa.',
-    primaryDiagnosisCode: 'Z00.1',
-    primaryDiagnosisDescription: 'Control de salud infantil y crecimiento',
-    secondaryDiagnoses: [
-      { code: 'L20.9', description: 'Dermatitis atópica leve', isChronic: false },
-    ],
-    treatmentPlan: 'Continuar con lactancia materna y vitamina D3.',
-    prescriptions: [
-      {
-        medicationName: 'Vitamina D3',
-        dosage: '400 UI',
-        administrationRoute: 'Oral',
-        frequency: 'Cada 24 hs',
-      },
-    ],
-    diagnosticOrders: ['Pesquisa metabólica neonatal confirmada'],
-    followUpInstructions: 'Control en 1 mes.',
-    followUpDate: '2026-10-15',
-  };
-
+describe('EncounterDetailDialogComponent saved snapshot editing', () => {
+  let fixture: ComponentFixture<EncounterDetailDialogComponent>; let component: EncounterDetailDialogComponent; let record: ClinicalEncounterDetail;
+  let service: { getById: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }; const user = signal<{ id: string } | null>(null);
   beforeEach(async () => {
-    encounterServiceSpy = {
-      getById: vi.fn().mockReturnValue(of(mockEncounter)),
-    };
-
-    await TestBed.configureTestingModule({
-      imports: [EncounterDetailDialogComponent],
-      providers: [
-        { provide: ClinicalEncounterService, useValue: encounterServiceSpy },
-        {
-          provide: WorkspaceService,
-          useValue: {
-            getTemplateById: vi.fn().mockReturnValue(of(null)),
-          },
-        },
-        { provide: PLATFORM_ID, useValue: 'browser' },
-      ],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(EncounterDetailDialogComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    user.set({ id: 'doctor-a' }); record = dialogEncounter(); service = { getById: vi.fn().mockImplementation(() => of(structuredClone(record))), update: vi.fn().mockImplementation((_id, request) => of({ ...record, version: 7, formValues: request.values, encounterDate: request.encounterDate })) };
+    await TestBed.configureTestingModule({ imports: [EncounterDetailDialogComponent], providers: [{ provide: ClinicalEncounterService, useValue: service }, { provide: AuthService, useValue: { currentUser: user } }] }).compileComponents();
+    fixture = TestBed.createComponent(EncounterDetailDialogComponent); component = fixture.componentInstance; fixture.detectChanges();
+    component.openModal(new CustomEvent('open-encounter-detail-modal', { detail: { encounter: record } })); fixture.detectChanges();
   });
-
-  it('should create the component with initial closed state', () => {
-    expect(component).toBeTruthy();
-    expect(component.isOpen()).toBe(false);
-    expect(component.encounter()).toBeNull();
+  function edit(): void { component.startEditing(); component.onValuesChange({ readingA: 0, readingB: 20, notes: 'Edición local', result: 100, unknown: 'No enviar' }); component.formValid.set(true); }
+  it('displays its snapshot, backend result and Argentine instant without fetching a current template', () => {
+    expect(service.getById).not.toHaveBeenCalled(); expect(fixture.nativeElement.textContent).toContain('Consulta inédita');
+    expect(fixture.nativeElement.textContent).toContain('01/01/2026 11:03');
+    expect(fixture.nativeElement.textContent).toContain('5');
+    expect(component.encounter()?.formDefinitionSnapshot).toEqual(record.formDefinitionSnapshot);
   });
-
-  it('should open and display encounter passed directly in event detail', () => {
-    window.dispatchEvent(
-      new CustomEvent('open-encounter-detail-modal', {
-        detail: { encounter: mockEncounter },
-      })
-    );
-    fixture.detectChanges();
-
-    expect(component.isOpen()).toBe(true);
-    expect(component.encounter()).toEqual(mockEncounter);
+  it('updates only canonical values and record revision, preserving the original exact instant until edited', async () => {
+    edit(); await component.save();
+    expect(service.update).toHaveBeenCalledWith(77, { expectedVersion: 6, encounterDate: '2026-01-01T14:03:45.123Z', consultationType: 'FOLLOW_UP', values: { readingA: 0, readingB: 20, notes: 'Edición local' } });
+    expect(component.encounter()?.version).toBe(7); expect(component.isEditing()).toBe(false);
+    component.startEditing(); component.encounterTime.set('12:15'); component.formValid.set(true); await component.save();
+    expect(service.update).toHaveBeenLastCalledWith(77, expect.objectContaining({ expectedVersion: 7, encounterDate: '2026-01-01T12:15:00-03:00' }));
   });
-
-  it('should open and fetch encounter by id from service if only id is passed', () => {
-    window.dispatchEvent(
-      new CustomEvent('open-encounter-detail-modal', {
-        detail: { encounterId: 101 },
-      })
-    );
-    fixture.detectChanges();
-
-    expect(component.isOpen()).toBe(true);
-    expect(encounterServiceSpy.getById).toHaveBeenCalledWith(101);
-    expect(component.encounter()).toEqual(mockEncounter);
+  it('preserves local edits and revision after a record conflict until explicit server adoption', async () => {
+    edit(); service.update.mockReturnValueOnce(throwError(() => ({ status: 409, error: { code: 'VERSION_CONFLICT' } })));
+    await component.save(); record = { ...record, version: 12, formValues: { ...record.formValues, notes: 'Servidor' } };
+    await component.reviewRemote(); expect(component.values()['notes']).toBe('Edición local'); expect(component.encounter()?.version).toBe(6);
+    await component.save(); expect(service.update).toHaveBeenCalledTimes(1);
+    component.useRemoteRecord(); expect(component.values()['notes']).toBe('Servidor'); expect(component.encounter()?.version).toBe(12);
   });
-
-  it('should handle service error when loading by id', () => {
-    encounterServiceSpy.getById.mockReturnValue(
-      throwError(() => ({ error: { message: 'Encounter not found' } }))
-    );
-
-    component.loadEncounter(999);
-
-    expect(component.isLoading()).toBe(false);
-    expect(component.errorMessage()).toBe('Encounter not found');
+  it('blocks concurrent saves, keeps responses on errors and restores the saved snapshot on explicit cancel', async () => {
+    edit(); const pending = new Subject<ClinicalEncounterDetail>(); service.update.mockReturnValueOnce(pending);
+    const request = component.save(); await component.save(); expect(service.update).toHaveBeenCalledTimes(1);
+    pending.error({ status: 400, error: { message: 'Dato inválido.' } }); await request;
+    expect(component.values()['notes']).toBe('Edición local'); expect(component.hasConflict()).toBe(false);
+    component.cancelEditing(); expect(component.values()['notes']).toBe('Consulta guardada'); expect(component.isEditing()).toBe(false);
   });
-
-  it('should close modal on escape key or backdrop click', () => {
-    component.isOpen.set(true);
-    component.encounter.set(mockEncounter);
-
-    component.onEscape();
-    expect(component.isOpen()).toBe(false);
-    expect(component.encounter()).toBeNull();
-
-    component.isOpen.set(true);
-    (component as any).openedAt = Date.now() - 500;
-    const mockElement = document.createElement('div');
-    const mockBackdropEvent = {
-      target: mockElement,
-      currentTarget: mockElement,
-    } as unknown as MouseEvent;
-    component.onBackdropMouseDown(mockBackdropEvent);
-    component.onBackdropClick(mockBackdropEvent);
-    expect(component.isOpen()).toBe(false);
+  it('ignores old loads after opening a different record and after closing the modal', async () => {
+    const pending = new Subject<ClinicalEncounterDetail>(); service.getById.mockReturnValueOnce(pending);
+    const request = component.loadEncounter(77);
+    component.openModal(new CustomEvent('open-encounter-detail-modal', { detail: { encounter: { ...record, id: 88 } } }));
+    pending.next(record); pending.complete(); await request; expect(component.encounter()?.id).toBe(88);
+    const late = new Subject<ClinicalEncounterDetail>(); service.getById.mockReturnValueOnce(late);
+    const loading = component.loadEncounter(77); component.closeModal(); late.next(record); late.complete(); await loading;
+    expect(component.encounter()).toBeNull(); expect(component.isOpen()).toBe(false);
   });
-
-  it('should return correct specialty badge CSS class', () => {
-    expect(component.getSpecialtyBadgeClass('PEDIATRICS')).toBe('badge-pediatrics');
-    expect(component.getSpecialtyBadgeClass('CARDIOLOGY')).toBe('badge-cardiology');
-    expect(component.getSpecialtyBadgeClass('GENERAL_MEDICINE')).toBe('badge-general');
-  });
-
-  it('should return correct consultation type labels', () => {
-    expect(component.getConsultationTypeLabel('FIRST_VISIT')).toBe('Primera Consulta');
-    expect(component.getConsultationTypeLabel('ROUTINE_CHECKUP')).toBe('Chequeo General');
-    expect(component.getConsultationTypeLabel('EMERGENCY')).toBe('Urgencia');
-  });
-
-  it('should classify BMI status correctly', () => {
-    expect(component.getBmiStatus(null).label).toBe('Sin datos de IMC');
-    expect(component.getBmiStatus(16.5).label).toContain('Bajo peso');
-    expect(component.getBmiStatus(22.0).label).toContain('Peso Normal');
-    expect(component.getBmiStatus(27.5).label).toBe('Sobrepeso');
-    expect(component.getBmiStatus(32.0).label).toBe('Obesidad');
-  });
-
-  it('should call print safely', () => {
-    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
-    component.printEncounter();
-    expect(printSpy).toHaveBeenCalled();
-  });
-
-  it('should render dynamic clinical encounter data and historical snapshot fields', () => {
-    const encWithDynamicData: ClinicalEncounterDetail = {
-      ...mockEncounter,
-      templateId: 5,
-      dynamicData: {
-        presionArterial: '120/80',
-        reflejoMoro: 'Presente',
-      },
-      snapshotFieldLabels: {
-        presionArterial: 'Presión Arterial',
-        reflejoMoro: 'Reflejo de Moro',
-      },
-    };
-
-    component.isOpen.set(true);
-    component.displayEncounter(encWithDynamicData);
-    fixture.detectChanges();
-
-    expect(component.encounter()?.dynamicData).toEqual(encWithDynamicData.dynamicData);
-    expect(component.encounter()?.snapshotFieldLabels).toEqual(encWithDynamicData.snapshotFieldLabels);
-
-    const dynamicCard = fixture.nativeElement.querySelector('.card-dynamic');
-    expect(dynamicCard).toBeTruthy();
+  it('drops a save response when identity changes and does not accept another patient record', async () => {
+    edit(); const pending = new Subject<ClinicalEncounterDetail>(); service.update.mockReturnValueOnce(pending);
+    const request = component.save(); user.set({ id: 'doctor-b' }); pending.next({ ...record, version: 7 }); pending.complete(); await request;
+    expect(component.encounter()?.version).toBe(6); fixture.detectChanges(); expect(component.encounter()).toBeNull(); expect(component.isOpen()).toBe(false);
   });
 });
-

@@ -1,8 +1,14 @@
 import { Routes } from '@angular/router';
 import { doctorchartPlanGuard } from './core/guards/doctorchart-plan.guard';
-import { doctorOnboardingGuard, preventCompletedOnboardingGuard } from './core/guards/doctor-onboarding.guard';
+import { doctorOnboardingGuard, doctorWizardGuard, preventCompletedOnboardingGuard } from './core/guards/doctor-onboarding.guard';
+import { superAdminGuard } from './core/guards/super-admin.guard';
 
 export const routes: Routes = [
+  {
+    path: 'admin/especialidades',
+    canActivate: [superAdminGuard],
+    loadComponent: () => import('./features/admin-specialties/admin-specialties.component').then(m => m.AdminSpecialtiesComponent),
+  },
   {
     path: '',
     pathMatch: 'full',
@@ -88,7 +94,7 @@ export const routes: Routes = [
   },
   {
     path: 'onboarding/setup',
-    canActivate: [doctorchartPlanGuard],
+    canActivate: [doctorchartPlanGuard, doctorWizardGuard],
     loadComponent: () =>
       import('./features/onboarding/onboarding-wizard/onboarding-wizard.component').then(
         (m) => m.OnboardingWizardComponent

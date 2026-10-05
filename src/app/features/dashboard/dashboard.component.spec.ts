@@ -1,3 +1,4 @@
+import { clinicalFormFixture } from '../../core/models/clinical-form.fixture';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DashboardComponent } from './dashboard.component';
 import { AuthService } from '../../core/services/auth.service';
@@ -74,6 +75,10 @@ describe('DashboardComponent', () => {
           encountersToday: 3,
           recentEncounters: [
             {
+              ...clinicalFormFixture(),
+              specialtyId: 1,
+              specialty: { id: 1, code: 'pediatrics', name: 'Pediatría', description: null },
+              consultationType: 'FIRST_VISIT',
               id: 101,
               patientId: 1,
               patientFullName: 'Mateo Rossi',
@@ -89,9 +94,7 @@ describe('DashboardComponent', () => {
     };
 
     workspaceStoreMock = {
-      currentSetup: signal({
-        quickNotes: 'Mis notas guardadas',
-      }),
+      quickNotes: signal('Mis notas guardadas'),
       updateQuickNotes: vi.fn().mockResolvedValue(undefined),
     };
 
@@ -198,8 +201,9 @@ describe('DashboardComponent', () => {
             consultationType: 'FIRST_VISIT',
             chiefComplaint: 'Control inicial',
             primaryDiagnosisDescription: 'Paciente sano',
-            dynamicData: { motivoConsulta: 'Control inicial', peso: 12.4 },
-            snapshotFieldLabels: { motivoConsulta: 'Motivo Principal', peso: 'Peso (kg)' },
+            ...clinicalFormFixture(),
+            formValues: {abc: 'Control inicial', def: 12.4},
+            formDefinitionSnapshot: {categories:[{key:'xyz',title:'Detalle',enabled:true,fields:[{key:'abc',label:'Motivo Principal',type:'TEXT',required:false},{key:'def',label:'Peso (kg)',type:'NUMBER',required:false}]}]},
           },
           {
             id: 502,
@@ -208,8 +212,9 @@ describe('DashboardComponent', () => {
             consultationType: 'FOLLOW_UP',
             chiefComplaint: 'Seguimiento evolutivo',
             primaryDiagnosisDescription: 'Evolución favorable',
-            dynamicData: { motivoConsulta: 'Seguimiento evolutivo' },
-            snapshotFieldLabels: { motivoConsulta: 'Motivo Principal' },
+            ...clinicalFormFixture(),
+            formValues: {abc: 'Seguimiento evolutivo'},
+            formDefinitionSnapshot: {categories:[{key:'xyz',title:'Detalle',enabled:true,fields:[{key:'abc',label:'Motivo Principal',type:'TEXT',required:false}]}]},
           },
         ]);
       }

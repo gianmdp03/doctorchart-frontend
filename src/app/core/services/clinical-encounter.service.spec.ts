@@ -3,165 +3,49 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 import { ClinicalEncounterService } from './clinical-encounter.service';
 import { environment } from '../../../environments/environment';
-import {
-  ClinicalEncounterDetail,
-  ClinicalEncounterList,
-  ClinicalEncounterRequest,
-} from '../models/clinical-encounter.model';
+import { ClinicalEncounterDetail, ClinicalEncounterRequest, ClinicalEncounterUpdateRequest } from '../models/clinical-encounter.model';
+import { clinicalFormFixture } from '../models/clinical-form.fixture';
 
-describe('ClinicalEncounterService', () => {
+describe('ClinicalEncounterService canonical records', () => {
   let service: ClinicalEncounterService;
-  let httpMock: HttpTestingController;
-
-  const mockDetail: ClinicalEncounterDetail = {
-    id: 10,
-    patientId: 1,
-    patientFullName: 'Carlos Menem',
-    encounterDate: '2026-09-17T20:00:00',
-    specialty: 'CARDIOLOGY',
-    consultationType: 'FIRST_VISIT',
-    chiefComplaint: 'Chest pain',
-    primaryDiagnosisCode: 'I20.9',
-    primaryDiagnosisDescription: 'Angina pectoris',
+  let http: HttpTestingController;
+  const record: ClinicalEncounterDetail = {
+    ...clinicalFormFixture(), id: 10, patientId: 1, patientFullName: 'Ada',
+    encounterDate: '2026-09-17T20:00:00-03:00', consultationType: 'FIRST_VISIT',
+    specialtyId: 7, specialty: {id:7,code:'custom_xyz',name:'Especialidad XYZ',description:null},
   };
-
-  const mockList: ClinicalEncounterList[] = [
-    {
-      id: 10,
-      patientId: 1,
-      encounterDate: '2026-09-17T20:00:00',
-      specialty: 'CARDIOLOGY',
-      consultationType: 'FIRST_VISIT',
-      chiefComplaint: 'Chest pain',
-      primaryDiagnosisCode: 'I20.9',
-      primaryDiagnosisDescription: 'Angina pectoris',
-    },
-  ];
-
+  const base = `${environment.apiUrl}/encounters`;
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [
-        ClinicalEncounterService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
-    });
-
-    service = TestBed.inject(ClinicalEncounterService);
-    httpMock = TestBed.inject(HttpTestingController);
+    TestBed.configureTestingModule({providers:[provideHttpClient(),provideHttpClientTesting()]});
+    service = TestBed.inject(ClinicalEncounterService); http = TestBed.inject(HttpTestingController);
   });
-
-  afterEach(() => {
-    httpMock.verify();
+  afterEach(() => http.verify());
+  it('reads and filters using catalog identities', () => {
+    service.getById(10).subscribe(value => expect(value.specialty.name).toBe('Especialidad XYZ'));
+    http.expectOne(`${base}/10`).flush(record);
+    service.getByPatientAndSpecialty(1,7).subscribe();
+    http.expectOne(`${base}/patient/1/specialty/7`).flush([record]);
+    expect(service.encounters()).toEqual([record]);
   });
-
-  it('should be created with initial signals', () => {
-    expect(service).toBeTruthy();
-    expect(service.encounters()).toEqual([]);
-    expect(service.currentEncounter()).toBeNull();
-    expect(service.loading()).toBe(false);
+  it('sends only versioned input values on create', () => {
+    const request: ClinicalEncounterRequest = {patientId:1,workspaceVersion:4,encounterDate:record.encounterDate,consultationType:'FIRST_VISIT',values:{arbitrary:0,flag:false}};
+    service.create(request).subscribe();
+    const pending=http.expectOne(base); expect(pending.request.method).toBe('POST'); expect(pending.request.body).toEqual(request);
+    pending.flush(record); expect(service.currentEncounter()).toEqual(record);
   });
-
-  it('should get encounter by ID and set currentEncounter signal', () => {
-    service.getById(10).subscribe((encounter) => {
-      expect(encounter.id).toBe(10);
-      expect(encounter.specialty).toBe('CARDIOLOGY');
-    });
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/encounters/10`);
-    expect(req.request.method).toBe('GET');
-    req.flush(mockDetail);
-
-    expect(service.currentEncounter()).toEqual(mockDetail);
+  it('updates with the record version independently of the workspace', () => {
+    const request: ClinicalEncounterUpdateRequest = {expectedVersion:0,encounterDate:record.encounterDate,consultationType:'FOLLOW_UP',values:{arbitrary:null}};
+    service.update(10,request).subscribe();
+    const pending=http.expectOne(`${base}/10`); expect(pending.request.method).toBe('PUT'); expect(pending.request.body).toEqual(request); pending.flush(record);
   });
-
-  it('should get encounters by patient ID and update encounters signal', () => {
-    service.getByPatient(1).subscribe((list) => {
-      expect(list.length).toBe(1);
-    });
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/encounters/patient/1`);
-    expect(req.request.method).toBe('GET');
-    req.flush(mockList);
-
-    expect(service.encounters()).toEqual(mockList);
+  it('evicts deleted records', () => {
+    service.encounters.set([record]); service.currentEncounter.set(record);
+    service.delete(10).subscribe(); http.expectOne(`${base}/10`).flush(null);
+    expect(service.encounters()).toEqual([]); expect(service.currentEncounter()).toBeNull();
   });
-
-  it('should get encounters filtered by patient ID and specialty', () => {
-    service.getByPatientAndSpecialty(1, 'CARDIOLOGY').subscribe((list) => {
-      expect(list.length).toBe(1);
-      expect(list[0].specialty).toBe('CARDIOLOGY');
-    });
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/encounters/patient/1/specialty/CARDIOLOGY`);
-    expect(req.request.method).toBe('GET');
-    req.flush(mockList);
-  });
-
-  it('should create an encounter via POST and update state', () => {
-    const request: ClinicalEncounterRequest = {
-      patientId: 1,
-      encounterDate: '2026-09-17T20:00:00',
-      specialty: 'CARDIOLOGY',
-      consultationType: 'FIRST_VISIT',
-      chiefComplaint: 'Chest pain',
-      primaryDiagnosisCode: 'I20.9',
-      primaryDiagnosisDescription: 'Angina pectoris',
-    };
-
-    service.create(request).subscribe((res) => {
-      expect(res.id).toBe(10);
-    });
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/encounters`);
-    expect(req.request.method).toBe('POST');
-    req.flush(mockDetail);
-
-    expect(service.currentEncounter()).toEqual(mockDetail);
-  });
-
-  it('should update an encounter via PUT', () => {
-    const request: ClinicalEncounterRequest = {
-      patientId: 1,
-      encounterDate: '2026-09-17T20:00:00',
-      specialty: 'CARDIOLOGY',
-      consultationType: 'FIRST_VISIT',
-      chiefComplaint: 'Chest pain updated',
-      primaryDiagnosisCode: 'I20.9',
-      primaryDiagnosisDescription: 'Angina pectoris',
-    };
-
-    service.update(10, request).subscribe((res) => {
-      expect(res.id).toBe(10);
-    });
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/encounters/10`);
-    expect(req.request.method).toBe('PUT');
-    req.flush(mockDetail);
-  });
-
-  it('should delete an encounter via DELETE and evict from signals', () => {
-    service.encounters.set(mockList);
-    service.currentEncounter.set(mockDetail);
-
-    service.delete(10).subscribe();
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/encounters/10`);
-    expect(req.request.method).toBe('DELETE');
-    req.flush(null);
-
-    expect(service.encounters()).toEqual([]);
-    expect(service.currentEncounter()).toBeNull();
-  });
-
-  it('should call migratePediatricCheckups via POST', () => {
-    service.migratePediatricCheckups().subscribe((res) => {
-      expect(res.status).toBe('COMPLETED');
-      expect(res.migratedNow).toBe(5);
-    });
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/encounters/migrate-pediatric`);
-    expect(req.request.method).toBe('POST');
-    req.flush({ totalFound: 10, alreadyMigrated: 5, migratedNow: 5, status: 'COMPLETED' });
+  it('does not restore a record or loading state after an identity clear', () => {
+    service.getById(10).subscribe(); const pending=http.expectOne(`${base}/10`);
+    service.clear(); pending.flush(record);
+    expect(service.currentEncounter()).toBeNull(); expect(service.loading()).toBe(false);
   });
 });

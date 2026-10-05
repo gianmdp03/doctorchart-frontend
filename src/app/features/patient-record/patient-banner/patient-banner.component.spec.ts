@@ -1,3 +1,4 @@
+import { clinicalFormFixture } from '../../../core/models/clinical-form.fixture';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PatientBannerComponent } from './patient-banner.component';
 import { ActivePatientService } from '../../../core/services/active-patient.service';
@@ -14,6 +15,7 @@ describe('PatientBannerComponent', () => {
   let routerSpy: { navigate: ReturnType<typeof vi.fn> };
 
   const mockPatient: PatientDetailDTO = {
+    ...clinicalFormFixture(),
     id: 10492,
     fullName: 'Mateo Rossi',
     birthDate: '2024-05-10',
@@ -37,7 +39,7 @@ describe('PatientBannerComponent', () => {
       activePatient: signal(mockPatient),
     };
     specialtyServiceMock = {
-      isPediatricMode: signal(true),
+      supportsGrowthCharts: signal(true),
     };
     routerSpy = {
       navigate: vi.fn(),

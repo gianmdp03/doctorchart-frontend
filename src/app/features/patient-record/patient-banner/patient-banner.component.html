@@ -118,7 +118,7 @@
             <span>Editar datos del paciente</span>
           </button>
 
-          @if (doctorSpecialtyService.isPediatricMode() && isChild()) {
+          @if (doctorSpecialtyService.supportsGrowthCharts() && isChild()) {
             <button type="button" class="dropdown-menu-item" (click)="goToCurves()">
               <ng-icon name="lucideTrendingUp" class="text-indigo-500" />
               <span>Ver Curvas de Crecimiento OMS</span>

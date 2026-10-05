@@ -1,13 +1,9 @@
-import { MedicalSpecialty } from './specialty.model';
+import { SpecialtySummary } from './specialty.model';
 
 export interface DoctorProfile {
   id: number;
   userId: string;
-  specialty: MedicalSpecialty;
+  specialty: SpecialtySummary;
   isSpecialtyLocked: boolean;
   createdAt: string;
-}
-
-export interface DoctorSpecialtyRequest {
-  specialty: MedicalSpecialty;
 }

@@ -1,23 +1,23 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import {
-  ONBOARDING_WIZARD_STEPS,
-  OnboardingWizardStepDefinition,
-} from '../../../core/config/onboarding-form-definitions';
 import { DoctorProfileService } from '../../../core/services/doctor-profile.service';
 import { WorkspaceStore } from '../../../core/services/workspace.store';
+import { WorkspaceSetup } from '../../../core/models/workspace.model';
+import { WizardDefinition, WizardFormDefinition, WizardStepKey } from '../../../core/models/wizard-definition.model';
 import { FormFieldEditorComponent } from '../../form-field-editor/form-field-editor.component';
-import {
-  createDefaultPatientFormTemplate,
-  PATIENT_FORM_SECTIONS,
-} from '../../../core/config/onboarding-form-definitions';
-import { FormTemplate, FormTemplateSchema } from '../../../core/models/workspace.model';
+
+type EditableStepKey = Exclude<WizardStepKey, 'completed'>;
+interface WizardStep {
+  key: EditableStepKey;
+  title: string;
+  kind: 'specialty' | 'patient' | 'encounter';
+  categoryKey?: string;
+}
 
 @Component({
   selector: 'app-onboarding-wizard',
-  imports: [CommonModule, FormFieldEditorComponent],
+  imports: [FormFieldEditorComponent],
   templateUrl: './onboarding-wizard.component.html',
   styleUrl: './onboarding-wizard.component.css',
 })
@@ -27,289 +27,236 @@ export class OnboardingWizardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly steps = ONBOARDING_WIZARD_STEPS;
+  readonly workspace = signal<WorkspaceSetup | null>(null);
+  readonly definition = signal<WizardDefinition | null>(null);
+  readonly activeStepKey = signal<EditableStepKey>('encounter');
+  readonly isLoading = signal(true);
   readonly isSaving = signal(false);
+  readonly hasConflict = signal(false);
+  readonly serverCopy = signal<WorkspaceSetup | null>(null);
+  readonly serverCopyLoaded = signal(false);
+  readonly showPatientCategories = signal(false);
+  readonly showResetConfirmation = signal(false);
+  readonly showDiscardConfirmation = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
-  readonly patientTemplate = signal<FormTemplate | null>(null);
-  readonly encounterTemplate = signal<FormTemplate | null>(null);
+  readonly isEditMode = computed(() => this.workspace()?.onboardingCompleted ?? false);
+  readonly editorReadonly = computed(() => this.isLoading() || this.isSaving() || this.hasConflict());
+  readonly steps = computed<WizardStep[]>(() => [
+    { key: 'specialty', title: 'Especialidad médica', kind: 'specialty' },
+    ...(this.definition()?.patientForm.categories.filter(category => category.enabled).map(category => ({
+      key: `patient:${category.key}` as EditableStepKey, title: category.title, kind: 'patient' as const, categoryKey: category.key,
+    })) ?? []),
+    { key: 'encounter', title: 'Historia Clínica', kind: 'encounter' },
+  ]);
+  readonly activeStepIndex = computed(() => this.steps().findIndex(step => step.key === this.activeStepKey()));
+  readonly activeStep = computed<WizardStep>(() => this.steps().find(step => step.key === this.activeStepKey()) ?? {
+    key: this.activeStepKey(), title: 'Categorías de la ficha', kind: 'patient',
+  });
+  readonly isLastStep = computed(() => this.activeStepKey() === 'encounter');
 
-  readonly isEditMode = computed(() => this.workspaceStore.isOnboardingCompleted());
+  async ngOnInit(): Promise<void> { await this.loadInitial(); }
 
-  readonly activeStepIndex = signal<number>(1);
-  readonly activeStep = computed<OnboardingWizardStepDefinition>(() => this.steps[this.activeStepIndex()]);
-  readonly isLastStep = computed(() => this.activeStepIndex() === this.steps.length - 1);
-  readonly isFirstStep = computed(() => this.isEditMode() ? this.activeStepIndex() <= 1 : this.activeStepIndex() === 0);
-  readonly isPatientFormStep = computed(() =>
-    ['PATIENT_PERSONAL_DATA', 'PATIENT_FAMILY_HISTORY', 'PATIENT_GUARDIANS'].includes(this.activeStep().onboardingStep)
-  );
-  readonly activePatientCategoryKey = computed(() =>
-    PATIENT_FORM_SECTIONS.find((section) => section.onboardingStep === this.activeStep().onboardingStep)?.categoryKey ?? null
-  );
-  readonly isEncounterFormStep = computed(() => this.activeStep().onboardingStep === 'ENCOUNTER_FORM');
-
-  async ngOnInit(): Promise<void> {
-    const setup = await this.workspaceStore.loadSetup();
-    if (!setup?.id || !setup.specialtyId || (!setup.onboardingCompleted && setup.onboardingStep === 'SPECIALTY')) {
-      await this.router.navigate(['/onboarding/select-specialty']);
-      return;
+  async loadInitial(force = false): Promise<void> {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+    try {
+      const workspace = await this.workspaceStore.loadSetup(force);
+      if (!workspace || (!workspace.onboardingCompleted && workspace.currentStepKey === 'specialty')) {
+        await this.router.navigate(['/onboarding/select-specialty']);
+        return;
+      }
+      this.acceptWorkspace(workspace);
+    } catch (error: unknown) {
+      this.errorMessage.set(this.errorText(error, 'No pudimos cargar tu configuración. Intentá nuevamente.'));
+    } finally {
+      this.isLoading.set(false);
     }
+  }
 
-    if (!setup.onboardingCompleted) {
-      const stepIndex = this.steps.findIndex((step) => step.onboardingStep === setup.onboardingStep);
-      this.activeStepIndex.set(stepIndex >= 0 ? stepIndex : 1);
-    } else {
-      this.activeStepIndex.set(1);
-    }
+  onPatientDefinitionChange(form: WizardFormDefinition): void {
+    if (this.editorReadonly()) return;
+    this.definition.update(current => current ? { ...current, patientForm: this.copy(form) } : current);
+    if (this.activeStepIndex() < 0) this.showPatientCategories.set(true);
+    this.successMessage.set(null);
+  }
 
-    this.patientTemplate.set(this.createPatientTemplate(
-      setup.defaultPatientTemplate,
-      setup.specialtyId,
-      setup.specialtyDisplayName,
-      setup.onboardingDraft,
-    ));
-    this.encounterTemplate.set(this.createEncounterTemplate(
-      setup.defaultEncounterTemplate,
-      setup.specialtyId,
-      setup.specialtyDisplayName,
-      setup.onboardingDraft,
-    ));
+  onPatientCategorySelected(key: string): void {
+    if (this.editorReadonly()) return;
+    const category = this.definition()?.patientForm.categories.find(category => category.key === key);
+    if (category?.enabled) this.activeStepKey.set(`patient:${category.key}`);
+  }
+
+  onEncounterDefinitionChange(form: WizardFormDefinition): void {
+    if (this.editorReadonly()) return;
+    this.definition.update(current => current ? { ...current, encounterForm: this.copy(form) } : current);
+    this.successMessage.set(null);
   }
 
   async goToStep(index: number): Promise<void> {
-    if (index < 0 || index >= this.steps.length || this.isSaving()) return;
-    if (index === 0 && this.isEditMode()) return;
-
-    this.activeStepIndex.set(index);
-    const targetStep = this.steps[index];
-    await this.saveStep(targetStep.onboardingStep);
+    const step = this.steps()[index];
+    if (!step || this.editorReadonly() || (step.kind === 'specialty' && this.isEditMode())) return;
+    const saved = await this.saveDraft(step.key);
+    if (saved && step.kind === 'specialty') await this.router.navigate(['/onboarding/select-specialty']);
   }
 
   async goNext(): Promise<void> {
-    const nextIndex = this.activeStepIndex() + 1;
-    const nextStep = this.steps[nextIndex]?.onboardingStep;
-    const setup = this.workspaceStore.currentSetup();
-    if (!nextStep || !setup?.specialtyId || this.isSaving()) return;
-
-    this.activeStepIndex.set(nextIndex);
-    await this.saveStep(nextStep);
+    const index = this.activeStepIndex();
+    await this.goToStep(index < 0 ? this.steps().length - 1 : index + 1);
   }
 
   async goPrevious(): Promise<void> {
     const index = this.activeStepIndex();
-    const setup = this.workspaceStore.currentSetup();
-    if (!setup?.specialtyId || this.isSaving()) return;
+    if (index <= 1 && this.isEditMode()) return;
+    await this.goToStep(index - 1);
+  }
 
-    if (index <= 1) {
-      if (this.isEditMode()) {
-        return;
-      }
-      this.activeStepIndex.set(0);
-      await this.saveStep('SPECIALTY');
-      if (!this.errorMessage()) {
-        await this.router.navigate(['/onboarding/select-specialty']);
-      }
-      return;
+  async saveProgress(): Promise<void> {
+    if (await this.saveDraft(this.activeStepKey())) {
+      this.successMessage.set('Borrador guardado. La configuración activa se conserva hasta aplicar los cambios.');
     }
-
-    const prevIndex = index - 1;
-    this.activeStepIndex.set(prevIndex);
-    await this.saveStep(this.steps[prevIndex].onboardingStep);
-  }
-
-  async handleSignOut(): Promise<void> {
-    this.doctorProfileService.clearProfile();
-    await this.authService.signOut();
-  }
-
-  async exitWizard(): Promise<void> {
-    if (this.isEditMode() && !this.isSaving()) {
-      await this.finishOnboarding();
-      return;
-    }
-    await this.router.navigate(['/dashboard']);
-  }
-
-  async cancelWizard(): Promise<void> {
-    await this.router.navigate(['/dashboard']);
-  }
-
-  async confirmResetToDefaults(): Promise<void> {
-    if (this.isSaving()) return;
-    const confirmed = typeof window !== 'undefined'
-      ? window.confirm('¿Estás seguro de restablecer la configuración de fábrica? Se descartarán las personalizaciones agregadas a las fichas y consultas, volviendo a las plantillas estándar de tu especialidad.')
-      : true;
-    if (!confirmed) return;
-
-    this.isSaving.set(true);
-    this.errorMessage.set(null);
-    this.successMessage.set(null);
-    try {
-      const setup = await this.workspaceStore.resetToDefaults();
-      if (setup?.specialtyId) {
-        this.patientTemplate.set(createDefaultPatientFormTemplate(setup.specialtyId, setup.specialtyDisplayName));
-        this.encounterTemplate.set(this.createEncounterTemplate(
-          setup.defaultEncounterTemplate,
-          setup.specialtyId,
-          setup.specialtyDisplayName,
-          null,
-        ));
-        this.successMessage.set('Plantillas restablecidas a los valores de fábrica.');
-      }
-    } catch {
-      this.errorMessage.set('No pudimos restablecer los valores de fábrica. Intentá nuevamente.');
-    } finally {
-      this.isSaving.set(false);
-    }
-  }
-
-  onPatientTemplateChange(template: FormTemplate): void {
-    this.patientTemplate.set(template);
-  }
-
-  onEncounterTemplateChange(template: FormTemplate): void {
-    this.encounterTemplate.set(template);
   }
 
   async finishOnboarding(): Promise<void> {
-    const setup = this.workspaceStore.currentSetup();
-    const patientTemplate = this.patientTemplate();
-    const encounterTemplate = this.encounterTemplate();
-    if (!setup?.specialtyId || !patientTemplate || !encounterTemplate || this.isSaving()) return;
+    if (this.editorReadonly()) return;
+    const saved = await this.saveDraft(this.activeStepKey());
+    if (!saved) return;
+    this.isSaving.set(true);
+    try {
+      const applied = await this.workspaceStore.finishOnboarding(saved.version);
+      this.acceptWorkspace(applied);
+      await this.router.navigate(['/dashboard']);
+    } catch (error: unknown) {
+      this.handleWriteError(error, 'El borrador está guardado, pero no pudimos aplicar los cambios. Revisá los campos e intentá nuevamente.');
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
 
+  async exitWizard(): Promise<void> {
+    if (!this.isEditMode() || this.editorReadonly()) return;
+    if (await this.saveDraft(this.activeStepKey())) await this.router.navigate(['/dashboard']);
+  }
+
+  async cancelWizard(): Promise<void> {
+    const workspace = this.workspace();
+    if (!workspace || !this.isEditMode() || this.editorReadonly()) return;
+    this.isSaving.set(true);
+    this.errorMessage.set(null);
+    try {
+      const restored = await this.workspaceStore.discardDraft(workspace.version);
+      this.acceptWorkspace(restored);
+      this.showDiscardConfirmation.set(false);
+      await this.router.navigate(['/dashboard']);
+    } catch (error: unknown) {
+      this.handleWriteError(error, 'No pudimos descartar el borrador. Tus cambios locales siguen visibles.');
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  async confirmResetToDefaults(): Promise<void> {
+    const workspace = this.workspace();
+    if (!workspace || this.editorReadonly()) return;
+    this.isSaving.set(true);
+    this.errorMessage.set(null);
+    try {
+      const reset = await this.workspaceStore.resetToDefaults(workspace.version);
+      this.acceptWorkspace(reset);
+      this.showResetConfirmation.set(false);
+      this.successMessage.set('Valores iniciales copiados al borrador. Revisalos y aplicá los cambios para usarlos.');
+    } catch (error: unknown) {
+      this.handleWriteError(error, 'No pudimos restablecer los valores iniciales. Tus cambios locales siguen visibles.');
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  async handleSignOut(): Promise<void> {
+    if (this.editorReadonly()) return;
+    if (!await this.saveDraft(this.activeStepKey())) return;
+    this.doctorProfileService.clearProfile();
+    await this.authService.signOut();
+    this.workspaceStore.clearSetup();
+  }
+
+  async reviewServerCopy(): Promise<void> {
+    if (this.isSaving()) return;
+    this.isSaving.set(true);
+    try {
+      this.serverCopy.set(await this.workspaceStore.loadSetup(true));
+      this.serverCopyLoaded.set(true);
+    } catch (error: unknown) {
+      this.errorMessage.set(this.errorText(error, 'No pudimos consultar la copia guardada. Tus cambios locales se conservan.'));
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  async useServerCopy(): Promise<void> {
+    if (!this.serverCopyLoaded() || this.isSaving()) return;
+    const latest = this.serverCopy();
+    if (!latest) {
+      await this.router.navigate(['/onboarding/select-specialty']);
+      return;
+    }
+    this.acceptWorkspace(latest);
+    this.hasConflict.set(false);
+    this.serverCopyLoaded.set(false);
+    this.serverCopy.set(null);
+    this.errorMessage.set(null);
+    this.successMessage.set('Copia del servidor cargada. Podés revisarla antes de editar.');
+  }
+
+  private async saveDraft(stepKey: EditableStepKey): Promise<WorkspaceSetup | null> {
+    const workspace = this.workspace();
+    const definition = this.definition();
+    if (!workspace || !definition || this.editorReadonly()) return null;
     this.isSaving.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
     try {
-      await this.workspaceStore.finishOnboarding({
-        specialtyId: setup.specialtyId,
-        patientColumnsConfig: setup.patientColumnsConfig,
-        modulesConfig: setup.modulesConfig,
-        patientTemplateSchema: patientTemplate.schemaDefinition,
-        customTemplateSchema: encounterTemplate.schemaDefinition,
+      const saved = await this.workspaceStore.saveOnboardingDraft({
+        expectedVersion: workspace.version, definition: this.copy(definition), currentStepKey: stepKey,
       });
-      await this.router.navigate(['/dashboard']);
-    } catch {
-      this.errorMessage.set('No pudimos guardar la configuración. Tus cambios siguen guardados y podés reintentarlo.');
+      this.acceptWorkspace(saved);
+      return saved;
+    } catch (error: unknown) {
+      this.handleWriteError(error, 'No pudimos guardar el avance. Tus cambios locales se conservan; revisá los campos y reintentá.');
+      return null;
     } finally {
       this.isSaving.set(false);
     }
   }
 
-  private async saveStep(nextStep: Exclude<OnboardingWizardStepDefinition['onboardingStep'], 'COMPLETED'>): Promise<void> {
-    const setup = this.workspaceStore.currentSetup();
-    if (!setup?.specialtyId) return;
+  private acceptWorkspace(workspace: WorkspaceSetup): void {
+    const definition = workspace.draftDefinition ?? workspace.definition;
+    if (!definition) throw new Error('El backend no devolvió una configuración personal.');
+    this.workspace.set(this.copy(workspace));
+    this.definition.set(this.copy(definition));
+    const firstCategory = definition.patientForm.categories.find(category => category.enabled);
+    this.activeStepKey.set(workspace.currentStepKey === 'completed'
+      ? firstCategory ? `patient:${firstCategory.key}` : 'encounter'
+      : workspace.currentStepKey);
+    this.showPatientCategories.set(false);
+  }
 
-    this.isSaving.set(true);
-    this.errorMessage.set(null);
-    try {
-      if (this.isEditMode()) {
-        const patientTemplate = this.patientTemplate();
-        const encounterTemplate = this.encounterTemplate();
-        await this.workspaceStore.finishOnboarding({
-          specialtyId: setup.specialtyId,
-          patientColumnsConfig: setup.patientColumnsConfig,
-          modulesConfig: setup.modulesConfig,
-          patientTemplateSchema: patientTemplate?.schemaDefinition,
-          customTemplateSchema: encounterTemplate?.schemaDefinition,
-        });
-      } else {
-        await this.workspaceStore.saveOnboardingDraft({
-          specialtyId: setup.specialtyId,
-          onboardingStep: nextStep,
-          onboardingDraft: this.createDraft(),
-        });
-      }
-    } catch {
-      this.errorMessage.set('No pudimos guardar el avance. Revisá tu conexión e intentá nuevamente.');
-    } finally {
-      this.isSaving.set(false);
+  private handleWriteError(error: unknown, fallback: string): void {
+    const response = error as { status?: number; error?: { code?: string } } | null;
+    if (response?.status === 409 && response.error?.code === 'VERSION_CONFLICT') {
+      this.hasConflict.set(true);
+      this.serverCopyLoaded.set(false);
+      this.serverCopy.set(null);
+      this.errorMessage.set('La configuración cambió en otra sesión. Tus cambios locales siguen visibles. Revisá la copia del servidor antes de continuar.');
+    } else {
+      this.errorMessage.set(this.errorText(error, fallback));
     }
   }
 
-  private createPatientTemplate(
-    defaultPatientTemplate: FormTemplate | null | undefined,
-    specialtyId: number,
-    specialtyDisplayName: string | null | undefined,
-    draft: Record<string, unknown> | null | undefined,
-  ): FormTemplate {
-    const template: FormTemplate = defaultPatientTemplate
-      ? (JSON.parse(JSON.stringify(defaultPatientTemplate)) as FormTemplate)
-      : createDefaultPatientFormTemplate(specialtyId, specialtyDisplayName);
-
-    const schema = draft?.['patientTemplateSchema'];
-    if (this.isFormTemplateSchema(schema)) {
-      template.schemaDefinition = schema;
-    }
-
-    if (template.schemaDefinition && Array.isArray(template.schemaDefinition.categories)) {
-      for (const section of PATIENT_FORM_SECTIONS) {
-        const exists = template.schemaDefinition.categories.some(
-          (c) => c.categoryKey === section.categoryKey
-        );
-        if (!exists) {
-          template.schemaDefinition.categories.push({
-            categoryKey: section.categoryKey,
-            title: section.title,
-            enabled: true,
-            fields: section.fields.map((f) => ({ ...f })),
-          });
-        }
-      }
-    }
-
-    return template;
+  private errorText(error: unknown, fallback: string): string {
+    const message = (error as { error?: { message?: unknown } } | null)?.error?.message;
+    return typeof message === 'string' ? message : fallback;
   }
 
-  private createDraft(): Record<string, unknown> {
-    const setupDraft = this.workspaceStore.currentSetup()?.onboardingDraft ?? {};
-    const patientTemplate = this.patientTemplate();
-    const encounterTemplate = this.encounterTemplate();
-    return {
-      ...setupDraft,
-      ...(patientTemplate ? { patientTemplateSchema: patientTemplate.schemaDefinition } : {}),
-      ...(encounterTemplate ? { customTemplateSchema: encounterTemplate.schemaDefinition } : {}),
-    };
-  }
-
-  private createEncounterTemplate(
-    defaultTemplate: FormTemplate | null | undefined,
-    specialtyId: number,
-    specialtyDisplayName: string | null | undefined,
-    draft: Record<string, unknown> | null | undefined,
-  ): FormTemplate {
-    const template: FormTemplate = defaultTemplate
-      ? JSON.parse(JSON.stringify(defaultTemplate)) as FormTemplate
-      : {
-          specialtyId,
-          specialtyDisplayName: specialtyDisplayName ?? null,
-          name: `Historia Clínica${specialtyDisplayName ? ` - ${specialtyDisplayName}` : ''}`,
-          templateType: 'ENCOUNTER',
-          isDefault: true,
-          isSystem: false,
-          schemaDefinition: {
-            categories: [{
-              categoryKey: 'SPECIALTY_SPECIFIC',
-              title: 'CONSULTA',
-              enabled: true,
-              fields: [],
-            }],
-          },
-        };
-    const schema = draft?.['customTemplateSchema'];
-    if (this.isFormTemplateSchema(schema)) {
-      template.schemaDefinition = schema;
-    }
-    template.id = undefined;
-    template.isSystem = false;
-    template.isDefault = true;
-    return template;
-  }
-
-  private isFormTemplateSchema(value: unknown): value is FormTemplateSchema {
-    return typeof value === 'object'
-      && value !== null
-      && 'categories' in value
-      && Array.isArray((value as FormTemplateSchema).categories);
-  }
+  private copy<T>(value: T): T { return JSON.parse(JSON.stringify(value)) as T; }
 }

@@ -13,6 +13,25 @@
   </div>
 } @else if (!authService.isLoggedIn()) {
   <app-login-page />
+} @else if (authService.isSuperAdmin()) {
+  <div class="app-layout-shell">
+    <app-sidebar />
+    <div class="app-main-viewport">
+      <app-header />
+      <main class="app-main-content">
+        <router-outlet />
+      </main>
+    </div>
+  </div>
+} @else if (doctorProfileService.error() || (!workspaceStore.loaded() && workspaceStore.error()) || (!workspaceStore.preferences() && workspaceStore.preferencesError())) {
+  <div class="app-splash-screen" role="alert">
+    <div class="splash-content">
+      <h2 class="splash-title">No pudimos cargar tu cuenta</h2>
+      <p class="splash-text">Reintentá para continuar.</p>
+      <button type="button" (click)="retrySetup()">Reintentar</button>
+      <button type="button" (click)="authService.signOut()">Cerrar sesión</button>
+    </div>
+  </div>
 } @else if (!doctorProfileService.loaded() || doctorProfileService.loading()) {
   <div class="app-splash-screen" role="status" aria-live="polite">
     <div class="splash-content">
@@ -26,7 +45,7 @@
       <p class="splash-text">Verificando perfil médico...</p>
     </div>
   </div>
-} @else if (workspaceStore.isLoading() && !workspaceStore.loaded()) {
+} @else if (workspaceStore.isLoading() && (!workspaceStore.loaded() || (workspaceStore.isOnboardingCompleted() && !workspaceStore.preferences()))) {
   <div class="app-splash-screen" role="status" aria-live="polite">
     <div class="splash-content">
       <div class="splash-logo">

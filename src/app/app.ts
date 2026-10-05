@@ -1,5 +1,7 @@
-import { Component, effect, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { ActivePatientService } from './core/services/active-patient.service';
+import { ClinicalEncounterService } from './core/services/clinical-encounter.service';
+import { Component, effect, inject, untracked } from '@angular/core';
+import { Router, RouterOutlet } from '@angular/router';
 import { HeaderComponent } from './layout/header/header.component';
 import { SidebarComponent } from './layout/sidebar/sidebar.component';
 import { AuthService } from './core/services/auth.service';
@@ -30,16 +32,53 @@ export class App {
   readonly authService = inject(AuthService);
   readonly doctorProfileService = inject(DoctorProfileService);
   readonly workspaceStore = inject(WorkspaceStore);
+  private readonly router = inject(Router);
+  private readonly activePatient = inject(ActivePatientService);
+  private readonly clinicalEncounters = inject(ClinicalEncounterService);
+  private identity: string | null = null;
+  private adminIdentity = false;
 
   constructor() {
     effect(() => {
-      if (this.authService.isLoggedIn()) {
-        this.doctorProfileService.loadProfile();
-        this.workspaceStore.loadSetup();
-      } else {
+      const identity = this.authService.currentUser()?.id ?? null;
+      const adminIdentity = this.authService.isSuperAdmin();
+      if (identity === this.identity && adminIdentity === this.adminIdentity) return;
+      this.identity = identity;
+      this.adminIdentity = adminIdentity;
+      untracked(() => {
+        this.activePatient.clear();
+        this.clinicalEncounters.clear();
         this.doctorProfileService.clearProfile();
         this.workspaceStore.clearSetup();
+        if (identity && adminIdentity) {
+          void this.router.navigate(['/admin/especialidades']).catch(() => undefined);
+        } else if (identity) {
+          void this.loadIdentity();
+          if (this.router.url.startsWith('/admin/')) void this.router.navigate(['/dashboard']).catch(() => undefined);
+        }
+      });
+    });
+    effect(() => {
+      if (this.authService.currentUser()?.id && !this.authService.isSuperAdmin() && this.workspaceStore.isOnboardingCompleted()
+        && !this.workspaceStore.preferences() && !this.workspaceStore.preferencesError()
+        && !this.workspaceStore.isLoading()) {
+        untracked(() => { void this.workspaceStore.loadPreferences().catch(() => undefined); });
       }
     });
   }
+
+  private async loadIdentity(): Promise<void> {
+    const identity = this.authService.currentUser()?.id;
+    const results = await Promise.allSettled([
+      this.doctorProfileService.loadProfile(),
+      this.workspaceStore.loadSetup().then(setup => setup ? this.workspaceStore.loadPreferences() : null),
+    ]);
+    if (!identity || identity !== this.authService.currentUser()?.id || this.authService.isSuperAdmin()
+      || results.some(result => result.status === 'rejected')) return;
+    // Initial guards can cancel navigation before login or while identity state is being reset.
+    // Resume only the empty entry route; preserve any page the user has already opened.
+    if (this.router.url === '/') await this.router.navigate(['/dashboard']).catch(() => undefined);
+  }
+
+  retrySetup(): void { if (!this.authService.isSuperAdmin()) void this.loadIdentity(); }
 }

@@ -6,6 +6,7 @@ import {
   PatientDetailDTO,
   PatientListDTO,
   PatientRequestDTO,
+  PatientUpdateRequestDTO,
 } from '../models/patient.model';
 import { PagedResponse } from '../models/api-response.model';
 
@@ -43,8 +44,12 @@ export class PatientService {
     return this.http.post<PatientDetailDTO>(this.baseUrl, patient);
   }
 
-  updatePatient(id: number, patient: PatientRequestDTO): Observable<PatientDetailDTO> {
+  updatePatient(id: number, patient: PatientUpdateRequestDTO): Observable<PatientDetailDTO> {
     return this.http.put<PatientDetailDTO>(`${this.baseUrl}/${id}`, patient);
+  }
+
+  updateVaccinations(id: number, expectedVersion: number, records: import('../models/clinical-records.model').VaccinationRecord[]): Observable<PatientDetailDTO> {
+    return this.http.put<PatientDetailDTO>(`${this.baseUrl}/${id}/vaccinations`, { expectedVersion, records });
   }
 
   deletePatient(id: number): Observable<void> {

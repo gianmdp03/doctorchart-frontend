@@ -1,41 +1,20 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
+import { environment } from '../../../environments/environment';
 
-/**
- * Functional HTTP Interceptor that automatically injects the Supabase Bearer token
- * into the 'Authorization' header of outgoing HTTP requests, excluding third-party APIs.
- */
+/** Only the user's bearer token travels from the browser to the configured API gateway. */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const token = authService.getAccessToken();
-
-  // Exclude external third-party APIs (e.g., Google APIs)
-  const isExcluded =
-    req.url.includes('googleapis.com') ||
-    req.url.includes('google.com') ||
-    req.url.includes('gist.githubusercontent.com');
-
-  if (isExcluded) {
+  const base = environment.apiUrl.replace(/\/$/, '');
+  const isClinicalApi = req.url === base || req.url.startsWith(`${base}/`) || req.url.startsWith(`${base}?`);
+  if (!isClinicalApi && req.url !== environment.aiGatewayUrl) {
     return next(req);
   }
-
-  const headers: Record<string, string> = {
-    'X-Gateway-Secret': 'pointly-gateway-secret-2026',
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    headers['X-Dev-Bypass'] = 'true';
-    headers['X-User-Id'] = 'dev-user';
-    headers['X-User-Role'] = 'DOCTOR';
-    headers['X-User-Plan'] = authService.doctorchartPlanTier?.() || 'PRO';
+  const token = inject(AuthService).getAccessToken();
+  let headers = req.headers;
+  for (const name of ['X-Gateway-Secret', 'X-Internal-Secret', 'X-User-Id', 'X-User-Role', 'X-User-Plan']) {
+    headers = headers.delete(name);
   }
-
-  const authReq = req.clone({
-    setHeaders: headers,
-  });
-
-  return next(authReq);
+  if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+  return next(req.clone({ headers }));
 };

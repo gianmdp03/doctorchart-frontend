@@ -17,6 +17,7 @@ describe('SidebarComponent', () => {
   beforeEach(async () => {
     authServiceMock = {
       isLoggedIn: signal(true),
+      isSuperAdmin: signal(false),
       userName: signal('Carlos Gómez'),
     };
 
@@ -75,5 +76,19 @@ describe('SidebarComponent', () => {
     expect(component.isCollapsed()).toBe(true);
     component.toggleCollapse();
     expect(component.isCollapsed()).toBe(false);
+  });
+
+  it('offers administration without clinical navigation for a super admin', () => {
+    authServiceMock.isSuperAdmin.set(true);
+    fixture.detectChanges();
+    const links = fixture.nativeElement.querySelectorAll('.sidebar-nav a');
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute('href')).toBe('/admin/especialidades');
+    expect(fixture.nativeElement.textContent).toContain('Administración');
+    expect(fixture.nativeElement.textContent).not.toContain('Pacientes');
+  });
+
+  it('does not expose the admin link to a doctor', () => {
+    expect(fixture.nativeElement.querySelector('a[href="/admin/especialidades"]')).toBeNull();
   });
 });

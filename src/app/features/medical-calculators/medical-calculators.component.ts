@@ -451,7 +451,8 @@ export class MedicalCalculatorsComponent implements OnInit {
   }
 
   restoreSpecialtyDefaults(): void {
-    const specialty = this.workspaceStore.specialtyCode() || 'general_medicine';
+    const specialty = this.workspaceStore.specialtyCode();
+    if (!specialty) return;
     this.calcService.getDefaultsForSpecialty(specialty).subscribe({
       next: (defs) => {
         if (defs?.length) {

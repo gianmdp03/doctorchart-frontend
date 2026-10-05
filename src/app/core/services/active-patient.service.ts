@@ -33,6 +33,7 @@ export class ActivePatientService {
   private readonly patientService = inject(PatientService);
   private readonly platformId = inject(PLATFORM_ID);
 
+  private generation = 0;
   readonly activePatient = signal<PatientDetailDTO | null>(getStoredActivePatient(this.platformId));
   readonly isLoading = signal<boolean>(false);
   readonly error = signal<string | null>(null);
@@ -250,6 +251,7 @@ export class ActivePatientService {
   }
 
   setActivePatient(patient: PatientDetailDTO | null): void {
+    this.generation++;
     this.activePatient.set(patient);
     this.error.set(null);
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
@@ -268,10 +270,12 @@ export class ActivePatientService {
   }
 
   loadPatient(id: number): void {
+    const generation = ++this.generation;
     this.isLoading.set(true);
     this.error.set(null);
     this.patientService.getPatientById(id).subscribe({
       next: (patient) => {
+        if (generation !== this.generation) return;
         this.activePatient.set(patient);
         this.isLoading.set(false);
         if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
@@ -282,6 +286,7 @@ export class ActivePatientService {
         }
       },
       error: (err) => {
+        if (generation !== this.generation) return;
         console.error('Error loading patient:', err);
         this.error.set(err.message || 'Error al cargar paciente');
         this.isLoading.set(false);
@@ -298,6 +303,8 @@ export class ActivePatientService {
   }
 
   clear(): void {
+    this.generation++;
+    this.isLoading.set(false);
     this.activePatient.set(null);
     this.error.set(null);
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {

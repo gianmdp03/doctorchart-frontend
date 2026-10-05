@@ -11,6 +11,7 @@ import {
   lucideCalculator,
 } from '@ng-icons/lucide';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -31,6 +32,7 @@ import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.ser
 })
 export class SidebarComponent {
   readonly specialtyService = inject(DoctorSpecialtyService);
+  readonly authService = inject(AuthService);
 
   readonly isCollapsed = signal<boolean>(false);
 

@@ -50,8 +50,8 @@ export class PatientGrowthService {
    * Returns a value with 1 decimal place (e.g., 3.4 months). Returns 0 if invalid or target < birth.
    */
   calculateExactAgeInMonths(birthDateStr: string, targetDateStr: string): number {
-    const birth = new Date(birthDateStr);
-    const target = new Date(targetDateStr);
+    const birth = this.businessDay(birthDateStr);
+    const target = this.businessDay(targetDateStr);
 
     if (isNaN(birth.getTime()) || isNaN(target.getTime()) || target < birth) {
       return 0;
@@ -68,20 +68,20 @@ export class PatientGrowthService {
    * Formats exact age into a human-friendly pediatric string (e.g. "3 meses y 12 días", "2 años y 1 mes").
    */
   formatAge(birthDateStr: string, targetDateStr: string): string {
-    const birth = new Date(birthDateStr);
-    const target = new Date(targetDateStr);
+    const birth = this.businessDay(birthDateStr);
+    const target = this.businessDay(targetDateStr);
 
     if (isNaN(birth.getTime()) || isNaN(target.getTime()) || target < birth) {
       return '0 días';
     }
 
-    let years = target.getFullYear() - birth.getFullYear();
-    let months = target.getMonth() - birth.getMonth();
-    let days = target.getDate() - birth.getDate();
+    let years = target.getUTCFullYear() - birth.getUTCFullYear();
+    let months = target.getUTCMonth() - birth.getUTCMonth();
+    let days = target.getUTCDate() - birth.getUTCDate();
 
     if (days < 0) {
       months--;
-      const prevMonthLastDay = new Date(target.getFullYear(), target.getMonth(), 0).getDate();
+      const prevMonthLastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), 0)).getUTCDate();
       days += prevMonthLastDay;
     }
 
@@ -115,7 +115,9 @@ export class PatientGrowthService {
    */
   formatDate(dateStr: string): string {
     if (!dateStr) return '';
-    const cleanDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const date = this.businessDay(dateStr);
+    if (Number.isNaN(date.getTime())) return dateStr;
+    const cleanDate = date.toISOString().slice(0, 10);
     const parts = cleanDate.split('-');
     if (parts.length === 3 && parts[0].length === 4) {
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
@@ -130,6 +132,13 @@ export class PatientGrowthService {
     return dateStr;
   }
 
+  private businessDay(value: string): Date {
+    if (!value.includes('T')) return new Date(`${value}T00:00:00Z`);
+    const instant = new Date(value);
+    if (Number.isNaN(instant.getTime())) return instant;
+    const day = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(instant);
+    return new Date(`${day}T00:00:00Z`);
+  }
   /**
    * Estimates approximate WHO percentile bracket for a specific measurement.
    */
@@ -194,7 +203,7 @@ export class PatientGrowthService {
           break;
       }
 
-      const value = this.parseNumeric(rawVal, metric);
+      const value = typeof rawVal === 'number' && Number.isFinite(rawVal) ? rawVal : null;
 
       if (value !== null && value > 0) {
         measurements.push({
@@ -261,7 +270,7 @@ export class PatientGrowthService {
             rawVal = item.perimetroEncefalico ?? null;
             break;
         }
-        const value = this.parseNumeric(rawVal, metric);
+        const value = typeof rawVal === 'number' && Number.isFinite(rawVal) ? rawVal : null;
         if (value !== null && value > 0) {
           measurements.push({
             encounterId: item.consultaId,
@@ -351,59 +360,12 @@ export class PatientGrowthService {
     encounter: ClinicalEncounterList,
     metric: GrowthMetricType
   ): number | null {
-    const dyn = encounter.dynamicData || {};
-    const vs = encounter.vitalSigns;
-
-    switch (metric) {
-      case 'WEIGHT':
-        return (
-          this.parseNumeric(encounter.peso, 'WEIGHT') ??
-          this.parseNumeric(vs?.weightKg, 'WEIGHT') ??
-          this.findDynamicValue(dyn, ['peso', 'weight', 'weightKg', 'pesoKg', 'peso_kg'], 'WEIGHT')
-        );
-      case 'HEIGHT':
-        return (
-          this.parseNumeric(encounter.talla, 'HEIGHT') ??
-          this.parseNumeric(vs?.heightCm, 'HEIGHT') ??
-          this.findDynamicValue(
-            dyn,
-            [
-              'talla',
-              'height',
-              'heightCm',
-              'tallaCm',
-              'talla_cm',
-              'estatura',
-              'longitud',
-            ],
-            'HEIGHT'
-          )
-        );
-      case 'HEAD_CIRCUMFERENCE':
-        return (
-          this.parseNumeric(encounter.perimetroEncefalico, 'HEAD_CIRCUMFERENCE') ??
-          this.parseNumeric(vs?.headCircumferenceCm, 'HEAD_CIRCUMFERENCE') ??
-          this.findDynamicValue(
-            dyn,
-            [
-              'perimetroCefalico',
-              'perimetro_cefalico',
-              'perimetroEncefalico',
-              'perimetro_encefalico',
-              'perimetroCraneal',
-              'perimetro_craneal',
-              'headCircumference',
-              'head_circumference',
-              'pc',
-            ],
-            'HEAD_CIRCUMFERENCE'
-          )
-        );
-      default:
-        return null;
-    }
+    // Wizard measurements already carry canonical kg/cm units from server bindings.
+    const value = metric === 'WEIGHT' ? encounter.peso ?? encounter.vitalSigns?.weightKg
+      : metric === 'HEIGHT' ? encounter.talla ?? encounter.vitalSigns?.heightCm
+      : encounter.perimetroEncefalico ?? encounter.vitalSigns?.headCircumferenceCm;
+    return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
   }
-
   private extractFromCheckup(
     checkup: MedicalCheckupDetailDTO,
     metric: GrowthMetricType
@@ -419,33 +381,6 @@ export class PatientGrowthService {
       default:
         return null;
     }
-  }
-
-  private findDynamicValue(
-    data: Record<string, unknown>,
-    candidateKeys: string[],
-    metric?: GrowthMetricType
-  ): number | null {
-    for (const key of candidateKeys) {
-      if (key in data) {
-        const val = this.parseNumeric(data[key], metric);
-        if (val !== null) return val;
-      }
-    }
-    // Check case-insensitive
-    const lowerKeys = Object.keys(data).reduce<Record<string, unknown>>((acc, k) => {
-      acc[k.toLowerCase()] = data[k];
-      return acc;
-    }, {});
-
-    for (const key of candidateKeys) {
-      const lower = key.toLowerCase();
-      if (lower in lowerKeys) {
-        const val = this.parseNumeric(lowerKeys[lower], metric);
-        if (val !== null) return val;
-      }
-    }
-    return null;
   }
 
   private parseNumeric(val: unknown, metric?: GrowthMetricType): number | null {

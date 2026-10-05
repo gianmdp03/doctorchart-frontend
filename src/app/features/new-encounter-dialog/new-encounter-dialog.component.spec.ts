@@ -1,159 +1,65 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of, Subject, throwError } from 'rxjs';
 import { NewEncounterDialogComponent } from './new-encounter-dialog.component';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
+import { AuthService } from '../../core/services/auth.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
-import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
-import { FormTemplate } from '../../core/models/workspace.model';
-import { of } from 'rxjs';
-import { signal } from '@angular/core';
+import { ClinicalEncounterDetail } from '../../core/models/clinical-encounter.model';
+import { dialogEncounter, dialogWorkspace } from '../dynamic-form-renderer/clinical-dialog.fixture';
 
-describe('NewEncounterDialogComponent', () => {
-  let component: NewEncounterDialogComponent;
-  let fixture: ComponentFixture<NewEncounterDialogComponent>;
-
-  const mockTemplate: FormTemplate = {
-    id: 99,
-    name: 'Plantilla de Prueba FASE 5',
-    templateType: 'ENCOUNTER',
-    isDefault: true,
-    schemaDefinition: {
-      categories: [
-        {
-          categoryKey: 'VITAL_SIGNS_AND_SOMATOMETRY',
-          title: 'Signos Vitales',
-          enabled: true,
-          fields: [
-            { key: 'pesoKg', label: 'Peso Corporal', type: 'NUMBER' },
-            { key: 'tallaCm', label: 'Estatura', type: 'NUMBER' },
-          ],
-        },
-      ],
-    },
-  };
-
-  let encounterServiceMock: {
-    create: ReturnType<typeof vi.fn>;
-  };
-
-  let workspaceStoreMock: {
-    defaultTemplate: ReturnType<typeof signal<FormTemplate | null>>;
-  };
-
-  let specialtyServiceMock: {
-    activeSpecialty: ReturnType<typeof signal<string | null>>;
-  };
-
+describe('NewEncounterDialogComponent canonical creation', () => {
+  let fixture: ComponentFixture<NewEncounterDialogComponent>; let component: NewEncounterDialogComponent;
+  let workspace: ReturnType<typeof dialogWorkspace>; let service: { create: ReturnType<typeof vi.fn> }; let store: { loadSetup: ReturnType<typeof vi.fn> };
+  const user = signal<{ id: string } | null>(null);
   beforeEach(async () => {
-    encounterServiceMock = {
-      create: vi.fn().mockReturnValue(
-        of({
-          id: 501,
-          patientId: 10,
-          patientFullName: 'Juan Pérez',
-          encounterDate: '2026-09-23',
-          specialty: 'GENERAL_MEDICINE',
-          consultationType: 'FIRST_VISIT',
-          chiefComplaint: 'Dolor torácico',
-          primaryDiagnosisDescription: 'Sospecha de reflujo',
-          templateId: 99,
-          dynamicData: { pesoKg: 78.5 },
-          snapshotFieldLabels: { pesoKg: 'Peso Corporal', tallaCm: 'Estatura' },
-        })
-      ),
-    };
-
-    workspaceStoreMock = {
-      defaultTemplate: signal<FormTemplate | null>(mockTemplate),
-    };
-
-    specialtyServiceMock = {
-      activeSpecialty: signal<string | null>('GENERAL_MEDICINE'),
-    };
-
-    await TestBed.configureTestingModule({
-      imports: [NewEncounterDialogComponent],
-      providers: [
-        { provide: ClinicalEncounterService, useValue: encounterServiceMock },
-        { provide: WorkspaceStore, useValue: workspaceStoreMock },
-        { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },
-      ],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(NewEncounterDialogComponent);
-    component = fixture.componentInstance;
+    user.set({ id: 'doctor-a' }); workspace = dialogWorkspace(); service = { create: vi.fn().mockReturnValue(of(dialogEncounter())) }; store = { loadSetup: vi.fn().mockImplementation(async () => structuredClone(workspace)) };
+    await TestBed.configureTestingModule({ imports: [NewEncounterDialogComponent], providers: [{ provide: ClinicalEncounterService, useValue: service }, { provide: WorkspaceStore, useValue: store }, { provide: AuthService, useValue: { currentUser: user } }] }).compileComponents();
+    fixture = TestBed.createComponent(NewEncounterDialogComponent); component = fixture.componentInstance; fixture.componentRef.setInput('patientId', 22); fixture.componentRef.setInput('isOpen', true); fixture.detectChanges(); await vi.waitFor(() => expect(component.definition()).not.toBeNull()); fixture.detectChanges();
   });
-
-  it('should create the new encounter dialog', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('should validate the configured form before submitting', async () => {
-    fixture.componentRef.setInput('isOpen', true);
-    fixture.componentRef.setInput('patientId', 10);
-    fixture.detectChanges();
-
-    component.onDynamicFormValidityChange(false);
+  function fill(): void { component.onDynamicDataChange({ readingA: 0, readingB: 10, notes: 'Sin aliases', result: 999, unknown: 'No enviar' }); component.onDynamicFormValidityChange(true); }
+  it('pins the effective backend definition and sends no specialty, snapshot, projections or template identifier', async () => {
+    fill(); component.encounterDay.set('2026-01-01'); component.encounterTime.set('11:03'); workspace.version = 50;
     await component.submitEncounter();
-    expect(component.errorMessage()).toContain('campos obligatorios');
-    expect(encounterServiceMock.create).not.toHaveBeenCalled();
+    expect(service.create).toHaveBeenCalledWith({ patientId: 22, workspaceVersion: 9, encounterDate: '2026-01-01T11:03:00-03:00', consultationType: 'FIRST_VISIT', values: { readingA: 0, readingB: 10, notes: 'Sin aliases' } });
+    expect(fixture.nativeElement.querySelector('app-date-picker')).not.toBeNull(); expect(fixture.nativeElement.querySelector('input[type="date"]')).toBeNull();
   });
-
-  it('should submit encounter with templateId, dynamicData, and snapshotFieldLabels', async () => {
-    let createdResult: any = null;
-    component.encounterCreated.subscribe((res) => {
-      createdResult = res;
-    });
-
-    fixture.componentRef.setInput('isOpen', true);
-    fixture.componentRef.setInput('patientId', 10);
-    fixture.componentRef.setInput('patientName', 'Juan Pérez');
-    fixture.detectChanges();
-
-    component.onDynamicDataChange({ pesoKg: 78.5 });
-
-    await component.submitEncounter();
-
-    expect(encounterServiceMock.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        patientId: 10,
-        encounterDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
-        chiefComplaint: '78.5',
-        primaryDiagnosisDescription: '78.5',
-        templateId: 99,
-        dynamicData: { pesoKg: 78.5 },
-        snapshotFieldLabels: {
-          pesoKg: 'Peso Corporal',
-          tallaCm: 'Estatura',
-        },
-      })
-    );
-
-    expect(createdResult).toBeTruthy();
-    expect(createdResult.id).toBe(501);
+  it('does not invent a complaint or diagnosis when the encounter form has no categories', async () => {
+    component.definition.set({ categories: [] }); component.onDynamicFormValidityChange(true); await component.submitEncounter();
+    expect(service.create).toHaveBeenCalledWith(expect.objectContaining({ values: {} }));
+    expect(service.create.mock.calls[0][0]).not.toHaveProperty('chiefComplaint');
+    expect(service.create.mock.calls[0][0]).not.toHaveProperty('primaryDiagnosisDescription');
   });
-  it('should only show FIRST_VISIT when previousEncountersCount is 0', () => {
-    fixture.componentRef.setInput('previousEncountersCount', 0);
-    fixture.detectChanges();
-
-    const types = component.consultationTypes();
-    expect(types.length).toBe(1);
-    expect(types[0].value).toBe('FIRST_VISIT');
-    expect(component.consultationType()).toBe('FIRST_VISIT');
+  it('keeps answers and pinned revision until explicit adoption after workspace conflict', async () => {
+    fill(); service.create.mockReturnValueOnce(throwError(() => ({ status: 409, error: { code: 'WORKSPACE_VERSION_CONFLICT' } })));
+    await component.submitEncounter(); expect(component.hasConflict()).toBe(true); expect(component.workspace()?.version).toBe(9);
+    workspace.version = 20; workspace.definition!.encounterForm.categories[0].fields = workspace.definition!.encounterForm.categories[0].fields.filter(field => field.key !== 'readingB');
+    await component.reviewRemote(); expect(component.dynamicFormData()['readingB']).toBe(10); expect(component.workspace()?.version).toBe(9);
+    await component.submitEncounter(); expect(service.create).toHaveBeenCalledTimes(1);
+    component.useRemoteWorkspace(); expect(component.dynamicFormData()).toEqual({ readingA: 0, notes: 'Sin aliases' }); expect(component.workspace()?.version).toBe(20);
   });
-
-  it('should show all other consultation types except FIRST_VISIT when previousEncountersCount > 0', () => {
-    fixture.componentRef.setInput('previousEncountersCount', 3);
-    fixture.detectChanges();
-
-    const types = component.consultationTypes();
-    expect(types.length).toBe(4);
-    expect(types.some((t) => t.value === 'FIRST_VISIT')).toBe(false);
-    expect(types.map((t) => t.value)).toEqual([
-      'FOLLOW_UP',
-      'ROUTINE_CHECKUP',
-      'EMERGENCY',
-      'INTERCONSULTATION',
-    ]);
-    expect(component.consultationType()).toBe('FOLLOW_UP');
+  it('rejects future or invalid metadata and blocks simultaneous creates', async () => {
+    fill(); component.encounterDay.set('9999-01-01'); await component.submitEncounter(); expect(service.create).not.toHaveBeenCalled();
+    component.encounterDay.set('2026-01-01'); component.encounterTime.set('25:00'); await component.submitEncounter(); expect(service.create).not.toHaveBeenCalled();
+    component.encounterTime.set('12:00'); const pending = new Subject<ClinicalEncounterDetail>(); service.create.mockReturnValueOnce(pending);
+    const request = component.submitEncounter(); await component.submitEncounter(); expect(service.create).toHaveBeenCalledTimes(1);
+    pending.error({ status: 500 }); await request; expect(component.isSubmitting()).toBe(false); expect(component.dynamicFormData()['readingA']).toBe(0);
+  });
+  it('ignores late results and rejects a submit when the patient or identity changes before effects run', async () => {
+    fill(); const pending = new Subject<ClinicalEncounterDetail>(); service.create.mockReturnValueOnce(pending); const emitted = vi.fn(); component.encounterCreated.subscribe(emitted);
+    const request = component.submitEncounter(); fixture.componentRef.setInput('patientId', 99);
+    pending.next(dialogEncounter()); pending.complete(); await request; expect(emitted).not.toHaveBeenCalled();
+    await component.submitEncounter(); expect(service.create).toHaveBeenCalledTimes(1);
+    fixture.detectChanges(); await vi.waitFor(() => expect(component.isLoading()).toBe(false));
+    user.set({ id: 'doctor-b' }); await component.submitEncounter(); expect(service.create).toHaveBeenCalledTimes(1);
+  });
+  it('does not populate another patient from a late workspace load', async () => {
+    let resolve!: (workspace: ReturnType<typeof dialogWorkspace>) => void;
+    store.loadSetup.mockReturnValueOnce(new Promise<ReturnType<typeof dialogWorkspace>>(done => resolve = done));
+    fixture.componentRef.setInput('patientId', 99); fixture.detectChanges();
+    fixture.componentRef.setInput('patientId', 22); fixture.detectChanges(); await vi.waitFor(() => expect(component.definition()).not.toBeNull());
+    const stale = dialogWorkspace(); stale.definition!.encounterForm.categories[0].title = 'Respuesta antigua'; resolve(stale); await Promise.resolve(); fixture.detectChanges();
+    expect(component.definition()?.categories[0].title).not.toBe('Respuesta antigua');
   });
 });

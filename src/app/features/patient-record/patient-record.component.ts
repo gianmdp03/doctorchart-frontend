@@ -1,3 +1,4 @@
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Component,
   DestroyRef,
@@ -39,7 +40,6 @@ import { CheckupService } from '../../core/services/checkup.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { MedicalCheckupDetailDTO } from '../../core/models/checkup.model';
 import { ClinicalEncounterList, PrescriptionItem } from '../../core/models/clinical-encounter.model';
-import { MedicalSpecialty } from '../../core/models/specialty.model';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { PatientBannerComponent } from './patient-banner/patient-banner.component';
 import { ClinicalTimelineComponent } from './clinical-timeline/clinical-timeline.component';
@@ -47,7 +47,7 @@ import { NewEncounterDialogComponent } from '../new-encounter-dialog/new-encount
 import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
 import { PatientVaccinationsComponent } from './patient-vaccinations/patient-vaccinations.component';
 import { WorkspaceStore } from '../../core/services/workspace.store';
-import { FormTemplate } from '../../core/models/workspace.model';
+import { WizardFormDefinition, WizardFormValues } from '../../core/models/wizard-definition.model';
 import { GrowthChartComponent } from './growth-chart/growth-chart.component';
 import { PatientStudiesComponent } from './patient-studies/patient-studies.component';
 import { PatientGrowthService } from '../../core/services/patient-growth.service';
@@ -156,6 +156,7 @@ export class PatientRecordComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly workspaceStore = inject(WorkspaceStore);
+  private checkupRead = 0; private encounterRead = 0; private growthRead = 0;
 
   // Growth Curves & Somatometry State
   readonly selectedGrowthMetric = signal<GrowthMetricType | 'ALL'>('WEIGHT');
@@ -212,52 +213,11 @@ export class PatientRecordComponent implements OnInit {
     return this.activePatientService.ageInYears() < 16;
   });
 
-  /**
-   * New patients carry the exact wizard schema used when they were registered.
-   * Legacy patients fall back to the doctor's current template instead.
-   */
-  readonly patientFormTemplate = computed<FormTemplate | null>(() => {
-    const patient = this.activePatientService.activePatient();
-    const baseTemplate = this.workspaceStore.defaultPatientTemplate();
-    const schema = patient?.patientTemplateSnapshot ?? baseTemplate?.schemaDefinition;
-    if (!schema) return null;
-
-    return {
-      ...(baseTemplate ?? {
-        name: 'Formulario del paciente',
-        templateType: 'PATIENT_EXTRA' as const,
-        isDefault: true,
-      }),
-      name: baseTemplate?.name ?? 'Formulario del paciente',
-      templateType: 'PATIENT_EXTRA',
-      isDefault: true,
-      schemaDefinition: schema,
-    };
-  });
-
-  readonly patientFormValues = computed<Record<string, unknown>>(() => {
-    const patient = this.activePatientService.activePatient();
-    if (!patient) return {};
-    const nameParts = patient.fullName.trim().split(/\s+/);
-    const values: Record<string, unknown> = {
-      ...(patient.patientExtraData ?? {}),
-      ...(patient.patientFormData ?? {}),
-      firstName: patient.patientFormData?.['firstName'] ?? nameParts[0] ?? '',
-      lastName: patient.patientFormData?.['lastName'] ?? nameParts.slice(1).join(' '),
-      birthDate: patient.birthDate,
-      nationalId: patient.nationalId ?? '',
-      phone: patient.phone ?? '',
-      address: patient.address ?? '',
-      email: patient.email ?? '',
-      gender: patient.gender ?? '',
-      bloodType: patient.bloodType ?? '',
-    };
-    delete values['fullName'];
-    return values;
-  });
-
+  readonly patientFormDefinition = computed<WizardFormDefinition | null>(() => this.activePatientService.activePatient()?.formDefinitionSnapshot ?? null);
+  readonly patientFormValues = computed<WizardFormValues>(() => this.activePatientService.activePatient()?.formValues ?? {});
+  readonly patientFormulaResults = computed(() => this.activePatientService.activePatient()?.formulaResults ?? {});
+  readonly growthEnabled = computed(() => this.workspaceStore.isModuleActive('GROWTH_CHARTS'));
   readonly tabs = computed<RecordTabItem[]>(() => {
-    const isPediatric = this.doctorSpecialtyService.isPediatricMode() || this.isChild();
     return [
       { id: 'resumen', label: '1. Datos del paciente' },
       { id: 'historia', label: '2. Consultas', badge: this.encounters().length },
@@ -269,7 +229,7 @@ export class PatientRecordComponent implements OnInit {
       },
       { id: 'recetas', label: '5. Recetas y Órdenes' },
       { id: 'estudios', label: '6. Estudios realizados' },
-    ];
+    ].filter(tab => tab.id !== 'curvas' || this.growthEnabled()) as RecordTabItem[];
   });
 
   readonly checkups = signal<MedicalCheckupDetailDTO[]>([]);
@@ -278,8 +238,6 @@ export class PatientRecordComponent implements OnInit {
   // Universal Encounters state
   readonly encounters = signal<ClinicalEncounterList[]>([]);
   readonly isLoadingEncounters = signal<boolean>(false);
-  readonly isMigrating = signal<boolean>(false);
-  readonly migrationMessage = signal<string | null>(null);
   readonly isPediatricToolsExpanded = signal<boolean>(true);
 
   // --- Recetas y Estudios Form State ---
@@ -334,13 +292,16 @@ export class PatientRecordComponent implements OnInit {
   constructor() {
     effect(() => {
       const patient = this.activePatientService.activePatient();
+      const growthEnabled = this.growthEnabled();
       untracked(() => {
+        if (!growthEnabled && this.selectedTab() === 'curvas') this.selectedTab.set('resumen');
         if (patient?.id) {
           this.loadCheckups(patient.id);
           this.loadEncounters(patient.id);
           this.loadSavedPrescriptions(patient.id);
           this.loadGrowthCurves(patient.id);
         } else {
+          this.isLoadingCheckups.set(false); this.isLoadingEncounters.set(false); this.isLoadingGrowthCurves.set(false);
           this.checkups.set([]);
           this.encounters.set([]);
           this.savedPrescriptionRecords.set([]);
@@ -364,7 +325,7 @@ export class PatientRecordComponent implements OnInit {
     this.route.queryParamMap.subscribe((queryParams) => {
       const tabParam = queryParams.get('tab') as PatientRecordTab | null;
       if (tabParam && ['resumen', 'historia', 'vacunas', 'curvas', 'recetas', 'estudios'].includes(tabParam)) {
-        this.selectedTab.set(tabParam);
+        this.setTab(tabParam);
       }
     });
 
@@ -391,25 +352,26 @@ export class PatientRecordComponent implements OnInit {
   }
 
   @HostListener('window:encounter-created')
+  @HostListener('window:encounter-updated')
+  @HostListener('window:encounter-deleted')
   onEncounterCreated(): void {
     if (isPlatformBrowser(this.platformId)) {
-      const patient = this.activePatientService.activePatient();
-      if (patient?.id) {
-        this.loadEncounters(patient.id);
-        this.loadCheckups(patient.id);
-        this.loadGrowthCurves(patient.id);
-      }
+      const patientId = this.activePatientService.patientId();
+      if (patientId) this.activePatientService.loadPatient(patientId);
     }
   }
-
   loadCheckups(patientId: number): void {
+    const revision = ++this.checkupRead;
+    const owner = this.authService.currentUser()?.id;
     this.isLoadingCheckups.set(true);
-    this.checkupService.getCheckupsByPatientId(patientId).subscribe({
+    this.checkupService.getCheckupsByPatientId(patientId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
+        if (revision !== this.checkupRead || patientId !== this.activePatientService.patientId() || owner !== this.authService.currentUser()?.id) return;
         this.checkups.set(data || []);
         this.isLoadingCheckups.set(false);
       },
       error: () => {
+        if (revision !== this.checkupRead || patientId !== this.activePatientService.patientId() || owner !== this.authService.currentUser()?.id) return;
         this.checkups.set([]);
         this.isLoadingCheckups.set(false);
       },
@@ -417,13 +379,17 @@ export class PatientRecordComponent implements OnInit {
   }
 
   loadEncounters(patientId: number): void {
+    const revision = ++this.encounterRead;
+    const owner = this.authService.currentUser()?.id;
     this.isLoadingEncounters.set(true);
-    this.clinicalEncounterService.getByPatient(patientId).subscribe({
+    this.clinicalEncounterService.getByPatient(patientId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
+        if (revision !== this.encounterRead || patientId !== this.activePatientService.patientId() || owner !== this.authService.currentUser()?.id) return;
         this.encounters.set(data || []);
         this.isLoadingEncounters.set(false);
       },
       error: () => {
+        if (revision !== this.encounterRead || patientId !== this.activePatientService.patientId() || owner !== this.authService.currentUser()?.id) return;
         this.encounters.set([]);
         this.isLoadingEncounters.set(false);
       },
@@ -431,13 +397,18 @@ export class PatientRecordComponent implements OnInit {
   }
 
   loadGrowthCurves(patientId: number): void {
+    const revision = ++this.growthRead;
+    const owner = this.authService.currentUser()?.id;
+    if (!this.growthEnabled()) { this.backendGrowthMeasurements.set([]); return; }
     this.isLoadingGrowthCurves.set(true);
-    this.growthService.getPatientGrowthCurves(patientId).subscribe({
+    this.growthService.getPatientGrowthCurves(patientId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
+        if (revision !== this.growthRead || patientId !== this.activePatientService.patientId() || owner !== this.authService.currentUser()?.id) return;
         this.backendGrowthMeasurements.set(data || []);
         this.isLoadingGrowthCurves.set(false);
       },
       error: () => {
+        if (revision !== this.growthRead || patientId !== this.activePatientService.patientId() || owner !== this.authService.currentUser()?.id) return;
         this.backendGrowthMeasurements.set([]);
         this.isLoadingGrowthCurves.set(false);
       },
@@ -445,6 +416,7 @@ export class PatientRecordComponent implements OnInit {
   }
 
   setTab(tab: PatientRecordTab): void {
+    if (tab === 'curvas' && !this.growthEnabled()) return;
     this.selectedTab.set(tab);
   }
 
@@ -489,7 +461,7 @@ export class PatientRecordComponent implements OnInit {
     this.isMoreMenuOpen.set(false);
   }
 
-  openNewEncounterModal(specialty?: MedicalSpecialty, event?: Event): void {
+  openNewEncounterModal(event?: Event): void {
     if (event) event.stopPropagation();
     this.isMoreMenuOpen.set(false);
     this.isNewEncounterModalOpen.set(true);
@@ -518,34 +490,11 @@ export class PatientRecordComponent implements OnInit {
     this.clinicalEncounterService.delete(encounterId).subscribe({
       next: () => {
         if (patientId) {
-          this.loadEncounters(patientId);
+          window.dispatchEvent(new CustomEvent('encounter-deleted', {detail:{patientId}}));
         }
       },
       error: (err) => {
         alert(err?.error?.message || 'Error al eliminar la consulta clínica.');
-      },
-    });
-  }
-
-  migratePediatricCheckups(): void {
-    this.isMigrating.set(true);
-    this.migrationMessage.set(null);
-    this.clinicalEncounterService.migratePediatricCheckups().subscribe({
-      next: (res) => {
-        this.isMigrating.set(false);
-        this.migrationMessage.set(
-          `Migración completada con éxito: ${res.migratedNow} controles pediátricos convertidos a consultas SOAP (${res.alreadyMigrated} ya estaban sincronizados).`
-        );
-        const patientId = this.activePatientService.patientId();
-        if (patientId) {
-          this.loadEncounters(patientId);
-        }
-      },
-      error: (err) => {
-        this.isMigrating.set(false);
-        this.migrationMessage.set(
-          err?.error?.message || 'Error al ejecutar la migración pediátrica a SOAP.'
-        );
       },
     });
   }
@@ -896,21 +845,17 @@ export class PatientRecordComponent implements OnInit {
   // Guardians & Parents
   readonly fatherName = computed(() => {
     const g = this.activePatientService.activePatient()?.guardianInfo;
-    const formVal = this.activePatientService.activePatient()?.patientFormData?.['fatherFullName'];
-    return g?.fatherFullName || (typeof formVal === 'string' ? formVal : null) || g?.firstGuardianFullName || '—';
+    return g?.fatherFullName || g?.firstGuardianFullName || '—';
   });
 
   readonly motherName = computed(() => {
     const g = this.activePatientService.activePatient()?.guardianInfo;
-    const formVal = this.activePatientService.activePatient()?.patientFormData?.['motherFullName'];
-    return g?.motherFullName || (typeof formVal === 'string' ? formVal : null) || g?.secondGuardianFullName || '—';
+    return g?.motherFullName || g?.secondGuardianFullName || '—';
   });
 
   readonly siblingsCount = computed(() => {
     const g = this.activePatientService.activePatient()?.guardianInfo;
-    const formVal = this.activePatientService.activePatient()?.patientFormData?.['siblingsCount'];
     if (g?.siblingsCount != null) return g.siblingsCount;
-    if (formVal != null && formVal !== '') return Number(formVal);
     return null;
   });
 
@@ -928,38 +873,30 @@ export class PatientRecordComponent implements OnInit {
 
   readonly primaryGuardian = computed(() => {
     const g = this.activePatientService.activePatient()?.guardianInfo;
-    const formVal = this.activePatientService.activePatient()?.patientFormData?.['primaryGuardian'];
-    return g?.primaryGuardian || (typeof formVal === 'string' ? formVal : null) || null;
+    return g?.primaryGuardian || null;
   });
 
   readonly primaryContactPhone = computed(() => {
     const g = this.activePatientService.activePatient()?.guardianInfo;
-    const formVal = this.activePatientService.activePatient()?.patientFormData?.['primaryContactPhone'];
-    return g?.primaryContactPhone || (typeof formVal === 'string' ? formVal : null) || (this.guardian1Phone() !== '—' ? this.guardian1Phone() : null);
+    return g?.primaryContactPhone || (this.guardian1Phone() !== '—' ? this.guardian1Phone() : null);
   });
 
   readonly hasSiblings = computed<boolean | null>(() => {
     const g = this.activePatientService.activePatient()?.guardianInfo;
-    const formVal = this.activePatientService.activePatient()?.patientFormData?.['hasSiblings'];
     if (g?.hasSiblings != null) return g.hasSiblings;
-    if (formVal === true || formVal === 'true') return true;
-    if (formVal === false || formVal === 'false') return false;
     if (this.siblingsCount() !== null && (this.siblingsCount() ?? 0) > 0) return true;
     return null;
   });
 
   readonly siblingOrder = computed(() => {
     const g = this.activePatientService.activePatient()?.guardianInfo;
-    const formVal = this.activePatientService.activePatient()?.patientFormData?.['siblingOrder'];
     if (g?.siblingOrder != null) return g.siblingOrder;
-    if (formVal != null && formVal !== '') return Number(formVal);
     return null;
   });
 
   readonly livingArrangement = computed(() => {
     const g = this.activePatientService.activePatient()?.guardianInfo;
-    const formVal = this.activePatientService.activePatient()?.patientFormData?.['livingArrangement'];
-    return g?.livingArrangement || (typeof formVal === 'string' ? formVal : null) || null;
+    return g?.livingArrangement || null;
   });
 
   // Emergency Contact
@@ -967,63 +904,6 @@ export class PatientRecordComponent implements OnInit {
     const p = this.activePatientService.activePatient();
     if (!p) return null;
     return p.emergencyContact || null;
-  });
-
-  // Gynecology Computeds
-  readonly fumDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['fum'] || extra?.['lastMenstrualPeriod'] || 'Sin registrar';
-  });
-
-  readonly menstrualCycleDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['menstrualCycle'] || 'Sin registrar';
-  });
-
-  readonly obstetricFormulaDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['obstetricFormula'] || 'G0 P0 C0 A0';
-  });
-
-  readonly contraceptionDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['contraception'] || 'Sin método registrado';
-  });
-
-  readonly papDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['lastPapDate'] || 'Sin registrar';
-  });
-
-  readonly mammographyDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['lastMammographyDate'] || 'Sin registrar';
-  });
-
-  // Cardiology Computeds
-  readonly smokingDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['smokingStatus'] || 'No fumador';
-  });
-
-  readonly physicalActivityDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['physicalActivity'] || 'Sedentario';
-  });
-
-  readonly bloodPressureBaselineDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['bloodPressureBaseline'] || '120/80 mmHg';
-  });
-
-  readonly cardioRiskScoreDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['cardioRiskScore'] || 'Bajo (< 5%)';
-  });
-
-  readonly cardiovascularConditionsDisplay = computed(() => {
-    const extra = this.activePatientService.activePatient()?.patientExtraData;
-    return extra?.['cardiovascularConditions'] || 'Sin comorbilidades cardiovasculares';
   });
 
   // History Computeds
@@ -1115,27 +995,18 @@ export class PatientRecordComponent implements OnInit {
   readonly paternalDiseases = computed<string[]>(() => {
     const fh = this.activePatientService.activePatient()?.familyHistory;
     if (fh?.paternalDiseases && fh.paternalDiseases.length > 0) return fh.paternalDiseases;
-    const val = this.activePatientService.activePatient()?.patientFormData?.['paternalDiseases'];
-    if (Array.isArray(val)) return val.map(String).filter(Boolean);
-    if (typeof val === 'string' && val.trim()) return [val.trim()];
     return [];
   });
 
   readonly maternalDiseases = computed<string[]>(() => {
     const fh = this.activePatientService.activePatient()?.familyHistory;
     if (fh?.maternalDiseases && fh.maternalDiseases.length > 0) return fh.maternalDiseases;
-    const val = this.activePatientService.activePatient()?.patientFormData?.['maternalDiseases'];
-    if (Array.isArray(val)) return val.map(String).filter(Boolean);
-    if (typeof val === 'string' && val.trim()) return [val.trim()];
     return [];
   });
 
   readonly siblingDiseases = computed<string[]>(() => {
     const fh = this.activePatientService.activePatient()?.familyHistory;
     if (fh?.siblingDiseases && fh.siblingDiseases.length > 0) return fh.siblingDiseases;
-    const val = this.activePatientService.activePatient()?.patientFormData?.['siblingDiseases'];
-    if (Array.isArray(val)) return val.map(String).filter(Boolean);
-    if (typeof val === 'string' && val.trim()) return [val.trim()];
     return [];
   });
 

@@ -1,3 +1,4 @@
+import { wizardRecordEntries } from '../../../core/models/wizard-record-display';
 import {
   Component,
   computed,
@@ -238,32 +239,12 @@ export class ClinicalTimelineComponent implements OnChanges {
 
 
   getEncounterSummary(encounter: ClinicalEncounterList): string {
-    const firstValue = Object.values(encounter.dynamicData ?? {}).find(
-      (value) => value !== null && value !== undefined && value !== '',
-    );
-    if (firstValue !== undefined) return this.formatValue(firstValue);
-    return encounter.chiefComplaint || encounter.primaryDiagnosisDescription || 'Consulta registrada';
+    return encounter.chiefComplaint || encounter.primaryDiagnosisDescription || wizardRecordEntries(encounter)[0]?.value || 'Consulta registrada';
   }
 
   getDynamicEntries(encounter: ClinicalEncounterList): { label: string; value: string }[] {
-    return Object.entries(encounter.dynamicData ?? {})
-      .filter(([, value]) => value !== null && value !== undefined && value !== '')
-      .map(([key, value]) => ({
-        label: encounter.snapshotFieldLabels?.[key] || this.formatFieldKey(key),
-        value: this.formatValue(value),
-      }));
+    return wizardRecordEntries(encounter);
   }
-
-  private formatFieldKey(key: string): string {
-    return key.replace(/([A-Z])/g, ' $1').replace(/^./, (char) => char.toUpperCase()).trim();
-  }
-
-  private formatValue(value: unknown): string {
-    if (typeof value === 'boolean') return value ? 'Sí' : 'No';
-    if (Array.isArray(value)) return value.join(', ');
-    return String(value);
-  }
-
   getBmiStatus(bmi?: number | null): { label: string; badgeClass: string } {
     if (!bmi) return { label: 'Sin IMC', badgeClass: 'bmi-neutral' };
     if (bmi < 18.5) return { label: `${bmi.toFixed(1)} (Bajo peso)`, badgeClass: 'bmi-warning' };

@@ -1,194 +1,100 @@
+import { beforeEach, describe, expect, it } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { DynamicFormRendererComponent } from './dynamic-form-renderer.component';
-import { FormTemplate } from '../../core/models/workspace.model';
 import { By } from '@angular/platform-browser';
+import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
+import { WizardFormDefinition, WizardFormValues, WizardFormulaResult } from '../../core/models/wizard-definition.model';
+import { customSpecialtyFixture } from '../onboarding/testing/custom-specialty.fixture';
+import { DynamicFormRendererComponent } from './dynamic-form-renderer.component';
 
-describe('DynamicFormRendererComponent', () => {
-  let component: DynamicFormRendererComponent;
-  let fixture: ComponentFixture<DynamicFormRendererComponent>;
-
-  const mockTemplate: FormTemplate = {
-    id: 1,
-    name: 'Plantilla Pediátrica Estándar',
-    templateType: 'ENCOUNTER',
-    isDefault: true,
-    schemaDefinition: {
-      categories: [
-        {
-          categoryKey: 'VITAL_SIGNS_AND_SOMATOMETRY',
-          title: 'Signos Vitales y Somatometría',
-          enabled: true,
-          fields: [
-            {
-              key: 'pesoKg',
-              label: 'Peso',
-              type: 'NUMBER',
-              required: true,
-              unit: 'kg',
-              placeholder: 'Ej: 12.5',
-            },
-            {
-              key: 'tallaCm',
-              label: 'Estatura',
-              type: 'NUMBER',
-              unit: 'cm',
-            },
-            {
-              key: 'estadoGeneral',
-              label: 'Estado General',
-              type: 'SELECT',
-              options: [
-                { value: 'BUENO', label: 'Buen estado general' },
-                { value: 'REGULAR', label: 'Regular estado' },
-                { value: 'MALO', label: 'Mal estado' },
-              ],
-            },
-            {
-              key: 'alimentacionMaterna',
-              label: 'Lactancia Materna Exclusiva',
-              type: 'BOOLEAN',
-            },
-            {
-              key: 'observacionesGenerales',
-              label: 'Observaciones',
-              type: 'TEXTAREA',
-              placeholder: 'Detalles...',
-            },
-          ],
-        },
-        {
-          categoryKey: 'DISABLED_SECTION',
-          title: 'Sección Oculta',
-          enabled: false,
-          fields: [
-            {
-              key: 'campoOculto',
-              label: 'Oculto',
-              type: 'TEXT',
-            },
-          ],
-        },
-      ],
-    },
-  };
-
+describe('DynamicFormRendererComponent canonical fields', () => {
+  let fixture: ComponentFixture<DynamicFormRendererComponent>; let component: DynamicFormRendererComponent; let definition: WizardFormDefinition;
+  const values: WizardFormValues = { identity: 'Paciente', born: '2001-03-04', consent: false, group: 'a', readingA: 0, readingB: 10, notes: 'Nota libre' };
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [DynamicFormRendererComponent],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(DynamicFormRendererComponent);
-    component = fixture.componentInstance;
+    definition = { categories: structuredClone([...customSpecialtyFixture.definition.patientForm.categories, ...customSpecialtyFixture.definition.encounterForm.categories]) };
+    await TestBed.configureTestingModule({ imports: [DynamicFormRendererComponent] }).compileComponents();
+    fixture = TestBed.createComponent(DynamicFormRendererComponent); component = fixture.componentInstance;
+    fixture.componentRef.setInput('definition', definition); fixture.componentRef.setInput('values', structuredClone(values)); fixture.detectChanges();
   });
-
-  it('should create the dynamic form renderer', () => {
-    expect(component).toBeTruthy();
+  it('renders unfamiliar stable categories and all seven field types with the shared date selector', () => {
+    expect(fixture.nativeElement.querySelector('[data-category-key="new_patient_category"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-field-key="identity"] input')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-field-key="readingA"] input[type="number"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-field-key="notes"] textarea')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-field-key="group"] select')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-field-key="consent"] select')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-field-key="result"] output')).not.toBeNull();
+    expect(fixture.debugElement.queryAll(By.directive(DatePickerComponent))).toHaveLength(1);
+    expect(fixture.nativeElement.querySelector('input[type="date"]')).toBeNull();
+    expect(component.formValid()).toBe(true);
   });
-
-  it('should render standard active fields from enabled categories', () => {
-    fixture.componentRef.setInput('template', mockTemplate);
-    fixture.detectChanges();
-
-    const pesoInput = fixture.debugElement.query(By.css('#pesoKg'));
-    expect(pesoInput).toBeTruthy();
-    expect(pesoInput.nativeElement.getAttribute('type')).toBe('number');
-
-    const select = fixture.debugElement.query(By.css('#estadoGeneral'));
-    expect(select).toBeTruthy();
-    const options = select.queryAll(By.css('option'));
-    expect(options.length).toBe(4); // 1 placeholder + 3 options
-
-    const radioYes = fixture.debugElement.query(By.css('input[name="alimentacionMaterna"]'));
-    expect(radioYes).toBeTruthy();
-    expect(radioYes.nativeElement.getAttribute('type')).toBe('radio');
-
-    const textarea = fixture.debugElement.query(By.css('#observacionesGenerales'));
-    expect(textarea).toBeTruthy();
-
-    // Disabled category should not render
-    const hiddenField = fixture.debugElement.query(By.css('#campoOculto'));
-    expect(hiddenField).toBeNull();
+  it('uses Argentine display and emits only an ISO date at the value boundary', () => {
+    let emitted: WizardFormValues = {}; component.valuesChange.subscribe(value => emitted = value);
+    const datePicker = fixture.debugElement.query(By.directive(DatePickerComponent)).componentInstance as DatePickerComponent;
+    datePicker.selectDate(new Date(2000, 1, 29));
+    expect(emitted['born']).toBe('2000-02-29');
+    fixture.componentRef.setInput('readonly', true); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('29/02/2000');
+    expect(fixture.nativeElement.textContent).toContain('Grupo A'); expect(fixture.nativeElement.textContent).toContain('No');
   });
-
-  it('should validate required fields and report validity correctly', () => {
-    fixture.componentRef.setInput('template', mockTemplate);
-    fixture.detectChanges();
-
-    // pesoKg is required, initial form should be invalid
-    expect(component.form().valid).toBe(false);
-
-    // Populate pesoKg
-    component.form().get('pesoKg')?.setValue(14.2);
-    expect(component.form().valid).toBe(true);
+  it('accepts zero and required false while rejecting wrong types, nonfinite numbers and invalid options', () => {
+    const number = component.fields().find(field => field.key === 'readingA')!;
+    expect(component.validField(number)).toBe(true);
+    component.setValue(number, Number.NaN); expect(component.formValid()).toBe(false);
+    component.setValue(number, '0'); expect(component.formValid()).toBe(false);
+    component.setValue(number, 101); expect(component.formValid()).toBe(false);
+    component.setValue(number, -10); expect(component.formValid()).toBe(true);
+    const boolean = component.fields().find(field => field.key === 'consent')!;
+    component.setValue(boolean, null); expect(component.formValid()).toBe(false);
+    component.setValue(boolean, false); expect(component.formValid()).toBe(true);
+    component.setValue(boolean, 'false'); expect(component.formValid()).toBe(false);
+    component.setValue(boolean, false);
+    component.setValue(component.fields().find(field => field.key === 'group')!, 'unknown'); expect(component.formValid()).toBe(false);
   });
-
-  it('should emit merged values when fields are updated', () => {
-    let emittedValues: Record<string, unknown> | null = null;
-    component.valuesChange.subscribe((val) => {
-      emittedValues = val;
-    });
-
-    fixture.componentRef.setInput('template', mockTemplate);
-    fixture.detectChanges();
-
-    component.form().get('pesoKg')?.setValue(15);
-
-    expect(emittedValues).toBeTruthy();
-    expect(emittedValues!['pesoKg']).toBe(15);
+  it('checks real calendar dates, required whitespace and optional null values', () => {
+    const date = component.fields().find(field => field.key === 'born')!;
+    component.setValue(date, '2025-02-29'); expect(component.formValid()).toBe(false);
+    component.setValue(date, '2024-02-29'); expect(component.formValid()).toBe(true);
+    component.setValue(date, '9999-01-01'); expect(component.formValid()).toBe(false);
+    component.setValue(date, '2000-01-01');
+    component.setValue(component.fields().find(field => field.key === 'identity')!, '  '); expect(component.formValid()).toBe(false);
+    component.setValue(component.fields().find(field => field.key === 'identity')!, 'Paciente');
+    component.setValue(component.fields().find(field => field.key === 'readingA')!, null); expect(component.formValid()).toBe(true);
   });
-
-  it('should implement Historical Tolerance: render orphaned fields in historical section without crashing', () => {
-    // Current template does NOT have "reflejoMoro", but values & snapshot do have it from an older encounter
-    const pastValues: Record<string, unknown> = {
-      pesoKg: 10.5,
-      reflejoMoro: 'Presente y simétrico',
-      perimetroCefalicoHistorico: '42 cm',
-    };
-
-    const pastSnapshot: Record<string, string> = {
-      reflejoMoro: 'Reflejo de Moro (Evaluación Arcaica)',
-      perimetroCefalicoHistorico: 'Perímetro Cefálico Histórico',
-    };
-
-    fixture.componentRef.setInput('template', mockTemplate);
-    fixture.componentRef.setInput('values', pastValues);
-    fixture.componentRef.setInput('historicalSnapshot', pastSnapshot);
-    fixture.detectChanges();
-
-    // Active field should be populated
-    expect(component.form().get('pesoKg')?.value).toBe(10.5);
-
-    // Historical section should be rendered
-    const historicalSection = fixture.debugElement.query(By.css('[data-testid="historical-section"]'));
-    expect(historicalSection).toBeTruthy();
-
-    // Orphaned field should be present with snapshot label
-    const moroItem = fixture.debugElement.query(By.css('[data-field-key="reflejoMoro"]'));
-    expect(moroItem).toBeTruthy();
-    expect(moroItem.nativeElement.textContent).toContain('Reflejo de Moro (Evaluación Arcaica)');
-    expect(moroItem.nativeElement.textContent).toContain('Presente y simétrico');
-
-    // Second orphaned field check
-    const pcItem = fixture.debugElement.query(By.css('[data-field-key="perimetroCefalicoHistorico"]'));
-    expect(pcItem).toBeTruthy();
-    expect(pcItem.nativeElement.textContent).toContain('Perímetro Cefálico Histórico');
-    expect(pcItem.nativeElement.textContent).toContain('42 cm');
+  it('evaluates recursive strict boolean visibility and preserves hidden input values without formula or unknown keys', () => {
+    definition.categories[0].fields.push({ key: 'nested', label: 'Control anidado', type: 'BOOLEAN', required: false, visibleWhen: { fieldKey: 'consent', equals: true } }, { key: 'hidden', label: 'Campo dependiente', type: 'TEXT', required: true, visibleWhen: { fieldKey: 'nested', equals: false } });
+    definition.categories.push({ key: 'disabled', title: 'Inactiva', enabled: false, fields: [{ key: 'preserved', label: 'Conservado', type: 'TEXT', required: true }] });
+    fixture.componentRef.setInput('definition', structuredClone(definition)); fixture.componentRef.setInput('values', { ...values, nested: false, hidden: 'Valor oculto', preserved: 'Categoría inactiva', unknown: 'No enviar', result: 999 }); fixture.detectChanges();
+    expect(component.isFieldVisible('hidden')).toBe(false); expect(component.formValid()).toBe(true);
+    let emitted: WizardFormValues = {}; component.valuesChange.subscribe(value => emitted = value);
+    const boolean = component.fields().find(field => field.key === 'consent')!;
+    component.setValue(boolean, 'true'); expect(component.isFieldVisible('nested')).toBe(false);
+    component.setValue(boolean, true); expect(component.isFieldVisible('hidden')).toBe(true);
+    expect(emitted['hidden']).toBe('Valor oculto'); expect(emitted['preserved']).toBe('Categoría inactiva');
+    expect(emitted).not.toHaveProperty('unknown'); expect(emitted).not.toHaveProperty('result');
   });
-
-  it('should handle readonly mode by disabling controls and locking boolean radios', () => {
-    fixture.componentRef.setInput('template', mockTemplate);
-    fixture.componentRef.setInput('readonly', true);
-    fixture.detectChanges();
-
-    const pesoInput = fixture.debugElement.query(By.css('#pesoKg'));
-    expect(pesoInput.nativeElement.disabled).toBe(true);
-
-    const radioYes = fixture.debugElement.query(By.css('input[name="alimentacionMaterna"]'));
-    expect(radioYes.nativeElement.disabled).toBe(true);
-
-    // Ensure setBooleanValue does not mutate form when readonly
-    component.form().get('alimentacionMaterna')?.setValue(true);
-    component.setBooleanValue('alimentacionMaterna', false);
-    expect(component.form().get('alimentacionMaterna')?.value).toBe(true);
+  it('fails closed on a visibility cycle and on a disabled controller category', () => {
+    definition.categories[0].fields.push({ key: 'cycleA', label: 'A', type: 'BOOLEAN', required: true, visibleWhen: { fieldKey: 'cycleB', equals: true } }, { key: 'cycleB', label: 'B', type: 'BOOLEAN', required: true, visibleWhen: { fieldKey: 'cycleA', equals: true } });
+    fixture.componentRef.setInput('definition', structuredClone(definition)); fixture.detectChanges();
+    expect(component.isFieldVisible('cycleA')).toBe(false);
+    definition.categories[1].fields[3].visibleWhen = { fieldKey: 'consent', equals: false }; definition.categories[0].enabled = false;
+    fixture.componentRef.setInput('definition', structuredClone(definition)); fixture.detectChanges();
+    expect(component.isFieldVisible('notes')).toBe(false);
+  });
+  it('displays authoritative formula statuses, including zero, and never sends a computed value', () => {
+    const formula = component.fields().find(field => field.key === 'result')!;
+    const cases: { status: WizardFormulaResult['status']; value: number | null; text: string }[] = [
+      { status: 'READY', value: 0, text: '0' }, { status: 'MISSING_INPUT', value: null, text: 'Faltan datos' }, { status: 'DIVISION_BY_ZERO', value: null, text: 'dividir por cero' }, { status: 'NOT_APPLICABLE', value: null, text: 'No corresponde' }, { status: 'INVALID_INPUT', value: null, text: 'Revisá los datos' },
+    ];
+    for (const result of cases) { fixture.componentRef.setInput('formulaResults', { result: { status: result.status, value: result.value } }); fixture.detectChanges(); expect(component.formulaText(formula)).toContain(result.text); }
+    fixture.componentRef.setInput('formulaResults', { result: { status: 'READY', value: 5 } }); fixture.detectChanges();
+    let emitted: WizardFormValues = {}; component.valuesChange.subscribe(value => emitted = value);
+    component.setValue(formula, 123); expect(emitted).toEqual({});
+    component.setValue(component.fields().find(field => field.key === 'readingA')!, 4);
+    expect(component.formulaText(formula)).toBe('Se actualizará al guardar'); expect(emitted).not.toHaveProperty('result');
+  });
+  it('blocks mutations in readonly mode and reports initial validity', () => {
+    fixture.componentRef.setInput('readonly', true); fixture.detectChanges();
+    component.setValue(component.fields()[0], 'Alterado'); expect(component.currentValues()['identity']).toBe('Paciente');
+    fixture.componentRef.setInput('values', {}); fixture.detectChanges(); expect(component.formValid()).toBe(false);
   });
 });

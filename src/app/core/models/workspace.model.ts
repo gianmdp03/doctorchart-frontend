@@ -1,166 +1,28 @@
-/**
- * Supported field input types for dynamic clinical templates.
- */
-export type FormFieldType =
-  | 'TEXT'
-  | 'NUMBER'
-  | 'DATE'
-  | 'SELECT'
-  | 'BOOLEAN'
-  | 'TEXTAREA'
-  | 'FORMULA';
-
-/** User-facing names for the field types stored in the template schema. */
-export const FORM_FIELD_TYPE_LABELS: Record<FormFieldType, string> = {
-  TEXT: 'Texto corto',
-  NUMBER: 'Número',
-  DATE: 'Fecha',
-  SELECT: 'Lista de opciones',
-  BOOLEAN: 'Sí / No',
-  TEXTAREA: 'Texto amplio',
-  FORMULA: 'Cálculo automático',
-};
-
-export function getFormFieldTypeLabel(type: FormFieldType): string {
-  return FORM_FIELD_TYPE_LABELS[type];
-}
-
-export type ClinicalFormulaType =
-  | 'IMC'
-  | 'BSA'
-  | 'TFGE'
-  | 'COCKCROFT'
-  | 'CHADS_VASC'
-  | 'CALCIO_CORREGIDO'
-  | 'CUSTOM';
-
-export type FormulaOperationType =
-  | 'ADD'
-  | 'SUBTRACT'
-  | 'MULTIPLY'
-  | 'DIVIDE'
-  | 'AVERAGE';
-
-export interface FormFieldOption {
-  value: string;
-  label: string;
-}
-
-export interface FormFieldDefinition {
-  key: string;
-  label: string;
-  type: FormFieldType;
-  required?: boolean;
-  placeholder?: string;
-  options?: FormFieldOption[];
-  unit?: string;
-  formulaType?: ClinicalFormulaType | string;
-  formulaOperation?: FormulaOperationType;
-  formulaVariableA?: string;
-  formulaVariableB?: string;
-  formulaConstantB?: number;
-  formulaVariables?: string[];
-  formulaExpression?: string;
-}
-
-export type FormCategoryKey =
-  | 'CORE_DEMOGRAPHICS'
-  | 'PATIENT_GUARDIANS'
-  | 'CONTACT_AND_LOGISTICS'
-  | 'BACKGROUND_FAMILY'
-  | 'BACKGROUND_PERSONAL'
-  | 'ALLERGIES_AND_TOXICS'
-  | 'REASON_AND_ANAMNESIS'
-  | 'VITAL_SIGNS_AND_SOMATOMETRY'
-  | 'PHYSICAL_EXAMINATION'
-  | 'DIAGNOSTIC_ASSESSMENT'
-  | 'TREATMENT_AND_PRESCRIPTIONS'
-  | 'SPECIALTY_SPECIFIC';
-
-export interface FormCategoryGroup {
-  categoryKey: FormCategoryKey | string;
-  title: string;
-  enabled: boolean;
-  fields: FormFieldDefinition[];
-}
-
-export interface FormTemplateSchema {
-  categories: FormCategoryGroup[];
-}
-
-export type TemplateType = 'PATIENT_EXTRA' | 'ENCOUNTER';
-
-export type OnboardingStep =
-  | 'SPECIALTY'
-  | 'PATIENT_PERSONAL_DATA'
-  | 'PATIENT_FAMILY_HISTORY'
-  | 'PATIENT_GUARDIANS'
-  | 'ENCOUNTER_FORM'
-  | 'COMPLETED';
-
-export interface FormTemplate {
-  id?: number;
-  userId?: string | null;
-  specialtyId?: number | null;
-  specialtyDisplayName?: string | null;
-  name: string;
-  templateType: TemplateType;
-  isDefault: boolean;
-  isSystem?: boolean;
-  schemaDefinition: FormTemplateSchema;
-  version?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface ModuleConfig {
-  MEDICATION_CATALOG?: boolean;
-  AI_ASSISTANT?: boolean;
-  GROWTH_CHARTS?: boolean;
-  [key: string]: boolean | undefined;
-}
-
-export type PatientColumnsConfig = Record<string, boolean>;
+import { SpecialtySummary } from './specialty.model';
+import { WizardDefinition, WizardStepKey } from './wizard-definition.model';
 
 export interface WorkspaceSetup {
-  id?: number | null;
-  userId: string;
-  specialtyId?: number | null;
-  specialtyCode?: string | null;
-  specialtyDisplayName?: string | null;
+  id: number;
+  version: number;
+  specialty: SpecialtySummary;
+  sourceWizardVersion: number | null;
+  draftSourceWizardVersion: number | null;
   onboardingCompleted: boolean;
-  onboardingStep: OnboardingStep;
-  onboardingDraft?: Record<string, unknown> | null;
+  currentStepKey: WizardStepKey;
+  definition: WizardDefinition | null;
+  draftDefinition: WizardDefinition | null;
+}
+export interface SelectSpecialtyRequest { specialtyId: number; expectedVersion: number | null; }
+export interface VersionRequest { expectedVersion: number; }
+export interface SaveOnboardingDraftRequest extends VersionRequest {
+  definition: WizardDefinition;
+  currentStepKey: Exclude<WizardStepKey, 'completed'>;
+}
+export interface WorkspacePreferences {
+  version: number;
   patientColumnsConfig: PatientColumnsConfig;
-  modulesConfig: ModuleConfig;
-  quickNotes?: string | null;
-  defaultPatientTemplate?: FormTemplate | null;
-  defaultEncounterTemplate?: FormTemplate | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
+  quickNotes: string | null;
 }
-
-export interface FinishOnboardingRequest {
-  specialtyId: number;
-  patientColumnsConfig?: PatientColumnsConfig;
-  modulesConfig?: ModuleConfig;
-  defaultTemplateId?: number;
-  patientTemplateSchema?: FormTemplateSchema;
-  customTemplateSchema?: FormTemplateSchema;
-}
-
-export interface SaveOnboardingDraftRequest {
-  specialtyId: number;
-  onboardingStep: Exclude<OnboardingStep, 'COMPLETED'>;
-  onboardingDraft?: Record<string, unknown>;
-}
-
-export interface WorkspaceUpdateRequest {
-  specialtyId?: number;
-  patientColumnsConfig?: PatientColumnsConfig;
-  modulesConfig?: ModuleConfig;
-}
-
-export interface QuickNotesUpdateRequest {
-  content: string;
-}
+export type PatientColumnsConfig = Record<string, boolean>;
+export interface WorkspaceUpdateRequest extends VersionRequest { patientColumnsConfig: PatientColumnsConfig; }
+export interface QuickNotesUpdateRequest { content: string | null; }

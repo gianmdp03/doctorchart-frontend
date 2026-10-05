@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnDestroy, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { PatientDetailDTO, PatientRequestDTO } from '../../../core/models/patient.model';
+import { PatientDetailDTO } from '../../../core/models/patient.model';
 import { VaccinationRecord } from '../../../core/models/clinical-records.model';
 import { PatientService } from '../../../core/services/patient.service';
 import { VaccinationCalendarService } from '../../vaccination-calendar/calendario.service';
@@ -26,14 +26,18 @@ interface PatientDose {
   styleUrl: './patient-vaccinations.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PatientVaccinationsComponent {
+export class PatientVaccinationsComponent implements OnDestroy {
   readonly calendarService = inject(VaccinationCalendarService);
   private readonly patientService = inject(PatientService);
 
   readonly patient = input.required<PatientDetailDTO>();
+  readonly patientUpdated = output<PatientDetailDTO>();
   readonly isSaving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly records = signal<VaccinationRecord[]>([]);
+  private savedVersion: number | null = null;
+  private epoch = 0;
+  private destroyed = false;
 
   readonly ageInMonths = computed(() => this.monthsBetween(this.patient().birthDate));
   readonly doses = computed<PatientDose[]>(() => {
@@ -82,22 +86,26 @@ export class PatientVaccinationsComponent {
   readonly appliedDoses = computed(() => this.doses().filter((dose) => dose.status === 'APLICADA'));
 
   constructor() {
+    effect(() => { this.patient(); untracked(() => { this.epoch++; this.savedVersion = null; this.records.set([]); this.isSaving.set(false); this.saveError.set(null); }); });
     this.calendarService.load();
   }
+  ngOnDestroy(): void { this.destroyed = true; this.epoch++; }
 
   markApplied(dose: PatientDose, applied: boolean): void {
+    if (this.isSaving()) return;
     const current = this.currentRecords().filter((record) => record.applicationKey !== dose.key);
     const next = [...current, {
       vaccineId: dose.vaccine.id,
       applicationKey: dose.key,
       applied,
-      appliedAt: applied ? (dose.record?.appliedAt || new Date().toISOString().slice(0, 10)) : null,
+      appliedAt: applied ? (dose.record?.appliedAt || new Intl.DateTimeFormat('en-CA', {timeZone:'America/Argentina/Buenos_Aires', year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())) : null,
     }];
     this.records.set(next);
     this.persist(next);
   }
 
   updateDate(dose: PatientDose, appliedAt: string): void {
+    if (this.isSaving()) return;
     const next = this.currentRecords().map((record) =>
       record.applicationKey === dose.key ? { ...record, appliedAt } : record,
     );
@@ -119,34 +127,20 @@ export class PatientVaccinationsComponent {
 
   private persist(records: VaccinationRecord[]): void {
     const patient = this.patient();
-    const request: PatientRequestDTO = {
-      fullName: patient.fullName,
-      birthDate: patient.birthDate,
-      nationalId: patient.nationalId,
-      gender: patient.gender,
-      bloodType: patient.bloodType,
-      phone: patient.phone,
-      email: patient.email,
-      address: patient.address,
-      emergencyContact: patient.emergencyContact,
-      insuranceInfo: patient.insuranceInfo,
-      allergies: patient.allergies,
-      chronicConditions: patient.chronicConditions,
-      patientExtraData: patient.patientExtraData,
-      patientFormData: patient.patientFormData,
-      patientTemplateSnapshot: patient.patientTemplateSnapshot,
-      guardianInfo: patient.guardianInfo,
-      perinatalHistory: patient.perinatalHistory,
-      personalHistory: patient.personalHistory,
-      familyHistory: patient.familyHistory,
-      immunizationAndNutrition: { ...patient.immunizationAndNutrition, vaccinationRecords: records },
-      latestMeasurements: patient.latestMeasurements,
-    };
+    const epoch = this.epoch;
     this.isSaving.set(true);
     this.saveError.set(null);
-    this.patientService.updatePatient(patient.id, request).subscribe({
-      next: () => this.isSaving.set(false),
+    this.patientService.updateVaccinations(patient.id, this.savedVersion ?? patient.version, records).subscribe({
+      next: updated => {
+        if (this.destroyed || epoch !== this.epoch || this.patient().id !== patient.id) return;
+        if (updated.id !== patient.id) { this.isSaving.set(false); this.saveError.set('La respuesta recibida no corresponde a este paciente.'); return; }
+        this.savedVersion = updated.version;
+        this.records.set(structuredClone(updated.immunizationAndNutrition?.vaccinationRecords ?? []));
+        this.isSaving.set(false);
+        this.patientUpdated.emit(updated);
+      },
       error: () => {
+        if (this.destroyed || epoch !== this.epoch || this.patient().id !== patient.id) return;
         this.isSaving.set(false);
         this.saveError.set('No se pudo guardar la aplicación de la vacuna.');
       },

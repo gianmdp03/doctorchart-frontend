@@ -1,70 +1,43 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { DoctorProfileService } from '../services/doctor-profile.service';
 import { WorkspaceStore } from '../services/workspace.store';
 
-/**
- * Functional Guard that forces authenticated clinicians to select their immutable medical specialty
- * before accessing clinical modules.
- */
-export const doctorOnboardingGuard: CanActivateFn = async (route, state) => {
-  const authService = inject(AuthService);
-  const doctorProfileService = inject(DoctorProfileService);
-  const workspaceStore = inject(WorkspaceStore);
+/** The personal editor is for clinicians; administrators configure specialty defaults in their panel. */
+export const doctorWizardGuard: CanActivateFn = async () => {
+  const auth = inject(AuthService);
   const router = inject(Router);
-
-  await authService.authReady;
-
-  if (!authService.isLoggedIn()) {
-    return true; // doctorchartPlanGuard handles redirect to login
-  }
-
-  const setup = await workspaceStore.loadSetup();
-  if (setup?.onboardingCompleted) {
-    return true;
-  }
-
-  // Legacy accounts completed specialty selection before the workspace wizard existed.
-  // Keep their access intact when they do not yet have a workspace record.
-  if (!doctorProfileService.loaded()) {
-    await doctorProfileService.loadProfile();
-  }
-
-  if (!setup?.id && doctorProfileService.hasSpecialty()) {
-    return true;
-  }
-
-  return router.createUrlTree([setup?.specialtyId ? '/onboarding/setup' : '/onboarding/select-specialty']);
+  await auth.authReady;
+  return auth.isLoggedIn() && auth.isSuperAdmin() ? router.createUrlTree(['/admin/especialidades']) : true;
 };
 
-/**
- * Functional Guard that prevents onboarded doctors from re-entering the specialty selection screen.
- */
-export const preventCompletedOnboardingGuard: CanActivateFn = async (route, state) => {
-  const authService = inject(AuthService);
-  const doctorProfileService = inject(DoctorProfileService);
-  const workspaceStore = inject(WorkspaceStore);
+export const doctorOnboardingGuard: CanActivateFn = async () => {
+  const auth = inject(AuthService);
+  const workspace = inject(WorkspaceStore);
   const router = inject(Router);
-
-  await authService.authReady;
-
-  if (!authService.isLoggedIn()) {
-    return true;
+  await auth.authReady;
+  if (!auth.isLoggedIn()) return true;
+  if (auth.isSuperAdmin()) return router.createUrlTree(['/admin/especialidades']);
+  try {
+    const setup = await workspace.loadSetup();
+    if (setup?.onboardingCompleted && setup.definition) return true;
+    return router.createUrlTree([setup ? '/onboarding/setup' : '/onboarding/select-specialty']);
+  } catch {
+    return false;
   }
+};
 
-  const setup = await workspaceStore.loadSetup();
-  if (setup?.onboardingCompleted) {
-    return router.createUrlTree(['/dashboard']);
+export const preventCompletedOnboardingGuard: CanActivateFn = async () => {
+  const auth = inject(AuthService);
+  const workspace = inject(WorkspaceStore);
+  const router = inject(Router);
+  await auth.authReady;
+  if (!auth.isLoggedIn()) return true;
+  if (auth.isSuperAdmin()) return router.createUrlTree(['/admin/especialidades']);
+  try {
+    const setup = await workspace.loadSetup();
+    return setup?.onboardingCompleted && setup.definition ? router.createUrlTree(['/dashboard']) : true;
+  } catch {
+    return false;
   }
-
-  if (!doctorProfileService.loaded()) {
-    await doctorProfileService.loadProfile();
-  }
-
-  if (!setup?.id && doctorProfileService.hasSpecialty()) {
-    return router.createUrlTree(['/dashboard']);
-  }
-
-  return true;
 };

@@ -1,4 +1,5 @@
-import { MedicalSpecialty } from './specialty.model';
+import { SpecialtySummary } from './specialty.model';
+import { ClinicalFormRecord, WizardFormValues } from './wizard-definition.model';
 
 export type ConsultationType =
   | 'FIRST_VISIT'
@@ -37,50 +38,30 @@ export interface DiagnosisItem {
 
 export interface ClinicalEncounterRequest {
   patientId: number;
+  workspaceVersion: number;
   encounterDate: string;
-  specialty: MedicalSpecialty;
   consultationType: ConsultationType;
-
-  // S - Subjective
-  chiefComplaint?: string | null;
-  historyOfPresentIllness?: string;
-
-  // O - Objective
-  vitalSigns?: VitalSigns;
-  physicalExamination?: string;
-  peso?: number | null;
-  talla?: number | null;
-  perimetroEncefalico?: number | null;
-
-  // A - Assessment
-  primaryDiagnosisCode?: string | null;
-  primaryDiagnosisDescription?: string | null;
-  secondaryDiagnoses?: DiagnosisItem[];
-  clinicalImpression?: string;
-
-  templateId?: number | null;
-  dynamicData?: Record<string, unknown>;
-  snapshotFieldLabels?: Record<string, string>;
-
-  // P - Plan
-  treatmentPlan?: string;
-  prescriptions?: PrescriptionItem[];
-  diagnosticOrders?: string[];
-  followUpInstructions?: string;
-  followUpDate?: string;
+  values: WizardFormValues;
 }
-
-export interface ClinicalEncounterDetail extends ClinicalEncounterRequest {
-  id: number;
-  patientFullName: string;
+export interface ClinicalEncounterUpdateRequest {
+  expectedVersion: number;
+  encounterDate: string;
+  consultationType: ConsultationType;
+  values: WizardFormValues;
 }
-
-export interface ClinicalEncounterList {
+export interface ClinicalEncounterDetail extends ClinicalEncounterList {
+  physicalExamination?: string | null;
+  secondaryDiagnoses?: DiagnosisItem[] | null;
+  clinicalImpression?: string | null;
+  diagnosticOrders?: string[] | null;
+}
+export interface ClinicalEncounterList extends ClinicalFormRecord {
   id: number;
   patientId: number;
   patientFullName?: string | null;
   encounterDate: string;
-  specialty: MedicalSpecialty;
+  specialtyId: number;
+  specialty: SpecialtySummary;
   consultationType: ConsultationType;
   chiefComplaint?: string | null;
   primaryDiagnosisCode?: string | null;
@@ -94,8 +75,6 @@ export interface ClinicalEncounterList {
   treatmentPlan?: string | null;
   followUpInstructions?: string | null;
   followUpDate?: string | null;
-  dynamicData?: Record<string, unknown> | null;
-  snapshotFieldLabels?: Record<string, string> | null;
 }
 
 export interface ClinicalEncounterDashboard {

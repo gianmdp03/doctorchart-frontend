@@ -1,705 +1,266 @@
-import {
-  Component,
-  computed,
-  effect,
-  input,
-  output,
-  signal,
-  untracked,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, computed, effect, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import {
-  lucidePlus,
-  lucideTrash2,
-  lucideArrowUp,
-  lucideArrowDown,
-  lucideAlertTriangle,
-  lucideCheck,
-  lucideX,
-  lucideSettings,
-  lucideCalculator,
-} from '@ng-icons/lucide';
-import {
-  ClinicalFormulaType,
-  FormCategoryGroup,
-  FormFieldDefinition,
-  FormFieldOption,
-  FormFieldType,
-  FormTemplate,
-  getFormFieldTypeLabel,
-  FormulaOperationType,
-} from '../../core/models/workspace.model';
+import { A11yModule } from '@angular/cdk/a11y';
+import { WizardFormDefinition, WizardFieldDefinition, WizardFormulaDefinition, WizardFormulaInput } from '../../core/models/wizard-definition.model';
 
-export interface FieldDeleteTarget {
-  categoryIndex: number;
-  fieldIndex: number;
-  field: FormFieldDefinition;
-}
+type FieldType = WizardFieldDefinition['type'];
+type Binding = NonNullable<WizardFieldDefinition['binding']>;
+type FormulaKind = WizardFormulaDefinition['kind'];
+interface BindingChoice { value: Binding; label: string; types: FieldType[]; unit?: string; }
+interface EditTarget { categoryKey: string; fieldKey: string | null; }
+const BINDINGS: BindingChoice[] = [
+  ...([
+    ['patient.fullName', 'Nombre completo'], ['patient.firstName', 'Nombre'], ['patient.lastName', 'Apellido'],
+    ['patient.nationalId', 'Documento'], ['patient.bloodType', 'Grupo sanguíneo'], ['patient.phone', 'Teléfono'],
+    ['patient.email', 'Correo'], ['patient.address', 'Dirección'],
+    ['patient.guardianInfo.fatherFullName', 'Nombre del padre'], ['patient.guardianInfo.motherFullName', 'Nombre de la madre'],
+    ['patient.guardianInfo.primaryContactPhone', 'Teléfono del responsable'],
+  ] as [Binding, string][]).map(([value, label]) => ({ value, label, types: ['TEXT'] as FieldType[] })),
+  { value: 'patient.birthDate', label: 'Fecha de nacimiento', types: ['DATE'] },
+  { value: 'patient.gender', label: 'Sexo', types: ['SELECT'] },
+  { value: 'patient.guardianInfo.primaryGuardian', label: 'Responsable principal', types: ['TEXT', 'SELECT'] },
+  { value: 'patient.guardianInfo.livingArrangement', label: 'Convivencia', types: ['TEXT', 'SELECT'] },
+  { value: 'patient.guardianInfo.hasSiblings', label: 'Tiene hermanos', types: ['BOOLEAN'] },
+  { value: 'patient.guardianInfo.siblingsCount', label: 'Cantidad de hermanos', types: ['NUMBER'] },
+  { value: 'patient.guardianInfo.siblingOrder', label: 'Lugar entre hermanos', types: ['NUMBER'] },
+  ...(['paternalDiseases', 'maternalDiseases', 'siblingDiseases'] as const).map((name, i) => ({
+    value: `patient.familyHistory.${name}` as Binding,
+    label: ['Antecedentes paternos', 'Antecedentes maternos', 'Antecedentes de hermanos'][i], types: ['TEXT', 'TEXTAREA'] as FieldType[],
+  })),
+  ...([
+    ['encounter.chiefComplaint', 'Motivo de consulta'], ['encounter.historyOfPresentIllness', 'Enfermedad actual'],
+    ['encounter.physicalExamination', 'Examen físico'], ['encounter.primaryDiagnosisDescription', 'Diagnóstico'],
+    ['encounter.treatmentPlan', 'Tratamiento'], ['encounter.followUpInstructions', 'Indicaciones de seguimiento'],
+  ] as [Binding, string][]).map(([value, label]) => ({ value, label, types: ['TEXT', 'TEXTAREA'] as FieldType[] })),
+  { value: 'encounter.followUpDate', label: 'Fecha de seguimiento', types: ['DATE'] },
+  { value: 'encounter.weightKg', label: 'Peso', types: ['NUMBER'], unit: 'kg' },
+  { value: 'encounter.heightCm', label: 'Talla', types: ['NUMBER'], unit: 'cm' },
+  { value: 'encounter.headCircumferenceCm', label: 'Perímetro cefálico', types: ['NUMBER'], unit: 'cm' },
+];
+const FORMULA_INPUTS: Record<FormulaKind, string[]> = {
+  IMC: ['weightKg', 'heightCm'], BSA: ['weightKg', 'heightCm'], TFGE: ['creatinineMgDl', 'ageYears', 'gender'],
+  COCKCROFT: ['creatinineMgDl', 'weightKg', 'ageYears', 'gender'], CALCIO_CORREGIDO: ['serumCalciumMgDl', 'serumAlbuminGDl'], CUSTOM: ['a', 'b'],
+};
+const INPUT_LABELS: Record<string, string> = {
+  weightKg: 'Peso (kg)', heightCm: 'Talla (cm)', creatinineMgDl: 'Creatinina (mg/dL)', ageYears: 'Edad (años)',
+  gender: 'Sexo', serumCalciumMgDl: 'Calcio (mg/dL)', serumAlbuminGDl: 'Albúmina (g/dL)', a: 'Primer dato', b: 'Segundo dato',
+};
+const clone = <T>(value: T): T => structuredClone(value);
 
-export interface FormulaConfigOption {
-  value: ClinicalFormulaType;
-  label: string;
-  defaultLabel: string;
-  defaultKey: string;
-  defaultUnit: string;
-  description: string;
-  suggestedPlaceholder: string;
-}
-
-@Component({
-  selector: 'app-form-field-editor',
-  imports: [CommonModule, FormsModule, NgIcon],
-  providers: [
-    provideIcons({
-      lucidePlus,
-      lucideTrash2,
-      lucideArrowUp,
-      lucideArrowDown,
-      lucideAlertTriangle,
-      lucideCheck,
-      lucideX,
-      lucideSettings,
-      lucideCalculator,
-    }),
-  ],
-  templateUrl: './form-field-editor.component.html',
-  styleUrl: './form-field-editor.component.css',
-})
+@Component({ selector: 'app-form-field-editor', imports: [FormsModule, A11yModule],
+  templateUrl: './form-field-editor.component.html', styleUrl: './form-field-editor.component.css' })
 export class FormFieldEditorComponent {
-  readonly getFieldTypeLabel = getFormFieldTypeLabel;
-
-  // Inputs & Outputs
-  readonly template = input<FormTemplate | null>(null);
-  readonly readonly = input<boolean>(false);
+  private lastRequestedCategory: string | null | undefined;
+  readonly definition = input<WizardFormDefinition>({ categories: [] });
+  readonly section = input<'patientForm' | 'encounterForm'>('patientForm');
   readonly selectedCategoryKey = input<string | null>(null);
-  readonly hideCategoryNavigation = input<boolean>(false);
-  readonly hideHeader = input<boolean>(false);
-  readonly showCategoryToggle = input<boolean>(true);
-  readonly templateChange = output<FormTemplate>();
-  readonly save = output<FormTemplate>();
-
-  // Internal reactive copy of the template
-  readonly workingTemplate = signal<FormTemplate | null>(null);
-  readonly selectedCategoryIndex = signal<number>(0);
-
-  // Deletion modal state
-  readonly deleteTarget = signal<FieldDeleteTarget | null>(null);
-
-  // Category management modal state
-  readonly isAddingCategory = signal<boolean>(false);
-  readonly newCategoryTitle = signal<string>('');
-  readonly newCategoryError = signal<string | null>(null);
-  readonly deleteCategoryTarget = signal<{ index: number; category: FormCategoryGroup } | null>(null);
-
-  // Add field modal state
-  readonly isAddingField = signal<boolean>(false);
-  readonly newFieldType = signal<FormFieldType>('TEXT');
-  readonly newFieldLabel = signal<string>('');
-  readonly newFieldKey = signal<string>('');
-  readonly newFieldPlaceholder = signal<string>('');
-  readonly newFieldUnit = signal<string>('');
-  readonly newFieldRequired = signal<boolean>(false);
-  readonly newFieldOptions = signal<FormFieldOption[]>([]);
-  readonly newOptionLabel = signal<string>('');
-  readonly newOptionValue = signal<string>('');
-
-  // Formula specific state
-  readonly newFieldFormulaType = signal<ClinicalFormulaType>('IMC');
-  readonly newFieldFormulaOperation = signal<FormulaOperationType>('SUBTRACT');
-  readonly newFieldFormulaVariableA = signal<string>('');
-  readonly newFieldFormulaVariableB = signal<string>('');
-  readonly newFieldFormulaConstantB = signal<number | null>(null);
-  readonly newFieldFormulaUseConstant = signal<boolean>(false);
-
-  readonly availableVariables = computed<
-    { key: string; label: string; unit?: string; categoryTitle: string }[]
-  >(() => {
-    const tmpl = this.workingTemplate();
-    if (!tmpl?.schemaDefinition?.categories) return [];
-    const list: { key: string; label: string; unit?: string; categoryTitle: string }[] = [];
-    for (const cat of tmpl.schemaDefinition.categories) {
-      if (!cat.fields) continue;
-      for (const f of cat.fields) {
-        if (f.type === 'NUMBER' || f.type === 'TEXT') {
-          list.push({
-            key: f.key,
-            label: f.label,
-            unit: f.unit,
-            categoryTitle: cat.title,
-          });
-        }
-      }
-    }
-    return list;
-  });
-
-  readonly operationOptions: {
-    value: FormulaOperationType;
-    label: string;
-    symbol: string;
-    example: string;
-  }[] = [
-    {
-      value: 'SUBTRACT',
-      label: 'Resta (A − B)',
-      symbol: '−',
-      example: 'Ej: Presión Sistólica − Presión Diastólica',
-    },
-    {
-      value: 'ADD',
-      label: 'Suma (A + B)',
-      symbol: '+',
-      example: 'Ej: Campo A + Campo B',
-    },
-    {
-      value: 'DIVIDE',
-      label: 'División / Ratio (A ÷ B)',
-      symbol: '÷',
-      example: 'Ej: Relación Campo A / Campo B',
-    },
-    {
-      value: 'MULTIPLY',
-      label: 'Multiplicación (A × B)',
-      symbol: '×',
-      example: 'Ej: Dosis o factor de escala',
-    },
-    {
-      value: 'AVERAGE',
-      label: 'Promedio (media entre campos)',
-      symbol: 'promedio',
-      example: 'Ej: (A + B) / 2',
-    },
+  readonly readonly = input(false);
+  readonly definitionChange = output<WizardFormDefinition>();
+  readonly categorySelected = output<string>();
+  readonly working = signal<WizardFormDefinition>({ categories: [] });
+  readonly selectedKey = signal<string | null>(null);
+  readonly error = signal<string | null>(null);
+  readonly newCategoryTitle = signal('');
+  readonly editTarget = signal<EditTarget | null>(null);
+  readonly fieldDraft = signal<WizardFieldDefinition | null>(null);
+  readonly categories = computed(() => this.working().categories);
+  readonly selectedCategory = computed(() => this.categories().find(c => c.key === this.selectedKey()) ?? null);
+  readonly bindingChoices = computed(() => BINDINGS.filter(b => b.value.startsWith(this.section() === 'patientForm' ? 'patient.' : 'encounter.')));
+  readonly allFields = computed(() => this.categories().flatMap(c => c.fields));
+  readonly formulaInputs = computed(() => FORMULA_INPUTS[this.fieldDraft()?.formula?.kind ?? 'CUSTOM']);
+  readonly visibilityControllers = computed(() => this.allFields().filter(f => f.type === 'BOOLEAN' && f.key !== this.editTarget()?.fieldKey));
+  readonly fieldTypes: { value: FieldType; label: string }[] = [
+    { value: 'TEXT', label: 'Texto corto' }, { value: 'TEXTAREA', label: 'Texto largo' }, { value: 'NUMBER', label: 'Número' },
+    { value: 'DATE', label: 'Fecha' }, { value: 'SELECT', label: 'Selección' }, { value: 'BOOLEAN', label: 'Sí / No' }, { value: 'FORMULA', label: 'Cálculo' },
   ];
-
-  readonly customFormulaPreview = computed<string>(() => {
-    const vars = this.availableVariables();
-    const keyA = this.newFieldFormulaVariableA();
-    const keyB = this.newFieldFormulaVariableB();
-    const useConst = this.newFieldFormulaUseConstant();
-    const constVal = this.newFieldFormulaConstantB();
-    const op = this.newFieldFormulaOperation();
-
-    const labelA = vars.find((v) => v.key === keyA)?.label || (keyA ? `[${keyA}]` : '[Dato 1]');
-    const labelB = useConst
-      ? constVal !== null && constVal !== undefined
-        ? `${constVal}`
-        : '[Número fijo]'
-      : vars.find((v) => v.key === keyB)?.label || (keyB ? `[${keyB}]` : '[Dato 2]');
-
-    const opSymbols: Record<FormulaOperationType, string> = {
-      SUBTRACT: '−',
-      ADD: '+',
-      MULTIPLY: '×',
-      DIVIDE: '÷',
-      AVERAGE: 'promediado con',
-    };
-
-    if (op === 'AVERAGE') {
-      return `Promedio(${labelA}, ${labelB})`;
-    }
-
-    return `${labelA} ${opSymbols[op] || '+'} ${labelB}`;
-  });
-
-  readonly formulaOptions: FormulaConfigOption[] = [
-    {
-      value: 'CUSTOM',
-      label: 'Cálculo personalizado entre datos de la consulta',
-      defaultLabel: 'Resultado Calculado',
-      defaultKey: 'resultadoCalculado',
-      defaultUnit: '',
-      description: 'Elige los campos de la consulta y la operación clínica o matemática a realizar.',
-      suggestedPlaceholder: 'Calculado automáticamente',
-    },
-    {
-      value: 'IMC',
-      label: 'Índice de Masa Corporal (IMC)',
-      defaultLabel: 'Índice de Masa Corporal (IMC)',
-      defaultKey: 'imc',
-      defaultUnit: 'kg/m²',
-      description: 'Cálculo automatizado a partir del peso y la talla.',
-      suggestedPlaceholder: 'Calculado automáticamente',
-    },
-    {
-      value: 'BSA',
-      label: 'Superficie Corporal (BSA - Mosteller)',
-      defaultLabel: 'Superficie Corporal (BSA)',
-      defaultKey: 'bsa',
-      defaultUnit: 'm²',
-      description: 'Estimación de área de superficie corporal para dosificación.',
-      suggestedPlaceholder: 'Calculado automáticamente',
-    },
-    {
-      value: 'TFGE',
-      label: 'Filtrado Glomerular (CKD-EPI 2021)',
-      defaultLabel: 'TFGe (CKD-EPI)',
-      defaultKey: 'tfge',
-      defaultUnit: 'mL/min/1.73m²',
-      description: 'Estadificación de función renal según creatinina, edad y sexo.',
-      suggestedPlaceholder: 'Calculado automáticamente',
-    },
-    {
-      value: 'COCKCROFT',
-      label: 'Aclaramiento Cockcroft-Gault (ClCr)',
-      defaultLabel: 'Aclaramiento Cockcroft (ClCr)',
-      defaultKey: 'clcrCockcroft',
-      defaultUnit: 'mL/min',
-      description: 'Aclaramiento renal para ajuste posológico farmacológico.',
-      suggestedPlaceholder: 'Calculado automáticamente',
-    },
-    {
-      value: 'CHADS_VASC',
-      label: 'Score CHA₂DS₂-VASc',
-      defaultLabel: 'Score CHA₂DS₂-VASc',
-      defaultKey: 'chadsVasc',
-      defaultUnit: 'puntos',
-      description: 'Estratificación de riesgo tromboembólico en FA.',
-      suggestedPlaceholder: 'Puntaje calculado',
-    },
-    {
-      value: 'CALCIO_CORREGIDO',
-      label: 'Calcio Sérico Corregido por Albúmina',
-      defaultLabel: 'Calcio Corregido',
-      defaultKey: 'calcioCorregido',
-      defaultUnit: 'mg/dL',
-      description: 'Ajuste de calcio total según albúmina sérica.',
-      suggestedPlaceholder: 'Calculado automáticamente',
-    },
+  readonly formulaKinds: { value: FormulaKind; label: string }[] = [
+    { value: 'IMC', label: 'Índice de masa corporal' }, { value: 'BSA', label: 'Superficie corporal' },
+    { value: 'TFGE', label: 'Filtrado glomerular' }, { value: 'COCKCROFT', label: 'Cockcroft-Gault' },
+    { value: 'CALCIO_CORREGIDO', label: 'Calcio corregido' }, { value: 'CUSTOM', label: 'Operación entre datos' },
   ];
-
-  readonly fieldTypes: { value: FormFieldType; label: string }[] = [
-    { value: 'TEXT', label: getFormFieldTypeLabel('TEXT') },
-    { value: 'NUMBER', label: getFormFieldTypeLabel('NUMBER') },
-    { value: 'DATE', label: getFormFieldTypeLabel('DATE') },
-    { value: 'SELECT', label: getFormFieldTypeLabel('SELECT') },
-    { value: 'BOOLEAN', label: getFormFieldTypeLabel('BOOLEAN') },
-    { value: 'TEXTAREA', label: getFormFieldTypeLabel('TEXTAREA') },
-    { value: 'FORMULA', label: getFormFieldTypeLabel('FORMULA') },
+  readonly operations: { value: NonNullable<WizardFormulaDefinition['operation']>; label: string }[] = [
+    { value: 'ADD', label: 'Sumar' }, { value: 'SUBTRACT', label: 'Restar' }, { value: 'MULTIPLY', label: 'Multiplicar' },
+    { value: 'DIVIDE', label: 'Dividir' }, { value: 'AVERAGE', label: 'Promediar' },
   ];
-
-  getFormulaLabel(formulaType?: string): string {
-    return this.formulaOptions.find((option) => option.value === formulaType)?.label
-      || getFormFieldTypeLabel('FORMULA');
-  }
-
-  isThreeColumnField(field: FormFieldDefinition): boolean {
-    return (
-      field.type === 'NUMBER' ||
-      field.type === 'FORMULA' ||
-      field.type === 'SELECT' ||
-      Boolean(field.unit && field.unit.trim().length > 0)
-    );
-  }
-
-  readonly categories = computed<FormCategoryGroup[]>(() => {
-    return this.workingTemplate()?.schemaDefinition?.categories || [];
-  });
-
-  readonly selectedCategory = computed<FormCategoryGroup | null>(() => {
-    const cats = this.categories();
-    const idx = this.selectedCategoryIndex();
-    return cats[idx] || null;
-  });
-
   constructor() {
     effect(() => {
-      const tmpl = this.template();
+      const form = this.definition(); const requested = this.selectedCategoryKey();
       untracked(() => {
-        if (tmpl) {
-          // Deep clone to allow safe local mutations
-          this.workingTemplate.set(JSON.parse(JSON.stringify(tmpl)));
-        } else {
-          this.workingTemplate.set(null);
-        }
+        this.working.set(clone(form));
+        const preferred = requested !== this.lastRequestedCategory ? requested ?? this.selectedKey() : this.selectedKey();
+        this.lastRequestedCategory = requested;
+        this.selectedKey.set(form.categories.some(c => c.key === preferred) ? preferred : form.categories[0]?.key ?? null);
       });
     });
-
-    effect(() => {
-      const categoryKey = this.selectedCategoryKey();
-      const categories = this.workingTemplate()?.schemaDefinition?.categories ?? [];
-      if (!categoryKey) return;
-
-      const categoryIndex = categories.findIndex((category) => category.categoryKey === categoryKey);
-      if (categoryIndex >= 0) {
-        this.selectedCategoryIndex.set(categoryIndex);
-      }
+  }
+  selectCategory(key: string): void { this.selectedKey.set(key); this.error.set(null); this.categorySelected.emit(key); }
+  typeLabel(type: FieldType): string { return this.fieldTypes.find(t => t.value === type)?.label ?? type; }
+  bindingLabel(binding: WizardFieldDefinition['binding']): string { return BINDINGS.find(b => b.value === binding)?.label ?? 'Dato personalizado'; }
+  inputLabel(name: string): string { return INPUT_LABELS[name] ?? name; }
+  addCategory(): void {
+    const title = this.newCategoryTitle().trim();
+    if (!title || title.length > 150) { this.error.set('Ingresá un nombre de categoría de hasta 150 caracteres.'); return; }
+    const key = this.uniqueKey(title, new Set(this.categories().map(c => c.key)), 'category');
+    if (this.commit(form => form.categories.push({ key, title, enabled: true, fields: [] }))) { this.selectedKey.set(key); this.newCategoryTitle.set(''); }
+  }
+  renameCategory(key: string, title: string): void {
+    if (!title.trim() || title.trim().length > 150) { this.error.set('El nombre de categoría no puede estar vacío ni superar 150 caracteres.'); return; }
+    this.commit(form => { const c = form.categories.find(c => c.key === key); if (c) c.title = title.trim(); });
+  }
+  toggleCategory(key: string): void { this.commit(form => { const c = form.categories.find(c => c.key === key); if (c) c.enabled = !c.enabled; }); }
+  moveCategory(key: string, direction: number): void { this.commit(form => this.move(form.categories, form.categories.findIndex(c => c.key === key), direction)); }
+  deleteCategory(key: string): void { this.commit(form => { form.categories = form.categories.filter(c => c.key !== key); }); }
+  moveField(categoryKey: string, fieldKey: string, direction: number): void {
+    this.commit(form => { const fields = form.categories.find(c => c.key === categoryKey)?.fields; if (fields) this.move(fields, fields.findIndex(f => f.key === fieldKey), direction); });
+  }
+  deleteField(categoryKey: string, fieldKey: string): void {
+    this.commit(form => { const c = form.categories.find(c => c.key === categoryKey); if (c) c.fields = c.fields.filter(f => f.key !== fieldKey); });
+  }
+  duplicateField(categoryKey: string, fieldKey: string): void {
+    this.commit(form => {
+      const c = form.categories.find(c => c.key === categoryKey); const field = c?.fields.find(f => f.key === fieldKey); if (!c || !field) return;
+      const copy = clone(field); copy.key = this.uniqueKey(field.key, new Set(form.categories.flatMap(c => c.fields.map(f => f.key))), 'field');
+      copy.label += ' (copia)'; delete copy.binding; c.fields.push(copy);
     });
   }
-
-  selectCategory(index: number): void {
-    this.selectedCategoryIndex.set(index);
+  openField(categoryKey: string, fieldKey: string | null = null): void {
+    if (this.readonly()) return;
+    const existing = this.categories().find(c => c.key === categoryKey)?.fields.find(f => f.key === fieldKey);
+    this.editTarget.set({ categoryKey, fieldKey }); this.fieldDraft.set(existing ? clone(existing) : { key: '', label: '', type: 'TEXT', required: false }); this.error.set(null);
   }
-
-  toggleCategoryEnabled(categoryIndex: number): void {
-    const tmpl = this.workingTemplate();
-    if (!tmpl?.schemaDefinition?.categories?.[categoryIndex]) return;
-
-    tmpl.schemaDefinition.categories[categoryIndex].enabled =
-      !tmpl.schemaDefinition.categories[categoryIndex].enabled;
-
-    this.notifyTemplateUpdated(tmpl);
+  closeField(): void { this.editTarget.set(null); this.fieldDraft.set(null); this.error.set(null); }
+  updateDraft(patch: Partial<WizardFieldDefinition>): void { const current = this.fieldDraft(); if (current) this.fieldDraft.set({ ...current, ...patch }); }
+  setType(type: FieldType): void {
+    const draft = this.fieldDraft(); if (!draft) return; const next = clone(draft); next.type = type;
+    if (type !== 'SELECT') delete next.options; else next.options ??= [];
+    if (type !== 'NUMBER') { delete next.minimum; delete next.maximum; }
+    if (type !== 'NUMBER' && type !== 'FORMULA') delete next.unit;
+    if (type !== 'FORMULA') delete next.formula;
+    else { next.required = false; delete next.binding; next.formula = { kind: 'CUSTOM', operation: 'ADD', inputs: {} }; }
+    if (next.binding && !BINDINGS.find(b => b.value === next.binding)?.types.includes(type)) delete next.binding;
+    this.fieldDraft.set(next);
   }
-
-  // Category Addition & Removal
-  openAddCategoryModal(): void {
-    this.newCategoryTitle.set('');
-    this.newCategoryError.set(null);
-    this.isAddingCategory.set(true);
+  setBinding(value: string): void {
+    const draft = this.fieldDraft(); if (!draft) return; const binding = BINDINGS.find(b => b.value === value);
+    if (binding && !binding.types.includes(draft.type)) this.setType(binding.types[0]);
+    this.updateDraft({ binding: binding?.value ?? null }); if (binding?.unit) this.updateDraft({ unit: binding.unit });
   }
-
-  closeAddCategoryModal(): void {
-    this.isAddingCategory.set(false);
-    this.newCategoryError.set(null);
+  setNumberProperty(property: 'minimum' | 'maximum', value: number | string | null): void {
+    const draft = this.fieldDraft(); if (!draft) return; const next = clone(draft);
+    if (value === '' || value === null) delete next[property]; else next[property] = Number(value); this.fieldDraft.set(next);
   }
-
-  onCategoryTitleInput(title: string): void {
-    this.newCategoryTitle.set(title);
-    if (this.newCategoryError()) {
-      this.newCategoryError.set(null);
-    }
+  addOption(): void { const draft = this.fieldDraft(); if (draft) this.updateDraft({ options: [...(draft.options ?? []), { value: '', label: '' }] }); }
+  updateOption(index: number, property: 'value' | 'label', value: string): void {
+    const options = clone(this.fieldDraft()?.options ?? []); if (options[index]) options[index][property] = value; this.updateDraft({ options });
   }
-
-  submitAddCategory(): void {
-    const title = this.newCategoryTitle().trim();
-    if (!title) {
-      this.newCategoryError.set('Ingresá el nombre de la categoría.');
-      return;
-    }
-
-    const tmpl = this.workingTemplate();
-    if (!tmpl?.schemaDefinition) return;
-
-    if (!Array.isArray(tmpl.schemaDefinition.categories)) {
-      tmpl.schemaDefinition.categories = [];
-    }
-
-    const categories = tmpl.schemaDefinition.categories;
-    const exists = categories.some(
-      (c) => c.title.trim().toLowerCase() === title.toLowerCase()
-    );
-    if (exists) {
-      this.newCategoryError.set('Ya existe una categoría con ese nombre.');
-      return;
-    }
-
-    const slug = this.toSnakeUpper(title);
-    const categoryKey = `CUSTOM_${slug || 'CATEGORY'}_${Date.now()}`;
-
-    const newCategory: FormCategoryGroup = {
-      categoryKey,
-      title,
-      enabled: true,
-      fields: [],
-    };
-
-    categories.push(newCategory);
-    this.notifyTemplateUpdated(tmpl);
-    this.selectedCategoryIndex.set(categories.length - 1);
-    this.closeAddCategoryModal();
+  deleteOption(index: number): void { this.updateDraft({ options: this.fieldDraft()?.options?.filter((_, i) => i !== index) }); }
+  setVisibility(fieldKey: string): void {
+    const draft = this.fieldDraft(); if (!draft) return; const next = clone(draft);
+    if (!fieldKey) delete next.visibleWhen; else next.visibleWhen = { fieldKey, equals: true }; this.fieldDraft.set(next);
   }
-
-  isCustomCategory(cat: FormCategoryGroup | null): boolean {
-    if (!cat) return false;
-    return typeof cat.categoryKey === 'string' && cat.categoryKey.startsWith('CUSTOM_');
+  setVisibilityValue(equals: boolean): void { const value = this.fieldDraft()?.visibleWhen; if (value) this.updateDraft({ visibleWhen: { ...value, equals } }); }
+  setFormulaKind(kind: FormulaKind): void { this.updateDraft({ formula: { kind, inputs: {}, ...(kind === 'CUSTOM' ? { operation: 'ADD' as const } : {}) } }); }
+  setOperation(operation: NonNullable<WizardFormulaDefinition['operation']>): void {
+    const formula = this.fieldDraft()?.formula; if (formula) this.updateDraft({ formula: { ...formula, operation } });
   }
-
-  requestDeleteCategory(index: number, category: FormCategoryGroup): void {
-    this.deleteCategoryTarget.set({ index, category });
+  operandChoices(name: string): { value: string; label: string }[] {
+    const gender = name === 'gender'; const custom = this.fieldDraft()?.formula?.kind === 'CUSTOM';
+    const fields = this.allFields().filter(f => f.key !== this.editTarget()?.fieldKey && (gender
+      ? f.type === 'SELECT' && f.options?.every(o => ['MALE', 'FEMALE', 'OTHER', 'UNKNOWN'].includes(o.value)) : f.type === 'NUMBER'));
+    const choices = fields.map(f => ({ value: 'field:' + f.key, label: f.label }));
+    if (!custom) choices.push(...(gender ? [{ value: 'context:patient.gender', label: 'Sexo del paciente' }] : [
+      { value: 'context:patient.ageYears', label: 'Edad del paciente (años)' }, { value: 'context:patient.latestWeightKg', label: 'Último peso anterior (kg)' },
+      { value: 'context:patient.latestHeightCm', label: 'Última talla anterior (cm)' },
+    ]));
+    if (!gender && (!custom || name === 'b')) choices.push({ value: 'constant', label: 'Número fijo' }); return choices;
   }
-
-  cancelDeleteCategory(): void {
-    this.deleteCategoryTarget.set(null);
+  operandValue(name: string): string {
+    const operand = this.fieldDraft()?.formula?.inputs[name]; return operand
+      ? 'fieldKey' in operand ? 'field:' + operand.fieldKey : 'context' in operand ? 'context:' + operand.context : 'constant' : '';
   }
-
-  confirmDeleteCategory(): void {
-    const target = this.deleteCategoryTarget();
-    if (!target) return;
-
-    const tmpl = this.workingTemplate();
-    if (!tmpl?.schemaDefinition?.categories) return;
-
-    tmpl.schemaDefinition.categories.splice(target.index, 1);
-    this.notifyTemplateUpdated(tmpl);
-
-    const nextIndex = Math.max(0, Math.min(target.index, tmpl.schemaDefinition.categories.length - 1));
-    this.selectedCategoryIndex.set(nextIndex);
-    this.deleteCategoryTarget.set(null);
+  operandConstant(name: string): number | null { const operand = this.fieldDraft()?.formula?.inputs[name]; return operand?.constant ?? null; }
+  setOperand(name: string, selection: string, constant: number | null = 0): void {
+    const formula = this.fieldDraft()?.formula; if (!formula) return; const inputs = clone(formula.inputs);
+    if (!selection) delete inputs[name]; else if (selection.startsWith('field:')) inputs[name] = { fieldKey: selection.slice(6) };
+    else if (selection.startsWith('context:')) inputs[name] = { context: selection.slice(8) } as WizardFormulaInput; else inputs[name] = { constant: constant ?? NaN };
+    this.updateDraft({ formula: { ...formula, inputs } });
   }
-
-  // Field Reordering
-  moveFieldUp(categoryIndex: number, fieldIndex: number): void {
-    if (fieldIndex <= 0) return;
-    const tmpl = this.workingTemplate();
-    if (!tmpl?.schemaDefinition?.categories?.[categoryIndex]) return;
-
-    const fields = tmpl.schemaDefinition.categories[categoryIndex].fields;
-    const temp = fields[fieldIndex];
-    fields[fieldIndex] = fields[fieldIndex - 1];
-    fields[fieldIndex - 1] = temp;
-
-    this.notifyTemplateUpdated(tmpl);
+  saveField(): void {
+    const target = this.editTarget(); const current = this.fieldDraft(); if (!target || !current || this.readonly()) return;
+    const field = clone(current); field.label = field.label.trim();
+    if (!field.label || field.label.length > 150) { this.error.set('Ingresá una etiqueta de hasta 150 caracteres.'); return; }
+    if (!field.placeholder) delete field.placeholder; if (!field.unit) delete field.unit;
+    const old = this.allFields().find(f => f.key === target.fieldKey);
+    const replaced = old && (old.type !== field.type || (old.binding ?? null) !== (field.binding ?? null));
+    field.key = old && !replaced ? old.key : this.uniqueKey(field.label, new Set(this.allFields().map(f => f.key)), 'field');
+    if (this.commit(form => {
+      const c = form.categories.find(c => c.key === target.categoryKey); if (!c) return;
+      const index = c.fields.findIndex(f => f.key === target.fieldKey); if (index < 0) c.fields.push(field); else c.fields[index] = field;
+    })) this.closeField();
   }
-
-  moveFieldDown(categoryIndex: number, fieldIndex: number): void {
-    const tmpl = this.workingTemplate();
-    if (!tmpl?.schemaDefinition?.categories?.[categoryIndex]) return;
-
-    const fields = tmpl.schemaDefinition.categories[categoryIndex].fields;
-    if (fieldIndex >= fields.length - 1) return;
-
-    const temp = fields[fieldIndex];
-    fields[fieldIndex] = fields[fieldIndex + 1];
-    fields[fieldIndex + 1] = temp;
-
-    this.notifyTemplateUpdated(tmpl);
+  private commit(change: (form: WizardFormDefinition) => void): boolean {
+    if (this.readonly()) return false; const previous = this.working(); const next = clone(previous); change(next);
+    const error = this.validate(next);
+    if (error) { this.error.set(error); return false; }
+    this.error.set(null); this.working.set(next);
+    if (!next.categories.some(c => c.key === this.selectedKey())) this.selectedKey.set(next.categories[0]?.key ?? null);
+    this.definitionChange.emit(clone(next)); return true;
   }
-
-  // Direct Field Property Edits
-  updateFieldProperty(
-    categoryIndex: number,
-    fieldIndex: number,
-    property: keyof FormFieldDefinition,
-    value: unknown
-  ): void {
-    const tmpl = this.workingTemplate();
-    if (!tmpl?.schemaDefinition?.categories?.[categoryIndex]?.fields?.[fieldIndex]) return;
-
-    (tmpl.schemaDefinition.categories[categoryIndex].fields[fieldIndex] as any)[property] = value;
-    this.notifyTemplateUpdated(tmpl);
-  }
-
-  // Field Deletion with Warning
-  requestDeleteField(categoryIndex: number, fieldIndex: number, field: FormFieldDefinition): void {
-    this.deleteTarget.set({ categoryIndex, fieldIndex, field });
-  }
-
-  cancelDelete(): void {
-    this.deleteTarget.set(null);
-  }
-
-  confirmDelete(): void {
-    const target = this.deleteTarget();
-    if (!target) return;
-
-    const tmpl = this.workingTemplate();
-    if (tmpl?.schemaDefinition?.categories?.[target.categoryIndex]?.fields) {
-      tmpl.schemaDefinition.categories[target.categoryIndex].fields.splice(target.fieldIndex, 1);
-      this.notifyTemplateUpdated(tmpl);
-    }
-    this.deleteTarget.set(null);
-  }
-
-  // Adding Field
-  openAddFieldModal(): void {
-    this.newFieldType.set('TEXT');
-    this.newFieldLabel.set('');
-    this.newFieldKey.set('');
-    this.newFieldPlaceholder.set('');
-    this.newFieldUnit.set('');
-    this.newFieldRequired.set(false);
-    this.newFieldOptions.set([]);
-    this.newOptionLabel.set('');
-    this.newOptionValue.set('');
-    this.newFieldFormulaType.set('CUSTOM');
-    this.newFieldFormulaOperation.set('SUBTRACT');
-
-    const vars = this.availableVariables();
-    if (vars.length > 0) {
-      this.newFieldFormulaVariableA.set(vars[0].key);
-      this.newFieldFormulaVariableB.set(vars.length > 1 ? vars[1].key : vars[0].key);
-    } else {
-      this.newFieldFormulaVariableA.set('');
-      this.newFieldFormulaVariableB.set('');
-    }
-
-    this.newFieldFormulaConstantB.set(null);
-    this.newFieldFormulaUseConstant.set(false);
-    this.isAddingField.set(true);
-  }
-
-  closeAddFieldModal(): void {
-    this.isAddingField.set(false);
-  }
-
-  onFieldTypeChange(type: FormFieldType): void {
-    this.newFieldType.set(type);
-    if (type === 'FORMULA') {
-      const vars = this.availableVariables();
-      if (!this.newFieldFormulaVariableA() && vars.length > 0) {
-        this.newFieldFormulaVariableA.set(vars[0].key);
-        this.newFieldFormulaVariableB.set(vars.length > 1 ? vars[1].key : vars[0].key);
+  private validate(form: WizardFormDefinition): string | null {
+    const fields = form.categories.flatMap(c => c.fields); const byKey = new Map(fields.map(f => [f.key, f]));
+    if (new Set(form.categories.map(c => c.key)).size !== form.categories.length || byKey.size !== fields.length) return 'Las claves deben ser únicas en todo el formulario.';
+    const bindings = fields.map(f => f.binding).filter(Boolean);
+    if (new Set(bindings).size !== bindings.length) return 'Ese dato estructural ya está vinculado a otro campo.';
+    if (bindings.includes('patient.fullName') && (bindings.includes('patient.firstName') || bindings.includes('patient.lastName'))) return 'Elegí nombre completo o nombre y apellido separados.';
+    for (const field of fields) {
+      if (!field.label.trim() || field.label.length > 150) return 'Las etiquetas no pueden estar vacías ni superar 150 caracteres.';
+      if (field.binding) {
+        const binding = BINDINGS.find(b => b.value === field.binding);
+        if (!binding?.types.includes(field.type) || !this.bindingChoices().some(b => b.value === field.binding)) return 'El tipo del campo no corresponde al dato vinculado.';
+        if (binding.unit && field.unit !== binding.unit) return `Este dato requiere unidad ${binding.unit}.`;
       }
-      this.onFormulaTypeSelect(this.newFieldFormulaType());
-    }
-  }
-
-  onFormulaTypeSelect(type: ClinicalFormulaType): void {
-    this.newFieldFormulaType.set(type);
-    const opt = this.formulaOptions.find((o) => o.value === type);
-    if (opt) {
-      this.newFieldLabel.set(opt.defaultLabel);
-      this.newFieldKey.set(opt.defaultKey);
-      this.newFieldUnit.set(opt.defaultUnit);
-      this.newFieldPlaceholder.set(opt.suggestedPlaceholder);
-    }
-    if (type === 'CUSTOM') {
-      this.syncCustomFormulaDefaults();
-    }
-  }
-
-  onCustomVariableAChange(key: string): void {
-    this.newFieldFormulaVariableA.set(key);
-    this.syncCustomFormulaDefaults();
-  }
-
-  onCustomVariableBChange(key: string): void {
-    this.newFieldFormulaVariableB.set(key);
-    this.syncCustomFormulaDefaults();
-  }
-
-  onCustomOperationChange(op: FormulaOperationType): void {
-    this.newFieldFormulaOperation.set(op);
-    this.syncCustomFormulaDefaults();
-  }
-
-  private syncCustomFormulaDefaults(): void {
-    if (this.newFieldFormulaType() !== 'CUSTOM') return;
-    const keyA = this.newFieldFormulaVariableA();
-    const keyB = this.newFieldFormulaVariableB();
-    const op = this.newFieldFormulaOperation();
-    const vars = this.availableVariables();
-
-    const varA = vars.find((v) => v.key === keyA);
-    const varB = vars.find((v) => v.key === keyB);
-
-    if (varA?.unit && (op === 'SUBTRACT' || op === 'ADD' || op === 'AVERAGE')) {
-      this.newFieldUnit.set(varA.unit);
-    }
-
-    if (keyA && keyB) {
-      if (op === 'SUBTRACT') {
-        this.newFieldLabel.set(`Diferencia ${varA?.label || keyA} - ${varB?.label || keyB}`);
-        this.newFieldKey.set(this.toCamelCase(`dif_${keyA}_${keyB}`));
-      } else if (op === 'DIVIDE') {
-        this.newFieldLabel.set(`Relación ${varA?.label || keyA} / ${varB?.label || keyB}`);
-        this.newFieldKey.set(this.toCamelCase(`ratio_${keyA}_${keyB}`));
-      } else if (op === 'ADD') {
-        this.newFieldLabel.set(`Total ${varA?.label || keyA} + ${varB?.label || keyB}`);
-        this.newFieldKey.set(this.toCamelCase(`total_${keyA}_${keyB}`));
-      } else if (op === 'AVERAGE') {
-        this.newFieldLabel.set(`Promedio ${varA?.label || keyA} y ${varB?.label || keyB}`);
-        this.newFieldKey.set(this.toCamelCase(`prom_${keyA}_${keyB}`));
+      if (field.type === 'SELECT') {
+        if (!field.options?.length || field.options.some(o => !o.value.trim() || !o.label.trim() || o.value.length > 80 || o.label.length > 150)) return 'Completá al menos una opción con valor y etiqueta.';
+        if (new Set(field.options.map(o => o.value)).size !== field.options.length) return 'Los valores de las opciones no pueden repetirse.';
+        if (field.binding === 'patient.gender' && field.options.some(o => !['MALE', 'FEMALE', 'OTHER', 'UNKNOWN'].includes(o.value))) return 'Los valores de sexo admitidos son MALE, FEMALE, OTHER y UNKNOWN.';
+      }
+      if ((field.minimum !== undefined && !Number.isFinite(field.minimum)) || (field.maximum !== undefined && !Number.isFinite(field.maximum)) ||
+        (field.minimum !== undefined && field.maximum !== undefined && field.minimum > field.maximum)) return 'Los límites numéricos deben ser válidos y el mínimo no puede superar al máximo.';
+      if (field.visibleWhen) {
+        let cursor: WizardFieldDefinition | undefined = field; const seen = new Set<string>();
+        while (cursor?.visibleWhen) {
+          if (seen.has(cursor.key)) return 'Las condiciones de visibilidad no pueden formar un ciclo.';
+          seen.add(cursor.key); const controller = byKey.get(cursor.visibleWhen.fieldKey);
+          if (controller?.type !== 'BOOLEAN') return 'La condición debe referir a un campo Sí / No existente.'; cursor = controller;
+        }
+      }
+      if (field.type === 'FORMULA') {
+        const formula = field.formula;
+        if (!formula || field.required || field.binding) return 'El cálculo requiere configuración y no puede ser obligatorio ni estar vinculado.';
+        const expected = FORMULA_INPUTS[formula.kind];
+        if (!expected || Object.keys(formula.inputs).length !== expected.length || expected.some(n => !formula.inputs[n])) return 'Seleccioná todas las entradas del cálculo.';
+        for (const name of expected) {
+          const operand = formula.inputs[name]; const gender = name === 'gender';
+          if (typeof operand.fieldKey === 'string') {
+            const source = byKey.get(operand.fieldKey);
+            if (!source || source.type !== (gender ? 'SELECT' : 'NUMBER')) return 'El cálculo debe referir a campos numéricos existentes; sexo requiere selección.';
+            if (gender && source.options?.some(o => !['MALE', 'FEMALE', 'OTHER', 'UNKNOWN'].includes(o.value))) return 'La entrada de sexo requiere valores compatibles.';
+          } else if (typeof operand.constant === 'number') {
+            if (gender || !Number.isFinite(operand.constant) || (formula.kind === 'CUSTOM' && name === 'a')) return 'La constante debe ser numérica y válida para esa entrada.';
+          } else if ((operand.context === 'patient.gender') !== gender || formula.kind === 'CUSTOM') return 'El contexto no corresponde a esa entrada del cálculo.';
+        }
+        if (formula.kind === 'CUSTOM' && !formula.operation) return 'Elegí la operación entre datos.';
       }
     }
+    return null;
   }
-
-  onLabelInput(label: string): void {
-    this.newFieldLabel.set(label);
-    this.newFieldKey.set(this.toCamelCase(label));
+  private uniqueKey(label: string, used: Set<string>, fallback: string): string {
+    let base = label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9_-]/g, '_').replace(/_+/g, '_').slice(0, 70);
+    if (!/^[A-Za-z]/.test(base)) base = fallback + '_' + base;
+    base = base.slice(0, 70);
+    let key = base; let suffix = 2; while (used.has(key)) key = base + '_' + suffix++; return key;
   }
-
-  addOption(): void {
-    const label = this.newOptionLabel().trim();
-    const value = this.newOptionValue().trim() || this.toSnakeUpper(label);
-    if (!label) return;
-
-    this.newFieldOptions.update((opts) => [...opts, { label, value }]);
-    this.newOptionLabel.set('');
-    this.newOptionValue.set('');
-  }
-
-  removeOption(index: number): void {
-    this.newFieldOptions.update((opts) => opts.filter((_, i) => i !== index));
-  }
-
-  submitAddField(): void {
-    const label = this.newFieldLabel().trim();
-    const key = this.generateUniqueFieldKey(this.newFieldKey() || this.toCamelCase(label));
-
-    if (!label || !key) return;
-
-    const tmpl = this.workingTemplate();
-    const catIdx = this.selectedCategoryIndex();
-    if (!tmpl?.schemaDefinition?.categories?.[catIdx]) return;
-
-    const isFormula = this.newFieldType() === 'FORMULA';
-    const isCustom = isFormula && this.newFieldFormulaType() === 'CUSTOM';
-
-    const newField: FormFieldDefinition = {
-      key,
-      label,
-      type: this.newFieldType(),
-      required: this.newFieldRequired(),
-      placeholder: this.newFieldPlaceholder().trim() || undefined,
-      unit: this.newFieldUnit().trim() || undefined,
-      options: this.newFieldType() === 'SELECT' ? this.newFieldOptions() : undefined,
-      formulaType: isFormula ? this.newFieldFormulaType() : undefined,
-      formulaOperation: isCustom ? this.newFieldFormulaOperation() : undefined,
-      formulaVariableA: isCustom ? this.newFieldFormulaVariableA() || undefined : undefined,
-      formulaVariableB:
-        isCustom && !this.newFieldFormulaUseConstant()
-          ? this.newFieldFormulaVariableB() || undefined
-          : undefined,
-      formulaConstantB:
-        isCustom && this.newFieldFormulaUseConstant() && this.newFieldFormulaConstantB() !== null
-          ? this.newFieldFormulaConstantB()!
-          : undefined,
-    };
-
-    tmpl.schemaDefinition.categories[catIdx].fields.push(newField);
-    this.notifyTemplateUpdated(tmpl);
-    this.closeAddFieldModal();
-  }
-
-  // Save changes
-  saveTemplate(): void {
-    const tmpl = this.workingTemplate();
-    if (tmpl) {
-      this.save.emit(tmpl);
-    }
-  }
-
-  private notifyTemplateUpdated(tmpl: FormTemplate): void {
-    const updated = JSON.parse(JSON.stringify(tmpl));
-    this.workingTemplate.set(updated);
-    this.templateChange.emit(updated);
-  }
-
-  private toCamelCase(str: string): string {
-    return str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9 ]/g, '')
-      .toLowerCase()
-      .split(' ')
-      .map((word, idx) => (idx === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)))
-      .join('');
-  }
-
-  private generateUniqueFieldKey(value: string): string {
-    const baseKey = value.replace(/[^a-zA-Z0-9_]/g, '');
-    if (!baseKey) return '';
-
-    const existingKeys = new Set(
-      this.categories().flatMap((category) => category.fields?.map((field) => field.key) || [])
-    );
-    let key = baseKey;
-    let suffix = 2;
-    while (existingKeys.has(key)) {
-      key = `${baseKey}${suffix++}`;
-    }
-    return key;
-  }
-
-  private toSnakeUpper(str: string): string {
-    return str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9 ]/g, '')
-      .toUpperCase()
-      .trim()
-      .replace(/\s+/g, '_');
+  private move<T>(values: T[], index: number, direction: number): void {
+    const next = index + direction; if (index < 0 || next < 0 || next >= values.length) return; [values[index], values[next]] = [values[next], values[index]];
   }
 }

@@ -1,5 +1,6 @@
 import {
   Component,
+  DestroyRef,
   effect,
   inject,
   input,
@@ -94,24 +95,48 @@ export class PatientColumnsConfigComponent {
   readonly isSaving = signal<boolean>(false);
   readonly saveSuccess = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly isLoading = signal(false);
+  private expectedVersion: number | null = null;
+  private openGeneration = 0;
+  private closeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      ++this.openGeneration;
+      if (this.closeTimer) clearTimeout(this.closeTimer);
+    });
     effect(() => {
       const open = this.isOpen();
-      const currentStoreColumns = this.workspaceStore.patientVisibleColumns();
-
       untracked(() => {
+        ++this.openGeneration;
+        if (this.closeTimer) clearTimeout(this.closeTimer);
+        this.expectedVersion = null;
+        this.isSaving.set(false);
         if (open) {
-          const config: PatientColumnsConfig = {};
-          for (const col of this.availableColumns) {
-            config[col.key] = currentStoreColumns[col.key] !== false;
-          }
-          this.localColumns.set(config);
           this.saveSuccess.set(false);
           this.errorMessage.set(null);
-        }
+          void this.loadColumns(this.openGeneration);
+        } else this.isLoading.set(false);
       });
     });
+  }
+
+  private async loadColumns(generation: number): Promise<void> {
+    this.isLoading.set(true);
+    try {
+      const preferences = await this.workspaceStore.loadPreferences(true);
+      if (generation !== this.openGeneration) return;
+      const config: PatientColumnsConfig = {};
+      for (const column of this.availableColumns) config[column.key] = preferences.patientColumnsConfig[column.key] !== false;
+      this.localColumns.set(config);
+      this.expectedVersion = preferences.version;
+    } catch (error) {
+      if (generation === this.openGeneration) {
+        this.errorMessage.set(error instanceof Error ? error.message : 'No se pudieron cargar las preferencias.');
+      }
+    } finally {
+      if (generation === this.openGeneration) this.isLoading.set(false);
+    }
   }
 
   isColumnChecked(key: string): boolean {
@@ -119,6 +144,7 @@ export class PatientColumnsConfigComponent {
   }
 
   toggleColumn(key: string): void {
+    if (this.expectedVersion === null || this.isSaving()) return;
     this.localColumns.update((current) => ({
       ...current,
       [key]: !this.isColumnChecked(key),
@@ -126,6 +152,7 @@ export class PatientColumnsConfigComponent {
   }
 
   selectAll(): void {
+    if (this.expectedVersion === null || this.isSaving()) return;
     const allTrue: PatientColumnsConfig = {};
     for (const col of this.availableColumns) {
       allTrue[col.key] = true;
@@ -134,6 +161,7 @@ export class PatientColumnsConfigComponent {
   }
 
   resetDefaults(): void {
+    if (this.expectedVersion === null || this.isSaving()) return;
     const defaults: PatientColumnsConfig = {};
     for (const col of this.availableColumns) {
       defaults[col.key] = col.defaultVisible;
@@ -142,29 +170,38 @@ export class PatientColumnsConfigComponent {
   }
 
   async saveConfiguration(): Promise<void> {
+    if (this.isSaving() || this.expectedVersion === null) return;
+    const generation = this.openGeneration;
     this.isSaving.set(true);
     this.errorMessage.set(null);
 
     try {
-      const updated = this.localColumns();
-      await this.workspaceStore.updateWorkspace({
+      const updated = { ...this.localColumns() };
+      const result = await this.workspaceStore.updateWorkspace({
+        expectedVersion: this.expectedVersion,
         patientColumnsConfig: updated,
       });
-
+      if (generation !== this.openGeneration) return;
+      this.expectedVersion = result.version;
       this.saveSuccess.set(true);
       this.columnsSaved.emit(updated);
-      setTimeout(() => {
-        this.close();
+      this.closeTimer = setTimeout(() => {
+        if (generation === this.openGeneration) this.close();
       }, 500);
     } catch (err: unknown) {
+      if (generation !== this.openGeneration) return;
       const msg = err instanceof Error ? err.message : 'Error al guardar la configuración de columnas.';
       this.errorMessage.set(msg);
     } finally {
-      this.isSaving.set(false);
+      if (generation === this.openGeneration) this.isSaving.set(false);
     }
   }
 
   close(): void {
+    ++this.openGeneration;
+    this.isSaving.set(false);
+    this.isLoading.set(false);
+    if (this.closeTimer) clearTimeout(this.closeTimer);
     this.closeDialog.emit();
   }
 }

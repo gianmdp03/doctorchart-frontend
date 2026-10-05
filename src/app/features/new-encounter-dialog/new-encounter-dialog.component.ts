@@ -1,314 +1,96 @@
-import {
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import {
-  lucideStethoscope,
-  lucideCalendar,
-  lucideFileText,
-  lucideCheck,
-  lucideX,
-  lucideAlertCircle,
-} from '@ng-icons/lucide';
+import { Component, computed, effect, inject, input, OnDestroy, output, signal, untracked } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
-import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
-import {
-  ClinicalEncounterDetail,
-  ClinicalEncounterRequest,
-  ConsultationType,
-} from '../../core/models/clinical-encounter.model';
-import { MedicalSpecialty } from '../../core/models/specialty.model';
-import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
+import { AuthService } from '../../core/services/auth.service';
+import { ClinicalEncounterDetail, ConsultationType } from '../../core/models/clinical-encounter.model';
+import { WorkspaceSetup } from '../../core/models/workspace.model';
+import { WizardFormDefinition, WizardFormValues } from '../../core/models/wizard-definition.model';
+import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
+import { DynamicFormRendererComponent, inputValues } from '../dynamic-form-renderer/dynamic-form-renderer.component';
+import { argentinaDateTime, conflictKind, encounterInstant, errorMessage, retainCompatibleValues } from '../dynamic-form-renderer/clinical-form-ui';
 
-@Component({
-  selector: 'app-new-encounter-dialog',
-  imports: [CommonModule, NgIcon, DynamicFormRendererComponent],
-  providers: [
-    provideIcons({
-      lucideStethoscope,
-      lucideCalendar,
-      lucideFileText,
-      lucideCheck,
-      lucideX,
-      lucideAlertCircle,
-    }),
-  ],
-  templateUrl: './new-encounter-dialog.component.html',
-  styleUrl: './new-encounter-dialog.component.css',
-})
-export class NewEncounterDialogComponent {
+@Component({ selector: 'app-new-encounter-dialog', imports: [FormsModule, DatePickerComponent, DynamicFormRendererComponent], templateUrl: './new-encounter-dialog.component.html', styleUrl: './new-encounter-dialog.component.css' })
+export class NewEncounterDialogComponent implements OnDestroy {
   private readonly encounterService = inject(ClinicalEncounterService);
-  readonly workspaceStore = inject(WorkspaceStore);
-  readonly specialtyService = inject(DoctorSpecialtyService);
-
-  // Inputs & Outputs
-  readonly isOpen = input<boolean>(false);
+  private readonly workspaceStore = inject(WorkspaceStore);
+  private readonly auth = inject(AuthService);
+  private epoch = 0; private destroyed = false; private owner = ''; private contextPatient: number | null = null;
+  private originalInstant = ''; private originalDay = ''; private originalTime = '';
+  readonly isOpen = input(false);
   readonly patientId = input<number | null>(null);
-  readonly patientName = input<string>('');
-  readonly previousEncountersCount = input<number>(0);
+  readonly patientName = input('');
+  readonly previousEncountersCount = input(0);
   readonly closeDialog = output<void>();
   readonly encounterCreated = output<ClinicalEncounterDetail>();
-
-  // Consultation metadata. Clinical fields are defined exclusively by the workspace template.
   readonly consultationType = signal<ConsultationType>('FIRST_VISIT');
-
-  // Dynamic Data & Status
-  readonly dynamicFormData = signal<Record<string, unknown>>({});
-  readonly isDynamicFormValid = signal<boolean>(true);
-  readonly isSubmitting = signal<boolean>(false);
+  readonly encounterDay = signal(''); readonly encounterTime = signal('');
+  readonly definition = signal<WizardFormDefinition | null>(null);
+  readonly workspace = signal<WorkspaceSetup | null>(null);
+  readonly dynamicFormData = signal<WizardFormValues>({});
+  readonly isDynamicFormValid = signal(false);
+  readonly isLoading = signal(false); readonly isSubmitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
-
-  // Active clinical template for this doctor
-  readonly activeTemplate = computed(() => {
-    return this.workspaceStore.defaultTemplate();
-  });
-
-  readonly consultationTypes = computed<{ value: ConsultationType; label: string }[]>(() => {
-    if (this.previousEncountersCount() === 0) {
-      return [{ value: 'FIRST_VISIT', label: 'Primera Consulta' }];
-    }
-    return [
-      { value: 'FOLLOW_UP', label: 'Control / Seguimiento' },
-      { value: 'ROUTINE_CHECKUP', label: 'Chequeo de Rutina' },
-      { value: 'EMERGENCY', label: 'Urgencia' },
-      { value: 'INTERCONSULTATION', label: 'Interconsulta' },
-    ];
-  });
-
+  readonly hasConflict = signal(false);
+  readonly remoteWorkspace = signal<WorkspaceSetup | null>(null);
+  readonly readonly = computed(() => !this.isOpen() || this.isLoading() || this.isSubmitting() || this.hasConflict() || this.identity() !== this.owner || this.patientId() !== this.contextPatient);
+  readonly consultationTypes: { value: ConsultationType; label: string }[] = [
+    { value: 'FIRST_VISIT', label: 'Primera consulta' }, { value: 'FOLLOW_UP', label: 'Control / seguimiento' }, { value: 'ROUTINE_CHECKUP', label: 'Chequeo de rutina' }, { value: 'EMERGENCY', label: 'Urgencia' }, { value: 'INTERCONSULTATION', label: 'Interconsulta' },
+  ];
+  readonly dateValid = computed(() => { const instant = this.currentInstant(); return !!instant && new Date(instant).getTime() <= Date.now(); });
   constructor() {
-    effect(() => {
-      const count = this.previousEncountersCount();
-      const current = this.consultationType();
-      if (count === 0) {
-        if (current !== 'FIRST_VISIT') {
-          this.consultationType.set('FIRST_VISIT');
-        }
-      } else {
-        if (current === 'FIRST_VISIT') {
-          this.consultationType.set('FOLLOW_UP');
-        }
-      }
-    });
+    effect(() => { const open = this.isOpen(); const patientId = this.patientId(); const identity = this.identity(); untracked(() => {
+      this.epoch++; this.owner = identity; this.contextPatient = patientId; this.isLoading.set(false); this.isSubmitting.set(false); this.resetForm();
+      if (open && patientId) void this.loadForm();
+    }); });
   }
-
-  onDynamicDataChange(values: Record<string, unknown>): void {
-    this.dynamicFormData.set(values);
+  ngOnDestroy(): void { this.destroyed = true; this.epoch++; }
+  async loadForm(): Promise<void> {
+    if (!this.isOpen() || !this.patientId() || this.isLoading() || this.isSubmitting() || this.identity() !== this.owner || this.patientId() !== this.contextPatient) return;
+    const epoch = this.epoch; this.isLoading.set(true); this.errorMessage.set(null);
+    try {
+      const workspace = await this.workspaceStore.loadSetup(); if (!this.alive(epoch)) return;
+      if (!workspace?.onboardingCompleted || !workspace.definition) throw new Error('El formulario clínico no está disponible.');
+      this.workspace.set(structuredClone(workspace)); this.definition.set(structuredClone(workspace.definition.encounterForm));
+    } catch (error) { if (this.alive(epoch)) this.errorMessage.set(errorMessage(error, 'No pudimos cargar el formulario de consulta.')); }
+    finally { if (this.alive(epoch)) this.isLoading.set(false); }
   }
-
-  onDynamicFormValidityChange(valid: boolean): void {
-    this.isDynamicFormValid.set(valid);
-  }
-
+  onDynamicDataChange(values: WizardFormValues): void { if (!this.readonly()) this.dynamicFormData.set(structuredClone(values)); }
+  onDynamicFormValidityChange(valid: boolean): void { this.isDynamicFormValid.set(valid); }
+  currentInstant(): string | null { return this.encounterDay() === this.originalDay && this.encounterTime() === this.originalTime ? this.originalInstant : encounterInstant(this.encounterDay(), this.encounterTime()); }
   async submitEncounter(): Promise<void> {
-    const pid = this.patientId();
-    if (!pid) {
-      this.errorMessage.set('No hay paciente activo seleccionado.');
-      return;
-    }
-
-    const tmpl = this.activeTemplate();
-    if (!tmpl) {
-      this.errorMessage.set('No hay una plantilla de Historia Clínica configurada para esta cuenta.');
-      return;
-    }
-
-    if (!this.isDynamicFormValid()) {
-      this.errorMessage.set('Por favor complete todos los campos obligatorios del formulario clínico.');
-      return;
-    }
-
-    this.isSubmitting.set(true);
-    this.errorMessage.set(null);
-
-    // Build historical label snapshot from active template
-    const snapshot: Record<string, string> = {};
-    if (tmpl?.schemaDefinition?.categories) {
-      for (const cat of tmpl.schemaDefinition.categories) {
-        if (cat.enabled !== false && cat.fields) {
-          for (const f of cat.fields) {
-            snapshot[f.key] = f.label;
-          }
-        }
-      }
-    }
-
-    const wsCode =
-      typeof this.workspaceStore.specialtyCode === 'function'
-        ? this.workspaceStore.specialtyCode()
-        : null;
-    const rawSpec =
-      wsCode ||
-      this.specialtyService.activeSpecialty() ||
-      'GENERAL_MEDICINE';
-    const currentSpec = rawSpec
-      .trim()
-      .toUpperCase()
-      .replace(/-/g, '_')
-      .replace(/\s+/g, '_') as MedicalSpecialty;
-
-    const { chiefComplaint, diagnosis } = this.extractClinicalSummary(
-      this.dynamicFormData(),
-      snapshot
-    );
-
-    const { peso, talla, perimetroEncefalico } = this.extractSomatometrics(this.dynamicFormData());
-
-    const payload: ClinicalEncounterRequest = {
-      patientId: pid,
-      encounterDate: new Date().toISOString(),
-      specialty: currentSpec,
-      consultationType: this.consultationType(),
-      chiefComplaint,
-      primaryDiagnosisDescription: diagnosis,
-      primaryDiagnosisCode: null,
-      peso,
-      talla,
-      perimetroEncefalico,
-      vitalSigns:
-        peso !== null || talla !== null || perimetroEncefalico !== null
-          ? {
-              weightKg: peso,
-              heightCm: talla,
-              headCircumferenceCm: perimetroEncefalico,
-            }
-          : undefined,
-      templateId: tmpl?.id || null,
-      dynamicData: this.dynamicFormData(),
-      snapshotFieldLabels: snapshot,
-    };
-
-    this.encounterService.create(payload).subscribe({
-      next: (created) => {
-        this.isSubmitting.set(false);
-        this.resetForm();
-        this.encounterCreated.emit(created);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('encounter-created', { detail: created }));
-        }
-        this.close();
-      },
-      error: (err) => {
-        this.isSubmitting.set(false);
-        this.errorMessage.set(
-          err?.error?.message || 'Error al guardar la consulta clínica. Reintente.'
-        );
-      },
-    });
+    const workspace = this.workspace(); const definition = this.definition(); const patientId = this.patientId(); const encounterDate = this.currentInstant();
+    if (!workspace || !definition || !patientId || !encounterDate || !this.dateValid() || !this.isDynamicFormValid() || this.readonly()) return;
+    const epoch = this.epoch; this.isSubmitting.set(true); this.errorMessage.set(null);
+    try {
+      const created = await firstValueFrom(this.encounterService.create({ patientId, workspaceVersion: workspace.version, encounterDate, consultationType: this.consultationType(), values: inputValues(definition, this.dynamicFormData()) }));
+      if (!this.alive(epoch)) return;
+      if (created.patientId !== patientId) throw new Error('La consulta recibida corresponde a otro paciente.');
+      this.encounterCreated.emit(created);
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('encounter-created', { detail: created }));
+      this.isSubmitting.set(false); this.definition.set(null); this.closeDialog.emit(); this.epoch++;
+    } catch (error) { if (this.alive(epoch)) { this.hasConflict.set(!!conflictKind(error)); this.errorMessage.set(errorMessage(error, 'No pudimos guardar la consulta. Tus respuestas se conservan.')); } }
+    finally { if (epoch === this.epoch && !this.destroyed) this.isSubmitting.set(false); }
   }
-
+  async reviewRemote(): Promise<void> {
+    if (!this.hasConflict() || this.isLoading() || this.isSubmitting() || this.identity() !== this.owner || this.patientId() !== this.contextPatient) return;
+    const epoch = this.epoch; this.isLoading.set(true); this.remoteWorkspace.set(null);
+    try { const remote = await this.workspaceStore.loadSetup(true); if (this.alive(epoch) && remote?.onboardingCompleted && remote.definition) this.remoteWorkspace.set(structuredClone(remote)); }
+    catch (error) { if (this.alive(epoch)) this.errorMessage.set(errorMessage(error, 'No pudimos consultar la configuración actual.')); }
+    finally { if (this.alive(epoch)) this.isLoading.set(false); }
+  }
+  useRemoteWorkspace(): void {
+    const remote = this.remoteWorkspace(); const previous = this.definition();
+    if (!remote?.definition || !previous || this.isLoading() || this.isSubmitting() || this.identity() !== this.owner || this.patientId() !== this.contextPatient) return;
+    this.dynamicFormData.set(retainCompatibleValues(previous, remote.definition.encounterForm, this.dynamicFormData())); this.workspace.set(structuredClone(remote)); this.definition.set(structuredClone(remote.definition.encounterForm)); this.hasConflict.set(false); this.remoteWorkspace.set(null); this.errorMessage.set(null);
+  }
   resetForm(): void {
+    this.workspace.set(null); this.definition.set(null); this.dynamicFormData.set({}); this.isDynamicFormValid.set(false); this.errorMessage.set(null); this.hasConflict.set(false); this.remoteWorkspace.set(null);
     this.consultationType.set(this.previousEncountersCount() === 0 ? 'FIRST_VISIT' : 'FOLLOW_UP');
-    this.dynamicFormData.set({});
-    this.errorMessage.set(null);
+    this.originalInstant = new Date().toISOString(); const parts = argentinaDateTime(this.originalInstant); this.originalDay = parts.day; this.originalTime = parts.time; this.encounterDay.set(parts.day); this.encounterTime.set(parts.time);
   }
-
-  close(): void {
-    this.closeDialog.emit();
-  }
-
-  private extractClinicalSummary(
-    values: Record<string, unknown>,
-    labels: Record<string, string>
-  ): { chiefComplaint: string; diagnosis: string } {
-    const entries = Object.entries(values)
-      .filter(([, val]) => val !== null && val !== undefined && String(val).trim() !== '')
-      .map(([key, val]) => ({
-        key,
-        label: labels[key] || key,
-        text: typeof val === 'boolean' ? (val ? 'Sí' : 'No') : String(val).trim(),
-      }));
-
-    if (entries.length === 0) {
-      return { chiefComplaint: 'Consulta registrada', diagnosis: 'Evaluación clínica' };
-    }
-
-    const complaintEntry = entries.find((e) =>
-      /motivo|consulta|sintoma|síntoma|evolucion|evolución|razon|razón/i.test(`${e.key} ${e.label}`)
-    );
-    const diagnosisEntry = entries.find((e) =>
-      /diagnostico|diagnóstico|conclusion|conclusión|impresion|impresión|evaluacion|evaluación|hallazgo|indicacion|indicación|plan/i.test(
-        `${e.key} ${e.label}`
-      )
-    );
-
-    const first = complaintEntry ?? entries[0];
-    const second =
-      diagnosisEntry && diagnosisEntry.key !== first.key
-        ? diagnosisEntry
-        : entries.find((e) => e.key !== first.key);
-
-    const chiefComplaint = first.text;
-    const diagnosis = second ? second.text : chiefComplaint;
-
-    return { chiefComplaint, diagnosis };
-  }
-
-  private extractSomatometrics(values: Record<string, unknown>): {
-    peso: number | null;
-    talla: number | null;
-    perimetroEncefalico: number | null;
-  } {
-    const parseNum = (val: unknown): number | null => {
-      if (val === null || val === undefined || val === '') return null;
-      if (typeof val === 'number') return isNaN(val) ? null : val;
-      if (typeof val === 'string') {
-        const clean = val.replace(/,/g, '.').replace(/[^\d.-]/g, '').trim();
-        const n = parseFloat(clean);
-        return isNaN(n) ? null : n;
-      }
-      return null;
-    };
-
-    const findVal = (keys: string[]): number | null => {
-      for (const k of keys) {
-        if (k in values) {
-          const v = parseNum(values[k]);
-          if (v !== null) return v;
-        }
-      }
-      const lowerKeys = Object.keys(values).reduce<Record<string, unknown>>((acc, k) => {
-        acc[k.toLowerCase()] = values[k];
-        return acc;
-      }, {});
-      for (const k of keys) {
-        const v = parseNum(lowerKeys[k.toLowerCase()]);
-        if (v !== null) return v;
-      }
-      return null;
-    };
-
-    return {
-      peso: findVal(['peso', 'weight', 'weightKg', 'pesoKg', 'peso_kg']),
-      talla: findVal([
-        'talla',
-        'height',
-        'heightCm',
-        'tallaCm',
-        'talla_cm',
-        'estatura',
-        'longitud',
-      ]),
-      perimetroEncefalico: findVal([
-        'perimetroEncefalico',
-        'perimetro_encefalico',
-        'perimetroCefalico',
-        'perimetro_cefalico',
-        'perimetroCraneal',
-        'perimetro_craneal',
-        'headCircumference',
-        'head_circumference',
-        'pc',
-      ]),
-    };
-  }
+  close(): void { if (!this.isSubmitting()) { this.epoch++; this.resetForm(); this.closeDialog.emit(); } }
+  private identity(): string { return this.auth.currentUser()?.id ?? ''; }
+  private alive(epoch: number): boolean { return !this.destroyed && epoch === this.epoch && this.isOpen() && this.identity() === this.owner && this.patientId() === this.contextPatient; }
 }
-
-

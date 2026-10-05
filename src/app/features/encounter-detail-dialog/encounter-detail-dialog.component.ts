@@ -1,227 +1,92 @@
+import { Component, computed, effect, HostListener, inject, OnDestroy, PLATFORM_ID, signal, untracked } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import {
-  Component,
-  HostListener,
-  inject,
-  PLATFORM_ID,
-  signal,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import {
-  lucideStethoscope,
-  lucideCalendar,
-  lucideClock,
-  lucideUser,
-  lucidePrinter,
-  lucideX,
-  lucideFileText,
-  lucideActivity,
-  lucidePill,
-  lucideClipboardList,
-  lucideCheckCircle2,
-} from '@ng-icons/lucide';
+import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
-import { WorkspaceService } from '../../core/services/workspace.service';
-import { ClinicalEncounterDetail, VitalSigns } from '../../core/models/clinical-encounter.model';
-import { FormTemplate } from '../../core/models/workspace.model';
-import { MedicalSpecialty } from '../../core/models/specialty.model';
+import { AuthService } from '../../core/services/auth.service';
+import { ClinicalEncounterDetail, ConsultationType } from '../../core/models/clinical-encounter.model';
+import { WizardFormValues, WizardFormulaResults } from '../../core/models/wizard-definition.model';
+import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
+import { DynamicFormRendererComponent, inputValues } from '../dynamic-form-renderer/dynamic-form-renderer.component';
+import { argentinaDateTime, conflictKind, encounterInstant, errorMessage } from '../dynamic-form-renderer/clinical-form-ui';
 
-@Component({
-  selector: 'app-encounter-detail-dialog',
-  imports: [CommonModule, NgIcon],
-  providers: [
-    provideIcons({
-      lucideStethoscope,
-      lucideCalendar,
-      lucideClock,
-      lucideUser,
-      lucidePrinter,
-      lucideX,
-      lucideFileText,
-      lucideActivity,
-      lucidePill,
-      lucideClipboardList,
-      lucideCheckCircle2,
-    }),
-  ],
-  templateUrl: './encounter-detail-dialog.component.html',
-  styleUrl: './encounter-detail-dialog.component.css',
-})
-export class EncounterDetailDialogComponent {
-  private readonly encounterService = inject(ClinicalEncounterService);
-  private readonly workspaceService = inject(WorkspaceService);
+@Component({ selector: 'app-encounter-detail-dialog', imports: [FormsModule, DatePickerComponent, DynamicFormRendererComponent], templateUrl: './encounter-detail-dialog.component.html', styleUrl: './encounter-detail-dialog.component.css' })
+export class EncounterDetailDialogComponent implements OnDestroy {
+  private readonly service = inject(ClinicalEncounterService);
+  private readonly auth = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
-
-  readonly isOpen = signal<boolean>(false);
-  readonly isLoading = signal<boolean>(false);
-  readonly errorMessage = signal<string | null>(null);
-
+  private epoch = 0; private destroyed = false; private owner = this.identity();
+  private originalDay = ''; private originalTime = ''; private openedAt = 0; private backdropMouseDown = false;
+  readonly isOpen = signal(false); readonly isLoading = signal(false); readonly isSubmitting = signal(false); readonly isEditing = signal(false);
   readonly encounter = signal<ClinicalEncounterDetail | null>(null);
-  readonly encounterTemplate = signal<FormTemplate | null>(null);
-
-  private openedAt = 0;
-  private backdropMouseDown = false;
-
+  readonly values = signal<WizardFormValues>({}); readonly formulaResults = signal<WizardFormulaResults>({});
+  readonly encounterDay = signal(''); readonly encounterTime = signal(''); readonly consultationType = signal<ConsultationType>('FIRST_VISIT');
+  readonly formValid = signal(false); readonly hasConflict = signal(false); readonly remoteRecord = signal<ClinicalEncounterDetail | null>(null);
+  readonly errorMessage = signal<string | null>(null);
+  readonly readonly = computed(() => !this.isOpen() || !this.isEditing() || this.isLoading() || this.isSubmitting() || this.hasConflict() || this.identity() !== this.owner);
+  readonly dateValid = computed(() => { const instant = this.currentInstant(); return !!instant && new Date(instant).getTime() <= Date.now(); });
+  readonly consultationTypes: { value: ConsultationType; label: string }[] = [
+    { value: 'FIRST_VISIT', label: 'Primera consulta' }, { value: 'FOLLOW_UP', label: 'Control / seguimiento' }, { value: 'ROUTINE_CHECKUP', label: 'Chequeo de rutina' }, { value: 'EMERGENCY', label: 'Urgencia' }, { value: 'INTERCONSULTATION', label: 'Interconsulta' },
+  ];
+  constructor() { effect(() => { const owner = this.identity(); untracked(() => { if (owner !== this.owner) { this.owner = owner; this.epoch++; this.isSubmitting.set(false); this.closeModal(); } }); }); }
+  ngOnDestroy(): void { this.destroyed = true; this.epoch++; }
   @HostListener('window:open-encounter-detail-modal', ['$event'])
   openModal(event?: Event): void {
-    this.openedAt = Date.now();
-    const customEvent = event as CustomEvent | undefined;
-    const detail = customEvent?.detail;
-
-    this.isOpen.set(true);
-    this.errorMessage.set(null);
-
-    if (detail?.encounter) {
-      this.displayEncounter(detail.encounter);
-    } else if (detail?.encounterId) {
-      this.loadEncounter(detail.encounterId);
-    }
+    if (this.isSubmitting() || this.identity() !== this.owner) return;
+    this.epoch++; this.openedAt = Date.now(); this.isOpen.set(true); this.errorMessage.set(null); this.encounter.set(null); this.isEditing.set(false); this.hasConflict.set(false); this.remoteRecord.set(null);
+    const detail = (event as CustomEvent | undefined)?.detail;
+    if (detail?.encounter?.formDefinitionSnapshot) this.displayEncounter(detail.encounter);
+    else if (detail?.encounterId || detail?.encounter?.id) void this.loadEncounter(detail.encounterId ?? detail.encounter.id);
   }
-
-  @HostListener('window:keydown.escape')
-  onEscape(): void {
-    if (this.isOpen()) {
-      this.closeModal();
-    }
-  }
-
+  @HostListener('window:keydown.escape') onEscape(): void { if (this.isOpen()) this.closeModal(); }
   closeModal(): void {
-    this.isOpen.set(false);
-    this.encounter.set(null);
-    this.encounterTemplate.set(null);
-    this.errorMessage.set(null);
-    this.isLoading.set(false);
+    if (this.isSubmitting()) return;
+    this.epoch++; this.isOpen.set(false); this.encounter.set(null); this.values.set({}); this.formulaResults.set({}); this.errorMessage.set(null); this.isLoading.set(false); this.isEditing.set(false); this.hasConflict.set(false); this.remoteRecord.set(null);
   }
-
-  onBackdropMouseDown(event: MouseEvent): void {
-    this.backdropMouseDown = event.target === event.currentTarget;
+  onBackdropMouseDown(event: MouseEvent): void { this.backdropMouseDown = event.target === event.currentTarget; }
+  onBackdropClick(event: MouseEvent): void { if (Date.now() - this.openedAt >= 300 && this.backdropMouseDown && event.target === event.currentTarget) this.closeModal(); this.backdropMouseDown = false; }
+  async loadEncounter(id: number): Promise<void> {
+    if (this.isSubmitting() || this.identity() !== this.owner) return;
+    const epoch = ++this.epoch; this.isLoading.set(true);
+    try { const record = await firstValueFrom(this.service.getById(id)); if (this.alive(epoch) && record.id === id) this.acceptRecord(record); }
+    catch (error) { if (this.alive(epoch)) this.errorMessage.set(errorMessage(error, 'No pudimos cargar el detalle de la consulta.')); }
+    finally { if (this.alive(epoch)) this.isLoading.set(false); }
   }
-
-  onBackdropClick(event: MouseEvent): void {
-    if (Date.now() - this.openedAt < 300) {
-      return;
-    }
-    if (this.backdropMouseDown && event.target === event.currentTarget) {
-      this.closeModal();
-    }
-    this.backdropMouseDown = false;
+  displayEncounter(record: ClinicalEncounterDetail): void {
+    this.epoch++; this.isLoading.set(false); this.isSubmitting.set(false); this.acceptRecord(record);
   }
-
-  loadEncounter(id: number): void {
-    this.isLoading.set(true);
-    this.encounterService.getById(id).subscribe({
-      next: (data) => {
-        this.displayEncounter(data);
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        this.isLoading.set(false);
-        this.errorMessage.set(
-          err?.error?.message || 'No se pudo cargar el detalle de la consulta médica.'
-        );
-      },
-    });
+  private acceptRecord(record: ClinicalEncounterDetail): void {
+    this.encounter.set(structuredClone(record)); this.values.set(structuredClone(record.formValues)); this.formulaResults.set(structuredClone(record.formulaResults));
+    const parts = argentinaDateTime(record.encounterDate); this.originalDay = parts.day; this.originalTime = parts.time; this.encounterDay.set(parts.day); this.encounterTime.set(parts.time); this.consultationType.set(record.consultationType); this.formValid.set(false); this.errorMessage.set(null); this.hasConflict.set(false); this.remoteRecord.set(null);
   }
-
-  displayEncounter(enc: ClinicalEncounterDetail): void {
-    this.encounter.set(enc);
-
-    if (enc.templateId) {
-      this.workspaceService.getTemplateById(enc.templateId).subscribe({
-        next: (tmpl) => this.encounterTemplate.set(tmpl),
-        error: () => this.encounterTemplate.set(null),
-      });
-    } else {
-      this.encounterTemplate.set(null);
-    }
+  startEditing(): void { if (this.encounter() && !this.isLoading() && !this.isSubmitting() && this.identity() === this.owner) this.isEditing.set(true); }
+  cancelEditing(): void { const record = this.encounter(); if (!record || this.isSubmitting() || this.isLoading()) return; this.acceptRecord(record); this.isEditing.set(false); }
+  onValuesChange(values: WizardFormValues): void { if (!this.readonly()) { this.values.set(structuredClone(values)); this.formulaResults.set({}); } }
+  currentInstant(): string | null { return this.encounterDay() === this.originalDay && this.encounterTime() === this.originalTime ? this.encounter()?.encounterDate ?? null : encounterInstant(this.encounterDay(), this.encounterTime()); }
+  async save(): Promise<void> {
+    const record = this.encounter(); const encounterDate = this.currentInstant();
+    if (!record || !encounterDate || !this.formValid() || !this.dateValid() || this.readonly()) return;
+    this.isSubmitting.set(true); this.errorMessage.set(null); const epoch = this.epoch;
+    try {
+      const saved = await firstValueFrom(this.service.update(record.id, { expectedVersion: record.version, encounterDate, consultationType: this.consultationType(), values: inputValues(record.formDefinitionSnapshot, this.values()) }));
+      if (!this.alive(epoch)) return;
+      if (saved.id !== record.id || saved.patientId !== record.patientId) throw new Error('La respuesta no corresponde a esta consulta.');
+      this.acceptRecord(saved); this.isEditing.set(false);
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('encounter-updated', { detail: saved }));
+    } catch (error) { if (this.alive(epoch)) { this.hasConflict.set(!!conflictKind(error)); this.errorMessage.set(errorMessage(error, 'No pudimos guardar los cambios. Tu edición se conserva.')); } }
+    finally { if (this.alive(epoch)) this.isSubmitting.set(false); }
   }
-
-  printEncounter(): void {
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.print();
-    }
+  async reviewRemote(): Promise<void> {
+    const record = this.encounter(); if (!record || !this.hasConflict() || this.isLoading() || this.isSubmitting() || this.identity() !== this.owner) return;
+    this.isLoading.set(true); this.remoteRecord.set(null); const epoch = this.epoch;
+    try { const remote = await firstValueFrom(this.service.getById(record.id)); if (this.alive(epoch) && remote.id === record.id && remote.patientId === record.patientId) this.remoteRecord.set(structuredClone(remote)); }
+    catch (error) { if (this.alive(epoch)) this.errorMessage.set(errorMessage(error, 'No pudimos consultar la copia guardada.')); }
+    finally { if (this.alive(epoch)) this.isLoading.set(false); }
   }
-
-  getSpecialtyBadgeClass(specialty?: MedicalSpecialty): string {
-    switch (specialty) {
-      case 'PEDIATRICS':
-        return 'badge-pediatrics';
-      case 'CARDIOLOGY':
-        return 'badge-cardiology';
-      case 'OPHTHALMOLOGY':
-        return 'badge-ophthalmology';
-      case 'GYNECOLOGY':
-        return 'badge-gynecology';
-      case 'PSYCHIATRY':
-        return 'badge-psychiatry';
-      case 'DERMATOLOGY':
-        return 'badge-dermatology';
-      case 'TRAUMATOLOGY':
-        return 'badge-traumatology';
-      default:
-        return 'badge-general';
-    }
-  }
-
-  getConsultationTypeLabel(type?: string): string {
-    switch (type) {
-      case 'FIRST_VISIT':
-        return 'Primera Consulta';
-      case 'FOLLOW_UP':
-        return 'Control / Seguimiento';
-      case 'ROUTINE_CHECKUP':
-        return 'Chequeo General';
-      case 'EMERGENCY':
-        return 'Urgencia';
-      case 'INTERCONSULTATION':
-        return 'Interconsulta';
-      default:
-        return type || 'Consulta';
-    }
-  }
-
-  getBmiStatus(bmi?: number | null): { label: string; badgeClass: string } {
-    if (!bmi) return { label: 'Sin datos de IMC', badgeClass: 'badge-neutral' };
-    if (bmi < 18.5) return { label: 'Bajo peso (< 18.5)', badgeClass: 'badge-warning' };
-    if (bmi < 25.0) return { label: 'Peso Normal / Eutrófico', badgeClass: 'badge-success' };
-    if (bmi < 30.0) return { label: 'Sobrepeso', badgeClass: 'badge-warning' };
-    return { label: 'Obesidad', badgeClass: 'badge-danger' };
-  }
-
-  getDynamicEntries(enc: ClinicalEncounterDetail): { key: string; label: string; value: string }[] {
-    if (!enc.dynamicData) return [];
-    const labels = enc.snapshotFieldLabels || {};
-    return Object.entries(enc.dynamicData).map(([key, val]) => {
-      const label = labels[key] || this.formatKeyToLabel(key);
-      let valueStr = '—';
-      if (typeof val === 'boolean') {
-        valueStr = val ? 'Sí' : 'No';
-      } else if (val !== null && val !== undefined) {
-        valueStr = String(val);
-      }
-      return { key, label, value: valueStr };
-    });
-  }
-
-  hasVitals(vitals?: VitalSigns): boolean {
-    if (!vitals) return false;
-    return !!(
-      vitals.systolicBloodPressure ||
-      vitals.diastolicBloodPressure ||
-      vitals.heartRate ||
-      vitals.respiratoryRate ||
-      vitals.temperatureCelsius ||
-      vitals.oxygenSaturationPercent ||
-      vitals.weightKg ||
-      vitals.heightCm
-    );
-  }
-
-  private formatKeyToLabel(key: string): string {
-    return key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (str) => str.toUpperCase())
-      .trim();
-  }
+  useRemoteRecord(): void { const remote = this.remoteRecord(); if (!remote || this.isLoading() || this.isSubmitting() || this.identity() !== this.owner) return; this.acceptRecord(remote); this.isEditing.set(true); }
+  formatDate(instant: string): string { const { day, time } = argentinaDateTime(instant); const [year, month, date] = day.split('-'); return `${date}/${month}/${year} ${time}`; }
+  getConsultationTypeLabel(type: string): string { return this.consultationTypes.find(option => option.value === type)?.label ?? type; }
+  printEncounter(): void { if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') window.print(); }
+  private identity(): string { return this.auth.currentUser()?.id ?? ''; }
+  private alive(epoch: number): boolean { return !this.destroyed && this.isOpen() && epoch === this.epoch && this.identity() === this.owner; }
 }

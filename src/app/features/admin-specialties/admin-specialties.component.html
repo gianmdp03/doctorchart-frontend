@@ -1,0 +1,99 @@
+<main class="admin-specialties">
+  <header class="page-header">
+    <div><span class="eyebrow">Administración</span><h1>Especialidades y wizard</h1>
+      <p>Creá especialidades y configurá las fichas y consultas que reciben los médicos al elegirlas.</p></div>
+    <button type="button" class="primary" [disabled]="busy() || accessDenied()" (click)="requestCreate()">Crear especialidad</button>
+  </header>
+  @if (busy()) { <p role="status">Procesando...</p> }
+  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+  @if (success()) { <p class="success" role="status">{{ success() }}</p> }
+  @if (validationIssues().length) {
+    <ul class="validation-errors" aria-label="Campos que requieren revisión">
+      @for (issue of validationIssues(); track $index) { <li>{{ issueText(issue) }}</li> }
+    </ul>
+  }
+  @if (accessDenied()) {
+    <section class="notice" role="alert"><h2>Acceso restringido</h2><p>Necesitás una cuenta con rol Superadmin para administrar el catálogo.</p></section>
+  } @else {
+    @if (pendingSelection()) {
+      <section class="confirmation" aria-label="Confirmar cambio de especialidad">
+        <p>Hay cambios locales pendientes. Continuar descartará esta edición; el borrador guardado en el servidor se conserva.</p>
+        <button type="button" [disabled]="busy()" (click)="pendingSelection.set(null)">Seguir editando</button>
+        <button type="button" class="danger" [disabled]="busy()" (click)="confirmSelection()">Descartar cambios locales y continuar</button>
+      </section>
+    }
+    <div class="admin-layout">
+      <aside class="catalog" aria-label="Catálogo administrativo">
+        <div class="section-heading"><h2>Catálogo</h2><button type="button" [disabled]="busy()" (click)="refreshCatalog()">Actualizar lista</button></div>
+        @for (specialty of specialties(); track specialty.id) {
+          <button type="button" class="catalog-item" [class.selected]="!creating() && selectedSpecialty()?.id === specialty.id"
+            [disabled]="busy()" (click)="requestSelect(specialty.id)">
+            <strong>{{ specialty.name }}</strong><span>{{ specialty.code }}</span>
+            <span class="status" [class.active]="specialty.active">{{ specialty.active ? 'Activa' : 'Inactiva / borrador' }}</span>
+          </button>
+        } @empty { @if (!busy() && !error()) { <p>No hay especialidades en el catálogo administrativo.</p> } }
+      </aside>
+      <section class="edit-panel" aria-label="Editar especialidad">
+        @if (definition(); as current) {
+          <div class="section-heading"><h2>{{ creating() ? 'Nueva especialidad' : selectedSpecialty()?.name }}</h2>
+            @if (wizard(); as saved) { <span class="publication">Publicación {{ saved.publishedVersion }}{{ saved.publishedDefinition ? '' : ' · sin publicar' }}</span> }
+          </div>
+          <p class="hint">Los cambios del wizard se guardan como borrador. Publicar los habilita para nuevas selecciones y conserva las copias personales de los médicos existentes.</p>
+          @if (hasConflict()) {
+            <section class="confirmation" aria-label="Revisar conflicto de versión">
+              <p>El servidor cambió desde que abriste esta copia. Los datos y campos que estabas editando siguen visibles. Revisá el estado del servidor antes de continuar.</p>
+              <button type="button" [disabled]="busy()" (click)="reviewRemote()">Consultar copia del servidor</button>
+              @if (remoteCopy(); as remote) {
+                <p>{{ remote.specialty.name }} · {{ remote.specialty.active ? 'Activa' : 'Inactiva' }} · Publicación {{ remote.wizard.publishedVersion }}</p>
+                <button type="button" class="danger" [disabled]="busy()" (click)="useRemote()">Usar copia del servidor y descartar mis cambios locales</button>
+              }
+            </section>
+          }
+          @if (metadataStale()) {
+            <section class="notice"><p>El wizard fue publicado, pero falta recuperar la revisión actual de la especialidad. Actualizá la lista antes de volver a guardar.</p>
+              <button type="button" [disabled]="busy()" (click)="refreshCatalog()">Recuperar revisión actual</button></section>
+          }
+          <fieldset class="metadata" [disabled]="readonly() || (!creating() && !wizard())">
+            <label>Nombre <input maxlength="120" [ngModel]="name()" (ngModelChange)="updateName($event)" /></label>
+            <label>Código <input maxlength="80" [ngModel]="code()" (ngModelChange)="updateCode($event)" [readonly]="!creating()" />
+              <span class="hint">{{ creating() ? 'Sugerido a partir del nombre; podés editarlo.' : 'El código identifica esta especialidad y no cambia.' }}</span></label>
+            <label class="wide">Descripción <textarea rows="2" [ngModel]="description()" (ngModelChange)="description.set($event)"></textarea></label>
+          </fieldset>
+          @if (!creating()) {
+            <div class="actions metadata-actions">
+              <button type="button" [disabled]="!canEditExisting() || metadataStale() || !metadataDirty()" (click)="saveMetadata()">Guardar nombre y descripción</button>
+              <button type="button" [disabled]="!canEditExisting() || metadataStale()" (click)="toggleActive()">{{ selectedSpecialty()?.active ? 'Desactivar especialidad' : 'Activar especialidad' }}</button>
+            </div>
+          }
+          @if (!creating() && !wizard()) {
+            <section class="notice"><p>La especialidad fue creada. Falta cargar su wizard para continuar editando.</p><button type="button" [disabled]="busy()" (click)="reloadWizard()">Volver a cargar el wizard</button></section>
+          } @else {
+            <fieldset class="capabilities" [disabled]="readonly()"><legend>Funciones disponibles</legend>
+              @for (capability of capabilities; track capability.key) {
+                <label><input type="checkbox" [ngModel]="current.modulesConfig[capability.key]" (ngModelChange)="setCapability(capability.key, $event)" />{{ capability.label }}</label>
+              }
+            </fieldset>
+            @for (generation of [editorGeneration()]; track generation) {
+              <h3>Ficha del paciente</h3>
+              <app-form-field-editor [definition]="current.patientForm" section="patientForm" [readonly]="readonly()"
+                (definitionChange)="onDefinitionChange('patientForm', $event)" />
+              <h3>Historia Clínica</h3>
+              <p class="hint">Esta sección está presente en todas las especialidades. Organizá sus categorías y campos para cada consulta.</p>
+              <app-form-field-editor [definition]="current.encounterForm" section="encounterForm" [readonly]="readonly()"
+                (definitionChange)="onDefinitionChange('encounterForm', $event)" />
+            }
+            @if (pendingEditor()) { <p class="notice">Aplicá o cancelá el campo abierto y completá las categorías pendientes antes de guardar el wizard.</p> }
+            <footer class="actions wizard-actions">
+              @if (creating()) {
+                <button type="button" class="primary" [disabled]="readonly() || pendingEditor()" (click)="createSpecialty()">Crear como borrador</button>
+              } @else {
+                <button type="button" [disabled]="!canEditExisting() || metadataStale() || pendingEditor()" (click)="saveDraft()">Guardar borrador del wizard</button>
+                <button type="button" class="primary" [disabled]="!canEditExisting() || metadataStale() || pendingEditor()" (click)="publishWizard()">Guardar y publicar wizard</button>
+              }
+            </footer>
+          }
+        } @else { <p class="empty-state">Elegí una especialidad para editar su wizard o creá una nueva.</p> }
+      </section>
+    </div>
+  }
+</main>

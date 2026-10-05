@@ -72,7 +72,7 @@ export class PrescriptionPrintLayoutComponent {
   });
 
   readonly doctorSpecialty = computed(() => {
-    return this.doctorSpecialtyService.currentSpecialtyOption().label || 'Medicina General';
+    return this.doctorSpecialtyService.currentSpecialtyOption().label;
   });
 
   readonly doctorLicense = computed(() => {

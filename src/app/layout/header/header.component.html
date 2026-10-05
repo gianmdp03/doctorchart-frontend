@@ -3,6 +3,7 @@
   <div class="header-left"></div>
 
   <!-- Center: Omnibox Global Search (Ctrl + K) -->
+  @if (!authService.isSuperAdmin()) {
   <div class="header-center" role="search">
     <div class="omnibox-wrapper" [class.is-focused]="isSearchOpen()">
       <ng-icon name="lucideSearch" class="omnibox-icon" />
@@ -76,6 +77,10 @@
     </div>
   </div>
 
+  } @else {
+    <div class="header-center"><span>Administración de especialidades</span></div>
+  }
+
   <!-- Right: Actions & Profile -->
   <div class="header-right">
     <!-- Visual Accessibility Font Switcher -->
@@ -117,6 +122,7 @@
 
           <div class="profile-menu-divider"></div>
 
+          @if (!authService.isSuperAdmin()) {
           <a
             [href]="syntahPlansUrl"
             target="_blank"
@@ -136,13 +142,15 @@
             <span>Perfil Profesional</span>
           </button>
 
+          }
+
           <button
             type="button"
             class="dropdown-action-item"
             (click)="openWizardConfig()"
           >
             <ng-icon name="lucideSliders" class="menu-action-icon" />
-            <span>Personalizar Fichas y Consultas</span>
+            <span>{{ authService.isSuperAdmin() ? 'Especialidades y wizards' : 'Personalizar Fichas y Consultas' }}</span>
           </button>
 
           <div class="profile-menu-divider"></div>

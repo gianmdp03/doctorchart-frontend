@@ -1,3 +1,4 @@
+import { wizardRecordEntries } from '../../core/models/wizard-record-display';
 import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -130,6 +131,8 @@ export class DashboardComponent implements OnInit {
   @HostListener('window:patient-updated')
   @HostListener('window:patient-deleted')
   @HostListener('window:encounter-created')
+  @HostListener('window:encounter-updated')
+  @HostListener('window:encounter-deleted')
   @HostListener('window:auth-success')
   onClinicalDataChanged(): void {
     this.loadKpiData();
@@ -225,9 +228,6 @@ export class DashboardComponent implements OnInit {
                   existing?.patientFullName ||
                   patientMap.get(item.patientId)?.fullName ||
                   null,
-                dynamicData: item.dynamicData ?? existing?.dynamicData ?? null,
-                snapshotFieldLabels:
-                  item.snapshotFieldLabels ?? existing?.snapshotFieldLabels ?? null,
               });
             }
           };
@@ -320,13 +320,13 @@ export class DashboardComponent implements OnInit {
   }
 
   hydrateNotes(): void {
-    this.quickNotes.set(this.workspaceStore.currentSetup()?.quickNotes || '');
+    this.quickNotes.set(this.workspaceStore.quickNotes() || '');
     this.isNotesDirty.set(false);
   }
 
   onNotesInput(content: string): void {
     this.quickNotes.set(content);
-    this.isNotesDirty.set(content !== (this.workspaceStore.currentSetup()?.quickNotes || ''));
+    this.isNotesDirty.set(content !== (this.workspaceStore.quickNotes() || ''));
     this.isNotesSaved.set(false);
   }
 
@@ -448,23 +448,7 @@ export class DashboardComponent implements OnInit {
 
   private extractClinicalHighlights(encounter: ClinicalEncounterList): ClinicalHighlightItem[] {
     const highlights: ClinicalHighlightItem[] = [];
-    const dynamic = encounter.dynamicData ?? {};
-    const labels = encounter.snapshotFieldLabels ?? {};
-
-    for (const [key, rawVal] of Object.entries(dynamic)) {
-      if (rawVal === null || rawVal === undefined || String(rawVal).trim() === '') continue;
-      const label = labels[key] || this.formatFieldKey(key);
-      const value =
-        typeof rawVal === 'boolean'
-          ? rawVal
-            ? 'Sí'
-            : 'No'
-          : Array.isArray(rawVal)
-            ? rawVal.join(', ')
-            : String(rawVal).trim();
-      highlights.push({ label, value });
-      if (highlights.length >= 3) break;
-    }
+    highlights.push(...wizardRecordEntries(encounter).slice(0, 3));
 
     if (highlights.length === 0) {
       if (encounter.chiefComplaint) {

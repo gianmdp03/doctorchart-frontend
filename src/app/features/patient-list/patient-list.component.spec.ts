@@ -20,7 +20,7 @@ describe('PatientListComponent', () => {
     setActivePatient: ReturnType<typeof vi.fn>;
   };
   let doctorSpecialtyServiceMock: {
-    isPediatricMode: ReturnType<typeof signal<boolean>>;
+    supportsGrowthCharts: ReturnType<typeof signal<boolean>>;
   };
   let workspaceStoreMock: {
     patientVisibleColumns: ReturnType<typeof signal<Record<string, boolean>>>;
@@ -53,7 +53,7 @@ describe('PatientListComponent', () => {
     };
 
     doctorSpecialtyServiceMock = {
-      isPediatricMode: signal<boolean>(false),
+      supportsGrowthCharts: signal<boolean>(false),
     };
 
     workspaceStoreMock = {

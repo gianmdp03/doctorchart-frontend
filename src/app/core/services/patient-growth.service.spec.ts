@@ -1,3 +1,4 @@
+import { clinicalFormFixture } from '../models/clinical-form.fixture';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
@@ -93,6 +94,11 @@ describe('PatientGrowthService', () => {
   });
 
   describe('formatDate', () => {
+    it('uses the Argentina calendar day for offset instants and age calculations', () => {
+      expect(service.formatDate('2026-01-02T01:00:00Z')).toBe('01/01/2026');
+      expect(service.formatAge('2026-01-01', '2026-01-02T01:00:00Z')).toBe('Recién nacido');
+      expect(service.calculateExactAgeInMonths('2026-01-01', '2026-01-02T01:00:00Z')).toBe(0);
+    });
     it('should format ISO YYYY-MM-DD to DD/MM/YYYY', () => {
       expect(service.formatDate('2024-06-15')).toBe('15/06/2024');
       expect(service.formatDate('2024-06-15T10:30:00Z')).toBe('15/06/2024');
@@ -140,29 +146,25 @@ describe('PatientGrowthService', () => {
         id: 2,
         patientId: 10,
         encounterDate: '2024-04-01',
-        specialty: 'PEDIATRICS',
+        ...clinicalFormFixture(), specialtyId: 1, specialty: {id:1,code:'pediatrics',name:'Pediatría',description:null},
         consultationType: 'ROUTINE_CHECKUP',
         vitalSigns: {
           weightKg: 6.4,
           heightCm: 62.0,
         },
-        dynamicData: {
-          perimetroCefalico: 41.0,
-        },
+        perimetroEncefalico: 41.0,
       },
       {
         id: 1,
         patientId: 10,
         encounterDate: '2024-02-01',
-        specialty: 'PEDIATRICS',
+        ...clinicalFormFixture(), specialtyId: 1, specialty: {id:1,code:'pediatrics',name:'Pediatría',description:null},
         consultationType: 'FIRST_VISIT',
         vitalSigns: {
           weightKg: 4.5,
           heightCm: 55.0,
         },
-        dynamicData: {
-          perimetro_cefalico: 37.5,
-        },
+        perimetroEncefalico: 37.5,
       },
     ];
 
@@ -198,7 +200,15 @@ describe('PatientGrowthService', () => {
       expect(heights[2].value).toBe(62.0);
     });
 
-    it('should extract head circumference from dynamicData and birth measurements', () => {
+    it('keeps canonical kg/cm units without guessing from dynamic keys or magnitude', () => {
+      const adult = { ...mockEncounters[0], peso: 125, talla: 180, vitalSigns: null };
+      const weights = service.extractPatientMeasurements({ birthDate: '1980-01-01' }, [adult], 'WEIGHT');
+      expect(weights[0].value).toBe(125);
+      const backend = service.transformBackendMeasurements([{ consultaId: 1, fechaConsulta: '2024-04-01', edadMeses: 530, edadLegible: '44 años', peso: 125, talla: 180, perimetroEncefalico: null }], 'WEIGHT', 'MALE');
+      expect(backend[0].value).toBe(125);
+    });
+
+    it('should extract head circumference from bound projections and birth measurements', () => {
       const hc = service.extractPatientMeasurements(mockPatient, mockEncounters, 'HEAD_CIRCUMFERENCE');
       expect(hc.length).toBe(3);
       expect(hc[0].value).toBe(35.0);

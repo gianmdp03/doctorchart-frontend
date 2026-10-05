@@ -15,7 +15,7 @@
           }
           <span><strong>F. Nacimiento:</strong> {{ activePatientService.formattedBirthDate() }}</span>
           <span><strong>Edad:</strong> {{ activePatientService.ageDisplay() }}</span>
-          @if (doctorSpecialtyService.isPediatricMode() && activePatientService.ageInYears() < 16 && activePatientService.primaryGuardian() !== '—') {
+          @if (doctorSpecialtyService.hasFamilyInformation() && activePatientService.ageInYears() < 16 && activePatientService.primaryGuardian() !== '—') {
             <span><strong>Tutor:</strong> {{ activePatientService.primaryGuardian() }}</span>
           }
         </div>
@@ -32,7 +32,7 @@
         <span class="label">Talla:</span>
         <span class="val">{{ activePatientService.formattedHeight() }}</span>
       </div>
-      @if (doctorSpecialtyService.isPediatricMode() && activePatientService.ageInYears() < 16) {
+      @if (doctorSpecialtyService.supportsGrowthCharts() && activePatientService.ageInYears() < 16) {
         <div class="metric-pill" title="Último perímetro cefálico">
           <span class="label">P. Cefálico:</span>
           <span class="val">{{ activePatientService.formattedHeadCircumference() }}</span>

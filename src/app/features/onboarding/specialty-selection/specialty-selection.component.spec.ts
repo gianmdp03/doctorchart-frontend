@@ -1,140 +1,98 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
-import { signal } from '@angular/core';
 import { SpecialtySelectionComponent } from './specialty-selection.component';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { DoctorProfileService } from '../../../core/services/doctor-profile.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { SpecialtySummary } from '../../../core/models/specialty.model';
 import { WorkspaceStore } from '../../../core/services/workspace.store';
+import { customSpecialtyFixture } from '../testing/custom-specialty.fixture';
 
 describe('SpecialtySelectionComponent', () => {
   let component: SpecialtySelectionComponent;
   let fixture: ComponentFixture<SpecialtySelectionComponent>;
-  let specialtyServiceMock: {
-    getSpecialties: ReturnType<typeof vi.fn>;
-    createCustomSpecialty: ReturnType<typeof vi.fn>;
-  };
-  let doctorProfileServiceMock: {
-    clearProfile: ReturnType<typeof vi.fn>;
-  };
-  let workspaceStoreMock: {
-    loadSetup: ReturnType<typeof vi.fn>;
-    saveOnboardingDraft: ReturnType<typeof vi.fn>;
-  };
-  let authServiceMock: {
-    signOut: ReturnType<typeof vi.fn>;
-  };
-  let router: Router;
-
-  const mockSpecialties: SpecialtySummary[] = [
-    { id: 4, specialty: 'PEDIATRICS', displayName: 'Pediatría y Neonatología', description: 'Atención pediátrica' },
-    { id: 7, specialty: 'CARDIOLOGY', displayName: 'Cardiología', description: 'Salud cardiovascular' },
-  ];
+  let specialties: { getSpecialties: ReturnType<typeof vi.fn> };
+  let workspace: { loadSetup: ReturnType<typeof vi.fn>; selectSpecialty: ReturnType<typeof vi.fn>; clearSetup: ReturnType<typeof vi.fn> };
+  let navigate: ReturnType<typeof vi.fn>;
+  const unfamiliar = { id: 81, code: customSpecialtyFixture.code, name: customSpecialtyFixture.name, description: customSpecialtyFixture.description };
 
   beforeEach(async () => {
-    specialtyServiceMock = {
-      getSpecialties: vi.fn().mockReturnValue(of(mockSpecialties)),
-      createCustomSpecialty: vi.fn(),
-    };
-    doctorProfileServiceMock = {
-      clearProfile: vi.fn(),
-    };
-    workspaceStoreMock = {
+    specialties = { getSpecialties: vi.fn().mockReturnValue(of([unfamiliar])) };
+    workspace = {
       loadSetup: vi.fn().mockResolvedValue(null),
-      saveOnboardingDraft: vi.fn().mockResolvedValue({}),
+      selectSpecialty: vi.fn().mockResolvedValue({}),
+      clearSetup: vi.fn(),
     };
-    authServiceMock = {
-      signOut: vi.fn().mockResolvedValue({ error: null }),
-    };
-
+    navigate = vi.fn().mockResolvedValue(true);
     await TestBed.configureTestingModule({
       imports: [SpecialtySelectionComponent],
       providers: [
-        { provide: SpecialtyService, useValue: specialtyServiceMock },
-        { provide: DoctorProfileService, useValue: doctorProfileServiceMock },
-        { provide: AuthService, useValue: authServiceMock },
-        { provide: WorkspaceStore, useValue: workspaceStoreMock },
+        { provide: Router, useValue: { navigate } },
+        { provide: SpecialtyService, useValue: specialties },
+        { provide: WorkspaceStore, useValue: workspace },
+        { provide: DoctorProfileService, useValue: { clearProfile: vi.fn() } },
+        { provide: AuthService, useValue: { signOut: vi.fn().mockResolvedValue(undefined) } },
       ],
     }).compileComponents();
-
-    router = TestBed.inject(Router);
-    vi.spyOn(router, 'navigate').mockResolvedValue(true);
-
     fixture = TestBed.createComponent(SpecialtySelectionComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    await vi.waitFor(() => expect(component.isLoading()).toBe(false));
     await fixture.whenStable();
     fixture.detectChanges();
   });
 
-  it('should create and load specialties list', () => {
-    expect(component).toBeTruthy();
-    expect(component.specialties().length).toBe(2);
-    expect(component.isLoading()).toBe(false);
+  it('preselects the only backend option by count even with an unfamiliar identity', () => {
+    expect(component.selectedSpecialty()).toBe(81);
+    expect(fixture.nativeElement.textContent).toContain(unfamiliar.name);
+    expect(fixture.nativeElement.textContent).not.toContain('Personalizada');
+    expect(fixture.nativeElement.querySelectorAll('.specialty-card')).toHaveLength(1);
   });
 
-  it('should select a specialty on card click', () => {
-    component.select('CARDIOLOGY');
-    expect(component.selectedSpecialty()).toBe('CARDIOLOGY');
-  });
-
-  it('should save the selected specialty as the first wizard checkpoint', async () => {
-    component.select('CARDIOLOGY');
-
+  it('confirms selection through the backend copy operation without sending definitions', async () => {
     await component.confirmSpecialty();
-
-    expect(workspaceStoreMock.saveOnboardingDraft).toHaveBeenCalledWith(
-      expect.objectContaining({
-        specialtyId: 7,
-        onboardingStep: 'PATIENT_PERSONAL_DATA',
-      })
-    );
-    expect(router.navigate).toHaveBeenCalledWith(['/onboarding/setup']);
+    expect(workspace.selectSpecialty).toHaveBeenCalledWith(81, null);
+    expect(navigate).toHaveBeenCalledWith(['/onboarding/setup']);
   });
 
-  it('should show an error when a specialty is missing its persisted identifier', async () => {
-    component.specialties.set([{ code: 'general_medicine', displayName: 'Medicina general' }]);
-    component.select('general_medicine');
-
+  it('requires a choice when the catalog contains multiple options', async () => {
+    specialties.getSpecialties.mockReturnValue(of([unfamiliar, { ...unfamiliar, id: 82, code: 'another', name: 'Otro nombre' }]));
+    await component.loadSpecialties(true);
+    expect(component.selectedSpecialty()).toBeNull();
     await component.confirmSpecialty();
-
-    expect(component.errorMessage()).toContain('identificador válido');
-  });
-
-  it('should show a save error and keep the user on the selection step', async () => {
-    component.select('PEDIATRICS');
-    workspaceStoreMock.saveOnboardingDraft.mockRejectedValue({ status: 500 });
-
+    expect(workspace.selectSpecialty).not.toHaveBeenCalled();
+    component.select(82);
     await component.confirmSpecialty();
-
-    expect(component.errorMessage()).toContain('guardar la especialidad');
+    expect(workspace.selectSpecialty).toHaveBeenCalledWith(82, null);
   });
 
-  it('should open modal and create custom specialty', () => {
-    specialtyServiceMock.createCustomSpecialty = vi.fn().mockReturnValue(
-      of({
-        id: 12,
-        code: 'MEDICINA_INTEGRATIVA',
-        name: 'Medicina Integrativa',
-        displayName: 'Medicina Integrativa',
-        description: 'Enfoque holístico',
-        isSystem: false,
-      })
-    );
+  it('keeps the choice and blocks retries after a conflict until an explicit reload', async () => {
+    workspace.selectSpecialty.mockRejectedValue({ status: 409, error: { code: 'VERSION_CONFLICT' } });
+    await component.confirmSpecialty();
+    expect(component.hasConflict()).toBe(true);
+    expect(component.selectedSpecialty()).toBe(81);
+    expect(navigate).not.toHaveBeenCalled();
+    await component.confirmSpecialty();
+    expect(workspace.selectSpecialty).toHaveBeenCalledTimes(1);
+    await component.loadSpecialties(true);
+    expect(workspace.loadSetup).toHaveBeenLastCalledWith(true);
+    expect(component.hasConflict()).toBe(false);
+  });
 
-    component.openCustomSpecialtyModal();
-    expect(component.isCustomModalOpen()).toBe(true);
+  it('reports catalog failures without inventing a default option', async () => {
+    specialties.getSpecialties.mockReturnValue(of([]));
+    await component.loadSpecialties(true);
+    expect(component.specialties()).toEqual([]);
+    expect(component.selectedSpecialty()).toBeNull();
+    expect(component.errorMessage()).toContain('No hay especialidades');
+  });
 
-    component.customName.set('Medicina Integrativa');
-    component.customDescription.set('Enfoque holístico');
-
-    component.createCustomSpecialty();
-
-    expect(component.isCustomModalOpen()).toBe(false);
-    expect(component.specialties().length).toBe(3);
-    expect(component.selectedSpecialty()).toBe('MEDICINA_INTEGRATIVA');
+  it('reports an unavailable specialty without mislabeling it as a version conflict', async () => {
+    workspace.selectSpecialty.mockRejectedValue({ status: 409, error: { code: 'SPECIALTY_NOT_AVAILABLE', message: 'La especialidad no está disponible.' } });
+    await component.confirmSpecialty();
+    expect(component.hasConflict()).toBe(false);
+    expect(component.errorMessage()).toBe('La especialidad no está disponible.');
+    expect(navigate).not.toHaveBeenCalled();
   });
 });
-

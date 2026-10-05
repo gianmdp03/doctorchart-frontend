@@ -4,86 +4,62 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { DoctorProfile } from '../models/doctor-profile.model';
-import { MedicalSpecialty } from '../models/specialty.model';
-import { DoctorSpecialtyService } from './doctor-specialty.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class DoctorProfileService {
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
-  private readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
-  private readonly apiUrl = `${environment.apiUrl}/doctor`;
-
   readonly profile = signal<DoctorProfile | null>(null);
-  readonly loading = signal<boolean>(false);
-  readonly loaded = signal<boolean>(false);
-
-  readonly hasSpecialty = computed(() => !!this.profile()?.specialty);
+  readonly loading = signal(false);
+  readonly loaded = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly hasSpecialty = computed(() => this.profile()?.specialty != null);
   readonly specialty = computed(() => this.profile()?.specialty ?? null);
-  readonly isSpecialtyLocked = computed(() => !!this.profile()?.isSpecialtyLocked);
-
-  private profilePromise: Promise<DoctorProfile | null> | null = null;
+  readonly isSpecialtyLocked = computed(() => this.profile()?.isSpecialtyLocked ?? false);
+  private request: Promise<DoctorProfile | null> | null = null;
+  private epoch = 0;
 
   async loadProfile(force = false): Promise<DoctorProfile | null> {
-    if (!isPlatformBrowser(this.platformId)) {
-      return null;
-    }
-
-    if (this.profilePromise && !force) {
-      return this.profilePromise;
-    }
-
-    this.profilePromise = (async () => {
-      this.loading.set(true);
+    if (!isPlatformBrowser(this.platformId)) return null;
+    if (this.request) return this.request;
+    if (!force && this.loaded()) return structuredClone(this.profile());
+    const epoch = this.epoch;
+    this.loading.set(true);
+    this.error.set(null);
+    const request = (async () => {
       try {
-        const result = await firstValueFrom(
-          this.http.get<DoctorProfile>(`${this.apiUrl}/profile`).pipe(timeout(6000))
-        );
-        this.profile.set(result);
-        if (result?.specialty) {
-          this.doctorSpecialtyService.setSpecialty(result.specialty);
-        } else {
-          this.doctorSpecialtyService.clearSpecialty();
+        const profile = await firstValueFrom(this.http.get<DoctorProfile | null>(`${environment.apiUrl}/doctor/profile`).pipe(timeout(6000)));
+        if (epoch !== this.epoch) throw new Error('La sesión cambió durante la carga del perfil.');
+        this.profile.set(structuredClone(profile));
+        this.loaded.set(true);
+        return structuredClone(profile);
+      } catch (error) {
+        if (epoch === this.epoch) {
+          if (error instanceof HttpErrorResponse && error.status === 404) {
+            this.profile.set(null);
+            this.loaded.set(true);
+            return null;
+          }
+          this.loaded.set(false);
+          this.error.set(error instanceof Error ? error.message : 'No se pudo cargar el perfil.');
         }
-        this.loaded.set(true);
-        return result;
-      } catch (err: unknown) {
-        this.profile.set(null);
-        this.doctorSpecialtyService.clearSpecialty();
-        this.loaded.set(true);
-        return null;
+        throw error;
       } finally {
-        this.loading.set(false);
-        this.profilePromise = null;
+        if (epoch === this.epoch) {
+          this.loading.set(false);
+          this.request = null;
+        }
       }
     })();
-
-    return this.profilePromise;
+    this.request = request;
+    return request;
   }
-
-  async assignSpecialty(specialty: MedicalSpecialty): Promise<DoctorProfile> {
-    this.loading.set(true);
-    try {
-      const result = await firstValueFrom(
-        this.http.post<DoctorProfile>(`${this.apiUrl}/specialty`, { specialty })
-      );
-      this.profile.set(result);
-      if (result?.specialty) {
-        this.doctorSpecialtyService.setSpecialty(result.specialty);
-      }
-      this.loaded.set(true);
-      return result;
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
   clearProfile(): void {
+    ++this.epoch;
     this.profile.set(null);
     this.loaded.set(false);
-    this.profilePromise = null;
-    this.doctorSpecialtyService.clearSpecialty();
+    this.loading.set(false);
+    this.error.set(null);
+    this.request = null;
   }
 }

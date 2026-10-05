@@ -1,17 +1,14 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { DoctorProfileService } from '../../../core/services/doctor-profile.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { MedicalSpecialty, SpecialtySummary } from '../../../core/models/specialty.model';
+import { SpecialtySummary } from '../../../core/models/specialty.model';
 import { WorkspaceStore } from '../../../core/services/workspace.store';
-import { createDefaultPatientFormSchema } from '../../../core/config/onboarding-form-definitions';
 
 @Component({
   selector: 'app-specialty-selection',
-  imports: [CommonModule, FormsModule],
   templateUrl: './specialty-selection.component.html',
   styleUrl: './specialty-selection.component.css',
 })
@@ -23,133 +20,81 @@ export class SpecialtySelectionComponent implements OnInit {
   private readonly router = inject(Router);
 
   readonly specialties = signal<SpecialtySummary[]>([]);
-  readonly selectedSpecialty = signal<MedicalSpecialty | string | null>(null);
-  readonly selectedSpecialtyItem = computed(() => {
-    const sel = this.selectedSpecialty();
-    if (!sel) return null;
-    return (
-      this.specialties().find(
-        (s) => s.code === sel || s.specialty === sel || (s.code && s.code.toUpperCase() === sel.toUpperCase())
-      ) || null
-    );
-  });
-  readonly isLoading = signal<boolean>(true);
-  readonly isSubmitting = signal<boolean>(false);
+  readonly selectedSpecialty = signal<number | null>(null);
+  readonly selectedSpecialtyItem = computed(() => this.specialties().find(item => item.id === this.selectedSpecialty()) ?? null);
+  readonly expectedVersion = signal<number | null>(null);
+  readonly isLoading = signal(true);
+  readonly isSubmitting = signal(false);
+  readonly hasConflict = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
-  // Custom Specialty Modal State
-  readonly isCustomModalOpen = signal<boolean>(false);
-  readonly customName = signal<string>('');
-  readonly customDescription = signal<string>('');
-  readonly isCreatingCustom = signal<boolean>(false);
-  readonly customError = signal<string | null>(null);
-
-  async handleSignOut(): Promise<void> {
-    this.doctorProfileService.clearProfile();
-    await this.authService.signOut();
-  }
-
   async ngOnInit(): Promise<void> {
-    const setup = await this.workspaceStore.loadSetup();
-    if (setup?.onboardingCompleted) {
-      await this.router.navigate(['/dashboard']);
-      return;
-    }
-    if (setup?.id && setup.specialtyId && setup.onboardingStep !== 'SPECIALTY') {
-      await this.router.navigate(['/onboarding/setup']);
-      return;
-    }
-    if (setup?.id && setup.onboardingStep === 'SPECIALTY' && setup.specialtyCode) {
-      this.selectedSpecialty.set(setup.specialtyCode);
-    }
-    this.loadSpecialties();
+    await this.loadSpecialties();
   }
 
-  loadSpecialties(): void {
-    this.specialtyService.getSpecialties().subscribe({
-      next: (list) => {
-        this.specialties.set(list);
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        console.error('Error fetching specialties:', err);
-        this.errorMessage.set('No se pudo cargar el catálogo de especialidades. Intente nuevamente.');
-        this.isLoading.set(false);
-      },
-    });
-  }
-
-  select(spec: MedicalSpecialty | string): void {
+  async loadSpecialties(force = false): Promise<void> {
     if (this.isSubmitting()) return;
-    this.selectedSpecialty.set(spec);
+    this.isLoading.set(true);
     this.errorMessage.set(null);
-  }
-
-  openCustomSpecialtyModal(): void {
-    this.customName.set('');
-    this.customDescription.set('');
-    this.customError.set(null);
-    this.isCustomModalOpen.set(true);
-  }
-
-  closeCustomSpecialtyModal(): void {
-    this.isCustomModalOpen.set(false);
-  }
-
-  createCustomSpecialty(): void {
-    const name = this.customName().trim();
-    const description = this.customDescription().trim();
-
-    if (!name) {
-      this.customError.set('El nombre de la especialidad es obligatorio.');
-      return;
+    try {
+      const setup = await this.workspaceStore.loadSetup(force);
+      if (setup?.onboardingCompleted) {
+        await this.router.navigate(['/dashboard']);
+        return;
+      }
+      if (setup && setup.currentStepKey !== 'specialty') {
+        await this.router.navigate(['/onboarding/setup']);
+        return;
+      }
+      const list = await firstValueFrom(this.specialtyService.getSpecialties());
+      this.specialties.set(list);
+      this.expectedVersion.set(setup?.version ?? null);
+      this.selectedSpecialty.set(setup ? list.find(item => item.id === setup.specialty.id)?.id ?? null : list.length === 1 ? list[0].id : null);
+      this.hasConflict.set(false);
+      if (list.length === 0) this.errorMessage.set('No hay especialidades disponibles. Contactá al administrador.');
+    } catch (error: unknown) {
+      this.errorMessage.set(this.errorText(error, 'No pudimos cargar las especialidades. Intentá nuevamente.'));
+    } finally {
+      this.isLoading.set(false);
     }
+  }
 
-    this.isCreatingCustom.set(true);
-    this.customError.set(null);
-
-    this.specialtyService.createCustomSpecialty({ name, description }).subscribe({
-      next: (created) => {
-        this.isCreatingCustom.set(false);
-        this.specialties.update((list) => [...list, created]);
-        this.selectedSpecialty.set(created.code || null);
-        this.closeCustomSpecialtyModal();
-      },
-      error: (err) => {
-        this.isCreatingCustom.set(false);
-        this.customError.set(
-          err?.error?.message || 'Error al crear la especialidad personalizada.'
-        );
-      },
-    });
+  select(id: number): void {
+    if (this.isSubmitting() || this.hasConflict()) return;
+    this.selectedSpecialty.set(id);
+    this.errorMessage.set(null);
   }
 
   async confirmSpecialty(): Promise<void> {
     const specialty = this.selectedSpecialtyItem();
-    if (!specialty?.id || this.isSubmitting()) {
-      if (!specialty?.id) {
-        this.errorMessage.set('La especialidad seleccionada no tiene un identificador válido. Recargá e intentá nuevamente.');
-      }
-      return;
-    }
-
+    if (!specialty || this.isSubmitting() || this.hasConflict()) return;
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
-
     try {
-      await this.workspaceStore.saveOnboardingDraft({
-        specialtyId: specialty.id,
-        onboardingStep: 'PATIENT_PERSONAL_DATA',
-        onboardingDraft: {
-          patientTemplateSchema: createDefaultPatientFormSchema(),
-        },
-      });
+      await this.workspaceStore.selectSpecialty(specialty.id, this.expectedVersion());
       await this.router.navigate(['/onboarding/setup']);
-    } catch (err: unknown) {
-      console.error('Failed to assign specialty:', err);
-      this.errorMessage.set('Ocurrió un error al guardar la especialidad. Verificá tu conexión y reintentá.');
+    } catch (error: unknown) {
+      const response = error as { status?: number; error?: { code?: string } } | null;
+      if (response?.status === 409 && response.error?.code === 'VERSION_CONFLICT') {
+        this.hasConflict.set(true);
+        this.errorMessage.set('Tu configuración cambió en otra sesión. La selección sigue visible; volvé a cargar para revisar el estado guardado.');
+      } else {
+        this.errorMessage.set(this.errorText(error, 'No pudimos guardar la especialidad. Revisá tu conexión e intentá nuevamente.'));
+      }
     } finally {
       this.isSubmitting.set(false);
     }
+  }
+
+  async handleSignOut(): Promise<void> {
+    if (this.isSubmitting()) return;
+    this.doctorProfileService.clearProfile();
+    await this.authService.signOut();
+    this.workspaceStore.clearSetup();
+  }
+
+  private errorText(error: unknown, fallback: string): string {
+    const message = (error as { error?: { message?: unknown } } | null)?.error?.message;
+    return typeof message === 'string' ? message : fallback;
   }
 }

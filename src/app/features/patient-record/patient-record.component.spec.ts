@@ -1,3 +1,7 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { WorkspaceStore } from '../../core/services/workspace.store';
+import { clinicalFormFixture } from '../../core/models/clinical-form.fixture';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PatientRecordComponent } from './patient-record.component';
@@ -8,7 +12,7 @@ import { ClinicalEncounterService } from '../../core/services/clinical-encounter
 import { AuthService } from '../../core/services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PLATFORM_ID, signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { PatientDetailDTO } from '../../core/models/patient.model';
 import { MedicalCheckupDetailDTO } from '../../core/models/checkup.model';
 import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
@@ -25,6 +29,7 @@ describe('PatientRecordComponent', () => {
   let authServiceMock: any;
 
   const mockPatient: PatientDetailDTO = {
+    ...clinicalFormFixture(),
     id: 10492,
     fullName: 'Mateo Rossi',
     birthDate: '2024-05-10',
@@ -91,7 +96,7 @@ describe('PatientRecordComponent', () => {
       id: 1,
       patientId: 10492,
       encounterDate: '2026-09-15',
-      specialty: 'PEDIATRICS',
+      ...clinicalFormFixture(), specialtyId: 1, specialty: {id:1,code:'pediatrics',name:'Pediatría',description:null},
       consultationType: 'ROUTINE_CHECKUP',
       chiefComplaint: 'Control pediátrico semestral',
       primaryDiagnosisCode: 'Z00.1',
@@ -101,7 +106,7 @@ describe('PatientRecordComponent', () => {
       id: 2,
       patientId: 10492,
       encounterDate: '2026-09-16',
-      specialty: 'CARDIOLOGY',
+      ...clinicalFormFixture(), specialtyId: 7, specialty: {id:7,code:'custom_xyz',name:'Especialidad XYZ',description:null},
       consultationType: 'FIRST_VISIT',
       chiefComplaint: 'Soplo funcional inocente',
       primaryDiagnosisCode: 'R01.0',
@@ -146,9 +151,6 @@ describe('PatientRecordComponent', () => {
     encounterServiceSpy = {
       getByPatient: vi.fn().mockReturnValue(of(mockEncountersList)),
       delete: vi.fn().mockReturnValue(of(undefined)),
-      migratePediatricCheckups: vi.fn().mockReturnValue(
-        of({ totalFound: 5, alreadyMigrated: 2, migratedNow: 3, status: 'SUCCESS' })
-      ),
     };
     routerSpy = {
       navigate: vi.fn(),
@@ -156,11 +158,14 @@ describe('PatientRecordComponent', () => {
     authServiceMock = {
       userName: signal('Dra. Sofía Mendoza'),
       isLoggedIn: signal(true),
+      currentUser: signal({id:'doctor'}), isSuperAdmin: signal(false),
     };
 
     await TestBed.configureTestingModule({
       imports: [PatientRecordComponent],
       providers: [
+        provideHttpClient(), provideHttpClientTesting(),
+        {provide:WorkspaceStore,useValue:{isModuleActive:()=>true}},
         ActivePatientService,
         { provide: PatientService, useValue: patientServiceSpy },
         { provide: CheckupService, useValue: checkupServiceSpy },
@@ -226,6 +231,26 @@ describe('PatientRecordComponent', () => {
   it('should load encounters on init', () => {
     expect(encounterServiceSpy.getByPatient).toHaveBeenCalledWith(10492);
     expect(component.encounters().length).toBe(2);
+  });
+
+  it('ignores a consultation response from the previously selected patient', () => {
+    const pending = new Subject<ClinicalEncounterList[]>();
+    encounterServiceSpy.getByPatient.mockReturnValueOnce(pending).mockReturnValue(of([]));
+    component.loadEncounters(mockPatient.id);
+    activePatientService.setActivePatient({ ...mockPatient, id: 99 });
+    fixture.detectChanges();
+    pending.next(mockEncountersList);
+    expect(component.encounters()).toEqual([]);
+  });
+
+  it('refreshes projected measurements and consultations after editing a consultation', () => {
+    const refreshed = {...mockPatient, latestMeasurements:{weight:8.5,height:70,headCircumference:44}};
+    patientServiceSpy.getPatientById.mockReturnValue(of(refreshed));
+    encounterServiceSpy.getByPatient.mockReturnValue(of([]));
+    window.dispatchEvent(new CustomEvent('encounter-updated'));
+    fixture.detectChanges();
+    expect(activePatientService.latestMeasurements()?.weight).toBe(8.5);
+    expect(component.encounters()).toEqual([]);
   });
 
   it('should switch to growth curves tab when requested', () => {

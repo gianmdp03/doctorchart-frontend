@@ -82,7 +82,10 @@ export class AuthService {
     );
   });
 
-  readonly isSuperAdmin = computed<boolean>(() => this.userRole()?.toUpperCase() === 'SUPER_ADMIN');
+  readonly isSuperAdmin = computed<boolean>(() => {
+    const role = this.currentUser()?.app_metadata?.['role'];
+    return typeof role === 'string' && role.toUpperCase() === 'SUPER_ADMIN';
+  });
   readonly isCompany = computed<boolean>(() => this.userRole()?.toUpperCase() === 'COMPANY');
 
   readonly doctorchartModule = computed<DoctorChartModuleInfo | null>(() => {

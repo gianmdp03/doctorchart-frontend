@@ -1,86 +1,40 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { authInterceptor } from './auth.interceptor';
+import { HttpRequest, HttpResponse } from '@angular/common/http';
+import { of } from 'rxjs';
+import { describe, it, expect, vi } from 'vitest';
 import { AuthService } from '../services/auth.service';
+import { authInterceptor } from './auth.interceptor';
+import { environment } from '../../../environments/environment';
 
-describe('authInterceptor', () => {
-  let httpClient: HttpClient;
-  let httpTestingController: HttpTestingController;
-  let authServiceMock: { getAccessToken: ReturnType<typeof vi.fn> };
+describe('authInterceptor gateway boundary', () => {
+  function intercept(url: string, token: string | null) {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [{ provide: AuthService, useValue: { getAccessToken: () => token } }] });
+    const next = vi.fn((_request: HttpRequest<unknown>) => of(new HttpResponse({ status: 200 })));
+    const request = new HttpRequest('GET', url);
+    TestBed.runInInjectionContext(() => authInterceptor(request, next));
+    return next.mock.calls[0][0];
+  }
 
-  beforeEach(() => {
-    authServiceMock = {
-      getAccessToken: vi.fn(),
-    };
-
-    TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(withInterceptors([authInterceptor])),
-        provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceMock },
-      ],
-    });
-
-    httpClient = TestBed.inject(HttpClient);
-    httpTestingController = TestBed.inject(HttpTestingController);
+  it('sends only the session token to the configured API', () => {
+    const request = intercept(`${environment.apiUrl}/workspace`, 'test-session-token');
+    expect(request.headers.get('Authorization')).toBe('Bearer test-session-token');
+    for (const name of ['X-Gateway-Secret', 'X-User-Id', 'X-User-Role', 'X-User-Plan']) {
+      expect(request.headers.has(name)).toBe(false);
+    }
   });
 
-  afterEach(() => {
-    httpTestingController.verify();
+  it('never invents a doctor identity for an unauthenticated request', () => {
+    expect(intercept(`${environment.apiUrl}/specialties`, null).headers.keys()).toEqual([]);
   });
 
-  it('should add Authorization Bearer header when access token is present', () => {
-    authServiceMock.getAccessToken.mockReturnValue('mocked-supabase-jwt-token');
-
-    httpClient.get('/api/doctorchart/patients').subscribe();
-
-    const req = httpTestingController.expectOne('/api/doctorchart/patients');
-    expect(req.request.headers.has('Authorization')).toBe(true);
-    expect(req.request.headers.get('Authorization')).toBe('Bearer mocked-supabase-jwt-token');
-    req.flush([]);
+  it('authenticates the explicitly configured assistant gateway too', () => {
+    expect(intercept(environment.aiGatewayUrl, 'test-session-token').headers.get('Authorization')).toBe('Bearer test-session-token');
+    expect(intercept(`${environment.aiGatewayUrl}-untrusted`, 'test-session-token').headers.has('Authorization')).toBe(false);
   });
 
-  it('should not add Authorization header when access token is null', () => {
-    authServiceMock.getAccessToken.mockReturnValue(null);
-
-    httpClient.get('/api/doctorchart/patients').subscribe();
-
-    const req = httpTestingController.expectOne('/api/doctorchart/patients');
-    expect(req.request.headers.has('Authorization')).toBe(false);
-    req.flush([]);
-  });
-
-  it('should not add Authorization header for googleapis.com requests even if token exists', () => {
-    authServiceMock.getAccessToken.mockReturnValue('mocked-supabase-jwt-token');
-
-    httpClient.get('https://www.googleapis.com/drive/v3/files').subscribe();
-
-    const req = httpTestingController.expectOne('https://www.googleapis.com/drive/v3/files');
-    expect(req.request.headers.has('Authorization')).toBe(false);
-    req.flush({});
-  });
-
-  it('should not add Authorization header for google.com requests even if token exists', () => {
-    authServiceMock.getAccessToken.mockReturnValue('mocked-supabase-jwt-token');
-
-    httpClient.get('https://accounts.google.com/o/oauth2/v2/auth').subscribe();
-
-    const req = httpTestingController.expectOne('https://accounts.google.com/o/oauth2/v2/auth');
-    expect(req.request.headers.has('Authorization')).toBe(false);
-    req.flush({});
-  });
-
-  it('should not add gateway or authorization headers to the public vaccination Gist', () => {
-    authServiceMock.getAccessToken.mockReturnValue('mocked-supabase-jwt-token');
-    const gistUrl =
-      'https://gist.githubusercontent.com/gianmdp03/8cc442cce33c3fd2485de18a2aa89638/raw/cal_vacunacion.json';
-
-    httpClient.get(gistUrl).subscribe();
-
-    const req = httpTestingController.expectOne(gistUrl);
-    expect(req.request.headers.has('Authorization')).toBe(false);
-    expect(req.request.headers.has('X-Gateway-Secret')).toBe(false);
-    req.flush({});
+  it('does not leak the token to external endpoints or a similarly named URL', () => {
+    expect(intercept('https://example.test/data', 'test-session-token').headers.has('Authorization')).toBe(false);
+    expect(intercept(`${environment.apiUrl}-untrusted/workspace`, 'test-session-token').headers.has('Authorization')).toBe(false);
   });
 });

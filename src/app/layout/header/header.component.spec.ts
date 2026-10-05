@@ -22,6 +22,7 @@ describe('HeaderComponent', () => {
   beforeEach(async () => {
     authServiceMock = {
       isLoggedIn: signal(true),
+      isSuperAdmin: signal(false),
       userName: signal('Dr. Santiago'),
       userEmail: signal('santiago@syntah.io'),
       hasDoctorchartPlan: signal(true),
@@ -105,5 +106,37 @@ describe('HeaderComponent', () => {
 
     component.handleGlobalShortcut(event);
     expect(preventDefaultSpy).toHaveBeenCalled();
+  });
+
+  it('provides administrative navigation and sign out without clinical search for a super admin', () => {
+    authServiceMock.isSuperAdmin.set(true);
+    component.isProfileMenuOpen.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('input[type="search"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Especialidades y wizards');
+    expect(fixture.nativeElement.textContent).toContain('Cerrar Sesión');
+    expect(fixture.nativeElement.textContent).not.toContain('Perfil Profesional');
+    component.onSearchInput({ target: { value: 'Paciente' } } as unknown as Event);
+    expect(patientServiceMock.getPatients).not.toHaveBeenCalled();
+  });
+
+  it('does not start a pending clinical search after promotion to super admin', () => {
+    vi.useFakeTimers();
+    try {
+      component.onSearchInput({ target: { value: 'Paciente' } } as unknown as Event);
+      authServiceMock.isSuperAdmin.set(true);
+      vi.advanceTimersByTime(250);
+      expect(patientServiceMock.getPatients).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('cancels a pending clinical search when leaving the header', () => {
+    vi.useFakeTimers();
+    try {
+      component.onSearchInput({ target: { value: 'Paciente' } } as unknown as Event);
+      fixture.destroy();
+      vi.advanceTimersByTime(250);
+      expect(patientServiceMock.getPatients).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
   });
 });

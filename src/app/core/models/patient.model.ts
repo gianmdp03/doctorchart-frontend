@@ -7,7 +7,7 @@ import {
   PersonalHistory,
 } from './clinical-records.model';
 import { MedicalCheckupListDTO } from './checkup.model';
-import { FormTemplateSchema } from './workspace.model';
+import { ClinicalFormRecord, WizardFormValues } from './wizard-definition.model';
 
 export interface InsuranceInfo {
   providerName?: string | null;
@@ -16,30 +16,12 @@ export interface InsuranceInfo {
 }
 
 export interface PatientRequestDTO {
-  fullName: string;
-  birthDate: string; // ISO format YYYY-MM-DD
-  nationalId?: string | null;
-  gender?: string | null;
-  bloodType?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  address?: string | null;
-  emergencyContact?: any | null;
-  insuranceInfo?: InsuranceInfo | null;
-  allergies?: string[] | null;
-  chronicConditions?: string[] | null;
-  patientExtraData?: Record<string, any> | null;
-  patientFormData?: Record<string, any> | null;
-  patientTemplateSnapshot?: FormTemplateSchema | null;
-  guardianInfo?: GuardianInfo | null;
-  perinatalHistory?: PerinatalHistory | null;
-  personalHistory?: PersonalHistory | null;
-  familyHistory?: FamilyHistory | null;
-  immunizationAndNutrition?: ImmunizationAndNutrition | null;
-  latestMeasurements?: AnthropometricMeasurements | null;
+  workspaceVersion: number;
+  values: WizardFormValues;
 }
+export interface PatientUpdateRequestDTO { expectedVersion: number; values: WizardFormValues; }
 
-export interface PatientDetailDTO {
+export interface PatientDetailDTO extends ClinicalFormRecord {
   id: number;
   fullName: string;
   birthDate: string;
@@ -53,9 +35,6 @@ export interface PatientDetailDTO {
   insuranceInfo?: InsuranceInfo | null;
   allergies?: string[] | null;
   chronicConditions?: string[] | null;
-  patientExtraData?: Record<string, any> | null;
-  patientFormData?: Record<string, any> | null;
-  patientTemplateSnapshot?: FormTemplateSchema | null;
   guardianInfo?: GuardianInfo | null;
   perinatalHistory?: PerinatalHistory | null;
   personalHistory?: PersonalHistory | null;

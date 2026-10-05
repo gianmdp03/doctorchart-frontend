@@ -1,530 +1,70 @@
-import {
-  Component,
-  DestroyRef,
-  computed,
-  effect,
-  inject,
-  input,
-  output,
-  signal,
-  untracked,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideCalculator, lucideInfo } from '@ng-icons/lucide';
-import {
-  FormCategoryGroup,
-  FormFieldDefinition,
-  FormTemplate,
-} from '../../core/models/workspace.model';
-import { MedicalCalculatorsService } from '../../core/services/medical-calculators.service';
-import { ActivePatientService } from '../../core/services/active-patient.service';
-import {
-  NormalizeDecimalDirective,
-  normalizeDecimal,
-} from '../../core/directives/normalize-decimal.directive';
-
-import { PatientDetailDTO } from '../../core/models/patient.model';
+import { Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
+import { WizardFieldDefinition, WizardFormDefinition, WizardFormValues, WizardValue, WizardFormulaResults } from '../../core/models/wizard-definition.model';
+import { isWizardFieldVisible } from '../../core/models/wizard-record-display';
 
-export interface OrphanedFieldItem {
-  key: string;
-  label: string;
-  value: unknown;
-}
+export const inputValues = (definition: WizardFormDefinition, values: WizardFormValues): WizardFormValues => Object.fromEntries(
+  definition.categories.flatMap(category => category.fields).filter(field => field.type !== 'FORMULA' && Object.prototype.hasOwnProperty.call(values, field.key)).map(field => [field.key, values[field.key]]),
+);
+export const validIsoDate = (value: unknown): boolean => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`); return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+};
 
-export interface ComputedFormulaResult {
-  value: string;
-  badge?: string;
-  badgeClass?: string;
-  unit?: string;
-}
-
-@Component({
-  selector: 'app-dynamic-form-renderer',
-  imports: [CommonModule, ReactiveFormsModule, NgIcon, NormalizeDecimalDirective, DatePickerComponent],
-  providers: [
-    provideIcons({
-      lucideCalculator,
-      lucideInfo,
-    }),
-  ],
-  templateUrl: './dynamic-form-renderer.component.html',
-  styleUrl: './dynamic-form-renderer.component.css',
-})
+@Component({ selector: 'app-dynamic-form-renderer', imports: [FormsModule, DatePickerComponent], templateUrl: './dynamic-form-renderer.component.html', styleUrl: './dynamic-form-renderer.component.css' })
 export class DynamicFormRendererComponent {
-  private readonly fb = inject(FormBuilder);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly calcService = inject(MedicalCalculatorsService);
-  private readonly activePatientService = inject(ActivePatientService);
-
-  // Inputs
-  readonly template = input<FormTemplate | null>(null);
-  readonly values = input<Record<string, unknown> | null>(null);
-  readonly historicalSnapshot = input<Record<string, string> | null>(null);
-  readonly readonly = input<boolean>(false);
-
-  // Outputs
-  readonly valuesChange = output<Record<string, unknown>>();
-  readonly valid = output<boolean>();
-
-  // State
-  readonly form = signal<FormGroup>(this.fb.group({}));
-  readonly isHistoricalExpanded = signal<boolean>(true);
-  readonly formulaResults = signal<Record<string, ComputedFormulaResult>>({});
-  readonly todayIso = new Date().toISOString().slice(0, 10);
-
-  // Derived: enabled categories
-  readonly enabledCategories = computed<FormCategoryGroup[]>(() => {
-    const tmpl = this.template();
-    if (!tmpl?.schemaDefinition?.categories) {
-      return [];
-    }
-    return tmpl.schemaDefinition.categories.filter((cat) => cat.enabled !== false);
-  });
-
-  // Derived: set of all active field keys in the current template
-  readonly activeFieldKeys = computed<Set<string>>(() => {
-    const keys = new Set<string>();
-    for (const cat of this.enabledCategories()) {
-      if (cat.fields) {
-        for (const f of cat.fields) {
-          keys.add(f.key);
-        }
-      }
-    }
-    return keys;
-  });
-
-  // Derived: orphaned fields present in values() but absent in current template
-  readonly orphanedFields = computed<OrphanedFieldItem[]>(() => {
-    const vals = this.values();
-    if (!vals) return [];
-
-    const activeKeys = this.activeFieldKeys();
-    const snapshot = this.historicalSnapshot() || {};
-    const orphaned: OrphanedFieldItem[] = [];
-    const hasNameFields = activeKeys.has('firstName') || activeKeys.has('lastName');
-
-    for (const [key, val] of Object.entries(vals)) {
-      if (key === 'fullName' && hasNameFields) {
-        continue;
-      }
-      if (key === 'id' || key === 'patientId') {
-        continue;
-      }
-      if (!activeKeys.has(key) && val !== null && val !== undefined && val !== '') {
-        orphaned.push({
-          key,
-          label: snapshot[key] || this.formatFallbackKey(key),
-          value: val,
-        });
-      }
-    }
-
-    return orphaned;
-  });
+  readonly definition = input<WizardFormDefinition>({ categories: [] });
+  readonly values = input<WizardFormValues>({});
+  readonly formulaResults = input<WizardFormulaResults>({});
+  readonly readonly = input(false);
+  readonly valuesChange = output<WizardFormValues>();
+  readonly validityChange = output<boolean>();
+  readonly currentValues = signal<WizardFormValues>({});
+  private readonly resultValues = signal<WizardFormValues>({});
+  readonly enabledCategories = computed(() => this.definition().categories.filter(category => category.enabled));
+  readonly fields = computed(() => this.definition().categories.flatMap(category => category.fields));
+  readonly todayIso = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  readonly formValid = computed(() => this.fields().every(field => !this.isFieldVisible(field.key) || this.validField(field)));
 
   constructor() {
-    // Rebuild form whenever template, values, or readonly changes
-    effect(() => {
-      const tmpl = this.template();
-      const vals = this.values();
-      const isReadonly = this.readonly();
-
-      untracked(() => {
-        this.buildForm(tmpl, vals, isReadonly);
-      });
-    });
+    effect(() => { const definition = this.definition(); const values = this.values(); untracked(() => this.currentValues.set(structuredClone(inputValues(definition, values)))); });
+    effect(() => { this.formulaResults(); untracked(() => this.resultValues.set(structuredClone(this.values()))); });
+    effect(() => this.validityChange.emit(this.formValid()));
   }
-
-  private buildForm(
-    tmpl: FormTemplate | null,
-    initialValues: Record<string, unknown> | null,
-    isReadonly: boolean
-  ): void {
-    const group: Record<string, FormControl> = {};
-    const categories = tmpl?.schemaDefinition?.categories || [];
-
-    for (const cat of categories) {
-      if (cat.enabled === false || !cat.fields) continue;
-
-      for (const field of cat.fields) {
-        const val = initialValues?.[field.key] !== undefined && initialValues?.[field.key] !== null
-          ? initialValues[field.key]
-          : (field.type === 'BOOLEAN' ? null : '');
-        const validators = [];
-        if (field.required && !isReadonly) {
-          validators.push(Validators.required);
-        }
-
-        const control = new FormControl(
-          { value: val, disabled: isReadonly || field.type === 'FORMULA' },
-          validators
-        );
-        group[field.key] = control;
-      }
-    }
-
-    const newFormGroup = this.fb.group(group);
-    this.form.set(newFormGroup);
-
-    // Initial formula evaluation
-    this.evaluateAllFormulas(newFormGroup, tmpl);
-
-    // Initial valid check
-    this.valid.emit(newFormGroup.valid);
-
-    const sub = newFormGroup.valueChanges.subscribe(() => {
-      this.evaluateAllFormulas(newFormGroup, tmpl);
-      this.emitCurrentValues(newFormGroup);
-    });
-
-    const statusSub = newFormGroup.statusChanges.subscribe(() => {
-      this.valid.emit(newFormGroup.valid);
-    });
-
-    this.destroyRef.onDestroy(() => {
-      sub.unsubscribe();
-      statusSub.unsubscribe();
-    });
+  setValue(field: WizardFieldDefinition, value: unknown): void {
+    if (this.readonly() || field.type === 'FORMULA') return;
+    this.currentValues.update(values => ({ ...values, [field.key]: (value === '' ? null : value) as WizardValue }));
+    this.valuesChange.emit(structuredClone(inputValues(this.definition(), this.currentValues())));
   }
-
-  setBooleanValue(key: string, val: boolean): void {
-    if (this.readonly()) return;
-    const ctrl = this.form().get(key);
-    if (ctrl) {
-      ctrl.setValue(val);
-      ctrl.markAsDirty();
-      ctrl.markAsTouched();
+  isFieldVisible(key: string): boolean { return isWizardFieldVisible(this.definition(), this.currentValues(), key); }
+  validField(field: WizardFieldDefinition): boolean {
+    if (field.type === 'FORMULA') return true;
+    const value = this.currentValues()[field.key];
+    const missing = value === null || value === undefined || (typeof value === 'string' && !value.trim());
+    if (missing) return !field.required;
+    switch (field.type) {
+      case 'TEXT': case 'TEXTAREA': return typeof value === 'string';
+      case 'NUMBER': return typeof value === 'number' && Number.isFinite(value) && (field.minimum === undefined || value >= field.minimum) && (field.maximum === undefined || value <= field.maximum);
+      case 'BOOLEAN': return typeof value === 'boolean';
+      case 'SELECT': return typeof value === 'string' && !!field.options?.some(option => option.value === value);
+      case 'DATE': return validIsoDate(value) && (field.binding !== 'patient.birthDate' || (value as string) <= this.todayIso);
     }
   }
-
-  setCumplePautas(val: boolean): void {
-    this.setBooleanValue('cumplePautas', val);
+  displayValue(field: WizardFieldDefinition): string {
+    const value = this.currentValues()[field.key];
+    if (value === null || value === undefined || value === '') return 'Sin respuesta';
+    if (field.type === 'BOOLEAN') return value === true ? 'Sí' : value === false ? 'No' : 'Respuesta inválida';
+    if (field.type === 'DATE' && validIsoDate(value)) { const [year, month, day] = (value as string).split('-'); return `${day}/${month}/${year}`; }
+    if (field.type === 'SELECT') return field.options?.find(option => option.value === value)?.label ?? 'Respuesta inválida';
+    return String(value);
   }
-
-  isFieldVisible(fieldKey: string): boolean {
-    if (fieldKey === 'justificacionPautas') {
-      const cumple = this.form().get('cumplePautas');
-      return !cumple || cumple.value === false;
-    }
-    if (fieldKey === 'siblingsCount' || fieldKey === 'siblingOrder') {
-      const hasSiblings = this.form().get('hasSiblings');
-      return !hasSiblings || hasSiblings.value === true;
-    }
-    return true;
-  }
-
-  private evaluateAllFormulas(currentForm: FormGroup, tmpl: FormTemplate | null): void {
-    if (!tmpl?.schemaDefinition?.categories) return;
-
-    const values = currentForm.getRawValue() as Record<string, unknown>;
-    const patient = this.activePatientService.activePatient();
-    const results: Record<string, ComputedFormulaResult> = {};
-
-    for (const cat of tmpl.schemaDefinition.categories) {
-      if (cat.enabled === false || !cat.fields) continue;
-
-      for (const field of cat.fields) {
-        if (field.type !== 'FORMULA') continue;
-
-        const res = this.calculateSingleFormula(field, values, patient);
-        if (res) {
-          results[field.key] = res;
-          if (res.value !== '—') {
-            const ctrl = currentForm.get(field.key);
-            if (ctrl && ctrl.value !== res.value) {
-              ctrl.setValue(res.value, { emitEvent: false });
-            }
-          }
-        }
-      }
-    }
-
-    this.formulaResults.set(results);
-  }
-
-  private calculateSingleFormula(
-    field: FormFieldDefinition,
-    values: Record<string, unknown>,
-    patient: PatientDetailDTO | null
-  ): ComputedFormulaResult | null {
-    const fType = field.formulaType || 'IMC';
-
-    const findNum = (...keys: string[]): number | null => {
-      for (const k of keys) {
-        for (const [vKey, vVal] of Object.entries(values)) {
-          if (vKey.toLowerCase() === k.toLowerCase()) {
-            const num = normalizeDecimal(vVal);
-            if (num !== null && !isNaN(num) && num > 0) return num;
-          }
-        }
-      }
-      return null;
-    };
-
-    if (fType === 'IMC') {
-      const weight =
-        findNum('peso', 'pesokg', 'weight', 'weightkg', 'pesoActual') ??
-        patient?.latestMeasurements?.weight ??
-        null;
-      const height =
-        findNum('talla', 'tallacm', 'altura', 'height', 'heightcm', 'estatura') ??
-        patient?.latestMeasurements?.height ??
-        null;
-
-      if (!weight || !height) {
-        return {
-          value: '—',
-          badge: 'Pendiente de peso y talla',
-          badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
-          unit: field.unit || 'kg/m²',
-        };
-      }
-
-      const res = this.calcService.calculateBmi({ weightKg: weight, heightCm: height });
-      if (res) {
-        return {
-          value: res.formattedValue,
-          badge: res.interpretation.label,
-          badgeClass: res.interpretation.badgeClass,
-          unit: res.unit,
-        };
-      }
-    }
-
-    if (fType === 'BSA') {
-      const weight = findNum('peso', 'pesokg', 'weight') ?? patient?.latestMeasurements?.weight ?? null;
-      const height = findNum('talla', 'tallacm', 'altura') ?? patient?.latestMeasurements?.height ?? null;
-
-      if (!weight || !height) {
-        return {
-          value: '—',
-          badge: 'Pendiente de peso y talla',
-          badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
-          unit: field.unit || 'm²',
-        };
-      }
-
-      const bsa = Math.sqrt((weight * height) / 3600);
-      return {
-        value: bsa.toFixed(2),
-        badge: 'Superficie Mosteller',
-        badgeClass: 'bg-teal-100 text-teal-800 border-teal-200',
-        unit: 'm²',
-      };
-    }
-
-    if (fType === 'TFGE') {
-      const cr = findNum('creatinina', 'creatininaserica', 'cr', 'creatinine');
-      let age = findNum('edad', 'age');
-      if (!age && patient?.birthDate) {
-        const b = new Date(patient.birthDate + 'T00:00:00');
-        if (!isNaN(b.getTime())) {
-          age = Math.abs(new Date(Date.now() - b.getTime()).getUTCFullYear() - 1970);
-        }
-      }
-      const genderStr = String(values['sexo'] || values['gender'] || patient?.gender || 'MALE');
-      const isFemale = genderStr.toUpperCase().startsWith('F') || genderStr.toUpperCase().startsWith('M');
-
-      if (!cr || !age) {
-        return {
-          value: '—',
-          badge: 'Pendiente de creatinina y edad',
-          badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
-          unit: field.unit || 'mL/min/1.73m²',
-        };
-      }
-
-      const res = this.calcService.calculateTfge({
-        creatinineMgDl: cr,
-        ageYears: age,
-        gender: isFemale ? 'FEMALE' : 'MALE',
-      });
-
-      if (res) {
-        return {
-          value: res.formattedValue,
-          badge: res.interpretation.label,
-          badgeClass: res.interpretation.badgeClass,
-          unit: res.unit,
-        };
-      }
-    }
-
-    if (fType === 'COCKCROFT') {
-      const cr = findNum('creatinina', 'cr');
-      const weight = findNum('peso', 'weight') ?? patient?.latestMeasurements?.weight ?? null;
-      let age = findNum('edad', 'age');
-      if (!age && patient?.birthDate) {
-        const b = new Date(patient.birthDate + 'T00:00:00');
-        if (!isNaN(b.getTime())) {
-          age = Math.abs(new Date(Date.now() - b.getTime()).getUTCFullYear() - 1970);
-        }
-      }
-      const genderStr = String(values['sexo'] || values['gender'] || patient?.gender || 'MALE');
-      const isFemale = genderStr.toUpperCase().startsWith('F');
-
-      if (!cr || !weight || !age) {
-        return {
-          value: '—',
-          badge: 'Pendiente de peso, creatinina y edad',
-          badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
-          unit: field.unit || 'mL/min',
-        };
-      }
-
-      const res = this.calcService.calculateCockcroftGault({
-        weightKg: weight,
-        ageYears: age,
-        creatinineMgDl: cr,
-        gender: isFemale ? 'FEMALE' : 'MALE',
-      });
-
-      if (res) {
-        return {
-          value: res.formattedValue,
-          badge: res.interpretation.label,
-          badgeClass: res.interpretation.badgeClass,
-          unit: res.unit,
-        };
-      }
-    }
-
-    if (fType === 'CALCIO_CORREGIDO') {
-      const ca = findNum('calcio', 'calciototal', 'calcioserico');
-      const alb = findNum('albumina', 'albuminaserica');
-
-      if (!ca || !alb) {
-        return {
-          value: '—',
-          badge: 'Pendiente de calcio y albúmina',
-          badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
-          unit: field.unit || 'mg/dL',
-        };
-      }
-
-      const res = this.calcService.calculateCalciumCorrection({
-        serumCalciumMgDl: ca,
-        serumAlbuminGDl: alb,
-      });
-
-      if (res) {
-        return {
-          value: res.formattedValue,
-          badge: res.interpretation.label,
-          badgeClass: res.interpretation.badgeClass,
-          unit: res.unit,
-        };
-      }
-    }
-
-    if (fType === 'CUSTOM') {
-      const varAKey = field.formulaVariableA;
-      const varBKey = field.formulaVariableB;
-      const constB = field.formulaConstantB;
-      const op = field.formulaOperation || 'SUBTRACT';
-
-      const valA = varAKey ? findNum(varAKey) : null;
-      const valB =
-        constB !== undefined && constB !== null ? constB : varBKey ? findNum(varBKey) : null;
-
-      if (valA === null || valB === null) {
-        return {
-          value: '—',
-          badge: 'Esperando variables',
-          badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
-          unit: field.unit,
-        };
-      }
-
-      let calcResult = 0;
-      let opBadge = '';
-      switch (op) {
-        case 'SUBTRACT':
-          calcResult = valA - valB;
-          opBadge = 'Diferencia';
-          break;
-        case 'ADD':
-          calcResult = valA + valB;
-          opBadge = 'Suma';
-          break;
-        case 'MULTIPLY':
-          calcResult = valA * valB;
-          opBadge = 'Multiplicación';
-          break;
-        case 'DIVIDE':
-          if (valB === 0) {
-            return {
-              value: 'Div / 0',
-              badge: 'División por cero',
-              badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
-              unit: field.unit,
-            };
-          }
-          calcResult = valA / valB;
-          opBadge = 'Ratio';
-          break;
-        case 'AVERAGE':
-          calcResult = (valA + valB) / 2;
-          opBadge = 'Promedio';
-          break;
-      }
-
-      const formatted = Number.isInteger(calcResult)
-        ? calcResult.toString()
-        : calcResult.toFixed(2);
-
-      return {
-        value: formatted,
-        badge: opBadge,
-        badgeClass: 'bg-teal-100 text-teal-800 border-teal-300',
-        unit: field.unit,
-      };
-    }
-
-    return {
-      value: String(values[field.key] ?? '—'),
-      badge: 'Fórmula Activa',
-      badgeClass: 'bg-teal-50 text-teal-700 border-teal-200',
-      unit: field.unit,
-    };
-  }
-
-  private emitCurrentValues(currentForm: FormGroup): void {
-    const activeValues = currentForm.getRawValue();
-    // Preserve orphaned values so they don't get lost on save
-    const orphanedVals = this.values() || {};
-    const merged: Record<string, unknown> = { ...orphanedVals, ...activeValues };
-    this.valuesChange.emit(merged);
-  }
-
-  toggleHistoricalExpanded(): void {
-    this.isHistoricalExpanded.update((v) => !v);
-  }
-
-  formatFallbackKey(key: string): string {
-    return key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (str) => str.toUpperCase())
-      .trim();
-  }
-
-  formatHistoricalValue(val: unknown): string {
-    if (typeof val === 'boolean') {
-      return val ? 'Sí' : 'No';
-    }
-    if (typeof val === 'object' && val !== null) {
-      return JSON.stringify(val);
-    }
-    return String(val ?? '');
+  formulaText(field: WizardFieldDefinition): string {
+    const result = this.formulaResults()[field.key];
+    if (!result) return 'Se calcula al guardar';
+    if (JSON.stringify(inputValues(this.definition(), this.resultValues())) !== JSON.stringify(this.currentValues())) return 'Se actualizará al guardar';
+    const labels: Record<string, string> = { READY: 'Resultado disponible', MISSING_INPUT: 'Faltan datos para calcular', DIVISION_BY_ZERO: 'No se puede dividir por cero', NOT_APPLICABLE: 'No corresponde calcular', INVALID_INPUT: 'Revisá los datos del cálculo' };
+    if (result.status === 'READY' && typeof result.value === 'number' && Number.isFinite(result.value)) return new Intl.NumberFormat('es-AR', { maximumFractionDigits: 6 }).format(result.value) + (field.unit ? ` ${field.unit}` : '');
+    return labels[result.status] ?? 'Resultado no disponible';
   }
 }

@@ -1,3 +1,4 @@
+import { clinicalFormFixture } from '../../../core/models/clinical-form.fixture';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 import { ClinicalTimelineComponent } from './clinical-timeline.component';
@@ -11,32 +12,29 @@ describe('ClinicalTimelineComponent', () => {
     {
       id: 101, patientId: 10492,
       encounterDate: '2026-03-15T10:00:00Z',
-      specialty: 'PEDIATRICS',
+      ...clinicalFormFixture(), specialtyId: 1, specialty: {id:1,code:'pediatrics',name:'Pediatría',description:null},
       consultationType: 'FIRST_VISIT',
       chiefComplaint: 'Control del mes',
       primaryDiagnosisDescription: 'Paciente sano',
       treatmentPlan: 'Seguir con lactancia',
-      dynamicData: {},
     },
     {
       id: 102, patientId: 10492,
       encounterDate: '2026-02-15T10:00:00Z',
-      specialty: 'PEDIATRICS',
+      ...clinicalFormFixture(), specialtyId: 1, specialty: {id:1,code:'pediatrics',name:'Pediatría',description:null},
       consultationType: 'FOLLOW_UP',
       chiefComplaint: 'Fiebre leve',
       primaryDiagnosisDescription: 'Rinitis',
       treatmentPlan: 'Paracetamol',
-      dynamicData: {},
     },
     {
       id: 103, patientId: 10492,
       encounterDate: '2026-01-15T10:00:00Z',
-      specialty: 'PEDIATRICS',
+      ...clinicalFormFixture(), specialtyId: 1, specialty: {id:1,code:'pediatrics',name:'Pediatría',description:null},
       consultationType: 'ROUTINE_CHECKUP',
       chiefComplaint: 'Chequeo',
       primaryDiagnosisDescription: 'Sano',
       treatmentPlan: 'Sin indicaciones',
-      dynamicData: {},
     },
   ];
 

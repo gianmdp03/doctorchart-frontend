@@ -4,6 +4,7 @@ import {
   ElementRef,
   HostListener,
   inject,
+  OnDestroy,
   signal,
   viewChild,
 } from '@angular/core';
@@ -49,7 +50,7 @@ import { environment } from '../../../environments/environment';
   templateUrl: './header.component.html',
   styleUrl: './header.component.css',
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnDestroy {
   readonly authService = inject(AuthService);
   readonly activePatientService = inject(ActivePatientService);
   private readonly patientService = inject(PatientService);
@@ -114,6 +115,7 @@ export class HeaderComponent {
   }
 
   onSearchInput(event: Event): void {
+    if (this.authService.isSuperAdmin()) return;
     const target = event.target as HTMLInputElement;
     const q = target.value;
     this.searchQuery.set(q);
@@ -133,6 +135,10 @@ export class HeaderComponent {
     this.isSearchOpen.set(true);
 
     this.debounceTimer = setTimeout(() => {
+      if (this.authService.isSuperAdmin()) {
+        this.isSearching.set(false);
+        return;
+      }
       this.patientService.getPatients(0, 8, 'fullName,asc', q.trim()).subscribe({
         next: (res) => {
           this.searchResults.set(res?.content || []);
@@ -189,7 +195,11 @@ export class HeaderComponent {
 
   openWizardConfig(): void {
     this.isProfileMenuOpen.set(false);
-    this.router.navigate(['/onboarding/setup']);
+    this.router.navigate([this.authService.isSuperAdmin() ? '/admin/especialidades' : '/onboarding/setup']);
+  }
+
+  ngOnDestroy(): void {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
   }
 
   async handleSignOut(): Promise<void> {

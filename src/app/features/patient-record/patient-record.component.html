@@ -37,7 +37,7 @@
     <div class="tab-content-area">
       <!-- TAB 1: RESUMEN & ANTECEDENTES -->
       @if (selectedTab() === 'resumen') {
-        @if (patientFormTemplate(); as template) {
+        @if (patientFormDefinition(); as definition) {
           <section class="tab-panel animate-fade-in" aria-label="Datos del paciente">
             <div class="tab-panel-toolbar">
               <div class="tab-panel-toolbar-text">
@@ -55,245 +55,18 @@
               </button>
             </div>
             <app-dynamic-form-renderer
-              [template]="template"
+              [definition]="definition"
               [values]="patientFormValues()"
+              [formulaResults]="patientFormulaResults()"
               [readonly]="true"
             />
           </section>
-        } @else {
-        <section class="tab-panel animate-fade-in" aria-label="Resumen & Antecedentes">
-          <div class="panel-grid-cards">
-            <!-- Card 1: Identificación y Contacto -->
-            <div class="clinical-section-card">
-              <div class="sec-card-header">
-                <ng-icon name="lucideUser" class="text-teal-600" />
-                <h3 class="sec-card-title">Identificación y Contacto</h3>
-              </div>
-              <div class="sec-card-body">
-                <div class="info-item">
-                  <span class="item-label">Nombre Completo:</span>
-                  <span class="item-value font-semibold">{{ patient.fullName }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Documento Nacional (DNI):</span>
-                  <span class="item-value">{{ patientNationalId() }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Fecha de Nacimiento:</span>
-                  <span class="item-value">{{ activePatientService.formattedBirthDate() }} ({{ activePatientService.ageDisplay() }})</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Sexo Biológico:</span>
-                  <span class="item-value">{{ biologicalSex() }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Grupo Sanguíneo:</span>
-                  <span class="item-value">{{ bloodType() }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Teléfono:</span>
-                  <span class="item-value">{{ patientPhone() }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Email:</span>
-                  <span class="item-value">{{ patientEmail() }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Domicilio:</span>
-                  <span class="item-value">{{ patientAddress() }}</span>
-                </div>
-
-                @if (isChild() || fatherName() !== '—' || motherName() !== '—' || siblingsCount() !== null || primaryGuardian() || livingArrangement()) {
-                  <div class="sec-subdivider"></div>
-                  <h4 class="subheading-title">Datos Familiares y Tutores</h4>
-                  @if (primaryGuardian()) {
-                    <div class="info-item">
-                      <span class="item-label">Tutor / Responsable:</span>
-                      <span class="item-value font-medium text-blue-700">{{ primaryGuardian() }}</span>
-                    </div>
-                  }
-                  <div class="info-item">
-                    <span class="item-label">Nombre de la Madre:</span>
-                    <span class="item-value">{{ motherName() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Nombre del Padre:</span>
-                    <span class="item-value">{{ fatherName() }}</span>
-                  </div>
-                  @if (primaryContactPhone()) {
-                    <div class="info-item">
-                      <span class="item-label">Teléfono de Contacto:</span>
-                      <span class="item-value">{{ primaryContactPhone() }}</span>
-                    </div>
-                  }
-                  <div class="info-item">
-                    <span class="item-label">¿Tiene Hermanos?:</span>
-                    <span class="item-value">
-                      @if (hasSiblings() === true) {
-                        Sí ({{ siblingsCountDisplay() }}{{ siblingOrder() ? ', orden: ' + siblingOrder() + '°' : '' }})
-                      } @else if (hasSiblings() === false) {
-                        No (Hijo único)
-                      } @else if (siblingsCount() !== null) {
-                        {{ siblingsCountDisplay() }}
-                      } @else {
-                        —
-                      }
-                    </span>
-                  </div>
-                  @if (livingArrangement()) {
-                    <div class="info-item">
-                      <span class="item-label">Convivencia:</span>
-                      <span class="item-value">{{ livingArrangement() }}</span>
-                    </div>
-                  }
-                }
-              </div>
-            </div>
-
-            <!-- Card 2: Antecedentes Médicos Personales -->
-            <div class="clinical-section-card">
-              <div class="sec-card-header">
-                <ng-icon name="lucideActivity" class="text-blue-600" />
-                <h3 class="sec-card-title">Antecedentes Médicos Personales</h3>
-              </div>
-              <div class="sec-card-body">
-                <div class="info-item">
-                  <span class="item-label">Enfermedades Previas / Crónicas:</span>
-                  <span class="item-value">{{ chronicOrPreviousDiseases() || 'Sin antecedentes patológicos registrados.' }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Internaciones o Cirugías:</span>
-                  <span class="item-value">{{ hospitalizationsOrSurgeries() || 'Sin cirugías ni internaciones previas.' }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Alergias Registradas:</span>
-                  <span class="item-value font-semibold text-rose-700">
-                    {{ allergies() || 'Sin alergias registradas.' }}
-                  </span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Medicación Habitual:</span>
-                  <div class="item-value">
-                    @if (habitualMedication().length > 0) {
-                      <ul class="med-list">
-                        @for (med of habitualMedication(); track $index) {
-                          <li>• {{ med }}</li>
-                        }
-                      </ul>
-                    } @else {
-                      <span>Sin medicación habitual.</span>
-                    }
-                  </div>
-                </div>
-
-                @if (birthWeightDisplay() !== '—') {
-                  <div class="sec-subdivider"></div>
-                  <h4 class="subheading-title">Datos Antropométricos al Nacer</h4>
-                  <div class="info-item">
-                    <span class="item-label">Peso al Nacer:</span>
-                    <span class="item-value font-semibold">{{ birthWeightDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Talla al Nacer:</span>
-                    <span class="item-value">{{ birthHeightDisplay() }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="item-label">Perímetro Cefálico al Nacer:</span>
-                    <span class="item-value">{{ birthHeadCircDisplay() }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- Card 3: Antecedentes Familiares & Hereditarios -->
-            <div class="clinical-section-card">
-              <div class="sec-card-header">
-                <ng-icon name="lucideUsers" class="text-purple-600" />
-                <h3 class="sec-card-title">Antecedentes Familiares</h3>
-              </div>
-              <div class="sec-card-body">
-                <div class="info-item">
-                  <span class="item-label">Enfermedades Paternas:</span>
-                  <div class="item-value">
-                    @if (paternalDiseases().length > 0) {
-                      <ul class="med-list">
-                        @for (item of paternalDiseases(); track $index) {
-                          <li>• {{ item }}</li>
-                        }
-                      </ul>
-                    } @else {
-                      <span>Sin patologías paternas reportadas.</span>
-                    }
-                  </div>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Enfermedades Maternas:</span>
-                  <div class="item-value">
-                    @if (maternalDiseases().length > 0) {
-                      <ul class="med-list">
-                        @for (item of maternalDiseases(); track $index) {
-                          <li>• {{ item }}</li>
-                        }
-                      </ul>
-                    } @else {
-                      <span>Sin patologías maternas reportadas.</span>
-                    }
-                  </div>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">Enfermedades de los Hermanos:</span>
-                  <div class="item-value">
-                    @if (siblingDiseases().length > 0) {
-                      <ul class="med-list">
-                        @for (item of siblingDiseases(); track $index) {
-                          <li>• {{ item }}</li>
-                        }
-                      </ul>
-                    } @else {
-                      <span>Sin patologías en hermanos reportadas.</span>
-                    }
-                  </div>
-                </div>
-                @if (familyChronicDiseases().length > 0) {
-                  <div class="info-item">
-                    <span class="item-label">Otras Enfermedades Familiares:</span>
-                    <div class="item-value">
-                      <ul class="med-list">
-                        @for (item of familyChronicDiseases(); track $index) {
-                          <li>• {{ item }}</li>
-                        }
-                      </ul>
-                    </div>
-                  </div>
-                }
-                @if (familyAllergies()) {
-                  <div class="info-item">
-                    <span class="item-label">Alergias en la Familia:</span>
-                    <span class="item-value">{{ familyAllergies() }}</span>
-                  </div>
-                }
-                @if (geneticDiseases()) {
-                  <div class="info-item">
-                    <span class="item-label">Enfermedades Genéticas:</span>
-                    <span class="item-value">{{ geneticDiseases() }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-          </div>
-        </section>
         }
       }
 
       <!-- TAB 2: HISTORIA CLÍNICA (CONSULTAS) -->
       @if (selectedTab() === 'historia') {
         <section class="tab-panel animate-fade-in" aria-label="Historia Clínica de Consultas">
-          @if (migrationMessage()) {
-            <div class="migration-alert-box mb-3">
-              <ng-icon name="lucideCheckCircle2" class="text-teal-600 text-base" />
-              <span>{{ migrationMessage() }}</span>
-            </div>
-          }
 
           <app-clinical-timeline
             [encounters]="encounters()"
@@ -309,12 +82,12 @@
       <!-- TAB: VACUNAS -->
       @if (selectedTab() === 'vacunas') {
         <section class="tab-panel animate-fade-in" aria-label="Vacunas">
-          <app-patient-vaccinations [patient]="patient" />
+          <app-patient-vaccinations [patient]="patient" (patientUpdated)="activePatientService.setActivePatient($event)" />
         </section>
       }
 
       <!-- TAB 4: EVOLUCIÓN Y CURVAS DE CRECIMIENTO OMS -->
-      @if (selectedTab() === 'curvas') {
+      @if (selectedTab() === 'curvas' && growthEnabled()) {
         <section class="tab-panel animate-fade-in" aria-label="Evolución y Curvas de Crecimiento OMS">
           <div class="growth-toolbar">
             <div class="growth-selector-pills">

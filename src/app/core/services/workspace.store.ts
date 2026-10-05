@@ -1,224 +1,203 @@
 import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { firstValueFrom, timeout } from 'rxjs';
+import { firstValueFrom, Observable, timeout } from 'rxjs';
 import { WorkspaceService } from './workspace.service';
 import { DoctorSpecialtyService } from './doctor-specialty.service';
-import {
-  FinishOnboardingRequest,
-  FormTemplate,
-  ModuleConfig,
-  PatientColumnsConfig,
-  QuickNotesUpdateRequest,
-  SaveOnboardingDraftRequest,
-  WorkspaceSetup,
-  WorkspaceUpdateRequest,
-} from '../models/workspace.model';
+import { SaveOnboardingDraftRequest, WorkspacePreferences, WorkspaceSetup, WorkspaceUpdateRequest } from '../models/workspace.model';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class WorkspaceStore {
-  private readonly workspaceService = inject(WorkspaceService);
-  private readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
+  private readonly service = inject(WorkspaceService);
+  private readonly specialtyService = inject(DoctorSpecialtyService);
   private readonly platformId = inject(PLATFORM_ID);
-
-  // State Signals
   readonly currentSetup = signal<WorkspaceSetup | null>(null);
-  readonly isLoading = signal<boolean>(false);
-  readonly loaded = signal<boolean>(false);
+  readonly preferences = signal<WorkspacePreferences | null>(null);
+  readonly loaded = signal(false);
   readonly error = signal<string | null>(null);
-
+  readonly preferencesError = signal<string | null>(null);
+  readonly isMutating = signal(false);
+  private readonly setupLoading = signal(false);
+  private readonly preferencesLoading = signal(false);
+  readonly isLoading = computed(() => this.setupLoading() || this.preferencesLoading() || this.isMutating());
+  readonly isOnboardingCompleted = computed(() => this.currentSetup()?.onboardingCompleted ?? false);
+  readonly definition = computed(() => this.currentSetup()?.definition ?? null);
+  readonly draftDefinition = computed(() => this.currentSetup()?.draftDefinition ?? null);
+  readonly activeModules = computed(() => this.definition()?.modulesConfig ?? null);
+  readonly patientVisibleColumns = computed(() => this.preferences()?.patientColumnsConfig ?? {});
+  readonly quickNotes = computed(() => this.preferences()?.quickNotes ?? null);
+  readonly specialtyCode = computed(() => this.currentSetup()?.specialty.code ?? null);
+  readonly specialtyDisplayName = computed(() => this.currentSetup()?.specialty.name ?? null);
   private setupPromise: Promise<WorkspaceSetup | null> | null = null;
+  private preferencesPromise: Promise<WorkspacePreferences> | null = null;
+  private epoch = 0;
+  private readRevision = 0;
 
-  // Computed Signals
-  readonly isOnboardingCompleted = computed<boolean>(() => {
-    return this.currentSetup()?.onboardingCompleted ?? false;
-  });
-
-  readonly activeModules = computed<ModuleConfig>(() => {
-    return this.currentSetup()?.modulesConfig ?? {};
-  });
-
-  readonly patientVisibleColumns = computed<PatientColumnsConfig>(() => {
-    return this.currentSetup()?.patientColumnsConfig ?? {};
-  });
-
-  readonly defaultTemplate = computed<FormTemplate | null>(() => {
-    return this.currentSetup()?.defaultEncounterTemplate ?? null;
-  });
-
-  readonly defaultPatientTemplate = computed<FormTemplate | null>(() => {
-    return this.currentSetup()?.defaultPatientTemplate ?? null;
-  });
-
-  readonly specialtyCode = computed<string | null>(() => {
-    return this.currentSetup()?.specialtyCode ?? null;
-  });
-
-  readonly specialtyDisplayName = computed<string | null>(() => {
-    return this.currentSetup()?.specialtyDisplayName ?? null;
-  });
-
-  private syncSpecialtyState(setup: WorkspaceSetup | null): void {
-    if (setup?.specialtyCode) {
-      this.doctorSpecialtyService.setSpecialty(setup.specialtyCode, setup.specialtyDisplayName);
-    }
-  }
-
-  /**
-   * Evaluates if a given operational module is active in the doctor's workspace.
-   */
-  isModuleActive(moduleCode: string): boolean {
+  isModuleActive(code: string): boolean {
     const modules = this.activeModules();
-    return modules[moduleCode] !== false && !!modules[moduleCode];
+    return modules !== null && Object.hasOwn(modules, code) && modules[code as keyof typeof modules] === true;
   }
+  isColumnVisible(key: string): boolean { return this.patientVisibleColumns()[key] !== false; }
 
-  /**
-   * Evaluates if a specific patient column is visible in tables and records.
-   */
-  isColumnVisible(columnKey: string): boolean {
-    const columns = this.patientVisibleColumns();
-    return columns[columnKey] !== false;
-  }
-
-  /**
-   * Loads or refreshes the current setup from the backend.
-   */
   async loadSetup(force = false): Promise<WorkspaceSetup | null> {
-    if (!isPlatformBrowser(this.platformId)) {
-      return null;
-    }
-
-    if (this.setupPromise && !force) {
-      return this.setupPromise;
-    }
-
-    this.setupPromise = (async () => {
-      this.isLoading.set(true);
-      this.error.set(null);
+    if (!isPlatformBrowser(this.platformId)) return null;
+    if (this.setupPromise) return this.setupPromise;
+    if (!force && this.loaded()) return this.clone(this.currentSetup());
+    if (this.isMutating()) throw new Error('Esperá a que termine el guardado antes de recargar.');
+    const epoch = this.epoch;
+    const revision = this.readRevision;
+    this.setupLoading.set(true);
+    this.error.set(null);
+    const request = (async () => {
       try {
-        const setup = await firstValueFrom(
-          this.workspaceService.getCurrentSetup().pipe(timeout(6000))
-        );
-        this.currentSetup.set(setup);
-        this.syncSpecialtyState(setup);
-        return setup;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Error al cargar workspace';
-        this.error.set(msg);
-        return null;
+        const setup = await firstValueFrom(this.service.getCurrentSetup().pipe(timeout(6000)));
+        this.assertCurrent(epoch, revision);
+        this.applySetup(setup);
+        return this.clone(setup);
+      } catch (error) {
+        if (this.isCurrent(epoch, revision)) {
+          this.error.set(this.message(error, 'No se pudo cargar la configuración.'));
+          this.loaded.set(false);
+        }
+        throw error;
       } finally {
-        this.isLoading.set(false);
-        this.loaded.set(true);
-        this.setupPromise = null;
+        if (this.isCurrent(epoch, revision)) {
+          this.setupLoading.set(false);
+          this.setupPromise = null;
+        }
       }
     })();
+    this.setupPromise = request;
+    return request;
+  }
 
-    return this.setupPromise;
+  async loadPreferences(force = false): Promise<WorkspacePreferences> {
+    if (this.preferencesPromise) return this.preferencesPromise;
+    if (!force && this.preferences()) return this.clone(this.preferences()!);
+    if (this.isMutating()) throw new Error('Esperá a que termine el guardado antes de recargar.');
+    const epoch = this.epoch;
+    const revision = this.readRevision;
+    this.preferencesLoading.set(true);
+    this.preferencesError.set(null);
+    const request = (async () => {
+      try {
+        const result = await firstValueFrom(this.service.getPreferences().pipe(timeout(6000)));
+        this.assertCurrent(epoch, revision);
+        if (this.currentSetup() && this.currentSetup()!.version !== result.version) {
+          const setup = await firstValueFrom(this.service.getCurrentSetup().pipe(timeout(6000)));
+          this.assertCurrent(epoch, revision);
+          this.applySetup(setup);
+        }
+        this.applyPreferences(result);
+        return this.clone(result);
+      } catch (error) {
+        if (this.isCurrent(epoch, revision)) this.preferencesError.set(this.message(error, 'No se pudieron cargar las preferencias.'));
+        throw error;
+      } finally {
+        if (this.isCurrent(epoch, revision)) {
+          this.preferencesLoading.set(false);
+          this.preferencesPromise = null;
+        }
+      }
+    })();
+    this.preferencesPromise = request;
+    return request;
+  }
+
+  selectSpecialty(specialtyId: number, expectedVersion: number | null): Promise<WorkspaceSetup> {
+    return this.mutate(() => this.service.selectSpecialty({ specialtyId, expectedVersion }), result => this.applySetup(result));
+  }
+  saveOnboardingDraft(payload: SaveOnboardingDraftRequest): Promise<WorkspaceSetup> {
+    const request = this.clone(payload);
+    return this.mutate(() => this.service.saveOnboardingDraft(request), result => this.applySetup(result));
+  }
+  finishOnboarding(expectedVersion: number): Promise<WorkspaceSetup> {
+    return this.mutate(() => this.service.finishOnboarding({ expectedVersion }), result => this.applySetup(result));
+  }
+  resetToDefaults(expectedVersion: number): Promise<WorkspaceSetup> {
+    return this.mutate(() => this.service.resetToDefaults({ expectedVersion }), result => this.applySetup(result));
+  }
+  discardDraft(expectedVersion: number): Promise<WorkspaceSetup> {
+    return this.mutate(() => this.service.discardDraft({ expectedVersion }), result => this.applySetup(result));
+  }
+  updateWorkspace(payload: WorkspaceUpdateRequest): Promise<WorkspacePreferences> {
+    const request = this.clone(payload);
+    return this.mutate(() => this.service.updateWorkspace(request), result => this.applyPreferences(result), true);
+  }
+  updateQuickNotes(content: string | null): Promise<WorkspacePreferences> {
+    return this.mutate(() => this.service.updateQuickNotes({ content }), result => this.applyPreferences(result), true);
   }
 
   clearSetup(): void {
+    ++this.epoch;
+    this.invalidateReads();
     this.currentSetup.set(null);
+    this.preferences.set(null);
     this.loaded.set(false);
     this.error.set(null);
-    this.setupPromise = null;
+    this.preferencesError.set(null);
+    this.isMutating.set(false);
+    this.specialtyService.clearSpecialty();
   }
-
-  /**
-   * Explicitly sets the local setup state.
-   */
   setSetup(setup: WorkspaceSetup): void {
-    this.currentSetup.set(setup);
+    this.invalidateReads();
+    this.applySetup(setup);
+  }
+
+  private async mutate<T>(operation: () => Observable<T>, apply: (result: T) => void, refreshSetup = false): Promise<T> {
+    if (this.isMutating()) throw new Error('Hay un guardado en curso. Esperá a que termine.');
+    const epoch = this.epoch;
+    this.invalidateReads();
+    this.isMutating.set(true);
+    this.error.set(null);
+    try {
+      const result = await firstValueFrom(operation().pipe(timeout(10000)));
+      if (epoch !== this.epoch) throw new Error('La sesión cambió. La respuesta anterior fue descartada.');
+      if (refreshSetup) {
+        const setup = await firstValueFrom(this.service.getCurrentSetup().pipe(timeout(6000)));
+        if (epoch !== this.epoch) throw new Error('La sesión cambió. La respuesta anterior fue descartada.');
+        this.applySetup(setup);
+      }
+      apply(this.clone(result));
+      return this.clone(result);
+    } catch (error) {
+      if (epoch === this.epoch) {
+        this.error.set(this.message(error, 'No se pudo guardar la configuración.'));
+        if (refreshSetup) this.loaded.set(false);
+      }
+      throw error;
+    } finally {
+      if (epoch === this.epoch) this.isMutating.set(false);
+    }
+  }
+  private applySetup(setup: WorkspaceSetup | null): void {
+    const current = this.clone(setup);
+    this.currentSetup.set(current);
     this.loaded.set(true);
-    this.syncSpecialtyState(setup);
+    this.specialtyService.setSpecialty(current?.specialty ?? null);
+    this.specialtyService.setDefinition(current?.definition ?? null);
+    if (!current) this.preferences.set(null);
   }
-
-  /**
-   * Finalizes the onboarding wizard and updates the workspace state.
-   */
-  async finishOnboarding(payload: FinishOnboardingRequest): Promise<WorkspaceSetup> {
-    this.isLoading.set(true);
-    this.error.set(null);
-    try {
-      const result = await firstValueFrom(this.workspaceService.finishOnboarding(payload));
-      this.currentSetup.set(result);
-      this.loaded.set(true);
-      this.syncSpecialtyState(result);
-      return result;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al finalizar onboarding';
-      this.error.set(msg);
-      throw err;
-    } finally {
-      this.isLoading.set(false);
+  private applyPreferences(result: WorkspacePreferences): void {
+    this.preferences.set(this.clone(result));
+    if (this.currentSetup() && this.currentSetup()!.version !== result.version) this.loaded.set(false);
+  }
+  private invalidateReads(): void {
+    ++this.readRevision;
+    this.setupPromise = null;
+    this.preferencesPromise = null;
+    this.setupLoading.set(false);
+    this.preferencesLoading.set(false);
+  }
+  private isCurrent(epoch: number, revision: number): boolean { return epoch === this.epoch && revision === this.readRevision; }
+  private assertCurrent(epoch: number, revision: number): void {
+    if (!this.isCurrent(epoch, revision)) throw new Error('La configuración cambió durante la carga. Recargá antes de continuar.');
+  }
+  private clone<T>(value: T): T { return structuredClone(value); }
+  private message(error: unknown, fallback: string): string {
+    if (error && typeof error === 'object' && 'error' in error) {
+      const body = error.error;
+      if (body && typeof body === 'object' && 'message' in body && typeof body.message === 'string') return body.message;
     }
-  }
-
-  /**
-   * Persists the current wizard checkpoint without granting access to clinical modules.
-   */
-  async saveOnboardingDraft(payload: SaveOnboardingDraftRequest): Promise<WorkspaceSetup> {
-    this.isLoading.set(true);
-    this.error.set(null);
-    try {
-      const result = await firstValueFrom(this.workspaceService.saveOnboardingDraft(payload));
-      this.currentSetup.set(result);
-      this.loaded.set(true);
-      return result;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al guardar el avance del onboarding';
-      this.error.set(msg);
-      throw err;
-    } finally {
-      this.isLoading.set(false);
-    }
-  }
-
-  async updateQuickNotes(content: string): Promise<WorkspaceSetup> {
-    const payload: QuickNotesUpdateRequest = { content };
-    const result = await firstValueFrom(this.workspaceService.updateQuickNotes(payload));
-    this.currentSetup.set(result);
-    this.loaded.set(true);
-    return result;
-  }
-
-  /**
-   * Updates workspace configuration in EDIT mode.
-   */
-  async updateWorkspace(payload: WorkspaceUpdateRequest): Promise<WorkspaceSetup> {
-    this.isLoading.set(true);
-    this.error.set(null);
-    try {
-      const result = await firstValueFrom(this.workspaceService.updateWorkspace(payload));
-      this.currentSetup.set(result);
-      this.loaded.set(true);
-      return result;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al actualizar workspace';
-      this.error.set(msg);
-      throw err;
-    } finally {
-      this.isLoading.set(false);
-    }
-  }
-
-  /**
-   * Resets workspace configuration, custom templates and chart mappings to factory defaults.
-   */
-  async resetToDefaults(): Promise<WorkspaceSetup> {
-    this.isLoading.set(true);
-    this.error.set(null);
-    try {
-      const result = await firstValueFrom(this.workspaceService.resetToDefaults());
-      this.currentSetup.set(result);
-      this.loaded.set(true);
-      return result;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al restablecer valores de fábrica';
-      this.error.set(msg);
-      throw err;
-    } finally {
-      this.isLoading.set(false);
-    }
+    return error instanceof Error ? error.message : fallback;
   }
 }
