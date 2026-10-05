@@ -4,7 +4,7 @@ import { inputValues, validIsoDate } from './dynamic-form-renderer.component';
 export function retainCompatibleValues(previous: WizardFormDefinition, next: WizardFormDefinition, values: WizardFormValues): WizardFormValues {
   const old = new Map(previous.categories.flatMap(category => category.fields).map(field => [field.key, field]));
   return inputValues(next, Object.fromEntries(next.categories.flatMap(category => category.fields).filter(field => {
-    const before = old.get(field.key); return before?.type === field.type && (before.binding ?? null) === (field.binding ?? null);
+    const before = old.get(field.key); return before?.type === field.type;
   }).filter(field => Object.prototype.hasOwnProperty.call(values, field.key)).map(field => [field.key, values[field.key]])));
 }
 export function argentinaDateTime(instant: string): { day: string; time: string } {

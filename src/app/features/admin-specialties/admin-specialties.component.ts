@@ -4,13 +4,13 @@ import { firstValueFrom } from 'rxjs';
 import { AdminSpecialtyService } from '../../core/services/admin-specialty.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SpecialtyDetail, WizardDefaultDetail } from '../../core/models/admin-specialty.model';
-import { WizardDefinition, WizardFormDefinition, WizardModulesConfig, WizardSection } from '../../core/models/wizard-definition.model';
+import { createDefaultWizardDefinition, WizardDefinition, WizardFormDefinition, WizardModulesConfig, WizardSection } from '../../core/models/wizard-definition.model';
 import { FormFieldEditorComponent } from '../form-field-editor/form-field-editor.component';
 
 type PendingSelection = { kind: 'create' } | { kind: 'select'; id: number };
 interface RemoteCopy { specialty: SpecialtyDetail; wizard: WizardDefaultDetail; }
 interface ValidationIssue { path: string; code: string; }
-const emptyDefinition = (): WizardDefinition => ({ schemaVersion: 1, patientForm: { categories: [] }, encounterForm: { categories: [] }, modulesConfig: { MEDICATION_CATALOG: false, AI_ASSISTANT: false, GROWTH_CHARTS: false } });
+const defaultDefinition = (): WizardDefinition => createDefaultWizardDefinition();
 const clone = <T>(value: T): T => structuredClone(value);
 
 @Component({
@@ -54,7 +54,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
     return selected !== null && (this.name() !== selected.name || this.description() !== (selected.description ?? ''));
   });
   readonly dirty = computed(() => this.pendingEditor() || (this.creating()
-    ? Boolean(this.name() || this.code() || this.description()) || JSON.stringify(this.definition()) !== JSON.stringify(emptyDefinition())
+    ? Boolean(this.name() || this.code() || this.description()) || JSON.stringify(this.definition()) !== JSON.stringify(defaultDefinition())
     : this.metadataDirty() || Boolean(this.wizard() && JSON.stringify(this.definition()) !== JSON.stringify(this.wizard()!.draftDefinition))));
   readonly readonly = computed(() => this.busy() || this.accessDenied() || this.hasConflict() || !this.auth.isSuperAdmin() || this.identity() !== this.owner);
   readonly canEditExisting = computed(() => !this.readonly() && !!this.selectedSpecialty() && this.wizard()?.specialtyId === this.selectedSpecialty()?.id);
@@ -107,7 +107,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
     if (this.busy() || this.accessDenied() || !this.auth.isSuperAdmin() || this.identity() !== this.owner) return;
     const epoch = ++this.epoch;
     if (selection.kind === 'create') {
-      this.selectedSpecialty.set(null); this.wizard.set(null); this.definition.set(emptyDefinition());
+      this.selectedSpecialty.set(null); this.wizard.set(null); this.definition.set(defaultDefinition());
       this.creating.set(true); this.name.set(''); this.code.set(''); this.description.set(''); this.codeEdited.set(false);
       this.clearFeedback(); this.editorGeneration.update(n => n + 1); return;
     }

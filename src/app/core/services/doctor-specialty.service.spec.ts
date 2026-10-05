@@ -12,7 +12,7 @@ describe('DoctorSpecialtyService metadata and capabilities', () => {
     service.setDefinition({
       schemaVersion: 1, patientForm: { categories: [{
         key: 'unseen', title: 'Categoría libre', enabled: true, fields: [{
-          key: 'relative', label: 'Responsable', type: 'TEXT', required: false, binding: 'patient.guardianInfo.fatherFullName',
+          key: 'relative', label: 'Responsable', type: 'TEXT', required: false,
         }],
       }] }, encounterForm: { categories: [] },
       modulesConfig: { MEDICATION_CATALOG: false, AI_ASSISTANT: false, GROWTH_CHARTS: true },

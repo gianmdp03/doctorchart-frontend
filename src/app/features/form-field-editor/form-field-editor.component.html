@@ -11,7 +11,7 @@
           <div class="category-actions">
             <button type="button" (click)="moveCategory(category.key, -1)" [disabled]="readonly() || i === 0" [attr.aria-label]="'Subir categoría ' + category.title">↑</button>
             <button type="button" (click)="moveCategory(category.key, 1)" [disabled]="readonly() || i === categories().length - 1" [attr.aria-label]="'Bajar categoría ' + category.title">↓</button>
-            <button type="button" (click)="toggleCategory(category.key)" [disabled]="readonly()" [attr.aria-pressed]="category.enabled">{{ category.enabled ? 'Activa' : 'Inactiva' }}</button>
+            <button type="button" (click)="toggleCategory(category.key)" [disabled]="readonly() || category.system" [attr.aria-pressed]="category.enabled">{{ category.enabled ? 'Activa' : 'Inactiva' }}</button>
           </div>
         </div>
       } @empty { <p class="hint">Todavía no hay categorías.</p> }
@@ -25,13 +25,15 @@
       @if (selectedCategory(); as category) {
         <header class="panel-header">
           <label class="control category-title">Nombre de la categoría
-            <input maxlength="150" [value]="category.title" (change)="renameCategory(category.key, $any($event.target).value)" [disabled]="readonly()" />
+            <input maxlength="150" [value]="category.title" (change)="renameCategory(category.key, $any($event.target).value)" [disabled]="readonly() || category.system" />
           </label>
-          <button type="button" class="danger" (click)="deleteCategory(category.key)" [disabled]="readonly()">Eliminar categoría</button>
+          @if (!category.system) {
+            <button type="button" class="danger" (click)="deleteCategory(category.key)" [disabled]="readonly()">Eliminar categoría</button>
+          }
         </header>
         @if (!category.enabled) { <p class="notice">Esta categoría está desactivada. Podés editarla y volver a activarla.</p> }
-        @if (section() === 'patientForm') {
-          <p class="hint">Antes de aplicar la configuración, el nombre y la fecha de nacimiento deben quedar obligatorios y visibles en una categoría activa. Podés guardar un borrador mientras reorganizás los campos.</p>
+        @if (category.system) {
+          <p class="hint">Categoría fija del sistema con los datos obligatorios del paciente. Podés agregar campos adicionales, pero los campos del sistema no se pueden modificar ni eliminar.</p>
         }
         <div class="fields-list">
           @for (field of category.fields; track field.key; let fi = $index) {
@@ -39,15 +41,19 @@
               <div class="field-summary">
                 <strong>{{ field.label }}</strong>
                 <span class="hint">{{ typeLabel(field.type) }} · {{ field.required ? 'Obligatorio' : 'Opcional' }}{{ field.unit ? ' · ' + field.unit : '' }}</span>
-                @if (field.binding) { <span class="binding">{{ bindingLabel(field.binding) }}</span> }
+                @if (field.system) { <span class="binding">Dato del sistema</span> }
                 @if (field.visibleWhen) { <span class="hint">Se muestra según otra respuesta</span> }
               </div>
               <div class="field-actions">
-                <button type="button" (click)="moveField(category.key, field.key, -1)" [disabled]="readonly() || fi === 0" [attr.aria-label]="'Subir campo ' + field.label">↑</button>
-                <button type="button" (click)="moveField(category.key, field.key, 1)" [disabled]="readonly() || fi === category.fields.length - 1" [attr.aria-label]="'Bajar campo ' + field.label">↓</button>
-                <button type="button" (click)="openField(category.key, field.key)" [disabled]="readonly()">Editar</button>
-                <button type="button" (click)="duplicateField(category.key, field.key)" [disabled]="readonly()">Duplicar</button>
-                <button type="button" class="danger" (click)="deleteField(category.key, field.key)" [disabled]="readonly()" [attr.aria-label]="'Eliminar campo ' + field.label">Eliminar</button>
+                @if (!field.system) {
+                  <button type="button" (click)="moveField(category.key, field.key, -1)" [disabled]="readonly() || fi === 0" [attr.aria-label]="'Subir campo ' + field.label">↑</button>
+                  <button type="button" (click)="moveField(category.key, field.key, 1)" [disabled]="readonly() || fi === category.fields.length - 1" [attr.aria-label]="'Bajar campo ' + field.label">↓</button>
+                  <button type="button" (click)="openField(category.key, field.key)" [disabled]="readonly()">Editar</button>
+                  <button type="button" (click)="duplicateField(category.key, field.key)" [disabled]="readonly()">Duplicar</button>
+                  <button type="button" class="danger" (click)="deleteField(category.key, field.key)" [disabled]="readonly()" [attr.aria-label]="'Eliminar campo ' + field.label">Eliminar</button>
+                } @else {
+                  <span class="hint">Bloqueado por el sistema</span>
+                }
               </div>
             </article>
           } @empty { <p class="empty-fields">Agregá los campos que necesitás en esta categoría.</p> }
@@ -68,16 +74,9 @@
             <label class="control">Tipo <select [ngModel]="field.type" (ngModelChange)="setType($event)">@for (type of fieldTypes; track type.value) { <option [value]="type.value">{{ type.label }}</option> }</select></label>
             <label class="control wide">Texto de ayuda <input maxlength="300" [ngModel]="field.placeholder ?? ''" (ngModelChange)="updateDraft({ placeholder: $event })" /></label>
           </div>
-          @if (editTarget()?.fieldKey) { <p class="hint">Cambiar el tipo o el dato vinculado reemplaza el campo por uno nuevo. Primero desvinculá las condiciones y cálculos que lo usan.</p> }
+          @if (editTarget()?.fieldKey) { <p class="hint">Cambiar el tipo reemplaza el campo por uno nuevo. Primero desvinculá las condiciones y cálculos que lo usan.</p> }
           @if (field.type !== 'FORMULA') {
             <label class="checkbox-control"><input type="checkbox" [ngModel]="field.required" (ngModelChange)="updateDraft({ required: $event })" />Respuesta obligatoria</label>
-            <label class="control">Dato del paciente o la consulta
-              <select [ngModel]="field.binding ?? ''" (ngModelChange)="setBinding($event)">
-                <option value="">Dato personalizado</option>
-                @for (binding of bindingChoices(); track binding.value) { <option [value]="binding.value">{{ binding.label }}</option> }
-              </select>
-            </label>
-            <p class="hint">Los datos vinculados alimentan las listas, resúmenes y gráficos. Los personalizados se guardan en el formulario.</p>
           }
           @if (field.type === 'NUMBER' || field.type === 'FORMULA') {
             <label class="control">Unidad <input maxlength="30" [ngModel]="field.unit ?? ''" (ngModelChange)="updateDraft({ unit: $event })" /></label>
@@ -88,7 +87,6 @@
           @if (field.type === 'DATE') { <p class="hint">Las fechas se ingresan con el selector del sistema y se muestran como dd/MM/aaaa.</p> }
           @if (field.type === 'SELECT') {
             <h4>Opciones</h4>
-            @if (field.binding === 'patient.gender') { <p class="hint">Usá los valores MALE, FEMALE, OTHER o UNKNOWN. Podés elegir sus etiquetas visibles.</p> }
             @for (option of field.options ?? []; track $index; let oi = $index) {
               <div class="option-row"><label class="control">Etiqueta <input maxlength="150" [ngModel]="option.label" (ngModelChange)="updateOption(oi, 'label', $event)" /></label><label class="control">Valor <input maxlength="80" [ngModel]="option.value" (ngModelChange)="updateOption(oi, 'value', $event)" /></label><button type="button" class="danger" (click)="deleteOption(oi)" [attr.aria-label]="'Eliminar opción ' + option.label">Eliminar</button></div>
             }

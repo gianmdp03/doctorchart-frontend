@@ -9,8 +9,16 @@ export class DoctorSpecialtyService {
   readonly activeSpecialty = computed(() => this.specialty()?.code ?? null);
   readonly supportsGrowthCharts = computed(() => this.definition()?.modulesConfig.GROWTH_CHARTS === true);
   readonly hasFamilyInformation = computed(() => this.definition()?.patientForm.categories
-    .some(category => category.enabled && category.fields.some(field =>
-      field.binding?.startsWith('patient.guardianInfo.') || field.binding?.startsWith('patient.familyHistory.'))) ?? false);
+    .some(category => category.enabled && (
+      category.key.toLowerCase().includes('family') || category.key.toLowerCase().includes('guardian') ||
+      category.fields.some(field =>
+        field.key.toLowerCase().includes('guardian') ||
+        field.key.toLowerCase().includes('family') ||
+        field.key.toLowerCase().includes('father') ||
+        field.key.toLowerCase().includes('mother') ||
+        field.key.toLowerCase().includes('relative')
+      )
+    )) ?? false);
   readonly currentSpecialtyOption = computed(() => ({
     value: this.specialty()?.code ?? null,
     label: this.specialty()?.name ?? 'Sin especialidad asignada',

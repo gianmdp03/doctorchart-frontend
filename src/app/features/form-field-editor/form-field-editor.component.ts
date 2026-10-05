@@ -4,39 +4,8 @@ import { A11yModule } from '@angular/cdk/a11y';
 import { WizardFormDefinition, WizardFieldDefinition, WizardFormulaDefinition, WizardFormulaInput } from '../../core/models/wizard-definition.model';
 
 type FieldType = WizardFieldDefinition['type'];
-type Binding = NonNullable<WizardFieldDefinition['binding']>;
 type FormulaKind = WizardFormulaDefinition['kind'];
-interface BindingChoice { value: Binding; label: string; types: FieldType[]; unit?: string; }
 interface EditTarget { categoryKey: string; fieldKey: string | null; }
-const BINDINGS: BindingChoice[] = [
-  ...([
-    ['patient.fullName', 'Nombre completo'], ['patient.firstName', 'Nombre'], ['patient.lastName', 'Apellido'],
-    ['patient.nationalId', 'Documento'], ['patient.bloodType', 'Grupo sanguíneo'], ['patient.phone', 'Teléfono'],
-    ['patient.email', 'Correo'], ['patient.address', 'Dirección'],
-    ['patient.guardianInfo.fatherFullName', 'Nombre del padre'], ['patient.guardianInfo.motherFullName', 'Nombre de la madre'],
-    ['patient.guardianInfo.primaryContactPhone', 'Teléfono del responsable'],
-  ] as [Binding, string][]).map(([value, label]) => ({ value, label, types: ['TEXT'] as FieldType[] })),
-  { value: 'patient.birthDate', label: 'Fecha de nacimiento', types: ['DATE'] },
-  { value: 'patient.gender', label: 'Sexo', types: ['SELECT'] },
-  { value: 'patient.guardianInfo.primaryGuardian', label: 'Responsable principal', types: ['TEXT', 'SELECT'] },
-  { value: 'patient.guardianInfo.livingArrangement', label: 'Convivencia', types: ['TEXT', 'SELECT'] },
-  { value: 'patient.guardianInfo.hasSiblings', label: 'Tiene hermanos', types: ['BOOLEAN'] },
-  { value: 'patient.guardianInfo.siblingsCount', label: 'Cantidad de hermanos', types: ['NUMBER'] },
-  { value: 'patient.guardianInfo.siblingOrder', label: 'Lugar entre hermanos', types: ['NUMBER'] },
-  ...(['paternalDiseases', 'maternalDiseases', 'siblingDiseases'] as const).map((name, i) => ({
-    value: `patient.familyHistory.${name}` as Binding,
-    label: ['Antecedentes paternos', 'Antecedentes maternos', 'Antecedentes de hermanos'][i], types: ['TEXT', 'TEXTAREA'] as FieldType[],
-  })),
-  ...([
-    ['encounter.chiefComplaint', 'Motivo de consulta'], ['encounter.historyOfPresentIllness', 'Enfermedad actual'],
-    ['encounter.physicalExamination', 'Examen físico'], ['encounter.primaryDiagnosisDescription', 'Diagnóstico'],
-    ['encounter.treatmentPlan', 'Tratamiento'], ['encounter.followUpInstructions', 'Indicaciones de seguimiento'],
-  ] as [Binding, string][]).map(([value, label]) => ({ value, label, types: ['TEXT', 'TEXTAREA'] as FieldType[] })),
-  { value: 'encounter.followUpDate', label: 'Fecha de seguimiento', types: ['DATE'] },
-  { value: 'encounter.weightKg', label: 'Peso', types: ['NUMBER'], unit: 'kg' },
-  { value: 'encounter.heightCm', label: 'Talla', types: ['NUMBER'], unit: 'cm' },
-  { value: 'encounter.headCircumferenceCm', label: 'Perímetro cefálico', types: ['NUMBER'], unit: 'cm' },
-];
 const FORMULA_INPUTS: Record<FormulaKind, string[]> = {
   IMC: ['weightKg', 'heightCm'], BSA: ['weightKg', 'heightCm'], TFGE: ['creatinineMgDl', 'ageYears', 'gender'],
   COCKCROFT: ['creatinineMgDl', 'weightKg', 'ageYears', 'gender'], CALCIO_CORREGIDO: ['serumCalciumMgDl', 'serumAlbuminGDl'], CUSTOM: ['a', 'b'],
@@ -65,7 +34,6 @@ export class FormFieldEditorComponent {
   readonly fieldDraft = signal<WizardFieldDefinition | null>(null);
   readonly categories = computed(() => this.working().categories);
   readonly selectedCategory = computed(() => this.categories().find(c => c.key === this.selectedKey()) ?? null);
-  readonly bindingChoices = computed(() => BINDINGS.filter(b => b.value.startsWith(this.section() === 'patientForm' ? 'patient.' : 'encounter.')));
   readonly allFields = computed(() => this.categories().flatMap(c => c.fields));
   readonly formulaInputs = computed(() => FORMULA_INPUTS[this.fieldDraft()?.formula?.kind ?? 'CUSTOM']);
   readonly visibilityControllers = computed(() => this.allFields().filter(f => f.type === 'BOOLEAN' && f.key !== this.editTarget()?.fieldKey));
@@ -95,7 +63,6 @@ export class FormFieldEditorComponent {
   }
   selectCategory(key: string): void { this.selectedKey.set(key); this.error.set(null); this.categorySelected.emit(key); }
   typeLabel(type: FieldType): string { return this.fieldTypes.find(t => t.value === type)?.label ?? type; }
-  bindingLabel(binding: WizardFieldDefinition['binding']): string { return BINDINGS.find(b => b.value === binding)?.label ?? 'Dato personalizado'; }
   inputLabel(name: string): string { return INPUT_LABELS[name] ?? name; }
   addCategory(): void {
     const title = this.newCategoryTitle().trim();
@@ -104,28 +71,43 @@ export class FormFieldEditorComponent {
     if (this.commit(form => form.categories.push({ key, title, enabled: true, fields: [] }))) { this.selectedKey.set(key); this.newCategoryTitle.set(''); }
   }
   renameCategory(key: string, title: string): void {
+    const c = this.categories().find(cat => cat.key === key);
+    if (c?.system) return;
     if (!title.trim() || title.trim().length > 150) { this.error.set('El nombre de categoría no puede estar vacío ni superar 150 caracteres.'); return; }
-    this.commit(form => { const c = form.categories.find(c => c.key === key); if (c) c.title = title.trim(); });
+    this.commit(form => { const cat = form.categories.find(cat => cat.key === key); if (cat) cat.title = title.trim(); });
   }
-  toggleCategory(key: string): void { this.commit(form => { const c = form.categories.find(c => c.key === key); if (c) c.enabled = !c.enabled; }); }
+  toggleCategory(key: string): void {
+    const c = this.categories().find(cat => cat.key === key);
+    if (c?.system) return;
+    this.commit(form => { const cat = form.categories.find(cat => cat.key === key); if (cat) cat.enabled = !cat.enabled; });
+  }
   moveCategory(key: string, direction: number): void { this.commit(form => this.move(form.categories, form.categories.findIndex(c => c.key === key), direction)); }
-  deleteCategory(key: string): void { this.commit(form => { form.categories = form.categories.filter(c => c.key !== key); }); }
+  deleteCategory(key: string): void {
+    const c = this.categories().find(cat => cat.key === key);
+    if (c?.system) return;
+    this.commit(form => { form.categories = form.categories.filter(cat => cat.key !== key); });
+  }
   moveField(categoryKey: string, fieldKey: string, direction: number): void {
+    const field = this.allFields().find(f => f.key === fieldKey);
+    if (field?.system) return;
     this.commit(form => { const fields = form.categories.find(c => c.key === categoryKey)?.fields; if (fields) this.move(fields, fields.findIndex(f => f.key === fieldKey), direction); });
   }
   deleteField(categoryKey: string, fieldKey: string): void {
+    const field = this.allFields().find(f => f.key === fieldKey);
+    if (field?.system) return;
     this.commit(form => { const c = form.categories.find(c => c.key === categoryKey); if (c) c.fields = c.fields.filter(f => f.key !== fieldKey); });
   }
   duplicateField(categoryKey: string, fieldKey: string): void {
     this.commit(form => {
-      const c = form.categories.find(c => c.key === categoryKey); const field = c?.fields.find(f => f.key === fieldKey); if (!c || !field) return;
+      const c = form.categories.find(c => c.key === categoryKey); const field = c?.fields.find(f => f.key === fieldKey); if (!c || !field || field.system) return;
       const copy = clone(field); copy.key = this.uniqueKey(field.key, new Set(form.categories.flatMap(c => c.fields.map(f => f.key))), 'field');
-      copy.label += ' (copia)'; delete copy.binding; c.fields.push(copy);
+      copy.label += ' (copia)'; delete copy.system; c.fields.push(copy);
     });
   }
   openField(categoryKey: string, fieldKey: string | null = null): void {
     if (this.readonly()) return;
     const existing = this.categories().find(c => c.key === categoryKey)?.fields.find(f => f.key === fieldKey);
+    if (existing?.system) return;
     this.editTarget.set({ categoryKey, fieldKey }); this.fieldDraft.set(existing ? clone(existing) : { key: '', label: '', type: 'TEXT', required: false }); this.error.set(null);
   }
   closeField(): void { this.editTarget.set(null); this.fieldDraft.set(null); this.error.set(null); }
@@ -136,14 +118,8 @@ export class FormFieldEditorComponent {
     if (type !== 'NUMBER') { delete next.minimum; delete next.maximum; }
     if (type !== 'NUMBER' && type !== 'FORMULA') delete next.unit;
     if (type !== 'FORMULA') delete next.formula;
-    else { next.required = false; delete next.binding; next.formula = { kind: 'CUSTOM', operation: 'ADD', inputs: {} }; }
-    if (next.binding && !BINDINGS.find(b => b.value === next.binding)?.types.includes(type)) delete next.binding;
+    else { next.required = false; next.formula = { kind: 'CUSTOM', operation: 'ADD', inputs: {} }; }
     this.fieldDraft.set(next);
-  }
-  setBinding(value: string): void {
-    const draft = this.fieldDraft(); if (!draft) return; const binding = BINDINGS.find(b => b.value === value);
-    if (binding && !binding.types.includes(draft.type)) this.setType(binding.types[0]);
-    this.updateDraft({ binding: binding?.value ?? null }); if (binding?.unit) this.updateDraft({ unit: binding.unit });
   }
   setNumberProperty(property: 'minimum' | 'maximum', value: number | string | null): void {
     const draft = this.fieldDraft(); if (!draft) return; const next = clone(draft);
@@ -191,7 +167,7 @@ export class FormFieldEditorComponent {
     if (!field.label || field.label.length > 150) { this.error.set('Ingresá una etiqueta de hasta 150 caracteres.'); return; }
     if (!field.placeholder) delete field.placeholder; if (!field.unit) delete field.unit;
     const old = this.allFields().find(f => f.key === target.fieldKey);
-    const replaced = old && (old.type !== field.type || (old.binding ?? null) !== (field.binding ?? null));
+    const replaced = old && old.type !== field.type;
     field.key = old && !replaced ? old.key : this.uniqueKey(field.label, new Set(this.allFields().map(f => f.key)), 'field');
     if (this.commit(form => {
       const c = form.categories.find(c => c.key === target.categoryKey); if (!c) return;
@@ -209,20 +185,20 @@ export class FormFieldEditorComponent {
   private validate(form: WizardFormDefinition): string | null {
     const fields = form.categories.flatMap(c => c.fields); const byKey = new Map(fields.map(f => [f.key, f]));
     if (new Set(form.categories.map(c => c.key)).size !== form.categories.length || byKey.size !== fields.length) return 'Las claves deben ser únicas en todo el formulario.';
-    const bindings = fields.map(f => f.binding).filter(Boolean);
-    if (new Set(bindings).size !== bindings.length) return 'Ese dato estructural ya está vinculado a otro campo.';
-    if (bindings.includes('patient.fullName') && (bindings.includes('patient.firstName') || bindings.includes('patient.lastName'))) return 'Elegí nombre completo o nombre y apellido separados.';
+    const sysCat = form.categories.find(c => c.key === 'sys_patient_profile');
+    if (sysCat) {
+      if (!sysCat.enabled) return 'La categoría de datos personales del paciente es obligatoria y debe estar activa.';
+      const sysKeys = new Set(sysCat.fields.map(f => f.key));
+      const requiredSysKeys = ['sys_firstName', 'sys_lastName', 'sys_dni', 'sys_dob', 'sys_sex', 'sys_phone', 'sys_email', 'sys_insurance'];
+      for (const k of requiredSysKeys) {
+        if (!sysKeys.has(k)) return `El campo obligatorio del sistema ${k} debe estar presente.`;
+      }
+    }
     for (const field of fields) {
       if (!field.label.trim() || field.label.length > 150) return 'Las etiquetas no pueden estar vacías ni superar 150 caracteres.';
-      if (field.binding) {
-        const binding = BINDINGS.find(b => b.value === field.binding);
-        if (!binding?.types.includes(field.type) || !this.bindingChoices().some(b => b.value === field.binding)) return 'El tipo del campo no corresponde al dato vinculado.';
-        if (binding.unit && field.unit !== binding.unit) return `Este dato requiere unidad ${binding.unit}.`;
-      }
       if (field.type === 'SELECT') {
         if (!field.options?.length || field.options.some(o => !o.value.trim() || !o.label.trim() || o.value.length > 80 || o.label.length > 150)) return 'Completá al menos una opción con valor y etiqueta.';
         if (new Set(field.options.map(o => o.value)).size !== field.options.length) return 'Los valores de las opciones no pueden repetirse.';
-        if (field.binding === 'patient.gender' && field.options.some(o => !['MALE', 'FEMALE', 'OTHER', 'UNKNOWN'].includes(o.value))) return 'Los valores de sexo admitidos son MALE, FEMALE, OTHER y UNKNOWN.';
       }
       if ((field.minimum !== undefined && !Number.isFinite(field.minimum)) || (field.maximum !== undefined && !Number.isFinite(field.maximum)) ||
         (field.minimum !== undefined && field.maximum !== undefined && field.minimum > field.maximum)) return 'Los límites numéricos deben ser válidos y el mínimo no puede superar al máximo.';
@@ -236,7 +212,7 @@ export class FormFieldEditorComponent {
       }
       if (field.type === 'FORMULA') {
         const formula = field.formula;
-        if (!formula || field.required || field.binding) return 'El cálculo requiere configuración y no puede ser obligatorio ni estar vinculado.';
+        if (!formula || field.required) return 'El cálculo requiere configuración y no puede ser obligatorio.';
         const expected = FORMULA_INPUTS[formula.kind];
         if (!expected || Object.keys(formula.inputs).length !== expected.length || expected.some(n => !formula.inputs[n])) return 'Seleccioná todas las entradas del cálculo.';
         for (const name of expected) {

@@ -48,8 +48,11 @@ export class DynamicFormRendererComponent {
       case 'NUMBER': return typeof value === 'number' && Number.isFinite(value) && (field.minimum === undefined || value >= field.minimum) && (field.maximum === undefined || value <= field.maximum);
       case 'BOOLEAN': return typeof value === 'boolean';
       case 'SELECT': return typeof value === 'string' && !!field.options?.some(option => option.value === value);
-      case 'DATE': return validIsoDate(value) && (field.binding !== 'patient.birthDate' || (value as string) <= this.todayIso);
+      case 'DATE': return validIsoDate(value) && (!this.isBirthDateField(field.key) || (value as string) <= this.todayIso);
     }
+  }
+  isBirthDateField(key: string): boolean {
+    return key === 'sys_dob' || key === 'born' || key === 'birthDate';
   }
   displayValue(field: WizardFieldDefinition): string {
     const value = this.currentValues()[field.key];

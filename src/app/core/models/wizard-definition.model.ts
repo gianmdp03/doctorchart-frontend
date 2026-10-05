@@ -1,37 +1,5 @@
 /** Canonical v1 JSON contract in backend docs/specialty-wizard. No specialty-specific defaults. */
 export type WizardFieldType = 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DATE' | 'SELECT' | 'BOOLEAN' | 'FORMULA';
-export type WizardBinding =
-  | 'patient.fullName'
-  | 'patient.firstName'
-  | 'patient.lastName'
-  | 'patient.birthDate'
-  | 'patient.nationalId'
-  | 'patient.gender'
-  | 'patient.bloodType'
-  | 'patient.phone'
-  | 'patient.email'
-  | 'patient.address'
-  | 'patient.guardianInfo.fatherFullName'
-  | 'patient.guardianInfo.motherFullName'
-  | 'patient.guardianInfo.primaryGuardian'
-  | 'patient.guardianInfo.primaryContactPhone'
-  | 'patient.guardianInfo.hasSiblings'
-  | 'patient.guardianInfo.siblingsCount'
-  | 'patient.guardianInfo.siblingOrder'
-  | 'patient.guardianInfo.livingArrangement'
-  | 'patient.familyHistory.paternalDiseases'
-  | 'patient.familyHistory.maternalDiseases'
-  | 'patient.familyHistory.siblingDiseases'
-  | 'encounter.chiefComplaint'
-  | 'encounter.historyOfPresentIllness'
-  | 'encounter.physicalExamination'
-  | 'encounter.primaryDiagnosisDescription'
-  | 'encounter.treatmentPlan'
-  | 'encounter.followUpInstructions'
-  | 'encounter.followUpDate'
-  | 'encounter.weightKg'
-  | 'encounter.heightCm'
-  | 'encounter.headCircumferenceCm';
 export type WizardFormulaKind = 'IMC' | 'BSA' | 'TFGE' | 'COCKCROFT' | 'CALCIO_CORREGIDO' | 'CUSTOM';
 export type WizardFormulaOperation = 'ADD' | 'SUBTRACT' | 'MULTIPLY' | 'DIVIDE' | 'AVERAGE';
 export type WizardFormulaContext = 'patient.ageYears' | 'patient.gender' | 'patient.latestWeightKg' | 'patient.latestHeightCm';
@@ -50,8 +18,8 @@ export interface WizardFieldDefinition {
   label: string;
   type: WizardFieldType;
   required: boolean;
+  system?: boolean;
   placeholder?: string | null;
-  binding?: WizardBinding | null;
   unit?: string;
   options?: WizardFieldOption[];
   minimum?: number;
@@ -63,6 +31,7 @@ export interface WizardCategoryDefinition {
   key: string;
   title: string;
   enabled: boolean;
+  system?: boolean;
   fields: WizardFieldDefinition[];
 }
 export interface WizardFormDefinition { categories: WizardCategoryDefinition[]; }
@@ -94,3 +63,90 @@ export interface ClinicalFormRecord {
   formDefinitionSnapshot: WizardFormDefinition;
   formulaContext: Record<string, WizardValue>;
 }
+
+export const createSystemPatientProfileCategory = (): WizardCategoryDefinition => ({
+  key: 'sys_patient_profile',
+  title: 'Datos Personales',
+  enabled: true,
+  system: true,
+  fields: [
+    {
+      key: 'sys_firstName',
+      label: 'Nombre',
+      type: 'TEXT',
+      required: true,
+      system: true,
+    },
+    {
+      key: 'sys_lastName',
+      label: 'Apellido',
+      type: 'TEXT',
+      required: true,
+      system: true,
+    },
+    {
+      key: 'sys_dni',
+      label: 'DNI',
+      type: 'TEXT',
+      required: true,
+      system: true,
+    },
+    {
+      key: 'sys_dob',
+      label: 'Fecha de nacimiento',
+      type: 'DATE',
+      required: true,
+      system: true,
+    },
+    {
+      key: 'sys_sex',
+      label: 'Sexo',
+      type: 'SELECT',
+      required: true,
+      system: true,
+      options: [
+        { value: 'MALE', label: 'Masculino' },
+        { value: 'FEMALE', label: 'Femenino' },
+        { value: 'OTHER', label: 'Otro' },
+        { value: 'UNKNOWN', label: 'Sin información' },
+      ],
+    },
+    {
+      key: 'sys_phone',
+      label: 'Teléfono',
+      type: 'TEXT',
+      required: false,
+      system: true,
+    },
+    {
+      key: 'sys_email',
+      label: 'Email',
+      type: 'TEXT',
+      required: false,
+      system: true,
+    },
+    {
+      key: 'sys_insurance',
+      label: 'Obra social / Cobertura',
+      type: 'TEXT',
+      required: false,
+      system: true,
+    },
+  ],
+});
+
+export const createDefaultWizardDefinition = (): WizardDefinition => ({
+  schemaVersion: 1,
+  patientForm: {
+    categories: [createSystemPatientProfileCategory()],
+  },
+  encounterForm: {
+    categories: [],
+  },
+  modulesConfig: {
+    MEDICATION_CATALOG: false,
+    AI_ASSISTANT: false,
+    GROWTH_CHARTS: false,
+  },
+});
+

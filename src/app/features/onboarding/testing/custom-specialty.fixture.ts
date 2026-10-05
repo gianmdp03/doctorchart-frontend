@@ -17,15 +17,13 @@ export const customSpecialtyFixture = {
               "key": "identity",
               "label": "Nombre completo",
               "type": "TEXT",
-              "required": true,
-              "binding": "patient.fullName"
+              "required": true
             },
             {
               "key": "born",
               "label": "Nacimiento",
               "type": "DATE",
-              "required": true,
-              "binding": "patient.birthDate"
+              "required": true
             },
             {
               "key": "consent",

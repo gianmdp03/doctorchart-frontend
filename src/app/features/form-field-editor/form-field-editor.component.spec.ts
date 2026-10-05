@@ -117,33 +117,46 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     expect(component.allFields().some(f => f.key === 'readingA')).toBe(false);
   });
 
-  it('allows an incomplete patient draft to replace full name with separate required first and last names', () => {
-    load(customSpecialtyFixture.definition.patientForm, 'patientForm');
-    const output = vi.spyOn(component.definitionChange, 'emit');
-    component.deleteField('new_patient_category', 'identity');
-    expect(component.allFields().some(f => f.binding === 'patient.fullName')).toBe(false);
-    expect(output).toHaveBeenCalled();
-    component.openField('new_patient_category'); component.updateDraft({ label: 'Nombre', required: true });
-    component.setBinding('patient.firstName'); component.saveField();
-    component.openField('new_patient_category'); component.updateDraft({ label: 'Apellido', required: true });
-    component.setBinding('patient.lastName'); component.saveField();
-    expect(component.error()).toBeNull();
-    const core = component.allFields().filter(f => f.required && !f.visibleWhen).map(f => f.binding);
-    expect(core).toContain('patient.firstName'); expect(core).toContain('patient.lastName'); expect(core).toContain('patient.birthDate');
-    component.toggleCategory('new_patient_category'); expect(component.categories()[0].enabled).toBe(false);
-    component.toggleCategory('new_patient_category'); expect(component.categories()[0].enabled).toBe(true);
-    component.renameCategory('new_patient_category', 'Datos reorganizados');
-    expect(component.categories()[0].title).toBe('Datos reorganizados');
+  it('prevents modifying or deleting locked system category and fields', () => {
+    const sysForm: WizardFormDefinition = {
+      categories: [
+        {
+          key: 'sys_patient_profile', title: 'Datos Personales', enabled: true, system: true,
+          fields: [
+            { key: 'sys_firstName', label: 'Nombre', type: 'TEXT', required: true, system: true },
+            { key: 'sys_lastName', label: 'Apellido', type: 'TEXT', required: true, system: true },
+            { key: 'sys_dni', label: 'Documento / DNI', type: 'TEXT', required: true, system: true },
+            { key: 'sys_dob', label: 'Fecha de nacimiento', type: 'DATE', required: true, system: true },
+            { key: 'sys_sex', label: 'Sexo biológico', type: 'SELECT', required: true, system: true, options: [{ value: 'MALE', label: 'M' }] },
+            { key: 'sys_phone', label: 'Teléfono', type: 'TEXT', required: false, system: true },
+            { key: 'sys_email', label: 'Correo', type: 'TEXT', required: false, system: true },
+            { key: 'sys_insurance', label: 'Obra Social', type: 'TEXT', required: false, system: true },
+          ]
+        }
+      ]
+    };
+    load(sysForm, 'patientForm');
+    const original = structuredClone(component.working());
+    component.renameCategory('sys_patient_profile', 'Nuevo Nombre');
+    expect(component.categories()[0].title).toBe('Datos Personales');
+    component.toggleCategory('sys_patient_profile');
+    expect(component.categories()[0].enabled).toBe(true);
+    component.deleteCategory('sys_patient_profile');
+    expect(component.categories()[0].key).toBe('sys_patient_profile');
+    component.deleteField('sys_patient_profile', 'sys_firstName');
+    expect(component.allFields().some(f => f.key === 'sys_firstName')).toBe(true);
+    component.openField('sys_patient_profile', 'sys_firstName');
+    expect(component.fieldDraft()).toBeNull();
+    component.moveField('sys_patient_profile', 'sys_firstName', 1);
+    expect(component.allFields()[0].key).toBe('sys_firstName');
+    component.duplicateField('sys_patient_profile', 'sys_firstName');
+    expect(component.allFields().filter(f => f.key.startsWith('sys_firstName'))).toHaveLength(1);
+    expect(component.working()).toEqual(original);
   });
 
-  it('rejects duplicate bindings and enforces measurement units and numeric bounds', () => {
-    load(customSpecialtyFixture.definition.patientForm, 'patientForm');
-    component.openField('new_patient_category'); component.updateDraft({ label: 'Otro nombre' }); component.setBinding('patient.fullName'); component.saveField();
-    expect(component.error()).toContain('ya está vinculado');
-    component.closeField(); load({ categories: [{ key: 'measurements', title: 'Mediciones', enabled: true, fields: [] }] });
-    component.openField('measurements'); component.updateDraft({ label: 'Peso' }); component.setBinding('encounter.weightKg');
-    expect(component.fieldDraft()).toMatchObject({ type: 'NUMBER', unit: 'kg' });
-    component.updateDraft({ unit: 'g' }); component.saveField(); expect(component.error()).toContain('kg');
+  it('enforces measurement units and numeric bounds on custom fields', () => {
+    load({ categories: [{ key: 'measurements', title: 'Mediciones', enabled: true, fields: [] }] });
+    component.openField('measurements'); component.updateDraft({ label: 'Peso' }); component.setType('NUMBER');
     component.updateDraft({ unit: 'kg', minimum: 20, maximum: 10 }); component.saveField(); expect(component.error()).toContain('mínimo');
     component.updateDraft({ maximum: 40 }); component.saveField(); expect(component.allFields()[0]).toMatchObject({ unit: 'kg', minimum: 20, maximum: 40 });
   });

@@ -57,7 +57,7 @@ describe('Administrative wizard editor and HTTP contract', () => {
     loadEditor('patientForm');
     editor.newCategoryTitle.set('Categoría inédita'); editor.addCategory();
     const key = editor.categories()[0].key;
-    editor.openField(key); editor.updateDraft({ label: 'Nombre completo', required: true }); editor.setBinding('patient.fullName'); editor.saveField();
+    editor.openField(key); editor.updateDraft({ label: 'Nombre completo', required: true }); editor.saveField();
     expect(editor.error()).toBeNull();
     // This is deliberately incomplete: server permits a draft, then checks birthDate at publication.
     expect(definition.patientForm.categories[0].fields).toHaveLength(1);
@@ -120,7 +120,7 @@ describe('Administrative wizard editor and HTTP contract', () => {
     loadEditor('patientForm'); editor.renameCategory('new_patient_category', 'Cambios sin guardar');
     const local = structuredClone(definition);
     const failure = { code: 'INVALID_WIZARD_DEFINITION', message: 'La configuración contiene campos inválidos.',
-      errors: [{ path: '/patientForm/categories/0/fields/0/binding', code: 'MISSING_PATIENT_CORE' }] };
+      errors: [{ path: '/patientForm/categories/0/key', code: 'MISSING_PATIENT_CORE' }] };
     let received: unknown;
     service.publishWizard(specialty.id, wizard.version).subscribe({ error: error => received = error.error });
     http.expectOne(`${base}/${specialty.id}/wizard/publish`).flush(failure, { status: 400, statusText: 'Bad Request' });

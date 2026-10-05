@@ -7,7 +7,7 @@ import { AdminSpecialtiesComponent } from './admin-specialties.component';
 import { AdminSpecialtyService } from '../../core/services/admin-specialty.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SpecialtyDetail, WizardDefaultDetail } from '../../core/models/admin-specialty.model';
-import { WizardDefinition } from '../../core/models/wizard-definition.model';
+import { createDefaultWizardDefinition, WizardDefinition } from '../../core/models/wizard-definition.model';
 import { FormFieldEditorComponent } from '../form-field-editor/form-field-editor.component';
 import { customSpecialtyFixture } from '../onboarding/testing/custom-specialty.fixture';
 
@@ -63,15 +63,27 @@ describe('AdminSpecialtiesComponent', () => {
     expect(fixture.debugElement.queryAll(By.directive(FormFieldEditorComponent))).toHaveLength(2);
   });
 
-  it('creates an empty inactive draft with a suggested editable code and no specialty defaults', async () => {
+  it('creates an inactive draft with system patient profile defaults and suggested editable code', async () => {
     component.requestCreate(); fixture.detectChanges();
     expect(component.name()).toBe('');
-    expect(component.definition()).toEqual({ schemaVersion: 1, patientForm: { categories: [] }, encounterForm: { categories: [] }, modulesConfig: { MEDICATION_CATALOG: false, AI_ASSISTANT: false, GROWTH_CHARTS: false } });
+    expect(component.definition()).toEqual(createDefaultWizardDefinition());
+    expect(component.definition()?.patientForm.categories[0].key).toBe('sys_patient_profile');
+    expect(component.definition()?.patientForm.categories[0].system).toBe(true);
+    expect(component.definition()?.patientForm.categories[0].fields).toHaveLength(8);
     component.updateName('Especialidad Inédita'); expect(component.code()).toBe('especialidad-inedita');
     component.updateCode('custom_identity'); component.updateName('Nombre editado');
     expect(component.code()).toBe('custom_identity');
     await component.createSpecialty(); fixture.detectChanges();
-    expect(service.createSpecialty).toHaveBeenCalledWith({ code: 'custom_identity', name: 'Nombre editado', description: null, definition: expect.objectContaining({ patientForm: { categories: [] } }) });
+    expect(service.createSpecialty).toHaveBeenCalledWith({
+      code: 'custom_identity',
+      name: 'Nombre editado',
+      description: null,
+      definition: expect.objectContaining({
+        patientForm: expect.objectContaining({
+          categories: expect.arrayContaining([expect.objectContaining({ key: 'sys_patient_profile', system: true })]),
+        }),
+      }),
+    });
     expect(service.getWizard).toHaveBeenLastCalledWith(91);
     expect(component.selectedSpecialty()?.active).toBe(false);
     expect(component.creating()).toBe(false);

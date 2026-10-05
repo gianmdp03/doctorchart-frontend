@@ -128,19 +128,85 @@
   align-items: center;
   padding: 0.25rem;
   border-radius: 50%;
+  z-index: 2;
 }
 
 .password-visibility-toggle:hover {
   color: var(--md-sys-color-primary);
 }
 
+.m3-textfield {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.m3-textfield input {
+  width: 100%;
+  height: 52px;
+  padding: 0 1rem;
+  border: 1.5px solid var(--md-sys-color-outline-variant, #bfc8ca);
+  border-radius: var(--md-shape-s, 8px);
+  background-color: #ffffff;
+  color: var(--md-sys-color-on-surface, #191c1d);
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.m3-textfield input:focus {
+  border-color: var(--md-sys-color-primary, #006874);
+  box-shadow: 0 0 0 3px rgba(0, 104, 116, 0.12);
+}
+
+.m3-textfield label {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.92rem;
+  color: var(--md-sys-color-secondary, #4a6267);
+  pointer-events: none;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: transparent;
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.m3-textfield input:focus ~ label,
+.m3-textfield input:not(:placeholder-shown) ~ label,
+.m3-textfield input:-webkit-autofill ~ label {
+  top: 0;
+  transform: translateY(-50%) scale(0.82);
+  transform-origin: left center;
+  left: 0.75rem;
+  background-color: #ffffff;
+  font-weight: 600;
+  color: var(--md-sys-color-primary, #006874);
+  z-index: 1;
+}
+
+.m3-textfield:has(.password-visibility-toggle) input,
+.m3-textfield.password-field input {
+  padding-right: 2.75rem;
+}
+
 .m3-textfield.has-error input {
-  border-color: var(--md-sys-color-error);
+  border-color: var(--md-sys-color-error, #ba1a1a);
+}
+
+.m3-textfield.has-error input:focus {
+  border-color: var(--md-sys-color-error, #ba1a1a);
+  box-shadow: 0 0 0 3px rgba(186, 26, 26, 0.12);
 }
 
 .m3-textfield.has-error label,
-.error-helper-text {
-  color: var(--md-sys-color-error);
+.m3-textfield.has-error input:focus ~ label,
+.m3-textfield.has-error input:not(:placeholder-shown) ~ label,
+.m3-textfield.has-error input:-webkit-autofill ~ label {
+  color: var(--md-sys-color-error, #ba1a1a);
 }
 
 .error-helper-text {
