@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  DestroyRef,
   Component,
   computed,
   effect,
@@ -7,6 +8,9 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { catchError, finalize, map, of, switchMap, timer } from 'rxjs';
+import { calculatorInputSummary } from '../../core/models/calculator-input-summary';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -46,6 +50,7 @@ import {
 } from '@ng-icons/lucide';
 import {
   CalculationExecutionRequestDTO,
+  CalculationPreviewRequestDTO,
   CalculationResult,
   CalculatorCategory,
   CalculatorId,
@@ -107,6 +112,7 @@ import { DatePickerComponent } from '../../shared/date-picker/date-picker.compon
 })
 export class MedicalCalculatorsComponent implements OnInit {
   readonly calcService = inject(MedicalCalculatorsService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly activePatientService = inject(ActivePatientService);
   readonly workspaceStore = inject(WorkspaceStore);
 
@@ -322,30 +328,30 @@ export class MedicalCalculatorsComponent implements OnInit {
   // -------------------------------------------------------------
   // Dynamic Results Computation
   // -------------------------------------------------------------
-  readonly currentResult = computed<CalculationResult | null>(() => {
+  readonly currentInputs = computed<Record<string, unknown>>(() => {
     const id = this.selectedId();
 
     switch (id) {
       case 'imc':
-        return this.calcService.calculateBmi({
+        return {
           weightKg: this.bmiWeight(),
           heightCm: this.bmiHeight(),
-        });
+        };
       case 'tfge':
-        return this.calcService.calculateTfge({
+        return {
           creatinineMgDl: this.tfgeCreatinine(),
           ageYears: this.tfgeAge(),
           gender: this.tfgeGender(),
-        });
+        };
       case 'cockcroft':
-        return this.calcService.calculateCockcroftGault({
+        return {
           weightKg: this.cockcroftWeight(),
           ageYears: this.cockcroftAge(),
           creatinineMgDl: this.cockcroftCreatinine(),
           gender: this.cockcroftGender(),
-        });
+        };
       case 'chads_vasc':
-        return this.calcService.calculateChadsVasc({
+        return {
           ageYears: this.chadsAge(),
           isFemale: this.chadsFemale(),
           congestiveHeartFailure: this.chadsHeartFailure(),
@@ -353,36 +359,67 @@ export class MedicalCalculatorsComponent implements OnInit {
           diabetes: this.chadsDiabetes(),
           strokeOrTia: this.chadsStroke(),
           vascularDisease: this.chadsVascular(),
-        });
+        };
       case 'calcio_corregido':
-        return this.calcService.calculateCalciumCorrection({
+        return {
           serumCalciumMgDl: this.calciumValue(),
           serumAlbuminGDl: this.albuminValue(),
-        });
+        };
       case 'holliday_segar':
-        return this.calcService.calculateHollidaySegar({
+        return {
           weightKg: this.hollidayWeight(),
-        });
+        };
       case 'bsa_mosteller':
-        return this.calcService.calculateBsaMosteller({
+        return {
           weightKg: this.bsaWeight(),
           heightCm: this.bsaHeight(),
-        });
+        };
       case 'pediatric_dosage':
-        return this.calcService.calculatePediatricDosage({
+        return {
           weightKg: this.pediatricWeight(),
           targetDoseMgKg: this.pediatricTargetDose(),
           doseUnit: this.pediatricDoseUnit(),
           drugConcentrationMg: this.pediatricDrugConcentrationMg(),
           drugConcentrationMl: this.pediatricDrugConcentrationMl(),
           dosesPerDay: this.pediatricDosesPerDay(),
-        });
+        };
       default:
-        return null;
+        return {};
     }
   });
 
+  readonly previewRequest = computed<CalculationPreviewRequestDTO | null>(() => this.isCurrentInputComplete()
+    ? { calculationCode: this.selectedId(), inputSnapshot: this.currentInputs() } : null);
+  private readonly previewResult = signal<{ requestKey: string; result: CalculationResult } | null>(null);
+  readonly currentResult = computed(() => {
+    const request = this.previewRequest(), preview = this.previewResult();
+    return request && preview?.requestKey === JSON.stringify(request) ? preview.result : null;
+  });
+  readonly isCalculating = signal(false);
+  readonly calculationError = signal<string | null>(null);
+  readonly saveError = signal<string | null>(null);
+
   constructor() {
+    toObservable(this.previewRequest).pipe(
+      switchMap(request => {
+        this.calculationError.set(null);
+        this.saveFeedback.set(false);
+        this.saveError.set(null);
+        this.isCalculating.set(!!request);
+        if (!request) return of(null);
+        const requestKey = JSON.stringify(request);
+        return timer(150).pipe(
+          switchMap(() => this.calcService.previewCalculation(request)),
+          map(result => ({ requestKey, result })),
+          catchError(error => {
+            this.calculationError.set(error.error?.message ?? 'No se pudo calcular el resultado.');
+            return of(null);
+          }),
+          finalize(() => this.isCalculating.set(false)),
+        );
+      }),
+      takeUntilDestroyed(),
+    ).subscribe(preview => this.previewResult.set(preview));
     // Automatically load backend history whenever the active patient changes
     effect(() => {
       const patient = this.activePatient();
@@ -774,122 +811,57 @@ export class MedicalCalculatorsComponent implements OnInit {
     }
   }
 
-  // Save calculation execution (Persists immutably to backend if patient exists)
   saveResultToRecord(): void {
-    const res = this.currentResult();
-    if (!res) return;
-
-    const meta = this.currentMetadata();
+    const result = this.currentResult();
+    if (!result || this.isSavingLog()) return;
     const patient = this.activePatient();
-
-    const snapshot = this.buildCurrentInputSnapshot();
-
-    // 1. Local storage / cache save
-    this.calcService.saveCalculation({
-      calculatorId: meta.id,
-      calculatorName: meta.name,
-      patientId: patient?.id ?? null,
-      patientName: patient?.fullName ?? null,
-      resultHeadline: `${res.formattedValue} ${res.unit}`,
-      interpretationLabel: res.interpretation.label,
-      severity: res.interpretation.severity,
-      calculatedAt: res.calculatedAt,
-      plainTextEvolution: res.plainTextEvolution,
-      inputsSummary: snapshot as Record<string, string | number | boolean>,
-    });
-
-    // 2. Immutable backend persistence when patient context is present
-    if (patient?.id) {
-      this.isSavingLog.set(true);
-      const payload: CalculationExecutionRequestDTO = {
-        patientId: patient.id,
-        calculationCode: meta.id,
-        calculationName: meta.name,
-        inputSnapshot: snapshot,
-        resultValue: typeof res.rawValue === 'number' ? res.rawValue : null,
-        formattedResult: `${res.formattedValue} ${res.unit}`.trim(),
-        resultUnit: res.unit,
-        resultInterpretation: res.interpretation.label,
-        severity: res.interpretation.severity,
-        plainTextEvolution: res.plainTextEvolution,
-      };
-
-      this.calcService.executeAndSaveToBackend(payload).subscribe({
-        next: (savedLog) => {
-          this.isSavingLog.set(false);
-          this.saveFeedback.set(true);
-          setTimeout(() => this.saveFeedback.set(false), 2500);
-          // Prepend saved log to reactive patient history
-          this.patientBackendHistory.update((hist) => [savedLog, ...hist]);
-        },
-        error: (err) => {
-          this.isSavingLog.set(false);
-          console.error('Error persisting calculation log to backend', err);
-          this.saveFeedback.set(true);
-          setTimeout(() => this.saveFeedback.set(false), 2500);
-        },
+    const snapshot = this.currentInputs();
+    this.saveError.set(null);
+    this.saveFeedback.set(false);
+    if (!patient?.id) {
+      this.calcService.saveCalculation({
+        calculatorId: result.calculatorId, calculatorName: result.calculationName,
+        patientId: null, patientName: null, resultHeadline: `${result.formattedValue} ${result.unit}`,
+        interpretationLabel: result.interpretation.label, severity: result.interpretation.severity,
+        calculatedAt: result.calculatedAt, plainTextEvolution: result.plainTextEvolution,
+        inputsSummary: calculatorInputSummary(result.calculatorId, snapshot),
       });
-    } else {
-      this.saveFeedback.set(true);
-      setTimeout(() => this.saveFeedback.set(false), 2500);
+      this.showSaveSuccess();
+      return;
     }
+    this.isSavingLog.set(true);
+    const payload: CalculationExecutionRequestDTO = {
+      patientId: patient.id, calculationCode: result.calculatorId, inputSnapshot: snapshot,
+    };
+    this.calcService.executeAndSaveToBackend(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: savedLog => {
+        this.isSavingLog.set(false);
+        this.calcService.saveCalculation({
+          calculatorId: savedLog.calculationCode as CalculatorId, calculatorName: savedLog.calculationName,
+          patientId: savedLog.patientId, patientName: savedLog.patientFullName, resultHeadline: savedLog.formattedResult,
+          interpretationLabel: savedLog.resultInterpretation ?? '', severity: savedLog.severity as SavedCalculationItem['severity'],
+          calculatedAt: savedLog.createdAt, plainTextEvolution: savedLog.plainTextEvolution ?? '',
+          inputsSummary: calculatorInputSummary(savedLog.calculationCode as CalculatorId, savedLog.inputSnapshot),
+        });
+        if (this.activePatient()?.id === savedLog.patientId) {
+          this.patientBackendHistory.update(history => [savedLog, ...history]);
+          this.showSaveSuccess();
+        }
+      },
+      error: error => {
+        this.isSavingLog.set(false);
+        this.saveError.set(error.error?.message ?? 'No se pudo guardar el cálculo.');
+      },
+    });
   }
 
-  private buildCurrentInputSnapshot(): Record<string, unknown> {
-    const id = this.selectedId();
-    switch (id) {
-      case 'imc':
-        return {
-          'Peso (kg)': this.bmiWeight(),
-          'Talla (cm)': this.bmiHeight(),
-        };
-      case 'tfge':
-        return {
-          'Creatinina (mg/dL)': this.tfgeCreatinine(),
-          'Edad (años)': this.tfgeAge(),
-          'Sexo': this.tfgeGender() === 'FEMALE' ? 'Femenino' : 'Masculino',
-        };
-      case 'cockcroft':
-        return {
-          'Peso (kg)': this.cockcroftWeight(),
-          'Edad (años)': this.cockcroftAge(),
-          'Creatinina (mg/dL)': this.cockcroftCreatinine(),
-          'Sexo': this.cockcroftGender() === 'FEMALE' ? 'Femenino' : 'Masculino',
-        };
-      case 'chads_vasc':
-        return {
-          'Edad (años)': this.chadsAge(),
-          'Sexo Femenino': this.chadsFemale(),
-          'Insuficiencia Cardíaca': this.chadsHeartFailure(),
-          'Hipertensión': this.chadsHypertension(),
-          'Diabetes': this.chadsDiabetes(),
-          'ACV previo / AIT': this.chadsStroke(),
-          'Enfermedad Vascular': this.chadsVascular(),
-        };
-      case 'calcio_corregido':
-        return {
-          'Calcio Sérico (mg/dL)': this.calciumValue(),
-          'Albúmina (g/dL)': this.albuminValue(),
-        };
-      case 'holliday_segar':
-        return {
-          'Peso Pediátrico (kg)': this.hollidayWeight(),
-        };
-      case 'bsa_mosteller':
-        return {
-          'Peso (kg)': this.bsaWeight(),
-          'Talla (cm)': this.bsaHeight(),
-        };
-      case 'pediatric_dosage':
-        return {
-          'Peso (kg)': this.pediatricWeight(),
-          'Dosis objetivo': `${this.pediatricTargetDose()} ${this.pediatricDoseUnit()}`,
-          'Concentración': `${this.pediatricDrugConcentrationMg()} mg / ${this.pediatricDrugConcentrationMl()} mL`,
-          'Frecuencia': `${this.pediatricDosesPerDay()} veces al día`,
-        };
-      default:
-        return {};
-    }
+  private showSaveSuccess(): void {
+    this.saveFeedback.set(true);
+    setTimeout(() => this.saveFeedback.set(false), 2500);
+  }
+
+  historyInputSummary(log: PatientCalculationLogDetailDTO): Record<string, string | number | boolean> {
+    return calculatorInputSummary(log.calculationCode as CalculatorId, log.inputSnapshot);
   }
 
   // -------------------------------------------------------------

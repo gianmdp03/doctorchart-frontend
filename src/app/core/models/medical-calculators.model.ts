@@ -18,8 +18,9 @@ export type CalculatorCategory =
   | 'pediatria';
 
 export interface InterpretationRange {
-  readonly min: number;
-  readonly max: number;
+  readonly code: string;
+  readonly min: number | null;
+  readonly max: number | null;
   readonly label: string;
   readonly severity: SeverityLevel;
   readonly clinicalAction?: string;
@@ -42,6 +43,7 @@ export interface CalculatorMetadata {
 
 export interface CalculationResult<T = number> {
   readonly calculatorId: CalculatorId;
+  readonly calculationName: string;
   readonly rawValue: T;
   readonly formattedValue: string;
   readonly unit: string;
@@ -73,60 +75,6 @@ export interface SavedCalculationItem {
 }
 
 // -------------------------------------------------------------
-// Input Models
-// -------------------------------------------------------------
-export interface BmiCalculatorInputs {
-  weightKg: number | null;
-  heightCm: number | null;
-}
-
-export interface TfgeCalculatorInputs {
-  creatinineMgDl: number | null;
-  ageYears: number | null;
-  gender: 'FEMALE' | 'MALE';
-}
-
-export interface CockcroftCalculatorInputs {
-  weightKg: number | null;
-  ageYears: number | null;
-  creatinineMgDl: number | null;
-  gender: 'FEMALE' | 'MALE';
-}
-
-export interface ChadsVascCalculatorInputs {
-  ageYears: number | null;
-  isFemale: boolean;
-  congestiveHeartFailure: boolean;
-  hypertension: boolean;
-  diabetes: boolean;
-  strokeOrTia: boolean;
-  vascularDisease: boolean;
-}
-
-export interface CalciumCorrectionInputs {
-  serumCalciumMgDl: number | null;
-  serumAlbuminGDl: number | null;
-}
-
-export interface HollidaySegarInputs {
-  weightKg: number | null;
-}
-
-export interface BsaMostellerInputs {
-  weightKg: number | null;
-  heightCm: number | null;
-}
-
-export interface PediatricDosageInputs {
-  weightKg: number | null;
-  targetDoseMgKg: number | null;
-  doseUnit: 'mg/kg/dia' | 'mg/kg/dosis';
-  drugConcentrationMg: number | null;
-  drugConcentrationMl: number | null;
-  dosesPerDay: number;
-}
-
-// -------------------------------------------------------------
 // Backend DTO Models
 // -------------------------------------------------------------
 export interface PatientAutofillDataDTO {
@@ -150,15 +98,17 @@ export interface CalculationExecutionRequestDTO {
   readonly patientId: number;
   readonly encounterId?: number | null;
   readonly calculationCode: string;
-  readonly calculationName: string;
   readonly inputSnapshot: Record<string, unknown>;
-  readonly resultValue?: number | null;
-  readonly formattedResult: string;
-  readonly resultUnit?: string;
-  readonly resultInterpretation?: string;
-  readonly severity?: SeverityLevel | string;
-  readonly plainTextEvolution?: string;
 }
+
+export interface CalculationPreviewRequestDTO {
+  readonly calculationCode: CalculatorId;
+  readonly inputSnapshot: Record<string, unknown>;
+}
+
+export type CalculationResultResponseDTO = Omit<CalculationResult, 'interpretation'> & {
+  readonly interpretation: Omit<InterpretationRange, 'badgeClass' | 'cardBorderClass' | 'bgHighlightClass'>;
+};
 
 export interface PatientCalculationLogDetailDTO {
   readonly id: number;

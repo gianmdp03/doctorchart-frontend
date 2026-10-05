@@ -913,15 +913,26 @@
                     }
                   </button>
                 </div>
+                @if (saveError()) {
+                  <p role="alert" class="text-rose-700 dark:text-rose-300">{{ saveError() }}</p>
+                }
               </div>
             } @else {
               <!-- Incomplete inputs state -->
               <div class="incomplete-inputs-state">
-                <ng-icon name="lucideInfo" class="incomplete-icon" />
-                <h4 class="incomplete-title">Parámetros incompletos</h4>
-                <p class="incomplete-text">
-                  Ingresa valores numéricos válidos en los campos de la izquierda o utiliza el botón <strong>Autocompletar datos del paciente</strong> para obtener el cálculo clínico inmediato.
-                </p>
+                @if (isCalculating()) {
+                  <ng-icon name="lucideRefreshCw" class="incomplete-icon animate-spin" />
+                  <h4 class="incomplete-title">Calculando...</h4>
+                } @else if (calculationError()) {
+                  <ng-icon name="lucideAlertCircle" class="incomplete-icon" />
+                  <p class="incomplete-text" role="alert">{{ calculationError() }}</p>
+                } @else {
+                  <ng-icon name="lucideInfo" class="incomplete-icon" />
+                  <h4 class="incomplete-title">Parámetros incompletos</h4>
+                  <p class="incomplete-text">
+                    Ingresa valores numéricos válidos en los campos de la izquierda o utiliza el botón <strong>Autocompletar datos del paciente</strong> para obtener el cálculo clínico inmediato.
+                  </p>
+                }
               </div>
             }
           </div>
@@ -1073,7 +1084,7 @@
                 <div class="history-expanded-body">
                   <h5 class="snapshot-section-title">Parámetros registrados al momento del cálculo:</h5>
                   <div class="snapshot-badges-row">
-                    @for (entry of log.inputSnapshot | keyvalue; track entry.key) {
+                    @for (entry of historyInputSummary(log) | keyvalue; track entry.key) {
                       <div class="snapshot-param-chip">
                         <span class="chip-key">{{ entry.key }}:</span>
                         <span class="chip-val">{{ entry.value }}</span>
