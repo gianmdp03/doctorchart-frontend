@@ -1,3 +1,5 @@
+import { SavedPrescriptionRecord, PrescriptionDocumentType } from '../../core/models/prescription.model';
+import { PatientPrescriptionStore } from './patient-prescription.store';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Component,
@@ -62,16 +64,6 @@ import {
 export type PatientRecordTab = 'resumen' | 'historia' | 'vacunas' | 'curvas' | 'recetas' | 'estudios';
 export type PrescriptionOrderFormMode = 'MEDICATION' | 'STUDY';
 
-export interface SavedPrescriptionRecord {
-  id: number;
-  createdAt: string;
-  type: 'PRESCRIPTION' | 'STUDY_ORDERS';
-  diagnosisDescription: string;
-  generalInstructions: string;
-  prescriptions: PrescriptionItem[];
-  diagnosticOrders: string[];
-}
-
 export interface RecordTabItem {
   id: PatientRecordTab;
   label: string;
@@ -121,6 +113,7 @@ export interface ComplicationChip {
     NewPatientDialogComponent,
   ],
   providers: [
+    PatientPrescriptionStore,
     provideIcons({
       lucideChevronLeft,
       lucidePlus,
@@ -145,6 +138,8 @@ export interface ComplicationChip {
   styleUrl: './patient-record.component.css',
 })
 export class PatientRecordComponent implements OnInit {
+  readonly prescriptionStore = inject(PatientPrescriptionStore);
+  private rxPatientId: number | null = null;
   readonly authService = inject(AuthService);
   readonly activePatientService = inject(ActivePatientService);
   readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
@@ -257,9 +252,10 @@ export class PatientRecordComponent implements OnInit {
 
   readonly draftPrescriptions = signal<PrescriptionItem[]>([]);
   readonly draftStudies = signal<string[]>([]);
-  readonly savedPrescriptionRecords = signal<SavedPrescriptionRecord[]>([]);
-  readonly rxErrorMessage = signal<string | null>(null);
-  readonly rxSuccessMessage = signal<string | null>(null);
+  readonly savedPrescriptionRecords = this.prescriptionStore.records;
+  readonly rxErrorMessage = this.prescriptionStore.error;
+  readonly rxSuccessMessage = this.prescriptionStore.success;
+  readonly rxBusy = this.prescriptionStore.busy;
 
   readonly commonStudySuggestions: readonly string[] = [
     'Tomografía Axial Computada (TAC)',
@@ -304,7 +300,7 @@ export class PatientRecordComponent implements OnInit {
           this.isLoadingCheckups.set(false); this.isLoadingEncounters.set(false); this.isLoadingGrowthCurves.set(false);
           this.checkups.set([]);
           this.encounters.set([]);
-          this.savedPrescriptionRecords.set([]);
+          this.loadSavedPrescriptions(null);
           this.backendGrowthMeasurements.set([]);
         }
       });
@@ -500,31 +496,11 @@ export class PatientRecordComponent implements OnInit {
   }
 
   // --- Métodos para Formulario de Recetas y Estudios ---
-  loadSavedPrescriptions(patientId: number): void {
-    if (!isPlatformBrowser(this.platformId) || typeof localStorage === 'undefined') {
-      return;
+  loadSavedPrescriptions(patientId: number | null): void {
+    if (patientId !== this.rxPatientId) {
+      this.clearRxForm(); this.rxPatientId = patientId;
     }
-    try {
-      const raw = localStorage.getItem(`dc_rx_records_${patientId}`);
-      if (raw) {
-        const parsed = JSON.parse(raw) as SavedPrescriptionRecord[];
-        if (Array.isArray(parsed)) {
-          this.savedPrescriptionRecords.set(parsed);
-          return;
-        }
-      }
-    } catch {}
-    this.savedPrescriptionRecords.set([]);
-  }
-
-  private persistSavedPrescriptions(records: SavedPrescriptionRecord[]): void {
-    const patientId = this.activePatientService.patientId();
-    if (!patientId || !isPlatformBrowser(this.platformId) || typeof localStorage === 'undefined') {
-      return;
-    }
-    try {
-      localStorage.setItem(`dc_rx_records_${patientId}`, JSON.stringify(records));
-    } catch {}
+    this.prescriptionStore.setPatient(patientId);
   }
 
   setRxFormMode(mode: PrescriptionOrderFormMode): void {
@@ -626,66 +602,40 @@ export class PatientRecordComponent implements OnInit {
     }
   }
 
-  saveCurrentRxToHistory(): SavedPrescriptionRecord | null {
+  saveCurrentRxToHistory(onSaved?: (record: SavedPrescriptionRecord) => void): void {
+    if (this.rxBusy()) return;
     this.commitPendingRxInputs();
-
     const meds = this.draftPrescriptions();
     const studies = this.draftStudies();
-
     if (meds.length === 0 && studies.length === 0) {
       this.rxErrorMessage.set('Agregá al menos un medicamento o estudio médico (ej. Tomografía) para guardar o imprimir.');
-      return null;
+      return;
     }
-
-    const docType: 'PRESCRIPTION' | 'STUDY_ORDERS' =
-      this.rxFormMode() === 'STUDY' && studies.length > 0
-        ? 'STUDY_ORDERS'
-        : meds.length > 0
-          ? 'PRESCRIPTION'
-          : 'STUDY_ORDERS';
-
-    const newRecord: SavedPrescriptionRecord = {
-      id: Date.now(),
-      createdAt: new Date().toISOString(),
-      type: docType,
-      diagnosisDescription: this.rxDiagnosis().trim(),
+    const type: PrescriptionDocumentType = this.rxFormMode() === 'STUDY' && studies.length > 0
+      ? 'STUDY_ORDERS' : meds.length > 0 ? 'PRESCRIPTION' : 'STUDY_ORDERS';
+    this.prescriptionStore.save({ type, diagnosisDescription: this.rxDiagnosis().trim(),
       generalInstructions: this.rxGeneralInstructions().trim(),
-      prescriptions: [...meds],
-      diagnosticOrders: [...studies],
-    };
-
-    const updated = [newRecord, ...this.savedPrescriptionRecords()];
-    this.savedPrescriptionRecords.set(updated);
-    this.persistSavedPrescriptions(updated);
-    this.rxErrorMessage.set(null);
-    this.rxSuccessMessage.set('Receta / orden registrada en el historial del paciente.');
-    return newRecord;
+      prescriptions: meds.map(item => ({ ...item })), diagnosticOrders: [...studies],
+    }, onSaved);
   }
 
   reprintSavedRecord(record: SavedPrescriptionRecord): void {
+    this.prescriptionStore.reprint(record.id, saved => this.openSavedPrescription(saved));
+  }
+
+  private openSavedPrescription(record: SavedPrescriptionRecord, forcedType?: PrescriptionDocumentType): void {
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('open-prescription-print-modal', {
-          detail: {
-            id: record.id,
-            type: record.type,
-            encounterDate: record.createdAt,
-            primaryDiagnosisCode: null,
-            primaryDiagnosisDescription: record.diagnosisDescription,
-            prescriptions: record.prescriptions,
-            diagnosticOrders: record.diagnosticOrders,
-            followUpInstructions: record.generalInstructions,
-          },
-        })
-      );
+      window.dispatchEvent(new CustomEvent('open-prescription-print-modal', { detail: {
+        id: record.id, patientId: record.patientId, authorUserId: record.authorUserId,
+        type: forcedType || record.type, encounterDate: record.createdAt,
+        primaryDiagnosisCode: null, primaryDiagnosisDescription: record.diagnosisDescription,
+        prescriptions: record.prescriptions, diagnosticOrders: record.diagnosticOrders,
+        followUpInstructions: record.generalInstructions,
+      } }));
     }
   }
 
-  deleteSavedRecord(recordId: number): void {
-    const updated = this.savedPrescriptionRecords().filter((r) => r.id !== recordId);
-    this.savedPrescriptionRecords.set(updated);
-    this.persistSavedPrescriptions(updated);
-  }
+  deleteSavedRecord(recordId: number): void { this.prescriptionStore.delete(recordId); }
 
   formatRxDate(isoString: string): string {
     try {
@@ -703,31 +653,18 @@ export class PatientRecordComponent implements OnInit {
       return;
     }
 
+    if (this.rxBusy()) return;
     this.commitPendingRxInputs();
     const currentMeds = this.draftPrescriptions();
     const currentStudies = this.draftStudies();
 
     if (currentMeds.length > 0 || currentStudies.length > 0) {
-      const saved = this.saveCurrentRxToHistory();
-      const docType: 'PRESCRIPTION' | 'STUDY_ORDERS' =
-        forcedType ||
-        saved?.type ||
-        (this.rxFormMode() === 'STUDY' && currentStudies.length > 0 ? 'STUDY_ORDERS' : 'PRESCRIPTION');
+      this.saveCurrentRxToHistory(saved => this.openSavedPrescription(saved, forcedType));
+      return;
+    }
 
-      window.dispatchEvent(
-        new CustomEvent('open-prescription-print-modal', {
-          detail: {
-            id: saved?.id || Date.now(),
-            type: docType,
-            encounterDate: new Date().toISOString(),
-            primaryDiagnosisCode: null,
-            primaryDiagnosisDescription: this.rxDiagnosis().trim() || undefined,
-            prescriptions: currentMeds,
-            diagnosticOrders: currentStudies,
-            followUpInstructions: this.rxGeneralInstructions().trim() || undefined,
-          },
-        })
-      );
+    if (this.prescriptionStore.loadError()) {
+      this.rxErrorMessage.set('Reintentá cargar el historial antes de imprimir un documento guardado.');
       return;
     }
 

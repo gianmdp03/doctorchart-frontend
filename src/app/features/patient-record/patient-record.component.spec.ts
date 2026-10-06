@@ -12,7 +12,9 @@ import { ClinicalEncounterService } from '../../core/services/clinical-encounter
 import { AuthService } from '../../core/services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PLATFORM_ID, signal } from '@angular/core';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
+import { PatientPrescriptionService } from '../../core/services/patient-prescription.service';
+import { SavedPrescriptionRecord } from '../../core/models/prescription.model';
 import { PatientDetailDTO } from '../../core/models/patient.model';
 import { MedicalCheckupDetailDTO } from '../../core/models/checkup.model';
 import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
@@ -27,6 +29,10 @@ describe('PatientRecordComponent', () => {
   let encounterServiceSpy: any;
   let routerSpy: any;
   let authServiceMock: any;
+  let prescriptionApi: any;
+  const issued = (patientId: number, request: any): SavedPrescriptionRecord => ({
+    ...request, id: 73, patientId, authorUserId: 'doctor', createdAt: '2026-10-05T12:34:56Z',
+  });
 
   const mockPatient: PatientDetailDTO = {
     ...clinicalFormFixture(),
@@ -152,6 +158,11 @@ describe('PatientRecordComponent', () => {
       getByPatient: vi.fn().mockReturnValue(of(mockEncountersList)),
       delete: vi.fn().mockReturnValue(of(undefined)),
     };
+    prescriptionApi = {
+      list: vi.fn().mockReturnValue(of([])),
+      create: vi.fn().mockImplementation((id, request) => of(issued(id, request))),
+      get: vi.fn(), delete: vi.fn().mockReturnValue(of(undefined)),
+    };
     routerSpy = {
       navigate: vi.fn(),
     };
@@ -167,6 +178,7 @@ describe('PatientRecordComponent', () => {
         provideHttpClient(), provideHttpClientTesting(),
         {provide:WorkspaceStore,useValue:{isModuleActive:()=>true}},
         ActivePatientService,
+        { provide: PatientPrescriptionService, useValue: prescriptionApi },
         { provide: PatientService, useValue: patientServiceSpy },
         { provide: CheckupService, useValue: checkupServiceSpy },
         { provide: ClinicalEncounterService, useValue: encounterServiceSpy },
@@ -274,7 +286,6 @@ describe('PatientRecordComponent', () => {
   it('should allow adding medications to draft and dispatching print modal', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
     dispatchSpy.mockClear();
-    localStorage.clear();
 
     component.setTab('recetas');
     component.setRxFormMode('MEDICATION');
@@ -304,7 +315,6 @@ describe('PatientRecordComponent', () => {
   it('should allow ordering diagnostic studies like Tomografía and dispatching print modal in STUDY_ORDERS mode', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
     dispatchSpy.mockClear();
-    localStorage.clear();
 
     component.setTab('recetas');
     component.setRxFormMode('STUDY');
@@ -362,5 +372,106 @@ describe('PatientRecordComponent', () => {
     expect(component.headCircumferenceMeasurements().length).toBeGreaterThanOrEqual(1);
     expect(component.totalMeasurementsCount()).toBeGreaterThan(0);
   });
-});
+  it('waits for persisted server identity before printing and ignores repeated clicks', () => {
+    const response = new Subject<SavedPrescriptionRecord>();
+    prescriptionApi.create.mockReturnValue(response);
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    component.setTab('recetas');
+    component.rxMedicationName.set('Amoxicilina');
+    component.printRecord(); component.printRecord(); component.saveCurrentRxToHistory();
+    fixture.detectChanges();
+    const emitButtons = [...fixture.nativeElement.querySelectorAll('button')].filter((button: any) =>
+      button.textContent.includes('Imprimir Receta Médica'));
+    expect(emitButtons).toHaveLength(2);
+    expect(emitButtons.every((button: any) => button.disabled)).toBe(true);
+    expect(prescriptionApi.create).toHaveBeenCalledTimes(1);
+    expect(component.savedPrescriptionRecords()).toEqual([]);
+    expect(dispatch).not.toHaveBeenCalled();
+    const request = prescriptionApi.create.mock.calls[0][1];
+    response.next(issued(10492, request)); response.complete();
+    expect(component.savedPrescriptionRecords()[0].id).toBe(73);
+    const event = dispatch.mock.calls[0][0] as CustomEvent;
+    expect(event.detail.id).toBe(73);
+    expect(event.detail.encounterDate).toBe('2026-10-05T12:34:56Z');
+    expect(event.detail.patientId).toBe(10492);
+    expect(event.detail.authorUserId).toBe('doctor');
+  });
 
+  it('preserves the draft and does not print or invent history after a save error', () => {
+    prescriptionApi.create.mockReturnValue(throwError(() => ({ status: 500 })));
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    component.rxStudyName.set('Tomografía');
+    component.printRecord();
+    expect(component.draftStudies()).toEqual(['Tomografía']);
+    expect(component.savedPrescriptionRecords()).toEqual([]);
+    expect(component.rxSuccessMessage()).toBeNull();
+    expect(component.rxErrorMessage()).toContain('No se pudo guardar');
+    expect(component.rxBusy()).toBe(false);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it('saves medications and studies together without sending browser identity or date', () => {
+    component.rxMedicationName.set('Paracetamol'); component.rxStudyName.set('ECG');
+    component.rxDiagnosis.set('Control'); component.rxGeneralInstructions.set('Reposo');
+    component.setRxFormMode('STUDY'); component.saveCurrentRxToHistory();
+    const [id, request] = prescriptionApi.create.mock.calls[0];
+    expect(id).toBe(10492); expect(request.type).toBe('STUDY_ORDERS');
+    expect(request.prescriptions[0].medicationName).toBe('Paracetamol');
+    expect(request.diagnosticOrders).toEqual(['ECG']);
+    expect(Object.keys(request).sort()).toEqual(['type','prescriptions','diagnosticOrders','diagnosisDescription','generalInstructions'].sort());
+  });
+
+  it('retrieves persisted content before reprinting instead of trusting the displayed row', () => {
+    const row = issued(10492, {type:'STUDY_ORDERS',prescriptions:[],diagnosticOrders:['ECG'], diagnosisDescription:'',generalInstructions:''});
+    prescriptionApi.get.mockReturnValue(of({...row, diagnosticOrders:['Tomografía guardada']}));
+    const dispatch = vi.spyOn(window,'dispatchEvent').mockClear();
+    component.reprintSavedRecord(row);
+    expect(prescriptionApi.get).toHaveBeenCalledWith(10492,73);
+    expect((dispatch.mock.calls[0][0] as CustomEvent).detail.diagnosticOrders).toEqual(['Tomografía guardada']);
+  });
+
+  it('keeps history after deletion errors and removes it only after backend acknowledgment', () => {
+    component.rxStudyName.set('ECG'); component.saveCurrentRxToHistory();
+    prescriptionApi.delete.mockReturnValue(throwError(() => ({status:500})));
+    component.deleteSavedRecord(73);
+    expect(component.savedPrescriptionRecords()).toHaveLength(1);
+    const response=new Subject<void>(); prescriptionApi.delete.mockReturnValue(response);
+    component.deleteSavedRecord(73);
+    expect(component.savedPrescriptionRecords()).toHaveLength(1);
+    response.next(); response.complete();
+    expect(component.savedPrescriptionRecords()).toEqual([]);
+  });
+
+  it('rejects empty documents without issuing an HTTP create', () => {
+    component.saveCurrentRxToHistory();
+    expect(prescriptionApi.create).not.toHaveBeenCalled();
+    expect(component.rxErrorMessage()).toContain('Agregá al menos');
+  });
+
+  it('does not print or insert a previous patient response after changing patients', () => {
+    const response = new Subject<SavedPrescriptionRecord>(); prescriptionApi.create.mockReturnValue(response);
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    component.rxMedicationName.set('Paracetamol'); component.printRecord();
+    const request = prescriptionApi.create.mock.calls[0][1];
+    activePatientService.setActivePatient({...mockPatient, id:20}); fixture.detectChanges();
+    response.next(issued(10492,request)); response.complete();
+    expect(component.savedPrescriptionRecords()).toEqual([]);
+    expect(component.draftPrescriptions()).toEqual([]);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(component.rxBusy()).toBe(false);
+  });
+
+  it('shows a history loading error with a retry that retrieves server records', () => {
+    prescriptionApi.list.mockReturnValue(throwError(() => ({status:500})));
+    component.loadSavedPrescriptions(20); component.setTab('recetas'); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No se pudo cargar el historial');
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    component.printRecord();
+    expect(dispatch).not.toHaveBeenCalled();
+    const row=issued(20,{type:'STUDY_ORDERS',prescriptions:[],diagnosticOrders:['ECG'],diagnosisDescription:'',generalInstructions:''});
+    prescriptionApi.list.mockReturnValue(of([row])); component.prescriptionStore.reload();
+    expect(component.savedPrescriptionRecords()).toEqual([row]);
+    expect(component.prescriptionStore.loadError()).toBeNull();
+  });
+
+});

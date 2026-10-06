@@ -192,6 +192,7 @@
                 <button
                   type="button"
                   class="cta-primary-btn btn-sm"
+                  [disabled]="rxBusy()"
                   (click)="printRecord()"
                 >
                   <ng-icon name="lucidePrinter" />
@@ -523,6 +524,7 @@
                   <button
                     type="button"
                     class="secondary-outline-btn btn-sm"
+                    [disabled]="rxBusy()"
                     (click)="saveCurrentRxToHistory()"
                   >
                     <ng-icon name="lucideCheckCircle2" />
@@ -531,6 +533,7 @@
                   <button
                     type="button"
                     class="cta-primary-btn btn-sm"
+                    [disabled]="rxBusy()"
                     (click)="printRecord()"
                   >
                     <ng-icon name="lucidePrinter" />
@@ -554,7 +557,12 @@
                 </div>
               </div>
               <div class="sec-card-body">
-                @if (savedPrescriptionRecords().length > 0) {
+                @if (prescriptionStore.loading()) {
+                  <p class="text-xs text-slate-500 py-3" role="status">Cargando recetas y órdenes...</p>
+                } @else if (prescriptionStore.loadError()) {
+                  <p class="text-xs text-slate-500 py-3" role="alert">{{ prescriptionStore.loadError() }}</p>
+                  <button type="button" class="secondary-outline-btn btn-xs" (click)="prescriptionStore.reload()">Reintentar</button>
+                } @else if (savedPrescriptionRecords().length > 0) {
                   <ul class="rx-history-list">
                     @for (rec of savedPrescriptionRecords(); track rec.id) {
                       <li class="rx-history-card">
@@ -586,6 +594,7 @@
                           <button
                             type="button"
                             class="secondary-outline-btn btn-xs"
+                            [disabled]="rxBusy()"
                             (click)="reprintSavedRecord(rec)"
                             title="Reimprimir documento"
                           >
@@ -595,6 +604,7 @@
                           <button
                             type="button"
                             class="rx-btn-remove"
+                            [disabled]="rxBusy()"
                             (click)="deleteSavedRecord(rec.id)"
                             title="Eliminar registro"
                             aria-label="Eliminar registro"
