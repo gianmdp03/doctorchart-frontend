@@ -5,7 +5,7 @@ import { signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { MedicalCalculatorsComponent } from './medical-calculators.component';
-import { MedicalCalculatorsService } from '../../core/services/medical-calculators.service';
+import { CalculatorSessionHistoryService } from '../../core/services/calculator-session-history.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { PatientDetailDTO } from '../../core/models/patient.model';
 import { CalculationResultResponseDTO } from '../../core/models/medical-calculators.model';
@@ -36,7 +36,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     fixture = TestBed.createComponent(MedicalCalculatorsComponent);
     component = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController);
-    TestBed.inject(MedicalCalculatorsService).clearHistory();
+    TestBed.inject(CalculatorSessionHistoryService).clear();
     fixture.detectChanges();
     http.expectOne(req => req.url.endsWith('/calculators/catalog')).flush(CALCULATOR_CATALOG_FIXTURE);
     http.expectOne(req => req.url.endsWith('/calculators/preferences')).flush({ favoriteCalculationCodes: ['holliday_segar'] });
@@ -108,7 +108,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     request.flush({ message: 'No se pudo guardar.' }, { status: 500, statusText: 'Error' });
     expect(component.saveFeedback()).toBe(false);
     expect(component.saveError()).toBe('No se pudo guardar.');
-    expect(component.calcService.savedHistory()).toEqual([]);
+    expect(TestBed.inject(CalculatorSessionHistoryService).items()).toEqual([]);
   });
 
   it('adds the backend-generated saved result to history only after confirmation', () => {
@@ -123,8 +123,9 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     });
     expect(component.saveFeedback()).toBe(true);
     expect(component.patientBackendHistory()[0].id).toBe(50);
-    expect(component.calcService.savedHistory()[0].plainTextEvolution).toBe('Evolución confirmada al guardar');
-    expect(component.calcService.savedHistory()[0].inputsSummary).toEqual({ 'Peso Pediátrico (kg)': 15 });
+    expect(component.patientBackendHistory()[0].plainTextEvolution).toBe('Evolución confirmada al guardar');
+    expect(component.historyInputSummary(component.patientBackendHistory()[0])).toEqual({ 'Peso Pediátrico (kg)': 15 });
+    expect(TestBed.inject(CalculatorSessionHistoryService).items()).toEqual([]);
   });
 
   it('uses the server catalog and preserves the pediatric favorites and their display order', () => {
@@ -568,7 +569,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     expect(component.isCurrentInputComplete()).toBe(false);
     expect(numberInputs().every(input=>input.value==='')).toBe(true);
     expect(component.saveFeedback()).toBe(false); expect(component.isSavingLog()).toBe(false);
-    expect(component.calcService.savedHistory()).toEqual([]);
+    expect(TestBed.inject(CalculatorSessionHistoryService).items()).toEqual([]);
     const preview = requestPreview(15);
     patient.set(null); fixture.detectChanges();
     expect(preview.cancelled).toBe(true); expect(component.currentResult()).toBeNull();
@@ -591,12 +592,16 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     expect(component.patientBackendHistory()).toEqual([]); expect(component.historyFilterCode()).toBe('all');
     http.expectOne(req=>req.url.endsWith('/patients/20/history')).flush([]);
   });
-  it('scopes visible local history and clearing to the selected patient', () => {
-    const item={calculatorId:'holliday_segar' as const,calculatorName:'Holliday',resultHeadline:'1250',interpretationLabel:'Normal',severity:'normal' as const,calculatedAt:RESULT.calculatedAt,plainTextEvolution:'Texto',inputsSummary:{}};
-    component.calcService.saveCalculation({...item,patientId:10}); component.calcService.saveCalculation({...item,patientId:20});
-    attachPatient(); expect(component.localHistory().map(item=>item.patientId)).toEqual([10]);
-    vi.spyOn(window,'confirm').mockReturnValueOnce(true); component.clearLocalHistory();
-    expect(component.localHistory()).toEqual([]); expect(component.calcService.savedHistory().map(item=>item.patientId)).toEqual([20]);
+  it('keeps patient-free calculations in the session and never mixes them with clinical history', () => {
+    requestPreview(15).flush(RESULT); component.saveResultToRecord();
+    http.expectNone(req => req.url.endsWith('/execute'));
+    expect(component.sessionHistory()[0].plainTextEvolution).toBe(RESULT.plainTextEvolution);
+    attachPatient(); expect(component.sessionHistory()).toEqual([]);
+    vi.spyOn(window, 'confirm').mockReturnValue(true); component.clearSessionHistory();
+    expect(TestBed.inject(CalculatorSessionHistoryService).items()).toHaveLength(1);
+    patient.set(null); fixture.detectChanges(); expect(component.sessionHistory()).toHaveLength(1);
+    component.clearSessionHistory(); expect(component.sessionHistory()).toEqual([]);
+    expect(component.patientBackendHistory()).toEqual([]);
   });
   it('reloads catalog and preferences for a different account and cancels old preference writes', () => {
     component.toggleFavoriteCalculator('imc'); const pending=http.expectOne(req=>req.method==='PUT');

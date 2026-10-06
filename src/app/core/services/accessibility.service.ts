@@ -1,9 +1,6 @@
 import { Injectable, PLATFORM_ID, inject, signal, computed, effect } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-
-export type FontSizeLevel = 'normal' | 'large' | 'xlarge';
-
-const STORAGE_KEY = 'doctorchart_font_size';
+import { BrowserUiStorageService, FontSizeLevel } from './browser-ui-storage.service';
 
 @Injectable({
   providedIn: 'root',
@@ -11,8 +8,9 @@ const STORAGE_KEY = 'doctorchart_font_size';
 export class AccessibilityService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private readonly storage = inject(BrowserUiStorageService);
 
-  readonly fontSizeLevel = signal<FontSizeLevel>(this.getInitialFontSize());
+  readonly fontSizeLevel = signal<FontSizeLevel>(this.storage.readFontSize());
 
   readonly fontSizeLabel = computed(() => {
     switch (this.fontSizeLevel()) {
@@ -33,11 +31,7 @@ export class AccessibilityService {
         const root = document.documentElement;
         root.classList.remove('font-size-normal', 'font-size-large', 'font-size-xlarge');
         root.classList.add(`font-size-${level}`);
-        try {
-          localStorage.setItem(STORAGE_KEY, level);
-        } catch {
-          // Ignore localStorage errors in private mode
-        }
+        this.storage.writeFontSize(level);
       });
     }
   }
@@ -79,16 +73,4 @@ export class AccessibilityService {
     this.fontSizeLevel.set('normal');
   }
 
-  private getInitialFontSize(): FontSizeLevel {
-    if (!this.isBrowser) return 'normal';
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY) as FontSizeLevel | null;
-      if (saved && (saved === 'normal' || saved === 'large' || saved === 'xlarge')) {
-        return saved;
-      }
-    } catch {
-      // Fallback
-    }
-    return 'normal';
-  }
 }

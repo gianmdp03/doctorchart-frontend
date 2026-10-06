@@ -1,7 +1,7 @@
-import { baseEnvironment } from './environment.base';
+import { publicConfig } from './environment.generated';
 
 export const environment = {
-  ...baseEnvironment,
+  ...publicConfig,
   production: true,
 };
 

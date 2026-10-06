@@ -47,7 +47,7 @@
               #fileInput
               id="studyFileInput"
               type="file"
-              accept=".pdf,image/*,.jpg,.jpeg,.png,.webp"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff"
               (change)="onFileChange($event)"
               class="hidden-file-input"
             />
@@ -89,6 +89,7 @@
             [ngModel]="description()"
             (ngModelChange)="description.set($event)"
             name="description"
+            maxlength="4000"
             placeholder="Ej: Tomografía de encéfalo con contraste, Ecografía abdominal, etc."
             class="form-input text-input"
           />
@@ -169,7 +170,7 @@
                 }
 
                 <div class="study-meta">
-                  <span class="meta-item">Fecha: {{ formatDate(study.createdAt) }}</span>
+                  <span class="meta-item">Fecha: {{ formatDate(study.uploadedAt) }}</span>
                   <span class="meta-dot">•</span>
                   <span class="meta-item">Tamaño: {{ formatFileSize(study.fileSize) }}</span>
                 </div>

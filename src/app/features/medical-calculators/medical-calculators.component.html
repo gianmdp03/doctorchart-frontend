@@ -373,7 +373,7 @@
                     [class.saved]="saveFeedback()"
                     [disabled]="isSavingLog()"
                     (click)="saveResultToRecord()"
-                    title="Guardar este resultado en el historial clínico inmutable del paciente"
+                    [title]="activePatient() ? 'Guardar este resultado en el historial clínico inmutable del paciente' : 'Conservar este cálculo durante la sesión; se pierde al recargar o cerrar sesión'"
                   >
                     @if (isSavingLog()) {
                       <ng-icon name="lucideRefreshCw" class="btn-icon animate-spin" />
@@ -383,7 +383,7 @@
                       <span>¡Guardado con éxito!</span>
                     } @else {
                       <ng-icon name="lucideSave" class="btn-icon" />
-                      <span>Guardar en Historial Clínico</span>
+                      <span>{{ activePatient() ? 'Guardar en Historial Clínico' : 'Guardar en la sesión' }}</span>
                     }
                   </button>
                 </div>
@@ -432,12 +432,12 @@
           </p>
         </div>
 
-        @if (!activePatient() && localHistory().length > 0) {
+        @if (!activePatient() && sessionHistory().length > 0) {
           <button
             type="button"
             class="clear-history-btn"
-            (click)="clearLocalHistory()"
-            title="Vaciar todo el historial guardado localmente"
+            (click)="clearSessionHistory()"
+            title="Vaciar los cálculos temporales de esta sesión"
           >
             <ng-icon name="lucideTrash2" class="btn-icon" />
             <span>Vaciar historial local</span>
@@ -604,11 +604,11 @@
           </p>
         </div>
 
-        <!-- Local Fallback History -->
-        @if (localHistory().length > 0) {
+        <!-- Temporary calculations without a patient -->
+        @if (sessionHistory().length > 0) {
           <h4 class="local-history-heading">Cálculos locales de la sesión:</h4>
           <div class="history-list-wrap">
-            @for (item of localHistory(); track item.id) {
+            @for (item of sessionHistory(); track item.id) {
               <article class="history-item-card">
                 <div class="history-item-top">
                   <span class="history-calc-badge">{{ item.calculatorName }}</span>

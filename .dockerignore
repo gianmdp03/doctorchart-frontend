@@ -1,0 +1,7 @@
+.git
+node_modules
+dist
+.angular
+.env*
+src/environments/environment.generated.ts
+*.log

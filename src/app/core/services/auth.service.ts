@@ -74,12 +74,8 @@ export class AuthService {
   });
 
   readonly userRole = computed<string | null>(() => {
-    const user = this.currentUser();
-    return (
-      (user?.app_metadata?.['role'] as string) ||
-      (user?.user_metadata?.['role'] as string) ||
-      null
-    );
+    const role = this.currentUser()?.app_metadata?.['role'];
+    return typeof role === 'string' && role.trim() ? role.trim() : null;
   });
 
   readonly isSuperAdmin = computed<boolean>(() => {
@@ -95,8 +91,7 @@ export class AuthService {
     }
 
     const appMeta = (user.app_metadata || {}) as Record<string, any>;
-    const userMeta = (user.user_metadata || {}) as Record<string, any>;
-    const appModules = (appMeta['app_modules'] || userMeta['app_modules']) as Record<string, any> | undefined;
+    const appModules = appMeta['app_modules'] as Record<string, any> | undefined;
 
     let mod: any = null;
     if (appModules && typeof appModules === 'object') {
@@ -104,7 +99,7 @@ export class AuthService {
     }
 
     if (!mod || typeof mod !== 'object') {
-      mod = appMeta['doctorchart'] || appMeta['doctor_chart'] || userMeta['doctorchart'] || userMeta['doctor_chart'];
+      mod = appMeta['doctorchart'] || appMeta['doctor_chart'];
     }
 
     if (!mod || typeof mod !== 'object') {

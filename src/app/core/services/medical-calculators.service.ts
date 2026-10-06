@@ -18,7 +18,6 @@ import {
   DoctorCalculatorPreferenceDTO,
   PatientAutofillDataDTO,
   PatientCalculationLogDetailDTO,
-  SavedCalculationItem,
 } from '../models/medical-calculators.model';
 
 
@@ -32,18 +31,16 @@ export class MedicalCalculatorsService {
   private readonly baseUrl = `${environment.apiUrl}/calculators`;
 
   readonly calculators = signal<readonly CalculatorMetadata[]>([]);
-  readonly savedHistory = signal<SavedCalculationItem[]>([]);
   private readonly auth = inject(AuthService);
   private owner: string | null | undefined;
   constructor() {
     this.syncSession();
     effect(() => { this.auth.currentUser(); untracked(() => this.syncSession()); });
   }
-  private key(): string | null { return this.owner ? 'doctorchart_calculations:' + encodeURIComponent(this.owner) : null; }
   private syncSession(): void {
     const owner = this.auth.currentUser()?.id ?? null;
     if (owner === this.owner) return;
-    this.owner = owner; this.calculators.set([]); this.savedHistory.set(this.loadStoredCalculations());
+    this.owner = owner; this.calculators.set([]);
   }
 
 
@@ -114,37 +111,6 @@ export class MedicalCalculatorsService {
     return this.http.get<PatientAutofillDataDTO>(`${this.baseUrl}/patients/${patientId}/autofill`);
   }
 
-  // -------------------------------------------------------------
-  // Persistencia e Historial en Memoria / LocalStorage
-  // -------------------------------------------------------------
-  saveCalculation(item: Omit<SavedCalculationItem, 'id'>): SavedCalculationItem {
-    this.syncSession();
-    const newItem: SavedCalculationItem = {
-      ...item,
-      id: `calc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    };
-
-    const currentList = this.savedHistory();
-    const updated = [newItem, ...currentList.slice(0, 49)]; // Limit to last 50
-    this.savedHistory.set(updated);
-    this.persistHistory(updated);
-    return newItem;
-  }
-
-  deleteCalculation(id: string): void {
-    this.syncSession();
-    const updated = this.savedHistory().filter((c) => c.id !== id);
-    this.savedHistory.set(updated);
-    this.persistHistory(updated);
-  }
-
-  clearHistory(patientId?: number | null): void {
-    this.syncSession();
-    const remaining = patientId === undefined ? [] : this.savedHistory().filter(item => item.patientId !== patientId);
-    this.savedHistory.set(remaining);
-    this.persistHistory(remaining);
-  }
-
   async copyToClipboard(text: string): Promise<boolean> {
     if (!isPlatformBrowser(this.platformId) || typeof navigator === 'undefined') {
       return false;
@@ -157,30 +123,4 @@ export class MedicalCalculatorsService {
     }
   }
 
-  private loadStoredCalculations(): SavedCalculationItem[] {
-    const key = this.key();
-    if (key && isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const items: unknown = JSON.parse(raw);
-          return Array.isArray(items) ? items : [];
-        }
-      } catch (err) {
-        console.warn('Error reading saved calculations from localStorage:', err);
-      }
-    }
-    return [];
-  }
-
-  private persistHistory(items: SavedCalculationItem[]): void {
-    const key = this.key();
-    if (key && isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(key, JSON.stringify(items));
-      } catch (err) {
-        console.warn('Error saving calculations to localStorage:', err);
-      }
-    }
-  }
 }

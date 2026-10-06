@@ -14,12 +14,11 @@ describe('PatientStudiesComponent', () => {
     {
       id: 1,
       patientId: 10,
-      fileName: 'study_1.pdf',
       originalFileName: 'radiografia_torax.pdf',
       contentType: 'application/pdf',
       fileSize: 1048576,
       description: 'Radiografía de control',
-      createdAt: '2026-10-01T10:00:00Z',
+      uploadedAt: '2026-10-01T10:00:00Z',
     },
   ];
 
@@ -59,6 +58,22 @@ describe('PatientStudiesComponent', () => {
     expect(component.hasStudies()).toBe(true);
   });
 
+  it('renders the canonical backend upload date in Argentine format', () => {
+    expect(fixture.nativeElement.textContent).toContain('01/10/2026');
+  });
+
+  it('shows controlled backend rejection messages without echoing technical details', () => {
+    const pending = new Subject<PatientMedicalStudy>();
+    studyServiceMock.uploadStudy.mockReturnValue(pending);
+    component.selectedFile.set(new File(['invalid'], 'estudio.pdf'));
+    component.submitUpload();
+    pending.error({ status: 415, error: { code: 'INVALID_STUDY_FILE', message: 'private-storage-path' } });
+    expect(component.errorMessage()).toContain('PDF sin cifrar');
+    expect(component.errorMessage()).not.toContain('private-storage-path');
+    expect(component.isUploading()).toBe(false);
+    expect(component.studies().length).toBe(1);
+  });
+
   it('should format file size properly', () => {
     expect(component.formatFileSize(1024)).toBe('1 KB');
     expect(component.formatFileSize(1048576)).toBe('1 MB');
@@ -80,12 +95,11 @@ describe('PatientStudiesComponent', () => {
     const createdStudy: PatientMedicalStudy = {
       id: 2,
       patientId: 10,
-      fileName: 'eco_renal.jpg',
       originalFileName: 'eco.jpg',
       contentType: 'image/jpeg',
       fileSize: 2048,
       description: 'Ecografía renal',
-      createdAt: '2026-10-01T11:00:00Z',
+      uploadedAt: '2026-10-01T11:00:00Z',
     };
     studyServiceMock.uploadStudy.mockReturnValue(of(createdStudy));
 
@@ -126,9 +140,10 @@ describe('PatientStudiesComponent', () => {
   it('releases preview URLs when the patient changes or the screen is destroyed', () => {
     const create=vi.spyOn(window.URL,'createObjectURL').mockReturnValue('blob:test');
     const revoke=vi.spyOn(window.URL,'revokeObjectURL').mockImplementation(()=>{});
-    vi.spyOn(window,'open').mockImplementation(()=>null);
+    const open=vi.spyOn(window,'open').mockImplementation(()=>null);
     studyServiceMock.getStudyFileBlob.mockReturnValue(of(new Blob(['pdf'])));
     component.openStudyPreview(mockStudies[0]); expect(create).toHaveBeenCalledTimes(1);
+    expect(open).toHaveBeenCalledWith('blob:test', '_blank', 'noopener,noreferrer');
     fixture.componentRef.setInput('patientId',20); fixture.detectChanges(); expect(revoke).toHaveBeenCalledWith('blob:test');
     fixture.destroy();
   });

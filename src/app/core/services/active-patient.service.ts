@@ -1,16 +1,16 @@
 import { Subscription } from 'rxjs';
 import { AuthService } from './auth.service';
-import { computed, DestroyRef, effect, inject, Injectable, PLATFORM_ID, signal, untracked } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { PatientDetailDTO } from '../models/patient.model';
 import { PatientService } from './patient.service';
+import { BrowserUiStorageService } from './browser-ui-storage.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ActivePatientService {
   private readonly patientService = inject(PatientService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly storage = inject(BrowserUiStorageService);
 
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
@@ -199,27 +199,19 @@ export class ActivePatientService {
     effect(() => { this.auth.currentUser(); untracked(() => this.syncSession()); });
     this.destroyRef.onDestroy(() => this.request?.unsubscribe());
   }
-  private storageKey(owner = this.owner): string | null {
-    return owner ? 'doctorchart_active_patient:' + encodeURIComponent(owner) : null;
-  }
   private syncSession(restore = true): void {
     const owner = this.auth.currentUser()?.id ?? null;
     if (owner === this.owner) return;
     this.request?.unsubscribe(); this.request = null; this.generation++;
+    if (!owner && this.owner) this.storage.writeActivePatientId(this.owner, null);
     this.owner = owner; this.activePatient.set(null); this.isLoading.set(false); this.error.set(null);
-    const key = this.storageKey();
-    if (restore && key && isPlatformBrowser(this.platformId)) {
-      try {
-        const stored = localStorage.getItem(key);
-        const id = Number(stored);
-        if (stored && Number.isSafeInteger(id) && id > 0) this.loadPatient(id);
-      } catch { }
+    if (restore && owner) {
+      const id = this.storage.readActivePatientId(owner);
+      if (id !== null) this.loadPatient(id);
     }
   }
   private persist(patientId: number | null): void {
-    const key = this.storageKey();
-    if (!key || !isPlatformBrowser(this.platformId)) return;
-    try { if (patientId) localStorage.setItem(key,String(patientId)); else localStorage.removeItem(key); } catch { }
+    if (this.owner) this.storage.writeActivePatientId(this.owner, patientId);
   }
   setActivePatient(patient: PatientDetailDTO | null): void {
     this.syncSession(false); this.request?.unsubscribe(); this.generation++;
@@ -233,7 +225,7 @@ export class ActivePatientService {
     this.request?.unsubscribe();
     const generation = ++this.generation;
     const owner = this.owner;
-    if (this.patientId() !== id) this.activePatient.set(null);
+    if (this.patientId() !== id) { this.activePatient.set(null); this.persist(null); }
     this.isLoading.set(true); this.error.set(null);
     this.request = this.patientService.getPatientById(id).subscribe({
       next: patient => {

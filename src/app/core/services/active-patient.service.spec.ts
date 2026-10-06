@@ -13,7 +13,7 @@ describe('Active patient session ownership', () => {
   const pending = new Map<number, Subject<PatientDetailDTO>>();
   const patient = (id:number):PatientDetailDTO => ({...clinicalFormFixture(),id,fullName:'Paciente '+id,birthDate:'1990-01-01'});
   beforeEach(() => {
-    localStorage.clear(); pending.clear(); user.set({id:'doctor-a'});
+    localStorage.clear(); sessionStorage.clear(); pending.clear(); user.set({id:'doctor-a'});
     TestBed.configureTestingModule({providers:[
       {provide:AuthService,useValue:{currentUser:user}},
       {provide:PatientService,useValue:{getPatientById:(id:number)=>{
@@ -27,37 +27,51 @@ describe('Active patient session ownership', () => {
     expect(pending.get(1)!.observed).toBe(false);
     pending.get(2)!.next(patient(2)); pending.get(1)!.next(patient(1));
     expect(service.patientId()).toBe(2);
-    expect(localStorage.getItem('doctorchart_active_patient:doctor-a')).toBe('2');
-    expect(localStorage.getItem('doctorchart_active_patient_data')).toBeNull();
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBe('2');
+    expect(sessionStorage.getItem('doctorchart_active_patient_data')).toBeNull();
+    expect(localStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
   });
   it('does not restore cleared data after a late response', () => {
     service.loadPatient(1); service.clear(); pending.get(1)!.next(patient(1));
     expect(service.activePatient()).toBeNull(); expect(service.isLoading()).toBe(false);
-    expect(localStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
   });
   it('removes the previous patient while selecting another, including failed loads', () => {
     service.setActivePatient(patient(1)); service.loadPatient(2);
     expect(service.activePatient()).toBeNull();
     pending.get(2)!.error({status:403});
     expect(service.activePatient()).toBeNull(); expect(service.isLoading()).toBe(false);
-    expect(localStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
   });
   it('keeps a same-patient refresh in context but clears it when access is denied', () => {
     service.setActivePatient(patient(1)); service.loadPatient(1);
     expect(service.patientId()).toBe(1);
     pending.get(1)!.error({status:404}); expect(service.activePatient()).toBeNull();
   });
+  it('does not restore the previous patient after a different selection fails temporarily', () => {
+    service.setActivePatient(patient(1)); service.loadPatient(2);
+    pending.get(2)!.error({status:500});
+    expect(service.activePatient()).toBeNull();
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
+  });
+  it('keeps clinical selection usable when browser storage is blocked', () => {
+    const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('blocked', 'SecurityError'); });
+    try {
+      service.loadPatient(2); pending.get(2)!.next(patient(2));
+      expect(service.patientId()).toBe(2); expect(service.error()).toBeNull();
+    } finally { write.mockRestore(); }
+  });
   it('restores only the authenticated account ID after backend revalidation', () => {
-    localStorage.setItem('doctorchart_active_patient:doctor-a','1');
-    localStorage.setItem('doctorchart_active_patient:doctor-b','2');
-    localStorage.setItem('doctorchart_active_patient_data',JSON.stringify(patient(99)));
-    localStorage.setItem('doctorchart_active_patient_id','99');
+    sessionStorage.setItem('doctorchart_active_patient:doctor-a','1');
+    sessionStorage.setItem('doctorchart_active_patient:doctor-b','2');
+    sessionStorage.setItem('doctorchart_active_patient_data',JSON.stringify(patient(99)));
+    sessionStorage.setItem('doctorchart_active_patient_id','99');
     TestBed.tick(); expect(service.activePatient()).toBeNull();
     expect(pending.has(99)).toBe(false); pending.get(1)!.next(patient(1));
     expect(service.patientId()).toBe(1);
     user.set({id:'doctor-b'}); TestBed.tick(); expect(service.activePatient()).toBeNull();
     pending.get(2)!.next(patient(2)); expect(service.patientId()).toBe(2);
-    expect(localStorage.getItem('doctorchart_active_patient:doctor-a')).toBe('1');
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBe('1');
   });
   it('ignores responses after account changes even before effects run', () => {
     service.loadPatient(1); user.set({id:'doctor-b'}); pending.get(1)!.next(patient(1));
@@ -67,6 +81,7 @@ describe('Active patient session ownership', () => {
     service.setActivePatient(patient(1)); user.set(null); TestBed.tick();
     service.setActivePatient(patient(2)); service.loadPatient(2);
     expect(service.activePatient()).toBeNull(); expect(pending.has(2)).toBe(false);
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
   });
   it('renders canonical measurements with existing pediatric precision and no unit guessing', () => {
     service.setActivePatient({...patient(1),latestMeasurements:{weightKg:3.35,heightCm:50,headCircumferenceCm:35}});

@@ -69,16 +69,11 @@ describe('MedicalCalculatorsService HTTP boundary', () => {
     http.expectOne(req => req.url.endsWith('/calculators/catalog')).flush(catalog);
   });
 
-  it('persists local calculations per account without adopting the old shared history', () => {
-    const item={calculatorId:'holliday_segar' as const,calculatorName:'Holliday',patientId:10,resultHeadline:'1250',interpretationLabel:'Normal',severity:'normal' as const,calculatedAt:FLUID_RESULT.calculatedAt,plainTextEvolution:'Texto',inputsSummary:{}};
-    localStorage.setItem('doctorchart_saved_calculations',JSON.stringify([{...item,id:'legacy'}]));
-    service.saveCalculation(item); expect(service.savedHistory()).toHaveLength(1);
-    expect(localStorage.getItem('doctorchart_calculations:doctor-a')).toContain('Texto');
-    TestBed.inject(AuthService).currentUser.set({id:'doctor-b'} as any); TestBed.tick();
-    expect(service.savedHistory()).toEqual([]); service.saveCalculation({...item,patientId:20});
-    TestBed.inject(AuthService).currentUser.set({id:'doctor-a'} as any); TestBed.tick();
-    expect(service.savedHistory().map(item=>item.patientId)).toEqual([10]);
-    TestBed.inject(AuthService).currentUser.set(null); TestBed.tick(); expect(service.savedHistory()).toEqual([]);
+  it('returns the authoritative patient log without reading or writing browser storage', () => {
+    const read = vi.spyOn(Storage.prototype, 'getItem'); const write = vi.spyOn(Storage.prototype, 'setItem');
+    service.executeAndSaveToBackend({patientId:10, calculationCode:'holliday_segar', inputSnapshot:{weightKg:15}})
+      .subscribe(saved => expect(saved.id).toBe(5));
+    http.expectOne(req => req.url.endsWith('/execute')).flush({id:5, patientId:10});
+    expect(read).not.toHaveBeenCalled(); expect(write).not.toHaveBeenCalled();
   });
-
 });

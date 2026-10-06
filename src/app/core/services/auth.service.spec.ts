@@ -57,6 +57,7 @@ describe('AuthService', () => {
       const mockUser = {
         id: 'usr-123',
         email: 'maria.gonzalez@hospital.com',
+        app_metadata: { role: 'DOCTOR' },
         user_metadata: {
           full_name: 'Dra. María González',
           dni: '32145678',
@@ -125,9 +126,17 @@ describe('AuthService', () => {
   });
 
   describe('Role and DoctorChart Plan Resolution', () => {
+    it('ignores a plan supplied only through editable metadata', () => {
+      service.currentUser.set({ id: 'doctor', app_metadata: {}, user_metadata: {
+        app_modules: { doctorchart: { active: true, tier: 'UNLIMITED' } },
+        doctorchart: { active: true, tier: 'UNLIMITED' },
+      } } as unknown as User);
+      expect(service.doctorchartModule()).toBeNull();
+      expect(service.hasDoctorchartPlan()).toBe(false);
+    });
     it('does not accept a superadmin role supplied through editable user metadata', () => {
       service.currentUser.set({ id: 'doctor', user_metadata: { role: 'SUPER_ADMIN' }, app_metadata: {} } as unknown as User);
-      expect(service.userRole()).toBe('SUPER_ADMIN');
+      expect(service.userRole()).toBeNull();
       expect(service.isSuperAdmin()).toBe(false);
       expect(service.hasDoctorchartPlan()).toBe(false);
       expect(service.doctorchartPlanTier()).toBeNull();

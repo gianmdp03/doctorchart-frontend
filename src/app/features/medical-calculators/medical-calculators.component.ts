@@ -59,12 +59,12 @@ import {
   PatientAutofillDataDTO,
   PatientCalculationLogDetailDTO,
   DoctorCalculatorPreferenceDTO,
-  SavedCalculationItem,
 } from '../../core/models/medical-calculators.model';
 import {
   MedicalCalculatorsService,
 } from '../../core/services/medical-calculators.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
+import { CalculatorSessionHistoryService } from '../../core/services/calculator-session-history.service';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 
 @Component({
@@ -112,6 +112,7 @@ import { DatePickerComponent } from '../../shared/date-picker/date-picker.compon
 })
 export class MedicalCalculatorsComponent implements OnInit {
   readonly calcService = inject(MedicalCalculatorsService);
+  private readonly sessionHistoryService = inject(CalculatorSessionHistoryService);
   private readonly auth = inject(AuthService);
   private readonly changed = new Subject<void>();
   private context = '';
@@ -119,7 +120,7 @@ export class MedicalCalculatorsComponent implements OnInit {
   private owner = this.auth.currentUser()?.id;
   private readonly actorChanged = new Subject<void>();
   readonly contextRevision = signal(0);
-  readonly localHistory = computed(() => this.calcService.savedHistory().filter(item => item.patientId === (this.activePatient()?.id ?? null)));
+  readonly sessionHistory = computed(() => this.activePatient() ? [] : this.sessionHistoryService.items());
   private contextKey(): string { return JSON.stringify([this.auth.currentUser()?.id ?? null,this.activePatientService.activePatient()?.id ?? null]); }
 
   private readonly destroyRef = inject(DestroyRef);
@@ -481,14 +482,14 @@ export class MedicalCalculatorsComponent implements OnInit {
     this.saveError.set(null);
     this.saveFeedback.set(false);
     if (!patient?.id) {
-      this.calcService.saveCalculation({
+      const saved = this.sessionHistoryService.save({
         calculatorId: result.calculatorId, calculatorName: result.calculationName,
-        patientId: null, patientName: null, resultHeadline: `${result.formattedValue} ${result.unit}`,
+        resultHeadline: `${result.formattedValue} ${result.unit}`,
         interpretationLabel: result.interpretation.label, severity: result.interpretation.severity,
         calculatedAt: result.calculatedAt, plainTextEvolution: result.plainTextEvolution,
         inputsSummary: summarizeCalculatorInputs(result.calculatorId, snapshot),
       });
-      this.showSaveSuccess();
+      if (saved) this.showSaveSuccess();
       return;
     }
     this.isSavingLog.set(true);
@@ -500,13 +501,6 @@ export class MedicalCalculatorsComponent implements OnInit {
         if (context !== this.contextKey()) return;
         if (savedLog.patientId !== patient.id) { this.isSavingLog.set(false); this.saveError.set('La respuesta no corresponde al paciente seleccionado.'); return; }
         this.isSavingLog.set(false);
-        this.calcService.saveCalculation({
-          calculatorId: savedLog.calculationCode as CalculatorId, calculatorName: savedLog.calculationName,
-          patientId: savedLog.patientId, patientName: savedLog.patientFullName, resultHeadline: savedLog.formattedResult,
-          interpretationLabel: savedLog.resultInterpretation ?? '', severity: savedLog.severity as SavedCalculationItem['severity'],
-          calculatedAt: savedLog.createdAt, plainTextEvolution: savedLog.plainTextEvolution ?? '',
-          inputsSummary: summarizeCalculatorInputs(savedLog.calculationCode as CalculatorId, savedLog.inputSnapshot),
-        });
         if (this.activePatient()?.id === savedLog.patientId) {
           this.patientBackendHistory.update(history => [savedLog, ...history]);
           this.showSaveSuccess();
@@ -577,15 +571,11 @@ export class MedicalCalculatorsComponent implements OnInit {
     }
   }
 
-  deleteLocalHistoryItem(item: SavedCalculationItem): void {
-    this.syncContext();
-    if (item.patientId === (this.activePatient()?.id ?? null)) this.calcService.deleteCalculation(item.id);
-  }
-
-  clearLocalHistory(): void {
+  clearSessionHistory(): void {
+    if (this.activePatient()) return;
     if (confirm('¿Estás seguro de que deseas vaciar el historial local de cálculos?')) {
       this.syncContext();
-      this.calcService.clearHistory(this.activePatient()?.id ?? null);
+      this.sessionHistoryService.clear();
     }
   }
 }

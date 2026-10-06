@@ -167,10 +167,19 @@ export class PatientStudiesComponent {
         this.successMessage.set('Estudio médico subido exitosamente.');
         setTimeout(() => { if (this.current(revision)) this.successMessage.set(null); }, 4000);
       },
-      error: () => {
+      error: (error) => {
         if (!this.current(revision)) return;
         this.isUploading.set(false);
-        this.errorMessage.set('Error al subir el estudio médico. Verificá la conexión y reintentá.');
+        const messages: Record<string, string> = {
+          STUDY_FILE_TOO_LARGE: 'El archivo supera el tamaño máximo permitido de 25 MB.',
+          INVALID_STUDY_FILE: 'El archivo debe ser un PDF sin cifrar o una imagen válida (JPG, PNG, WebP, GIF, BMP o TIFF).',
+          EMPTY_STUDY_FILE: 'Seleccioná un archivo que no esté vacío.',
+          INVALID_STUDY_FILENAME: 'El nombre del archivo no es válido.',
+          STUDY_DESCRIPTION_TOO_LONG: 'La descripción admite hasta 4000 caracteres.',
+          STUDY_IMAGE_TOO_LARGE: 'La imagen supera la resolución máxima permitida.',
+          STUDY_VALIDATION_BUSY: 'Hay otras cargas en proceso. Reintentá en unos segundos.',
+        };
+        this.errorMessage.set(messages[error?.error?.code] ?? 'Error al subir el estudio médico. Verificá la conexión y reintentá.');
       },
     });
   }
@@ -185,7 +194,7 @@ export class PatientStudiesComponent {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = study.originalFileName || study.fileName;
+        a.download = study.originalFileName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -207,7 +216,7 @@ export class PatientStudiesComponent {
         if (!this.current(revision)) return;
         const url = window.URL.createObjectURL(blob);
         this.previewUrls.add(url);
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
       },
       error: () => {
         if (!this.current(revision)) return;

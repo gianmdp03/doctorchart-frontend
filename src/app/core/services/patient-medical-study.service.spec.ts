@@ -13,12 +13,11 @@ describe('PatientMedicalStudyService', () => {
     {
       id: 1,
       patientId: 10,
-      fileName: 'study_1.pdf',
       originalFileName: 'radiografia.pdf',
       contentType: 'application/pdf',
       fileSize: 1024,
       description: 'Radiografía de tórax',
-      createdAt: '2026-10-01T12:00:00Z',
+      uploadedAt: '2026-10-01T12:00:00Z',
     },
   ];
 
@@ -61,12 +60,11 @@ describe('PatientMedicalStudyService', () => {
     req.flush({
       id: 2,
       patientId: 10,
-      fileName: 'study_2.png',
       originalFileName: 'test.png',
       contentType: 'image/png',
       fileSize: 12,
       description: 'Foto de tomografía',
-      createdAt: '2026-10-01T12:05:00Z',
+      uploadedAt: '2026-10-01T12:05:00Z',
     });
   });
 

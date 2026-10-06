@@ -42,3 +42,14 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Local runtime/build configuration
+.env
+.env.*
+!.env*.example
+/src/environments/environment.generated.ts
+/block13a-*.log
+
+/block13b-*.log
+/block13c-*.log
+/block13d-*.log

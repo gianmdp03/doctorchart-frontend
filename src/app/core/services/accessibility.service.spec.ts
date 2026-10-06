@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { AccessibilityService, FontSizeLevel } from './accessibility.service';
+import { AccessibilityService } from './accessibility.service';
 
 describe('AccessibilityService', () => {
   let service: AccessibilityService;

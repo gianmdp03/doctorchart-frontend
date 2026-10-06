@@ -2,6 +2,11 @@
 
 Estado: cumplido. Corresponde al bloque 8 del plan acordado; el siguiente es el 9, mediciones.
 
+La persistencia local de calculadoras y de la selección del paciente descrita en
+este cierre histórico se revisó posteriormente en [13c](browser-storage-block-13c.md):
+historial clínico exclusivamente en backend, cálculos sin paciente en memoria e ID
+de selección por cuenta y pestaña en `sessionStorage`.
+
 ## Comportamiento
 
 El contexto clínico se identifica por cuenta autenticada y paciente seleccionado. Cambiar cualquiera de ellos invalida el estado anterior. Actualizar datos del mismo paciente y renovar la sesión de la misma cuenta conservan el contexto.

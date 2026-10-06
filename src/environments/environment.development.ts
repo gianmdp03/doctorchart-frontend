@@ -1,9 +1,3 @@
-import { baseEnvironment } from './environment.base';
+import { publicConfig } from './environment.generated';
 
-export const environment = {
-  ...baseEnvironment,
-  production: false,
-  apiUrl: 'http://localhost:8000/api/doctorchart',
-  aiGatewayUrl: 'http://localhost:8000/api/ai/doctorchart/chat',
-};
-
+export const environment = { ...publicConfig, production: false };

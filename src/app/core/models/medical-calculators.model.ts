@@ -60,12 +60,10 @@ export interface CalculationResult<T = number> {
   readonly plainTextEvolution: string;
 }
 
-export interface SavedCalculationItem {
+export interface SessionCalculationItem {
   readonly id: string;
   readonly calculatorId: CalculatorId;
   readonly calculatorName: string;
-  readonly patientId?: number | null;
-  readonly patientName?: string | null;
   readonly resultHeadline: string;
   readonly interpretationLabel: string;
   readonly severity: SeverityLevel;

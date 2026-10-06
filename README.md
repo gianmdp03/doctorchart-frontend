@@ -1,59 +1,80 @@
-# DoctorchartFrontend
+# DoctorChart frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.7.
+Frontend Angular con configuración clínica por especialidad. Node 24 verificado.
+La guía completa de servicios, base nueva y comprobaciones está en
+[el cierre de 13d](docs/startup-block-13d.md).
 
-## Development server
+## Configuración local
 
-To start a local development server, run:
+Desde la raíz del repositorio:
 
-```bash
-ng serve
+```powershell
+npm ci
+Copy-Item .env.development.example .env.development
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Completar los valores públicos del archivo privado: proyecto y clave publicable
+Supabase, URL del frontend, URL clínica del API gateway, URL de chat DoctorChart
+del mismo gateway y URL real del catálogo de planes. No usar claves de servicio
+Supabase, claves Gemini ni secretos internos en frontend.
 
-## Code scaffolding
+La configuración se genera y valida antes de iniciar Angular:
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
+```powershell
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Abrir `http://localhost:4202/`. Antes deben estar disponibles PostgreSQL, Billing,
+backend DoctorChart, AI gateway y API gateway; ver
+[la preparación del backend](../doctorchart-backend/docs/runtime-configuration.md).
+El acceso utiliza cuentas reales de Supabase con sus roles y suscripciones
+administrados en servidor. Las cuentas y contraseñas de prueba no se versionan.
 
-```bash
-ng generate --help
+## Pruebas y build
+
+Para tests, crear `.env.test` con los mismos valores públicos de desarrollo:
+
+```powershell
+Copy-Item .env.development .env.test
+npm test -- --watch=false
+npm run test:config
 ```
 
-## Building
+Para producción, completar `.env.production` a partir de su ejemplo o proporcionar
+las variables `PUBLIC_*` en el proceso de build:
 
-To build the project run:
-
-```bash
-ng build
+```powershell
+Copy-Item .env.production.example .env.production
+npm run build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+El build no toma automáticamente valores de desarrollo. Sus archivos quedan en
+`dist/doctorchart-frontend`. El servidor SSR se ejecuta con
+`npm run serve:ssr:doctorchart-frontend`; las URLs públicas del bundle deben
+corresponder al entorno donde se desplegará. Los cambios en variables requieren
+generar otra vez la configuración y reconstruir el bundle.
 
-## Running unit tests
+El servidor de producción acepta exclusivamente el hostname de `PUBLIC_APP_URL`.
+Después del build, comprobar el servidor real con esa misma URL; por ejemplo,
+para un build local:
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
+```powershell
+$env:PUBLIC_APP_URL = 'http://localhost:4202'
+npm run test:ssr
 ```
 
-## Running end-to-end tests
+Esta prueba levanta el artefacto en un puerto temporal, verifica rutas públicas
+y protegidas sin datos clínicos en el HTML, rechaza un Host ajeno y detiene el
+proceso. Detrás de un proxy, conservar el Host público configurado; el servidor
+no habilita confianza general en cabeceras reenviadas.
 
-For end-to-end (e2e) testing, run:
+## Convenciones y documentación
 
-```bash
-ng e2e
-```
+Usar el componente compartido `app-date-picker` en todos los selectores de fecha.
+Entrada y presentación: `dd/MM/aaaa`; conversión ISO solo en la frontera de datos.
+Los datos clínicos persistidos pertenecen al backend. El navegador conserva las
+preferencias y referencias descritas en [13c](docs/browser-storage-block-13c.md).
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Consultar [el plan y estado de los bloques](docs/refactor-plan.md),
+[seguridad y configuración](docs/security-configuration-block-13a.md) y
+[almacenamiento privado de estudios](docs/study-storage-block-13b.md).
