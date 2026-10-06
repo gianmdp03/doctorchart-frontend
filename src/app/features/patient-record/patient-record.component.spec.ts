@@ -1,3 +1,5 @@
+import { PatientGrowthService } from '../../core/services/patient-growth.service';
+import { BackendGrowthMeasurement } from '../../core/models/growth-chart.model';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { WorkspaceStore } from '../../core/services/workspace.store';
@@ -6,7 +8,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PatientRecordComponent } from './patient-record.component';
 import { ActivePatientService } from '../../core/services/active-patient.service';
-import { CheckupService } from '../../core/services/checkup.service';
 import { PatientService } from '../../core/services/patient.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -16,7 +17,6 @@ import { of, Subject, throwError } from 'rxjs';
 import { PatientPrescriptionService } from '../../core/services/patient-prescription.service';
 import { SavedPrescriptionRecord } from '../../core/models/prescription.model';
 import { PatientDetailDTO } from '../../core/models/patient.model';
-import { MedicalCheckupDetailDTO } from '../../core/models/checkup.model';
 import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 
@@ -24,12 +24,16 @@ describe('PatientRecordComponent', () => {
   let component: PatientRecordComponent;
   let fixture: ComponentFixture<PatientRecordComponent>;
   let activePatientService: ActivePatientService;
-  let checkupServiceSpy: any;
   let patientServiceSpy: any;
   let encounterServiceSpy: any;
   let routerSpy: any;
   let authServiceMock: any;
   let prescriptionApi: any;
+  let growthReadSpy: any;
+  const measurementHistory: BackendGrowthMeasurement[] = [
+    {source:'BIRTH',encounterId:null,date:'2024-05-10',ageMonths:0,ageFormatted:'Al nacer',measurements:{weightKg:3.35,heightCm:50,headCircumferenceCm:35}},
+    {source:'ENCOUNTER',encounterId:1,date:'2026-09-15',ageMonths:28.2,ageFormatted:'2 años y 4 meses',measurements:{weightKg:7.95,heightCm:67.5,headCircumferenceCm:43.8}},
+  ];
   const issued = (patientId: number, request: any): SavedPrescriptionRecord => ({
     ...request, id: 73, patientId, authorUserId: 'doctor', createdAt: '2026-10-05T12:34:56Z',
   });
@@ -55,9 +59,9 @@ describe('PatientRecordComponent', () => {
     },
     personalHistory: {
       birthMeasurements: {
-        weight: 3.35,
-        height: 50.0,
-        headCircumference: 35.0,
+        weightKg: 3.35,
+        heightCm: 50.0,
+        headCircumferenceCm: 35.0,
       },
       chronicOrPreviousDiseases: ['Bronquiolitis leve a los 3 meses'],
       allergies: ['Amoxicilina'],
@@ -72,30 +76,11 @@ describe('PatientRecordComponent', () => {
       feedingDiet: 'Lactancia materna exclusiva',
     },
     latestMeasurements: {
-      weight: 7.95,
-      height: 67.5,
-      headCircumference: 43.8,
+      weightKg: 7.95,
+      heightCm: 67.5,
+      headCircumferenceCm: 43.8,
     },
   };
-
-  const mockCheckupList: MedicalCheckupDetailDTO[] = [
-    {
-      id: 101,
-      patientId: 10492,
-      patientFullName: 'Mateo Rossi',
-      checkupDate: '2026-03-15',
-      reason: 'ROUTINE',
-      measurements: { weight: 3.35, height: 50.0, headCircumference: 35.0 },
-    },
-    {
-      id: 390,
-      patientId: 10492,
-      patientFullName: 'Mateo Rossi',
-      checkupDate: '2026-09-15',
-      reason: 'ROUTINE',
-      measurements: { weight: 7.95, height: 67.5, headCircumference: 43.8 },
-    },
-  ];
 
   const mockEncountersList: ClinicalEncounterList[] = [
     {
@@ -148,9 +133,6 @@ describe('PatientRecordComponent', () => {
       clip: () => {},
     })) as any;
 
-    checkupServiceSpy = {
-      getCheckupsByPatientId: vi.fn().mockReturnValue(of(mockCheckupList)),
-    };
     patientServiceSpy = {
       getPatientById: vi.fn().mockReturnValue(of(mockPatient)),
     };
@@ -180,7 +162,6 @@ describe('PatientRecordComponent', () => {
         ActivePatientService,
         { provide: PatientPrescriptionService, useValue: prescriptionApi },
         { provide: PatientService, useValue: patientServiceSpy },
-        { provide: CheckupService, useValue: checkupServiceSpy },
         { provide: ClinicalEncounterService, useValue: encounterServiceSpy },
         { provide: AuthService, useValue: authServiceMock },
         { provide: Router, useValue: routerSpy },
@@ -195,6 +176,7 @@ describe('PatientRecordComponent', () => {
       ],
     }).compileComponents();
 
+    growthReadSpy = vi.spyOn(TestBed.inject(PatientGrowthService), 'getPatientGrowthCurves').mockReturnValue(of(measurementHistory));
     activePatientService = TestBed.inject(ActivePatientService);
     activePatientService.setActivePatient(mockPatient);
 
@@ -232,14 +214,6 @@ describe('PatientRecordComponent', () => {
     expect(component.totalHeadCircGain()).toBe('+8.8 cm');
   });
 
-  it('should load checkups on init and map rows for table', () => {
-    expect(checkupServiceSpy.getCheckupsByPatientId).toHaveBeenCalledWith(10492);
-    const tableData = component.checkupTableData();
-    expect(tableData.length).toBe(2);
-    expect(tableData[0].code).toBe('CP-390');
-    expect(tableData[1].code).toBe('CP-101');
-  });
-
   it('should load encounters on init', () => {
     expect(encounterServiceSpy.getByPatient).toHaveBeenCalledWith(10492);
     expect(component.encounters().length).toBe(2);
@@ -256,15 +230,37 @@ describe('PatientRecordComponent', () => {
   });
 
   it('refreshes projected measurements and consultations after editing a consultation', () => {
-    const refreshed = {...mockPatient, latestMeasurements:{weight:8.5,height:70,headCircumference:44}};
+    const refreshed = {...mockPatient, latestMeasurements:{weightKg:8.5,heightCm:70,headCircumferenceCm:44}};
     patientServiceSpy.getPatientById.mockReturnValue(of(refreshed));
     encounterServiceSpy.getByPatient.mockReturnValue(of([]));
     window.dispatchEvent(new CustomEvent('encounter-updated', { detail: { patientId: mockPatient.id } }));
     fixture.detectChanges();
-    expect(activePatientService.latestMeasurements()?.weight).toBe(8.5);
+    expect(activePatientService.latestMeasurements()?.weightKg).toBe(8.5);
     expect(component.encounters()).toEqual([]);
   });
 
+  it('does not recreate local points when the backend history is empty', () => {
+    growthReadSpy.mockReturnValue(of([])); component.loadGrowthCurves(mockPatient.id);
+    expect(component.weightMeasurements()).toEqual([]); expect(component.heightMeasurements()).toEqual([]);
+    expect(component.headCircumferenceMeasurements()).toEqual([]); expect(component.growthError()).toBeNull();
+  });
+  it('shows measurement errors and retries without silently using local patient data', () => {
+    growthReadSpy.mockReturnValueOnce(throwError(()=>({status:500}))).mockReturnValue(of(measurementHistory));
+    component.loadGrowthCurves(mockPatient.id); component.setTab('curvas'); fixture.detectChanges();
+    expect(component.weightMeasurements()).toEqual([]); expect(component.isLoadingGrowthCurves()).toBe(false);
+    const alert = fixture.nativeElement.querySelector('[role="alert"]'); expect(alert.textContent).toContain('No se pudieron cargar las mediciones');
+    alert.querySelector('button').click(); fixture.detectChanges();
+    expect(component.growthError()).toBeNull(); expect(component.weightMeasurements()).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('app-growth-chart')).toBeTruthy();
+  });
+  it('ignores growth responses from a previous patient or account', () => {
+    const pending = new Subject<BackendGrowthMeasurement[]>(); growthReadSpy.mockReturnValueOnce(pending).mockReturnValue(of([]));
+    component.loadGrowthCurves(mockPatient.id); activePatientService.setActivePatient({...mockPatient,id:99}); fixture.detectChanges();
+    pending.next(measurementHistory); expect(component.weightMeasurements()).toEqual([]);
+    const denied = new Subject<BackendGrowthMeasurement[]>(); growthReadSpy.mockReturnValueOnce(denied);
+    component.loadGrowthCurves(99); authServiceMock.currentUser.set({id:'another-doctor'}); denied.error({status:403});
+    expect(component.growthError()).toBeNull(); fixture.detectChanges(); expect(component.backendGrowthMeasurements()).toEqual([]);
+  });
   it('should switch to growth curves tab when requested', () => {
     component.navigateToGrowthCurves();
     expect(component.selectedTab()).toBe('curvas');
@@ -365,7 +361,7 @@ describe('PatientRecordComponent', () => {
     expect(charts.length).toBe(3);
   });
 
-  it('should reactively extract patient growth measurements from birth and consultations', () => {
+  it('renders the canonical backend birth and consultation measurements', () => {
     expect(component.patientSex()).toBe('MALE');
     expect(component.weightMeasurements().length).toBeGreaterThanOrEqual(1);
     expect(component.heightMeasurements().length).toBeGreaterThanOrEqual(1);

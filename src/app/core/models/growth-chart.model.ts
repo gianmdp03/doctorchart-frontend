@@ -1,3 +1,5 @@
+import { AnthropometricMeasurements } from './clinical-records.model';
+
 export type GrowthMetricType = 'WEIGHT' | 'HEIGHT' | 'HEAD_CIRCUMFERENCE';
 export type BiologicalSex = 'MALE' | 'FEMALE';
 
@@ -22,13 +24,12 @@ export interface PatientGrowthMeasurement {
 }
 
 export interface BackendGrowthMeasurement {
-  consultaId: number;
-  fechaConsulta: string;
-  edadMeses: number;
-  edadLegible: string;
-  peso: number | null;
-  talla: number | null;
-  perimetroEncefalico: number | null;
+  source: 'BIRTH' | 'ENCOUNTER';
+  encounterId: number | null;
+  date: string;
+  ageMonths: number;
+  ageFormatted: string;
+  measurements: AnthropometricMeasurements;
 }
 
 export interface GrowthMetricConfig {

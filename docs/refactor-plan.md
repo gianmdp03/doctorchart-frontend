@@ -14,8 +14,8 @@ evidencia antes de comenzar el siguiente y se conserva la experiencia de pediatr
 | 6. Persistencia de recetas | Guardar recetas y órdenes en backend. | Cumplido; ver [implementación y pruebas](prescription-persistence-block-6.md) |
 | 7. Impresión | Eliminar datos inventados y vincular el documento al paciente y médico. | Cumplido; ver [implementación y pruebas](printing-block-7.md) |
 | 8. Contexto de sesión | Evitar mezclar pacientes, borradores y conversaciones. | Cumplido; ver [implementación y pruebas](session-context-block-8.md) |
-| 9. Mediciones | Unificar fuentes y unidades; eliminar el camino antiguo. | Pendiente; siguiente bloque |
-| 10. Vacunación | Gobernar calendario, identificadores y reglas desde backend. | Pendiente |
+| 9. Mediciones | Unificar fuentes y unidades; eliminar el camino antiguo. | Cumplido; ver [implementación y pruebas](measurements-block-9.md) |
+| 10. Vacunación | Gobernar calendario, identificadores y reglas desde backend. | Pendiente; siguiente bloque |
 | 11. Listados y estadísticas | Llevar filtros completos y agregados al backend. | Pendiente |
 | 12. Experiencias por especialidad | Aislar módulos y componer navegación, pestañas y acciones. | Pendiente |
 | 13. Configuración y almacenamiento | Resolver archivos, secretos, entornos y documentación. | Pendiente |

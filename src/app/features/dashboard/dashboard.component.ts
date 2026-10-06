@@ -466,8 +466,8 @@ export class DashboardComponent implements OnInit {
           : encounter.primaryDiagnosisDescription;
         highlights.push({ label: 'Diagnóstico', value: diagVal });
       }
-      if (encounter.vitalSigns?.weightKg) {
-        highlights.push({ label: 'Peso', value: `${encounter.vitalSigns.weightKg} kg` });
+      if (encounter.measurements?.weightKg) {
+        highlights.push({ label: 'Peso', value: `${encounter.measurements.weightKg} kg` });
       }
       if (
         encounter.vitalSigns?.systolicBloodPressure &&

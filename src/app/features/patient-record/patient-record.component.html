@@ -11,7 +11,6 @@
       [patient]="patient"
       (newEncounter)="openNewEncounterModal()"
       (editPatient)="openNewPatientModal()"
-      (newCheckup)="openNewCheckupModal()"
       (printSummary)="printRecord()"
       (viewCurves)="navigateToGrowthCurves()"
     />
@@ -143,29 +142,38 @@
             </div>
           </div>
 
-          <!-- Componentes de Gráficos OMS -->
-          @if (selectedGrowthMetric() === 'WEIGHT' || selectedGrowthMetric() === 'ALL') {
-            <app-growth-chart
-              [metric]="'WEIGHT'"
-              [sex]="patientSex()"
-              [measurements]="weightMeasurements()"
-            />
-          }
+          @if (isLoadingGrowthCurves()) {
+            <p role="status">Cargando mediciones…</p>
+          } @else if (growthError()) {
+            <div role="alert">
+              <p>{{ growthError() }}</p>
+              <button type="button" class="growth-pill-btn" (click)="loadGrowthCurves(activePatientService.patientId()!)">Reintentar</button>
+            </div>
+          } @else {
+            <!-- Componentes de Gráficos OMS -->
+            @if (selectedGrowthMetric() === 'WEIGHT' || selectedGrowthMetric() === 'ALL') {
+              <app-growth-chart
+                [metric]="'WEIGHT'"
+                [sex]="patientSex()"
+                [measurements]="weightMeasurements()"
+              />
+            }
 
-          @if (selectedGrowthMetric() === 'HEIGHT' || selectedGrowthMetric() === 'ALL') {
-            <app-growth-chart
-              [metric]="'HEIGHT'"
-              [sex]="patientSex()"
-              [measurements]="heightMeasurements()"
-            />
-          }
+            @if (selectedGrowthMetric() === 'HEIGHT' || selectedGrowthMetric() === 'ALL') {
+              <app-growth-chart
+                [metric]="'HEIGHT'"
+                [sex]="patientSex()"
+                [measurements]="heightMeasurements()"
+              />
+            }
 
-          @if (selectedGrowthMetric() === 'HEAD_CIRCUMFERENCE' || selectedGrowthMetric() === 'ALL') {
-            <app-growth-chart
-              [metric]="'HEAD_CIRCUMFERENCE'"
-              [sex]="patientSex()"
-              [measurements]="headCircumferenceMeasurements()"
-            />
+            @if (selectedGrowthMetric() === 'HEAD_CIRCUMFERENCE' || selectedGrowthMetric() === 'ALL') {
+              <app-growth-chart
+                [metric]="'HEAD_CIRCUMFERENCE'"
+                [sex]="patientSex()"
+                [measurements]="headCircumferenceMeasurements()"
+              />
+            }
           }
         </section>
       }

@@ -6,7 +6,6 @@ import {
   PerinatalHistory,
   PersonalHistory,
 } from './clinical-records.model';
-import { MedicalCheckupListDTO } from './checkup.model';
 import { ClinicalFormRecord, WizardFormValues } from './wizard-definition.model';
 
 export interface InsuranceInfo {
@@ -41,7 +40,6 @@ export interface PatientDetailDTO extends ClinicalFormRecord {
   familyHistory?: FamilyHistory | null;
   immunizationAndNutrition?: ImmunizationAndNutrition | null;
   latestMeasurements?: AnthropometricMeasurements | null;
-  checkups?: MedicalCheckupListDTO[];
 }
 
 export interface PatientListDTO {

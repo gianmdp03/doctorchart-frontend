@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`MedicalCalculatorsComponent server calculations > preserves the bsa_mosteller autofill fields and feedback > bsa_mosteller autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Peso: 15 kg, Talla: 100 cm."`;
+exports[`MedicalCalculatorsComponent server calculations > preserves the bsa_mosteller autofill fields and feedback > bsa_mosteller autofill feedback 1`] = `"Datos autocompletados desde el historial del paciente: Peso: 15 kg, Talla: 100 cm."`;
 
 exports[`MedicalCalculatorsComponent server calculations > preserves the bsa_mosteller form, request inputs and clearing behavior > bsa_mosteller initial form 1`] = `
 {
@@ -44,7 +44,7 @@ exports[`MedicalCalculatorsComponent server calculations > preserves the bsa_mos
 }
 `;
 
-exports[`MedicalCalculatorsComponent server calculations > preserves the calcio_corregido autofill fields and feedback > calcio_corregido autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Calcio: 9.4 mg/dL, Albúmina: 4.2 g/dL."`;
+exports[`MedicalCalculatorsComponent server calculations > preserves the calcio_corregido autofill fields and feedback > calcio_corregido autofill feedback 1`] = `"Datos autocompletados desde el historial del paciente: Calcio: 9.4 mg/dL, Albúmina: 4.2 g/dL."`;
 
 exports[`MedicalCalculatorsComponent server calculations > preserves the calcio_corregido form, request inputs and clearing behavior > calcio_corregido initial form 1`] = `
 {
@@ -88,7 +88,7 @@ exports[`MedicalCalculatorsComponent server calculations > preserves the calcio_
 }
 `;
 
-exports[`MedicalCalculatorsComponent server calculations > preserves the chads_vasc autofill fields and feedback > chads_vasc autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Edad: 8 años, Sexo: Femenino."`;
+exports[`MedicalCalculatorsComponent server calculations > preserves the chads_vasc autofill fields and feedback > chads_vasc autofill feedback 1`] = `"Datos autocompletados desde el historial del paciente: Edad: 8 años, Sexo: Femenino."`;
 
 exports[`MedicalCalculatorsComponent server calculations > preserves the chads_vasc form, request inputs and clearing behavior > chads_vasc initial form 1`] = `
 {
@@ -199,7 +199,7 @@ exports[`MedicalCalculatorsComponent server calculations > preserves the chads_v
 }
 `;
 
-exports[`MedicalCalculatorsComponent server calculations > preserves the cockcroft autofill fields and feedback > cockcroft autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Peso: 15 kg, Edad: 8 años, Creatinina: 0.65 mg/dL, Sexo: Femenino."`;
+exports[`MedicalCalculatorsComponent server calculations > preserves the cockcroft autofill fields and feedback > cockcroft autofill feedback 1`] = `"Datos autocompletados desde el historial del paciente: Peso: 15 kg, Edad: 8 años, Creatinina: 0.65 mg/dL, Sexo: Femenino."`;
 
 exports[`MedicalCalculatorsComponent server calculations > preserves the cockcroft form, request inputs and clearing behavior > cockcroft initial form 1`] = `
 {
@@ -293,7 +293,7 @@ exports[`MedicalCalculatorsComponent server calculations > preserves the cockcro
 }
 `;
 
-exports[`MedicalCalculatorsComponent server calculations > preserves the holliday_segar autofill fields and feedback > holliday_segar autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Peso: 15 kg."`;
+exports[`MedicalCalculatorsComponent server calculations > preserves the holliday_segar autofill fields and feedback > holliday_segar autofill feedback 1`] = `"Datos autocompletados desde el historial del paciente: Peso: 15 kg."`;
 
 exports[`MedicalCalculatorsComponent server calculations > preserves the holliday_segar form, request inputs and clearing behavior > holliday_segar initial form 1`] = `
 {
@@ -320,7 +320,7 @@ exports[`MedicalCalculatorsComponent server calculations > preserves the hollida
 }
 `;
 
-exports[`MedicalCalculatorsComponent server calculations > preserves the imc autofill fields and feedback > imc autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Peso: 15 kg, Talla: 100 cm."`;
+exports[`MedicalCalculatorsComponent server calculations > preserves the imc autofill fields and feedback > imc autofill feedback 1`] = `"Datos autocompletados desde el historial del paciente: Peso: 15 kg, Talla: 100 cm."`;
 
 exports[`MedicalCalculatorsComponent server calculations > preserves the imc form, request inputs and clearing behavior > imc initial form 1`] = `
 {
@@ -493,7 +493,7 @@ exports[`MedicalCalculatorsComponent server calculations > preserves the pediatr
 }
 `;
 
-exports[`MedicalCalculatorsComponent server calculations > preserves the tfge autofill fields and feedback > tfge autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Creatinina: 0.65 mg/dL, Edad: 8 años, Sexo: Femenino."`;
+exports[`MedicalCalculatorsComponent server calculations > preserves the tfge autofill fields and feedback > tfge autofill feedback 1`] = `"Datos autocompletados desde el historial del paciente: Creatinina: 0.65 mg/dL, Edad: 8 años, Sexo: Femenino."`;
 
 exports[`MedicalCalculatorsComponent server calculations > preserves the tfge form, request inputs and clearing behavior > tfge initial form 1`] = `
 {

@@ -68,6 +68,15 @@ describe('Active patient session ownership', () => {
     service.setActivePatient(patient(2)); service.loadPatient(2);
     expect(service.activePatient()).toBeNull(); expect(pending.has(2)).toBe(false);
   });
+  it('renders canonical measurements with existing pediatric precision and no unit guessing', () => {
+    service.setActivePatient({...patient(1),latestMeasurements:{weightKg:3.35,heightCm:50,headCircumferenceCm:35}});
+    expect(service.formattedWeight()).toBe('3.350 kg'); expect(service.formattedHeight()).toBe('50.0 cm');
+    expect(service.formattedHeadCircumference()).toBe('35.0 cm');
+    service.setActivePatient({...patient(1),latestMeasurements:{weightKg:125,heightCm:300}});
+    expect(service.formattedWeight()).toBe('125.0 kg'); expect(service.formattedHeight()).toBe('300.0 cm');
+    expect(service.formattedHeadCircumference()).toBe('-- cm');
+    service.setActivePatient(patient(1)); expect(service.formattedWeight()).toBe('-- kg');
+  });
   it('rejects a response for a different patient', () => {
     service.loadPatient(1); pending.get(1)!.next(patient(2));
     expect(service.activePatient()).toBeNull(); expect(service.error()).toContain('no corresponde');

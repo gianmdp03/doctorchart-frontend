@@ -1,7 +1,7 @@
 export interface AnthropometricMeasurements {
-  weight?: number | null;
-  height?: number | null;
-  headCircumference?: number | null;
+  weightKg?: number | null;
+  heightCm?: number | null;
+  headCircumferenceCm?: number | null;
 }
 
 export interface GuardianInfo {

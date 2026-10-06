@@ -186,13 +186,8 @@ export class MedicalCalculatorsComponent implements OnInit {
     return null;
   });
 
-  readonly activePatientWeight = computed<number | null>(() => {
-    return this.activePatient()?.latestMeasurements?.weight ?? null;
-  });
-
-  readonly activePatientHeight = computed<number | null>(() => {
-    return this.activePatient()?.latestMeasurements?.height ?? null;
-  });
+  readonly activePatientWeight = computed(() => this.activePatient()?.latestMeasurements?.weightKg ?? null);
+  readonly activePatientHeight = computed(() => this.activePatient()?.latestMeasurements?.heightCm ?? null);
 
   // Filtered catalog for left sidebar
   readonly filteredCalculators = computed(() => {
@@ -409,10 +404,10 @@ export class MedicalCalculatorsComponent implements OnInit {
         next: (data: PatientAutofillDataDTO) => {
           if (isCurrentForm() && data.patientId === patient.id) this.applyAutofillData(data, calculator.form);
         },
-        error: (err) => {
+        error: () => {
           if (!isCurrentForm()) return;
-          console.warn('Backend autofill failed, falling back to cached patient record:', err);
-          this.applyFallbackAutofill(calculator.form);
+          this.autofillBannerMessage.set('No se pudieron cargar los datos del paciente. Reintentá o ingresalos manualmente.');
+          this.autofillAlertSeverity.set('warning');
         },
       });
   }
@@ -423,13 +418,13 @@ export class MedicalCalculatorsComponent implements OnInit {
       data.gender?.toUpperCase() === 'MALE' ? 'MALE' : this.activePatientGender();
     const { filledParams, missingParams } = form.autofill({
       age: data.ageYears ?? this.activePatientAgeYears(), gender,
-      weight: data.weightKg ?? this.activePatientWeight(), height: data.heightCm ?? this.activePatientHeight(),
+      weight: data.weightKg, height: data.heightCm,
       creatinine: data.creatinineMgDl, calcium: data.serumCalciumMgDl, albumin: data.serumAlbuminGDl,
     });
 
     if (missingParams.length === 0) {
       this.autofillBannerMessage.set(
-        `Datos autocompletados desde la última consulta del paciente: ${filledParams.join(', ')}.`
+        `Datos autocompletados desde el historial del paciente: ${filledParams.join(', ')}.`
       );
       this.autofillAlertSeverity.set('success');
     } else if (filledParams.length > 0) {
@@ -446,31 +441,6 @@ export class MedicalCalculatorsComponent implements OnInit {
 
     const revision = this.contextRevision();
     const context = this.context; setTimeout(() => { if (revision === this.contextRevision() && context === this.contextKey() && !this.destroyRef.destroyed) this.autofillBannerMessage.set(null); }, 6000);
-  }
-
-  private applyFallbackAutofill(form: CalculatorFormState): void {
-    const age = this.activePatientAgeYears();
-    const gender = this.activePatientGender();
-    const weight = this.activePatientWeight();
-    const height = this.activePatientHeight();
-
-    const fallbackDTO: PatientAutofillDataDTO = {
-      patientId: this.activePatient()?.id ?? 0,
-      fullName: this.activePatient()?.fullName ?? '',
-      birthDate: this.activePatient()?.birthDate ?? null,
-      ageYears: age,
-      gender,
-      weightKg: weight,
-      heightCm: height,
-      systolicBloodPressure: null,
-      diastolicBloodPressure: null,
-      creatinineMgDl: null,
-      serumCalciumMgDl: null,
-      serumAlbuminGDl: null,
-      encounterId: null,
-      encounterDate: null,
-    };
-    this.applyAutofillData(fallbackDTO, form);
   }
 
   // -------------------------------------------------------------

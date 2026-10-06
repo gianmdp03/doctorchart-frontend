@@ -526,15 +526,21 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     expect(component.currentInputs()).toEqual({ ageYears: null, isFemale: false, congestiveHeartFailure: false, hypertension: false, diabetes: false, strokeOrTia: false, vascularDisease: false });
   });
 
-  it('preserves the cached pediatric autofill after a server error', () => {
-    patient.set({ id: 10, fullName: 'Paciente', birthDate: '2022-05-10', latestMeasurements: { weight: 15, height: 100 } } as PatientDetailDTO);
+  it('does not replace absent backend measurements with cached patient values', () => {
+    patient.set({id:10,fullName:'Paciente',birthDate:'2022-05-10',latestMeasurements:{weightKg:15,heightCm:100}} as PatientDetailDTO);
+    fixture.detectChanges(); http.expectOne(req=>req.url.endsWith('/patients/10/history')).flush([]);
+    component.selectCalculator('holliday_segar'); fixture.detectChanges(); component.autofillFromPatient();
+    http.expectOne(req=>req.url.endsWith('/calculators/patients/10/autofill')).flush({patientId:10,weightKg:null,heightCm:null});
+    expect(component.currentInputs()).toEqual({weightKg:null}); expect(component.autofillAlertSeverity()).toBe('warning');
+  });
+  it('shows autofill errors without substituting cached measurements', () => {
+    patient.set({ id: 10, fullName: 'Paciente', birthDate: '2022-05-10', latestMeasurements: { weightKg: 15, heightCm: 100 } } as PatientDetailDTO);
     fixture.detectChanges(); http.expectOne(req => req.url.endsWith('/calculators/patients/10/history')).flush([]);
-    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     component.autofillFromPatient();
     http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill')).flush({}, { status: 500, statusText: 'Error' });
-    warning.mockRestore();
-    expect(component.currentInputs()).toEqual({ weightKg: 15 });
-    expect(component.autofillAlertSeverity()).toBe('success');
+    expect(component.currentInputs()).toEqual({ weightKg: null });
+    expect(component.autofillAlertSeverity()).toBe('warning');
+    expect(component.autofillBannerMessage()).toContain('Reintentá');
     expect(component.isAutofilling()).toBe(false);
   });
 

@@ -38,9 +38,7 @@ import {
 } from '@ng-icons/lucide';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { AuthService } from '../../core/services/auth.service';
-import { CheckupService } from '../../core/services/checkup.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
-import { MedicalCheckupDetailDTO } from '../../core/models/checkup.model';
 import { ClinicalEncounterList, PrescriptionItem } from '../../core/models/clinical-encounter.model';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { PatientBannerComponent } from './patient-banner/patient-banner.component';
@@ -68,20 +66,6 @@ export interface RecordTabItem {
   id: PatientRecordTab;
   label: string;
   badge?: number | string;
-}
-
-export interface CheckupTableRow {
-  code: string;
-  date: string;
-  age: string;
-  reason: string;
-  weight: string;
-  height: string;
-  headCircumference: string;
-  percentile: string;
-  percentilBadge: boolean;
-  observations: string;
-  isLatest: boolean;
 }
 
 export interface VaccineScheduleItem {
@@ -144,52 +128,34 @@ export class PatientRecordComponent implements OnInit {
   readonly activePatientService = inject(ActivePatientService);
   readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
   readonly growthService = inject(PatientGrowthService);
-  private readonly checkupService = inject(CheckupService);
   private readonly clinicalEncounterService = inject(ClinicalEncounterService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly workspaceStore = inject(WorkspaceStore);
-  private checkupRead = 0; private encounterRead = 0; private growthRead = 0;
+  private encounterRead = 0; private growthRead = 0;
 
   // Growth Curves & Somatometry State
   readonly selectedGrowthMetric = signal<GrowthMetricType | 'ALL'>('WEIGHT');
   readonly backendGrowthMeasurements = signal<BackendGrowthMeasurement[]>([]);
   readonly isLoadingGrowthCurves = signal<boolean>(false);
+  readonly growthError = signal<string | null>(null);
 
   readonly patientSex = computed<BiologicalSex>(() =>
     this.growthService.normalizeGender(this.activePatientService.activePatient()?.gender)
   );
 
   readonly weightMeasurements = computed(() =>
-    this.growthService.extractPatientMeasurements(
-      this.activePatientService.activePatient() || {},
-      this.encounters(),
-      'WEIGHT',
-      this.checkups(),
-      this.backendGrowthMeasurements()
-    )
+    this.growthService.transformBackendMeasurements(this.backendGrowthMeasurements(), 'WEIGHT', this.patientSex())
   );
 
   readonly heightMeasurements = computed(() =>
-    this.growthService.extractPatientMeasurements(
-      this.activePatientService.activePatient() || {},
-      this.encounters(),
-      'HEIGHT',
-      this.checkups(),
-      this.backendGrowthMeasurements()
-    )
+    this.growthService.transformBackendMeasurements(this.backendGrowthMeasurements(), 'HEIGHT', this.patientSex())
   );
 
   readonly headCircumferenceMeasurements = computed(() =>
-    this.growthService.extractPatientMeasurements(
-      this.activePatientService.activePatient() || {},
-      this.encounters(),
-      'HEAD_CIRCUMFERENCE',
-      this.checkups(),
-      this.backendGrowthMeasurements()
-    )
+    this.growthService.transformBackendMeasurements(this.backendGrowthMeasurements(), 'HEAD_CIRCUMFERENCE', this.patientSex())
   );
 
   readonly totalMeasurementsCount = computed(() =>
@@ -227,8 +193,6 @@ export class PatientRecordComponent implements OnInit {
     ].filter(tab => tab.id !== 'curvas' || this.growthEnabled()) as RecordTabItem[];
   });
 
-  readonly checkups = signal<MedicalCheckupDetailDTO[]>([]);
-  readonly isLoadingCheckups = signal<boolean>(false);
 
   // Universal Encounters state
   readonly encounters = signal<ClinicalEncounterList[]>([]);
@@ -294,20 +258,18 @@ export class PatientRecordComponent implements OnInit {
       const growthEnabled = this.growthEnabled();
       untracked(() => {
         if (context !== this.recordContext) {
-          this.recordContext = context; this.checkupRead++; this.encounterRead++; this.growthRead++;
-          this.checkups.set([]); this.encounters.set([]); this.backendGrowthMeasurements.set([]);
+          this.recordContext = context; this.encounterRead++; this.growthRead++;
+          this.encounters.set([]); this.backendGrowthMeasurements.set([]); this.growthError.set(null);
           this.clearRxForm(); this.rxPatientId = null;
           this.isMoreMenuOpen.set(false); this.isNewEncounterModalOpen.set(false); this.isEditPatientModalOpen.set(false);
         }
         if (!growthEnabled && this.selectedTab() === 'curvas') this.selectedTab.set('resumen');
         if (patient?.id) {
-          this.loadCheckups(patient.id);
           this.loadEncounters(patient.id);
           this.loadSavedPrescriptions(patient.id);
           this.loadGrowthCurves(patient.id);
         } else {
-          this.isLoadingCheckups.set(false); this.isLoadingEncounters.set(false); this.isLoadingGrowthCurves.set(false);
-          this.checkups.set([]);
+          this.isLoadingEncounters.set(false); this.isLoadingGrowthCurves.set(false);
           this.encounters.set([]);
           this.loadSavedPrescriptions(null);
           this.backendGrowthMeasurements.set([]);
@@ -336,23 +298,9 @@ export class PatientRecordComponent implements OnInit {
 
     const patient = this.activePatientService.activePatient();
     if (patient?.id) {
-      this.loadCheckups(patient.id);
       this.loadEncounters(patient.id);
       this.loadSavedPrescriptions(patient.id);
       this.loadGrowthCurves(patient.id);
-    }
-  }
-
-  @HostListener('window:checkup-created')
-  onCheckupCreated(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      const patient = this.activePatientService.activePatient();
-      if (patient?.id) {
-        this.activePatientService.loadPatient(patient.id);
-        this.loadCheckups(patient.id);
-        this.loadEncounters(patient.id);
-        this.loadGrowthCurves(patient.id);
-      }
     }
   }
 
@@ -366,24 +314,6 @@ export class PatientRecordComponent implements OnInit {
       if (patientId && eventPatientId === patientId) this.activePatientService.loadPatient(patientId);
     }
   }
-  loadCheckups(patientId: number): void {
-    const revision = ++this.checkupRead;
-    const owner = this.authService.currentUser()?.id;
-    this.isLoadingCheckups.set(true);
-    this.checkupService.getCheckupsByPatientId(patientId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => {
-        if (revision !== this.checkupRead || patientId !== this.activePatientService.patientId() || owner !== this.authService.currentUser()?.id) return;
-        this.checkups.set(data || []);
-        this.isLoadingCheckups.set(false);
-      },
-      error: () => {
-        if (revision !== this.checkupRead || patientId !== this.activePatientService.patientId() || owner !== this.authService.currentUser()?.id) return;
-        this.checkups.set([]);
-        this.isLoadingCheckups.set(false);
-      },
-    });
-  }
-
   loadEncounters(patientId: number): void {
     const revision = ++this.encounterRead;
     const owner = this.authService.currentUser()?.id;
@@ -405,8 +335,9 @@ export class PatientRecordComponent implements OnInit {
   loadGrowthCurves(patientId: number): void {
     const revision = ++this.growthRead;
     const owner = this.authService.currentUser()?.id;
-    if (!this.growthEnabled()) { this.backendGrowthMeasurements.set([]); return; }
+    if (!this.growthEnabled()) { this.backendGrowthMeasurements.set([]); this.growthError.set(null); this.isLoadingGrowthCurves.set(false); return; }
     this.isLoadingGrowthCurves.set(true);
+    this.growthError.set(null);
     this.growthService.getPatientGrowthCurves(patientId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         if (revision !== this.growthRead || patientId !== this.activePatientService.patientId() || owner !== this.authService.currentUser()?.id) return;
@@ -416,6 +347,7 @@ export class PatientRecordComponent implements OnInit {
       error: () => {
         if (revision !== this.growthRead || patientId !== this.activePatientService.patientId() || owner !== this.authService.currentUser()?.id) return;
         this.backendGrowthMeasurements.set([]);
+        this.growthError.set('No se pudieron cargar las mediciones.');
         this.isLoadingGrowthCurves.set(false);
       },
     });
@@ -460,11 +392,6 @@ export class PatientRecordComponent implements OnInit {
 
   openNewPatientModal(event?: Event): void {
     this.openEditPatientModal(event);
-  }
-
-  openNewCheckupModal(event?: Event): void {
-    if (event) event.stopPropagation();
-    this.isMoreMenuOpen.set(false);
   }
 
   openNewEncounterModal(event?: Event): void {
@@ -889,17 +816,17 @@ export class PatientRecordComponent implements OnInit {
   });
 
   readonly birthWeightDisplay = computed(() => {
-    const w = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.weight;
+    const w = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.weightKg;
     return w != null && !isNaN(Number(w)) && Number(w) > 0 ? `${Number(w).toFixed(3)} kg` : '—';
   });
 
   readonly birthHeightDisplay = computed(() => {
-    const h = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.height;
+    const h = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.heightCm;
     return h != null && !isNaN(Number(h)) && Number(h) > 0 ? `${Number(h).toFixed(1)} cm` : '—';
   });
 
   readonly birthHeadCircDisplay = computed(() => {
-    const hc = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.headCircumference;
+    const hc = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.headCircumferenceCm;
     return hc != null && !isNaN(Number(hc)) && Number(hc) > 0 ? `${Number(hc).toFixed(1)} cm` : '—';
   });
 
@@ -938,33 +865,9 @@ export class PatientRecordComponent implements OnInit {
   });
 
 
-  // Table Data for Checkups
-  readonly checkupTableData = computed<CheckupTableRow[]>(() => {
-    const list = this.checkups();
-    if (!list || list.length === 0) return [];
-
-    const sorted = [...list].sort(
-      (a, b) => new Date(b.checkupDate).getTime() - new Date(a.checkupDate).getTime()
-    );
-
-    return sorted.map((c, idx) => ({
-      code: `CP-${c.id}`,
-      date: c.checkupDate?.split('T')?.[0] || c.checkupDate,
-      age: this.activePatientService.ageDisplay(),
-      reason: c.reason === 'ROUTINE' ? 'Control de Crecimiento' : String(c.reason),
-      weight: c.measurements?.weight != null ? `${c.measurements.weight} kg` : '—',
-      height: c.measurements?.height != null ? `${c.measurements.height} cm` : '—',
-      headCircumference: c.measurements?.headCircumference != null ? `${c.measurements.headCircumference} cm` : '—',
-      percentile: 'En rango',
-      percentilBadge: true,
-      observations: 'Control somatométrico clínico registrado.',
-      isLatest: idx === 0,
-    }));
-  });
-
   readonly totalWeightGain = computed(() => {
-    const latest = this.activePatientService.latestMeasurements()?.weight;
-    const birth = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.weight;
+    const latest = this.activePatientService.latestMeasurements()?.weightKg;
+    const birth = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.weightKg;
     if (latest && birth) {
       const diff = Number(latest) - Number(birth);
       return `${diff >= 0 ? '+' : ''}${diff.toFixed(3)} kg`;
@@ -973,8 +876,8 @@ export class PatientRecordComponent implements OnInit {
   });
 
   readonly totalHeightGain = computed(() => {
-    const latest = this.activePatientService.latestMeasurements()?.height;
-    const birth = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.height;
+    const latest = this.activePatientService.latestMeasurements()?.heightCm;
+    const birth = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.heightCm;
     if (latest && birth) {
       const diff = Number(latest) - Number(birth);
       return `${diff >= 0 ? '+' : ''}${diff.toFixed(1)} cm`;
@@ -983,8 +886,8 @@ export class PatientRecordComponent implements OnInit {
   });
 
   readonly totalHeadCircGain = computed(() => {
-    const latest = this.activePatientService.latestMeasurements()?.headCircumference;
-    const birth = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.headCircumference;
+    const latest = this.activePatientService.latestMeasurements()?.headCircumferenceCm;
+    const birth = this.activePatientService.activePatient()?.personalHistory?.birthMeasurements?.headCircumferenceCm;
     if (latest && birth) {
       const diff = Number(latest) - Number(birth);
       return `${diff >= 0 ? '+' : ''}${diff.toFixed(1)} cm`;

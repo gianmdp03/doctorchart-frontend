@@ -56,7 +56,6 @@ export class PatientBannerComponent {
   @Input() patient: PatientDetailDTO | null = null;
   @Output() newEncounter = new EventEmitter<void>();
   @Output() editPatient = new EventEmitter<void>();
-  @Output() newCheckup = new EventEmitter<void>();
   @Output() printSummary = new EventEmitter<void>();
   @Output() viewCurves = new EventEmitter<void>();
 

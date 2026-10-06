@@ -1,3 +1,4 @@
+import { AnthropometricMeasurements } from './clinical-records.model';
 import { SpecialtySummary } from './specialty.model';
 import { ClinicalFormRecord, WizardFormValues } from './wizard-definition.model';
 
@@ -15,10 +16,6 @@ export interface VitalSigns {
   respiratoryRate?: number | null;
   temperatureCelsius?: number | null;
   oxygenSaturationPercent?: number | null;
-  weightKg?: number | null;
-  heightCm?: number | null;
-  headCircumferenceCm?: number | null;
-  bodyMassIndex?: number | null;
 }
 
 export interface PrescriptionItem {
@@ -66,9 +63,7 @@ export interface ClinicalEncounterList extends ClinicalFormRecord {
   chiefComplaint?: string | null;
   primaryDiagnosisCode?: string | null;
   primaryDiagnosisDescription?: string | null;
-  peso?: number | null;
-  talla?: number | null;
-  perimetroEncefalico?: number | null;
+  measurements?: AnthropometricMeasurements | null;
   vitalSigns?: VitalSigns | null;
   prescriptions?: PrescriptionItem[] | null;
   historyOfPresentIllness?: string | null;

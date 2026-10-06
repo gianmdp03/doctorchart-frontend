@@ -137,7 +137,7 @@ export class ActivePatientService {
 
   readonly formattedWeight = computed(() => {
     const m = this.latestMeasurements();
-    const weight = m?.weight != null ? Number(m.weight) : null;
+    const weight = m?.weightKg != null ? Number(m.weightKg) : null;
     if (weight != null && !isNaN(weight) && weight > 0) {
       return `${weight >= 10 ? weight.toFixed(1) : weight.toFixed(3)} kg`;
     }
@@ -146,7 +146,7 @@ export class ActivePatientService {
 
   readonly formattedHeight = computed(() => {
     const m = this.latestMeasurements();
-    const height = m?.height != null ? Number(m.height) : null;
+    const height = m?.heightCm != null ? Number(m.heightCm) : null;
     if (height != null && !isNaN(height) && height > 0) {
       return `${height.toFixed(1)} cm`;
     }
@@ -155,7 +155,7 @@ export class ActivePatientService {
 
   readonly formattedHeadCircumference = computed(() => {
     const m = this.latestMeasurements();
-    const hc = m?.headCircumference != null ? Number(m.headCircumference) : null;
+    const hc = m?.headCircumferenceCm != null ? Number(m.headCircumferenceCm) : null;
     if (hc != null && !isNaN(hc) && hc > 0) {
       return `${hc.toFixed(1)} cm`;
     }
@@ -164,8 +164,8 @@ export class ActivePatientService {
 
   readonly deltaWeight = computed(() => {
     const patient = this.activePatient();
-    const currentWeight = patient?.latestMeasurements?.weight != null ? Number(patient.latestMeasurements.weight) : null;
-    const birthWeight = patient?.personalHistory?.birthMeasurements?.weight != null ? Number(patient.personalHistory.birthMeasurements.weight) : null;
+    const currentWeight = patient?.latestMeasurements?.weightKg != null ? Number(patient.latestMeasurements.weightKg) : null;
+    const birthWeight = patient?.personalHistory?.birthMeasurements?.weightKg != null ? Number(patient.personalHistory.birthMeasurements.weightKg) : null;
     if (currentWeight != null && birthWeight != null && !isNaN(currentWeight) && !isNaN(birthWeight) && currentWeight > 0 && birthWeight > 0) {
       const diff = currentWeight - birthWeight;
       const sign = diff >= 0 ? '+' : '';
@@ -176,8 +176,8 @@ export class ActivePatientService {
 
   readonly bmiDisplay = computed(() => {
     const m = this.latestMeasurements();
-    const weight = m?.weight != null ? Number(m.weight) : null;
-    const height = m?.height != null ? Number(m.height) : null;
+    const weight = m?.weightKg != null ? Number(m.weightKg) : null;
+    const height = m?.heightCm != null ? Number(m.heightCm) : null;
     if (
       weight != null &&
       height != null &&
