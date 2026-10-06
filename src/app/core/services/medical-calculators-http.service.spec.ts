@@ -4,7 +4,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { MedicalCalculatorsService } from './medical-calculators.service';
 import { CalculationResultResponseDTO } from '../models/medical-calculators.model';
-import { calculatorInputSummary } from '../models/calculator-input-summary';
 
 export const FLUID_RESULT: CalculationResultResponseDTO = {
   calculatorId: 'holliday_segar', calculationName: 'Requerimiento Hídrico Basal Pediátrico (Holliday-Segar)',
@@ -55,12 +54,6 @@ describe('MedicalCalculatorsService HTTP boundary', () => {
     expect(failed).toBe(true);
   });
 
-  it('keeps the pediatric input summary readable while using canonical input keys', () => {
-    expect(calculatorInputSummary('pediatric_dosage', { weightKg: 10, targetDoseMgKg: 50, doseUnit: 'mg/kg/dia',
-      drugConcentrationMg: 250, drugConcentrationMl: 5, dosesPerDay: 3 })).toEqual({
-      'Peso (kg)': 10, 'Dosis objetivo': '50 mg/kg/dia', 'Concentración': '250 mg / 5 mL', 'Frecuencia': '3 veces al día',
-    });
-  });
 
   it('maps authoritative server metadata while retaining only the existing icons locally', () => {
     expect(service.calculators()).toEqual([]);

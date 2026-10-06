@@ -1,0 +1,104 @@
+<div class="form-field-group">
+  <label for="chadsAgeInput" class="form-label">
+    <span>Edad del Paciente</span>
+    <span class="text-xs text-rose-500 font-semibold">* Requerido</span>
+  </label>
+  <div class="input-with-addon">
+    <input
+      id="chadsAgeInput"
+      type="number"
+      step="1"
+      min="0"
+      max="120"
+      placeholder="Ej. 68"
+      class="form-input"
+      [class.border-rose-400]="form().ageYears() === null"
+      [ngModel]="form().ageYears()"
+      (ngModelChange)="form().ageYears.set($event)"
+    />
+    <span class="input-addon">años</span>
+  </div>
+</div>
+
+<div class="chads-checklist">
+  <label class="checkbox-tile">
+    <input
+      type="checkbox"
+      [ngModel]="form().isFemale()"
+      (ngModelChange)="form().isFemale.set($event)"
+    />
+    <div class="tile-content">
+      <span class="tile-title">Sexo Biológico Femenino (+1 pt)</span>
+      <span class="tile-desc">Aplica si la paciente tiene ≥ 1 otro factor de riesgo</span>
+    </div>
+  </label>
+
+  <label class="checkbox-tile">
+    <input
+      type="checkbox"
+      [ngModel]="form().congestiveHeartFailure()"
+      (ngModelChange)="form().congestiveHeartFailure.set($event)"
+    />
+    <div class="tile-content">
+      <span class="tile-title">Insuficiencia Cardíaca Congestiva (+1 pt)</span>
+      <span class="tile-desc">IC sintomática o FEVI reducida ≤ 40%</span>
+    </div>
+  </label>
+
+  <label class="checkbox-tile">
+    <input
+      type="checkbox"
+      [ngModel]="form().hypertension()"
+      (ngModelChange)="form().hypertension.set($event)"
+    />
+    <div class="tile-content">
+      <span class="tile-title">Hipertensión Arterial (+1 pt)</span>
+      <span class="tile-desc"
+        >PA sistólica persistente >140 o diastólica >90 mmHg o tratamiento antihipertensivo</span
+      >
+    </div>
+  </label>
+
+  <label class="checkbox-tile">
+    <input
+      type="checkbox"
+      [ngModel]="form().diabetes()"
+      (ngModelChange)="form().diabetes.set($event)"
+    />
+    <div class="tile-content">
+      <span class="tile-title">Diabetes Mellitus (+1 pt)</span>
+      <span class="tile-desc"
+        >Glucemia en ayunas >126 mg/dL o terapia hipoglucemiante/insulina</span
+      >
+    </div>
+  </label>
+
+  <label class="checkbox-tile">
+    <input
+      type="checkbox"
+      [ngModel]="form().strokeOrTia()"
+      (ngModelChange)="form().strokeOrTia.set($event)"
+    />
+    <div class="tile-content">
+      <span class="tile-title">ACV / AIT / Tromboembolismo Previo (+2 pts)</span>
+      <span class="tile-desc"
+        >Accidente cerebrovascular isquémico previo, ataque isquémico transitorio o embolia
+        arterial</span
+      >
+    </div>
+  </label>
+
+  <label class="checkbox-tile">
+    <input
+      type="checkbox"
+      [ngModel]="form().vascularDisease()"
+      (ngModelChange)="form().vascularDisease.set($event)"
+    />
+    <div class="tile-content">
+      <span class="tile-title">Enfermedad Vascular (+1 pt)</span>
+      <span class="tile-desc"
+        >Infarto agudo de miocardio previo, arteriopatía periférica o placa aórtica compleja</span
+      >
+    </div>
+  </label>
+</div>

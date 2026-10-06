@@ -24,7 +24,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
   let http: HttpTestingController;
   const patient = signal<PatientDetailDTO | null>(null);
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.useFakeTimers();
     patient.set(null);
     TestBed.configureTestingModule({ imports: [MedicalCalculatorsComponent], providers: [
@@ -39,6 +39,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     http.expectOne(req => req.url.endsWith('/calculators/catalog')).flush(CALCULATOR_CATALOG_FIXTURE);
     http.expectOne(req => req.url.endsWith('/calculators/preferences')).flush({ favoriteCalculationCodes: ['holliday_segar'] });
     fixture.detectChanges();
+    await fixture.whenStable();
   });
   afterEach(() => {
     fixture.destroy();
@@ -48,7 +49,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
   });
 
   function requestPreview(weight: number) {
-    component.hollidayWeight.set(weight);
+    setNumberInputs([weight]);
     fixture.detectChanges();
     vi.advanceTimersByTime(151);
     return http.expectOne(req => req.url.endsWith('/calculators/preview'));
@@ -73,7 +74,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
 
   it('cancels older previews and immediately invalidates a result when inputs change', () => {
     const first = requestPreview(15);
-    component.hollidayWeight.set(20);
+    setNumberInputs([20]);
     expect(component.currentResult()).toBeNull();
     fixture.detectChanges();
     expect(first.cancelled).toBe(true);
@@ -81,7 +82,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     const second = http.expectOne(req => req.url.endsWith('/calculators/preview'));
     second.flush({ ...RESULT, rawValue: 1500, formattedValue: '1500' });
     expect(component.currentResult()?.rawValue).toBe(1500);
-    component.hollidayWeight.set(null);
+    setNumberInputs([null]);
     expect(component.currentResult()).toBeNull();
     component.saveResultToRecord();
     http.expectNone(req => req.url.endsWith('/calculators/execute'));
@@ -198,6 +199,352 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     expect(fixture.nativeElement.textContent).toContain('Reintentar');
     component.toggleFavoriteCalculator('imc');
     http.expectNone(req => req.method === 'PUT');
+  });
+
+
+  function numberInputs() {
+    return Array.from(fixture.nativeElement.querySelectorAll('.inputs-card input[type="number"]')) as HTMLInputElement[];
+  }
+
+  function setNumberInputs(values: (number | null)[]) {
+    numberInputs().forEach((input, index) => {
+      input.value = values[index] === null ? '' : String(values[index]);
+      input.dispatchEvent(new Event('input'));
+    });
+    fixture.detectChanges();
+  }
+
+  function formAppearance() {
+    const card: HTMLElement = fixture.nativeElement.querySelector('.inputs-card');
+    return {
+      text: card.textContent?.replace(/\s+/g, ' ').trim(),
+      controls: Array.from(card.querySelectorAll('input, button, select')).map(control => ({
+        tag: control.tagName, id: control.id,
+        attributes: Object.fromEntries(['type', 'min', 'max', 'step', 'placeholder'].map(name => [name, control.getAttribute(name)])),
+        classes: control.className.split(' ').filter(name => name && !name.startsWith('ng-')).sort(),
+        value: (control as HTMLInputElement).value,
+        checked: control instanceof HTMLInputElement && control.type === 'checkbox' ? control.checked : undefined,
+      })),
+    };
+  }
+
+  it('preserves the imc form, request inputs and clearing behavior', async () => {
+    component.selectCalculator('imc'); fixture.detectChanges();
+    await fixture.whenStable();
+    expect(formAppearance()).toMatchSnapshot('imc initial form');
+    setNumberInputs([70,175]);
+    vi.advanceTimersByTime(151);
+    const request = http.expectOne(req => req.url.endsWith('/calculators/preview'));
+    expect(request.request.body).toEqual({ calculationCode: 'imc', inputSnapshot: {"weightKg":70,"heightCm":175} });
+    request.flush({ ...RESULT, calculatorId: 'imc' });
+    component.resetCurrentInputs(); fixture.detectChanges();
+    expect(component.currentResult()).toBeNull();
+    await fixture.whenStable();
+    expect(numberInputs().every(input => input.value === '')).toBe(true);
+    vi.advanceTimersByTime(151);
+    http.expectNone(req => req.url.endsWith('/calculators/preview'));
+  });
+
+  it('preserves the tfge form, request inputs and clearing behavior', async () => {
+    component.selectCalculator('tfge'); fixture.detectChanges();
+    await fixture.whenStable();
+    expect(formAppearance()).toMatchSnapshot('tfge initial form');
+    setNumberInputs([1,55]);
+    vi.advanceTimersByTime(151);
+    const request = http.expectOne(req => req.url.endsWith('/calculators/preview'));
+    expect(request.request.body).toEqual({ calculationCode: 'tfge', inputSnapshot: {"creatinineMgDl":1,"ageYears":55,"gender":"MALE"} });
+    request.flush({ ...RESULT, calculatorId: 'tfge' });
+    component.resetCurrentInputs(); fixture.detectChanges();
+    expect(component.currentResult()).toBeNull();
+    await fixture.whenStable();
+    expect(numberInputs().every(input => input.value === '')).toBe(true);
+    vi.advanceTimersByTime(151);
+    http.expectNone(req => req.url.endsWith('/calculators/preview'));
+  });
+
+  it('preserves the cockcroft form, request inputs and clearing behavior', async () => {
+    component.selectCalculator('cockcroft'); fixture.detectChanges();
+    await fixture.whenStable();
+    expect(formAppearance()).toMatchSnapshot('cockcroft initial form');
+    setNumberInputs([70,55,1]);
+    vi.advanceTimersByTime(151);
+    const request = http.expectOne(req => req.url.endsWith('/calculators/preview'));
+    expect(request.request.body).toEqual({ calculationCode: 'cockcroft', inputSnapshot: {"weightKg":70,"ageYears":55,"creatinineMgDl":1,"gender":"MALE"} });
+    request.flush({ ...RESULT, calculatorId: 'cockcroft' });
+    component.resetCurrentInputs(); fixture.detectChanges();
+    expect(component.currentResult()).toBeNull();
+    await fixture.whenStable();
+    expect(numberInputs().every(input => input.value === '')).toBe(true);
+    vi.advanceTimersByTime(151);
+    http.expectNone(req => req.url.endsWith('/calculators/preview'));
+  });
+
+  it('preserves the chads_vasc form, request inputs and clearing behavior', async () => {
+    component.selectCalculator('chads_vasc'); fixture.detectChanges();
+    await fixture.whenStable();
+    expect(formAppearance()).toMatchSnapshot('chads_vasc initial form');
+    setNumberInputs([0]);
+    vi.advanceTimersByTime(151);
+    const request = http.expectOne(req => req.url.endsWith('/calculators/preview'));
+    expect(request.request.body).toEqual({ calculationCode: 'chads_vasc', inputSnapshot: {"ageYears":0,"isFemale":false,"congestiveHeartFailure":false,"hypertension":false,"diabetes":false,"strokeOrTia":false,"vascularDisease":false} });
+    request.flush({ ...RESULT, calculatorId: 'chads_vasc' });
+    component.resetCurrentInputs(); fixture.detectChanges();
+    expect(component.currentResult()).toBeNull();
+    await fixture.whenStable();
+    expect(numberInputs().every(input => input.value === '')).toBe(true);
+    vi.advanceTimersByTime(151);
+    http.expectNone(req => req.url.endsWith('/calculators/preview'));
+  });
+
+  it('preserves the calcio_corregido form, request inputs and clearing behavior', async () => {
+    component.selectCalculator('calcio_corregido'); fixture.detectChanges();
+    await fixture.whenStable();
+    expect(formAppearance()).toMatchSnapshot('calcio_corregido initial form');
+    setNumberInputs([8.2,3]);
+    vi.advanceTimersByTime(151);
+    const request = http.expectOne(req => req.url.endsWith('/calculators/preview'));
+    expect(request.request.body).toEqual({ calculationCode: 'calcio_corregido', inputSnapshot: {"serumCalciumMgDl":8.2,"serumAlbuminGDl":3} });
+    request.flush({ ...RESULT, calculatorId: 'calcio_corregido' });
+    component.resetCurrentInputs(); fixture.detectChanges();
+    expect(component.currentResult()).toBeNull();
+    await fixture.whenStable();
+    expect(numberInputs().every(input => input.value === '')).toBe(true);
+    vi.advanceTimersByTime(151);
+    http.expectNone(req => req.url.endsWith('/calculators/preview'));
+  });
+
+  it('preserves the holliday_segar form, request inputs and clearing behavior', async () => {
+    component.selectCalculator('holliday_segar'); fixture.detectChanges();
+    await fixture.whenStable();
+    expect(formAppearance()).toMatchSnapshot('holliday_segar initial form');
+    setNumberInputs([15]);
+    vi.advanceTimersByTime(151);
+    const request = http.expectOne(req => req.url.endsWith('/calculators/preview'));
+    expect(request.request.body).toEqual({ calculationCode: 'holliday_segar', inputSnapshot: {"weightKg":15} });
+    request.flush({ ...RESULT, calculatorId: 'holliday_segar' });
+    component.resetCurrentInputs(); fixture.detectChanges();
+    expect(component.currentResult()).toBeNull();
+    await fixture.whenStable();
+    expect(numberInputs().every(input => input.value === '')).toBe(true);
+    vi.advanceTimersByTime(151);
+    http.expectNone(req => req.url.endsWith('/calculators/preview'));
+  });
+
+  it('preserves the bsa_mosteller form, request inputs and clearing behavior', async () => {
+    component.selectCalculator('bsa_mosteller'); fixture.detectChanges();
+    await fixture.whenStable();
+    expect(formAppearance()).toMatchSnapshot('bsa_mosteller initial form');
+    setNumberInputs([18,110]);
+    vi.advanceTimersByTime(151);
+    const request = http.expectOne(req => req.url.endsWith('/calculators/preview'));
+    expect(request.request.body).toEqual({ calculationCode: 'bsa_mosteller', inputSnapshot: {"weightKg":18,"heightCm":110} });
+    request.flush({ ...RESULT, calculatorId: 'bsa_mosteller' });
+    component.resetCurrentInputs(); fixture.detectChanges();
+    expect(component.currentResult()).toBeNull();
+    await fixture.whenStable();
+    expect(numberInputs().every(input => input.value === '')).toBe(true);
+    vi.advanceTimersByTime(151);
+    http.expectNone(req => req.url.endsWith('/calculators/preview'));
+  });
+
+  it('preserves the pediatric_dosage form, request inputs and clearing behavior', async () => {
+    component.selectCalculator('pediatric_dosage'); fixture.detectChanges();
+    await fixture.whenStable();
+    expect(formAppearance()).toMatchSnapshot('pediatric_dosage initial form');
+    setNumberInputs([12,50,250,5]);
+    vi.advanceTimersByTime(151);
+    const request = http.expectOne(req => req.url.endsWith('/calculators/preview'));
+    expect(request.request.body).toEqual({ calculationCode: 'pediatric_dosage', inputSnapshot: {"weightKg":12,"targetDoseMgKg":50,"doseUnit":"mg/kg/dia","drugConcentrationMg":250,"drugConcentrationMl":5,"dosesPerDay":3} });
+    request.flush({ ...RESULT, calculatorId: 'pediatric_dosage' });
+    component.resetCurrentInputs(); fixture.detectChanges();
+    expect(component.currentResult()).toBeNull();
+    await fixture.whenStable();
+    expect(numberInputs().every(input => input.value === '')).toBe(true);
+    vi.advanceTimersByTime(151);
+    http.expectNone(req => req.url.endsWith('/calculators/preview'));
+  });
+
+  it('preserves the imc autofill fields and feedback', () => {
+    attachPatient(); component.selectCalculator('imc'); fixture.detectChanges();
+    component.autofillFromPatient();
+    http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill')).flush({
+      patientId: 10, fullName: 'Paciente', birthDate: '2018-05-10', ageYears: 8, gender: 'FEMALE',
+      weightKg: 15, heightCm: 100, systolicBloodPressure: null, diastolicBloodPressure: null,
+      creatinineMgDl: 0.65, serumCalciumMgDl: 9.4, serumAlbuminGDl: 4.2, encounterId: 100, encounterDate: null,
+    });
+    expect(component.currentInputs()).toEqual({"weightKg":15,"heightCm":100});
+    expect(component.autofillBannerMessage()).toMatchSnapshot('imc autofill feedback');
+    expect(component.autofillAlertSeverity()).toBe('success');
+  });
+
+  it('preserves the tfge autofill fields and feedback', () => {
+    attachPatient(); component.selectCalculator('tfge'); fixture.detectChanges();
+    component.autofillFromPatient();
+    http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill')).flush({
+      patientId: 10, fullName: 'Paciente', birthDate: '2018-05-10', ageYears: 8, gender: 'FEMALE',
+      weightKg: 15, heightCm: 100, systolicBloodPressure: null, diastolicBloodPressure: null,
+      creatinineMgDl: 0.65, serumCalciumMgDl: 9.4, serumAlbuminGDl: 4.2, encounterId: 100, encounterDate: null,
+    });
+    expect(component.currentInputs()).toEqual({"creatinineMgDl":0.65,"ageYears":8,"gender":"FEMALE"});
+    expect(component.autofillBannerMessage()).toMatchSnapshot('tfge autofill feedback');
+    expect(component.autofillAlertSeverity()).toBe('success');
+  });
+
+  it('preserves the cockcroft autofill fields and feedback', () => {
+    attachPatient(); component.selectCalculator('cockcroft'); fixture.detectChanges();
+    component.autofillFromPatient();
+    http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill')).flush({
+      patientId: 10, fullName: 'Paciente', birthDate: '2018-05-10', ageYears: 8, gender: 'FEMALE',
+      weightKg: 15, heightCm: 100, systolicBloodPressure: null, diastolicBloodPressure: null,
+      creatinineMgDl: 0.65, serumCalciumMgDl: 9.4, serumAlbuminGDl: 4.2, encounterId: 100, encounterDate: null,
+    });
+    expect(component.currentInputs()).toEqual({"weightKg":15,"ageYears":8,"creatinineMgDl":0.65,"gender":"FEMALE"});
+    expect(component.autofillBannerMessage()).toMatchSnapshot('cockcroft autofill feedback');
+    expect(component.autofillAlertSeverity()).toBe('success');
+  });
+
+  it('preserves the chads_vasc autofill fields and feedback', () => {
+    attachPatient(); component.selectCalculator('chads_vasc'); fixture.detectChanges();
+    component.autofillFromPatient();
+    http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill')).flush({
+      patientId: 10, fullName: 'Paciente', birthDate: '2018-05-10', ageYears: 8, gender: 'FEMALE',
+      weightKg: 15, heightCm: 100, systolicBloodPressure: null, diastolicBloodPressure: null,
+      creatinineMgDl: 0.65, serumCalciumMgDl: 9.4, serumAlbuminGDl: 4.2, encounterId: 100, encounterDate: null,
+    });
+    expect(component.currentInputs()).toEqual({"ageYears":8,"isFemale":true,"congestiveHeartFailure":false,"hypertension":false,"diabetes":false,"strokeOrTia":false,"vascularDisease":false});
+    expect(component.autofillBannerMessage()).toMatchSnapshot('chads_vasc autofill feedback');
+    expect(component.autofillAlertSeverity()).toBe('success');
+  });
+
+  it('preserves the calcio_corregido autofill fields and feedback', () => {
+    attachPatient(); component.selectCalculator('calcio_corregido'); fixture.detectChanges();
+    component.autofillFromPatient();
+    http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill')).flush({
+      patientId: 10, fullName: 'Paciente', birthDate: '2018-05-10', ageYears: 8, gender: 'FEMALE',
+      weightKg: 15, heightCm: 100, systolicBloodPressure: null, diastolicBloodPressure: null,
+      creatinineMgDl: 0.65, serumCalciumMgDl: 9.4, serumAlbuminGDl: 4.2, encounterId: 100, encounterDate: null,
+    });
+    expect(component.currentInputs()).toEqual({"serumCalciumMgDl":9.4,"serumAlbuminGDl":4.2});
+    expect(component.autofillBannerMessage()).toMatchSnapshot('calcio_corregido autofill feedback');
+    expect(component.autofillAlertSeverity()).toBe('success');
+  });
+
+  it('preserves the holliday_segar autofill fields and feedback', () => {
+    attachPatient(); component.selectCalculator('holliday_segar'); fixture.detectChanges();
+    component.autofillFromPatient();
+    http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill')).flush({
+      patientId: 10, fullName: 'Paciente', birthDate: '2018-05-10', ageYears: 8, gender: 'FEMALE',
+      weightKg: 15, heightCm: 100, systolicBloodPressure: null, diastolicBloodPressure: null,
+      creatinineMgDl: 0.65, serumCalciumMgDl: 9.4, serumAlbuminGDl: 4.2, encounterId: 100, encounterDate: null,
+    });
+    expect(component.currentInputs()).toEqual({"weightKg":15});
+    expect(component.autofillBannerMessage()).toMatchSnapshot('holliday_segar autofill feedback');
+    expect(component.autofillAlertSeverity()).toBe('success');
+  });
+
+  it('preserves the bsa_mosteller autofill fields and feedback', () => {
+    attachPatient(); component.selectCalculator('bsa_mosteller'); fixture.detectChanges();
+    component.autofillFromPatient();
+    http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill')).flush({
+      patientId: 10, fullName: 'Paciente', birthDate: '2018-05-10', ageYears: 8, gender: 'FEMALE',
+      weightKg: 15, heightCm: 100, systolicBloodPressure: null, diastolicBloodPressure: null,
+      creatinineMgDl: 0.65, serumCalciumMgDl: 9.4, serumAlbuminGDl: 4.2, encounterId: 100, encounterDate: null,
+    });
+    expect(component.currentInputs()).toEqual({"weightKg":15,"heightCm":100});
+    expect(component.autofillBannerMessage()).toMatchSnapshot('bsa_mosteller autofill feedback');
+    expect(component.autofillAlertSeverity()).toBe('success');
+  });
+
+  it('preserves the pediatric_dosage autofill fields and feedback', () => {
+    attachPatient(); component.selectCalculator('pediatric_dosage'); fixture.detectChanges();
+    component.autofillFromPatient();
+    http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill')).flush({
+      patientId: 10, fullName: 'Paciente', birthDate: '2018-05-10', ageYears: 8, gender: 'FEMALE',
+      weightKg: 15, heightCm: 100, systolicBloodPressure: null, diastolicBloodPressure: null,
+      creatinineMgDl: 0.65, serumCalciumMgDl: 9.4, serumAlbuminGDl: 4.2, encounterId: 100, encounterDate: null,
+    });
+    expect(component.currentInputs()).toEqual({"weightKg":15,"targetDoseMgKg":null,"doseUnit":"mg/kg/dia","drugConcentrationMg":null,"drugConcentrationMl":null,"dosesPerDay":3});
+    expect(component.autofillBannerMessage()).toMatchSnapshot('pediatric_dosage autofill feedback');
+    expect(component.autofillAlertSeverity()).toBe('info');
+  });
+
+  it('preserves pediatric dose unit and frequency when clearing numeric inputs', () => {
+    component.selectCalculator('pediatric_dosage'); fixture.detectChanges();
+    const unitButton = Array.from(fixture.nativeElement.querySelectorAll('.inputs-card button')).find(button => (button as HTMLElement).textContent?.trim() === 'mg/kg/dosis') as HTMLButtonElement;
+    unitButton.click();
+    const select: HTMLSelectElement = fixture.nativeElement.querySelector('#pedDosesPerDaySelect');
+    select.value = select.options[1].value; select.dispatchEvent(new Event('change'));
+    setNumberInputs([12,50,250,5]);
+    component.resetCurrentInputs(); fixture.detectChanges();
+    expect(component.currentInputs()).toEqual({ weightKg: null, targetDoseMgKg: null, doseUnit: 'mg/kg/dosis', drugConcentrationMg: null, drugConcentrationMl: null, dosesPerDay: 2 });
+  });
+
+  it('keeps each calculators inputs when switching and clearing another calculator', async () => {
+    setNumberInputs([15]);
+    component.selectCalculator('bsa_mosteller'); fixture.detectChanges(); setNumberInputs([18,110]);
+    component.resetCurrentInputs(); fixture.detectChanges();
+    component.selectCalculator('holliday_segar'); fixture.detectChanges();
+    await fixture.whenStable();
+    expect(numberInputs()[0].value).toBe('15');
+  });
+
+
+  it('keeps a late autofill response from changing another calculator', () => {
+    attachPatient(); component.autofillFromPatient();
+    const request = http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill'));
+    component.selectCalculator('bsa_mosteller'); fixture.detectChanges();
+    request.flush({ patientId: 10, fullName: 'Paciente', weightKg: 15, heightCm: 100, ageYears: 8, gender: 'FEMALE' });
+    expect(component.currentInputs()).toEqual({ weightKg: null, heightCm: null });
+    expect(component.autofillBannerMessage()).toBeNull();
+    expect(component.isAutofilling()).toBe(false);
+    component.selectCalculator('holliday_segar');
+    expect(component.currentInputs()).toEqual({ weightKg: null });
+  });
+
+  it('renders an unavailable form without calculating through another module', () => {
+    component.selectedId.set('unregistered' as typeof RESULT.calculatorId);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.inputs-card').textContent).toContain('todavía no está disponible');
+    expect(component.currentInputs()).toEqual({});
+    expect(component.isCurrentInputComplete()).toBe(false);
+    component.resetCurrentInputs(); vi.advanceTimersByTime(151);
+    http.expectNone(req => req.url.endsWith('/calculators/preview'));
+  });
+
+  it('keeps the CHA2DS2-VASc flags independent and clears them with the active form', () => {
+    component.selectCalculator('chads_vasc'); fixture.detectChanges();
+    setNumberInputs([68]);
+    const flags = Array.from(fixture.nativeElement.querySelectorAll('.inputs-card input[type="checkbox"]')) as HTMLInputElement[];
+    for (const flag of flags) flag.click();
+    fixture.detectChanges(); vi.advanceTimersByTime(151);
+    const request = http.expectOne(req => req.url.endsWith('/calculators/preview'));
+    expect(request.request.body.inputSnapshot).toEqual({ ageYears: 68, isFemale: true, congestiveHeartFailure: true, hypertension: true, diabetes: true, strokeOrTia: true, vascularDisease: true });
+    request.flush({ ...RESULT, calculatorId: 'chads_vasc' });
+    component.resetCurrentInputs(); fixture.detectChanges();
+    expect(component.currentInputs()).toEqual({ ageYears: null, isFemale: false, congestiveHeartFailure: false, hypertension: false, diabetes: false, strokeOrTia: false, vascularDisease: false });
+  });
+
+  it('preserves the cached pediatric autofill after a server error', () => {
+    patient.set({ id: 10, fullName: 'Paciente', birthDate: '2022-05-10', latestMeasurements: { weight: 15, height: 100 } } as PatientDetailDTO);
+    fixture.detectChanges(); http.expectOne(req => req.url.endsWith('/calculators/patients/10/history')).flush([]);
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    component.autofillFromPatient();
+    http.expectOne(req => req.url.endsWith('/calculators/patients/10/autofill')).flush({}, { status: 500, statusText: 'Error' });
+    warning.mockRestore();
+    expect(component.currentInputs()).toEqual({ weightKg: 15 });
+    expect(component.autofillAlertSeverity()).toBe('success');
+    expect(component.isAutofilling()).toBe(false);
+  });
+
+  it('keeps the renal gender selection local and clears it with its form', () => {
+    component.selectCalculator('tfge'); fixture.detectChanges(); setNumberInputs([1,55]);
+    const female = Array.from(fixture.nativeElement.querySelectorAll('.inputs-card button')).find(button => (button as HTMLElement).textContent?.trim() === 'Femenino') as HTMLButtonElement;
+    female.click(); fixture.detectChanges(); vi.advanceTimersByTime(151);
+    const request = http.expectOne(req => req.url.endsWith('/calculators/preview'));
+    expect(request.request.body.inputSnapshot.gender).toBe('FEMALE'); request.flush({ ...RESULT, calculatorId: 'tfge' });
+    component.selectCalculator('cockcroft'); expect(component.currentInputs()['gender']).toBe('MALE');
+    component.selectCalculator('tfge'); expect(component.currentInputs()['gender']).toBe('FEMALE');
+    component.resetCurrentInputs(); expect(component.currentInputs()['gender']).toBe('MALE');
   });
 
 });

@@ -1,0 +1,114 @@
+<div class="form-field-group">
+  <label for="pedWeightInput" class="form-label">
+    <span>Peso del Paciente</span>
+    <span class="text-xs text-rose-500 font-semibold">* Requerido</span>
+  </label>
+  <div class="input-with-addon">
+    <input
+      id="pedWeightInput"
+      type="number"
+      step="0.1"
+      min="0.5"
+      max="150"
+      placeholder="Ej. 12.0"
+      class="form-input"
+      [class.border-rose-400]="!form().weightKg()"
+      [ngModel]="form().weightKg()"
+      (ngModelChange)="form().weightKg.set($event)"
+    />
+    <span class="input-addon">kg</span>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <div class="form-field-group">
+    <label for="pedTargetDoseInput" class="form-label">
+      <span>Dosis Objetivo</span>
+      <span class="text-xs text-rose-500 font-semibold">* Requerido</span>
+    </label>
+    <input
+      id="pedTargetDoseInput"
+      type="number"
+      step="0.5"
+      min="0.1"
+      placeholder="Ej. 50"
+      class="form-input"
+      [class.border-rose-400]="!form().targetDoseMgKg()"
+      [ngModel]="form().targetDoseMgKg()"
+      (ngModelChange)="form().targetDoseMgKg.set($event)"
+    />
+  </div>
+
+  <div class="form-field-group">
+    <label class="form-label">Unidad de Dosificación</label>
+    <div class="radio-pill-group">
+      <button
+        type="button"
+        class="radio-pill-btn text-xs"
+        [class.active]="form().doseUnit() === 'mg/kg/dia'"
+        (click)="form().doseUnit.set('mg/kg/dia')"
+      >
+        mg/kg/día
+      </button>
+      <button
+        type="button"
+        class="radio-pill-btn text-xs"
+        [class.active]="form().doseUnit() === 'mg/kg/dosis'"
+        (click)="form().doseUnit.set('mg/kg/dosis')"
+      >
+        mg/kg/dosis
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="form-field-group">
+  <label class="form-label">
+    <span>Concentración del Fármaco (Suspensión / Jarabe)</span>
+    <span class="text-xs text-rose-500 font-semibold">* Requerido</span>
+  </label>
+  <div class="flex items-center gap-2">
+    <div class="input-with-addon flex-1">
+      <input
+        type="number"
+        step="5"
+        min="1"
+        placeholder="Ej. 250"
+        class="form-input"
+        [class.border-rose-400]="!form().drugConcentrationMg()"
+        [ngModel]="form().drugConcentrationMg()"
+        (ngModelChange)="form().drugConcentrationMg.set($event)"
+      />
+      <span class="input-addon">mg</span>
+    </div>
+    <span class="font-bold text-slate-400">/</span>
+    <div class="input-with-addon flex-1">
+      <input
+        type="number"
+        step="1"
+        min="0.5"
+        placeholder="Ej. 5"
+        class="form-input"
+        [class.border-rose-400]="!form().drugConcentrationMl()"
+        [ngModel]="form().drugConcentrationMl()"
+        (ngModelChange)="form().drugConcentrationMl.set($event)"
+      />
+      <span class="input-addon">mL</span>
+    </div>
+  </div>
+</div>
+
+<div class="form-field-group">
+  <label for="pedDosesPerDaySelect" class="form-label">Frecuencia / Tomas Diarias</label>
+  <select
+    id="pedDosesPerDaySelect"
+    class="form-input"
+    [ngModel]="form().dosesPerDay()"
+    (ngModelChange)="form().dosesPerDay.set(+$event)"
+  >
+    <option [value]="1">1 toma al día (Cada 24 horas)</option>
+    <option [value]="2">2 tomas al día (Cada 12 horas)</option>
+    <option [value]="3">3 tomas al día (Cada 8 horas)</option>
+    <option [value]="4">4 tomas al día (Cada 6 horas)</option>
+  </select>
+</div>

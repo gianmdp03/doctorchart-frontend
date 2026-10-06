@@ -1,0 +1,65 @@
+<div class="form-field-group">
+  <label for="tfgeCreatinineInput" class="form-label">
+    <span>Creatinina Sérica</span>
+    <span class="text-xs text-rose-500 font-semibold">* Requerido</span>
+  </label>
+  <div class="input-with-addon">
+    <input
+      id="tfgeCreatinineInput"
+      type="number"
+      step="0.05"
+      min="0.1"
+      max="25"
+      placeholder="Ej. 1.0"
+      class="form-input"
+      [class.border-rose-400]="!form().creatinineMgDl()"
+      [ngModel]="form().creatinineMgDl()"
+      (ngModelChange)="form().creatinineMgDl.set($event)"
+    />
+    <span class="input-addon">mg/dL</span>
+  </div>
+</div>
+
+<div class="form-field-group">
+  <label for="tfgeAgeInput" class="form-label">
+    <span>Edad del Paciente</span>
+    <span class="text-xs text-rose-500 font-semibold">* Requerido</span>
+  </label>
+  <div class="input-with-addon">
+    <input
+      id="tfgeAgeInput"
+      type="number"
+      step="1"
+      min="18"
+      max="120"
+      placeholder="Ej. 55"
+      class="form-input"
+      [class.border-rose-400]="!form().ageYears()"
+      [ngModel]="form().ageYears()"
+      (ngModelChange)="form().ageYears.set($event)"
+    />
+    <span class="input-addon">años</span>
+  </div>
+</div>
+
+<div class="form-field-group">
+  <label class="form-label">Sexo Biológico</label>
+  <div class="radio-pill-group">
+    <button
+      type="button"
+      class="radio-pill-btn"
+      [class.active]="form().gender() === 'MALE'"
+      (click)="form().gender.set('MALE')"
+    >
+      Masculino
+    </button>
+    <button
+      type="button"
+      class="radio-pill-btn"
+      [class.active]="form().gender() === 'FEMALE'"
+      (click)="form().gender.set('FEMALE')"
+    >
+      Femenino
+    </button>
+  </div>
+</div>

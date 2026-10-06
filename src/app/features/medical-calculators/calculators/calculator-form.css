@@ -1,0 +1,8 @@
+:host {
+  display: contents;
+}
+
+.field-hint {
+  font-size: 0.725rem;
+  color: #64748b;
+}

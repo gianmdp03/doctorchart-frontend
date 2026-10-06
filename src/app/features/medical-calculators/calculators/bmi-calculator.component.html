@@ -1,0 +1,43 @@
+<div class="form-field-group">
+  <label for="bmiWeightInput" class="form-label">
+    <span>Peso Corporal</span>
+    <span class="text-xs text-rose-500 font-semibold">* Requerido</span>
+  </label>
+  <div class="input-with-addon">
+    <input
+      id="bmiWeightInput"
+      type="number"
+      step="0.1"
+      min="1"
+      max="500"
+      placeholder="Ej. 70"
+      class="form-input"
+      [class.border-rose-400]="!form().weightKg()"
+      [ngModel]="form().weightKg()"
+      (ngModelChange)="form().weightKg.set($event)"
+    />
+    <span class="input-addon">kg</span>
+  </div>
+</div>
+
+<div class="form-field-group">
+  <label for="bmiHeightInput" class="form-label">
+    <span>Talla / Altura</span>
+    <span class="text-xs text-rose-500 font-semibold">* Requerido</span>
+  </label>
+  <div class="input-with-addon">
+    <input
+      id="bmiHeightInput"
+      type="number"
+      step="0.5"
+      min="30"
+      max="250"
+      placeholder="Ej. 175"
+      class="form-input"
+      [class.border-rose-400]="!form().heightCm()"
+      [ngModel]="form().heightCm()"
+      (ngModelChange)="form().heightCm.set($event)"
+    />
+    <span class="input-addon">cm</span>
+  </div>
+</div>

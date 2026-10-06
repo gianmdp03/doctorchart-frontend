@@ -1,0 +1,571 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the bsa_mosteller autofill fields and feedback > bsa_mosteller autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Peso: 15 kg, Talla: 100 cm."`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the bsa_mosteller form, request inputs and clearing behavior > bsa_mosteller initial form 1`] = `
+{
+  "controls": [
+    {
+      "attributes": {
+        "max": "300",
+        "min": "0.5",
+        "placeholder": "Ej. 18.0",
+        "step": "0.1",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "bsaWeightInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": "250",
+        "min": "20",
+        "placeholder": "Ej. 110",
+        "step": "0.5",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "bsaHeightInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+  ],
+  "text": "Parámetros de EntradaPeso* RequeridokgTalla / Longitud* Requeridocm",
+}
+`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the calcio_corregido autofill fields and feedback > calcio_corregido autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Calcio: 9.4 mg/dL, Albúmina: 4.2 g/dL."`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the calcio_corregido form, request inputs and clearing behavior > calcio_corregido initial form 1`] = `
+{
+  "controls": [
+    {
+      "attributes": {
+        "max": "20",
+        "min": "2",
+        "placeholder": "Ej. 8.2",
+        "step": "0.1",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "calciumValueInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": "7",
+        "min": "0.5",
+        "placeholder": "Ej. 3.0",
+        "step": "0.1",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "albuminValueInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+  ],
+  "text": "Parámetros de EntradaCalcio Total Medido* Requeridomg/dLAlbúmina Sérica* Requeridog/dL",
+}
+`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the chads_vasc autofill fields and feedback > chads_vasc autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Edad: 8 años, Sexo: Femenino."`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the chads_vasc form, request inputs and clearing behavior > chads_vasc initial form 1`] = `
+{
+  "controls": [
+    {
+      "attributes": {
+        "max": "120",
+        "min": "0",
+        "placeholder": "Ej. 68",
+        "step": "1",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "chadsAgeInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "checkbox",
+      },
+      "checked": false,
+      "classes": [],
+      "id": "",
+      "tag": "INPUT",
+      "value": "on",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "checkbox",
+      },
+      "checked": false,
+      "classes": [],
+      "id": "",
+      "tag": "INPUT",
+      "value": "on",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "checkbox",
+      },
+      "checked": false,
+      "classes": [],
+      "id": "",
+      "tag": "INPUT",
+      "value": "on",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "checkbox",
+      },
+      "checked": false,
+      "classes": [],
+      "id": "",
+      "tag": "INPUT",
+      "value": "on",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "checkbox",
+      },
+      "checked": false,
+      "classes": [],
+      "id": "",
+      "tag": "INPUT",
+      "value": "on",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "checkbox",
+      },
+      "checked": false,
+      "classes": [],
+      "id": "",
+      "tag": "INPUT",
+      "value": "on",
+    },
+  ],
+  "text": "Parámetros de EntradaEdad del Paciente* RequeridoañosSexo Biológico Femenino (+1 pt)Aplica si la paciente tiene ≥ 1 otro factor de riesgoInsuficiencia Cardíaca Congestiva (+1 pt)IC sintomática o FEVI reducida ≤ 40%Hipertensión Arterial (+1 pt)PA sistólica persistente >140 o diastólica >90 mmHg o tratamiento antihipertensivoDiabetes Mellitus (+1 pt)Glucemia en ayunas >126 mg/dL o terapia hipoglucemiante/insulinaACV / AIT / Tromboembolismo Previo (+2 pts)Accidente cerebrovascular isquémico previo, ataque isquémico transitorio o embolia arterialEnfermedad Vascular (+1 pt)Infarto agudo de miocardio previo, arteriopatía periférica o placa aórtica compleja",
+}
+`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the cockcroft autofill fields and feedback > cockcroft autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Peso: 15 kg, Edad: 8 años, Creatinina: 0.65 mg/dL, Sexo: Femenino."`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the cockcroft form, request inputs and clearing behavior > cockcroft initial form 1`] = `
+{
+  "controls": [
+    {
+      "attributes": {
+        "max": "300",
+        "min": "10",
+        "placeholder": "Ej. 70",
+        "step": "0.5",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "cockcroftWeightInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": "120",
+        "min": "18",
+        "placeholder": "Ej. 60",
+        "step": "1",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "cockcroftAgeInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": "20",
+        "min": "0.1",
+        "placeholder": "Ej. 1.2",
+        "step": "0.05",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "cockcroftCrInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "button",
+      },
+      "checked": undefined,
+      "classes": [
+        "active",
+        "radio-pill-btn",
+      ],
+      "id": "",
+      "tag": "BUTTON",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "button",
+      },
+      "checked": undefined,
+      "classes": [
+        "radio-pill-btn",
+      ],
+      "id": "",
+      "tag": "BUTTON",
+      "value": "",
+    },
+  ],
+  "text": "Parámetros de EntradaPeso Actual* RequeridokgEdad* RequeridoañosCreatinina Sérica* Requeridomg/dLSexo Biológico Masculino (Factor 1.00) Femenino (Factor 0.85)",
+}
+`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the holliday_segar autofill fields and feedback > holliday_segar autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Peso: 15 kg."`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the holliday_segar form, request inputs and clearing behavior > holliday_segar initial form 1`] = `
+{
+  "controls": [
+    {
+      "attributes": {
+        "max": "150",
+        "min": "0.5",
+        "placeholder": "Ej. 14.5",
+        "step": "0.1",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "hollidayWeightInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+  ],
+  "text": "Parámetros de EntradaPeso del Paciente Pediátrico* Requeridokg Aplica para niños y adolescentes. Regla escalonada: 100 mL/kg (primeros 10kg), 50 mL/kg (10 a 20kg), y 20 mL/kg (>20kg).",
+}
+`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the imc autofill fields and feedback > imc autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Peso: 15 kg, Talla: 100 cm."`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the imc form, request inputs and clearing behavior > imc initial form 1`] = `
+{
+  "controls": [
+    {
+      "attributes": {
+        "max": "500",
+        "min": "1",
+        "placeholder": "Ej. 70",
+        "step": "0.1",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "bmiWeightInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": "250",
+        "min": "30",
+        "placeholder": "Ej. 175",
+        "step": "0.5",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "bmiHeightInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+  ],
+  "text": "Parámetros de EntradaPeso Corporal* RequeridokgTalla / Altura* Requeridocm",
+}
+`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the pediatric_dosage autofill fields and feedback > pediatric_dosage autofill feedback 1`] = `"Se cargaron: Peso: 15 kg. Pendientes por completar en ficha: Dosis objetivo y concentración del fármaco."`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the pediatric_dosage form, request inputs and clearing behavior > pediatric_dosage initial form 1`] = `
+{
+  "controls": [
+    {
+      "attributes": {
+        "max": "150",
+        "min": "0.5",
+        "placeholder": "Ej. 12.0",
+        "step": "0.1",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "pedWeightInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": "0.1",
+        "placeholder": "Ej. 50",
+        "step": "0.5",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "pedTargetDoseInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "button",
+      },
+      "checked": undefined,
+      "classes": [
+        "active",
+        "radio-pill-btn",
+        "text-xs",
+      ],
+      "id": "",
+      "tag": "BUTTON",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "button",
+      },
+      "checked": undefined,
+      "classes": [
+        "radio-pill-btn",
+        "text-xs",
+      ],
+      "id": "",
+      "tag": "BUTTON",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": "1",
+        "placeholder": "Ej. 250",
+        "step": "5",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": "0.5",
+        "placeholder": "Ej. 5",
+        "step": "1",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": null,
+      },
+      "checked": undefined,
+      "classes": [
+        "form-input",
+      ],
+      "id": "pedDosesPerDaySelect",
+      "tag": "SELECT",
+      "value": "3",
+    },
+  ],
+  "text": "Parámetros de EntradaPeso del Paciente* RequeridokgDosis Objetivo* RequeridoUnidad de Dosificación mg/kg/día mg/kg/dosis Concentración del Fármaco (Suspensión / Jarabe)* Requeridomg/mLFrecuencia / Tomas Diarias1 toma al día (Cada 24 horas)2 tomas al día (Cada 12 horas)3 tomas al día (Cada 8 horas)4 tomas al día (Cada 6 horas)",
+}
+`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the tfge autofill fields and feedback > tfge autofill feedback 1`] = `"Datos autocompletados desde la última consulta del paciente: Creatinina: 0.65 mg/dL, Edad: 8 años, Sexo: Femenino."`;
+
+exports[`MedicalCalculatorsComponent server calculations > preserves the tfge form, request inputs and clearing behavior > tfge initial form 1`] = `
+{
+  "controls": [
+    {
+      "attributes": {
+        "max": "25",
+        "min": "0.1",
+        "placeholder": "Ej. 1.0",
+        "step": "0.05",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "tfgeCreatinineInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": "120",
+        "min": "18",
+        "placeholder": "Ej. 55",
+        "step": "1",
+        "type": "number",
+      },
+      "checked": undefined,
+      "classes": [
+        "border-rose-400",
+        "form-input",
+      ],
+      "id": "tfgeAgeInput",
+      "tag": "INPUT",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "button",
+      },
+      "checked": undefined,
+      "classes": [
+        "active",
+        "radio-pill-btn",
+      ],
+      "id": "",
+      "tag": "BUTTON",
+      "value": "",
+    },
+    {
+      "attributes": {
+        "max": null,
+        "min": null,
+        "placeholder": null,
+        "step": null,
+        "type": "button",
+      },
+      "checked": undefined,
+      "classes": [
+        "radio-pill-btn",
+      ],
+      "id": "",
+      "tag": "BUTTON",
+      "value": "",
+    },
+  ],
+  "text": "Parámetros de EntradaCreatinina Sérica* Requeridomg/dLEdad del Paciente* RequeridoañosSexo Biológico Masculino Femenino",
+}
+`;
