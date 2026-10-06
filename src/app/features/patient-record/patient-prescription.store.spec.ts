@@ -43,12 +43,6 @@ describe('PatientPrescriptionStore with real HTTP client', () => {
     store.delete(31); http.expectOne(url(10)+'/31').flush(null,{status:204,statusText:'No Content'});
     expect(store.records()).toEqual([]); expect(store.busy()).toBe(false);
   });
-  it('fetches a document by both patient and record identifiers before reprinting', () => {
-    load(); let saved: SavedPrescriptionRecord | undefined;
-    store.reprint(31,value=>saved=value);
-    const request=http.expectOne(url(10)+'/31'); expect(request.request.method).toBe('GET'); expect(saved).toBeUndefined();
-    request.flush(record); expect(saved).toEqual(record);
-  });
   it('keeps failed saves out of history, clears success, and permits retry', () => {
     load(); store.save(draft); http.expectOne(url(10)).flush({message:'Datos no válidos'}, {status:400,statusText:'Bad Request'});
     expect(store.error()).toBe('Datos no válidos'); expect(store.success()).toBeNull(); expect(store.records()).toEqual([]);
@@ -69,10 +63,5 @@ describe('PatientPrescriptionStore with real HTTP client', () => {
     store.setPatient(10); http.expectOne(url(10)).flush({}, {status:403,statusText:'Forbidden'});
     expect(store.loadError()).toContain('No se pudo cargar'); store.reload(); http.expectOne(url(10)).flush([record]);
     expect(store.loadError()).toBeNull(); expect(store.records()).toEqual([record]);
-  });
-  it('never invokes a print callback after a document retrieval error', () => {
-    load(); let printed=false; store.reprint(31,()=>printed=true);
-    http.expectOne(url(10)+'/31').flush({}, {status:404,statusText:'Not Found'});
-    expect(printed).toBe(false); expect(store.error()).toContain('No se pudo recuperar'); expect(store.busy()).toBe(false);
   });
 });

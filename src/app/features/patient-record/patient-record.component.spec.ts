@@ -308,8 +308,9 @@ describe('PatientRecordComponent', () => {
     const customEvent = dispatchSpy.mock.calls[0][0] as CustomEvent;
     expect(customEvent.type).toBe('open-prescription-print-modal');
     expect(customEvent.detail.type).toBe('PRESCRIPTION');
-    expect(customEvent.detail.prescriptions.length).toBe(1);
-    expect(customEvent.detail.primaryDiagnosisDescription).toBe('Cefalea tensional');
+    expect(customEvent.detail).toEqual({source:'PRESCRIPTION_RECORD',id:73,patientId:10492,type:'PRESCRIPTION'});
+    expect(component.savedPrescriptionRecords()[0].prescriptions).toHaveLength(1);
+    expect(component.savedPrescriptionRecords()[0].diagnosisDescription).toBe('Cefalea tensional');
   });
 
   it('should allow ordering diagnostic studies like Tomografía and dispatching print modal in STUDY_ORDERS mode', () => {
@@ -333,9 +334,8 @@ describe('PatientRecordComponent', () => {
     const customEvent = dispatchSpy.mock.calls[0][0] as CustomEvent;
     expect(customEvent.type).toBe('open-prescription-print-modal');
     expect(customEvent.detail.type).toBe('STUDY_ORDERS');
-    expect(customEvent.detail.diagnosticOrders).toContain(
-      'Tomografía Axial Computada (TAC) — De cerebro sin contraste'
-    );
+    expect(component.savedPrescriptionRecords()[0].diagnosticOrders).toContain('Tomografía Axial Computada (TAC) — De cerebro sin contraste');
+    expect(customEvent.detail.source).toBe('PRESCRIPTION_RECORD');
   });
 
   it('should display the growth curves module and allow toggling metrics in tab curvas', () => {
@@ -392,9 +392,10 @@ describe('PatientRecordComponent', () => {
     expect(component.savedPrescriptionRecords()[0].id).toBe(73);
     const event = dispatch.mock.calls[0][0] as CustomEvent;
     expect(event.detail.id).toBe(73);
-    expect(event.detail.encounterDate).toBe('2026-10-05T12:34:56Z');
+    expect(component.savedPrescriptionRecords()[0].createdAt).toBe('2026-10-05T12:34:56Z');
     expect(event.detail.patientId).toBe(10492);
-    expect(event.detail.authorUserId).toBe('doctor');
+    expect(component.savedPrescriptionRecords()[0].authorUserId).toBe('doctor');
+    expect(event.detail.source).toBe('PRESCRIPTION_RECORD');
   });
 
   it('preserves the draft and does not print or invent history after a save error', () => {
@@ -421,13 +422,11 @@ describe('PatientRecordComponent', () => {
     expect(Object.keys(request).sort()).toEqual(['type','prescriptions','diagnosticOrders','diagnosisDescription','generalInstructions'].sort());
   });
 
-  it('retrieves persisted content before reprinting instead of trusting the displayed row', () => {
+  it('reprints with an explicit stored document reference instead of passing row content', () => {
     const row = issued(10492, {type:'STUDY_ORDERS',prescriptions:[],diagnosticOrders:['ECG'], diagnosisDescription:'',generalInstructions:''});
-    prescriptionApi.get.mockReturnValue(of({...row, diagnosticOrders:['Tomografía guardada']}));
     const dispatch = vi.spyOn(window,'dispatchEvent').mockClear();
     component.reprintSavedRecord(row);
-    expect(prescriptionApi.get).toHaveBeenCalledWith(10492,73);
-    expect((dispatch.mock.calls[0][0] as CustomEvent).detail.diagnosticOrders).toEqual(['Tomografía guardada']);
+    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({source:'PRESCRIPTION_RECORD',id:73,patientId:10492,type:'STUDY_ORDERS'});
   });
 
   it('keeps history after deletion errors and removes it only after backend acknowledgment', () => {
@@ -474,4 +473,16 @@ describe('PatientRecordComponent', () => {
     expect(component.prescriptionStore.loadError()).toBeNull();
   });
 
+  it('never invents a prescription from habitual medication or creates a browser ID', () => {
+    const dispatch=vi.spyOn(window,'dispatchEvent').mockClear();
+    component.printRecord();
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(component.rxErrorMessage()).toContain('Agregá al menos');
+    expect(prescriptionApi.create).not.toHaveBeenCalled();
+  });
+  it('passes consultation IDs to the print endpoint instead of trusting the clinical timeline row', () => {
+    const dispatch=vi.spyOn(window,'dispatchEvent').mockClear();
+    component.onPrintPrescription({...mockEncountersList[0],patientId:20});
+    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({source:'ENCOUNTER',id:1,patientId:20});
+  });
 });

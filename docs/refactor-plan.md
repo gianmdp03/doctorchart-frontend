@@ -12,8 +12,8 @@ evidencia antes de comenzar el siguiente y se conserva la experiencia de pediatr
 | 4. Cálculos oficiales | Calcular y validar resultados en backend. | Cumplido |
 | 5. Interfaz de calculadoras | Separar cada calculadora y consumir el catálogo backend. | Cumplido; ver [implementación y pruebas](calculator-interface-block-5.md) |
 | 6. Persistencia de recetas | Guardar recetas y órdenes en backend. | Cumplido; ver [implementación y pruebas](prescription-persistence-block-6.md) |
-| 7. Impresión | Eliminar datos inventados y vincular el documento al paciente y médico. | Pendiente; siguiente bloque |
-| 8. Contexto de sesión | Evitar mezclar pacientes, borradores y conversaciones. | Pendiente |
+| 7. Impresión | Eliminar datos inventados y vincular el documento al paciente y médico. | Cumplido; ver [implementación y pruebas](printing-block-7.md) |
+| 8. Contexto de sesión | Evitar mezclar pacientes, borradores y conversaciones. | Pendiente; siguiente bloque |
 | 9. Mediciones | Unificar fuentes y unidades; eliminar el camino antiguo. | Pendiente |
 | 10. Vacunación | Gobernar calendario, identificadores y reglas desde backend. | Pendiente |
 | 11. Listados y estadísticas | Llevar filtros completos y agregados al backend. | Pendiente |
@@ -28,7 +28,8 @@ El bloque 5 estaba parcialmente implementado: consumía el catálogo backend,
 pero mantenía los ocho formularios en un único componente. Su cierre se corrigió
 separando componentes, estado y comportamiento por calculadora. Este trabajo no
 se renumeró como bloque 6. El bloque 6 se completó después mediante su propio
-contrato de persistencia y pruebas, sin dar por reparado el bloque 7.
+contrato de persistencia y pruebas. El bloque 7 se completó posteriormente con
+una proyección de impresión autorizada y la eliminación de datos inventados.
 
 No se incorporan migraciones de datos ni adaptadores para el código anterior.
 La configuración de calculadoras del backend requiere su esquema nuevo,

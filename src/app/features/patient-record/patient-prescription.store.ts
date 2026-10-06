@@ -48,15 +48,6 @@ export class PatientPrescriptionStore {
       error: error => { this.writing.set(false); this.error.set(error?.error?.message || 'No se pudo guardar la receta u orden. El borrador se conserva.'); },
     });
   }
-  reprint(id: number, onLoaded: (record: SavedPrescriptionRecord) => void): void {
-    const patientId = this.patientId;
-    if (!patientId || this.busy()) return;
-    this.writing.set(true); this.error.set(null); this.success.set(null);
-    this.api.get(patientId,id).pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: record => { this.writing.set(false); onLoaded(record); },
-      error: () => { this.writing.set(false); this.error.set('No se pudo recuperar el documento para imprimir.'); },
-    });
-  }
   delete(id: number): void {
     const patientId = this.patientId;
     if (!patientId || this.busy()) return;

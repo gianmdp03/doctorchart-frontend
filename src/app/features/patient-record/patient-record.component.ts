@@ -620,17 +620,13 @@ export class PatientRecordComponent implements OnInit {
   }
 
   reprintSavedRecord(record: SavedPrescriptionRecord): void {
-    this.prescriptionStore.reprint(record.id, saved => this.openSavedPrescription(saved));
+    this.openSavedPrescription(record);
   }
 
   private openSavedPrescription(record: SavedPrescriptionRecord, forcedType?: PrescriptionDocumentType): void {
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('open-prescription-print-modal', { detail: {
-        id: record.id, patientId: record.patientId, authorUserId: record.authorUserId,
-        type: forcedType || record.type, encounterDate: record.createdAt,
-        primaryDiagnosisCode: null, primaryDiagnosisDescription: record.diagnosisDescription,
-        prescriptions: record.prescriptions, diagnosticOrders: record.diagnosticOrders,
-        followUpInstructions: record.generalInstructions,
+        source: 'PRESCRIPTION_RECORD', id: record.id, patientId: record.patientId, type: forcedType || record.type,
       } }));
     }
   }
@@ -675,48 +671,18 @@ export class PatientRecordComponent implements OnInit {
     }
 
     const latestEnc = this.encounters()[0];
-    const fallbackMeds: PrescriptionItem[] =
-      latestEnc?.prescriptions && latestEnc.prescriptions.length > 0
-        ? latestEnc.prescriptions
-        : this.habitualMedication().map((med) => ({
-            medicationName: med,
-            dosage: 'Según indicación habitual',
-            frequency: 'Cada 24 horas',
-            administrationRoute: 'Vía Oral',
-          }));
-
-    window.dispatchEvent(
-      new CustomEvent('open-prescription-print-modal', {
-        detail: {
-          id: latestEnc?.id || Date.now(),
-          type: forcedType || (this.rxFormMode() === 'STUDY' ? 'STUDY_ORDERS' : 'PRESCRIPTION'),
-          encounterDate: latestEnc?.encounterDate || new Date().toISOString(),
-          primaryDiagnosisCode: latestEnc?.primaryDiagnosisCode,
-          primaryDiagnosisDescription: this.rxDiagnosis().trim() || latestEnc?.primaryDiagnosisDescription,
-          prescriptions: fallbackMeds,
-          diagnosticOrders: [],
-          followUpInstructions: this.rxGeneralInstructions().trim() || latestEnc?.followUpInstructions,
-        },
-      })
-    );
+    if (latestEnc && (latestEnc.prescriptions?.length ?? 0) > 0) {
+      this.onPrintPrescription(latestEnc, forcedType);
+      return;
+    }
+    this.rxErrorMessage.set('Agregá al menos un medicamento o estudio para emitir el documento.');
   }
 
-  onPrintPrescription(enc: ClinicalEncounterList): void {
+  onPrintPrescription(enc: ClinicalEncounterList, type?: PrescriptionDocumentType): void {
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('open-prescription-print-modal', {
-          detail: {
-            id: enc.id,
-            type: 'PRESCRIPTION',
-            encounterDate: enc.encounterDate,
-            primaryDiagnosisCode: enc.primaryDiagnosisCode,
-            primaryDiagnosisDescription: enc.primaryDiagnosisDescription,
-            prescriptions: enc.prescriptions || [],
-            diagnosticOrders: [],
-            followUpInstructions: enc.followUpInstructions,
-          },
-        })
-      );
+      window.dispatchEvent(new CustomEvent('open-prescription-print-modal', { detail: {
+        source: 'ENCOUNTER', id: enc.id, patientId: enc.patientId, ...(type ? {type} : {}),
+      } }));
     }
   }
 

@@ -1,3 +1,4 @@
+import { doctorPrintIdentity } from '../../core/models/doctor-print-identity';
 import { isPlatformBrowser } from '@angular/common';
 import {
   Component,
@@ -51,14 +52,7 @@ export class UserProfileDialogComponent {
     return (user?.user_metadata?.['role'] as string) || 'Médico Especialista';
   });
 
-  readonly license = computed(() => {
-    const user = this.user();
-    return (
-      (user?.user_metadata?.['license'] as string) ||
-      (user?.user_metadata?.['matricula'] as string) ||
-      'MP 84219'
-    );
-  });
+  readonly license = computed(() => doctorPrintIdentity(this.user()?.user_metadata).license || 'No informada');
 
   readonly initials = computed(() => {
     const name = this.fullName();

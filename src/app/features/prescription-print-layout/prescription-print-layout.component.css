@@ -592,29 +592,16 @@
   gap: 16px;
 }
 
-.footer-security {
+.footer-reference {
   display: flex;
   align-items: center;
   gap: 10px;
 
-  .qr-mockup {
-    width: 46px;
-    height: 46px;
-    background-color: #f8fafc;
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #1e293b;
-    font-size: 1.75rem;
-  }
-
-  .security-text {
+  .reference-text {
     display: flex;
     flex-direction: column;
 
-    .security-badge {
+    .reference-code {
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -623,16 +610,10 @@
       color: #0f766e;
     }
 
-    .legal-cite {
+    .reference-type {
       margin: 1px 0 0;
       font-size: 0.625rem;
       color: #64748b;
-    }
-
-    .validity-cite {
-      margin: 0;
-      font-size: 0.5625rem;
-      color: #94a3b8;
     }
   }
 }
@@ -767,3 +748,5 @@
     border-left: 1px dashed #94a3b8 !important;
   }
 }
+
+.print-feedback { padding: 2rem; color: #475569; }

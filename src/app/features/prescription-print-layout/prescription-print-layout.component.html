@@ -8,7 +8,7 @@
             <span class="toolbar-badge">Vista Previa de Impresión</span>
             <h2 class="toolbar-title">
               @if (documentType() === 'PRESCRIPTION') {
-                Recetario Farmacológico Oficial
+                Recetario Médico
               } @else {
                 Orden Médica de Prácticas y Estudios
               }
@@ -21,6 +21,7 @@
               type="button"
               class="toggle-btn"
               [class.active]="documentType() === 'PRESCRIPTION'"
+              [disabled]="!hasPrescriptions()"
               (click)="setDocType('PRESCRIPTION')"
             >
               <ng-icon name="lucidePill" />
@@ -30,6 +31,7 @@
               type="button"
               class="toggle-btn"
               [class.active]="documentType() === 'STUDY_ORDERS'"
+              [disabled]="!hasStudies()"
               (click)="setDocType('STUDY_ORDERS')"
             >
               <ng-icon name="lucideFileText" />
@@ -64,6 +66,7 @@
           <button
             type="button"
             class="action-btn btn-print-cta"
+            [disabled]="!canPrint()"
             (click)="print()"
           >
             <ng-icon name="lucidePrinter" />
@@ -82,6 +85,11 @@
 
       <!-- Scrollable Preview Area -->
       <div class="preview-scroll-viewport">
+        @if (loading()) {
+          <p class="print-feedback" role="status">Cargando documento...</p>
+        } @else if (error()) {
+          <p class="print-feedback" role="alert">{{ error() }}</p>
+        } @else if (document()) {
         <div
           class="printable-sheet-container"
           [class.format-a4-dual]="printFormat() === 'A4_DUAL'"
@@ -109,6 +117,7 @@
             </section>
           }
         </div>
+        }
       </div>
     </div>
   </div>
@@ -126,9 +135,9 @@
           </svg>
         </div>
         <div class="clinic-text">
-          <h1 class="clinic-name">{{ clinicInfo().name }}</h1>
-          <p class="clinic-sub">{{ clinicInfo().address }}</p>
-          <p class="clinic-contact">{{ clinicInfo().phone }}</p>
+          <h1 class="clinic-name">{{ clinicInfo().name || 'DoctorChart' }}</h1>
+          @if (clinicInfo().address) { <p class="clinic-sub">{{ clinicInfo().address }}</p> }
+          @if (clinicInfo().phone) { <p class="clinic-contact">{{ clinicInfo().phone }}</p> }
         </div>
       </div>
 
@@ -151,7 +160,7 @@
       </div>
       <div class="doc-meta">
         <span class="doc-date"><strong>Fecha:</strong> {{ formattedDate() }}</span>
-        <span class="doc-code"><strong>ID:</strong> {{ electronicRecipeCode() }}</span>
+        <span class="doc-code"><strong>ID:</strong> {{ documentCode() }}</span>
       </div>
     </div>
 
@@ -185,9 +194,9 @@
         </div>
 
         <div class="medications-content">
-          @if (encounterData()?.prescriptions && (encounterData()?.prescriptions?.length || 0) > 0) {
+          @if (document()?.prescriptions && (document()?.prescriptions?.length || 0) > 0) {
             <div class="medications-list">
-              @for (item of encounterData()!.prescriptions; track item.medicationName; let idx = $index) {
+              @for (item of document()!.prescriptions; track $index; let idx = $index) {
                 <div class="prescription-entry">
                   <div class="entry-line-main">
                     <span class="entry-num">{{ idx + 1 }}.</span>
@@ -225,20 +234,20 @@
           }
 
           <!-- Diagnostic & Clinical Notes -->
-          @if (encounterData()?.primaryDiagnosisDescription || encounterData()?.patientInstructions) {
+          @if (document()?.primaryDiagnosisDescription || document()?.patientInstructions) {
             <div class="clinical-footnotes">
-              @if (encounterData()?.primaryDiagnosisDescription) {
+              @if (document()?.primaryDiagnosisDescription) {
                 <p class="diag-note">
                   <strong>Diagnóstico:</strong>
-                  @if (encounterData()?.primaryDiagnosisCode) {
-                    [{{ encounterData()?.primaryDiagnosisCode }}]
+                  @if (document()?.primaryDiagnosisCode) {
+                    [{{ document()?.primaryDiagnosisCode }}]
                   }
-                  {{ encounterData()?.primaryDiagnosisDescription }}
+                  {{ document()?.primaryDiagnosisDescription }}
                 </p>
               }
-              @if (encounterData()?.patientInstructions) {
+              @if (document()?.patientInstructions) {
                 <p class="instructions-note">
-                  <strong>Indicaciones generales:</strong> {{ encounterData()?.patientInstructions }}
+                  <strong>Indicaciones generales:</strong> {{ document()?.patientInstructions }}
                 </p>
               }
             </div>
@@ -249,9 +258,9 @@
         <div class="study-orders-content">
           <p class="study-preamble">Solicito la realización de los siguientes estudios diagnósticos y prácticas:</p>
 
-          @if (encounterData()?.diagnosticOrders && (encounterData()?.diagnosticOrders?.length || 0) > 0) {
+          @if (document()?.diagnosticOrders && (document()?.diagnosticOrders?.length || 0) > 0) {
             <ol class="study-orders-list">
-              @for (study of encounterData()!.diagnosticOrders; track study; let idx = $index) {
+              @for (study of document()!.diagnosticOrders; track $index; let idx = $index) {
                 <li class="study-order-item">
                   <strong>{{ study }}</strong>
                 </li>
@@ -265,20 +274,20 @@
             </div>
           }
 
-          @if (encounterData()?.primaryDiagnosisDescription || encounterData()?.patientInstructions) {
+          @if (document()?.primaryDiagnosisDescription || document()?.patientInstructions) {
             <div class="clinical-footnotes mt-4">
-              @if (encounterData()?.primaryDiagnosisDescription) {
+              @if (document()?.primaryDiagnosisDescription) {
                 <p class="diag-note">
                   <strong>Diagnóstico presuntivo:</strong>
-                  @if (encounterData()?.primaryDiagnosisCode) {
-                    [{{ encounterData()?.primaryDiagnosisCode }}]
+                  @if (document()?.primaryDiagnosisCode) {
+                    [{{ document()?.primaryDiagnosisCode }}]
                   }
-                  {{ encounterData()?.primaryDiagnosisDescription }}
+                  {{ document()?.primaryDiagnosisDescription }}
                 </p>
               }
-              @if (encounterData()?.patientInstructions) {
+              @if (document()?.patientInstructions) {
                 <p class="instructions-note">
-                  <strong>Preparación / Indicaciones:</strong> {{ encounterData()?.patientInstructions }}
+                  <strong>Preparación / Indicaciones:</strong> {{ document()?.patientInstructions }}
                 </p>
               }
             </div>
@@ -287,19 +296,12 @@
       }
     </section>
 
-    <!-- Footer: Digital Verification & Doctor Signature Area -->
+    <!-- Footer: Stored document reference & handwritten signature area -->
     <footer class="sheet-footer">
-      <div class="footer-security">
-        <div class="qr-mockup">
-          <ng-icon name="lucideQrCode" class="qr-icon" />
-        </div>
-        <div class="security-text">
-          <span class="security-badge">
-            <ng-icon name="lucideCheckCircle" class="check-icon" />
-            Firma Digital Registrada
-          </span>
-          <p class="legal-cite">Ley 27.553 · DoctorChart Cloud</p>
-          <p class="validity-cite">Válido por 30 días</p>
+      <div class="footer-reference">
+        <div class="reference-text">
+          <span class="reference-code">Documento {{ documentCode() }}</span>
+          <p class="reference-type">{{ documentType() === 'PRESCRIPTION' ? 'Receta médica' : 'Orden de estudios' }}</p>
         </div>
       </div>
 

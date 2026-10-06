@@ -153,7 +153,7 @@ describe('UserProfileDialogComponent', () => {
     expect(component.email()).toBe('solo.correo@hospital.com');
     expect(component.dni()).toBe('No especificado');
     expect(component.role()).toBe('Médico Especialista');
-    expect(component.license()).toBe('MP 84219');
+    expect(component.license()).toBe('No informada');
     expect(component.initials()).toBe('SO');
   });
 
