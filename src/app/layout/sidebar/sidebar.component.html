@@ -29,69 +29,12 @@
       }
     </div>
 
-    <!-- 1. Inicio / Dashboard -->
-    <a
-      routerLink="/dashboard"
-      routerLinkActive="active"
-      class="nav-item"
-      title="Inicio / Dashboard"
-    >
-      <ng-icon name="lucideLayoutDashboard" class="nav-icon" />
-      @if (!isCollapsed()) {
-        <span class="nav-label">Inicio / Dashboard</span>
-      }
-    </a>
-
-    <!-- 2. Directorio de Pacientes -->
-    <a
-      routerLink="/pacientes"
-      routerLinkActive="active"
-      class="nav-item"
-      title="Directorio de Pacientes"
-    >
-      <ng-icon name="lucideUsers" class="nav-icon" />
-      @if (!isCollapsed()) {
-        <span class="nav-label">Pacientes</span>
-      }
-    </a>
-
-    <!-- 3. Calculadoras Médicas -->
-    <a
-      routerLink="/calculadoras"
-      routerLinkActive="active"
-      class="nav-item"
-      title="Calculadoras Médicas"
-    >
-      <ng-icon name="lucideCalculator" class="nav-icon" />
-      @if (!isCollapsed()) {
-        <span class="nav-label">Calculadoras</span>
-      }
-    </a>
-
-    <a
-      routerLink="/calendario-vacunacion"
-      routerLinkActive="active"
-      class="nav-item"
-      title="Calendario de vacunación"
-    >
-      <ng-icon name="lucideCalendarDays" class="nav-icon" />
-      @if (!isCollapsed()) {
-        <span class="nav-label">Vacunación</span>
-      }
-    </a>
-
-    <!-- 4. Personalizar Fichas y Consultas (Wizard) -->
-    <a
-      routerLink="/onboarding/setup"
-      routerLinkActive="active"
-      class="nav-item"
-      title="Personalizar Fichas y Consultas"
-    >
-      <ng-icon name="lucideSliders" class="nav-icon" />
-      @if (!isCollapsed()) {
-        <span class="nav-label">Personalizar Fichas</span>
-      }
-    </a>
+    @for (item of workspace.navigation(); track item.id) {
+      <a [routerLink]="item.path" routerLinkActive="active" class="nav-item" [title]="item.title">
+        <ng-icon [name]="item.icon" class="nav-icon" />
+        @if (!isCollapsed()) { <span class="nav-label">{{ item.label }}</span> }
+      </a>
+    }
     }
   </nav>
 

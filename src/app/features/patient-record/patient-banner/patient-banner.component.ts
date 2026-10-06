@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  effect,
   EventEmitter,
   HostListener,
   inject,
@@ -25,7 +26,8 @@ import {
 } from '@ng-icons/lucide';
 import { PatientDetailDTO } from '../../../core/models/patient.model';
 import { ActivePatientService } from '../../../core/services/active-patient.service';
-import { DoctorSpecialtyService } from '../../../core/services/doctor-specialty.service';
+import { PatientRecordActionsService } from '../../../core/experience/patient-record-actions.service';
+import { PatientRecordActionId } from '../../../core/models/specialty-experience.model';
 
 @Component({
   selector: 'app-patient-banner',
@@ -51,9 +53,15 @@ import { DoctorSpecialtyService } from '../../../core/services/doctor-specialty.
 export class PatientBannerComponent {
   private readonly router = inject(Router);
   readonly activePatientService = inject(ActivePatientService);
-  readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
+  readonly recordActions = inject(PatientRecordActionsService);
 
-  @Input() patient: PatientDetailDTO | null = null;
+  private readonly patientInput = signal<PatientDetailDTO | null>(null);
+  @Input() set patient(value: PatientDetailDTO | null) {
+    this.patientInput.set(value);
+  }
+  get patient(): PatientDetailDTO | null {
+    return this.patientInput();
+  }
   @Output() newEncounter = new EventEmitter<void>();
   @Output() editPatient = new EventEmitter<void>();
   @Output() printSummary = new EventEmitter<void>();
@@ -167,13 +175,41 @@ export class PatientBannerComponent {
     if (p?.chronicConditions && p.chronicConditions.length > 0) {
       list.push(...p.chronicConditions);
     }
-    if (p?.personalHistory?.chronicOrPreviousDiseases && p.personalHistory.chronicOrPreviousDiseases.length > 0) {
+    if (
+      p?.personalHistory?.chronicOrPreviousDiseases &&
+      p.personalHistory.chronicOrPreviousDiseases.length > 0
+    ) {
       list.push(...p.personalHistory.chronicOrPreviousDiseases);
     }
     return [...new Set(list.filter(Boolean))];
   });
 
+  readonly availableActions = computed(() =>
+    this.recordActions.actions().filter((action) => action.id !== 'VIEW_GROWTH' || this.isChild()),
+  );
+  readonly primaryActions = computed(() =>
+    this.availableActions().filter((action) => action.primary),
+  );
+  readonly menuActions = computed(() => this.availableActions().filter((action) => action.menu));
+  constructor() {
+    effect(() => {
+      if (!this.menuActions().length) this.isMenuOpen.set(false);
+    });
+  }
+
+  runAction(id: PatientRecordActionId): void {
+    if (!this.recordActions.has(id)) return;
+    const handlers: Record<PatientRecordActionId, () => void> = {
+      EDIT_PATIENT: () => this.onEditPatient(),
+      NEW_ENCOUNTER: () => this.onNewEncounter(),
+      VIEW_GROWTH: () => this.goToCurves(),
+      PRINT_DOCUMENT: () => this.onPrintSummary(),
+    };
+    handlers[id]();
+  }
+
   toggleMenu(event: Event): void {
+    if (!this.menuActions().length) return;
     event.stopPropagation();
     this.isMenuOpen.update((v) => !v);
   }
@@ -190,20 +226,24 @@ export class PatientBannerComponent {
   }
 
   onNewEncounter(): void {
+    if (!this.recordActions.has('NEW_ENCOUNTER')) return;
     this.newEncounter.emit();
   }
 
   onEditPatient(): void {
+    if (!this.recordActions.has('EDIT_PATIENT')) return;
     this.isMenuOpen.set(false);
     this.editPatient.emit();
   }
 
   onPrintSummary(): void {
+    if (!this.recordActions.has('PRINT_DOCUMENT')) return;
     this.isMenuOpen.set(false);
     this.printSummary.emit();
   }
 
   goToCurves(): void {
+    if (!this.recordActions.has('VIEW_GROWTH') || !this.isChild()) return;
     this.isMenuOpen.set(false);
     if (this.viewCurves.observed) {
       this.viewCurves.emit();

@@ -2,7 +2,11 @@ import { clinicalFormFixture } from '../../../core/models/clinical-form.fixture'
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PatientBannerComponent } from './patient-banner.component';
 import { ActivePatientService } from '../../../core/services/active-patient.service';
-import { DoctorSpecialtyService } from '../../../core/services/doctor-specialty.service';
+import { WorkspaceStore } from '../../../core/services/workspace.store';
+import {
+  PatientRecordActionId,
+  PATIENT_RECORD_ACTION_IDS,
+} from '../../../core/models/specialty-experience.model';
 import { Router } from '@angular/router';
 import { PatientDetailDTO } from '../../../core/models/patient.model';
 import { signal } from '@angular/core';
@@ -11,7 +15,9 @@ describe('PatientBannerComponent', () => {
   let component: PatientBannerComponent;
   let fixture: ComponentFixture<PatientBannerComponent>;
   let activePatientServiceMock: any;
-  let specialtyServiceMock: any;
+  const configuredActions = signal<PatientRecordActionId[]>([]);
+  const growthEnabled = signal(true);
+  const growthTab = signal(true);
   let routerSpy: { navigate: ReturnType<typeof vi.fn> };
 
   const mockPatient: PatientDetailDTO = {
@@ -38,9 +44,9 @@ describe('PatientBannerComponent', () => {
     activePatientServiceMock = {
       activePatient: signal(mockPatient),
     };
-    specialtyServiceMock = {
-      supportsGrowthCharts: signal(true),
-    };
+    configuredActions.set([...PATIENT_RECORD_ACTION_IDS]);
+    growthEnabled.set(true);
+    growthTab.set(true);
     routerSpy = {
       navigate: vi.fn(),
     };
@@ -49,7 +55,15 @@ describe('PatientBannerComponent', () => {
       imports: [PatientBannerComponent],
       providers: [
         { provide: ActivePatientService, useValue: activePatientServiceMock },
-        { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },
+        {
+          provide: WorkspaceStore,
+          useValue: {
+            patientRecordActions: configuredActions,
+            hasRecordAction: (id: PatientRecordActionId) => configuredActions().includes(id),
+            hasRecordTab: () => growthTab(),
+            isModuleActive: () => growthEnabled(),
+          },
+        },
         { provide: Router, useValue: routerSpy },
       ],
     }).compileComponents();
@@ -60,6 +74,84 @@ describe('PatientBannerComponent', () => {
     fixture.detectChanges();
   });
 
+  it('preserves pediatric action labels and order in both button groups', () => {
+    expect(
+      [...fixture.nativeElement.querySelectorAll('.banner-actions-block > button')].map((el: any) =>
+        el.textContent.trim(),
+      ),
+    ).toEqual(['Editar datos', 'Nueva consulta']);
+    component.toggleMenu(new Event('click'));
+    fixture.detectChanges();
+    expect(
+      [...fixture.nativeElement.querySelectorAll('.dropdown-menu-item')].map((el: any) =>
+        el.textContent.trim(),
+      ),
+    ).toEqual([
+      'Editar datos del paciente',
+      'Ver Curvas de Crecimiento OMS',
+      'Imprimir Resumen de Historia Clínica',
+    ]);
+  });
+  it('composes selection and order from the configured action IDs', () => {
+    configuredActions.set(['PRINT_DOCUMENT', 'NEW_ENCOUNTER', 'EDIT_PATIENT']);
+    fixture.detectChanges();
+    expect(
+      [...fixture.nativeElement.querySelectorAll('.banner-actions-block > button')].map((el: any) =>
+        el.textContent.trim(),
+      ),
+    ).toEqual(['Nueva consulta', 'Editar datos']);
+    component.toggleMenu(new Event('click'));
+    fixture.detectChanges();
+    expect(
+      [...fixture.nativeElement.querySelectorAll('.dropdown-menu-item')].map((el: any) =>
+        el.textContent.trim(),
+      ),
+    ).toEqual(['Imprimir Resumen de Historia Clínica', 'Editar datos del paciente']);
+  });
+  it('removes all buttons, closes the menu and blocks handlers when actions are cleared', () => {
+    component.toggleMenu(new Event('click'));
+    fixture.detectChanges();
+    const edit = vi.spyOn(component.editPatient, 'emit'),
+      create = vi.spyOn(component.newEncounter, 'emit'),
+      print = vi.spyOn(component.printSummary, 'emit'),
+      curves = vi.spyOn(component.viewCurves, 'emit');
+    configuredActions.set([]);
+    fixture.detectChanges();
+    component.onEditPatient();
+    component.onNewEncounter();
+    component.onPrintSummary();
+    component.goToCurves();
+    expect(component.isMenuOpen()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.banner-actions-block').children).toHaveLength(0);
+    for (const spy of [edit, create, print, curves]) expect(spy).not.toHaveBeenCalled();
+    expect(routerSpy.navigate).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.patient-fullname').textContent).toContain(
+      mockPatient.fullName,
+    );
+  });
+  it('requires growth tab, personal switch and child context for the growth shortcut', () => {
+    configuredActions.set(['VIEW_GROWTH']);
+    for (const change of [
+      () => growthTab.set(false),
+      () => {
+        growthTab.set(true);
+        growthEnabled.set(false);
+      },
+      () => {
+        growthEnabled.set(true);
+        component.patient = { ...mockPatient, birthDate: '1980-05-10' };
+      },
+    ]) {
+      change();
+      fixture.detectChanges();
+      component.goToCurves();
+      expect(component.menuActions()).toEqual([]);
+      expect(routerSpy.navigate).not.toHaveBeenCalled();
+    }
+    component.patient = mockPatient;
+    fixture.detectChanges();
+    expect(component.menuActions().map((action) => action.id)).toEqual(['VIEW_GROWTH']);
+  });
   it('should create the patient banner', () => {
     expect(component).toBeTruthy();
   });

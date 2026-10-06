@@ -20,11 +20,16 @@
         <h1 class="patient-fullname">
           {{ (patient || activePatientService.activePatient())?.fullName || 'Paciente' }}
         </h1>
-        <span class="hc-number-chip">HC #{{ (patient || activePatientService.activePatient())?.id }}</span>
+        <span class="hc-number-chip"
+          >HC #{{ (patient || activePatientService.activePatient())?.id }}</span
+        >
 
         <!-- Cobertura / Obra Social Badge Prominente -->
         @if (coverageInfo().isParticular) {
-          <span class="coverage-chip particular" title="Atención Particular / Sin Cobertura Registrada">
+          <span
+            class="coverage-chip particular"
+            title="Atención Particular / Sin Cobertura Registrada"
+          >
             <ng-icon name="lucideCreditCard" class="text-slate-400" />
             <span>Particular</span>
           </span>
@@ -84,53 +89,45 @@
     }
   </div>
 
-  <!-- Right: Streamlined Contextual Actions -->
+  <!-- Common actions retain their presentation; specialty selection and order come from the server. -->
   <div class="banner-actions-block">
-    <button
-      type="button"
-      class="btn-secondary-edit"
-      (click)="onEditPatient()"
-      title="Editar datos filiatorios y clínicos del paciente"
-    >
-      <ng-icon name="lucideUser" />
-      <span>Editar datos</span>
-    </button>
-    <button type="button" class="btn-primary-soap" (click)="onNewEncounter()">
-      <ng-icon name="lucidePlus" />
-      <span>Nueva consulta</span>
-    </button>
-    <!-- Secondary Actions Dropdown Menu -->
-    <div class="more-menu-container">
-      <button
-        type="button"
-        class="btn-more-options"
-        (click)="toggleMenu($event)"
-        [attr.aria-expanded]="isMenuOpen()"
-        title="Más acciones del paciente"
-      >
-        <ng-icon name="lucideMoreHorizontal" />
-      </button>
-
-      @if (isMenuOpen()) {
-        <div class="dropdown-actions-menu" (click)="$event.stopPropagation()">
-          <button type="button" class="dropdown-menu-item" (click)="onEditPatient()">
-            <ng-icon name="lucideUser" class="text-slate-500" />
-            <span>Editar datos del paciente</span>
-          </button>
-
-          @if (doctorSpecialtyService.supportsGrowthCharts() && isChild()) {
-            <button type="button" class="dropdown-menu-item" (click)="goToCurves()">
-              <ng-icon name="lucideTrendingUp" class="text-indigo-500" />
-              <span>Ver Curvas de Crecimiento OMS</span>
-            </button>
-          }
-
-          <button type="button" class="dropdown-menu-item" (click)="onPrintSummary()">
-            <ng-icon name="lucidePrinter" class="text-slate-500" />
-            <span>Imprimir Resumen de Historia Clínica</span>
-          </button>
-        </div>
+    @for (action of primaryActions(); track action.id) {
+      @if (action.primary; as presentation) {
+        <button
+          type="button"
+          [class]="presentation.css"
+          (click)="runAction(action.id)"
+          [attr.title]="presentation.title ?? null"
+        >
+          <ng-icon [name]="presentation.icon" />
+          <span>{{ presentation.label }}</span>
+        </button>
       }
-    </div>
+    }
+    @if (menuActions().length) {
+      <div class="more-menu-container">
+        <button
+          type="button"
+          class="btn-more-options"
+          (click)="toggleMenu($event)"
+          [attr.aria-expanded]="isMenuOpen()"
+          title="Más acciones del paciente"
+        >
+          <ng-icon name="lucideMoreHorizontal" />
+        </button>
+        @if (isMenuOpen()) {
+          <div class="dropdown-actions-menu" (click)="$event.stopPropagation()">
+            @for (action of menuActions(); track action.id) {
+              @if (action.menu; as presentation) {
+                <button type="button" class="dropdown-menu-item" (click)="runAction(action.id)">
+                  <ng-icon [name]="presentation.icon" [class]="presentation.iconCss" />
+                  <span>{{ presentation.label }}</span>
+                </button>
+              }
+            }
+          </div>
+        }
+      </div>
+    }
   </div>
 </header>

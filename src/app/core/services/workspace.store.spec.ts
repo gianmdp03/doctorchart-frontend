@@ -16,6 +16,7 @@ describe('WorkspaceStore canonical lifecycle', () => {
   };
   const setup: WorkspaceSetup = {
     id: 1, version: 3, specialty: { id: 10, code: 'unseen_xyz', name: 'Especialidad nueva', description: null },
+    experience: { specialtyId: 10, specialtyVersion: 0, patientRecordActions: ['EDIT_PATIENT', 'NEW_ENCOUNTER', 'VIEW_GROWTH', 'PRINT_DOCUMENT'], patientRecordTabs: ['SUMMARY', 'ENCOUNTERS'], navigation: ['DASHBOARD', 'PATIENTS', 'WIZARD'] },
     sourceWizardVersion: 1, draftSourceWizardVersion: null, definition, draftDefinition: null,
     onboardingCompleted: true, currentStepKey: 'completed',
   };
@@ -60,6 +61,69 @@ describe('WorkspaceStore canonical lifecycle', () => {
     expect(store.preferences()).toBeNull();
   });
 
+  it('composes navigation without changing the personal wizard and clears it with the session', async () => {
+    await store.loadSetup();
+    expect(store.navigation().map(item => item.path)).toEqual(['/dashboard', '/pacientes', '/onboarding/setup']);
+    expect(store.hasNavigation('CALCULATORS')).toBe(false);
+    store.setSetup({ ...setup, experience: { ...setup.experience, specialtyVersion: 5,
+      navigation: ['DASHBOARD', 'CALCULATORS', 'PATIENTS', 'WIZARD'] } });
+    expect(store.navigation()[1].path).toBe('/calculadoras');
+    expect(store.definition()).toEqual(definition);
+    expect(store.currentSetup()?.version).toBe(setup.version);
+    store.clearSetup(); expect(store.navigation()).toEqual([]);
+  });
+
+  it('rejects an unknown or mismatched experience before replacing a valid workspace', () => {
+    store.setSetup(setup);
+    for (const experience of [
+      { ...setup.experience, specialtyId: 999 },
+      { ...setup.experience, navigation: ['DASHBOARD', 'PATIENTS', 'WIZARD', 'UNKNOWN'] },
+      { ...setup.experience, navigation: ['DASHBOARD', 'PATIENTS'] },
+      { ...setup.experience, navigation: ['DASHBOARD', 'PATIENTS', 'WIZARD', 'PATIENTS'] },
+    ]) {
+      expect(() => store.setSetup({ ...setup, experience } as WorkspaceSetup)).toThrow('experiencia');
+      expect(store.currentSetup()).toEqual(setup);
+    }
+  });
+
+  it('uses only the configured record modules independently of navigation and personal forms', () => {
+    store.setSetup({ ...setup, experience: { ...setup.experience, patientRecordTabs: ['ENCOUNTERS', 'STUDIES', 'SUMMARY'] } });
+    expect(store.patientRecordTabs()).toEqual(['ENCOUNTERS', 'STUDIES', 'SUMMARY']);
+    expect(store.hasRecordTab('VACCINATION')).toBe(false);
+    expect(store.definition()).toEqual(definition);
+    expect(store.currentSetup()?.version).toBe(setup.version);
+    expect(store.navigation().map(item => item.id)).toEqual(setup.experience.navigation);
+    store.clearSetup();
+    expect(store.patientRecordTabs()).toEqual([]);
+    expect(store.hasRecordTab('SUMMARY')).toBe(false);
+  });
+
+  it('rejects invalid record compositions before replacing the workspace', () => {
+    store.setSetup(setup);
+    for (const patientRecordTabs of [undefined, null, 'SUMMARY', [], ['SUMMARY'], ['SUMMARY', 'ENCOUNTERS', 'UNKNOWN'], ['SUMMARY', 'ENCOUNTERS', 'SUMMARY'], ['SUMMARY', 'ENCOUNTERS', 4]]) {
+      expect(() => store.setSetup({ ...setup, experience: { ...setup.experience, patientRecordTabs } } as WorkspaceSetup)).toThrow('experiencia');
+      expect(store.currentSetup()).toEqual(setup);
+    }
+  });
+
+  it('keeps action composition separate from tabs, navigation and personal wizard', () => {
+    store.setSetup({ ...setup, experience: { ...setup.experience, patientRecordActions: ['PRINT_DOCUMENT','EDIT_PATIENT'] } });
+    expect(store.patientRecordActions()).toEqual(['PRINT_DOCUMENT','EDIT_PATIENT']);
+    expect(store.hasRecordAction('NEW_ENCOUNTER')).toBe(false);
+    expect(store.patientRecordTabs()).toEqual(setup.experience.patientRecordTabs);
+    expect(store.definition()).toEqual(definition);
+    expect(store.currentSetup()?.version).toBe(setup.version);
+    store.setSetup({ ...setup, experience: { ...setup.experience, patientRecordActions: [] } });
+    expect(store.patientRecordActions()).toEqual([]);
+    store.clearSetup(); expect(store.hasRecordAction('EDIT_PATIENT')).toBe(false);
+  });
+  it('rejects missing, duplicate, unknown or malformed actions before replacing configuration', () => {
+    store.setSetup(setup);
+    for(const patientRecordActions of [undefined,null,'EDIT_PATIENT',['UNKNOWN'],['EDIT_PATIENT','EDIT_PATIENT'],[4]]) {
+      expect(()=>store.setSetup({ ...setup, experience:{...setup.experience,patientRecordActions} } as WorkspaceSetup)).toThrow('experiencia');
+      expect(store.currentSetup()).toEqual(setup);
+    }
+  });
   it('keeps null workspace distinct from failed loads and allows retry', async () => {
     service.getCurrentSetup.mockReturnValueOnce(throwError(() => new Error('Offline')));
     await expect(store.loadSetup()).rejects.toThrow('Offline');
@@ -87,7 +151,7 @@ describe('WorkspaceStore canonical lifecycle', () => {
     service.getCurrentSetup.mockReturnValueOnce(response);
     const old = store.loadSetup().catch(error => error);
     store.clearSetup();
-    const newSetup = { ...setup, id: 2, specialty: { ...setup.specialty, id: 20, name: 'Otro médico' } };
+    const newSetup = { ...setup, id: 2, specialty: { ...setup.specialty, id: 20, name: 'Otro médico' }, experience: { ...setup.experience, specialtyId: 20 } };
     service.getCurrentSetup.mockReturnValueOnce(of(newSetup));
     await store.loadSetup();
     response.next(setup);

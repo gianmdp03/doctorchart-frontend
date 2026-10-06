@@ -1,9 +1,9 @@
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, takeUntil } from 'rxjs';
-import { PrescriptionRequest, SavedPrescriptionRecord } from '../../core/models/prescription.model';
-import { PatientPrescriptionService } from '../../core/services/patient-prescription.service';
+import { PrescriptionRequest, SavedPrescriptionRecord } from '../../../core/models/prescription.model';
+import { PatientPrescriptionService } from '../../../core/services/patient-prescription.service';
 
 /** Component-scoped history: HTTP responses cannot cross patient changes or outlive the screen. */
 @Injectable()

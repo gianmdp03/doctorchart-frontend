@@ -1,0 +1,29 @@
+@if (patientFormDefinition(); as definition) {
+  <section class="tab-panel animate-fade-in" aria-label="Datos del paciente">
+    <div class="tab-panel-toolbar">
+      <div class="tab-panel-toolbar-text">
+        <h3 class="panel-section-title">Datos Filiatorios y Clínicos</h3>
+        <p class="panel-section-subtitle">
+          Información general, tutores y antecedentes registrados del paciente.
+        </p>
+      </div>
+      @if (recordActions.has('EDIT_PATIENT')) {
+        <button
+          type="button"
+          class="btn-tab-edit"
+          (click)="editPatient.emit()"
+          title="Editar datos filiatorios y clínicos del paciente"
+        >
+          <ng-icon name="lucideUser" />
+          <span>Editar datos</span>
+        </button>
+      }
+    </div>
+    <app-dynamic-form-renderer
+      [definition]="definition"
+      [values]="patientFormValues()"
+      [formulaResults]="patientFormulaResults()"
+      [readonly]="true"
+    />
+  </section>
+}

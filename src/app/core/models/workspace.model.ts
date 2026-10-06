@@ -1,3 +1,4 @@
+import { SpecialtyExperience } from './specialty-experience.model';
 import { SpecialtySummary } from './specialty.model';
 import { WizardDefinition, WizardStepKey } from './wizard-definition.model';
 
@@ -5,6 +6,7 @@ export interface WorkspaceSetup {
   id: number;
   version: number;
   specialty: SpecialtySummary;
+  experience: SpecialtyExperience;
   sourceWizardVersion: number | null;
   draftSourceWizardVersion: number | null;
   onboardingCompleted: boolean;

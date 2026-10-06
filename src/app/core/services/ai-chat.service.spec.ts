@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 import { AuthService } from './auth.service';
 import { ActivePatientService } from './active-patient.service';
+import { WorkspaceStore } from './workspace.store';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -10,11 +11,16 @@ import { environment } from '../../../environments/environment';
 describe('AiChatService', () => {
   let service: AiChatService;
   let httpMock: HttpTestingController;
+  let aiEnabled: ReturnType<typeof signal<boolean>>;
+  let specialtyCode: ReturnType<typeof signal<string>>;
 
   beforeEach(() => {
+    aiEnabled = signal(true);
+    specialtyCode = signal('pediatrics');
     TestBed.configureTestingModule({
       providers: [
         AiChatService,
+        {provide: WorkspaceStore, useValue: {specialtyCode, activeModules: () => ({AI_ASSISTANT: aiEnabled()}), isModuleActive: () => aiEnabled()}},
         {provide: AuthService, useValue: {currentUser: signal({id: 'doctor-a'})}},
         {provide: ActivePatientService, useValue: {activePatient: signal(null)}},
         provideHttpClient(),
@@ -224,11 +230,37 @@ describe('AiChatService', () => {
     expect(first.cancelled).toBe(true); expect(service.messages()).toHaveLength(1);
     service.sendMessage('Nueva'); httpMock.expectNone(environment.aiGatewayUrl);
   });
+  it('rejects prompts and opening the chat when its personal module is disabled', () => {
+    aiEnabled.set(false); TestBed.tick();
+    service.openChat(); service.toggleChat(); service.sendMessage('Consulta');
+    expect(service.isOpen()).toBe(false); expect(service.messages()).toHaveLength(1);
+    httpMock.expectNone(environment.aiGatewayUrl);
+  });
+  it('cancels a conversation when AI availability is removed', () => {
+    service.openChat(); service.sendMessage('Consulta'); const pending=httpMock.expectOne(environment.aiGatewayUrl);
+    aiEnabled.set(false); TestBed.tick();
+    expect(pending.cancelled).toBe(true); expect(service.isTyping()).toBe(false);
+    expect(service.isOpen()).toBe(false); expect(service.messages()).toHaveLength(1);
+  });
+  it('discards a response after AI is disabled even before the reactive cleanup runs', () => {
+    service.sendMessage('Consulta'); const pending=httpMock.expectOne(environment.aiGatewayUrl);
+    aiEnabled.set(false); pending.flush({response:'Respuesta anterior'});
+    expect(service.messages().some(message=>message.text==='Respuesta anterior')).toBe(false);
+    TestBed.tick(); expect(service.messages()).toHaveLength(1);
+  });
   it('retains the conversation when the same patient is refreshed', () => {
     (TestBed.inject(ActivePatientService).activePatient as any).set({id:10}); TestBed.tick();
     service.sendMessage('Consulta'); httpMock.expectOne(environment.aiGatewayUrl).flush({response:'Respuesta'});
     (TestBed.inject(ActivePatientService).activePatient as any).set({id:10, fullName:'Actualizado'}); TestBed.tick();
     expect(service.messages()).toHaveLength(3);
+  });
+
+  it('discards the previous specialty conversation even if AI remains enabled', () => {
+    service.sendMessage('Consulta anterior'); const pending=httpMock.expectOne(environment.aiGatewayUrl);
+    specialtyCode.set('custom'); TestBed.tick();
+    expect(pending.cancelled).toBe(true);expect(service.messages()).toHaveLength(1);
+    service.sendMessage('Consulta nueva');httpMock.expectOne(environment.aiGatewayUrl).flush({response:'Nueva especialidad'});
+    expect(service.messages().some(message=>message.text==='Consulta anterior')).toBe(false);
   });
 
 });

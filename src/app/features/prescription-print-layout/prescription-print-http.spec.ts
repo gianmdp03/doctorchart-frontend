@@ -1,3 +1,4 @@
+import { PatientRecordActionsService } from '../../core/experience/patient-record-actions.service';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -21,7 +22,7 @@ describe('Print preview with HTTP client',()=>{
   const url=(collection:string,patient=10,id=31)=>environment.apiUrl+'/patients/'+patient+'/'+collection+'/'+id+'/print';
   beforeEach(async()=>{
     user.set({id:'doctor-a',user_metadata:{full_name:'Dra. Sofía Mendoza',license:'MP 1234'}});
-    await TestBed.configureTestingModule({imports:[PrescriptionPrintLayoutComponent],providers:[
+    await TestBed.configureTestingModule({imports:[PrescriptionPrintLayoutComponent],providers:[{provide:PatientRecordActionsService,useValue:{has:()=>true}},
       provideHttpClient(),provideHttpClientTesting(),{provide:PLATFORM_ID,useValue:'browser'},
       {provide:AuthService,useValue:{currentUser:user}},
     ]}).compileComponents();

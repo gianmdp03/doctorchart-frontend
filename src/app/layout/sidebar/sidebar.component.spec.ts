@@ -1,3 +1,6 @@
+import { WorkspaceStore } from '../../core/services/workspace.store';
+import { CLINICAL_NAVIGATION } from '../../core/experience/clinical-navigation';
+import { ClinicalNavigationItem } from '../../core/experience/clinical-navigation';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SidebarComponent } from './sidebar.component';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
@@ -13,8 +16,10 @@ describe('SidebarComponent', () => {
   let authServiceMock: any;
   let specialtyServiceMock: any;
   let profileServiceMock: any;
+  const navigation = signal<ClinicalNavigationItem[]>([]);
 
   beforeEach(async () => {
+    navigation.set(Object.values(CLINICAL_NAVIGATION));
     authServiceMock = {
       isLoggedIn: signal(true),
       isSuperAdmin: signal(false),
@@ -40,6 +45,7 @@ describe('SidebarComponent', () => {
       imports: [SidebarComponent],
       providers: [
         provideRouter([]),
+        { provide: WorkspaceStore, useValue: { navigation } },
         { provide: AuthService, useValue: authServiceMock },
         { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },
         { provide: DoctorProfileService, useValue: profileServiceMock },
@@ -68,6 +74,22 @@ describe('SidebarComponent', () => {
       const svg = ic.querySelector('svg');
       expect(svg).toBeTruthy();
     });
+  });
+
+  it('renders only server-selected entries in server order', () => {
+    navigation.set([CLINICAL_NAVIGATION.DASHBOARD, CLINICAL_NAVIGATION.PATIENTS, CLINICAL_NAVIGATION.WIZARD]);
+    fixture.detectChanges();
+    const links = [...fixture.nativeElement.querySelectorAll('.sidebar-nav a')] as HTMLAnchorElement[];
+    expect(links.map(link => link.getAttribute('href'))).toEqual(['/dashboard', '/pacientes', '/onboarding/setup']);
+    expect(fixture.nativeElement.textContent).not.toContain('Vacunación');
+    navigation.set([CLINICAL_NAVIGATION.DASHBOARD, CLINICAL_NAVIGATION.VACCINATION, CLINICAL_NAVIGATION.PATIENTS, CLINICAL_NAVIGATION.WIZARD]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')[1].getAttribute('href')).toBe('/calendario-vacunacion');
+  });
+
+  it('clears clinical navigation while no workspace is loaded', () => {
+    navigation.set([]); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')).toHaveLength(0);
   });
 
   it('should toggle collapse state', () => {

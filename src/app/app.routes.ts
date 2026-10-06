@@ -1,3 +1,4 @@
+import { clinicalNavigationGuard } from './core/guards/clinical-navigation.guard';
 import { Routes } from '@angular/router';
 import { doctorchartPlanGuard } from './core/guards/doctorchart-plan.guard';
 import { doctorOnboardingGuard, doctorWizardGuard, preventCompletedOnboardingGuard } from './core/guards/doctor-onboarding.guard';
@@ -25,7 +26,7 @@ export const routes: Routes = [
   },
   {
     path: 'calendario-vacunacion',
-    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicalNavigationGuard('VACCINATION')],
     loadComponent: () =>
       import('./features/vaccination-calendar/calendario-vacunacion.component').then(
         (m) => m.VaccinationCalendarComponent,
@@ -78,7 +79,7 @@ export const routes: Routes = [
   },
   {
     path: 'calculadoras',
-    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicalNavigationGuard('CALCULATORS')],
     loadComponent: () =>
       import('./features/medical-calculators/medical-calculators.component').then(
         (m) => m.MedicalCalculatorsComponent

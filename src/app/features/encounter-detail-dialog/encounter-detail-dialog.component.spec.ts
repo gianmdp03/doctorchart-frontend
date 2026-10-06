@@ -1,3 +1,4 @@
+import { PatientRecordActionsService } from '../../core/experience/patient-record-actions.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { signal } from '@angular/core';
@@ -11,14 +12,24 @@ import { dialogEncounter } from '../dynamic-form-renderer/clinical-dialog.fixtur
 
 describe('EncounterDetailDialogComponent saved snapshot editing', () => {
   let fixture: ComponentFixture<EncounterDetailDialogComponent>; let component: EncounterDetailDialogComponent; let record: ClinicalEncounterDetail;
+  const printEnabled=signal(true);
   let service: { getById: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }; const user = signal<{ id: string } | null>(null);
   beforeEach(async () => {
+    printEnabled.set(true);
     user.set({ id: 'doctor-a' }); record = dialogEncounter(); service = { getById: vi.fn().mockImplementation(() => of(structuredClone(record))), update: vi.fn().mockImplementation((_id, request) => of({ ...record, version: 7, formValues: request.values, encounterDate: request.encounterDate })) };
-    await TestBed.configureTestingModule({ imports: [EncounterDetailDialogComponent], providers: [{provide:ActivePatientService,useValue:{activePatient:signal(null)}},{ provide: ClinicalEncounterService, useValue: service }, { provide: AuthService, useValue: { currentUser: user } }] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [EncounterDetailDialogComponent], providers: [{ provide: PatientRecordActionsService, useValue: { has: () => printEnabled() } },{provide:ActivePatientService,useValue:{activePatient:signal(null)}},{ provide: ClinicalEncounterService, useValue: service }, { provide: AuthService, useValue: { currentUser: user } }] }).compileComponents();
     fixture = TestBed.createComponent(EncounterDetailDialogComponent); component = fixture.componentInstance; fixture.detectChanges();
     component.openModal(new CustomEvent('open-encounter-detail-modal', { detail: { encounter: record } })); fixture.detectChanges();
   });
   function edit(): void { component.startEditing(); component.onValuesChange({ readingA: 0, readingB: 20, notes: 'Edición local', result: 100, unknown: 'No enviar' }); component.formValid.set(true); }
+  it('hides and blocks printing while keeping the stored consultation readable', () => {
+    const print=vi.spyOn(window,'print').mockImplementation(()=>{});
+    printEnabled.set(false); fixture.detectChanges();
+    component.printEncounter();
+    expect(print).not.toHaveBeenCalled();
+    expect([...fixture.nativeElement.querySelectorAll('button')].some((el:any)=>el.textContent.trim()==='Imprimir')).toBe(false);
+    expect(component.encounter()).toEqual(record);
+  });
   it('displays its snapshot, backend result and Argentine instant without fetching a current template', () => {
     expect(service.getById).not.toHaveBeenCalled(); expect(fixture.nativeElement.textContent).toContain('Consulta inédita');
     expect(fixture.nativeElement.textContent).toContain('01/01/2026 11:03');

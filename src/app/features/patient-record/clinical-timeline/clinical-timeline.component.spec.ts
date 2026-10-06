@@ -45,6 +45,7 @@ describe('ClinicalTimelineComponent', () => {
 
     fixture = TestBed.createComponent(ClinicalTimelineComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('canCreateEncounter', true);
   });
 
   it('should initialize and expand the first two encounters by default', () => {

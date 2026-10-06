@@ -111,6 +111,7 @@ describe('App administrative entry', () => {
       error: signal('Unrelated clinical load error'), loaded: signal(false), loading: signal(false),
     };
     workspace = {
+      isModuleActive: vi.fn().mockReturnValue(false),
       clearSetup: vi.fn(), loadSetup: vi.fn().mockResolvedValue(null), loadPreferences: vi.fn().mockResolvedValue(null),
       preferences: signal(null), preferencesError: signal(null), isLoading: signal(false),
       isOnboardingCompleted: completed, loaded: signal(false), error: signal(null),

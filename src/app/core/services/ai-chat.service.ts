@@ -1,6 +1,7 @@
 import { Subscription } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ActivePatientService } from './active-patient.service';
+import { WorkspaceStore } from './workspace.store';
 import { DestroyRef, effect, Injectable, inject, signal, untracked } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -31,18 +32,22 @@ export class AiChatService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly patient = inject(ActivePatientService);
+  private readonly workspace = inject(WorkspaceStore);
   private request: Subscription | null = null;
   private context = '';
   readonly contextRevision = signal(0);
   constructor() {
     this.syncContext();
-    effect(() => { this.auth.currentUser(); this.patient.activePatient(); untracked(() => this.syncContext()); });
+    effect(() => { this.auth.currentUser(); this.patient.activePatient(); this.workspace.specialtyCode(); this.workspace.activeModules(); untracked(() => this.syncContext()); });
     inject(DestroyRef).onDestroy(() => this.request?.unsubscribe());
   }
   syncContext(): void {
-    const context = JSON.stringify([this.auth.currentUser()?.id ?? null,this.patient.activePatient()?.id ?? null]);
+    const context = this.contextKey();
     if (context === this.context) return;
     this.context = context; this.clearHistory(); this.isOpen.set(false);
+  }
+  private contextKey(): string {
+    return JSON.stringify([this.auth.currentUser()?.id ?? null, this.patient.activePatient()?.id ?? null, this.workspace.specialtyCode(), this.workspace.isModuleActive('AI_ASSISTANT')]);
   }
 
 
@@ -59,6 +64,7 @@ export class AiChatService {
   ];
 
   toggleChat(): void {
+    if (!this.workspace.isModuleActive('AI_ASSISTANT')) return;
     const next = !this.isOpen();
     this.isOpen.set(next);
     if (next) {
@@ -67,6 +73,7 @@ export class AiChatService {
   }
 
   openChat(): void {
+    if (!this.workspace.isModuleActive('AI_ASSISTANT')) return;
     this.isOpen.set(true);
     this.hasUnread.set(false);
   }
@@ -90,10 +97,10 @@ export class AiChatService {
 
   sendMessage(userText: string): void {
     this.syncContext();
-    if (!this.auth.currentUser()?.id) return;
+    if (!this.auth.currentUser()?.id || !this.workspace.isModuleActive('AI_ASSISTANT')) return;
     const revision = this.contextRevision();
     const context = this.context;
-    const current = () => revision === this.contextRevision() && context === JSON.stringify([this.auth.currentUser()?.id ?? null,this.patient.activePatient()?.id ?? null]);
+    const current = () => revision === this.contextRevision() && context === this.contextKey();
     const trimmed = userText.trim();
     if (!trimmed || this.isTyping()) return;
 

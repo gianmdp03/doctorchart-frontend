@@ -13,7 +13,7 @@
         }
         <app-dynamic-form-renderer [definition]="record.formDefinitionSnapshot" [values]="values()" [formulaResults]="formulaResults()" [readonly]="readonly()" (valuesChange)="onValuesChange($event)" (validityChange)="formValid.set($event)" />
       </div>
-      <footer class="modal-footer-clean">@if (isEditing()) { <button type="button" class="btn-close-dialog" [disabled]="isSubmitting()" (click)="cancelEditing()">Cancelar edición</button><button type="button" class="btn-close-dialog" [disabled]="readonly() || !formValid() || !dateValid()" (click)="save()">{{ isSubmitting() ? 'Guardando...' : 'Guardar cambios' }}</button> } @else { <button type="button" class="btn-close-dialog" (click)="printEncounter()">Imprimir</button><button type="button" class="btn-close-dialog" (click)="startEditing()">Editar consulta</button> }</footer>
+      <footer class="modal-footer-clean">@if (isEditing()) { <button type="button" class="btn-close-dialog" [disabled]="isSubmitting()" (click)="cancelEditing()">Cancelar edición</button><button type="button" class="btn-close-dialog" [disabled]="readonly() || !formValid() || !dateValid()" (click)="save()">{{ isSubmitting() ? 'Guardando...' : 'Guardar cambios' }}</button> } @else { @if (recordActions.has('PRINT_DOCUMENT')) { <button type="button" class="btn-close-dialog" (click)="printEncounter()">Imprimir</button> }<button type="button" class="btn-close-dialog" (click)="startEditing()">Editar consulta</button> }</footer>
     }
   </section></div>
 }

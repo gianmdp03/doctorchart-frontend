@@ -41,6 +41,7 @@ describe('OnboardingWizardComponent', () => {
   const base: WorkspaceSetup = {
     id: 12, version: 10,
     specialty: { id: 81, code: customSpecialtyFixture.code, name: customSpecialtyFixture.name, description: customSpecialtyFixture.description },
+    experience: { specialtyId: 81, specialtyVersion: 0, patientRecordActions: ['EDIT_PATIENT', 'NEW_ENCOUNTER', 'VIEW_GROWTH', 'PRINT_DOCUMENT'], patientRecordTabs: ['SUMMARY', 'ENCOUNTERS'], navigation: ['DASHBOARD', 'PATIENTS', 'WIZARD'] },
     sourceWizardVersion: null, draftSourceWizardVersion: 1, onboardingCompleted: false,
     currentStepKey: 'patient:new_patient_category', definition: null,
     draftDefinition: clone(customSpecialtyFixture.definition),

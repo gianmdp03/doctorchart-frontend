@@ -53,6 +53,7 @@
           </div>
         }
       }
+      @if (workspace.hasNavigation('CALCULATORS')) {
       <a routerLink="/calculadoras" class="metric-pill calc-link-pill" title="Abrir Calculadora Clínica para este paciente">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-1" aria-hidden="true">
           <rect x="4" y="2" width="16" height="20" rx="2" />
@@ -62,6 +63,7 @@
         </svg>
         <span class="val font-semibold text-teal-700 dark:text-teal-300">Calculadora</span>
       </a>
+      }
     </div>
   } @else {
     <div class="patient-identity">

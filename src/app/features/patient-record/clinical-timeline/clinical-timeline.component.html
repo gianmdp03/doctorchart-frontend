@@ -84,9 +84,11 @@
           <span class="text-xs text-slate-500">(de {{ encounters.length }})</span>
         }
       </span>
-      <button type="button" class="btn-new-encounter-cta" (click)="newEncounter.emit()">
+      @if (canCreateEncounter()) {
+      <button type="button" class="btn-new-encounter-cta" (click)="createEncounter()">
         <ng-icon name="lucidePlus" /><span>+ Nueva consulta</span>
       </button>
+      }
     </div>
   </div>
 
@@ -105,7 +107,9 @@
         <div class="empty-icon-circle"><ng-icon name="lucideStethoscope" /></div>
         <h3>Sin consultas registradas</h3>
         <p>No se encontraron consultas previas registradas.</p>
-        <button type="button" class="btn-new-encounter-cta mt-3" (click)="newEncounter.emit()"><ng-icon name="lucidePlus" /><span>Crear primera consulta</span></button>
+      @if (canCreateEncounter()) {
+        <button type="button" class="btn-new-encounter-cta mt-3" (click)="createEncounter()"><ng-icon name="lucidePlus" /><span>Crear primera consulta</span></button>
+      }
       </div>
     }
   } @else {

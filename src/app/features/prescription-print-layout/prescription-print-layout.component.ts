@@ -1,3 +1,4 @@
+import { PatientRecordActionsService } from '../../core/experience/patient-record-actions.service';
 import { Component, computed, DestroyRef, effect, HostListener, inject, PLATFORM_ID, signal } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -28,12 +29,13 @@ export type PrintDocumentType = 'PRESCRIPTION' | 'STUDY_ORDERS';
   styleUrl: './prescription-print-layout.component.css',
 })
 export class PrescriptionPrintLayoutComponent {
+  private readonly recordActions = inject(PatientRecordActionsService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly auth = inject(AuthService);
   private readonly activePatient = inject(ActivePatientService);
   private openingPatientId: number | null = null;
   private currentPatientId(): number | null { return this.activePatient.activePatient()?.id ?? null; }
-  private sameContext(): boolean { return this.openingUserId === (this.auth.currentUser()?.id ?? null) && this.openingPatientId === this.currentPatientId(); }
+  private sameContext(): boolean { return this.recordActions.has('PRINT_DOCUMENT') && this.openingUserId === (this.auth.currentUser()?.id ?? null) && this.openingPatientId === this.currentPatientId(); }
   private readonly api = inject(ClinicalDocumentPrintService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cancelled = new Subject<void>();
@@ -67,7 +69,7 @@ export class PrescriptionPrintLayoutComponent {
   readonly documentCode = computed(() => this.document()?.code || '');
   readonly hasPrescriptions = computed(() => (this.document()?.prescriptions.length ?? 0) > 0);
   readonly hasStudies = computed(() => (this.document()?.diagnosticOrders.length ?? 0) > 0);
-  readonly canPrint = computed(() => this.isOpen() && !this.loading() && !this.error() && !!this.document()
+  readonly canPrint = computed(() => this.recordActions.has('PRINT_DOCUMENT') && this.isOpen() && !this.loading() && !this.error() && !!this.document()
     && this.sameContext() && this.auth.currentUser()?.id === this.document()?.author.userId
     && (this.documentType() === 'PRESCRIPTION' ? this.hasPrescriptions() : this.hasStudies()));
 
@@ -75,12 +77,14 @@ export class PrescriptionPrintLayoutComponent {
     effect(() => {
       const userId = this.auth.currentUser()?.id ?? null;
       const patientId = this.currentPatientId();
-      if (this.isOpen() && (userId !== this.openingUserId || patientId !== this.openingPatientId)) this.closeModal();
+      const printEnabled = this.recordActions.has('PRINT_DOCUMENT');
+      if (this.isOpen() && (!printEnabled || userId !== this.openingUserId || patientId !== this.openingPatientId)) this.closeModal();
     });
   }
   @HostListener('window:open-prescription-print-modal', ['$event'])
   onOpenModal(event?: Event): void {
     this.closeModal();
+    if (!this.recordActions.has('PRINT_DOCUMENT')) return;
     const reference = (event as CustomEvent | undefined)?.detail as PrintDocumentReference | undefined;
     const user = this.auth.currentUser();
     if (!user || !reference || !['PRESCRIPTION_RECORD','ENCOUNTER'].includes(reference.source)

@@ -6,7 +6,7 @@ evidencia antes de comenzar el siguiente y se conserva la experiencia de pediatr
 
 | Bloque | Reparación | Estado |
 | --- | --- | --- |
-| 1. Autenticación | Unificar autenticación y eliminar accesos alternativos inseguros. | Cumplido |
+| 1. Autenticación | Unificar autenticación y eliminar accesos alternativos inseguros. | Cumplido en DoctorChart; hallazgo pendiente en el gateway externo, registrado en 12e para el bloque 13 |
 | 2. Permisos de estudios | Impedir acceso a archivos de pacientes ajenos. | Cumplido |
 | 3. Permisos de calculadoras | Validar propietario y relación paciente–consulta. | Cumplido |
 | 4. Cálculos oficiales | Calcular y validar resultados en backend. | Cumplido |
@@ -17,8 +17,8 @@ evidencia antes de comenzar el siguiente y se conserva la experiencia de pediatr
 | 9. Mediciones | Unificar fuentes y unidades; eliminar el camino antiguo. | Cumplido; ver [implementación y pruebas](measurements-block-9.md) |
 | 10. Vacunación | Gobernar calendario, identificadores y reglas desde backend. | Cumplido; ver [implementación y pruebas](vaccination-block-10.md) |
 | 11. Listados y estadísticas | Llevar filtros completos y agregados al backend. | Cumplido; ver [implementación y pruebas](listings-block-11.md) |
-| 12. Experiencias por especialidad | Aislar módulos y componer navegación, pestañas y acciones. | Pendiente; siguiente bloque |
-| 13. Configuración y almacenamiento | Resolver archivos, secretos, entornos y documentación. | Pendiente |
+| 12. Experiencias por especialidad | Aislar módulos y componer navegación, pestañas y acciones. | Cumplido: [12a navegación](specialty-navigation-block-12a.md), [12b módulos](record-modules-block-12b.md), [12c pestañas](record-tabs-block-12c.md), [12d acciones](record-actions-block-12d.md) y [12e disponibilidad backend e IA](record-availability-block-12e.md) |
+| 13. Configuración y almacenamiento | Resolver archivos, secretos, entornos y documentación. | Pendiente; incluye bypass de desarrollo y secreto fijo detectados en gateways externos, y preparación de base de desarrollo nueva |
 
 La comprobación de los bloques 1–4 pasó 215 pruebas backend específicas y 21
 frontend antes de completar la separación de la interfaz. El trabajo previo de
@@ -32,5 +32,9 @@ contrato de persistencia y pruebas. El bloque 7 se completó posteriormente con
 una proyección de impresión autorizada y la eliminación de datos inventados.
 
 No se incorporan migraciones de datos ni adaptadores para el código anterior.
+La revisión de 12e encontró `X-Dev-Bypass` en `api-gateway/main.go` y un secreto
+predeterminado fijo en `ai-gateway/config.go`. Su corrección queda pendiente
+en 13; los controles verificados en DoctorChart no demuestran que la
+autenticación de todo el ecosistema ya esté cerrada.
 La configuración de calculadoras del backend requiere su esquema nuevo,
 documentado en [el contrato backend](../../doctorchart-backend/docs/calculators.md).

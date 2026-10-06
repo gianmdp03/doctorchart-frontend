@@ -1,3 +1,5 @@
+import { ClinicalNavigationId, PatientRecordModuleId, PATIENT_RECORD_MODULE_IDS, PatientRecordActionId, PATIENT_RECORD_ACTION_IDS } from '../models/specialty-experience.model';
+import { CLINICAL_NAVIGATION } from '../experience/clinical-navigation';
 import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { firstValueFrom, Observable, timeout } from 'rxjs';
@@ -22,6 +24,12 @@ export class WorkspaceStore {
   readonly isOnboardingCompleted = computed(() => this.currentSetup()?.onboardingCompleted ?? false);
   readonly definition = computed(() => this.currentSetup()?.definition ?? null);
   readonly draftDefinition = computed(() => this.currentSetup()?.draftDefinition ?? null);
+  readonly experience = computed(() => this.currentSetup()?.experience ?? null);
+  readonly navigation = computed(() => (this.experience()?.navigation ?? []).map(id => CLINICAL_NAVIGATION[id]));
+  readonly patientRecordTabs = computed(() => this.experience()?.patientRecordTabs ?? []);
+  hasRecordTab(id: PatientRecordModuleId): boolean { return this.patientRecordTabs().includes(id); }
+  readonly patientRecordActions = computed(() => this.experience()?.patientRecordActions ?? []);
+  hasRecordAction(id: PatientRecordActionId): boolean { return this.patientRecordActions().includes(id); }
   readonly activeModules = computed(() => this.definition()?.modulesConfig ?? null);
   readonly patientVisibleColumns = computed(() => this.preferences()?.patientColumnsConfig ?? {});
   readonly quickNotes = computed(() => this.preferences()?.quickNotes ?? null);
@@ -36,6 +44,7 @@ export class WorkspaceStore {
     const modules = this.activeModules();
     return modules !== null && Object.hasOwn(modules, code) && modules[code as keyof typeof modules] === true;
   }
+  hasNavigation(id: ClinicalNavigationId): boolean { return this.experience()?.navigation.includes(id) ?? false; }
   isColumnVisible(key: string): boolean { return this.patientVisibleColumns()[key] !== false; }
 
   async loadSetup(force = false): Promise<WorkspaceSetup | null> {
@@ -171,6 +180,23 @@ export class WorkspaceStore {
   }
   private applySetup(setup: WorkspaceSetup | null): void {
     const current = this.clone(setup);
+    if (current) {
+      const experience = current.experience;
+      if (!experience || experience.specialtyId !== current.specialty.id || !Number.isSafeInteger(experience.specialtyVersion)
+          || experience.specialtyVersion < 0 || !Array.isArray(experience.navigation)
+          || experience.navigation.some(id => !Object.hasOwn(CLINICAL_NAVIGATION, id))
+          || new Set(experience.navigation).size !== experience.navigation.length
+          || !(['DASHBOARD', 'PATIENTS', 'WIZARD'] as const).every(id => experience.navigation.includes(id))
+          || !Array.isArray(experience.patientRecordTabs)
+          || experience.patientRecordTabs.some(id => !PATIENT_RECORD_MODULE_IDS.includes(id))
+          || new Set(experience.patientRecordTabs).size !== experience.patientRecordTabs.length
+          || !(['SUMMARY', 'ENCOUNTERS'] as const).every(id => experience.patientRecordTabs.includes(id))
+          || !Array.isArray(experience.patientRecordActions)
+          || experience.patientRecordActions.some(id => !PATIENT_RECORD_ACTION_IDS.includes(id))
+          || new Set(experience.patientRecordActions).size !== experience.patientRecordActions.length) {
+        throw new Error('La experiencia recibida no corresponde a una configuración válida de esta especialidad.');
+      }
+    }
     this.currentSetup.set(current);
     this.loaded.set(true);
     this.specialtyService.setSpecialty(current?.specialty ?? null);

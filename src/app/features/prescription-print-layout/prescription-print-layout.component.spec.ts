@@ -1,3 +1,4 @@
+import { PatientRecordActionsService } from '../../core/experience/patient-record-actions.service';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { signal, PLATFORM_ID } from '@angular/core';
 import { ClinicalDocumentPrintService } from '../../core/services/clinical-document-print.service';
@@ -25,11 +26,13 @@ describe('Prescription print presentation baseline', () => {
   let component: PrescriptionPrintLayoutComponent;
   let fixture: ComponentFixture<PrescriptionPrintLayoutComponent>;
   let api: {get: ReturnType<typeof vi.fn>};
+  const printEnabled=signal(true);
   const user=signal<any>({id:'doctor-a',user_metadata:{full_name:'Dra. Sofía Mendoza',license:'MP 1234'}});
   beforeEach(async () => {
+    printEnabled.set(true);
     user.set({id:'doctor-a',user_metadata:{full_name:'Dra. Sofía Mendoza',license:'MP 1234'}});
     api={get:vi.fn().mockReturnValue(of(document))};
-    await TestBed.configureTestingModule({imports:[PrescriptionPrintLayoutComponent],providers:[
+    await TestBed.configureTestingModule({imports:[PrescriptionPrintLayoutComponent],providers:[{provide:PatientRecordActionsService,useValue:{has:()=>printEnabled()}},
       {provide:ClinicalDocumentPrintService,useValue:api},
       provideHttpClient(),provideHttpClientTesting(),{provide:PLATFORM_ID,useValue:'browser'},
       {provide:AuthService,useValue:{currentUser:user,userName:signal('Dra. Sofía Mendoza')}},
@@ -110,6 +113,37 @@ describe('Prescription print presentation baseline', () => {
   ]) it('rejects a document that does not match the requested source, patient, author or date', () => {
     api.get.mockReturnValue(of(mismatch));component.onOpenModal(new CustomEvent('open-prescription-print-modal',{detail}));
     expect(component.document()).toBeNull();expect(component.canPrint()).toBe(false);expect(component.error()).toContain('No se pudo verificar');
+  });
+  it('does not fetch documents or print when the action is omitted', () => {
+    printEnabled.set(false);
+    component.onOpenModal(new CustomEvent('open-prescription-print-modal',{detail}));
+    const print=vi.spyOn(window,'print').mockImplementation(()=>{});
+    component.print();
+    expect(api.get).not.toHaveBeenCalled();
+    expect(print).not.toHaveBeenCalled();
+    expect(component.isOpen()).toBe(false);
+  });
+  it('disables printing immediately and cancels a pending preview when the action is removed', () => {
+    const pending=new Subject<ClinicalPrintDocument>(); api.get.mockReturnValue(pending);
+    component.onOpenModal(new CustomEvent('open-prescription-print-modal',{detail}));
+    fixture.detectChanges();
+    printEnabled.set(false);
+    expect(component.canPrint()).toBe(false);
+    pending.next(document);
+    expect(component.document()).toBeNull();
+    expect(component.isOpen()).toBe(false);
+    expect(pending.observed).toBe(false);
+    fixture.detectChanges();
+  });
+  it('closes an already loaded document when the action is removed', () => {
+    component.onOpenModal(new CustomEvent('open-prescription-print-modal',{detail}));
+    fixture.detectChanges();
+    expect(component.canPrint()).toBe(true);
+    printEnabled.set(false);
+    expect(component.canPrint()).toBe(false);
+    fixture.detectChanges();
+    expect(component.document()).toBeNull();
+    expect(component.isOpen()).toBe(false);
   });
   it('does not open unsupported, missing or forged document references', () => {
     for(const bad of [null,{id:0,patientId:10,source:'ENCOUNTER'},{id:1,patientId:0,source:'ENCOUNTER'},{id:1,patientId:10,source:'URL'},{}])

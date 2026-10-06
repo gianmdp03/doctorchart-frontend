@@ -1,3 +1,4 @@
+import { WorkspaceStore } from '../../core/services/workspace.store';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -33,6 +34,7 @@ import { AuthService } from '../../core/services/auth.service';
 export class SidebarComponent {
   readonly specialtyService = inject(DoctorSpecialtyService);
   readonly authService = inject(AuthService);
+  readonly workspace = inject(WorkspaceStore);
 
   readonly isCollapsed = signal<boolean>(false);
 

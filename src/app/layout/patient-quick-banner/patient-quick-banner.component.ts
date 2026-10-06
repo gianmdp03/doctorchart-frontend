@@ -1,3 +1,4 @@
+import { WorkspaceStore } from '../../core/services/workspace.store';
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ActivePatientService } from '../../core/services/active-patient.service';
@@ -10,6 +11,7 @@ import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.ser
   styleUrl: './patient-quick-banner.component.css',
 })
 export class PatientQuickBannerComponent {
+  readonly workspace = inject(WorkspaceStore);
   readonly activePatientService = inject(ActivePatientService);
   readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
 }

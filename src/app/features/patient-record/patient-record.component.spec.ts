@@ -1,3 +1,22 @@
+import {
+  PatientRecordModuleId,
+  PATIENT_RECORD_MODULE_IDS,
+} from '../../core/models/specialty-experience.model';
+import {
+  PatientRecordActionId,
+  PATIENT_RECORD_ACTION_IDS,
+} from '../../core/models/specialty-experience.model';
+import { PatientPrescriptionEditorStore } from './patient-prescriptions/patient-prescription-editor.store';
+import { PatientGrowthStore } from './patient-growth/patient-growth.store';
+import { PatientBannerComponent } from './patient-banner/patient-banner.component';
+import { ClinicalTimelineComponent } from './clinical-timeline/clinical-timeline.component';
+import { PatientEncountersStore } from './patient-encounters/patient-encounters.store';
+import { By } from '@angular/platform-browser';
+import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
+import { PatientVaccinationsComponent } from './patient-vaccinations/patient-vaccinations.component';
+import { PatientStudiesComponent } from './patient-studies/patient-studies.component';
+import { PatientSummaryComponent } from './patient-summary/patient-summary.component';
+import { PatientPrescriptionsComponent } from './patient-prescriptions/patient-prescriptions.component';
 import { PatientGrowthService } from '../../core/services/patient-growth.service';
 import { BackendGrowthMeasurement } from '../../core/models/growth-chart.model';
 import { provideHttpClient } from '@angular/common/http';
@@ -13,7 +32,7 @@ import { ClinicalEncounterService } from '../../core/services/clinical-encounter
 import { AuthService } from '../../core/services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PLATFORM_ID, signal } from '@angular/core';
-import { of, Subject, throwError } from 'rxjs';
+import { of, Subject, BehaviorSubject, throwError } from 'rxjs';
 import { PatientPrescriptionService } from '../../core/services/patient-prescription.service';
 import { SavedPrescriptionRecord } from '../../core/models/prescription.model';
 import { PatientDetailDTO } from '../../core/models/patient.model';
@@ -22,6 +41,9 @@ import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.ser
 
 describe('PatientRecordComponent', () => {
   let component: PatientRecordComponent;
+  let rx: PatientPrescriptionEditorStore;
+  let growth: PatientGrowthStore;
+  let history: PatientEncountersStore;
   let fixture: ComponentFixture<PatientRecordComponent>;
   let activePatientService: ActivePatientService;
   let patientServiceSpy: any;
@@ -30,12 +52,34 @@ describe('PatientRecordComponent', () => {
   let authServiceMock: any;
   let prescriptionApi: any;
   let growthReadSpy: any;
+  let queryParams: BehaviorSubject<Map<string, string>>;
+  const configuredActions = signal<PatientRecordActionId[]>([...PATIENT_RECORD_ACTION_IDS]);
+  const configuredTabs = signal<PatientRecordModuleId[]>([...PATIENT_RECORD_MODULE_IDS]);
+  const growthEnabledFlag = signal(true);
   const measurementHistory: BackendGrowthMeasurement[] = [
-    {source:'BIRTH',encounterId:null,date:'2024-05-10',ageMonths:0,ageFormatted:'Al nacer',measurements:{weightKg:3.35,heightCm:50,headCircumferenceCm:35}},
-    {source:'ENCOUNTER',encounterId:1,date:'2026-09-15',ageMonths:28.2,ageFormatted:'2 años y 4 meses',measurements:{weightKg:7.95,heightCm:67.5,headCircumferenceCm:43.8}},
+    {
+      source: 'BIRTH',
+      encounterId: null,
+      date: '2024-05-10',
+      ageMonths: 0,
+      ageFormatted: 'Al nacer',
+      measurements: { weightKg: 3.35, heightCm: 50, headCircumferenceCm: 35 },
+    },
+    {
+      source: 'ENCOUNTER',
+      encounterId: 1,
+      date: '2026-09-15',
+      ageMonths: 28.2,
+      ageFormatted: '2 años y 4 meses',
+      measurements: { weightKg: 7.95, heightCm: 67.5, headCircumferenceCm: 43.8 },
+    },
   ];
   const issued = (patientId: number, request: any): SavedPrescriptionRecord => ({
-    ...request, id: 73, patientId, authorUserId: 'doctor', createdAt: '2026-10-05T12:34:56Z',
+    ...request,
+    id: 73,
+    patientId,
+    authorUserId: 'doctor',
+    createdAt: '2026-10-05T12:34:56Z',
   });
 
   const mockPatient: PatientDetailDTO = {
@@ -87,7 +131,9 @@ describe('PatientRecordComponent', () => {
       id: 1,
       patientId: 10492,
       encounterDate: '2026-09-15',
-      ...clinicalFormFixture(), specialtyId: 1, specialty: {id:1,code:'pediatrics',name:'Pediatría',description:null},
+      ...clinicalFormFixture(),
+      specialtyId: 1,
+      specialty: { id: 1, code: 'pediatrics', name: 'Pediatría', description: null },
       consultationType: 'ROUTINE_CHECKUP',
       chiefComplaint: 'Control pediátrico semestral',
       primaryDiagnosisCode: 'Z00.1',
@@ -97,7 +143,9 @@ describe('PatientRecordComponent', () => {
       id: 2,
       patientId: 10492,
       encounterDate: '2026-09-16',
-      ...clinicalFormFixture(), specialtyId: 7, specialty: {id:7,code:'custom_xyz',name:'Especialidad XYZ',description:null},
+      ...clinicalFormFixture(),
+      specialtyId: 7,
+      specialty: { id: 7, code: 'custom_xyz', name: 'Especialidad XYZ', description: null },
       consultationType: 'FIRST_VISIT',
       chiefComplaint: 'Soplo funcional inocente',
       primaryDiagnosisCode: 'R01.0',
@@ -106,10 +154,16 @@ describe('PatientRecordComponent', () => {
   ];
 
   beforeEach(async () => {
+    queryParams = new BehaviorSubject(new Map());
+    growthEnabledFlag.set(true);
+    configuredTabs.set([...PATIENT_RECORD_MODULE_IDS]);
+    configuredActions.set([...PATIENT_RECORD_ACTION_IDS]);
     HTMLCanvasElement.prototype.getContext = (() => ({
       fillRect: () => {},
       clearRect: () => {},
-      getImageData: (x: number, y: number, w: number, h: number) => ({ data: new Array(w * h * 4) }),
+      getImageData: (x: number, y: number, w: number, h: number) => ({
+        data: new Array(w * h * 4),
+      }),
       putImageData: () => {},
       createImageData: () => [],
       setTransform: () => {},
@@ -143,7 +197,8 @@ describe('PatientRecordComponent', () => {
     prescriptionApi = {
       list: vi.fn().mockReturnValue(of([])),
       create: vi.fn().mockImplementation((id, request) => of(issued(id, request))),
-      get: vi.fn(), delete: vi.fn().mockReturnValue(of(undefined)),
+      get: vi.fn(),
+      delete: vi.fn().mockReturnValue(of(undefined)),
     };
     routerSpy = {
       navigate: vi.fn(),
@@ -151,14 +206,25 @@ describe('PatientRecordComponent', () => {
     authServiceMock = {
       userName: signal('Dra. Sofía Mendoza'),
       isLoggedIn: signal(true),
-      currentUser: signal({id:'doctor'}), isSuperAdmin: signal(false),
+      currentUser: signal({ id: 'doctor' }),
+      isSuperAdmin: signal(false),
     };
 
     await TestBed.configureTestingModule({
       imports: [PatientRecordComponent],
       providers: [
-        provideHttpClient(), provideHttpClientTesting(),
-        {provide:WorkspaceStore,useValue:{isModuleActive:()=>true}},
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: WorkspaceStore,
+          useValue: {
+            patientRecordTabs: configuredTabs,
+            patientRecordActions: configuredActions,
+            hasRecordAction: (id: PatientRecordActionId) => configuredActions().includes(id),
+            hasRecordTab: (id: PatientRecordModuleId) => configuredTabs().includes(id),
+            isModuleActive: (code: string) => code !== 'GROWTH_CHARTS' || growthEnabledFlag(),
+          },
+        },
         ActivePatientService,
         { provide: PatientPrescriptionService, useValue: prescriptionApi },
         { provide: PatientService, useValue: patientServiceSpy },
@@ -169,20 +235,249 @@ describe('PatientRecordComponent', () => {
           provide: ActivatedRoute,
           useValue: {
             paramMap: of(new Map([['id', '10492']])),
-            queryParamMap: of(new Map()),
+            queryParamMap: queryParams,
           },
         },
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],
     }).compileComponents();
 
-    growthReadSpy = vi.spyOn(TestBed.inject(PatientGrowthService), 'getPatientGrowthCurves').mockReturnValue(of(measurementHistory));
+    growthReadSpy = vi
+      .spyOn(TestBed.inject(PatientGrowthService), 'getPatientGrowthCurves')
+      .mockReturnValue(of(measurementHistory));
     activePatientService = TestBed.inject(ActivePatientService);
     activePatientService.setActivePatient(mockPatient);
 
     fixture = TestBed.createComponent(PatientRecordComponent);
     component = fixture.componentInstance;
+    rx = fixture.debugElement.injector.get(PatientPrescriptionEditorStore);
+    growth = fixture.debugElement.injector.get(PatientGrowthStore);
+    history = fixture.debugElement.injector.get(PatientEncountersStore);
     fixture.detectChanges();
+  });
+
+  it('hides repeated edit and new consultation buttons and guards their output handlers', () => {
+    configuredActions.set([]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.btn-tab-edit')).toBeNull();
+    component.openEditPatientModal();
+    component.openNewEncounterModal();
+    fixture.debugElement
+      .query(By.directive(PatientBannerComponent))
+      .componentInstance.editPatient.emit();
+    fixture.debugElement
+      .query(By.directive(PatientBannerComponent))
+      .componentInstance.newEncounter.emit();
+    expect(component.isEditPatientModalOpen()).toBe(false);
+    expect(component.isNewEncounterModalOpen()).toBe(false);
+    component.setTab('historia');
+    fixture.detectChanges();
+    const timeline = fixture.debugElement.query(
+      By.directive(ClinicalTimelineComponent),
+    ).componentInstance;
+    expect(fixture.nativeElement.querySelector('.btn-new-encounter-cta')).toBeNull();
+    timeline.newEncounter.emit();
+    timeline.createEncounter();
+    expect(component.isNewEncounterModalOpen()).toBe(false);
+    history.encounters.set([]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.btn-new-encounter-cta')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Sin consultas registradas');
+  });
+  it('closes edit and new consultation dialogs if their actions are removed', () => {
+    component.openEditPatientModal();
+    component.openNewEncounterModal();
+    expect(component.isEditPatientModalOpen()).toBe(true);
+    expect(component.isNewEncounterModalOpen()).toBe(true);
+    configuredActions.set(['PRINT_DOCUMENT']);
+    fixture.detectChanges();
+    expect(component.isEditPatientModalOpen()).toBe(false);
+    expect(component.isNewEncounterModalOpen()).toBe(false);
+  });
+  it('hides all prescription print buttons and blocks calls without discarding the draft', () => {
+    rx.rxMedicationName.set('Borrador conservado');
+    configuredActions.set(['EDIT_PATIENT', 'NEW_ENCOUNTER']);
+    component.setTab('recetas');
+    fixture.detectChanges();
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    expect(
+      [...fixture.nativeElement.querySelectorAll('button')].some((el: any) =>
+        el.textContent.toLowerCase().includes('imprimir'),
+      ),
+    ).toBe(false);
+    component.printDocument();
+    rx.printRecord(history.encounters()[0]);
+    rx.onPrintPrescription(mockEncountersList[0]);
+    rx.reprintSavedRecord(issued(mockPatient.id, {}));
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(prescriptionApi.create).not.toHaveBeenCalled();
+    expect(rx.rxMedicationName()).toBe('Borrador conservado');
+    rx.saveCurrentRxToHistory();
+    expect(prescriptionApi.create).toHaveBeenCalledTimes(1);
+  });
+  it('does not open printing from a save callback after the action is removed', () => {
+    const response = new Subject<SavedPrescriptionRecord>();
+    prescriptionApi.create.mockReturnValue(response);
+    rx.rxMedicationName.set('Medicamento');
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    rx.printRecord();
+    expect(prescriptionApi.create).toHaveBeenCalledTimes(1);
+    configuredActions.set([]);
+    response.next(
+      issued(mockPatient.id, { type: 'PRESCRIPTION', prescriptions: [], diagnosticOrders: [] }),
+    );
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+  it('does not execute the growth shortcut if its action is omitted', () => {
+    configuredActions.set(['EDIT_PATIENT', 'NEW_ENCOUNTER']);
+    fixture.detectChanges();
+    component.navigateToGrowthCurves();
+    expect(component.selectedTab()).toBe('resumen');
+    component.setTab('curvas');
+    expect(component.selectedTab()).toBe('curvas');
+  });
+  it('preserves pediatric tab labels, order and badges, including numbering with growth disabled', () => {
+    expect(component.tabs().map((tab) => tab.label)).toEqual([
+      '1. Datos del paciente',
+      '2. Consultas',
+      '3. Vacunas',
+      '4. Evolución y Curvas',
+      '5. Recetas y Órdenes',
+      '6. Estudios realizados',
+    ]);
+    expect(component.tabs()[1].badge).toBe(2);
+    expect(component.tabs()[3].badge).toBe(6);
+    growthEnabledFlag.set(false);
+    fixture.detectChanges();
+    expect(
+      [...fixture.nativeElement.querySelectorAll('.flat-tab-btn > span:first-child')].map(
+        (el: any) => el.textContent.trim(),
+      ),
+    ).toEqual([
+      '1. Datos del paciente',
+      '2. Consultas',
+      '3. Vacunas',
+      '5. Recetas y Órdenes',
+      '6. Estudios realizados',
+    ]);
+  });
+
+  it('composes a different ordered record without inferring modules from specialty codes', () => {
+    configuredTabs.set(['ENCOUNTERS', 'STUDIES', 'SUMMARY']);
+    fixture.detectChanges();
+    expect(component.tabs().map((tab) => tab.label)).toEqual([
+      '1. Consultas',
+      '2. Estudios realizados',
+      '3. Datos del paciente',
+    ]);
+    component.setTab('estudios');
+    fixture.detectChanges();
+    const studies = fixture.debugElement.query(By.directive(PatientStudiesComponent));
+    expect(studies.componentInstance.patientId()).toBe(mockPatient.id);
+    expect(fixture.debugElement.query(By.directive(PatientSummaryComponent))).toBeNull();
+    component.setTab('vacunas');
+    fixture.detectChanges();
+    expect(component.selectedTab()).toBe('estudios');
+    expect(fixture.debugElement.query(By.directive(PatientVaccinationsComponent))).toBeNull();
+  });
+
+  it('rejects omitted and unknown query tabs while accepting configured deep links', () => {
+    configuredTabs.set(['SUMMARY', 'ENCOUNTERS']);
+    fixture.detectChanges();
+    for (const id of ['recetas', 'vacunas', 'curvas', 'estudios', 'unknown']) {
+      queryParams.next(new Map([['tab', id]]));
+      fixture.detectChanges();
+      expect(component.selectedTab()).toBe('resumen');
+      expect(fixture.debugElement.query(By.directive(PatientPrescriptionsComponent))).toBeNull();
+    }
+    queryParams.next(new Map([['tab', 'historia']]));
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.directive(ClinicalTimelineComponent))).toBeTruthy();
+  });
+
+  it('removes selected modules immediately and discards their pending growth response', () => {
+    const pending = new Subject<BackendGrowthMeasurement[]>();
+    growthReadSpy.mockReturnValueOnce(pending);
+    growth.loadGrowthCurves(mockPatient.id);
+    component.setTab('curvas');
+    fixture.detectChanges();
+    rx.rxMedicationName.set('Borrador conservado');
+    const encounterReads = encounterServiceSpy.getByPatient.mock.calls.length;
+    const prescriptionReads = prescriptionApi.list.mock.calls.length;
+    const growthReads = growthReadSpy.mock.calls.length;
+    configuredTabs.set(['SUMMARY', 'ENCOUNTERS', 'PRESCRIPTIONS']);
+    expect(component.activeTab()?.id).toBe('resumen');
+    fixture.detectChanges();
+    expect(component.selectedTab()).toBe('resumen');
+    expect(growth.growthEnabled()).toBe(false);
+    pending.next(measurementHistory);
+    expect(growth.backendGrowthMeasurements()).toEqual([]);
+    expect(growth.isLoadingGrowthCurves()).toBe(false);
+    expect(growthReadSpy.mock.calls.length).toBe(growthReads);
+    expect(encounterServiceSpy.getByPatient.mock.calls.length).toBe(encounterReads);
+    expect(prescriptionApi.list.mock.calls.length).toBe(prescriptionReads);
+    expect(rx.rxMedicationName()).toBe('Borrador conservado');
+  });
+
+  it('cancels prescription history and clears drafts when the prescription module is removed', () => {
+    const pending = new Subject<SavedPrescriptionRecord[]>();
+    prescriptionApi.list.mockReturnValueOnce(pending);
+    rx.prescriptionStore.reload();
+    rx.rxMedicationName.set('Borrador anterior');
+    configuredTabs.set(['SUMMARY', 'ENCOUNTERS']); fixture.detectChanges();
+    expect(pending.observed).toBe(false);
+    pending.next([issued(mockPatient.id, {})]);
+    expect(rx.savedPrescriptionRecords()).toEqual([]);
+    expect(rx.rxMedicationName()).toBe('');
+    expect(rx.prescriptionsEnabled()).toBe(false);
+  });
+  it('does not read or write prescriptions when the module is omitted', () => {
+    configuredTabs.set(['SUMMARY', 'ENCOUNTERS']); fixture.detectChanges();
+    prescriptionApi.list.mockClear();
+    rx.prescriptionStore.reload();
+    rx.rxMedicationName.set('Intento directo');
+    rx.saveCurrentRxToHistory(); rx.deleteSavedRecord(1);
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    rx.reprintSavedRecord(issued(mockPatient.id, {}));
+    expect(prescriptionApi.list).not.toHaveBeenCalled();
+    expect(prescriptionApi.create).not.toHaveBeenCalled();
+    expect(prescriptionApi.delete).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+  it('still prints persisted consultation documents without a prescription module', () => {
+    configuredTabs.set(['SUMMARY', 'ENCOUNTERS']); fixture.detectChanges();
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    rx.printRecord({...mockEncountersList[0], prescriptions: [{medicationName: 'Amoxicilina', dosage: '5 ml', frequency: 'Cada 8 horas', administrationRoute: 'Vía Oral', durationDays: 7}]});
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({detail: expect.objectContaining({source: 'ENCOUNTER', id: mockEncountersList[0].id})}));
+    expect(prescriptionApi.create).not.toHaveBeenCalled();
+  });
+  it('does not mount a module outside the effective composition even if selected state is changed directly', () => {
+    configuredTabs.set(['SUMMARY', 'ENCOUNTERS']);
+    component.selectedTab.set('vacunas');
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.directive(PatientVaccinationsComponent))).toBeNull();
+    expect(fixture.debugElement.query(By.directive(PatientSummaryComponent))).toBeTruthy();
+    configuredTabs.set([]);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.directive(PatientSummaryComponent))).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.flat-tab-btn')).toHaveLength(0);
+  });
+
+  it('updates dynamically mounted vaccination inputs and forwards its patient update output', () => {
+    component.setTab('vacunas');
+    fixture.detectChanges();
+    const vaccines = fixture.debugElement.query(
+      By.directive(PatientVaccinationsComponent),
+    ).componentInstance;
+    const updated = { ...mockPatient, fullName: 'Nombre actualizado' };
+    activePatientService.setActivePatient(updated);
+    fixture.detectChanges();
+    expect(vaccines.patient()).toEqual(updated);
+    expect(
+      fixture.debugElement.query(By.directive(PatientVaccinationsComponent)).componentInstance,
+    ).toBe(vaccines);
+    vaccines.patientUpdated.emit(mockPatient);
+    expect(activePatientService.activePatient()).toEqual(mockPatient);
   });
 
   it('should create the component', () => {
@@ -199,67 +494,116 @@ describe('PatientRecordComponent', () => {
     expect(component.selectedTab()).toBe('recetas');
   });
 
-  it('should compute patient information correctly from activePatient', () => {
-    expect(component.patientNationalId()).toBe('36.812.904');
-    expect(component.guardian1Name()).toBe('Carla Lucía Benítez (Madre)');
-    expect(component.guardian2Name()).toBe('Esteban Gabriel Rossi (Padre)');
-    expect(component.birthWeightDisplay()).toBe('3.350 kg');
-    expect(component.hasAllergies()).toBe(true);
-    expect(component.allergies()).toContain('Amoxicilina');
+  it('renders the saved patient form snapshot through its independent summary module', () => {
+    const summary = fixture.debugElement.query(By.directive(PatientSummaryComponent));
+    expect(summary).toBeTruthy();
+    const form = summary.query(By.directive(DynamicFormRendererComponent))
+      .componentInstance as DynamicFormRendererComponent;
+    expect(form.definition()).toEqual(mockPatient.formDefinitionSnapshot);
+    expect(form.values()).toEqual(mockPatient.formValues);
+    expect(form.formulaResults()).toEqual(mockPatient.formulaResults);
+    expect(form.readonly()).toBe(true);
+    summary.nativeElement.querySelector('.btn-tab-edit').click();
+    fixture.detectChanges();
+    expect(component.isEditPatientModalOpen()).toBe(true);
   });
-
-  it('should calculate somatometrics gains correctly', () => {
-    expect(component.totalWeightGain()).toBe('+4.600 kg');
-    expect(component.totalHeightGain()).toBe('+17.5 cm');
-    expect(component.totalHeadCircGain()).toBe('+8.8 cm');
+  it('retains the prescription draft and growth selection when tab components are recreated', async () => {
+    component.setTab('recetas');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const first = fixture.debugElement.query(
+      By.directive(PatientPrescriptionsComponent),
+    ).componentInstance;
+    fixture.nativeElement.querySelector('#rx-med-name').value = 'Medicamento pendiente';
+    fixture.nativeElement.querySelector('#rx-med-name').dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    growth.selectedGrowthMetric.set('HEIGHT');
+    component.setTab('historia');
+    fixture.detectChanges();
+    component.setTab('recetas');
+    fixture.detectChanges();
+    const second = fixture.debugElement.query(
+      By.directive(PatientPrescriptionsComponent),
+    ).componentInstance;
+    await fixture.whenStable();
+    expect(second).not.toBe(first);
+    expect(second.editor).toBe(first.editor);
+    expect(fixture.nativeElement.querySelector('#rx-med-name').value).toBe('Medicamento pendiente');
+    component.setTab('curvas');
+    fixture.detectChanges();
+    expect(growth.selectedGrowthMetric()).toBe('HEIGHT');
   });
-
   it('should load encounters on init', () => {
     expect(encounterServiceSpy.getByPatient).toHaveBeenCalledWith(10492);
-    expect(component.encounters().length).toBe(2);
+    expect(history.encounters().length).toBe(2);
   });
 
   it('ignores a consultation response from the previously selected patient', () => {
     const pending = new Subject<ClinicalEncounterList[]>();
     encounterServiceSpy.getByPatient.mockReturnValueOnce(pending).mockReturnValue(of([]));
-    component.loadEncounters(mockPatient.id);
+    history.loadEncounters(mockPatient.id);
     activePatientService.setActivePatient({ ...mockPatient, id: 99 });
     fixture.detectChanges();
     pending.next(mockEncountersList);
-    expect(component.encounters()).toEqual([]);
+    expect(history.encounters()).toEqual([]);
   });
 
   it('refreshes projected measurements and consultations after editing a consultation', () => {
-    const refreshed = {...mockPatient, latestMeasurements:{weightKg:8.5,heightCm:70,headCircumferenceCm:44}};
+    const refreshed = {
+      ...mockPatient,
+      latestMeasurements: { weightKg: 8.5, heightCm: 70, headCircumferenceCm: 44 },
+    };
     patientServiceSpy.getPatientById.mockReturnValue(of(refreshed));
     encounterServiceSpy.getByPatient.mockReturnValue(of([]));
-    window.dispatchEvent(new CustomEvent('encounter-updated', { detail: { patientId: mockPatient.id } }));
+    window.dispatchEvent(
+      new CustomEvent('encounter-updated', { detail: { patientId: mockPatient.id } }),
+    );
     fixture.detectChanges();
     expect(activePatientService.latestMeasurements()?.weightKg).toBe(8.5);
-    expect(component.encounters()).toEqual([]);
+    expect(history.encounters()).toEqual([]);
   });
 
   it('does not recreate local points when the backend history is empty', () => {
-    growthReadSpy.mockReturnValue(of([])); component.loadGrowthCurves(mockPatient.id);
-    expect(component.weightMeasurements()).toEqual([]); expect(component.heightMeasurements()).toEqual([]);
-    expect(component.headCircumferenceMeasurements()).toEqual([]); expect(component.growthError()).toBeNull();
+    growthReadSpy.mockReturnValue(of([]));
+    growth.loadGrowthCurves(mockPatient.id);
+    expect(growth.weightMeasurements()).toEqual([]);
+    expect(growth.heightMeasurements()).toEqual([]);
+    expect(growth.headCircumferenceMeasurements()).toEqual([]);
+    expect(growth.growthError()).toBeNull();
   });
   it('shows measurement errors and retries without silently using local patient data', () => {
-    growthReadSpy.mockReturnValueOnce(throwError(()=>({status:500}))).mockReturnValue(of(measurementHistory));
-    component.loadGrowthCurves(mockPatient.id); component.setTab('curvas'); fixture.detectChanges();
-    expect(component.weightMeasurements()).toEqual([]); expect(component.isLoadingGrowthCurves()).toBe(false);
-    const alert = fixture.nativeElement.querySelector('[role="alert"]'); expect(alert.textContent).toContain('No se pudieron cargar las mediciones');
-    alert.querySelector('button').click(); fixture.detectChanges();
-    expect(component.growthError()).toBeNull(); expect(component.weightMeasurements()).toHaveLength(2);
+    growthReadSpy
+      .mockReturnValueOnce(throwError(() => ({ status: 500 })))
+      .mockReturnValue(of(measurementHistory));
+    growth.loadGrowthCurves(mockPatient.id);
+    component.setTab('curvas');
+    fixture.detectChanges();
+    expect(growth.weightMeasurements()).toEqual([]);
+    expect(growth.isLoadingGrowthCurves()).toBe(false);
+    const alert = fixture.nativeElement.querySelector('[role="alert"]');
+    expect(alert.textContent).toContain('No se pudieron cargar las mediciones');
+    alert.querySelector('button').click();
+    fixture.detectChanges();
+    expect(growth.growthError()).toBeNull();
+    expect(growth.weightMeasurements()).toHaveLength(2);
     expect(fixture.nativeElement.querySelector('app-growth-chart')).toBeTruthy();
   });
   it('ignores growth responses from a previous patient or account', () => {
-    const pending = new Subject<BackendGrowthMeasurement[]>(); growthReadSpy.mockReturnValueOnce(pending).mockReturnValue(of([]));
-    component.loadGrowthCurves(mockPatient.id); activePatientService.setActivePatient({...mockPatient,id:99}); fixture.detectChanges();
-    pending.next(measurementHistory); expect(component.weightMeasurements()).toEqual([]);
-    const denied = new Subject<BackendGrowthMeasurement[]>(); growthReadSpy.mockReturnValueOnce(denied);
-    component.loadGrowthCurves(99); authServiceMock.currentUser.set({id:'another-doctor'}); denied.error({status:403});
-    expect(component.growthError()).toBeNull(); fixture.detectChanges(); expect(component.backendGrowthMeasurements()).toEqual([]);
+    const pending = new Subject<BackendGrowthMeasurement[]>();
+    growthReadSpy.mockReturnValueOnce(pending).mockReturnValue(of([]));
+    growth.loadGrowthCurves(mockPatient.id);
+    activePatientService.setActivePatient({ ...mockPatient, id: 99 });
+    fixture.detectChanges();
+    pending.next(measurementHistory);
+    expect(growth.weightMeasurements()).toEqual([]);
+    const denied = new Subject<BackendGrowthMeasurement[]>();
+    growthReadSpy.mockReturnValueOnce(denied);
+    growth.loadGrowthCurves(99);
+    authServiceMock.currentUser.set({ id: 'another-doctor' });
+    denied.error({ status: 403 });
+    expect(growth.growthError()).toBeNull();
+    fixture.detectChanges();
+    expect(growth.backendGrowthMeasurements()).toEqual([]);
   });
   it('should switch to growth curves tab when requested', () => {
     component.navigateToGrowthCurves();
@@ -271,42 +615,61 @@ describe('PatientRecordComponent', () => {
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/pacientes']);
   });
 
-  it('should toggle more menu state', () => {
-    expect(component.isMoreMenuOpen()).toBe(false);
-    component.toggleMoreMenu();
-    expect(component.isMoreMenuOpen()).toBe(true);
-    component.closeMoreMenu();
-    expect(component.isMoreMenuOpen()).toBe(false);
+  it('starts a new record with independent module state and cancels reads when the old record closes', () => {
+    const pending = new Subject<BackendGrowthMeasurement[]>();
+    growthReadSpy.mockReturnValueOnce(pending);
+    growth.loadGrowthCurves(mockPatient.id);
+    rx.rxMedicationName.set('Borrador anterior');
+    growth.selectedGrowthMetric.set('ALL');
+    const oldGrowth = growth;
+    const oldRx = rx;
+    fixture.destroy();
+    fixture = TestBed.createComponent(PatientRecordComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    rx = fixture.debugElement.injector.get(PatientPrescriptionEditorStore);
+    growth = fixture.debugElement.injector.get(PatientGrowthStore);
+    expect(rx).not.toBe(oldRx);
+    expect(growth).not.toBe(oldGrowth);
+    expect(rx.rxMedicationName()).toBe('');
+    expect(growth.selectedGrowthMetric()).toBe('WEIGHT');
+    pending.next([]);
+    pending.complete();
+    expect(growth.weightMeasurements()).toHaveLength(2);
   });
-
   it('should allow adding medications to draft and dispatching print modal', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
     dispatchSpy.mockClear();
 
     component.setTab('recetas');
-    component.setRxFormMode('MEDICATION');
+    rx.setRxFormMode('MEDICATION');
 
-    component.rxMedicationName.set('Ibuprofeno 400mg');
-    component.rxDosage.set('1 comprimido');
-    component.rxFrequency.set('Cada 8 horas');
-    component.rxAdministrationRoute.set('Vía Oral');
-    component.rxDurationDays.set(5);
-    component.rxDiagnosis.set('Cefalea tensional');
+    rx.rxMedicationName.set('Ibuprofeno 400mg');
+    rx.rxDosage.set('1 comprimido');
+    rx.rxFrequency.set('Cada 8 horas');
+    rx.rxAdministrationRoute.set('Vía Oral');
+    rx.rxDurationDays.set(5);
+    rx.rxDiagnosis.set('Cefalea tensional');
 
-    component.addMedicationToDraft();
+    rx.addMedicationToDraft();
 
-    expect(component.draftPrescriptions().length).toBe(1);
-    expect(component.draftPrescriptions()[0].medicationName).toBe('Ibuprofeno 400mg');
+    expect(rx.draftPrescriptions().length).toBe(1);
+    expect(rx.draftPrescriptions()[0].medicationName).toBe('Ibuprofeno 400mg');
 
-    component.printRecord();
+    rx.printRecord(history.encounters()[0]);
 
     expect(dispatchSpy).toHaveBeenCalled();
     const customEvent = dispatchSpy.mock.calls[0][0] as CustomEvent;
     expect(customEvent.type).toBe('open-prescription-print-modal');
     expect(customEvent.detail.type).toBe('PRESCRIPTION');
-    expect(customEvent.detail).toEqual({source:'PRESCRIPTION_RECORD',id:73,patientId:10492,type:'PRESCRIPTION'});
-    expect(component.savedPrescriptionRecords()[0].prescriptions).toHaveLength(1);
-    expect(component.savedPrescriptionRecords()[0].diagnosisDescription).toBe('Cefalea tensional');
+    expect(customEvent.detail).toEqual({
+      source: 'PRESCRIPTION_RECORD',
+      id: 73,
+      patientId: 10492,
+      type: 'PRESCRIPTION',
+    });
+    expect(rx.savedPrescriptionRecords()[0].prescriptions).toHaveLength(1);
+    expect(rx.savedPrescriptionRecords()[0].diagnosisDescription).toBe('Cefalea tensional');
   });
 
   it('should allow ordering diagnostic studies like Tomografía and dispatching print modal in STUDY_ORDERS mode', () => {
@@ -314,23 +677,27 @@ describe('PatientRecordComponent', () => {
     dispatchSpy.mockClear();
 
     component.setTab('recetas');
-    component.setRxFormMode('STUDY');
+    rx.setRxFormMode('STUDY');
 
-    component.selectQuickStudy('Tomografía Axial Computada (TAC)');
-    component.rxStudySpecification.set('De cerebro sin contraste');
-    component.rxDiagnosis.set('Control neurológico');
+    rx.selectQuickStudy('Tomografía Axial Computada (TAC)');
+    rx.rxStudySpecification.set('De cerebro sin contraste');
+    rx.rxDiagnosis.set('Control neurológico');
 
     // Calling printRecord directly auto-commits the pending study input
-    component.printRecord();
+    rx.printRecord(history.encounters()[0]);
 
-    expect(component.draftStudies().length).toBe(1);
-    expect(component.draftStudies()[0]).toBe('Tomografía Axial Computada (TAC) — De cerebro sin contraste');
+    expect(rx.draftStudies().length).toBe(1);
+    expect(rx.draftStudies()[0]).toBe(
+      'Tomografía Axial Computada (TAC) — De cerebro sin contraste',
+    );
 
     expect(dispatchSpy).toHaveBeenCalled();
     const customEvent = dispatchSpy.mock.calls[0][0] as CustomEvent;
     expect(customEvent.type).toBe('open-prescription-print-modal');
     expect(customEvent.detail.type).toBe('STUDY_ORDERS');
-    expect(component.savedPrescriptionRecords()[0].diagnosticOrders).toContain('Tomografía Axial Computada (TAC) — De cerebro sin contraste');
+    expect(rx.savedPrescriptionRecords()[0].diagnosticOrders).toContain(
+      'Tomografía Axial Computada (TAC) — De cerebro sin contraste',
+    );
     expect(customEvent.detail.source).toBe('PRESCRIPTION_RECORD');
   });
 
@@ -339,7 +706,7 @@ describe('PatientRecordComponent', () => {
     fixture.detectChanges();
 
     expect(component.selectedTab()).toBe('curvas');
-    expect(component.selectedGrowthMetric()).toBe('WEIGHT');
+    expect(growth.selectedGrowthMetric()).toBe('WEIGHT');
 
     // Growth toolbar is rendered
     const toolbar = fixture.nativeElement.querySelector('.growth-toolbar');
@@ -350,154 +717,275 @@ describe('PatientRecordComponent', () => {
     expect(pills.length).toBe(4);
 
     // Switch metric to HEIGHT
-    component.selectedGrowthMetric.set('HEIGHT');
+    growth.selectedGrowthMetric.set('HEIGHT');
     fixture.detectChanges();
-    expect(component.selectedGrowthMetric()).toBe('HEIGHT');
+    expect(growth.selectedGrowthMetric()).toBe('HEIGHT');
 
     // Switch metric to ALL
-    component.selectedGrowthMetric.set('ALL');
+    growth.selectedGrowthMetric.set('ALL');
     fixture.detectChanges();
     const charts = fixture.nativeElement.querySelectorAll('app-growth-chart');
     expect(charts.length).toBe(3);
   });
 
   it('renders the canonical backend birth and consultation measurements', () => {
-    expect(component.patientSex()).toBe('MALE');
-    expect(component.weightMeasurements().length).toBeGreaterThanOrEqual(1);
-    expect(component.heightMeasurements().length).toBeGreaterThanOrEqual(1);
-    expect(component.headCircumferenceMeasurements().length).toBeGreaterThanOrEqual(1);
-    expect(component.totalMeasurementsCount()).toBeGreaterThan(0);
+    expect(growth.patientSex()).toBe('MALE');
+    expect(growth.weightMeasurements().length).toBeGreaterThanOrEqual(1);
+    expect(growth.heightMeasurements().length).toBeGreaterThanOrEqual(1);
+    expect(growth.headCircumferenceMeasurements().length).toBeGreaterThanOrEqual(1);
+    expect(growth.totalMeasurementsCount()).toBeGreaterThan(0);
   });
   it('waits for persisted server identity before printing and ignores repeated clicks', () => {
     const response = new Subject<SavedPrescriptionRecord>();
     prescriptionApi.create.mockReturnValue(response);
     const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
     component.setTab('recetas');
-    component.rxMedicationName.set('Amoxicilina');
-    component.printRecord(); component.printRecord(); component.saveCurrentRxToHistory();
+    rx.rxMedicationName.set('Amoxicilina');
+    rx.printRecord(history.encounters()[0]);
+    rx.printRecord(history.encounters()[0]);
+    rx.saveCurrentRxToHistory();
     fixture.detectChanges();
-    const emitButtons = [...fixture.nativeElement.querySelectorAll('button')].filter((button: any) =>
-      button.textContent.includes('Imprimir Receta Médica'));
+    const emitButtons = [...fixture.nativeElement.querySelectorAll('button')].filter(
+      (button: any) => button.textContent.includes('Imprimir Receta Médica'),
+    );
     expect(emitButtons).toHaveLength(2);
     expect(emitButtons.every((button: any) => button.disabled)).toBe(true);
     expect(prescriptionApi.create).toHaveBeenCalledTimes(1);
-    expect(component.savedPrescriptionRecords()).toEqual([]);
+    expect(rx.savedPrescriptionRecords()).toEqual([]);
     expect(dispatch).not.toHaveBeenCalled();
     const request = prescriptionApi.create.mock.calls[0][1];
-    response.next(issued(10492, request)); response.complete();
-    expect(component.savedPrescriptionRecords()[0].id).toBe(73);
+    response.next(issued(10492, request));
+    response.complete();
+    expect(rx.savedPrescriptionRecords()[0].id).toBe(73);
     const event = dispatch.mock.calls[0][0] as CustomEvent;
     expect(event.detail.id).toBe(73);
-    expect(component.savedPrescriptionRecords()[0].createdAt).toBe('2026-10-05T12:34:56Z');
+    expect(rx.savedPrescriptionRecords()[0].createdAt).toBe('2026-10-05T12:34:56Z');
     expect(event.detail.patientId).toBe(10492);
-    expect(component.savedPrescriptionRecords()[0].authorUserId).toBe('doctor');
+    expect(rx.savedPrescriptionRecords()[0].authorUserId).toBe('doctor');
     expect(event.detail.source).toBe('PRESCRIPTION_RECORD');
   });
 
   it('preserves the draft and does not print or invent history after a save error', () => {
     prescriptionApi.create.mockReturnValue(throwError(() => ({ status: 500 })));
     const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
-    component.rxStudyName.set('Tomografía');
-    component.printRecord();
-    expect(component.draftStudies()).toEqual(['Tomografía']);
-    expect(component.savedPrescriptionRecords()).toEqual([]);
-    expect(component.rxSuccessMessage()).toBeNull();
-    expect(component.rxErrorMessage()).toContain('No se pudo guardar');
-    expect(component.rxBusy()).toBe(false);
+    rx.rxStudyName.set('Tomografía');
+    rx.printRecord(history.encounters()[0]);
+    expect(rx.draftStudies()).toEqual(['Tomografía']);
+    expect(rx.savedPrescriptionRecords()).toEqual([]);
+    expect(rx.rxSuccessMessage()).toBeNull();
+    expect(rx.rxErrorMessage()).toContain('No se pudo guardar');
+    expect(rx.rxBusy()).toBe(false);
     expect(dispatch).not.toHaveBeenCalled();
   });
 
   it('saves medications and studies together without sending browser identity or date', () => {
-    component.rxMedicationName.set('Paracetamol'); component.rxStudyName.set('ECG');
-    component.rxDiagnosis.set('Control'); component.rxGeneralInstructions.set('Reposo');
-    component.setRxFormMode('STUDY'); component.saveCurrentRxToHistory();
+    rx.rxMedicationName.set('Paracetamol');
+    rx.rxStudyName.set('ECG');
+    rx.rxDiagnosis.set('Control');
+    rx.rxGeneralInstructions.set('Reposo');
+    rx.setRxFormMode('STUDY');
+    rx.saveCurrentRxToHistory();
     const [id, request] = prescriptionApi.create.mock.calls[0];
-    expect(id).toBe(10492); expect(request.type).toBe('STUDY_ORDERS');
+    expect(id).toBe(10492);
+    expect(request.type).toBe('STUDY_ORDERS');
     expect(request.prescriptions[0].medicationName).toBe('Paracetamol');
     expect(request.diagnosticOrders).toEqual(['ECG']);
-    expect(Object.keys(request).sort()).toEqual(['type','prescriptions','diagnosticOrders','diagnosisDescription','generalInstructions'].sort());
+    expect(Object.keys(request).sort()).toEqual(
+      [
+        'type',
+        'prescriptions',
+        'diagnosticOrders',
+        'diagnosisDescription',
+        'generalInstructions',
+      ].sort(),
+    );
   });
 
   it('reprints with an explicit stored document reference instead of passing row content', () => {
-    const row = issued(10492, {type:'STUDY_ORDERS',prescriptions:[],diagnosticOrders:['ECG'], diagnosisDescription:'',generalInstructions:''});
-    const dispatch = vi.spyOn(window,'dispatchEvent').mockClear();
-    component.reprintSavedRecord(row);
-    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({source:'PRESCRIPTION_RECORD',id:73,patientId:10492,type:'STUDY_ORDERS'});
+    const row = issued(10492, {
+      type: 'STUDY_ORDERS',
+      prescriptions: [],
+      diagnosticOrders: ['ECG'],
+      diagnosisDescription: '',
+      generalInstructions: '',
+    });
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    rx.reprintSavedRecord(row);
+    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({
+      source: 'PRESCRIPTION_RECORD',
+      id: 73,
+      patientId: 10492,
+      type: 'STUDY_ORDERS',
+    });
   });
 
   it('keeps history after deletion errors and removes it only after backend acknowledgment', () => {
-    component.rxStudyName.set('ECG'); component.saveCurrentRxToHistory();
-    prescriptionApi.delete.mockReturnValue(throwError(() => ({status:500})));
-    component.deleteSavedRecord(73);
-    expect(component.savedPrescriptionRecords()).toHaveLength(1);
-    const response=new Subject<void>(); prescriptionApi.delete.mockReturnValue(response);
-    component.deleteSavedRecord(73);
-    expect(component.savedPrescriptionRecords()).toHaveLength(1);
-    response.next(); response.complete();
-    expect(component.savedPrescriptionRecords()).toEqual([]);
+    rx.rxStudyName.set('ECG');
+    rx.saveCurrentRxToHistory();
+    prescriptionApi.delete.mockReturnValue(throwError(() => ({ status: 500 })));
+    rx.deleteSavedRecord(73);
+    expect(rx.savedPrescriptionRecords()).toHaveLength(1);
+    const response = new Subject<void>();
+    prescriptionApi.delete.mockReturnValue(response);
+    rx.deleteSavedRecord(73);
+    expect(rx.savedPrescriptionRecords()).toHaveLength(1);
+    response.next();
+    response.complete();
+    expect(rx.savedPrescriptionRecords()).toEqual([]);
   });
 
   it('rejects empty documents without issuing an HTTP create', () => {
-    component.saveCurrentRxToHistory();
+    rx.saveCurrentRxToHistory();
     expect(prescriptionApi.create).not.toHaveBeenCalled();
-    expect(component.rxErrorMessage()).toContain('Agregá al menos');
+    expect(rx.rxErrorMessage()).toContain('Agregá al menos');
   });
 
   it('does not print or insert a previous patient response after changing patients', () => {
-    const response = new Subject<SavedPrescriptionRecord>(); prescriptionApi.create.mockReturnValue(response);
+    const response = new Subject<SavedPrescriptionRecord>();
+    prescriptionApi.create.mockReturnValue(response);
     const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
-    component.rxMedicationName.set('Paracetamol'); component.printRecord();
+    rx.rxMedicationName.set('Paracetamol');
+    rx.printRecord(history.encounters()[0]);
     const request = prescriptionApi.create.mock.calls[0][1];
-    activePatientService.setActivePatient({...mockPatient, id:20}); fixture.detectChanges();
-    response.next(issued(10492,request)); response.complete();
-    expect(component.savedPrescriptionRecords()).toEqual([]);
-    expect(component.draftPrescriptions()).toEqual([]);
+    activePatientService.setActivePatient({ ...mockPatient, id: 20 });
+    fixture.detectChanges();
+    response.next(issued(10492, request));
+    response.complete();
+    expect(rx.savedPrescriptionRecords()).toEqual([]);
+    expect(rx.draftPrescriptions()).toEqual([]);
     expect(dispatch).not.toHaveBeenCalled();
-    expect(component.rxBusy()).toBe(false);
+    expect(rx.rxBusy()).toBe(false);
   });
 
   it('shows a history loading error with a retry that retrieves server records', () => {
-    prescriptionApi.list.mockReturnValue(throwError(() => ({status:500})));
-    component.loadSavedPrescriptions(20); component.setTab('recetas'); fixture.detectChanges();
+    prescriptionApi.list.mockReturnValue(throwError(() => ({ status: 500 })));
+    patientServiceSpy.getPatientById.mockReturnValue(of({ ...mockPatient, id: 20 }));
+    activePatientService.setActivePatient({ ...mockPatient, id: 20 });
+    component.setTab('recetas');
+    fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No se pudo cargar el historial');
     const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
-    component.printRecord();
+    rx.printRecord(history.encounters()[0]);
     expect(dispatch).not.toHaveBeenCalled();
-    const row=issued(20,{type:'STUDY_ORDERS',prescriptions:[],diagnosticOrders:['ECG'],diagnosisDescription:'',generalInstructions:''});
-    prescriptionApi.list.mockReturnValue(of([row])); component.prescriptionStore.reload();
-    expect(component.savedPrescriptionRecords()).toEqual([row]);
-    expect(component.prescriptionStore.loadError()).toBeNull();
+    const row = issued(20, {
+      type: 'STUDY_ORDERS',
+      prescriptions: [],
+      diagnosticOrders: ['ECG'],
+      diagnosisDescription: '',
+      generalInstructions: '',
+    });
+    prescriptionApi.list.mockReturnValue(of([row]));
+    rx.prescriptionStore.reload();
+    expect(rx.savedPrescriptionRecords()).toEqual([row]);
+    expect(rx.prescriptionStore.loadError()).toBeNull();
   });
 
   it('never invents a prescription from habitual medication or creates a browser ID', () => {
-    const dispatch=vi.spyOn(window,'dispatchEvent').mockClear();
-    component.printRecord();
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    rx.printRecord(history.encounters()[0]);
     expect(dispatch).not.toHaveBeenCalled();
-    expect(component.rxErrorMessage()).toContain('Agregá al menos');
+    expect(rx.rxErrorMessage()).toContain('Agregá al menos');
     expect(prescriptionApi.create).not.toHaveBeenCalled();
   });
   it('passes consultation IDs to the print endpoint instead of trusting the clinical timeline row', () => {
-    const dispatch=vi.spyOn(window,'dispatchEvent').mockClear();
-    component.onPrintPrescription({...mockEncountersList[0],patientId:20});
-    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({source:'ENCOUNTER',id:1,patientId:20});
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    rx.onPrintPrescription({ ...mockEncountersList[0], patientId: 20 });
+    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({
+      source: 'ENCOUNTER',
+      id: 1,
+      patientId: 20,
+    });
   });
 
   it('ignores consultation events for another patient', () => {
     patientServiceSpy.getPatientById.mockClear();
-    window.dispatchEvent(new CustomEvent('encounter-updated',{detail:{patientId:99}}));
+    window.dispatchEvent(new CustomEvent('encounter-updated', { detail: { patientId: 99 } }));
     expect(patientServiceSpy.getPatientById).not.toHaveBeenCalled();
   });
   it('clears patient drafts and closes editing modals when switching patient', () => {
-    component.rxDiagnosis.set('Paciente A'); component.rxMedicationName.set('Medicamento A'); component.addMedicationToDraft();
-    component.isNewEncounterModalOpen.set(true); component.isEditPatientModalOpen.set(true);
-    activePatientService.setActivePatient({...mockPatient,id:99}); fixture.detectChanges();
-    expect(component.rxDiagnosis()).toBe(''); expect(component.draftPrescriptions()).toEqual([]);
-    expect(component.isNewEncounterModalOpen()).toBe(false); expect(component.isEditPatientModalOpen()).toBe(false);
+    rx.rxDiagnosis.set('Paciente A');
+    rx.rxMedicationName.set('Medicamento A');
+    rx.addMedicationToDraft();
+    component.isNewEncounterModalOpen.set(true);
+    component.isEditPatientModalOpen.set(true);
+    activePatientService.setActivePatient({ ...mockPatient, id: 99 });
+    fixture.detectChanges();
+    expect(rx.rxDiagnosis()).toBe('');
+    expect(rx.draftPrescriptions()).toEqual([]);
+    expect(component.isNewEncounterModalOpen()).toBe(false);
+    expect(component.isEditPatientModalOpen()).toBe(false);
   });
   it('does not save the previous draft after changing patient before the context effect runs', () => {
-    component.rxMedicationName.set('Medicamento A'); component.addMedicationToDraft();
-    activePatientService.setActivePatient({...mockPatient,id:99}); component.saveCurrentRxToHistory();
-    expect(prescriptionApi.create).not.toHaveBeenCalled(); expect(component.draftPrescriptions()).toEqual([]);
+    rx.rxMedicationName.set('Medicamento A');
+    rx.addMedicationToDraft();
+    activePatientService.setActivePatient({ ...mockPatient, id: 99 });
+    rx.saveCurrentRxToHistory();
+    expect(prescriptionApi.create).not.toHaveBeenCalled();
+    expect(rx.draftPrescriptions()).toEqual([]);
+  });
+  it('disabling growth does not reload consultations or reset a prescription draft', () => {
+    rx.rxMedicationName.set('Borrador conservado');
+    component.setTab('curvas');
+    fixture.detectChanges();
+    encounterServiceSpy.getByPatient.mockClear();
+    prescriptionApi.list.mockClear();
+    growthEnabledFlag.set(false);
+    fixture.detectChanges();
+    expect(component.selectedTab()).toBe('resumen');
+    expect(component.tabs().some((tab) => tab.id === 'curvas')).toBe(false);
+    expect(rx.rxMedicationName()).toBe('Borrador conservado');
+    expect(encounterServiceSpy.getByPatient).not.toHaveBeenCalled();
+    expect(prescriptionApi.list).not.toHaveBeenCalled();
   });
 
+  it('routes timeline actions through its module and refreshes the patient once after a confirmed deletion', () => {
+    component.setTab('historia');
+    fixture.detectChanges();
+    const timeline = fixture.debugElement.query(By.directive(ClinicalTimelineComponent))
+      .componentInstance as ClinicalTimelineComponent;
+    timeline.newEncounter.emit();
+    expect(component.isNewEncounterModalOpen()).toBe(true);
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    timeline.viewDetail.emit(1);
+    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({ encounterId: 1 });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    patientServiceSpy.getPatientById.mockClear();
+    timeline.deleteEncounter.emit(1);
+    fixture.detectChanges();
+    expect(encounterServiceSpy.delete).toHaveBeenCalledWith(1);
+    expect(patientServiceSpy.getPatientById).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes the latest consultation to prescription printing from both the module and banner', async () => {
+    const enc = {
+      ...mockEncountersList[0],
+      prescriptions: [{ medicationName: 'Medicación de consulta' }],
+    };
+    encounterServiceSpy.getByPatient.mockReturnValue(of([enc]));
+    history.loadEncounters(mockPatient.id);
+    component.setTab('recetas');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
+    const button = [...fixture.nativeElement.querySelectorAll('button')].find((item: any) =>
+      item.textContent.includes('Imprimir Receta Médica'),
+    ) as HTMLButtonElement;
+    button.click();
+    fixture.detectChanges();
+    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({
+      source: 'ENCOUNTER',
+      id: 1,
+      patientId: 10492,
+    });
+    dispatch.mockClear();
+    fixture.debugElement
+      .query(By.directive(PatientBannerComponent))
+      .componentInstance.printSummary.emit();
+    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({
+      source: 'ENCOUNTER',
+      id: 1,
+      patientId: 10492,
+    });
+    expect(prescriptionApi.create).not.toHaveBeenCalled();
+  });
 });

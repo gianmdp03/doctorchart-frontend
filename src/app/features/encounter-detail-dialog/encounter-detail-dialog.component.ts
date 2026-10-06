@@ -1,3 +1,4 @@
+import { PatientRecordActionsService } from '../../core/experience/patient-record-actions.service';
 import { Component, computed, effect, HostListener, inject, OnDestroy, PLATFORM_ID, signal, untracked } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +14,7 @@ import { argentinaDateTime, conflictKind, encounterInstant, errorMessage } from 
 
 @Component({ selector: 'app-encounter-detail-dialog', imports: [FormsModule, DatePickerComponent, DynamicFormRendererComponent], templateUrl: './encounter-detail-dialog.component.html', styleUrl: './encounter-detail-dialog.component.css' })
 export class EncounterDetailDialogComponent implements OnDestroy {
+  readonly recordActions = inject(PatientRecordActionsService);
   private readonly service = inject(ClinicalEncounterService);
   private readonly auth = inject(AuthService);
   private readonly activePatient = inject(ActivePatientService);
@@ -91,7 +93,7 @@ export class EncounterDetailDialogComponent implements OnDestroy {
   useRemoteRecord(): void { const remote = this.remoteRecord(); if (!remote || this.isLoading() || this.isSubmitting() || this.identity() !== this.owner) return; this.acceptRecord(remote); this.isEditing.set(true); }
   formatDate(instant: string): string { const { day, time } = argentinaDateTime(instant); const [year, month, date] = day.split('-'); return `${date}/${month}/${year} ${time}`; }
   getConsultationTypeLabel(type: string): string { return this.consultationTypes.find(option => option.value === type)?.label ?? type; }
-  printEncounter(): void { if (this.alive(this.epoch) && isPlatformBrowser(this.platformId) && typeof window !== 'undefined') window.print(); }
+  printEncounter(): void { if (this.recordActions.has('PRINT_DOCUMENT') && this.alive(this.epoch) && isPlatformBrowser(this.platformId) && typeof window !== 'undefined') window.print(); }
   private identity(): string { return this.auth.currentUser()?.id ?? ''; }
   private alive(epoch: number): boolean { return !this.destroyed && this.isOpen() && epoch === this.epoch && this.identity() === this.owner && this.patientContext === this.currentPatientId(); }
 }

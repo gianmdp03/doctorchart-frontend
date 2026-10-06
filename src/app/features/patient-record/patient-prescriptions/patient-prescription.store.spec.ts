@@ -1,12 +1,12 @@
 import { signal } from '@angular/core';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import { PatientPrescriptionStore } from './patient-prescription.store';
-import { PrescriptionRequest, SavedPrescriptionRecord } from '../../core/models/prescription.model';
-import { environment } from '../../../environments/environment';
+import { PrescriptionRequest, SavedPrescriptionRecord } from '../../../core/models/prescription.model';
+import { environment } from '../../../../environments/environment';
 
 describe('PatientPrescriptionStore with real HTTP client', () => {
   let store: PatientPrescriptionStore;

@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
+import { WorkspaceStore } from '../../core/services/workspace.store';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -17,6 +18,7 @@ describe('AiAssistantWidgetComponent', () => {
       imports: [AiAssistantWidgetComponent],
       providers: [
         AiChatService,
+        {provide: WorkspaceStore, useValue: {specialtyCode: () => 'pediatrics', activeModules: () => ({AI_ASSISTANT: true}), isModuleActive: () => true}},
         {provide: AuthService, useValue: {currentUser: signal({id: 'doctor-a'})}},
         {provide: ActivePatientService, useValue: {activePatient: signal(null)}},
         provideHttpClient(),

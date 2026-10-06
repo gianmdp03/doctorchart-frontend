@@ -4,6 +4,7 @@ import {
   computed,
   EventEmitter,
   inject,
+  input,
   Input,
   OnChanges,
   SimpleChanges,
@@ -56,7 +57,10 @@ import { DatePickerComponent } from '../../../shared/date-picker/date-picker.com
   styleUrl: './clinical-timeline.component.css',
 })
 export class ClinicalTimelineComponent implements OnChanges {
-  @Input() encounters: ClinicalEncounterList[] = [];
+  readonly canCreateEncounter = input.required<boolean>();
+  private readonly encounterRows = signal<ClinicalEncounterList[]>([]);
+  @Input() set encounters(value: ClinicalEncounterList[]) { this.encounterRows.set(value); }
+  get encounters(): ClinicalEncounterList[] { return this.encounterRows(); }
   @Input() isLoading = false;
   @Output() newEncounter = new EventEmitter<void>();
   @Output() viewDetail = new EventEmitter<number>();
@@ -92,6 +96,8 @@ export class ClinicalTimelineComponent implements OnChanges {
       return true;
     });
   });
+
+  createEncounter(): void { if (this.canCreateEncounter()) this.newEncounter.emit(); }
 
   setPreset(preset: 'ALL' | 'LAST_30' | 'LAST_90' | 'THIS_YEAR'): void {
     this.datePreset.set(preset);
