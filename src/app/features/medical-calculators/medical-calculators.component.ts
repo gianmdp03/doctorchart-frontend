@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { catchError, finalize, map, of, switchMap, timer } from 'rxjs';
+import { catchError, finalize, forkJoin, map, of, switchMap, timer } from 'rxjs';
 import { calculatorInputSummary } from '../../core/models/calculator-input-summary';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -52,19 +52,16 @@ import {
   CalculationExecutionRequestDTO,
   CalculationPreviewRequestDTO,
   CalculationResult,
-  CalculatorCategory,
   CalculatorId,
-  CalculatorMetadata,
   PatientAutofillDataDTO,
   PatientCalculationLogDetailDTO,
+  DoctorCalculatorPreferenceDTO,
   SavedCalculationItem,
 } from '../../core/models/medical-calculators.model';
 import {
   MedicalCalculatorsService,
-  MEDICAL_CALCULATORS_CATALOG,
 } from '../../core/services/medical-calculators.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
-import { WorkspaceStore } from '../../core/services/workspace.store';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 
 @Component({
@@ -114,7 +111,6 @@ export class MedicalCalculatorsComponent implements OnInit {
   readonly calcService = inject(MedicalCalculatorsService);
   private readonly destroyRef = inject(DestroyRef);
   readonly activePatientService = inject(ActivePatientService);
-  readonly workspaceStore = inject(WorkspaceStore);
 
   // View mode: 'calculator' | 'history'
   readonly activeTab = signal<'calculator' | 'history'>('calculator');
@@ -126,13 +122,10 @@ export class MedicalCalculatorsComponent implements OnInit {
   readonly onlyFavorites = signal<boolean>(false);
 
   // Doctor "Mis Cálculos" & Catalog Modal
-  readonly myCalculatorsCodes = signal<string[]>([
-    'imc',
-    'tfge',
-    'cockcroft',
-    'chads_vasc',
-    'calcio_corregido',
-  ]);
+  readonly myCalculatorsCodes = signal<string[]>([]);
+  readonly isLoadingSetup = signal(false);
+  readonly setupLoaded = signal(false);
+  readonly preferencesError = signal<string | null>(null);
   readonly isCatalogModalOpen = signal<boolean>(false);
   readonly modalSearchQuery = signal<string>('');
   readonly modalCategoryFilter = signal<string>('all');
@@ -237,7 +230,7 @@ export class MedicalCalculatorsComponent implements OnInit {
     const favOnly = this.onlyFavorites();
     const favCodes = this.myCalculatorsCodes();
 
-    return MEDICAL_CALCULATORS_CATALOG.filter((item) => {
+    return this.calcService.calculators().filter((item) => {
       const matchFav = !favOnly || favCodes.includes(item.id);
       const matchCat = cat === 'all' || item.category === cat;
       const matchQuery =
@@ -253,14 +246,14 @@ export class MedicalCalculatorsComponent implements OnInit {
   // Doctor favorite calculators metadata list
   readonly favoriteCalculatorsList = computed(() => {
     const favCodes = this.myCalculatorsCodes();
-    return MEDICAL_CALCULATORS_CATALOG.filter((c) => favCodes.includes(c.id));
+    return this.calcService.calculators().filter((c) => favCodes.includes(c.id));
   });
 
   // Modal filtered catalog
   readonly modalFilteredCalculators = computed(() => {
     const cat = this.modalCategoryFilter();
     const query = this.modalSearchQuery().toLowerCase().trim();
-    return MEDICAL_CALCULATORS_CATALOG.filter((item) => {
+    return this.calcService.calculators().filter((item) => {
       const matchCat = cat === 'all' || item.category === cat;
       const matchQuery =
         !query ||
@@ -272,10 +265,8 @@ export class MedicalCalculatorsComponent implements OnInit {
     });
   });
 
-  readonly currentMetadata = computed<CalculatorMetadata>(() => {
-    const found = MEDICAL_CALCULATORS_CATALOG.find((c) => c.id === this.selectedId());
-    return found ?? MEDICAL_CALCULATORS_CATALOG[0];
-  });
+  readonly currentMetadata = computed(() =>
+    this.calcService.calculators().find(c => c.id === this.selectedId()));
 
   // Current inputs completeness check
   readonly isCurrentInputComplete = computed<boolean>(() => {
@@ -388,7 +379,7 @@ export class MedicalCalculatorsComponent implements OnInit {
     }
   });
 
-  readonly previewRequest = computed<CalculationPreviewRequestDTO | null>(() => this.isCurrentInputComplete()
+  readonly previewRequest = computed<CalculationPreviewRequestDTO | null>(() => this.setupLoaded() && this.currentMetadata() && this.isCurrentInputComplete()
     ? { calculationCode: this.selectedId(), inputSnapshot: this.currentInputs() } : null);
   private readonly previewResult = signal<{ requestKey: string; result: CalculationResult } | null>(null);
   readonly currentResult = computed(() => {
@@ -432,7 +423,7 @@ export class MedicalCalculatorsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadDoctorPreferences();
+    this.loadCalculatorSetup();
     if (this.activePatient()?.id) {
       this.loadPatientHistory();
     }
@@ -441,24 +432,36 @@ export class MedicalCalculatorsComponent implements OnInit {
   // -------------------------------------------------------------
   // Doctor Preferences ("Mis Cálculos")
   // -------------------------------------------------------------
-  loadDoctorPreferences(): void {
-    this.calcService.getDoctorPreferences().subscribe({
-      next: (pref) => {
-        if (pref?.favoriteCalculationCodes?.length) {
-          this.myCalculatorsCodes.set(pref.favoriteCalculationCodes);
-          // If selected calculator is not among favorites, select the first favorite
-          if (!pref.favoriteCalculationCodes.includes(this.selectedId())) {
-            this.selectedId.set(pref.favoriteCalculationCodes[0] as CalculatorId);
-          }
-        }
-      },
-      error: (err) => {
-        console.warn('Could not load doctor preferences, using local defaults', err);
-      },
-    });
+  loadCalculatorSetup(): void {
+    if (this.isLoadingSetup() || this.isUpdatingPreferences()) return;
+    this.isLoadingSetup.set(true);
+    this.setupLoaded.set(false);
+    this.preferencesError.set(null);
+    this.calcService.calculators.set([]);
+    forkJoin({ catalog: this.calcService.getCatalogFromBackend(), preferences: this.calcService.getDoctorPreferences() })
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isLoadingSetup.set(false)))
+      .subscribe({
+        next: ({ catalog, preferences }) => {
+          this.calcService.calculators.set(catalog);
+          this.applyPreferences(preferences, true);
+          this.setupLoaded.set(true);
+        },
+        error: () => this.preferencesError.set('No se pudieron cargar las calculadoras. Volvé a intentar.'),
+      });
+  }
+
+  private applyPreferences(preferences: DoctorCalculatorPreferenceDTO, selectFavorite = false): void {
+    const codes = preferences.favoriteCalculationCodes;
+    this.myCalculatorsCodes.set(codes);
+    const catalog = this.calcService.calculators();
+    if ((selectFavorite && codes.length && !codes.includes(this.selectedId())) || !this.currentMetadata()) {
+      const first = catalog.find(item => item.id === codes[0]) ?? catalog[0];
+      if (first) this.selectedId.set(first.id);
+    }
   }
 
   toggleFavoriteCalculator(code: string): void {
+    if (!this.setupLoaded() || this.isUpdatingPreferences() || !this.calcService.calculators().some(item => item.id === code)) return;
     const current = [...this.myCalculatorsCodes()];
     const index = current.indexOf(code);
     if (index >= 0) {
@@ -470,41 +473,31 @@ export class MedicalCalculatorsComponent implements OnInit {
     } else {
       current.push(code);
     }
-    this.myCalculatorsCodes.set(current);
     this.persistDoctorPreferences(current);
   }
 
-  persistDoctorPreferences(codes: string[]): void {
+  private persistDoctorPreferences(codes: string[]): void {
+    if (!this.setupLoaded() || this.isUpdatingPreferences()) return;
     this.isUpdatingPreferences.set(true);
-    this.calcService.updateDoctorPreferences(codes).subscribe({
-      next: () => {
-        this.isUpdatingPreferences.set(false);
-      },
-      error: (err) => {
-        console.error('Error saving doctor calculator preferences', err);
-        this.isUpdatingPreferences.set(false);
-      },
-    });
+    this.preferencesError.set(null);
+    this.calcService.updateDoctorPreferences(codes)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isUpdatingPreferences.set(false)))
+      .subscribe({
+        next: preference => this.applyPreferences(preference),
+        error: () => this.preferencesError.set('No se pudieron guardar los favoritos. Volvé a intentar.'),
+      });
   }
 
   restoreSpecialtyDefaults(): void {
-    const specialty = this.workspaceStore.specialtyCode();
-    if (!specialty) return;
-    this.calcService.getDefaultsForSpecialty(specialty).subscribe({
-      next: (defs) => {
-        if (defs?.length) {
-          const codes = defs.map((d) => d.code);
-          this.myCalculatorsCodes.set(codes);
-          this.persistDoctorPreferences(codes);
-          if (!codes.includes(this.selectedId())) {
-            this.selectedId.set(codes[0] as CalculatorId);
-          }
-        }
-      },
-      error: (err) => {
-        console.error('Error restoring defaults for specialty', err);
-      },
-    });
+    if (!this.setupLoaded() || this.isUpdatingPreferences()) return;
+    this.isUpdatingPreferences.set(true);
+    this.preferencesError.set(null);
+    this.calcService.resetDoctorPreferences()
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isUpdatingPreferences.set(false)))
+      .subscribe({
+        next: preference => this.applyPreferences(preference, true),
+        error: () => this.preferencesError.set('No se pudieron restablecer los favoritos. Volvé a intentar.'),
+      });
   }
 
   // -------------------------------------------------------------

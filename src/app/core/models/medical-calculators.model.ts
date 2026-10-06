@@ -146,6 +146,6 @@ export interface ClinicalCalculationDefinitionDTO {
   readonly summaryFormula: string;
   readonly requiredParameters: string[];
   readonly resultUnit: string;
-  readonly defaultSpecialties: string[];
   readonly isSystem: boolean;
+  readonly displayOrder: number;
 }

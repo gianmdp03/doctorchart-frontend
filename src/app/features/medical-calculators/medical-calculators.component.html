@@ -1,3 +1,15 @@
+@if (isLoadingSetup()) {
+  <p role="status" class="p-4">Cargando calculadoras…</p>
+}
+@if (preferencesError() && !isCatalogModalOpen()) {
+  <div role="alert" class="p-4 text-rose-600">
+    {{ preferencesError() }}
+    @if (!setupLoaded()) {
+      <button type="button" class="reset-btn" (click)="loadCalculatorSetup()" [disabled]="isLoadingSetup()">Reintentar</button>
+    }
+  </div>
+}
+@if (setupLoaded()) {
 <div class="calculators-container">
   <!-- Top Header -->
   <header class="calculators-header">
@@ -246,15 +258,16 @@
       <!-- Main Calculator Workspace: Inputs + Live Results Card -->
       <section class="calc-workspace-panel">
         <!-- Calculator Header Card -->
+        @if (currentMetadata(); as metadata) {
         <div class="calc-details-header">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div class="flex items-center gap-2 mb-1">
-                <span class="calc-category-badge">{{ currentMetadata().categoryLabel }}</span>
-                <span class="calc-evidence-badge">{{ currentMetadata().evidenceReference }}</span>
+                <span class="calc-category-badge">{{ metadata.categoryLabel }}</span>
+                <span class="calc-evidence-badge">{{ metadata.evidenceReference }}</span>
               </div>
-              <h2 class="calc-workspace-title">{{ currentMetadata().name }}</h2>
-              <p class="calc-workspace-desc">{{ currentMetadata().description }}</p>
+              <h2 class="calc-workspace-title">{{ metadata.name }}</h2>
+              <p class="calc-workspace-desc">{{ metadata.description }}</p>
             </div>
             <div class="flex items-center gap-2">
               <button
@@ -270,10 +283,11 @@
           </div>
           <div class="calc-formula-bar">
             <span class="formula-label">Fórmula:</span>
-            <code class="formula-code">{{ currentMetadata().summaryFormula }}</code>
+            <code class="formula-code">{{ metadata.summaryFormula }}</code>
           </div>
         </div>
 
+        }
         <div class="calc-body-grid">
           <!-- FORM INPUTS SECTION -->
           <div class="inputs-card">
@@ -1277,6 +1291,7 @@
                   type="button"
                   class="panel-action-btn remove-btn"
                   (click)="toggleFavoriteCalculator(item.id)"
+                  [disabled]="isUpdatingPreferences()"
                 >
                   <span>Quitar de mi panel</span>
                 </button>
@@ -1285,6 +1300,7 @@
                   type="button"
                   class="panel-action-btn add-btn"
                   (click)="toggleFavoriteCalculator(item.id)"
+                  [disabled]="isUpdatingPreferences()"
                 >
                   <ng-icon name="lucidePlus" class="mr-1 inline" />
                   <span>Añadir a mi panel</span>
@@ -1296,11 +1312,15 @@
       </div>
 
       <!-- Modal Footer -->
+      @if (preferencesError()) {
+        <p role="alert" class="p-4 text-rose-600">{{ preferencesError() }}</p>
+      }
       <div class="modal-footer">
         <button
           type="button"
           class="restore-defaults-btn"
           (click)="restoreSpecialtyDefaults()"
+          [disabled]="isUpdatingPreferences()"
           title="Restaurar calculadoras recomendadas para mi especialidad"
         >
           <ng-icon name="lucideRotateCcw" class="mr-1 inline" />
@@ -1317,4 +1337,6 @@
       </div>
     </div>
   </div>
+}
+
 }

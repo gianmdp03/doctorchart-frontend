@@ -1,3 +1,4 @@
+import { CALCULATOR_CATALOG_FIXTURE } from '../testing/calculator-catalog.fixture';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -59,5 +60,16 @@ describe('MedicalCalculatorsService HTTP boundary', () => {
       drugConcentrationMg: 250, drugConcentrationMl: 5, dosesPerDay: 3 })).toEqual({
       'Peso (kg)': 10, 'Dosis objetivo': '50 mg/kg/dia', 'Concentración': '250 mg / 5 mL', 'Frecuencia': '3 veces al día',
     });
+  });
+
+  it('maps authoritative server metadata while retaining only the existing icons locally', () => {
+    expect(service.calculators()).toEqual([]);
+    const catalog = CALCULATOR_CATALOG_FIXTURE.map(item => item.code === 'imc' ? { ...item, name: 'Nombre del servidor' } : item);
+    service.getCatalogFromBackend().subscribe(items => {
+      expect(items.map(item => item.id)).toEqual(catalog.map(item => item.code));
+      expect(items[0].name).toBe('Nombre del servidor');
+      expect(items.map(item => item.icon)).toEqual(['lucideWeight', 'lucideActivity', 'lucideStethoscope', 'lucideHeart', 'lucideFlaskConical', 'lucideDroplets', 'lucideSparkles', 'lucidePill']);
+    });
+    http.expectOne(req => req.url.endsWith('/calculators/catalog')).flush(catalog);
   });
 });
