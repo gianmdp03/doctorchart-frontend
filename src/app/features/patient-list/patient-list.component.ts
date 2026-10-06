@@ -1,4 +1,6 @@
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntil } from 'rxjs';
+import { AccountReadScope } from '../../core/services/account-read-scope';
+import { displayLocalDate } from '../../core/date/display-date';
 import {
   Component,
   OnInit,
@@ -19,17 +21,10 @@ import { ActivePatientService } from '../../core/services/active-patient.service
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import {
   PatientDetailDTO,
+  PatientDirectoryFilter,
   PatientListDTO,
 } from '../../core/models/patient.model';
 import { getTotalElements, getTotalPages } from '../../core/models/api-response.model';
-
-export type PatientDirectoryFilter =
-  | 'ALL'
-  | 'ADULT'
-  | 'MINOR'
-  | 'INFANT'
-  | 'TODDLER'
-  | 'VACCINE_PENDING';
 
 export interface PatientCardItem {
   id: number;
@@ -37,7 +32,7 @@ export interface PatientCardItem {
   birthDate: string;
   initials: string;
   ageDisplay: string;
-  ageInMonths: number;
+  ageInMonths: number | null;
   birthDateDisplay: string;
   dni: string;
   tutor: string;
@@ -51,59 +46,6 @@ export interface PatientCardItem {
   detail?: PatientDetailDTO;
 }
 
-function parseBirthDate(birthDateStr: string): Date | null {
-  if (!birthDateStr) return null;
-  const iso = birthDateStr.includes('T') ? birthDateStr : `${birthDateStr}T00:00:00`;
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function calculateAgeMonths(birthDateStr: string): number {
-  const birth = parseBirthDate(birthDateStr);
-  if (!birth) return 0;
-  const now = new Date();
-  let months =
-    (now.getFullYear() - birth.getFullYear()) * 12 +
-    (now.getMonth() - birth.getMonth());
-  if (now.getDate() < birth.getDate()) {
-    months--;
-  }
-  return Math.max(0, months);
-}
-
-function formatAgeDisplay(birthDateStr: string): string {
-  const birth = parseBirthDate(birthDateStr);
-  if (!birth) return '—';
-  const now = new Date();
-  let months =
-    (now.getFullYear() - birth.getFullYear()) * 12 +
-    (now.getMonth() - birth.getMonth());
-  if (now.getDate() < birth.getDate()) {
-    months--;
-  }
-  if (months < 0) return 'Recién nacido';
-  if (months === 0) {
-    const diffTime = Math.abs(now.getTime() - birth.getTime());
-    const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-    return `${diffDays} días`;
-  }
-  if (months === 1) return '1 mes';
-  if (months < 24) return `${months} meses`;
-  const years = Math.floor(months / 12);
-  const remMonths = months % 12;
-  return remMonths > 0 ? `${years} años ${remMonths}m` : `${years} años`;
-}
-
-function formatBirthDateDisplay(birthDateStr: string): string {
-  const birth = parseBirthDate(birthDateStr);
-  if (!birth) return birthDateStr || '—';
-  return birth.toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
-
 function extractInitials(fullName: string): string {
   if (!fullName) return 'DP';
   const parts = fullName.trim().split(/\s+/);
@@ -114,48 +56,37 @@ function extractInitials(fullName: string): string {
 }
 
 function mapDtoToCardItem(dto: PatientListDTO): PatientCardItem {
-  const ageMonths = calculateAgeMonths(dto.birthDate);
-  const isAdult = ageMonths >= 216; // >= 18 años
-  let badgeText = 'Primera Infancia';
-  let badgeClass = 'badge-info';
-
-  if (isAdult) {
-    badgeText = 'Adulto';
-    badgeClass = 'badge-primary';
-  } else if (ageMonths <= 1) {
-    badgeText = 'Neonatal';
-    badgeClass = 'badge-info';
-  } else if (ageMonths <= 12) {
-    badgeText = 'Lactante';
-    badgeClass = 'badge-info';
-  } else if (ageMonths <= 144) {
-    badgeText = 'Niñez';
-    badgeClass = 'badge-info';
-  } else {
-    badgeText = 'Adolescente';
-    badgeClass = 'badge-info';
-  }
-
+  const badges = {
+    ADULT: 'Adulto',
+    NEONATAL: 'Neonatal',
+    INFANT: 'Lactante',
+    CHILD: 'Niñez',
+    ADOLESCENT: 'Adolescente',
+    UNKNOWN: '—',
+  };
+  const badgeText = badges[dto.ageGroup];
+  const badgeClass = dto.ageGroup === 'ADULT' ? 'badge-primary' : 'badge-info';
   return {
     id: dto.id,
     fullName: dto.fullName,
     birthDate: dto.birthDate,
     initials: extractInitials(dto.fullName),
-    ageDisplay: formatAgeDisplay(dto.birthDate),
-    ageInMonths: ageMonths,
-    birthDateDisplay: formatBirthDateDisplay(dto.birthDate),
+    ageDisplay: dto.ageDisplay,
+    ageInMonths: dto.ageInMonths,
+    birthDateDisplay: displayLocalDate(dto.birthDate),
     dni: dto.nationalId ? `DNI: ${dto.nationalId}` : `ID #${dto.id}`,
     tutor: dto.phone ? `Tel: ${dto.phone}` : 'Contacto registrado',
     lastCheckup:
       (dto.totalEncounters ?? 0) > 0
-        ? `${dto.totalEncounters} ${(dto.totalEncounters ?? 0) === 1 ? 'control previo' : 'controles previos'}${dto.lastEncounterDate ? ' • Último: ' + dto.lastEncounterDate : ''}`
+        ? `${dto.totalEncounters} ${(dto.totalEncounters ?? 0) === 1 ? 'control previo' : 'controles previos'}${dto.lastEncounterDate ? ' • Último: ' + displayLocalDate(dto.lastEncounterDate) : ''}`
         : 'Sin controles previos',
-    nextCheckupOrNote: (dto.totalEncounters ?? 0) === 0 ? '1ª Consulta Pendiente' : 'Control periódico',
+    nextCheckupOrNote:
+      (dto.totalEncounters ?? 0) === 0 ? '1ª Consulta Pendiente' : 'Control periódico',
     totalEncounters: dto.totalEncounters ?? 0,
     lastEncounterDate: dto.lastEncounterDate ?? null,
     badgeText,
     badgeClass,
-    hasPendingVaccine: false,
+    hasPendingVaccine: dto.hasPendingVaccine,
   };
 }
 
@@ -197,12 +128,20 @@ export class PatientListComponent implements OnInit {
 
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private observer: IntersectionObserver | null = null;
+  readonly loadError = signal<string | null>(null);
+  private readonly reads = new AccountReadScope(() => this.loadInitial());
 
   constructor() {
-    this.destroyRef.onDestroy(() => { if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer); });
+    this.destroyRef.onDestroy(() => {
+      if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
+    });
     effect(() => {
       const el = this.sentinelRef()?.nativeElement;
-      if (!isPlatformBrowser(this.platformId) || !el || typeof IntersectionObserver === 'undefined') {
+      if (
+        !isPlatformBrowser(this.platformId) ||
+        !el ||
+        typeof IntersectionObserver === 'undefined'
+      ) {
         return;
       }
       if (this.observer) {
@@ -210,43 +149,20 @@ export class PatientListComponent implements OnInit {
       }
       this.observer = new IntersectionObserver(
         (entries) => {
-          if (entries[0].isIntersecting && this.hasMore() && !this.isLoadingMore() && !this.isLoading()) {
+          if (
+            entries[0].isIntersecting &&
+            this.hasMore() &&
+            !this.isLoadingMore() &&
+            !this.isLoading()
+          ) {
             this.loadMore();
           }
         },
-        { rootMargin: '300px 0px', threshold: 0.01 }
+        { rootMargin: '300px 0px', threshold: 0.01 },
       );
       this.observer.observe(el);
     });
   }
-
-  readonly filteredPatients = computed(() => {
-    const filter = this.selectedFilter();
-    const list = this.patients();
-
-    if (filter === 'ALL') {
-      return list;
-    }
-
-    return list.filter((patient) => {
-      if (filter === 'INFANT') {
-        return patient.ageInMonths <= 12;
-      }
-      if (filter === 'TODDLER') {
-        return patient.ageInMonths > 12 && patient.ageInMonths <= 72;
-      }
-      if (filter === 'VACCINE_PENDING') {
-        return patient.hasPendingVaccine;
-      }
-      if (filter === 'ADULT') {
-        return patient.ageInMonths >= 216;
-      }
-      if (filter === 'MINOR') {
-        return patient.ageInMonths < 216;
-      }
-      return true;
-    });
-  });
 
   openColumnsModal(): void {
     this.isColumnsModalOpen.set(true);
@@ -282,62 +198,59 @@ export class PatientListComponent implements OnInit {
   }
 
   loadInitial(search?: string): void {
-    this.isLoading.set(true);
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
+    const current = this.reads.begin();
+    this.patients.set([]);
+    this.isLoadingMore.set(false);
     this.currentPage.set(0);
-    const query = search !== undefined ? search : this.searchQuery();
-
-    this.patientService.getPatients(0, this.pageSize, 'fullName,asc', query).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (response) => {
-        if (response?.content && response.content.length > 0) {
-          const items = response.content.map(mapDtoToCardItem);
-          this.patients.set(items);
-        } else {
-          this.patients.set([]);
-        }
-        this.totalPages.set(getTotalPages(response));
-        this.totalElements.set(getTotalElements(response));
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        console.warn('Error loading patients:', err);
-        this.patients.set([]);
-        this.totalPages.set(1);
-        this.totalElements.set(0);
-        this.isLoading.set(false);
-      },
-    });
-  }
-
-  loadMore(): void {
-    if (this.isLoadingMore() || !this.hasMore() || this.isLoading()) {
+    this.totalPages.set(0);
+    this.totalElements.set(0);
+    this.loadError.set(null);
+    if (!this.reads.authenticated()) {
+      this.isLoading.set(false);
       return;
     }
-
+    this.isLoading.set(true);
+    this.fetchPage(0, search ?? this.searchQuery(), current, false);
+  }
+  loadMore(): void {
+    if (this.isLoadingMore() || !this.hasMore() || this.isLoading() || !this.reads.authenticated())
+      return;
+    const current = this.reads.begin();
     this.isLoadingMore.set(true);
-    const nextPage = this.currentPage() + 1;
-    const query = this.searchQuery();
-
-    this.patientService.getPatients(nextPage, this.pageSize, 'fullName,asc', query).subscribe({
-      next: (response) => {
-        if (response?.content && response.content.length > 0) {
-          const newItems = response.content.map(mapDtoToCardItem);
-          this.patients.update((curr) => {
-            // Avoid duplicates by ID
-            const existingIds = new Set(curr.map((p) => p.id));
-            const unique = newItems.filter((p) => !existingIds.has(p.id));
-            return [...curr, ...unique];
-          });
-        }
-        this.currentPage.set(nextPage);
-        this.totalPages.set(getTotalPages(response));
-        this.totalElements.set(getTotalElements(response));
-        this.isLoadingMore.set(false);
-      },
-      error: (err) => {
-        console.warn('Error loading more patients:', err);
-        this.isLoadingMore.set(false);
-      },
-    });
+    this.loadError.set(null);
+    this.fetchPage(this.currentPage() + 1, this.searchQuery(), current, true);
+  }
+  private fetchPage(page: number, query: string, current: () => boolean, append: boolean): void {
+    this.patientService
+      .getPatients(page, this.pageSize, 'fullName,asc', query, this.selectedFilter())
+      .pipe(takeUntil(this.reads.canceled))
+      .subscribe({
+        next: (response) => {
+          if (!current()) return;
+          const items = response.content.map(mapDtoToCardItem);
+          this.patients.update((existing) =>
+            append
+              ? [...existing, ...items.filter((item) => !existing.some((p) => p.id === item.id))]
+              : items,
+          );
+          this.currentPage.set(page);
+          this.totalPages.set(getTotalPages(response));
+          this.totalElements.set(getTotalElements(response));
+          this.isLoading.set(false);
+          this.isLoadingMore.set(false);
+        },
+        error: () => {
+          if (current()) {
+            this.loadError.set('No se pudo cargar el directorio. Reintentá la carga.');
+            this.isLoading.set(false);
+            this.isLoadingMore.set(false);
+          }
+        },
+      });
   }
 
   @HostListener('window:scroll')
@@ -358,12 +271,18 @@ export class PatientListComponent implements OnInit {
 
   setFilter(filter: PatientDirectoryFilter): void {
     this.selectedFilter.set(filter);
+    this.loadInitial();
   }
 
   onSearchInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     const val = target.value;
     this.searchQuery.set(val);
+    this.reads.cancel();
+    this.patients.set([]);
+    this.isLoadingMore.set(false);
+    this.isLoading.set(true);
+    this.totalPages.set(0);
 
     if (this.searchDebounceTimer) {
       clearTimeout(this.searchDebounceTimer);
@@ -409,4 +328,3 @@ export class PatientListComponent implements OnInit {
     this.loadInitial();
   }
 }
-

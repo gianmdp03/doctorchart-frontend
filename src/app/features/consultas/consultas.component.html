@@ -15,11 +15,12 @@
         class="filter-input"
         placeholder="Buscar por paciente, motivo o código CIE-10..."
         [ngModel]="searchQuery()"
-        (ngModelChange)="searchQuery.set($event)"
+        (ngModelChange)="onSearch($event)"
       />
     </div>
   </div>
 
+  @if (loadError(); as error) { <p role="alert">{{ error }} <button type="button" class="btn-detail" (click)="loadConsultations()">Reintentar</button></p> }
   <!-- Consultations Table -->
   <div class="consultas-table-card">
     @if (isLoading()) {
@@ -27,7 +28,7 @@
         <div class="consultas-spinner"></div>
         <span>Cargando consultas clínicas...</span>
       </div>
-    } @else if (filteredConsultations().length > 0) {
+    } @else if (consultations().length > 0) {
       <div class="table-container">
         <table class="clinical-table">
           <thead>
@@ -42,7 +43,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (c of filteredConsultations(); track c.id) {
+            @for (c of consultations(); track c.id) {
               <tr>
                 <td><strong>#E-{{ c.id }}</strong></td>
                 <td><span class="text-slate-600 font-medium">{{ c.encounterDate }}</span></td>
@@ -94,4 +95,9 @@
       </div>
     }
   </div>
+  @if (hasMore()) {
+    <button type="button" class="btn-detail" [disabled]="isLoadingMore() || isLoading()" (click)="loadMore()">
+      {{ isLoadingMore() ? 'Cargando…' : 'Cargar más consultas' }}
+    </button>
+  }
 </div>

@@ -70,11 +70,13 @@ export class ClinicalEncounterService {
     page = 0,
     size = 50,
     sort = 'encounterDate,desc',
+    search?: string,
   ): Observable<PagedResponse<ClinicalEncounterList>> {
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('page', page)
       .set('size', size)
       .set('sort', sort);
+    if (search?.trim()) params = params.set('search', search.trim());
     return this.http.get<PagedResponse<ClinicalEncounterList>>(this.baseUrl, { params });
   }
 

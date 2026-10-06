@@ -72,8 +72,16 @@ export interface ClinicalEncounterList extends ClinicalFormRecord {
   followUpDate?: string | null;
 }
 
+export interface DashboardRecentEncounter {
+  encounter: ClinicalEncounterList;
+  patientAgeLabel: string;
+  patientNationalId: string | null;
+  encounterLocalDate: string;
+}
 export interface ClinicalEncounterDashboard {
+  totalPatients: number;
+  asOfDate: string;
   encountersThisMonth: number;
   encountersToday: number;
-  recentEncounters: ClinicalEncounterList[];
+  recentEncounters: DashboardRecentEncounter[];
 }

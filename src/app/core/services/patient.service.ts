@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   PatientDetailDTO,
   PatientListDTO,
+  PatientDirectoryFilter,
   PatientRequestDTO,
   PatientUpdateRequestDTO,
 } from '../models/patient.model';
@@ -21,12 +22,14 @@ export class PatientService {
     page = 0,
     size = 10,
     sort = 'fullName,asc',
-    search?: string
+    search?: string,
+    filter: PatientDirectoryFilter = 'ALL'
   ): Observable<PagedResponse<PatientListDTO>> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString())
-      .set('sort', sort);
+      .set('sort', sort)
+      .set('filter', filter);
 
     if (search && search.trim()) {
       params = params.set('search', search.trim());

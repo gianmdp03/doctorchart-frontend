@@ -8,6 +8,7 @@
     </div>
   </header>
 
+  @if (metricsError(); as error) { <p role="alert">{{ error }} <button type="button" class="secondary-outline-btn btn-xs" (click)="loadKpiData()">Reintentar</button></p> }
   <section class="kpi-grid" aria-label="Métricas principales">
     <div class="kpi-card" role="region" aria-label="Total de pacientes">
       <div class="kpi-header">
@@ -15,7 +16,7 @@
         <div class="kpi-icon-wrap bg-blue-50 text-blue-600"><ng-icon name="lucideUsers" /></div>
       </div>
       <div class="kpi-value-row">
-        @if (isLoadingMetrics()) { <span class="kpi-loading-skeleton"></span> } @else { <span class="kpi-number">{{ totalPatients() }}</span> }
+        @if (isLoadingMetrics()) { <span class="kpi-loading-skeleton"></span> } @else { <span class="kpi-number">{{ totalPatients() ?? '—' }}</span> }
       </div>
       <div class="kpi-footer"><a routerLink="/pacientes" class="kpi-link">Ver directorio <ng-icon name="lucideArrowRight" /></a></div>
     </div>
@@ -26,7 +27,7 @@
         <div class="kpi-icon-wrap bg-teal-50 text-teal-600"><ng-icon name="lucideStethoscope" /></div>
       </div>
       <div class="kpi-value-row">
-        @if (isLoadingMetrics()) { <span class="kpi-loading-skeleton"></span> } @else { <span class="kpi-number">{{ encountersMonthCount() }}</span> }
+        @if (isLoadingMetrics()) { <span class="kpi-loading-skeleton"></span> } @else { <span class="kpi-number">{{ encountersMonthCount() ?? '—' }}</span> }
       </div>
       <div class="kpi-footer"><span class="kpi-subtext">Consultas registradas en el mes actual</span></div>
     </div>
@@ -40,8 +41,8 @@
         @if (isLoadingMetrics()) {
           <span class="kpi-loading-skeleton"></span>
         } @else {
-          <span class="kpi-number">{{ encountersTodayCount() }}</span>
-          @if (encountersTodayCount() > 0) {
+          <span class="kpi-number">{{ encountersTodayCount() ?? '—' }}</span>
+          @if ((encountersTodayCount() ?? 0) > 0) {
             <span class="kpi-badge-trend positive">Actividad del día</span>
           }
         }
@@ -163,12 +164,13 @@
           <div class="header-title-wrap"><h2 class="card-title"><ng-icon name="lucideUsers" class="title-icon text-blue-600" /> Acceso rápido a pacientes</h2><p class="card-subtitle">Búsqueda en el padrón de pacientes</p></div>
           <div class="directory-search-box"><ng-icon name="lucideSearch" class="search-box-icon" /><input type="search" class="directory-search-input" placeholder="Buscar paciente..." [value]="directorySearch()" (input)="onDirectorySearchInput($event)" /></div>
         </div>
+        @if (directoryError(); as error) { <p role="alert">{{ error }} <button type="button" class="secondary-outline-btn btn-xs" (click)="loadDirectory(directoryPage(), directorySearch())">Reintentar</button></p> }
         @if (isSearchingDirectory()) {
           <div class="card-loading-state"><div class="mini-spinner"></div><span>Buscando pacientes...</span></div>
         } @else if (directoryPatients().length > 0) {
           <div class="encounters-table-wrap">
             <table class="clinical-table"><thead><tr><th>Paciente</th><th>Fecha de nacimiento</th><th>Acción</th></tr></thead><tbody>
-              @for (patient of directoryPatients(); track patient.id) { <tr><td><span class="patient-cell-name">{{ patient.fullName }}</span></td><td><span class="cell-datetime">{{ patient.birthDate || '—' }}</span></td><td><button type="button" class="btn-open-record" (click)="openPatient(patient.id)">Abrir ficha</button></td></tr> }
+              @for (patient of directoryPatients(); track patient.id) { <tr><td><span class="patient-cell-name">{{ patient.fullName }}</span></td><td><span class="cell-datetime">{{ displayDate(patient.birthDate) }}</span></td><td><button type="button" class="btn-open-record" (click)="openPatient(patient.id)">Abrir ficha</button></td></tr> }
             </tbody></table>
           </div>
           <div class="table-pagination-row"><span class="pagination-info">Página {{ directoryPage() + 1 }} de {{ directoryTotalPages() }}</span><div class="pagination-btns"><button type="button" class="btn-page" [disabled]="directoryPage() === 0" (click)="loadDirectory(directoryPage() - 1, directorySearch())"><ng-icon name="lucideChevronLeft" /> Anterior</button><button type="button" class="btn-page" [disabled]="directoryPage() + 1 >= directoryTotalPages()" (click)="loadDirectory(directoryPage() + 1, directorySearch())">Siguiente <ng-icon name="lucideChevronRight" /></button></div></div>

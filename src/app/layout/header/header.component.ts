@@ -1,3 +1,6 @@
+import { takeUntil } from 'rxjs';
+import { AccountReadScope } from '../../core/services/account-read-scope';
+import { displayLocalDate } from '../../core/date/display-date';
 import {
   Component,
   computed,
@@ -64,12 +67,15 @@ export class HeaderComponent implements OnDestroy {
   readonly searchQuery = signal('');
   readonly searchResults = signal<PatientListDTO[]>([]);
   readonly isSearching = signal(false);
+  readonly searchError = signal<string | null>(null);
+  readonly displayDate = displayLocalDate;
   readonly isSearchOpen = signal(false);
   readonly isProfileMenuOpen = signal(false);
 
   readonly syntahPlansUrl = environment.syntahPlansUrl;
 
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly searchReads = new AccountReadScope(() => this.clearSearch());
 
   readonly planBadgeLabel = computed<string | null>(() => {
     if (!this.authService.hasDoctorchartPlan()) {
@@ -115,9 +121,13 @@ export class HeaderComponent implements OnDestroy {
   }
 
   onSearchInput(event: Event): void {
-    if (this.authService.isSuperAdmin()) return;
-    const target = event.target as HTMLInputElement;
-    const q = target.value;
+    this.search((event.target as HTMLInputElement).value);
+  }
+  retrySearch(): void { this.search(this.searchQuery()); }
+  private search(q: string): void {
+    if (this.authService.isSuperAdmin()) { this.clearSearch(); return; }
+    const current = this.searchReads.begin();
+    this.searchResults.set([]); this.searchError.set(null);
     this.searchQuery.set(q);
 
     if (this.debounceTimer) {
@@ -135,17 +145,16 @@ export class HeaderComponent implements OnDestroy {
     this.isSearchOpen.set(true);
 
     this.debounceTimer = setTimeout(() => {
-      if (this.authService.isSuperAdmin()) {
-        this.isSearching.set(false);
-        return;
-      }
-      this.patientService.getPatients(0, 8, 'fullName,asc', q.trim()).subscribe({
+      if (!current() || this.authService.isSuperAdmin() || !this.searchReads.authenticated()) { this.isSearching.set(false); return; }
+      this.patientService.getPatients(0, 8, 'fullName,asc', q.trim()).pipe(takeUntil(this.searchReads.canceled)).subscribe({
         next: (res) => {
+          if (!current()) return;
           this.searchResults.set(res?.content || []);
           this.isSearching.set(false);
         },
-        error: (err) => {
-          console.warn('Search patients error:', err);
+        error: () => {
+          if (!current()) return;
+          this.searchError.set('No se pudo realizar la búsqueda.');
           this.searchResults.set([]);
           this.isSearching.set(false);
         },
@@ -161,12 +170,15 @@ export class HeaderComponent implements OnDestroy {
 
   selectPatient(patient: PatientListDTO): void {
     this.activePatientService.loadPatient(patient.id);
-    this.isSearchOpen.set(false);
-    this.searchQuery.set('');
+    this.clearSearch();
     this.router.navigate(['/pacientes', patient.id]);
   }
 
   clearSearch(event?: Event): void {
+    this.searchReads.cancel();
+    if (this.debounceTimer) { clearTimeout(this.debounceTimer); this.debounceTimer = null; }
+    this.isSearching.set(false);
+    this.searchError.set(null);
     if (event) event.stopPropagation();
     this.searchQuery.set('');
     this.searchResults.set([]);

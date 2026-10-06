@@ -16,8 +16,8 @@ evidencia antes de comenzar el siguiente y se conserva la experiencia de pediatr
 | 8. Contexto de sesión | Evitar mezclar pacientes, borradores y conversaciones. | Cumplido; ver [implementación y pruebas](session-context-block-8.md) |
 | 9. Mediciones | Unificar fuentes y unidades; eliminar el camino antiguo. | Cumplido; ver [implementación y pruebas](measurements-block-9.md) |
 | 10. Vacunación | Gobernar calendario, identificadores y reglas desde backend. | Cumplido; ver [implementación y pruebas](vaccination-block-10.md) |
-| 11. Listados y estadísticas | Llevar filtros completos y agregados al backend. | Pendiente; siguiente bloque |
-| 12. Experiencias por especialidad | Aislar módulos y componer navegación, pestañas y acciones. | Pendiente |
+| 11. Listados y estadísticas | Llevar filtros completos y agregados al backend. | Cumplido; ver [implementación y pruebas](listings-block-11.md) |
+| 12. Experiencias por especialidad | Aislar módulos y componer navegación, pestañas y acciones. | Pendiente; siguiente bloque |
 | 13. Configuración y almacenamiento | Resolver archivos, secretos, entornos y documentación. | Pendiente |
 
 La comprobación de los bloques 1–4 pasó 215 pruebas backend específicas y 21

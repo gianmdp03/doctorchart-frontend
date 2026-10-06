@@ -1,6 +1,15 @@
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AccountReadScope } from '../../core/services/account-read-scope';
+import { displayLocalDate } from '../../core/date/display-date';
 import { wizardRecordEntries } from '../../core/models/wizard-record-display';
-import { DestroyRef, Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
+import {
+  DestroyRef,
+  Component,
+  computed,
+  HostListener,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -19,15 +28,18 @@ import {
   lucideUserPlus,
   lucideUsers,
 } from '@ng-icons/lucide';
-import { catchError, forkJoin, of, switchMap } from 'rxjs';
+import { takeUntil } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { PatientService } from '../../core/services/patient.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { PatientListDTO } from '../../core/models/patient.model';
-import { ClinicalEncounterList } from '../../core/models/clinical-encounter.model';
-import { getTotalElements, getTotalPages } from '../../core/models/api-response.model';
+import {
+  ClinicalEncounterList,
+  DashboardRecentEncounter,
+} from '../../core/models/clinical-encounter.model';
+import { getTotalPages } from '../../core/models/api-response.model';
 
 export interface ClinicalHighlightItem {
   label: string;
@@ -83,13 +95,16 @@ export class DashboardComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly totalPatients = signal<number>(0);
-  readonly encountersMonthCount = signal<number>(0);
-  readonly encountersTodayCount = signal<number>(0);
+  readonly totalPatients = signal<number | null>(null);
+  readonly encountersMonthCount = signal<number | null>(null);
+  readonly encountersTodayCount = signal<number | null>(null);
   readonly isLoadingMetrics = signal<boolean>(true);
 
   readonly recentEncounters = signal<RecentEncounterItem[]>([]);
   readonly isLoadingRecent = signal<boolean>(true);
+  readonly metricsError = signal<string | null>(null);
+  readonly directoryError = signal<string | null>(null);
+  readonly displayDate = displayLocalDate;
 
   readonly directoryPatients = signal<PatientListDTO[]>([]);
   readonly directorySearch = signal<string>('');
@@ -108,19 +123,21 @@ export class DashboardComponent implements OnInit {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-    })
+    }),
   );
 
   readonly greeting = computed(() => {
     const hour = new Date().getHours();
     const prefix =
-      hour >= 20 || hour < 6
-        ? 'Buenas noches'
-        : hour >= 13
-          ? 'Buenas tardes'
-          : 'Buen día';
+      hour >= 20 || hour < 6 ? 'Buenas noches' : hour >= 13 ? 'Buenas tardes' : 'Buen día';
     const name = this.authService.userName();
     return name ? `${prefix}, Dr(a). ${name}` : `${prefix}, Doctor(a)`;
+  });
+
+  private readonly metricsReads = new AccountReadScope(() => this.loadKpiData());
+  private readonly directoryReads = new AccountReadScope(() => {
+    this.directorySearch.set('');
+    this.loadDirectory(0);
   });
 
   ngOnInit(): void {
@@ -142,164 +159,74 @@ export class DashboardComponent implements OnInit {
   }
 
   loadKpiData(): void {
+    const current = this.metricsReads.begin();
+    this.totalPatients.set(null);
+    this.encountersMonthCount.set(null);
+    this.encountersTodayCount.set(null);
+    this.recentEncounters.set([]);
+    this.metricsError.set(null);
+    if (!this.metricsReads.authenticated()) {
+      this.isLoadingMetrics.set(false);
+      this.isLoadingRecent.set(false);
+      return;
+    }
     this.isLoadingMetrics.set(true);
     this.isLoadingRecent.set(true);
-
-    const patients$ = this.patientService.getPatients(0, 50, 'id,desc').pipe(
-      catchError(() => of(null))
-    );
-    const dashboard$ = this.clinicalEncounterService.getDashboard().pipe(
-      catchError(() => of(null))
-    );
-    const allEncounters$ =
-      typeof this.clinicalEncounterService.getAll === 'function'
-        ? this.clinicalEncounterService.getAll(0, 100, 'encounterDate,desc').pipe(
-            catchError(() => of(null))
-          )
-        : of(null);
-
-    forkJoin({
-      patients: patients$,
-      activity: dashboard$,
-      allEncounters: allEncounters$,
-    })
-      .pipe(
-        switchMap(({ patients, activity, allEncounters }) => {
-          const patientList = patients?.content ?? [];
-          const recentPatients = patientList.slice(0, 15);
-          if (
-            typeof this.clinicalEncounterService.getByPatient !== 'function' ||
-            recentPatients.length === 0
-          ) {
-            return of({
-              patients,
-              activity,
-              allEncounters,
-              perPatientEncounters: [] as ClinicalEncounterList[],
-            });
-          }
-
-          const perPatientCalls = recentPatients.map((p) =>
-            this.clinicalEncounterService.getByPatient(p.id).pipe(
-              catchError(() => of([] as ClinicalEncounterList[]))
-            )
-          );
-
-          return forkJoin(perPatientCalls).pipe(
-            switchMap((lists) => {
-              const flattened: ClinicalEncounterList[] = [];
-              lists.forEach((list, idx) => {
-                const owner = recentPatients[idx];
-                for (const item of list || []) {
-                  flattened.push({
-                    ...item,
-                    patientId: item.patientId ?? owner.id,
-                    patientFullName: item.patientFullName || owner.fullName,
-                  });
-                }
-              });
-              return of({
-                patients,
-                activity,
-                allEncounters,
-                perPatientEncounters: flattened,
-              });
-            })
-          );
-        })
-      )
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    this.clinicalEncounterService
+      .getDashboard()
+      .pipe(takeUntil(this.metricsReads.canceled))
       .subscribe({
-        next: ({ patients, activity, allEncounters, perPatientEncounters }) => {
-          this.totalPatients.set(patients ? getTotalElements(patients) : 0);
-
-          const patientMap = new Map<number, PatientListDTO>();
-          for (const p of patients?.content ?? []) {
-            patientMap.set(p.id, p);
-          }
-
-          const encounterMap = new Map<number, ClinicalEncounterList>();
-          const mergeList = (items?: ClinicalEncounterList[] | null) => {
-            for (const item of items ?? []) {
-              if (!item || item.id == null) continue;
-              const existing = encounterMap.get(item.id);
-              encounterMap.set(item.id, {
-                ...existing,
-                ...item,
-                patientFullName:
-                  item.patientFullName ||
-                  existing?.patientFullName ||
-                  patientMap.get(item.patientId)?.fullName ||
-                  null,
-              });
-            }
-          };
-
-          mergeList(activity?.recentEncounters);
-          mergeList(allEncounters?.content);
-          mergeList(perPatientEncounters);
-
-          const mergedEncounters = Array.from(encounterMap.values()).sort((a, b) => {
-            const timeA = new Date(a.encounterDate).getTime() || 0;
-            const timeB = new Date(b.encounterDate).getTime() || 0;
-            if (timeB !== timeA) return timeB - timeA;
-            return (b.id || 0) - (a.id || 0);
-          });
-
-          const now = new Date();
-          let localTodayCount = 0;
-          let localMonthCount = 0;
-
-          for (const enc of mergedEncounters) {
-            const d = new Date(enc.encounterDate);
-            if (!Number.isNaN(d.getTime())) {
-              if (this.isSameLocalMonth(d, now)) {
-                localMonthCount++;
-              }
-              if (this.isSameLocalDay(d, now)) {
-                localTodayCount++;
-              }
-            }
-          }
-
-          this.encountersMonthCount.set(
-            Math.max(localMonthCount, activity?.encountersThisMonth ?? 0)
-          );
-          this.encountersTodayCount.set(
-            Math.max(localTodayCount, activity?.encountersToday ?? 0)
-          );
-
+        next: (activity) => {
+          if (!current()) return;
+          this.totalPatients.set(activity.totalPatients);
+          this.encountersMonthCount.set(activity.encountersThisMonth);
+          this.encountersTodayCount.set(activity.encountersToday);
           this.recentEncounters.set(
-            mergedEncounters.slice(0, 8).map((encounter) =>
-              this.mapToRecentEncounterItem(encounter, patientMap.get(encounter.patientId), now)
-            )
+            activity.recentEncounters.map((recent) =>
+              this.mapToRecentEncounterItem(recent, activity.asOfDate),
+            ),
           );
-
           this.isLoadingMetrics.set(false);
           this.isLoadingRecent.set(false);
         },
         error: () => {
-          this.isLoadingMetrics.set(false);
-          this.isLoadingRecent.set(false);
-          this.recentEncounters.set([]);
+          if (current()) {
+            this.metricsError.set('No se pudo cargar la actividad clínica.');
+            this.isLoadingMetrics.set(false);
+            this.isLoadingRecent.set(false);
+          }
         },
       });
   }
-
   loadDirectory(page: number, search?: string): void {
+    const current = this.directoryReads.begin();
+    this.directoryPatients.set([]);
+    this.directoryError.set(null);
+    this.directoryPage.set(page);
+    if (!this.directoryReads.authenticated()) {
+      this.isSearchingDirectory.set(false);
+      return;
+    }
     this.isSearchingDirectory.set(true);
-    this.patientService.getPatients(page, 6, 'fullName,asc', search).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (response) => {
-        this.directoryPatients.set(response?.content || []);
-        this.directoryPage.set(page);
-        this.directoryTotalPages.set(getTotalPages(response));
-        this.isSearchingDirectory.set(false);
-      },
-      error: () => {
-        this.directoryPatients.set([]);
-        this.isSearchingDirectory.set(false);
-      },
-    });
+    this.patientService
+      .getPatients(page, 6, 'fullName,asc', search)
+      .pipe(takeUntil(this.directoryReads.canceled))
+      .subscribe({
+        next: (response) => {
+          if (current()) {
+            this.directoryPatients.set(response.content);
+            this.directoryPage.set(page);
+            this.directoryTotalPages.set(getTotalPages(response));
+            this.isSearchingDirectory.set(false);
+          }
+        },
+        error: () => {
+          if (current()) {
+            this.directoryError.set('No se pudo cargar el directorio.');
+            this.isSearchingDirectory.set(false);
+          }
+        },
+      });
   }
 
   onDirectorySearchInput(event: Event): void {
@@ -317,7 +244,7 @@ export class DashboardComponent implements OnInit {
     if (event) event.stopPropagation();
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
-        new CustomEvent('open-encounter-detail-modal', { detail: { encounterId } })
+        new CustomEvent('open-encounter-detail-modal', { detail: { encounterId } }),
       );
     }
   }
@@ -348,45 +275,34 @@ export class DashboardComponent implements OnInit {
   }
 
   private mapToRecentEncounterItem(
-    encounter: ClinicalEncounterList,
-    patient: PatientListDTO | undefined,
-    now: Date
+    recent: DashboardRecentEncounter,
+    asOfDate: string,
   ): RecentEncounterItem {
+    const encounter = recent.encounter;
     const date = new Date(encounter.encounterDate);
     const validDate = !Number.isNaN(date.getTime());
-    const isToday = validDate && this.isSameLocalDay(date, now);
-
-    const encounterDateOnly = validDate
-      ? date.toLocaleDateString('es-AR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        })
-      : '—';
-
-    const hasTimeComponent =
-      validDate &&
-      encounter.encounterDate.includes('T') &&
-      (date.getHours() !== 0 || date.getMinutes() !== 0 || encounter.encounterDate.length > 10);
-
-    const encounterTimeOnly = hasTimeComponent
-      ? date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' hs'
+    const isToday = recent.encounterLocalDate === asOfDate;
+    const encounterDateOnly = displayLocalDate(recent.encounterLocalDate);
+    const encounterTimeOnly = validDate
+      ? date.toLocaleTimeString('es-AR', {
+          timeZone: 'America/Argentina/Buenos_Aires',
+          hour: '2-digit',
+          minute: '2-digit',
+        }) + ' hs'
       : '';
-
     const encounterDate = encounterTimeOnly
-      ? `${encounterDateOnly} • ${encounterTimeOnly}`
+      ? encounterDateOnly + ' • ' + encounterTimeOnly
       : encounterDateOnly;
-
-    const patientName =
-      encounter.patientFullName || patient?.fullName || `Paciente #${encounter.patientId}`;
-    const patientMeta = this.buildPatientMeta(patient, encounter.patientId);
+    const patientName = encounter.patientFullName || 'Paciente #' + encounter.patientId;
+    const patientMeta =
+      [recent.patientAgeLabel, recent.patientNationalId ? 'DNI ' + recent.patientNationalId : '']
+        .filter(Boolean)
+        .join(' • ') || 'HC #' + encounter.patientId;
     const consultationTypeLabel = this.getConsultationTypeLabel(encounter.consultationType);
     const clinicalHighlights = this.extractClinicalHighlights(encounter);
 
     const chiefComplaint =
-      encounter.chiefComplaint ||
-      clinicalHighlights[0]?.value ||
-      'Consulta clínica';
+      encounter.chiefComplaint || clinicalHighlights[0]?.value || 'Consulta clínica';
     const diagnosis =
       encounter.primaryDiagnosisDescription &&
       encounter.primaryDiagnosisDescription !== encounter.chiefComplaint
@@ -409,44 +325,6 @@ export class DashboardComponent implements OnInit {
       diagnosisCode: encounter.primaryDiagnosisCode,
       clinicalHighlights,
     };
-  }
-
-  private buildPatientMeta(patient: PatientListDTO | undefined, patientId: number): string {
-    const parts: string[] = [];
-    if (patient?.birthDate) {
-      const ageStr = this.calculateAgeDisplay(patient.birthDate);
-      if (ageStr) parts.push(ageStr);
-    }
-    if (patient?.nationalId) {
-      parts.push(`DNI ${patient.nationalId}`);
-    }
-    if (parts.length === 0) {
-      return `HC #${patientId}`;
-    }
-    return parts.join(' • ');
-  }
-
-  private calculateAgeDisplay(birthDateStr: string): string {
-    const birth = new Date(birthDateStr);
-    if (Number.isNaN(birth.getTime())) return '';
-    const now = new Date();
-    let years = now.getFullYear() - birth.getFullYear();
-    let months = now.getMonth() - birth.getMonth();
-    if (now.getDate() < birth.getDate()) {
-      months--;
-    }
-    if (months < 0) {
-      years--;
-      months += 12;
-    }
-    if (years < 0) return '';
-    if (years === 0) {
-      return months <= 1 ? `${Math.max(months, 1)} mes` : `${months} meses`;
-    }
-    if (years < 3 && months > 0) {
-      return `${years} ${years === 1 ? 'año' : 'años'}, ${months} m`;
-    }
-    return `${years} ${years === 1 ? 'año' : 'años'}`;
   }
 
   private extractClinicalHighlights(encounter: ClinicalEncounterList): ClinicalHighlightItem[] {
@@ -483,14 +361,6 @@ export class DashboardComponent implements OnInit {
     return highlights;
   }
 
-  private formatFieldKey(key: string): string {
-    return key
-      .replace(/_/g, ' ')
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (c) => c.toUpperCase())
-      .trim();
-  }
-
   private getConsultationTypeLabel(type?: string | null): string {
     switch (type) {
       case 'FIRST_VISIT':
@@ -507,17 +377,4 @@ export class DashboardComponent implements OnInit {
         return 'Consulta médica';
     }
   }
-
-  private isSameLocalDay(d1: Date, d2: Date): boolean {
-    return (
-      d1.getFullYear() === d2.getFullYear() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getDate() === d2.getDate()
-    );
-  }
-
-  private isSameLocalMonth(d1: Date, d2: Date): boolean {
-    return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
-  }
 }
-

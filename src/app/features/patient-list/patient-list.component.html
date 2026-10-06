@@ -109,9 +109,10 @@
     </div>
   </div>
 
+  @if (loadError(); as error) { <p role="alert">{{ error }} <button type="button" class="m3-chip" (click)="loadInitial()">Reintentar</button></p> }
   <!-- Cards Grid -->
   <div class="patient-cards-grid">
-    @for (patient of filteredPatients(); track patient.id) {
+    @for (patient of patients(); track patient.id) {
       <article
         class="patient-card"
         [class.patient-card-active]="isActive(patient.id)"

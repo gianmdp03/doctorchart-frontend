@@ -41,6 +41,8 @@
               <span class="spinner-ring"></span>
               <span>Buscando pacientes en tiempo real...</span>
             </div>
+          } @else if (searchError(); as error) {
+            <div class="search-dropdown-empty" role="alert"><p>{{ error }}</p><button type="button" (click)="retrySearch()">Reintentar</button></div>
           } @else if (searchResults().length > 0) {
             <div class="search-dropdown-header">
               <span>Resultados encontrados ({{ searchResults().length }})</span>
@@ -60,7 +62,7 @@
                       @if (p.nationalId) {
                         DNI: {{ p.nationalId }} •
                       }
-                      HC: #{{ p.id }} • F. Nac: {{ p.birthDate }}
+                      HC: #{{ p.id }} • F. Nac: {{ displayDate(p.birthDate) }}
                     </span>
                   </div>
                   <span class="result-action">Abrir Ficha →</span>

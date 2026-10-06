@@ -23,6 +23,12 @@ describe('ClinicalEncounterService canonical records', () => {
     service = TestBed.inject(ClinicalEncounterService); http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('asks the backend for a complete paginated search without changing patient encounter state',()=>{
+    service.encounters.set([record]);service.getAll(3,50,'encounterDate,desc',' J30.1 ').subscribe();
+    const req=http.expectOne(r=>r.url===base);
+    expect(req.request.params.get('page')).toBe('3');expect(req.request.params.get('search')).toBe('J30.1');
+    req.flush({content:[],totalElements:0,totalPages:0});expect(service.encounters()).toEqual([record]);
+  });
   it('reads and filters using catalog identities', () => {
     service.getById(10).subscribe(value => expect(value.specialty.name).toBe('Especialidad XYZ'));
     http.expectOne(`${base}/10`).flush(record);

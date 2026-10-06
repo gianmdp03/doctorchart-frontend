@@ -9,7 +9,7 @@ import { DoctorProfileService } from '../../core/services/doctor-profile.service
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { signal } from '@angular/core';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { provideRouter } from '@angular/router';
 
 describe('DashboardComponent', () => {
@@ -26,6 +26,7 @@ describe('DashboardComponent', () => {
 
   beforeEach(async () => {
     authServiceMock = {
+      currentUser: signal({ id: 'doctor-a' }),
       isLoggedIn: signal(true),
       userName: signal('Dra. Sofía Mendoza'),
       userEmail: signal('sofia@doctorchart.com'),
@@ -43,7 +44,7 @@ describe('DashboardComponent', () => {
           totalPages: 1,
           size: 6,
           number: 0,
-        })
+        }),
       ),
     };
 
@@ -71,24 +72,31 @@ describe('DashboardComponent', () => {
     clinicalEncounterServiceMock = {
       getDashboard: vi.fn().mockReturnValue(
         of({
+          totalPatients: 2,
+          asOfDate: '2026-10-05',
           encountersThisMonth: 12,
           encountersToday: 3,
           recentEncounters: [
             {
-              ...clinicalFormFixture(),
-              specialtyId: 1,
-              specialty: { id: 1, code: 'pediatrics', name: 'Pediatría', description: null },
-              consultationType: 'FIRST_VISIT',
-              id: 101,
-              patientId: 1,
-              patientFullName: 'Mateo Rossi',
-              encounterDate: '2026-09-24T10:00:00Z',
-              chiefComplaint: 'Control clínico',
-              primaryDiagnosisDescription: 'Rinitis alérgica',
-              primaryDiagnosisCode: 'J30.1',
+              patientAgeLabel: '2 años, 4 m',
+              patientNationalId: '50123456',
+              encounterLocalDate: '2026-09-24',
+              encounter: {
+                ...clinicalFormFixture(),
+                specialtyId: 1,
+                specialty: { id: 1, code: 'pediatrics', name: 'Pediatría', description: null },
+                consultationType: 'FIRST_VISIT',
+                id: 101,
+                patientId: 1,
+                patientFullName: 'Mateo Rossi',
+                encounterDate: '2026-09-24T10:00:00Z',
+                chiefComplaint: 'Control clínico',
+                primaryDiagnosisDescription: 'Rinitis alérgica',
+                primaryDiagnosisCode: 'J30.1',
+              },
             },
           ],
-        })
+        }),
       ),
       getByPatient: vi.fn().mockReturnValue(of([])),
     };
@@ -151,91 +159,84 @@ describe('DashboardComponent', () => {
     expect(component.isNotesSaved()).toBe(true);
   });
 
-  it('should resolve totalPatients correctly when backend returns nested pageable structure', () => {
-    patientServiceMock.getPatients.mockReturnValue(
+  it('uses the complete server total independently of the directory page', () => {
+    clinicalEncounterServiceMock.getDashboard.mockReturnValue(
       of({
-        content: [
-          { id: 1, fullName: 'Mateo Rossi' },
-          { id: 2, fullName: 'Lucía Fernández' },
-          { id: 3, fullName: 'Carlos Gómez' },
-        ],
-        page: {
-          totalElements: 3,
-          totalPages: 1,
-          size: 10,
-          number: 0,
-        },
-      } as any)
+        totalPatients: 230,
+        asOfDate: '2026-10-05',
+        encountersThisMonth: 0,
+        encountersToday: 0,
+        recentEncounters: [],
+      }),
     );
-
     component.loadKpiData();
-    expect(component.totalPatients()).toBe(3);
+    expect(component.totalPatients()).toBe(230);
+    expect(component.encountersMonthCount()).toBe(0);
+    expect(component.encountersTodayCount()).toBe(0);
+    expect(clinicalEncounterServiceMock.getByPatient).not.toHaveBeenCalled();
   });
 
   it('should reload KPIs when patient-created event is dispatched', () => {
     const kpiSpy = vi.spyOn(component, 'loadKpiData');
     const dirSpy = vi.spyOn(component, 'loadDirectory');
 
-    window.dispatchEvent(new CustomEvent('patient-created', { detail: { id: 99, fullName: 'Nuevo Paciente' } }));
+    window.dispatchEvent(
+      new CustomEvent('patient-created', { detail: { id: 99, fullName: 'Nuevo Paciente' } }),
+    );
 
     expect(kpiSpy).toHaveBeenCalled();
     expect(dirSpy).toHaveBeenCalledWith(0, '');
   });
 
-  it('should aggregate per-patient consultations into recentEncounters and encountersTodayCount even when getDashboard returns 0', () => {
-    const nowIso = new Date().toISOString();
-    clinicalEncounterServiceMock.getDashboard.mockReturnValue(
-      of({
-        encountersThisMonth: 0,
-        encountersToday: 0,
-        recentEncounters: [],
-      })
-    );
-    clinicalEncounterServiceMock.getByPatient.mockImplementation((patientId: number) => {
-      if (patientId === 1) {
-        return of([
-          {
-            id: 501,
-            patientId: 1,
-            encounterDate: nowIso,
-            consultationType: 'FIRST_VISIT',
-            chiefComplaint: 'Control inicial',
-            primaryDiagnosisDescription: 'Paciente sano',
-            ...clinicalFormFixture(),
-            formValues: {abc: 'Control inicial', def: 12.4},
-            formDefinitionSnapshot: {categories:[{key:'xyz',title:'Detalle',enabled:true,fields:[{key:'abc',label:'Motivo Principal',type:'TEXT',required:false},{key:'def',label:'Peso (kg)',type:'NUMBER',required:false}]}]},
-          },
-          {
-            id: 502,
-            patientId: 1,
-            encounterDate: nowIso,
-            consultationType: 'FOLLOW_UP',
-            chiefComplaint: 'Seguimiento evolutivo',
-            primaryDiagnosisDescription: 'Evolución favorable',
-            ...clinicalFormFixture(),
-            formValues: {abc: 'Seguimiento evolutivo'},
-            formDefinitionSnapshot: {categories:[{key:'xyz',title:'Detalle',enabled:true,fields:[{key:'abc',label:'Motivo Principal',type:'TEXT',required:false}]}]},
-          },
-        ]);
-      }
-      return of([]);
-    });
-
-    component.loadKpiData();
-
-    expect(component.encountersTodayCount()).toBe(2);
-    expect(component.encountersMonthCount()).toBe(2);
-    expect(component.recentEncounters().length).toBe(2);
+  it('renders recent patient metadata and clinical highlights from the backend projection', () => {
     expect(component.recentEncounters()[0].patientName).toBe('Mateo Rossi');
-    expect(component.recentEncounters()[0].isToday).toBe(true);
-    expect(component.recentEncounters()[0].patientMeta).toContain('DNI 50123456');
-    expect(component.recentEncounters()[0].clinicalHighlights.length).toBeGreaterThan(0);
+    expect(component.recentEncounters()[0].patientMeta).toBe('2 años, 4 m • DNI 50123456');
+    expect(component.recentEncounters()[0].encounterDateOnly).toBe('24/09/2026');
+    expect(component.recentEncounters()[0].isToday).toBe(false);
+    expect(clinicalEncounterServiceMock.getByPatient).not.toHaveBeenCalled();
+  });
+  it('shows an error without turning failed statistics into zero activity', () => {
+    clinicalEncounterServiceMock.getDashboard.mockReturnValue(throwError(() => ({ status: 500 })));
+    component.loadKpiData();
+    expect(component.metricsError()).toContain('No se pudo');
+    expect(component.totalPatients()).toBeNull();
+    expect(component.encountersTodayCount()).toBeNull();
+    expect(component.recentEncounters()).toEqual([]);
+  });
+  it('cancels earlier reads and ignores replies after an account switch before effects run', () => {
+    const old = new Subject<any>(),
+      latest = new Subject<any>();
+    clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(old).mockReturnValueOnce(latest);
+    component.loadKpiData();
+    component.loadKpiData();
+    expect(old.observed).toBe(false);
+    authServiceMock.currentUser.set({ id: 'doctor-b' });
+    latest.next({
+      totalPatients: 999,
+      encountersToday: 999,
+      encountersThisMonth: 999,
+      recentEncounters: [],
+    });
+    expect(component.totalPatients()).toBeNull();
+    fixture.detectChanges();
+    expect(latest.observed).toBe(false);
+  });
+  it('cancels a directory search when a new one starts and keeps its latest page', () => {
+    const pending = new Subject<any>();
+    patientServiceMock.getPatients.mockReturnValueOnce(pending);
+    component.loadDirectory(0, 'older');
+    component.loadDirectory(0, 'newer');
+    expect(pending.observed).toBe(false);
+    pending.next({ content: [], totalPages: 99 });
+    expect(component.directoryPatients()).toHaveLength(2);
   });
 
   it('cancels pending account directory requests on destruction', () => {
-    const pending=new Subject<any>(); patientServiceMock.getPatients.mockReturnValue(pending);
-    component.loadDirectory(0); expect(pending.observed).toBe(true); fixture.destroy(); expect(pending.observed).toBe(false);
+    const pending = new Subject<any>();
+    patientServiceMock.getPatients.mockReturnValue(pending);
+    component.loadDirectory(0);
+    expect(pending.observed).toBe(true);
+    fixture.destroy();
+    expect(pending.observed).toBe(false);
   });
-
 });
-

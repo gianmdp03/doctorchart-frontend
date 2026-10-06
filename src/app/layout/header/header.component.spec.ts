@@ -6,7 +6,7 @@ import { PatientService } from '../../core/services/patient.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { DoctorProfileService } from '../../core/services/doctor-profile.service';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { provideRouter } from '@angular/router';
 
 describe('HeaderComponent', () => {
@@ -18,9 +18,24 @@ describe('HeaderComponent', () => {
   let patientServiceMock: any;
   let specialtyServiceMock: any;
   let profileServiceMock: any;
+  it('cancels superseded global searches and does not publish previous-account results',()=>{
+    vi.useFakeTimers();const pending=new Subject<any>();patientServiceMock.getPatients.mockReturnValueOnce(pending);
+    component.onSearchInput({target:{value:'older'}} as any);vi.advanceTimersByTime(251);expect(pending.observed).toBe(true);
+    component.onSearchInput({target:{value:'newer'}} as any);expect(pending.observed).toBe(false);
+    const late=new Subject<any>();patientServiceMock.getPatients.mockReturnValueOnce(late);vi.advanceTimersByTime(251);
+    authServiceMock.currentUser.set({id:'doctor-b'});late.next({content:[{id:999}]});expect(component.searchResults()).toEqual([]);
+    fixture.detectChanges();expect(late.observed).toBe(false);expect(component.searchQuery()).toBe('');vi.useRealTimers();
+  });
+  it('clears pending timers and distinguishes search failures from no matches',()=>{
+    vi.useFakeTimers();patientServiceMock.getPatients.mockReturnValueOnce(throwError(()=>({status:500})));
+    component.onSearchInput({target:{value:'Ada'}} as any);vi.advanceTimersByTime(251);expect(component.searchError()).toContain('No se pudo');
+    component.retrySearch();component.clearSearch();const count=patientServiceMock.getPatients.mock.calls.length;
+    vi.advanceTimersByTime(251);expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(count);expect(component.isSearching()).toBe(false);vi.useRealTimers();
+  });
 
   beforeEach(async () => {
     authServiceMock = {
+      currentUser:signal({id:'doctor-a'}),
       isLoggedIn: signal(true),
       isSuperAdmin: signal(false),
       userName: signal('Dr. Santiago'),
