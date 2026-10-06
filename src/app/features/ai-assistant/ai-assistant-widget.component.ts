@@ -56,11 +56,13 @@ import { AiChatService } from '../../core/services/ai-chat.service';
 export class AiAssistantWidgetComponent {
   protected readonly chatService = inject(AiChatService);
 
+  private draftRevision = this.chatService.contextRevision();
   readonly inputMessage = signal<string>('');
   readonly messagesContainer =
     viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
 
   constructor() {
+    effect(() => { this.draftRevision = this.chatService.contextRevision(); this.inputMessage.set(''); });
     effect(() => {
       this.chatService.messages();
       this.chatService.isTyping();
@@ -80,6 +82,8 @@ export class AiAssistantWidgetComponent {
   }
 
   onSendMessage(): void {
+    this.chatService.syncContext();
+    if (this.draftRevision !== this.chatService.contextRevision()) { this.inputMessage.set(''); return; }
     const text = this.inputMessage();
     if (!text.trim()) return;
 

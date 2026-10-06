@@ -1,3 +1,5 @@
+import { signal } from '@angular/core';
+import { AuthService } from '../../core/services/auth.service';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -13,7 +15,7 @@ describe('PatientPrescriptionStore with real HTTP client', () => {
   const draft: PrescriptionRequest = {type:'STUDY_ORDERS',diagnosisDescription:'Control',generalInstructions:'Reposo',prescriptions:[],diagnosticOrders:['ECG']};
   const record: SavedPrescriptionRecord = {...draft,id:31,patientId:10,authorUserId:'doctor-a',createdAt:'2026-10-05T14:30:00Z'};
   beforeEach(() => {
-    TestBed.configureTestingModule({providers:[provideHttpClient(),provideHttpClientTesting(),PatientPrescriptionStore]});
+    TestBed.configureTestingModule({providers:[{provide:AuthService,useValue:{currentUser:signal({id:'doctor-a'})}},provideHttpClient(),provideHttpClientTesting(),PatientPrescriptionStore]});
     store=TestBed.inject(PatientPrescriptionStore); http=TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
@@ -64,4 +66,18 @@ describe('PatientPrescriptionStore with real HTTP client', () => {
     expect(store.loadError()).toContain('No se pudo cargar'); store.reload(); http.expectOne(url(10)).flush([record]);
     expect(store.loadError()).toBeNull(); expect(store.records()).toEqual([record]);
   });
+
+  it('ignores a late save from a different account even before effects run', () => {
+    load(); const printed=vi.fn(); store.save(draft,printed); const request=http.expectOne(url(10));
+    TestBed.inject(AuthService).currentUser.set({id:'doctor-b'} as any); request.flush(record);
+    expect(printed).not.toHaveBeenCalled(); expect(store.records()).toEqual([]); TestBed.tick();
+    expect(store.busy()).toBe(false); expect(store.success()).toBeNull();
+    store.setPatient(10); http.expectOne(url(10)).flush([]); expect(store.records()).toEqual([]);
+  });
+  it('cancels account-scoped writes and suppresses late deletion errors', () => {
+    load(); store.delete(31); const request=http.expectOne(url(10)+'/31');
+    TestBed.inject(AuthService).currentUser.set(null); TestBed.tick();
+    expect(request.cancelled).toBe(true); expect(store.busy()).toBe(false); expect(store.error()).toBeNull();
+  });
+
 });

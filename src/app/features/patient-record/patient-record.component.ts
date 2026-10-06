@@ -285,11 +285,20 @@ export class PatientRecordComponent implements OnInit {
     'Oftálmica / Ótica',
   ];
 
+  private recordContext = '';
   constructor() {
     effect(() => {
       const patient = this.activePatientService.activePatient();
+      const owner = this.authService.currentUser()?.id;
+      const context = JSON.stringify([owner ?? null, patient?.id ?? null]);
       const growthEnabled = this.growthEnabled();
       untracked(() => {
+        if (context !== this.recordContext) {
+          this.recordContext = context; this.checkupRead++; this.encounterRead++; this.growthRead++;
+          this.checkups.set([]); this.encounters.set([]); this.backendGrowthMeasurements.set([]);
+          this.clearRxForm(); this.rxPatientId = null;
+          this.isMoreMenuOpen.set(false); this.isNewEncounterModalOpen.set(false); this.isEditPatientModalOpen.set(false);
+        }
         if (!growthEnabled && this.selectedTab() === 'curvas') this.selectedTab.set('resumen');
         if (patient?.id) {
           this.loadCheckups(patient.id);
@@ -308,7 +317,7 @@ export class PatientRecordComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe((params) => {
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const idParam = params.get('id');
       if (idParam) {
         const id = Number(idParam);
@@ -318,7 +327,7 @@ export class PatientRecordComponent implements OnInit {
       }
     });
 
-    this.route.queryParamMap.subscribe((queryParams) => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((queryParams) => {
       const tabParam = queryParams.get('tab') as PatientRecordTab | null;
       if (tabParam && ['resumen', 'historia', 'vacunas', 'curvas', 'recetas', 'estudios'].includes(tabParam)) {
         this.setTab(tabParam);
@@ -347,13 +356,14 @@ export class PatientRecordComponent implements OnInit {
     }
   }
 
-  @HostListener('window:encounter-created')
-  @HostListener('window:encounter-updated')
-  @HostListener('window:encounter-deleted')
-  onEncounterCreated(): void {
+  @HostListener('window:encounter-created', ['$event'])
+  @HostListener('window:encounter-updated', ['$event'])
+  @HostListener('window:encounter-deleted', ['$event'])
+  onEncounterCreated(event?: Event): void {
     if (isPlatformBrowser(this.platformId)) {
       const patientId = this.activePatientService.patientId();
-      if (patientId) this.activePatientService.loadPatient(patientId);
+      const eventPatientId = (event as CustomEvent | undefined)?.detail?.patientId;
+      if (patientId && eventPatientId === patientId) this.activePatientService.loadPatient(patientId);
     }
   }
   loadCheckups(patientId: number): void {
@@ -442,7 +452,7 @@ export class PatientRecordComponent implements OnInit {
 
   onPatientUpdated(updatedPatient: PatientDetailDTO): void {
     this.isEditPatientModalOpen.set(false);
-    if (updatedPatient.id) {
+    if (updatedPatient.id && updatedPatient.id === this.activePatientService.patientId()) {
       this.activePatientService.setActivePatient(updatedPatient);
       this.activePatientService.loadPatient(updatedPatient.id);
     }
@@ -483,13 +493,18 @@ export class PatientRecordComponent implements OnInit {
     if (!confirmed) return;
 
     const patientId = this.activePatientService.patientId();
-    this.clinicalEncounterService.delete(encounterId).subscribe({
+    const owner = this.authService.currentUser()?.id;
+    const context = this.recordContext;
+    const current = () => context === this.recordContext && patientId === this.activePatientService.patientId() && owner === this.authService.currentUser()?.id;
+    this.clinicalEncounterService.delete(encounterId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
+        if (!current()) return;
         if (patientId) {
           window.dispatchEvent(new CustomEvent('encounter-deleted', {detail:{patientId}}));
         }
       },
       error: (err) => {
+        if (!current()) return;
         alert(err?.error?.message || 'Error al eliminar la consulta clínica.');
       },
     });
@@ -602,7 +617,11 @@ export class PatientRecordComponent implements OnInit {
     }
   }
 
+  private currentRecordContext(): boolean {
+    return this.recordContext === JSON.stringify([this.authService.currentUser()?.id ?? null, this.activePatientService.patientId()]);
+  }
   saveCurrentRxToHistory(onSaved?: (record: SavedPrescriptionRecord) => void): void {
+    if (!this.currentRecordContext()) { this.clearRxForm(); return; }
     if (this.rxBusy()) return;
     this.commitPendingRxInputs();
     const meds = this.draftPrescriptions();
@@ -624,6 +643,7 @@ export class PatientRecordComponent implements OnInit {
   }
 
   private openSavedPrescription(record: SavedPrescriptionRecord, forcedType?: PrescriptionDocumentType): void {
+    if (!this.currentRecordContext() || record.patientId !== this.activePatientService.patientId()) return;
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('open-prescription-print-modal', { detail: {
         source: 'PRESCRIPTION_RECORD', id: record.id, patientId: record.patientId, type: forcedType || record.type,

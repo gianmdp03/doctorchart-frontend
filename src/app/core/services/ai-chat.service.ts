@@ -1,4 +1,7 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { AuthService } from './auth.service';
+import { ActivePatientService } from './active-patient.service';
+import { DestroyRef, effect, Injectable, inject, signal, untracked } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
@@ -26,6 +29,22 @@ export const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
 })
 export class AiChatService {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
+  private readonly patient = inject(ActivePatientService);
+  private request: Subscription | null = null;
+  private context = '';
+  readonly contextRevision = signal(0);
+  constructor() {
+    this.syncContext();
+    effect(() => { this.auth.currentUser(); this.patient.activePatient(); untracked(() => this.syncContext()); });
+    inject(DestroyRef).onDestroy(() => this.request?.unsubscribe());
+  }
+  syncContext(): void {
+    const context = JSON.stringify([this.auth.currentUser()?.id ?? null,this.patient.activePatient()?.id ?? null]);
+    if (context === this.context) return;
+    this.context = context; this.clearHistory(); this.isOpen.set(false);
+  }
+
 
   readonly isOpen = signal<boolean>(false);
   readonly isTyping = signal<boolean>(false);
@@ -57,6 +76,9 @@ export class AiChatService {
   }
 
   clearHistory(): void {
+    this.request?.unsubscribe(); this.request = null;
+    this.contextRevision.update(value => value + 1);
+    this.isTyping.set(false); this.hasUnread.set(false);
     this.messages.set([
       {
         ...INITIAL_ASSISTANT_MESSAGE,
@@ -67,6 +89,11 @@ export class AiChatService {
   }
 
   sendMessage(userText: string): void {
+    this.syncContext();
+    if (!this.auth.currentUser()?.id) return;
+    const revision = this.contextRevision();
+    const context = this.context;
+    const current = () => revision === this.contextRevision() && context === JSON.stringify([this.auth.currentUser()?.id ?? null,this.patient.activePatient()?.id ?? null]);
     const trimmed = userText.trim();
     if (!trimmed || this.isTyping()) return;
 
@@ -80,10 +107,11 @@ export class AiChatService {
     this.messages.update((prev) => [...prev, userMsg]);
     this.isTyping.set(true);
 
-    this.http
+    this.request = this.http
       .post<AiChatResponse>(environment.aiGatewayUrl, { message: trimmed })
       .subscribe({
         next: (res) => {
+          if (!current()) return;
           this.isTyping.set(false);
           const botMsg: ChatMessage = {
             id: 'bot-' + Date.now(),
@@ -97,6 +125,7 @@ export class AiChatService {
           }
         },
         error: (err: HttpErrorResponse) => {
+          if (!current()) return;
           this.isTyping.set(false);
           let errorText =
             'No fue posible procesar la consulta clínica en este momento. Por favor, intente nuevamente en unos instantes.';

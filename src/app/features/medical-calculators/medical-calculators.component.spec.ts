@@ -1,3 +1,4 @@
+import { AuthService } from '../../core/services/auth.service';
 import { CALCULATOR_CATALOG_FIXTURE } from '../../core/testing/calculator-catalog.fixture';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
@@ -29,6 +30,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     patient.set(null);
     TestBed.configureTestingModule({ imports: [MedicalCalculatorsComponent], providers: [
       provideHttpClient(), provideHttpClientTesting(),
+      {provide:AuthService,useValue:{currentUser:signal({id:'doctor-a'})}},
       { provide: ActivePatientService, useValue: { activePatient: patient } },
     ] });
     fixture = TestBed.createComponent(MedicalCalculatorsComponent);
@@ -545,6 +547,58 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     component.selectCalculator('cockcroft'); expect(component.currentInputs()['gender']).toBe('MALE');
     component.selectCalculator('tfge'); expect(component.currentInputs()['gender']).toBe('FEMALE');
     component.resetCurrentInputs(); expect(component.currentInputs()['gender']).toBe('MALE');
+  });
+
+
+  it('resets all calculator drafts and cancels pending preview, autofill and save when switching patients', async () => {
+    attachPatient(); requestPreview(15).flush(RESULT);
+    component.saveResultToRecord(); const saving=http.expectOne(req=>req.url.endsWith('/calculators/execute'));
+    component.autofillFromPatient(); const autofill=http.expectOne(req=>req.url.endsWith('/autofill'));
+    patient.set({id:20,fullName:'Otro paciente'} as PatientDetailDTO);
+    expect(component.currentResult()).toBeNull(); fixture.detectChanges();
+    expect(saving.cancelled).toBe(true); expect(autofill.cancelled).toBe(true);
+    http.expectOne(req=>req.url.endsWith('/patients/20/history')).flush([]);
+    await Promise.resolve(); fixture.detectChanges();
+    expect(component.isCurrentInputComplete()).toBe(false);
+    expect(numberInputs().every(input=>input.value==='')).toBe(true);
+    expect(component.saveFeedback()).toBe(false); expect(component.isSavingLog()).toBe(false);
+    expect(component.calcService.savedHistory()).toEqual([]);
+    const preview = requestPreview(15);
+    patient.set(null); fixture.detectChanges();
+    expect(preview.cancelled).toBe(true); expect(component.currentResult()).toBeNull();
+  });
+  it('rejects late persistence errors before the patient context effect runs', () => {
+    attachPatient(); requestPreview(15).flush(RESULT); component.saveResultToRecord();
+    const saving=http.expectOne(req=>req.url.endsWith('/execute'));
+    patient.set({id:20,fullName:'Otro'} as PatientDetailDTO);
+    saving.flush({message:'Error del anterior'}, {status:500,statusText:'Error'});
+    expect(component.saveError()).toBeNull(); fixture.detectChanges();
+    http.expectOne(req=>req.url.endsWith('/patients/20/history')).flush([]);
+    expect(component.isSavingLog()).toBe(false);
+  });
+  it('keeps only the latest history filter response and resets filters for a different patient', () => {
+    attachPatient(); component.loadPatientHistory(); const older=http.expectOne(req=>req.url.endsWith('/patients/10/history'));
+    component.historyFilterCode.set('imc'); component.loadPatientHistory(); const newer=http.expectOne(req=>req.url.endsWith('/patients/10/history'));
+    newer.flush([{id:2,patientId:10,calculationCode:'imc',inputSnapshot:{}}]); older.flush([{id:1,patientId:10}]);
+    expect(component.patientBackendHistory()[0].id).toBe(2);
+    patient.set({id:20} as PatientDetailDTO); fixture.detectChanges();
+    expect(component.patientBackendHistory()).toEqual([]); expect(component.historyFilterCode()).toBe('all');
+    http.expectOne(req=>req.url.endsWith('/patients/20/history')).flush([]);
+  });
+  it('scopes visible local history and clearing to the selected patient', () => {
+    const item={calculatorId:'holliday_segar' as const,calculatorName:'Holliday',resultHeadline:'1250',interpretationLabel:'Normal',severity:'normal' as const,calculatedAt:RESULT.calculatedAt,plainTextEvolution:'Texto',inputsSummary:{}};
+    component.calcService.saveCalculation({...item,patientId:10}); component.calcService.saveCalculation({...item,patientId:20});
+    attachPatient(); expect(component.localHistory().map(item=>item.patientId)).toEqual([10]);
+    vi.spyOn(window,'confirm').mockReturnValueOnce(true); component.clearLocalHistory();
+    expect(component.localHistory()).toEqual([]); expect(component.calcService.savedHistory().map(item=>item.patientId)).toEqual([20]);
+  });
+  it('reloads catalog and preferences for a different account and cancels old preference writes', () => {
+    component.toggleFavoriteCalculator('imc'); const pending=http.expectOne(req=>req.method==='PUT');
+    TestBed.inject(AuthService).currentUser.set({id:'doctor-b'} as any); fixture.detectChanges();
+    expect(pending.cancelled).toBe(true); expect(component.myCalculatorsCodes()).toEqual([]);
+    http.expectOne(req=>req.url.endsWith('/catalog')).flush(CALCULATOR_CATALOG_FIXTURE);
+    http.expectOne(req=>req.url.endsWith('/preferences')).flush({favoriteCalculationCodes:['imc']});
+    expect(component.myCalculatorsCodes()).toEqual(['imc']); expect(component.setupLoaded()).toBe(true);
   });
 
 });

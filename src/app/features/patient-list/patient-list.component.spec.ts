@@ -4,7 +4,7 @@ import { PatientService } from '../../core/services/patient.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
@@ -97,4 +97,14 @@ describe('PatientListComponent', () => {
     component.closeColumnsModal();
     expect(component.isColumnsModalOpen()).toBe(false);
   });
+
+  it('cancels the account screen request and its search timer on destruction', () => {
+    vi.useFakeTimers(); const pending=new Subject<any>(); patientServiceMock.getPatients.mockReturnValue(pending);
+    component.loadInitial(); expect(pending.observed).toBe(true);
+    component.onSearchInput({target:{value:'Nueva búsqueda'}} as any);
+    fixture.destroy(); expect(pending.observed).toBe(false);
+    const calls=patientServiceMock.getPatients.mock.calls.length; vi.advanceTimersByTime(400);
+    expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(calls); vi.useRealTimers();
+  });
+
 });

@@ -4,7 +4,7 @@ import { ClinicalEncounterService } from '../../core/services/clinical-encounter
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { provideRouter } from '@angular/router';
 
 describe('ConsultasComponent', () => {
@@ -102,4 +102,10 @@ describe('ConsultasComponent', () => {
       })
     );
   });
+
+  it('cancels pending consultations when the account screen is destroyed', () => {
+    const pending=new Subject<any>(); clinicalEncounterServiceMock.getAll.mockReturnValue(pending);
+    component.loadConsultations(); expect(pending.observed).toBe(true); fixture.destroy(); expect(pending.observed).toBe(false);
+  });
+
 });

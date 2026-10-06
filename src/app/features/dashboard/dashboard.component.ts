@@ -1,5 +1,6 @@
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { wizardRecordEntries } from '../../core/models/wizard-record-display';
-import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
+import { DestroyRef, Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -80,6 +81,7 @@ export class DashboardComponent implements OnInit {
   private readonly clinicalEncounterService = inject(ClinicalEncounterService);
   private readonly workspaceStore = inject(WorkspaceStore);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly totalPatients = signal<number>(0);
   readonly encountersMonthCount = signal<number>(0);
@@ -206,6 +208,7 @@ export class DashboardComponent implements OnInit {
           );
         })
       )
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ patients, activity, allEncounters, perPatientEncounters }) => {
           this.totalPatients.set(patients ? getTotalElements(patients) : 0);
@@ -285,7 +288,7 @@ export class DashboardComponent implements OnInit {
 
   loadDirectory(page: number, search?: string): void {
     this.isSearchingDirectory.set(true);
-    this.patientService.getPatients(page, 6, 'fullName,asc', search).subscribe({
+    this.patientService.getPatients(page, 6, 'fullName,asc', search).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.directoryPatients.set(response?.content || []);
         this.directoryPage.set(page);

@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, takeUntil } from 'rxjs';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucidePrinter, lucideX, lucidePill, lucideFileText } from '@ng-icons/lucide';
+import { ActivePatientService } from '../../core/services/active-patient.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClinicalDocumentPrintService } from '../../core/services/clinical-document-print.service';
 import { ClinicalPrintDocument, PrintDocumentReference } from '../../core/models/clinical-print-document.model';
@@ -29,6 +30,10 @@ export type PrintDocumentType = 'PRESCRIPTION' | 'STUDY_ORDERS';
 export class PrescriptionPrintLayoutComponent {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly auth = inject(AuthService);
+  private readonly activePatient = inject(ActivePatientService);
+  private openingPatientId: number | null = null;
+  private currentPatientId(): number | null { return this.activePatient.activePatient()?.id ?? null; }
+  private sameContext(): boolean { return this.openingUserId === (this.auth.currentUser()?.id ?? null) && this.openingPatientId === this.currentPatientId(); }
   private readonly api = inject(ClinicalDocumentPrintService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cancelled = new Subject<void>();
@@ -63,13 +68,14 @@ export class PrescriptionPrintLayoutComponent {
   readonly hasPrescriptions = computed(() => (this.document()?.prescriptions.length ?? 0) > 0);
   readonly hasStudies = computed(() => (this.document()?.diagnosticOrders.length ?? 0) > 0);
   readonly canPrint = computed(() => this.isOpen() && !this.loading() && !this.error() && !!this.document()
-    && this.auth.currentUser()?.id === this.document()?.author.userId
+    && this.sameContext() && this.auth.currentUser()?.id === this.document()?.author.userId
     && (this.documentType() === 'PRESCRIPTION' ? this.hasPrescriptions() : this.hasStudies()));
 
   constructor() {
     effect(() => {
       const userId = this.auth.currentUser()?.id ?? null;
-      if (this.isOpen() && userId !== this.openingUserId) this.closeModal();
+      const patientId = this.currentPatientId();
+      if (this.isOpen() && (userId !== this.openingUserId || patientId !== this.openingPatientId)) this.closeModal();
     });
   }
   @HostListener('window:open-prescription-print-modal', ['$event'])
@@ -80,12 +86,12 @@ export class PrescriptionPrintLayoutComponent {
     if (!user || !reference || !['PRESCRIPTION_RECORD','ENCOUNTER'].includes(reference.source)
         || !Number.isSafeInteger(reference.id) || reference.id <= 0
         || !Number.isSafeInteger(reference.patientId) || reference.patientId <= 0) return;
-    this.openingUserId = user.id;
+    this.openingUserId = user.id; this.openingPatientId = this.currentPatientId();
     const identity = doctorPrintIdentity(user.user_metadata);
     this.isOpen.set(true); this.loading.set(true);
     this.api.get(reference).pipe(takeUntil(this.cancelled),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: document => {
-        if (this.auth.currentUser()?.id !== this.openingUserId) { this.closeModal(); return; }
+        if (!this.sameContext()) { this.closeModal(); return; }
         this.loading.set(false);
         if (document.source !== reference.source || document.id !== reference.id || document.patient.id !== reference.patientId
             || document.author.userId !== this.openingUserId || !Number.isFinite(Date.parse(document.issuedAt))) {
@@ -96,14 +102,14 @@ export class PrescriptionPrintLayoutComponent {
         this.documentType.set(type === 'STUDY_ORDERS' && document.diagnosticOrders.length > 0 ? 'STUDY_ORDERS'
           : document.prescriptions.length > 0 ? 'PRESCRIPTION' : 'STUDY_ORDERS');
       },
-      error: error => { this.loading.set(false); this.error.set(error?.error?.message || 'No se pudo recuperar el documento para imprimir.'); },
+      error: error => { if (!this.sameContext()) { this.closeModal(); return; } this.loading.set(false); this.error.set(error?.error?.message || 'No se pudo recuperar el documento para imprimir.'); },
     });
   }
   @HostListener('window:keydown.escape')
   onEscape(): void { if (this.isOpen()) this.closeModal(); }
   closeModal(): void {
     this.cancelled.next(); this.isOpen.set(false); this.loading.set(false); this.error.set(null);
-    this.document.set(null); this.authorIdentity.set(null); this.openingUserId = null;
+    this.document.set(null); this.authorIdentity.set(null); this.openingUserId = null; this.openingPatientId = null;
   }
   setFormat(format: PrintPageFormat): void { this.printFormat.set(format); }
   setDocType(type: PrintDocumentType): void {

@@ -142,4 +142,19 @@ describe('Prescription print presentation baseline', () => {
     api.get.mockReturnValue(of({...document,issuedAt:'2026-10-06T01:00:00Z'}));
     component.onOpenModal(new CustomEvent('open-prescription-print-modal',{detail}));expect(component.formattedDate()).toBe('05/10/2026');
   });
+
+  it('disables printing immediately and closes the document when the selected patient changes', () => {
+    component.onOpenModal(new CustomEvent('open-prescription-print-modal',{detail})); fixture.detectChanges();
+    const print=vi.spyOn(window,'print').mockImplementation(()=>{});
+    (TestBed.inject(ActivePatientService).activePatient as any).set({id:20});
+    expect(component.canPrint()).toBe(false); component.print(); expect(print).not.toHaveBeenCalled();
+    fixture.detectChanges(); expect(component.isOpen()).toBe(false); expect(component.document()).toBeNull();
+  });
+  it('cannot reopen a late document after changing the selected patient', () => {
+    const pending=new Subject<ClinicalPrintDocument>(); api.get.mockReturnValue(pending);
+    component.onOpenModal(new CustomEvent('open-prescription-print-modal',{detail}));
+    (TestBed.inject(ActivePatientService).activePatient as any).set({id:20}); pending.next(document);
+    expect(component.document()).toBeNull(); expect(component.isOpen()).toBe(false); expect(pending.observed).toBe(false);
+  });
+
 });

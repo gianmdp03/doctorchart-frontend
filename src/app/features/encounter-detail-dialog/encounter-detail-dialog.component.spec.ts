@@ -1,3 +1,4 @@
+import { ActivePatientService } from '../../core/services/active-patient.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -13,7 +14,7 @@ describe('EncounterDetailDialogComponent saved snapshot editing', () => {
   let service: { getById: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }; const user = signal<{ id: string } | null>(null);
   beforeEach(async () => {
     user.set({ id: 'doctor-a' }); record = dialogEncounter(); service = { getById: vi.fn().mockImplementation(() => of(structuredClone(record))), update: vi.fn().mockImplementation((_id, request) => of({ ...record, version: 7, formValues: request.values, encounterDate: request.encounterDate })) };
-    await TestBed.configureTestingModule({ imports: [EncounterDetailDialogComponent], providers: [{ provide: ClinicalEncounterService, useValue: service }, { provide: AuthService, useValue: { currentUser: user } }] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [EncounterDetailDialogComponent], providers: [{provide:ActivePatientService,useValue:{activePatient:signal(null)}},{ provide: ClinicalEncounterService, useValue: service }, { provide: AuthService, useValue: { currentUser: user } }] }).compileComponents();
     fixture = TestBed.createComponent(EncounterDetailDialogComponent); component = fixture.componentInstance; fixture.detectChanges();
     component.openModal(new CustomEvent('open-encounter-detail-modal', { detail: { encounter: record } })); fixture.detectChanges();
   });
@@ -59,4 +60,17 @@ describe('EncounterDetailDialogComponent saved snapshot editing', () => {
     const request = component.save(); user.set({ id: 'doctor-b' }); pending.next({ ...record, version: 7 }); pending.complete(); await request;
     expect(component.encounter()?.version).toBe(6); fixture.detectChanges(); expect(component.encounter()).toBeNull(); expect(component.isOpen()).toBe(false);
   });
+
+  it('blocks editing immediately and discards the open draft when the selected patient changes', async () => {
+    edit(); (TestBed.inject(ActivePatientService).activePatient as any).set({id:99});
+    expect(component.readonly()).toBe(true); await component.save(); expect(service.update).not.toHaveBeenCalled();
+    fixture.detectChanges(); expect(component.isOpen()).toBe(false); expect(component.values()).toEqual({});
+  });
+  it('ignores a pending save after changing patient context', async () => {
+    edit(); const pending=new Subject<ClinicalEncounterDetail>(); service.update.mockReturnValueOnce(pending);
+    const saving=component.save(); (TestBed.inject(ActivePatientService).activePatient as any).set({id:99}); fixture.detectChanges();
+    pending.next({...record,version:99}); pending.complete(); await saving;
+    expect(component.encounter()).toBeNull(); expect(component.isOpen()).toBe(false);
+  });
+
 });

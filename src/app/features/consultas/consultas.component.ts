@@ -1,4 +1,5 @@
-import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DestroyRef, Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -34,6 +35,7 @@ export class ConsultasComponent implements OnInit {
   readonly activePatientService = inject(ActivePatientService);
   readonly specialtyService = inject(DoctorSpecialtyService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly searchQuery = signal<string>('');
   readonly consultations = signal<ConsultationExplorerItem[]>([]);
@@ -103,6 +105,7 @@ export class ConsultasComponent implements OnInit {
           );
         })
       )
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ baseList, perPatient }) => {
           const map = new Map<number, ClinicalEncounterList>();

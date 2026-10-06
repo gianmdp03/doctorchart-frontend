@@ -9,7 +9,7 @@ import { DoctorProfileService } from '../../core/services/doctor-profile.service
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { provideRouter } from '@angular/router';
 
 describe('DashboardComponent', () => {
@@ -231,5 +231,11 @@ describe('DashboardComponent', () => {
     expect(component.recentEncounters()[0].patientMeta).toContain('DNI 50123456');
     expect(component.recentEncounters()[0].clinicalHighlights.length).toBeGreaterThan(0);
   });
+
+  it('cancels pending account directory requests on destruction', () => {
+    const pending=new Subject<any>(); patientServiceMock.getPatients.mockReturnValue(pending);
+    component.loadDirectory(0); expect(pending.observed).toBe(true); fixture.destroy(); expect(pending.observed).toBe(false);
+  });
+
 });
 

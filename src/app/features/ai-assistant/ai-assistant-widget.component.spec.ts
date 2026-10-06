@@ -1,3 +1,6 @@
+import { signal } from '@angular/core';
+import { AuthService } from '../../core/services/auth.service';
+import { ActivePatientService } from '../../core/services/active-patient.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -14,6 +17,8 @@ describe('AiAssistantWidgetComponent', () => {
       imports: [AiAssistantWidgetComponent],
       providers: [
         AiChatService,
+        {provide: AuthService, useValue: {currentUser: signal({id: 'doctor-a'})}},
+        {provide: ActivePatientService, useValue: {activePatient: signal(null)}},
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
@@ -127,4 +132,14 @@ describe('AiAssistantWidgetComponent', () => {
 
     expect(clearSpy).toHaveBeenCalled();
   });
+
+  it('clears a draft on patient changes without sending it into the new conversation', () => {
+    component.inputMessage.set('Borrador paciente A');
+    (TestBed.inject(ActivePatientService).activePatient as any).set({id:20});
+    chatService.syncContext(); // Service already synchronized, widget effect still pending.
+    const send=vi.spyOn(chatService,'sendMessage'); component.onSendMessage();
+    expect(send).not.toHaveBeenCalled(); expect(component.inputMessage()).toBe('');
+    fixture.detectChanges(); expect(component.inputMessage()).toBe('');
+  });
+
 });

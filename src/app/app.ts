@@ -1,6 +1,6 @@
-import { ActivePatientService } from './core/services/active-patient.service';
 import { ClinicalEncounterService } from './core/services/clinical-encounter.service';
-import { Component, effect, inject, untracked } from '@angular/core';
+import { ActivePatientService } from './core/services/active-patient.service';
+import { Component, computed, effect, inject, untracked } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { HeaderComponent } from './layout/header/header.component';
 import { SidebarComponent } from './layout/sidebar/sidebar.component';
@@ -32,6 +32,7 @@ export class App {
   readonly authService = inject(AuthService);
   readonly doctorProfileService = inject(DoctorProfileService);
   readonly workspaceStore = inject(WorkspaceStore);
+  readonly sessionKeys = computed(() => [JSON.stringify([this.authService.currentUser()?.id ?? null, this.authService.isSuperAdmin()])]);
   private readonly router = inject(Router);
   private readonly activePatient = inject(ActivePatientService);
   private readonly clinicalEncounters = inject(ClinicalEncounterService);
@@ -46,7 +47,7 @@ export class App {
       this.identity = identity;
       this.adminIdentity = adminIdentity;
       untracked(() => {
-        this.activePatient.clear();
+        if (adminIdentity) this.activePatient.clear();
         this.clinicalEncounters.clear();
         this.doctorProfileService.clearProfile();
         this.workspaceStore.clearSetup();

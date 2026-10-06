@@ -259,7 +259,7 @@ describe('PatientRecordComponent', () => {
     const refreshed = {...mockPatient, latestMeasurements:{weight:8.5,height:70,headCircumference:44}};
     patientServiceSpy.getPatientById.mockReturnValue(of(refreshed));
     encounterServiceSpy.getByPatient.mockReturnValue(of([]));
-    window.dispatchEvent(new CustomEvent('encounter-updated'));
+    window.dispatchEvent(new CustomEvent('encounter-updated', { detail: { patientId: mockPatient.id } }));
     fixture.detectChanges();
     expect(activePatientService.latestMeasurements()?.weight).toBe(8.5);
     expect(component.encounters()).toEqual([]);
@@ -485,4 +485,23 @@ describe('PatientRecordComponent', () => {
     component.onPrintPrescription({...mockEncountersList[0],patientId:20});
     expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({source:'ENCOUNTER',id:1,patientId:20});
   });
+
+  it('ignores consultation events for another patient', () => {
+    patientServiceSpy.getPatientById.mockClear();
+    window.dispatchEvent(new CustomEvent('encounter-updated',{detail:{patientId:99}}));
+    expect(patientServiceSpy.getPatientById).not.toHaveBeenCalled();
+  });
+  it('clears patient drafts and closes editing modals when switching patient', () => {
+    component.rxDiagnosis.set('Paciente A'); component.rxMedicationName.set('Medicamento A'); component.addMedicationToDraft();
+    component.isNewEncounterModalOpen.set(true); component.isEditPatientModalOpen.set(true);
+    activePatientService.setActivePatient({...mockPatient,id:99}); fixture.detectChanges();
+    expect(component.rxDiagnosis()).toBe(''); expect(component.draftPrescriptions()).toEqual([]);
+    expect(component.isNewEncounterModalOpen()).toBe(false); expect(component.isEditPatientModalOpen()).toBe(false);
+  });
+  it('does not save the previous draft after changing patient before the context effect runs', () => {
+    component.rxMedicationName.set('Medicamento A'); component.addMedicationToDraft();
+    activePatientService.setActivePatient({...mockPatient,id:99}); component.saveCurrentRxToHistory();
+    expect(prescriptionApi.create).not.toHaveBeenCalled(); expect(component.draftPrescriptions()).toEqual([]);
+  });
+
 });

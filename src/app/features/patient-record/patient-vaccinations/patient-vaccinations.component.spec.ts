@@ -1,3 +1,4 @@
+import { AuthService } from '../../../core/services/auth.service';
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -24,6 +25,7 @@ describe('PatientVaccinationsComponent record revision handoff', () => {
   beforeEach(async () => {
     update = vi.fn().mockImplementation((id, expectedVersion, records) => of({ ...host.patient(), id, version: expectedVersion + 1, immunizationAndNutrition: { vaccinationRecords: records } }));
     await TestBed.configureTestingModule({ imports: [VaccinationsHost], providers: [
+      {provide:AuthService,useValue:{currentUser:signal({id:'doctor-a'})}},
       { provide: PatientService, useValue: { updateVaccinations: update } },
       { provide: VaccinationCalendarService, useValue: { data: signal(calendar), loading: signal(false), error: signal(null), load: vi.fn() } },
     ] }).compileComponents();
@@ -64,4 +66,13 @@ describe('PatientVaccinationsComponent record revision handoff', () => {
     expect(host.patient().id).toBe(22); expect(host.patient().version).toBe(3);
     expect(component.isSaving()).toBe(false); expect(component.saveError()).toContain('no corresponde');
   });
+
+  it('suppresses old account responses before effects run and cancels the old request', () => {
+    const pending=new Subject<PatientDetailDTO>(); update.mockReturnValueOnce(pending);
+    const component=child(fixture); component.markApplied(component.doses()[0],true);
+    TestBed.inject(AuthService).currentUser.set({id:'doctor-b'} as any); pending.next({...dialogPatient(),version:99});
+    expect(host.patient().version).toBe(3); fixture.detectChanges();
+    expect(pending.observed).toBe(false); expect(component.isSaving()).toBe(false); expect(component.records()).toEqual([]);
+  });
+
 });

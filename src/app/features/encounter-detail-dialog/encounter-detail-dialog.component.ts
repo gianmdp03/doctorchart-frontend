@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
+import { ActivePatientService } from '../../core/services/active-patient.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClinicalEncounterDetail, ConsultationType } from '../../core/models/clinical-encounter.model';
 import { WizardFormValues, WizardFormulaResults } from '../../core/models/wizard-definition.model';
@@ -14,6 +15,9 @@ import { argentinaDateTime, conflictKind, encounterInstant, errorMessage } from 
 export class EncounterDetailDialogComponent implements OnDestroy {
   private readonly service = inject(ClinicalEncounterService);
   private readonly auth = inject(AuthService);
+  private readonly activePatient = inject(ActivePatientService);
+  private patientContext: number | null = null;
+  private currentPatientId(): number | null { return this.activePatient.activePatient()?.id ?? null; }
   private readonly platformId = inject(PLATFORM_ID);
   private epoch = 0; private destroyed = false; private owner = this.identity();
   private originalDay = ''; private originalTime = ''; private openedAt = 0; private backdropMouseDown = false;
@@ -23,16 +27,17 @@ export class EncounterDetailDialogComponent implements OnDestroy {
   readonly encounterDay = signal(''); readonly encounterTime = signal(''); readonly consultationType = signal<ConsultationType>('FIRST_VISIT');
   readonly formValid = signal(false); readonly hasConflict = signal(false); readonly remoteRecord = signal<ClinicalEncounterDetail | null>(null);
   readonly errorMessage = signal<string | null>(null);
-  readonly readonly = computed(() => !this.isOpen() || !this.isEditing() || this.isLoading() || this.isSubmitting() || this.hasConflict() || this.identity() !== this.owner);
+  readonly readonly = computed(() => !this.isOpen() || !this.isEditing() || this.isLoading() || this.isSubmitting() || this.hasConflict() || this.identity() !== this.owner || this.patientContext !== this.currentPatientId());
   readonly dateValid = computed(() => { const instant = this.currentInstant(); return !!instant && new Date(instant).getTime() <= Date.now(); });
   readonly consultationTypes: { value: ConsultationType; label: string }[] = [
     { value: 'FIRST_VISIT', label: 'Primera consulta' }, { value: 'FOLLOW_UP', label: 'Control / seguimiento' }, { value: 'ROUTINE_CHECKUP', label: 'Chequeo de rutina' }, { value: 'EMERGENCY', label: 'Urgencia' }, { value: 'INTERCONSULTATION', label: 'Interconsulta' },
   ];
-  constructor() { effect(() => { const owner = this.identity(); untracked(() => { if (owner !== this.owner) { this.owner = owner; this.epoch++; this.isSubmitting.set(false); this.closeModal(); } }); }); }
+  constructor() { effect(() => { const owner = this.identity(); const patientId = this.currentPatientId(); untracked(() => { if (owner !== this.owner || (this.isOpen() && patientId !== this.patientContext)) { this.owner = owner; this.epoch++; this.isSubmitting.set(false); this.closeModal(); } }); }); }
   ngOnDestroy(): void { this.destroyed = true; this.epoch++; }
   @HostListener('window:open-encounter-detail-modal', ['$event'])
   openModal(event?: Event): void {
     if (this.isSubmitting() || this.identity() !== this.owner) return;
+    this.patientContext = this.currentPatientId();
     this.epoch++; this.openedAt = Date.now(); this.isOpen.set(true); this.errorMessage.set(null); this.encounter.set(null); this.isEditing.set(false); this.hasConflict.set(false); this.remoteRecord.set(null);
     const detail = (event as CustomEvent | undefined)?.detail;
     if (detail?.encounter?.formDefinitionSnapshot) this.displayEncounter(detail.encounter);
@@ -86,7 +91,7 @@ export class EncounterDetailDialogComponent implements OnDestroy {
   useRemoteRecord(): void { const remote = this.remoteRecord(); if (!remote || this.isLoading() || this.isSubmitting() || this.identity() !== this.owner) return; this.acceptRecord(remote); this.isEditing.set(true); }
   formatDate(instant: string): string { const { day, time } = argentinaDateTime(instant); const [year, month, date] = day.split('-'); return `${date}/${month}/${year} ${time}`; }
   getConsultationTypeLabel(type: string): string { return this.consultationTypes.find(option => option.value === type)?.label ?? type; }
-  printEncounter(): void { if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') window.print(); }
+  printEncounter(): void { if (this.alive(this.epoch) && isPlatformBrowser(this.platformId) && typeof window !== 'undefined') window.print(); }
   private identity(): string { return this.auth.currentUser()?.id ?? ''; }
-  private alive(epoch: number): boolean { return !this.destroyed && this.isOpen() && epoch === this.epoch && this.identity() === this.owner; }
+  private alive(epoch: number): boolean { return !this.destroyed && this.isOpen() && epoch === this.epoch && this.identity() === this.owner && this.patientContext === this.currentPatientId(); }
 }

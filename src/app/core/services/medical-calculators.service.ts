@@ -1,4 +1,5 @@
-import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
+import { AuthService } from './auth.service';
+import { Injectable, PLATFORM_ID, effect, inject, signal, untracked } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
@@ -20,7 +21,7 @@ import {
   SavedCalculationItem,
 } from '../models/medical-calculators.model';
 
-const SAVED_CALCULATIONS_KEY = 'doctorchart_saved_calculations';
+
 
 @Injectable({
   providedIn: 'root',
@@ -31,7 +32,20 @@ export class MedicalCalculatorsService {
   private readonly baseUrl = `${environment.apiUrl}/calculators`;
 
   readonly calculators = signal<readonly CalculatorMetadata[]>([]);
-  readonly savedHistory = signal<SavedCalculationItem[]>(this.loadStoredCalculations());
+  readonly savedHistory = signal<SavedCalculationItem[]>([]);
+  private readonly auth = inject(AuthService);
+  private owner: string | null | undefined;
+  constructor() {
+    this.syncSession();
+    effect(() => { this.auth.currentUser(); untracked(() => this.syncSession()); });
+  }
+  private key(): string | null { return this.owner ? 'doctorchart_calculations:' + encodeURIComponent(this.owner) : null; }
+  private syncSession(): void {
+    const owner = this.auth.currentUser()?.id ?? null;
+    if (owner === this.owner) return;
+    this.owner = owner; this.calculators.set([]); this.savedHistory.set(this.loadStoredCalculations());
+  }
+
 
   // -------------------------------------------------------------
   // Backend API Integration
@@ -104,6 +118,7 @@ export class MedicalCalculatorsService {
   // Persistencia e Historial en Memoria / LocalStorage
   // -------------------------------------------------------------
   saveCalculation(item: Omit<SavedCalculationItem, 'id'>): SavedCalculationItem {
+    this.syncSession();
     const newItem: SavedCalculationItem = {
       ...item,
       id: `calc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -117,14 +132,17 @@ export class MedicalCalculatorsService {
   }
 
   deleteCalculation(id: string): void {
+    this.syncSession();
     const updated = this.savedHistory().filter((c) => c.id !== id);
     this.savedHistory.set(updated);
     this.persistHistory(updated);
   }
 
-  clearHistory(): void {
-    this.savedHistory.set([]);
-    this.persistHistory([]);
+  clearHistory(patientId?: number | null): void {
+    this.syncSession();
+    const remaining = patientId === undefined ? [] : this.savedHistory().filter(item => item.patientId !== patientId);
+    this.savedHistory.set(remaining);
+    this.persistHistory(remaining);
   }
 
   async copyToClipboard(text: string): Promise<boolean> {
@@ -140,11 +158,13 @@ export class MedicalCalculatorsService {
   }
 
   private loadStoredCalculations(): SavedCalculationItem[] {
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+    const key = this.key();
+    if (key && isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       try {
-        const raw = localStorage.getItem(SAVED_CALCULATIONS_KEY);
+        const raw = localStorage.getItem(key);
         if (raw) {
-          return JSON.parse(raw) as SavedCalculationItem[];
+          const items: unknown = JSON.parse(raw);
+          return Array.isArray(items) ? items : [];
         }
       } catch (err) {
         console.warn('Error reading saved calculations from localStorage:', err);
@@ -154,9 +174,10 @@ export class MedicalCalculatorsService {
   }
 
   private persistHistory(items: SavedCalculationItem[]): void {
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+    const key = this.key();
+    if (key && isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       try {
-        localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(items));
+        localStorage.setItem(key, JSON.stringify(items));
       } catch (err) {
         console.warn('Error saving calculations to localStorage:', err);
       }

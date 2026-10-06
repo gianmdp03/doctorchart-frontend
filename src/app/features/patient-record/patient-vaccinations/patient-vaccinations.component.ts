@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnDestroy, output, signal, untracked } from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AuthService } from '../../../core/services/auth.service';
+import { DestroyRef, ChangeDetectionStrategy, Component, computed, effect, inject, input, OnDestroy, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PatientDetailDTO } from '../../../core/models/patient.model';
 import { VaccinationRecord } from '../../../core/models/clinical-records.model';
@@ -29,6 +32,10 @@ interface PatientDose {
 export class PatientVaccinationsComponent implements OnDestroy {
   readonly calendarService = inject(VaccinationCalendarService);
   private readonly patientService = inject(PatientService);
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly changed = new Subject<void>();
+  private owner = this.auth.currentUser()?.id;
 
   readonly patient = input.required<PatientDetailDTO>();
   readonly patientUpdated = output<PatientDetailDTO>();
@@ -86,13 +93,13 @@ export class PatientVaccinationsComponent implements OnDestroy {
   readonly appliedDoses = computed(() => this.doses().filter((dose) => dose.status === 'APLICADA'));
 
   constructor() {
-    effect(() => { this.patient(); untracked(() => { this.epoch++; this.savedVersion = null; this.records.set([]); this.isSaving.set(false); this.saveError.set(null); }); });
+    effect(() => { this.patient(); const owner = this.auth.currentUser()?.id; untracked(() => { this.changed.next(); this.owner = owner; this.epoch++; this.savedVersion = null; this.records.set([]); this.isSaving.set(false); this.saveError.set(null); }); });
     this.calendarService.load();
   }
   ngOnDestroy(): void { this.destroyed = true; this.epoch++; }
 
   markApplied(dose: PatientDose, applied: boolean): void {
-    if (this.isSaving()) return;
+    if (this.isSaving() || this.owner !== this.auth.currentUser()?.id) return;
     const current = this.currentRecords().filter((record) => record.applicationKey !== dose.key);
     const next = [...current, {
       vaccineId: dose.vaccine.id,
@@ -105,7 +112,7 @@ export class PatientVaccinationsComponent implements OnDestroy {
   }
 
   updateDate(dose: PatientDose, appliedAt: string): void {
-    if (this.isSaving()) return;
+    if (this.isSaving() || this.owner !== this.auth.currentUser()?.id) return;
     const next = this.currentRecords().map((record) =>
       record.applicationKey === dose.key ? { ...record, appliedAt } : record,
     );
@@ -128,11 +135,12 @@ export class PatientVaccinationsComponent implements OnDestroy {
   private persist(records: VaccinationRecord[]): void {
     const patient = this.patient();
     const epoch = this.epoch;
+    const owner = this.owner;
     this.isSaving.set(true);
     this.saveError.set(null);
-    this.patientService.updateVaccinations(patient.id, this.savedVersion ?? patient.version, records).subscribe({
+    this.patientService.updateVaccinations(patient.id, this.savedVersion ?? patient.version, records).pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef)).subscribe({
       next: updated => {
-        if (this.destroyed || epoch !== this.epoch || this.patient().id !== patient.id) return;
+        if (this.destroyed || epoch !== this.epoch || owner !== this.auth.currentUser()?.id || this.patient().id !== patient.id) return;
         if (updated.id !== patient.id) { this.isSaving.set(false); this.saveError.set('La respuesta recibida no corresponde a este paciente.'); return; }
         this.savedVersion = updated.version;
         this.records.set(structuredClone(updated.immunizationAndNutrition?.vaccinationRecords ?? []));
@@ -140,7 +148,7 @@ export class PatientVaccinationsComponent implements OnDestroy {
         this.patientUpdated.emit(updated);
       },
       error: () => {
-        if (this.destroyed || epoch !== this.epoch || this.patient().id !== patient.id) return;
+        if (this.destroyed || epoch !== this.epoch || owner !== this.auth.currentUser()?.id || this.patient().id !== patient.id) return;
         this.isSaving.set(false);
         this.saveError.set('No se pudo guardar la aplicación de la vacuna.');
       },

@@ -1,3 +1,5 @@
+import { signal } from '@angular/core';
+import { AuthService } from './auth.service';
 import { CALCULATOR_CATALOG_FIXTURE } from '../testing/calculator-catalog.fixture';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -18,7 +20,8 @@ describe('MedicalCalculatorsService HTTP boundary', () => {
   let service: MedicalCalculatorsService;
   let http: HttpTestingController;
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [MedicalCalculatorsService, provideHttpClient(), provideHttpClientTesting()] });
+    localStorage.clear();
+    TestBed.configureTestingModule({ providers: [{provide:AuthService,useValue:{currentUser:signal({id:'doctor-a'})}},MedicalCalculatorsService, provideHttpClient(), provideHttpClientTesting()] });
     service = TestBed.inject(MedicalCalculatorsService);
     http = TestBed.inject(HttpTestingController);
   });
@@ -65,4 +68,17 @@ describe('MedicalCalculatorsService HTTP boundary', () => {
     });
     http.expectOne(req => req.url.endsWith('/calculators/catalog')).flush(catalog);
   });
+
+  it('persists local calculations per account without adopting the old shared history', () => {
+    const item={calculatorId:'holliday_segar' as const,calculatorName:'Holliday',patientId:10,resultHeadline:'1250',interpretationLabel:'Normal',severity:'normal' as const,calculatedAt:FLUID_RESULT.calculatedAt,plainTextEvolution:'Texto',inputsSummary:{}};
+    localStorage.setItem('doctorchart_saved_calculations',JSON.stringify([{...item,id:'legacy'}]));
+    service.saveCalculation(item); expect(service.savedHistory()).toHaveLength(1);
+    expect(localStorage.getItem('doctorchart_calculations:doctor-a')).toContain('Texto');
+    TestBed.inject(AuthService).currentUser.set({id:'doctor-b'} as any); TestBed.tick();
+    expect(service.savedHistory()).toEqual([]); service.saveCalculation({...item,patientId:20});
+    TestBed.inject(AuthService).currentUser.set({id:'doctor-a'} as any); TestBed.tick();
+    expect(service.savedHistory().map(item=>item.patientId)).toEqual([10]);
+    TestBed.inject(AuthService).currentUser.set(null); TestBed.tick(); expect(service.savedHistory()).toEqual([]);
+  });
+
 });

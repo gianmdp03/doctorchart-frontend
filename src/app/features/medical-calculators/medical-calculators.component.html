@@ -432,7 +432,7 @@
           </p>
         </div>
 
-        @if (!activePatient() && calcService.savedHistory().length > 0) {
+        @if (!activePatient() && localHistory().length > 0) {
           <button
             type="button"
             class="clear-history-btn"
@@ -605,10 +605,10 @@
         </div>
 
         <!-- Local Fallback History -->
-        @if (calcService.savedHistory().length > 0) {
+        @if (localHistory().length > 0) {
           <h4 class="local-history-heading">Cálculos locales de la sesión:</h4>
           <div class="history-list-wrap">
-            @for (item of calcService.savedHistory(); track item.id) {
+            @for (item of localHistory(); track item.id) {
               <article class="history-item-card">
                 <div class="history-item-top">
                   <span class="history-calc-badge">{{ item.calculatorName }}</span>

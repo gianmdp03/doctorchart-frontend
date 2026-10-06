@@ -1,3 +1,6 @@
+import { signal } from '@angular/core';
+import { AuthService } from './auth.service';
+import { ActivePatientService } from './active-patient.service';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -12,6 +15,8 @@ describe('AiChatService', () => {
     TestBed.configureTestingModule({
       providers: [
         AiChatService,
+        {provide: AuthService, useValue: {currentUser: signal({id: 'doctor-a'})}},
+        {provide: ActivePatientService, useValue: {activePatient: signal(null)}},
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
@@ -191,4 +196,39 @@ describe('AiChatService', () => {
     service.openChat();
     expect(service.hasUnread()).toBe(false);
   });
+
+  it('cancels an old conversation on patient changes and preserves the gateway contract', () => {
+    service.sendMessage('Consulta paciente A');
+    const first = httpMock.expectOne(environment.aiGatewayUrl);
+    expect(first.request.body).toEqual({message:'Consulta paciente A'});
+    (TestBed.inject(ActivePatientService).activePatient as any).set({id:20}); TestBed.tick();
+    expect(first.cancelled).toBe(true); expect(service.messages()).toHaveLength(1); expect(service.isTyping()).toBe(false);
+    service.sendMessage('Consulta paciente B'); httpMock.expectOne(environment.aiGatewayUrl).flush({response:'Respuesta B'});
+    expect(service.messages().map(message=>message.text).join(' ')).not.toContain('Consulta paciente A');
+  });
+  it('does not display a response after an account change before the context effect runs', () => {
+    service.sendMessage('Consulta'); const pending=httpMock.expectOne(environment.aiGatewayUrl);
+    TestBed.inject(AuthService).currentUser.set({id:'doctor-b'} as any); pending.flush({response:'Vieja'});
+    expect(service.messages().some(message=>message.text==='Vieja')).toBe(false);
+    TestBed.tick(); expect(service.messages()).toHaveLength(1);
+  });
+  it('cancels pending requests when clearing history and permits a new conversation immediately', () => {
+    service.sendMessage('Anterior'); const first=httpMock.expectOne(environment.aiGatewayUrl);
+    service.clearHistory(); expect(first.cancelled).toBe(true); expect(service.isTyping()).toBe(false);
+    service.sendMessage('Nueva'); httpMock.expectOne(environment.aiGatewayUrl).flush({response:'Nueva respuesta'});
+    expect(service.messages()).toHaveLength(3);
+  });
+  it('clears chat on logout and does not send unauthenticated prompts', () => {
+    service.sendMessage('Anterior'); const first=httpMock.expectOne(environment.aiGatewayUrl);
+    TestBed.inject(AuthService).currentUser.set(null); TestBed.tick();
+    expect(first.cancelled).toBe(true); expect(service.messages()).toHaveLength(1);
+    service.sendMessage('Nueva'); httpMock.expectNone(environment.aiGatewayUrl);
+  });
+  it('retains the conversation when the same patient is refreshed', () => {
+    (TestBed.inject(ActivePatientService).activePatient as any).set({id:10}); TestBed.tick();
+    service.sendMessage('Consulta'); httpMock.expectOne(environment.aiGatewayUrl).flush({response:'Respuesta'});
+    (TestBed.inject(ActivePatientService).activePatient as any).set({id:10, fullName:'Actualizado'}); TestBed.tick();
+    expect(service.messages()).toHaveLength(3);
+  });
+
 });

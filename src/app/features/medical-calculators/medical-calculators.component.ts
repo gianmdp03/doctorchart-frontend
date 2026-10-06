@@ -1,3 +1,4 @@
+import { AuthService } from '../../core/services/auth.service';
 import {
   ChangeDetectionStrategy,
   DestroyRef,
@@ -7,9 +8,10 @@ import {
   inject,
   OnInit,
   signal,
+  untracked,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { catchError, finalize, forkJoin, map, of, switchMap, timer } from 'rxjs';
+import { catchError, finalize, forkJoin, map, of, Subject, switchMap, takeUntil, timer } from 'rxjs';
 import { createCalculatorSessions, summarizeCalculatorInputs } from './calculators/calculator-registry';
 import { CalculatorFormState } from './calculators/calculator-form';
 import { CommonModule } from '@angular/common';
@@ -110,6 +112,16 @@ import { DatePickerComponent } from '../../shared/date-picker/date-picker.compon
 })
 export class MedicalCalculatorsComponent implements OnInit {
   readonly calcService = inject(MedicalCalculatorsService);
+  private readonly auth = inject(AuthService);
+  private readonly changed = new Subject<void>();
+  private context = '';
+  private historyRead = 0;
+  private owner = this.auth.currentUser()?.id;
+  private readonly actorChanged = new Subject<void>();
+  readonly contextRevision = signal(0);
+  readonly localHistory = computed(() => this.calcService.savedHistory().filter(item => item.patientId === (this.activePatient()?.id ?? null)));
+  private contextKey(): string { return JSON.stringify([this.auth.currentUser()?.id ?? null,this.activePatientService.activePatient()?.id ?? null]); }
+
   private readonly destroyRef = inject(DestroyRef);
   readonly activePatientService = inject(ActivePatientService);
 
@@ -232,18 +244,21 @@ export class MedicalCalculatorsComponent implements OnInit {
 
   readonly previewRequest = computed<CalculationPreviewRequestDTO | null>(() => this.setupLoaded() && this.currentMetadata() && this.isCurrentInputComplete()
     ? { calculationCode: this.selectedId(), inputSnapshot: this.currentInputs() } : null);
-  private readonly previewResult = signal<{ requestKey: string; result: CalculationResult } | null>(null);
+  private readonly previewResult = signal<{ context: string; requestKey: string; result: CalculationResult } | null>(null);
   readonly currentResult = computed(() => {
     const request = this.previewRequest(), preview = this.previewResult();
-    return request && preview?.requestKey === JSON.stringify(request) ? preview.result : null;
+    return request && preview?.context === this.contextKey() && preview?.requestKey === JSON.stringify(request) ? preview.result : null;
   });
   readonly isCalculating = signal(false);
   readonly calculationError = signal<string | null>(null);
   readonly saveError = signal<string | null>(null);
 
   constructor() {
-    toObservable(this.previewRequest).pipe(
-      switchMap(request => {
+    this.context = this.contextKey();
+    toObservable(computed(() => ({request:this.previewRequest(), context:this.contextKey()}))).pipe(
+      switchMap(({request,context}) => {
+        this.syncContext();
+        if (context !== this.contextKey() || JSON.stringify(request) !== JSON.stringify(this.previewRequest())) return of(null);
         this.calculationError.set(null);
         this.saveFeedback.set(false);
         this.saveError.set(null);
@@ -252,32 +267,45 @@ export class MedicalCalculatorsComponent implements OnInit {
         const requestKey = JSON.stringify(request);
         return timer(150).pipe(
           switchMap(() => this.calcService.previewCalculation(request)),
-          map(result => ({ requestKey, result })),
+          map(result => ({ context, requestKey, result })),
           catchError(error => {
+            if (context !== this.contextKey()) return of(null);
             this.calculationError.set(error.error?.message ?? 'No se pudo calcular el resultado.');
             return of(null);
           }),
-          finalize(() => this.isCalculating.set(false)),
+          finalize(() => { if (context === this.contextKey()) this.isCalculating.set(false); }),
         );
       }),
       takeUntilDestroyed(),
     ).subscribe(preview => this.previewResult.set(preview));
-    // Automatically load backend history whenever the active patient changes
     effect(() => {
-      const patient = this.activePatient();
-      if (patient?.id) {
-        this.loadPatientHistory();
-      } else {
-        this.patientBackendHistory.set([]);
-      }
+      this.auth.currentUser(); this.activePatient();
+      untracked(() => { this.syncContext(); this.loadPatientHistory(); });
     });
+  }
+
+  private syncContext(): void {
+    const context = this.contextKey();
+    if (context === this.context) return;
+    this.changed.next(); this.context = context; this.historyRead++;
+    const owner = this.auth.currentUser()?.id;
+    if (owner !== this.owner) {
+      this.owner = owner; this.actorChanged.next();
+      this.isLoadingSetup.set(false); this.isUpdatingPreferences.set(false);
+      this.setupLoaded.set(false); this.myCalculatorsCodes.set([]); this.preferencesError.set(null);
+      if (owner) this.loadCalculatorSetup();
+    }
+    this.contextRevision.update(value => value + 1);
+    for (const calculator of this.calculatorSessions.values()) calculator.form.reset();
+    this.isCalculating.set(false); this.previewResult.set(null); this.patientBackendHistory.set([]); this.expandedHistoryLogId.set(null);
+    this.historyFilterCode.set('all'); this.historyDateFrom.set(''); this.historyDateTo.set('');
+    this.isAutofilling.set(false); this.isSavingLog.set(false); this.isLoadingHistory.set(false);
+    this.autofillBannerMessage.set(null); this.saveFeedback.set(false); this.copyFeedback.set(false);
+    this.saveError.set(null); this.calculationError.set(null); this.isCatalogModalOpen.set(false);
   }
 
   ngOnInit(): void {
     this.loadCalculatorSetup();
-    if (this.activePatient()?.id) {
-      this.loadPatientHistory();
-    }
   }
 
   // -------------------------------------------------------------
@@ -285,19 +313,21 @@ export class MedicalCalculatorsComponent implements OnInit {
   // -------------------------------------------------------------
   loadCalculatorSetup(): void {
     if (this.isLoadingSetup() || this.isUpdatingPreferences()) return;
+    const owner = this.auth.currentUser()?.id;
     this.isLoadingSetup.set(true);
     this.setupLoaded.set(false);
     this.preferencesError.set(null);
     this.calcService.calculators.set([]);
     forkJoin({ catalog: this.calcService.getCatalogFromBackend(), preferences: this.calcService.getDoctorPreferences() })
-      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isLoadingSetup.set(false)))
+      .pipe(takeUntil(this.actorChanged), takeUntilDestroyed(this.destroyRef), finalize(() => { if (owner === this.auth.currentUser()?.id) this.isLoadingSetup.set(false); }))
       .subscribe({
         next: ({ catalog, preferences }) => {
+          if (owner !== this.auth.currentUser()?.id) return;
           this.calcService.calculators.set(catalog);
           this.applyPreferences(preferences, true);
           this.setupLoaded.set(true);
         },
-        error: () => this.preferencesError.set('No se pudieron cargar las calculadoras. Volvé a intentar.'),
+        error: () => { if (owner === this.auth.currentUser()?.id) this.preferencesError.set('No se pudieron cargar las calculadoras. Volvé a intentar.'); },
       });
   }
 
@@ -329,25 +359,27 @@ export class MedicalCalculatorsComponent implements OnInit {
 
   private persistDoctorPreferences(codes: string[]): void {
     if (!this.setupLoaded() || this.isUpdatingPreferences()) return;
+    const owner = this.auth.currentUser()?.id;
     this.isUpdatingPreferences.set(true);
     this.preferencesError.set(null);
     this.calcService.updateDoctorPreferences(codes)
-      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isUpdatingPreferences.set(false)))
+      .pipe(takeUntil(this.actorChanged), takeUntilDestroyed(this.destroyRef), finalize(() => { if (owner === this.auth.currentUser()?.id) this.isUpdatingPreferences.set(false); }))
       .subscribe({
-        next: preference => this.applyPreferences(preference),
-        error: () => this.preferencesError.set('No se pudieron guardar los favoritos. Volvé a intentar.'),
+        next: preference => { if (owner === this.auth.currentUser()?.id) this.applyPreferences(preference); },
+        error: () => { if (owner === this.auth.currentUser()?.id) this.preferencesError.set('No se pudieron guardar los favoritos. Volvé a intentar.'); },
       });
   }
 
   restoreSpecialtyDefaults(): void {
     if (!this.setupLoaded() || this.isUpdatingPreferences()) return;
+    const owner = this.auth.currentUser()?.id;
     this.isUpdatingPreferences.set(true);
     this.preferencesError.set(null);
     this.calcService.resetDoctorPreferences()
-      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isUpdatingPreferences.set(false)))
+      .pipe(takeUntil(this.actorChanged), takeUntilDestroyed(this.destroyRef), finalize(() => { if (owner === this.auth.currentUser()?.id) this.isUpdatingPreferences.set(false); }))
       .subscribe({
-        next: preference => this.applyPreferences(preference, true),
-        error: () => this.preferencesError.set('No se pudieron restablecer los favoritos. Volvé a intentar.'),
+        next: preference => { if (owner === this.auth.currentUser()?.id) this.applyPreferences(preference, true); },
+        error: () => { if (owner === this.auth.currentUser()?.id) this.preferencesError.set('No se pudieron restablecer los favoritos. Volvé a intentar.'); },
       });
   }
 
@@ -355,6 +387,8 @@ export class MedicalCalculatorsComponent implements OnInit {
   // Smart Autofill from Patient Context & Clinical History
   // -------------------------------------------------------------
   autofillFromPatient(): void {
+    this.syncContext();
+    const context = this.context;
     const patient = this.activePatient();
     if (!patient?.id) {
       this.autofillBannerMessage.set('No hay ningún paciente activo seleccionado para autocompletar.');
@@ -364,16 +398,16 @@ export class MedicalCalculatorsComponent implements OnInit {
 
     const calculator = this.currentCalculator();
     if (!calculator || this.isAutofilling()) return;
-    const isCurrentForm = () => this.currentCalculator() === calculator && this.activePatient()?.id === patient.id;
+    const isCurrentForm = () => context === this.contextKey() && this.currentCalculator() === calculator && this.activePatient()?.id === patient.id;
 
     this.isAutofilling.set(true);
     this.autofillBannerMessage.set(null);
 
     this.calcService.getPatientAutofillData(patient.id)
-      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isAutofilling.set(false)))
+      .pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef), finalize(() => { if (context === this.contextKey()) this.isAutofilling.set(false); }))
       .subscribe({
         next: (data: PatientAutofillDataDTO) => {
-          if (isCurrentForm()) this.applyAutofillData(data, calculator.form);
+          if (isCurrentForm() && data.patientId === patient.id) this.applyAutofillData(data, calculator.form);
         },
         error: (err) => {
           if (!isCurrentForm()) return;
@@ -410,7 +444,8 @@ export class MedicalCalculatorsComponent implements OnInit {
       this.autofillAlertSeverity.set('warning');
     }
 
-    setTimeout(() => this.autofillBannerMessage.set(null), 6000);
+    const revision = this.contextRevision();
+    const context = this.context; setTimeout(() => { if (revision === this.contextRevision() && context === this.contextKey() && !this.destroyRef.destroyed) this.autofillBannerMessage.set(null); }, 6000);
   }
 
   private applyFallbackAutofill(form: CalculatorFormState): void {
@@ -454,17 +489,21 @@ export class MedicalCalculatorsComponent implements OnInit {
   }
 
   async copyResultText(): Promise<void> {
+    const revision = this.contextRevision();
+    const context = this.contextKey();
     const res = this.currentResult();
     if (!res) return;
 
     const ok = await this.calcService.copyToClipboard(res.plainTextEvolution);
-    if (ok) {
+    if (ok && revision === this.contextRevision() && context === this.contextKey() && !this.destroyRef.destroyed) {
       this.copyFeedback.set(true);
-      setTimeout(() => this.copyFeedback.set(false), 2200);
+      setTimeout(() => { if (revision === this.contextRevision() && context === this.contextKey() && !this.destroyRef.destroyed) this.copyFeedback.set(false); }, 2200);
     }
   }
 
   saveResultToRecord(): void {
+    this.syncContext();
+    const context = this.context;
     const result = this.currentResult();
     if (!result || this.isSavingLog()) return;
     const patient = this.activePatient();
@@ -486,8 +525,10 @@ export class MedicalCalculatorsComponent implements OnInit {
     const payload: CalculationExecutionRequestDTO = {
       patientId: patient.id, calculationCode: result.calculatorId, inputSnapshot: snapshot,
     };
-    this.calcService.executeAndSaveToBackend(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.calcService.executeAndSaveToBackend(payload).pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef)).subscribe({
       next: savedLog => {
+        if (context !== this.contextKey()) return;
+        if (savedLog.patientId !== patient.id) { this.isSavingLog.set(false); this.saveError.set('La respuesta no corresponde al paciente seleccionado.'); return; }
         this.isSavingLog.set(false);
         this.calcService.saveCalculation({
           calculatorId: savedLog.calculationCode as CalculatorId, calculatorName: savedLog.calculationName,
@@ -502,6 +543,7 @@ export class MedicalCalculatorsComponent implements OnInit {
         }
       },
       error: error => {
+        if (context !== this.contextKey()) return;
         this.isSavingLog.set(false);
         this.saveError.set(error.error?.message ?? 'No se pudo guardar el cálculo.');
       },
@@ -510,7 +552,8 @@ export class MedicalCalculatorsComponent implements OnInit {
 
   private showSaveSuccess(): void {
     this.saveFeedback.set(true);
-    setTimeout(() => this.saveFeedback.set(false), 2500);
+    const revision = this.contextRevision();
+    const context = this.context; setTimeout(() => { if (revision === this.contextRevision() && context === this.contextKey() && !this.destroyRef.destroyed) this.saveFeedback.set(false); }, 2500);
   }
 
   historyInputSummary(log: PatientCalculationLogDetailDTO): Record<string, string | number | boolean> {
@@ -521,6 +564,9 @@ export class MedicalCalculatorsComponent implements OnInit {
   // Patient Backend History Actions & Filters
   // -------------------------------------------------------------
   loadPatientHistory(): void {
+    this.syncContext();
+    const context = this.context;
+    const revision = ++this.historyRead;
     const patientId = this.activePatient()?.id;
     if (!patientId) {
       this.patientBackendHistory.set([]);
@@ -532,12 +578,14 @@ export class MedicalCalculatorsComponent implements OnInit {
     const from = this.historyDateFrom() ? new Date(this.historyDateFrom()).toISOString() : undefined;
     const to = this.historyDateTo() ? new Date(this.historyDateTo() + 'T23:59:59').toISOString() : undefined;
 
-    this.calcService.getPatientHistoryFromBackend(patientId, code, from, to).subscribe({
+    this.calcService.getPatientHistoryFromBackend(patientId, code, from, to).pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (history) => {
+        if (context !== this.contextKey() || revision !== this.historyRead) return;
         this.isLoadingHistory.set(false);
         this.patientBackendHistory.set(history);
       },
       error: (err) => {
+        if (context !== this.contextKey() || revision !== this.historyRead) return;
         this.isLoadingHistory.set(false);
         console.error('Error fetching patient calculation history', err);
       },
@@ -549,21 +597,25 @@ export class MedicalCalculatorsComponent implements OnInit {
   }
 
   async copyHistoryEvolution(evolutionText?: string): Promise<void> {
+    const revision = this.contextRevision();
+    const context = this.contextKey();
     if (!evolutionText) return;
     const ok = await this.calcService.copyToClipboard(evolutionText);
-    if (ok) {
+    if (ok && revision === this.contextRevision() && context === this.contextKey() && !this.destroyRef.destroyed) {
       this.copyFeedback.set(true);
-      setTimeout(() => this.copyFeedback.set(false), 2200);
+      setTimeout(() => { if (revision === this.contextRevision() && context === this.contextKey() && !this.destroyRef.destroyed) this.copyFeedback.set(false); }, 2200);
     }
   }
 
   deleteLocalHistoryItem(item: SavedCalculationItem): void {
-    this.calcService.deleteCalculation(item.id);
+    this.syncContext();
+    if (item.patientId === (this.activePatient()?.id ?? null)) this.calcService.deleteCalculation(item.id);
   }
 
   clearLocalHistory(): void {
     if (confirm('¿Estás seguro de que deseas vaciar el historial local de cálculos?')) {
-      this.calcService.clearHistory();
+      this.syncContext();
+      this.calcService.clearHistory(this.activePatient()?.id ?? null);
     }
   }
 }

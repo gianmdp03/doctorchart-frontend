@@ -1,3 +1,4 @@
+import { By } from '@angular/platform-browser';
 import { ActivePatientService } from './core/services/active-patient.service';
 import { ClinicalEncounterService } from './core/services/clinical-encounter.service';
 import { TestBed } from '@angular/core/testing';
@@ -34,6 +35,9 @@ describe('App', () => {
 
 @Component({template:'<p>Selección de especialidad</p>'})
 class LoginDestination {}
+
+@Component({template:'<input [value]="draft()" />'})
+class AccountSessionProbe { readonly draft = signal('Borrador nuevo'); }
 
 describe('App recovers the empty entry route after login', () => {
   const currentUser = signal<User | null>(null);
@@ -162,4 +166,19 @@ describe('App administrative entry', () => {
     expect(TestBed.inject(Router).navigate).toHaveBeenLastCalledWith(['/dashboard']);
     expect(workspace['loadSetup']).toHaveBeenCalledOnce();
   });
+
+  it('recreates the routed screen for a different account while preserving it for token or metadata refreshes', async () => {
+    (profile['error'] as ReturnType<typeof signal>).set(null); (profile['loaded'] as ReturnType<typeof signal>).set(true); (workspace['loaded'] as ReturnType<typeof signal>).set(true); (workspace['preferences'] as ReturnType<typeof signal>).set({}); completed.set(true);
+    currentUser.set(user('DOCTOR'));
+    const router=TestBed.inject(Router); router.resetConfig([{path:'account-screen',component:AccountSessionProbe}]);
+    const fixture=TestBed.createComponent(App); fixture.detectChanges(); await router.navigateByUrl('/account-screen'); fixture.detectChanges();
+    const first=fixture.debugElement.query(By.directive(AccountSessionProbe)).componentInstance as AccountSessionProbe;
+    first.draft.set('Datos de cuenta A');
+    currentUser.set({...user('DOCTOR'),user_metadata:{full_name:'Actualizado'}}); fixture.detectChanges();
+    expect(fixture.debugElement.query(By.directive(AccountSessionProbe)).componentInstance).toBe(first);
+    currentUser.set({...user('DOCTOR'),id:'doctor-b'}); fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+    const second=fixture.debugElement.query(By.directive(AccountSessionProbe)).componentInstance as AccountSessionProbe;
+    expect(second).not.toBe(first); expect(second.draft()).toBe('Borrador nuevo');
+  });
+
 });

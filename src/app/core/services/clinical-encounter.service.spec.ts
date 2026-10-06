@@ -1,3 +1,6 @@
+import { signal } from '@angular/core';
+import { AuthService } from './auth.service';
+import { ActivePatientService } from './active-patient.service';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -16,7 +19,7 @@ describe('ClinicalEncounterService canonical records', () => {
   };
   const base = `${environment.apiUrl}/encounters`;
   beforeEach(() => {
-    TestBed.configureTestingModule({providers:[provideHttpClient(),provideHttpClientTesting()]});
+    TestBed.configureTestingModule({providers:[{provide:AuthService,useValue:{currentUser:signal({id:'doctor-a'})}},{provide:ActivePatientService,useValue:{patientId:signal<number|null>(1)}},provideHttpClient(),provideHttpClientTesting()]});
     service = TestBed.inject(ClinicalEncounterService); http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
@@ -48,4 +51,26 @@ describe('ClinicalEncounterService canonical records', () => {
     service.clear(); pending.flush(record);
     expect(service.currentEncounter()).toBeNull(); expect(service.loading()).toBe(false);
   });
+
+  it('keeps the last opened encounter when earlier reads arrive later', () => {
+    service.getById(10).subscribe(); const old=http.expectOne(base+'/10');
+    service.getById(20).subscribe(); const current=http.expectOne(base+'/20');
+    current.flush({...record,id:20}); old.flush(record);
+    expect(service.currentEncounter()?.id).toBe(20);
+  });
+  it('does not let older list errors stop a newer patient request', () => {
+    service.getByPatient(1).subscribe({error:()=>{}}); const old=http.expectOne(base+'/patient/1');
+    service.getByPatient(2).subscribe(); const current=http.expectOne(base+'/patient/2');
+    old.flush({}, {status:500,statusText:'Error'}); expect(service.loading()).toBe(true);
+    current.flush([{...record,patientId:2}]); expect(service.encounters()[0].patientId).toBe(2);
+  });
+  it('ignores a response across patient or account switches before effects run', () => {
+    service.getById(10).subscribe(); const pending=http.expectOne(base+'/10');
+    (TestBed.inject(ActivePatientService).patientId as any).set(2); pending.flush(record);
+    expect(service.currentEncounter()).toBeNull(); TestBed.tick();
+    service.getById(10).subscribe(); const second=http.expectOne(base+'/10');
+    TestBed.inject(AuthService).currentUser.set({id:'doctor-b'} as any); second.flush(record);
+    expect(service.currentEncounter()).toBeNull(); TestBed.tick(); expect(service.loading()).toBe(false);
+  });
+
 });

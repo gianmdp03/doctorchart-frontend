@@ -1,30 +1,9 @@
-import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { AuthService } from './auth.service';
+import { computed, DestroyRef, effect, inject, Injectable, PLATFORM_ID, signal, untracked } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { PatientDetailDTO } from '../models/patient.model';
 import { PatientService } from './patient.service';
-
-const ACTIVE_PATIENT_STORAGE_KEY = 'doctorchart_active_patient_id';
-const ACTIVE_PATIENT_DATA_KEY = 'doctorchart_active_patient_data';
-
-function getStoredActivePatient(platformId: object): PatientDetailDTO | null {
-  if (isPlatformBrowser(platformId) && typeof window !== 'undefined') {
-    try {
-      const hasAuth = Object.keys(localStorage).some(
-        (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
-      );
-      if (!hasAuth) {
-        return null;
-      }
-      const json = localStorage.getItem(ACTIVE_PATIENT_DATA_KEY);
-      if (json) {
-        return JSON.parse(json) as PatientDetailDTO;
-      }
-    } catch (e) {
-      console.warn('Unable to parse cached active patient data:', e);
-    }
-  }
-  return null;
-}
 
 @Injectable({
   providedIn: 'root',
@@ -33,8 +12,12 @@ export class ActivePatientService {
   private readonly patientService = inject(PatientService);
   private readonly platformId = inject(PLATFORM_ID);
 
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+  private owner: string | null | undefined = undefined;
+  private request: Subscription | null = null;
   private generation = 0;
-  readonly activePatient = signal<PatientDetailDTO | null>(getStoredActivePatient(this.platformId));
+  readonly activePatient = signal<PatientDetailDTO | null>(null);
   readonly isLoading = signal<boolean>(false);
   readonly error = signal<string | null>(null);
 
@@ -213,106 +196,65 @@ export class ActivePatientService {
   });
 
   constructor() {
-    this.hydrateFromStorage();
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.addEventListener('auth-signout', () => {
-        this.clear();
-      });
-      window.addEventListener('auth-success', () => {
-        this.clear();
-      });
-    }
+    effect(() => { this.auth.currentUser(); untracked(() => this.syncSession()); });
+    this.destroyRef.onDestroy(() => this.request?.unsubscribe());
   }
-
-  private hydrateFromStorage(): void {
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+  private storageKey(owner = this.owner): string | null {
+    return owner ? 'doctorchart_active_patient:' + encodeURIComponent(owner) : null;
+  }
+  private syncSession(restore = true): void {
+    const owner = this.auth.currentUser()?.id ?? null;
+    if (owner === this.owner) return;
+    this.request?.unsubscribe(); this.request = null; this.generation++;
+    this.owner = owner; this.activePatient.set(null); this.isLoading.set(false); this.error.set(null);
+    const key = this.storageKey();
+    if (restore && key && isPlatformBrowser(this.platformId)) {
       try {
-        const hasAuth = Object.keys(localStorage).some(
-          (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
-        );
-        if (!hasAuth) {
-          localStorage.removeItem(ACTIVE_PATIENT_STORAGE_KEY);
-          localStorage.removeItem(ACTIVE_PATIENT_DATA_KEY);
-          this.activePatient.set(null);
-          return;
-        }
-
-        const storedId = localStorage.getItem(ACTIVE_PATIENT_STORAGE_KEY);
-        if (storedId) {
-          const idNum = Number(storedId);
-          if (!isNaN(idNum) && idNum > 0) {
-            this.loadPatient(idNum);
-          }
-        }
-      } catch (e) {
-        console.warn('Unable to access localStorage for active patient:', e);
-      }
+        const stored = localStorage.getItem(key);
+        const id = Number(stored);
+        if (stored && Number.isSafeInteger(id) && id > 0) this.loadPatient(id);
+      } catch { }
     }
   }
-
+  private persist(patientId: number | null): void {
+    const key = this.storageKey();
+    if (!key || !isPlatformBrowser(this.platformId)) return;
+    try { if (patientId) localStorage.setItem(key,String(patientId)); else localStorage.removeItem(key); } catch { }
+  }
   setActivePatient(patient: PatientDetailDTO | null): void {
-    this.generation++;
-    this.activePatient.set(patient);
-    this.error.set(null);
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      try {
-        if (patient?.id) {
-          localStorage.setItem(ACTIVE_PATIENT_STORAGE_KEY, String(patient.id));
-          localStorage.setItem(ACTIVE_PATIENT_DATA_KEY, JSON.stringify(patient));
-        } else {
-          localStorage.removeItem(ACTIVE_PATIENT_STORAGE_KEY);
-          localStorage.removeItem(ACTIVE_PATIENT_DATA_KEY);
-        }
-      } catch (e) {
-        console.warn('Unable to save active patient in localStorage:', e);
-      }
-    }
+    this.syncSession(false); this.request?.unsubscribe(); this.generation++;
+    if (!this.owner) return;
+    this.activePatient.set(patient ? structuredClone(patient) : null); this.isLoading.set(false); this.error.set(null);
+    this.persist(patient?.id ?? null);
   }
-
   loadPatient(id: number): void {
+    this.syncSession(false);
+    if (!this.owner || !Number.isSafeInteger(id) || id <= 0) return;
+    this.request?.unsubscribe();
     const generation = ++this.generation;
-    this.isLoading.set(true);
-    this.error.set(null);
-    this.patientService.getPatientById(id).subscribe({
-      next: (patient) => {
-        if (generation !== this.generation) return;
-        this.activePatient.set(patient);
-        this.isLoading.set(false);
-        if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-          try {
-            localStorage.setItem(ACTIVE_PATIENT_STORAGE_KEY, String(id));
-            localStorage.setItem(ACTIVE_PATIENT_DATA_KEY, JSON.stringify(patient));
-          } catch {}
+    const owner = this.owner;
+    if (this.patientId() !== id) this.activePatient.set(null);
+    this.isLoading.set(true); this.error.set(null);
+    this.request = this.patientService.getPatientById(id).subscribe({
+      next: patient => {
+        if (generation !== this.generation || owner !== this.auth.currentUser()?.id) return;
+        if (patient.id !== id) {
+          this.activePatient.set(null); this.isLoading.set(false); this.persist(null);
+          this.error.set('La respuesta no corresponde al paciente solicitado.'); return;
         }
+        this.activePatient.set(structuredClone(patient)); this.isLoading.set(false); this.persist(id);
       },
-      error: (err) => {
-        if (generation !== this.generation) return;
-        console.error('Error loading patient:', err);
-        this.error.set(err.message || 'Error al cargar paciente');
-        this.isLoading.set(false);
-        // If patient not found, remove stale ID and cached data from storage
-        if (err?.status === 404 && isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-          try {
-            localStorage.removeItem(ACTIVE_PATIENT_STORAGE_KEY);
-            localStorage.removeItem(ACTIVE_PATIENT_DATA_KEY);
-            this.activePatient.set(null);
-          } catch {}
-        }
+      error: err => {
+        if (generation !== this.generation || owner !== this.auth.currentUser()?.id) return;
+        this.activePatient.set(null); this.isLoading.set(false);
+        this.error.set(err?.error?.message || 'Error al cargar paciente');
+        if (err?.status === 403 || err?.status === 404) this.persist(null);
       },
     });
   }
-
   clear(): void {
-    this.generation++;
-    this.isLoading.set(false);
-    this.activePatient.set(null);
-    this.error.set(null);
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem(ACTIVE_PATIENT_STORAGE_KEY);
-        localStorage.removeItem(ACTIVE_PATIENT_DATA_KEY);
-      } catch {}
-    }
+    this.syncSession(false);
+    this.request?.unsubscribe(); this.request = null; this.generation++;
+    this.isLoading.set(false); this.activePatient.set(null); this.error.set(null); this.persist(null);
   }
 }
-

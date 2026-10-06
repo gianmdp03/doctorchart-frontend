@@ -1,3 +1,4 @@
+@for (sessionKey of sessionKeys(); track sessionKey) {
 @if (!authService.isAuthInitialized()) {
   <div class="app-splash-screen" role="status" aria-live="polite">
     <div class="splash-content">
@@ -75,4 +76,6 @@
   <app-user-profile-dialog />
   <app-ai-assistant-widget />
   <app-prescription-print-layout />
+}
+
 }

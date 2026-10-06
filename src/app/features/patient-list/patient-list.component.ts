@@ -1,3 +1,4 @@
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Component,
   OnInit,
@@ -198,6 +199,7 @@ export class PatientListComponent implements OnInit {
   private observer: IntersectionObserver | null = null;
 
   constructor() {
+    this.destroyRef.onDestroy(() => { if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer); });
     effect(() => {
       const el = this.sentinelRef()?.nativeElement;
       if (!isPlatformBrowser(this.platformId) || !el || typeof IntersectionObserver === 'undefined') {
@@ -284,7 +286,7 @@ export class PatientListComponent implements OnInit {
     this.currentPage.set(0);
     const query = search !== undefined ? search : this.searchQuery();
 
-    this.patientService.getPatients(0, this.pageSize, 'fullName,asc', query).subscribe({
+    this.patientService.getPatients(0, this.pageSize, 'fullName,asc', query).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         if (response?.content && response.content.length > 0) {
           const items = response.content.map(mapDtoToCardItem);

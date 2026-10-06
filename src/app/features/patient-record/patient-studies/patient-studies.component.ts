@@ -1,12 +1,17 @@
+import { Subject, takeUntil } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AuthService } from '../../../core/services/auth.service';
 import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  DestroyRef,
   computed,
   effect,
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -50,6 +55,27 @@ import { PatientMedicalStudyService } from '../../../core/services/patient-medic
 })
 export class PatientStudiesComponent {
   private readonly studyService = inject(PatientMedicalStudyService);
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly changed = new Subject<void>();
+  private context = '';
+  private revision = 0;
+  private read = 0;
+  private readonly previewUrls = new Set<string>();
+  private contextKey(): string { return JSON.stringify([this.auth.currentUser()?.id ?? null,this.patientId()]); }
+  private syncContext(): void {
+    const context = this.contextKey(); if (context === this.context) return;
+    this.changed.next(); this.context = context; this.revision++; this.read++;
+    this.studies.set([]); this.clearSelectedFile(); this.errorMessage.set(null); this.successMessage.set(null);
+    this.isLoading.set(false); this.isUploading.set(false);
+    this.releasePreviews();
+  }
+  private releasePreviews(): void {
+    for (const url of this.previewUrls) window.URL.revokeObjectURL(url);
+    this.previewUrls.clear();
+  }
+  private current(revision: number): boolean { return revision === this.revision && this.context === this.contextKey() && !this.destroyRef.destroyed; }
+
 
   readonly patientId = input.required<number>();
 
@@ -68,22 +94,24 @@ export class PatientStudiesComponent {
 
   constructor() {
     effect(() => {
-      const pid = this.patientId();
-      if (pid) {
-        this.loadStudies(pid);
-      }
+      const pid = this.patientId(); this.auth.currentUser();
+      untracked(() => { this.syncContext(); if (pid) this.loadStudies(pid); });
     });
+    this.destroyRef.onDestroy(() => { this.changed.next(); this.releasePreviews(); });
   }
 
   loadStudies(patientId: number): void {
+    this.syncContext(); const revision = this.revision; const read = ++this.read;
     this.isLoading.set(true);
     this.errorMessage.set(null);
-    this.studyService.getStudies(patientId).subscribe({
+    this.studyService.getStudies(patientId).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
+        if (!this.current(revision) || read !== this.read || patientId !== this.patientId()) return;
         this.studies.set(data);
         this.isLoading.set(false);
       },
       error: () => {
+        if (!this.current(revision) || read !== this.read) return;
         this.errorMessage.set('No se pudieron cargar los estudios médicos del paciente.');
         this.isLoading.set(false);
       },
@@ -115,6 +143,9 @@ export class PatientStudiesComponent {
   }
 
   submitUpload(): void {
+    this.syncContext();
+    if (this.isUploading()) return;
+    const revision = this.revision;
     const file = this.selectedFile();
     if (!file) {
       this.errorMessage.set('Por favor seleccioná un archivo antes de continuar.');
@@ -126,15 +157,18 @@ export class PatientStudiesComponent {
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
-    this.studyService.uploadStudy(pid, file, this.description()).subscribe({
+    this.studyService.uploadStudy(pid, file, this.description()).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
+        if (!this.current(revision)) return;
+        if (created.patientId !== pid) { this.isUploading.set(false); this.errorMessage.set('La respuesta no corresponde al paciente seleccionado.'); return; }
         this.studies.update((list) => [created, ...list]);
         this.clearSelectedFile();
         this.isUploading.set(false);
         this.successMessage.set('Estudio médico subido exitosamente.');
-        setTimeout(() => this.successMessage.set(null), 4000);
+        setTimeout(() => { if (this.current(revision)) this.successMessage.set(null); }, 4000);
       },
       error: () => {
+        if (!this.current(revision)) return;
         this.isUploading.set(false);
         this.errorMessage.set('Error al subir el estudio médico. Verificá la conexión y reintentá.');
       },
@@ -142,8 +176,12 @@ export class PatientStudiesComponent {
   }
 
   downloadStudy(study: PatientMedicalStudy): void {
-    this.studyService.getStudyFileBlob(this.patientId(), study.id).subscribe({
+    this.syncContext();
+    if (study.patientId !== this.patientId()) return;
+    const revision = this.revision;
+    this.studyService.getStudyFileBlob(this.patientId(), study.id).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (blob) => {
+        if (!this.current(revision)) return;
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -154,35 +192,47 @@ export class PatientStudiesComponent {
         window.URL.revokeObjectURL(url);
       },
       error: () => {
+        if (!this.current(revision)) return;
         this.errorMessage.set('No se pudo descargar el archivo del estudio.');
       },
     });
   }
 
   openStudyPreview(study: PatientMedicalStudy): void {
-    this.studyService.getStudyFileBlob(this.patientId(), study.id).subscribe({
+    this.syncContext();
+    if (study.patientId !== this.patientId()) return;
+    const revision = this.revision;
+    this.studyService.getStudyFileBlob(this.patientId(), study.id).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (blob) => {
+        if (!this.current(revision)) return;
         const url = window.URL.createObjectURL(blob);
+        this.previewUrls.add(url);
         window.open(url, '_blank');
       },
       error: () => {
+        if (!this.current(revision)) return;
         this.errorMessage.set('No se pudo previsualizar el archivo.');
       },
     });
   }
 
   deleteStudy(study: PatientMedicalStudy): void {
+    this.syncContext();
+    if (study.patientId !== this.patientId()) return;
+    const revision = this.revision;
     if (!confirm(`¿Estás seguro de que deseás eliminar el estudio "${study.originalFileName}"?`)) {
       return;
     }
 
-    this.studyService.deleteStudy(this.patientId(), study.id).subscribe({
+    this.studyService.deleteStudy(this.patientId(), study.id).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
+        if (!this.current(revision)) return;
         this.studies.update((list) => list.filter((s) => s.id !== study.id));
         this.successMessage.set('Estudio eliminado correctamente.');
-        setTimeout(() => this.successMessage.set(null), 3000);
+        setTimeout(() => { if (this.current(revision)) this.successMessage.set(null); }, 3000);
       },
       error: () => {
+        if (!this.current(revision)) return;
         this.errorMessage.set('No se pudo eliminar el estudio médico.');
       },
     });
