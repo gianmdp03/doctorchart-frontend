@@ -1,51 +1,48 @@
 import { HttpErrorResponse, HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { finalize } from 'rxjs';
-
+import { Subscription, finalize } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { CalendarioVacunacionJSON } from './calendario.types';
-
-export const CALENDARIO_VACUNACION_URL =
-  'https://gist.githubusercontent.com/gianmdp03/8cc442cce33c3fd2485de18a2aa89638/raw/cal_vacunacion.json';
-
 @Injectable({ providedIn: 'root' })
 export class VaccinationCalendarService {
   private readonly http = inject(HttpClient);
-
+  private request?: Subscription;
+  private read = 0;
   readonly data = signal<CalendarioVacunacionJSON | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly hasData = computed(() => this.data() !== null);
-
-  /** Loads the official calendar and updates the exposed signal state. */
   load(): void {
+    if (this.hasData() || this.loading()) return;
+    const read = ++this.read;
     this.loading.set(true);
     this.error.set(null);
-
-    this.http
-      .get<CalendarioVacunacionJSON>(CALENDARIO_VACUNACION_URL)
-      .pipe(finalize(() => this.loading.set(false)))
+    this.request = this.http
+      .get<CalendarioVacunacionJSON>(environment.apiUrl + '/vaccination-calendar')
+      .pipe(
+        finalize(() => {
+          if (read === this.read) this.loading.set(false);
+        }),
+      )
       .subscribe({
-        next: (calendar) => this.data.set(calendar),
+        next: (calendar) => {
+          if (read === this.read) this.data.set(calendar);
+        },
         error: (error: unknown) => {
-          this.error.set(this.toErrorMessage(error));
+          if (read === this.read)
+            this.error.set(
+              error instanceof HttpErrorResponse && error.status
+                ? 'No se pudo cargar el calendario de vacunación (HTTP ' + error.status + ').'
+                : 'No se pudo cargar el calendario de vacunación.',
+            );
         },
       });
   }
-
-  /** Removes the loaded calendar and any previous request error. */
   clear(): void {
+    this.read++;
+    this.request?.unsubscribe();
     this.data.set(null);
     this.error.set(null);
     this.loading.set(false);
-  }
-
-  private toErrorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      return error.status
-        ? `No se pudo cargar el calendario de vacunación (HTTP ${error.status}).`
-        : 'No se pudo conectar con el calendario de vacunación.';
-    }
-
-    return 'No se pudo cargar el calendario de vacunación.';
   }
 }

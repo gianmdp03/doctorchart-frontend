@@ -1,5 +1,6 @@
 /** Payload published by the National Vaccination Calendar data source. */
 export interface CalendarioVacunacionJSON {
+  calendarId: string;
   metadata: Metadata;
   grupos_etarios_columnas: GrupoEtario[];
   referencias_patologias: Record<string, string>;
@@ -59,6 +60,8 @@ export interface NotaAplicacion {
 }
 
 export interface AplicacionDosis {
+  id: string;
+  ageRule: { fromMonths: number; toMonths: number; graceMonths: number } | null;
   /** IDs of the age columns covered by this application, in calendar order. */
   columnas: string[];
   dosis: string;

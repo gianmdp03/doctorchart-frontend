@@ -25,8 +25,4 @@ describe('PatientService canonical records', () => {
     service.updatePatient(1,body).subscribe(); const req=http.expectOne(`${base}/1`);
     expect(req.request.body).toEqual(body); expect(req.request.method).toBe('PUT'); req.flush(record);
   });
-  it('updates vaccinations separately from the wizard', () => {
-    service.updateVaccinations(1,0,[]).subscribe(); const req=http.expectOne(`${base}/1/vaccinations`);
-    expect(req.request.body).toEqual({expectedVersion:0,records:[]}); req.flush(record);
-  });
 });

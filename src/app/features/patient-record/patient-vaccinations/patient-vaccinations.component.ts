@@ -1,27 +1,28 @@
 import { Subject, takeUntil } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/services/auth.service';
-import { DestroyRef, ChangeDetectionStrategy, Component, computed, effect, inject, input, OnDestroy, output, signal, untracked } from '@angular/core';
+import {
+  DestroyRef,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PatientDetailDTO } from '../../../core/models/patient.model';
-import { VaccinationRecord } from '../../../core/models/clinical-records.model';
+import {
+  PatientVaccinationDose,
+  PatientVaccinationSchedule,
+  VaccinationStatus,
+} from '../../../core/models/vaccination.model';
 import { PatientService } from '../../../core/services/patient.service';
-import { VaccinationCalendarService } from '../../vaccination-calendar/calendario.service';
-import { AplicacionDosis, ColumnaEtaria, Vacuna } from '../../vaccination-calendar/calendario.types';
+import { PatientVaccinationService } from '../../../core/services/patient-vaccination.service';
 import { DatePickerComponent } from '../../../shared/date-picker/date-picker.component';
-
-type ScheduleStatus = 'APLICADA' | 'PENDIENTE' | 'ACTUAL' | 'FUTURA';
-
-interface PatientDose {
-  key: string;
-  vaccine: Vacuna;
-  application: AplicacionDosis;
-  dueFrom: number;
-  dueTo: number;
-  status: ScheduleStatus;
-  record?: VaccinationRecord;
-}
-
 @Component({
   selector: 'app-patient-vaccinations',
   imports: [FormsModule, DatePickerComponent],
@@ -29,147 +30,205 @@ interface PatientDose {
   styleUrl: './patient-vaccinations.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PatientVaccinationsComponent implements OnDestroy {
-  readonly calendarService = inject(VaccinationCalendarService);
-  private readonly patientService = inject(PatientService);
+export class PatientVaccinationsComponent {
+  private readonly api = inject(PatientVaccinationService);
+  private readonly patients = inject(PatientService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly changed = new Subject<void>();
-  private owner = this.auth.currentUser()?.id;
-
+  private context = '';
+  private epoch = 0;
   readonly patient = input.required<PatientDetailDTO>();
   readonly patientUpdated = output<PatientDetailDTO>();
+  readonly schedule = signal<PatientVaccinationSchedule | null>(null);
   readonly isSaving = signal(false);
+  readonly isLoading = signal(false);
   readonly saveError = signal<string | null>(null);
-  readonly records = signal<VaccinationRecord[]>([]);
-  private savedVersion: number | null = null;
-  private epoch = 0;
-  private destroyed = false;
-
-  readonly ageInMonths = computed(() => this.monthsBetween(this.patient().birthDate));
-  readonly doses = computed<PatientDose[]>(() => {
-    const calendar = this.calendarService.data();
-    if (!calendar) return [];
-    const columns = new Map<string, ColumnaEtaria>(
-      calendar.grupos_etarios_columnas.flatMap((group) => group.columnas).map((column) => [column.id, column]),
-    );
-    const records = new Map(this.currentRecords().map((record) => [record.applicationKey, record]));
-    const age = this.ageInMonths();
-
-    return calendar.vacunas.flatMap((vaccine) => vaccine.aplicaciones.flatMap((application) => {
-      const months = application.columnas
-        .map((id) => this.columnAgeInMonths(columns.get(id)))
-        .filter((value): value is number => value !== null);
-      if (!months.length) return [];
-      const key = `${vaccine.id}:${application.columnas.join(',')}`;
-      const record = records.get(key);
-      const dueFrom = Math.min(...months);
-      const dueTo = Math.max(...months);
-      const status: ScheduleStatus = record?.applied
-        ? 'APLICADA'
-        : age < dueFrom ? 'FUTURA' : age > dueTo + 1 ? 'PENDIENTE' : 'ACTUAL';
-      return [{ key, vaccine, application, dueFrom, dueTo, status, record }];
-    }));
-  });
-
-  readonly overdueDoses = computed(() =>
-    this.doses()
-      .filter((dose) => dose.status === 'PENDIENTE')
-      .sort((a, b) => a.dueFrom - b.dueFrom || a.dueTo - b.dueTo)
+  readonly loadError = signal<string | null>(null);
+  readonly ageLabel = computed(() => this.schedule()?.ageLabel ?? '—');
+  readonly doses = computed(() => this.schedule()?.doses ?? []);
+  readonly overdueDoses = computed(() => this.doses().filter((d) => d.status === 'PENDIENTE'));
+  readonly currentDoses = computed(() => this.doses().filter((d) => d.status === 'ACTUAL'));
+  readonly futureDoses = computed(() => this.doses().filter((d) => d.status === 'FUTURA'));
+  readonly appliedDoses = computed(() => this.doses().filter((d) => d.status === 'APLICADA'));
+  readonly canSave = computed(
+    () =>
+      !this.isSaving() &&
+      !this.isLoading() &&
+      this.schedule()?.patientVersion === this.patient().version,
   );
-
-  readonly currentDoses = computed(() =>
-    this.doses()
-      .filter((dose) => dose.status === 'ACTUAL')
-      .sort((a, b) => a.dueFrom - b.dueFrom || a.dueTo - b.dueTo)
-  );
-
-  readonly futureDoses = computed(() =>
-    this.doses()
-      .filter((dose) => dose.status === 'FUTURA')
-      .sort((a, b) => a.dueFrom - b.dueFrom || a.dueTo - b.dueTo)
-  );
-
-  readonly appliedDoses = computed(() => this.doses().filter((dose) => dose.status === 'APLICADA'));
-
   constructor() {
-    effect(() => { this.patient(); const owner = this.auth.currentUser()?.id; untracked(() => { this.changed.next(); this.owner = owner; this.epoch++; this.savedVersion = null; this.records.set([]); this.isSaving.set(false); this.saveError.set(null); }); });
-    this.calendarService.load();
-  }
-  ngOnDestroy(): void { this.destroyed = true; this.epoch++; }
-
-  markApplied(dose: PatientDose, applied: boolean): void {
-    if (this.isSaving() || this.owner !== this.auth.currentUser()?.id) return;
-    const current = this.currentRecords().filter((record) => record.applicationKey !== dose.key);
-    const next = [...current, {
-      vaccineId: dose.vaccine.id,
-      applicationKey: dose.key,
-      applied,
-      appliedAt: applied ? (dose.record?.appliedAt || new Intl.DateTimeFormat('en-CA', {timeZone:'America/Argentina/Buenos_Aires', year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())) : null,
-    }];
-    this.records.set(next);
-    this.persist(next);
-  }
-
-  updateDate(dose: PatientDose, appliedAt: string): void {
-    if (this.isSaving() || this.owner !== this.auth.currentUser()?.id) return;
-    const next = this.currentRecords().map((record) =>
-      record.applicationKey === dose.key ? { ...record, appliedAt } : record,
-    );
-    this.records.set(next);
-    this.persist(next);
-  }
-
-  statusLabel(status: ScheduleStatus): string {
-    return { APLICADA: 'Aplicada', PENDIENTE: 'Pendiente', ACTUAL: 'Corresponde ahora', FUTURA: 'Futura' }[status];
-  }
-
-  ageLabel(months: number): string {
-    return months < 24 ? `${months} meses` : `${Math.floor(months / 12)} años`;
-  }
-
-  private currentRecords(): VaccinationRecord[] {
-    return this.records().length ? this.records() : (this.patient().immunizationAndNutrition?.vaccinationRecords ?? []);
-  }
-
-  private persist(records: VaccinationRecord[]): void {
-    const patient = this.patient();
-    const epoch = this.epoch;
-    const owner = this.owner;
-    this.isSaving.set(true);
-    this.saveError.set(null);
-    this.patientService.updateVaccinations(patient.id, this.savedVersion ?? patient.version, records).pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: updated => {
-        if (this.destroyed || epoch !== this.epoch || owner !== this.auth.currentUser()?.id || this.patient().id !== patient.id) return;
-        if (updated.id !== patient.id) { this.isSaving.set(false); this.saveError.set('La respuesta recibida no corresponde a este paciente.'); return; }
-        this.savedVersion = updated.version;
-        this.records.set(structuredClone(updated.immunizationAndNutrition?.vaccinationRecords ?? []));
-        this.isSaving.set(false);
-        this.patientUpdated.emit(updated);
-      },
-      error: () => {
-        if (this.destroyed || epoch !== this.epoch || owner !== this.auth.currentUser()?.id || this.patient().id !== patient.id) return;
-        this.isSaving.set(false);
-        this.saveError.set('No se pudo guardar la aplicación de la vacuna.');
-      },
+    effect(() => {
+      this.patient();
+      this.auth.currentUser();
+      untracked(() => this.syncContext());
+    });
+    this.destroyRef.onDestroy(() => {
+      this.epoch++;
+      this.changed.next();
+      this.changed.complete();
     });
   }
-
-  private columnAgeInMonths(column?: ColumnaEtaria): number | null {
-    if (!column) return null;
-    if (column.id === 'recien_nacido') return 0;
-    const month = /^(\d+)_meses$/.exec(column.id);
-    if (month) return Number(month[1]);
-    const years = /^(\d+)\s*años?$/.exec(column.subtitulo ?? '');
-    if (years) return Number(years[1]) * 12;
-    if (column.id === 'a_partir_15_anos') return 180;
-    if (column.id === 'adultos') return 216;
-    return null;
+  private contextKey() {
+    return JSON.stringify([
+      this.auth.currentUser()?.id ?? null,
+      this.patient().id,
+      this.patient().version,
+    ]);
   }
-
-  private monthsBetween(birthDate: string): number {
-    const birth = new Date(`${birthDate}T00:00:00`);
-    const now = new Date();
-    return Math.max(0, (now.getFullYear() - birth.getFullYear()) * 12 + now.getMonth() - birth.getMonth() - (now.getDate() < birth.getDate() ? 1 : 0));
+  private syncContext() {
+    const key = this.contextKey();
+    if (key === this.context) return;
+    const keepConfirmed =
+      !!this.auth.currentUser()?.id &&
+      this.context !== '' &&
+      this.schedule()?.patientId === this.patient().id &&
+      this.schedule()?.patientVersion === this.patient().version &&
+      JSON.parse(this.context)[0] === this.auth.currentUser()?.id;
+    this.changed.next();
+    this.epoch++;
+    this.context = key;
+    this.isSaving.set(false);
+    this.isLoading.set(false);
+    this.saveError.set(null);
+    this.loadError.set(null);
+    if (!keepConfirmed) {
+      this.schedule.set(null);
+      if (this.auth.currentUser()?.id) this.loadSchedule();
+    }
+  }
+  private current(key: string, epoch: number) {
+    return !this.destroyRef.destroyed && key === this.contextKey() && epoch === this.epoch;
+  }
+  private loadSchedule() {
+    const patient = this.patient(),
+      key = this.context,
+      epoch = this.epoch;
+    this.isLoading.set(true);
+    this.loadError.set(null);
+    this.api
+      .schedule(patient.id)
+      .pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (schedule) => {
+          if (!this.current(key, epoch)) return;
+          this.isLoading.set(false);
+          if (schedule.patientId !== patient.id) {
+            this.loadError.set('La respuesta recibida no corresponde a este paciente.');
+            return;
+          }
+          this.schedule.set(schedule);
+          if (schedule.patientVersion !== patient.version)
+            this.loadError.set('La ficha cambió. Actualizala antes de registrar vacunas.');
+        },
+        error: () => {
+          if (this.current(key, epoch)) {
+            this.isLoading.set(false);
+            this.loadError.set('No se pudo cargar el calendario del paciente.');
+          }
+        },
+      });
+  }
+  refresh() {
+    this.syncContext();
+    if (this.isSaving() || this.isLoading() || !this.auth.currentUser()?.id) return;
+    const key = this.context,
+      epoch = this.epoch,
+      id = this.patient().id;
+    this.isLoading.set(true);
+    this.loadError.set(null);
+    this.patients
+      .getPatientById(id)
+      .pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (patient) => {
+          if (!this.current(key, epoch)) return;
+          this.isLoading.set(false);
+          if (patient.id !== id) {
+            this.loadError.set('La respuesta recibida no corresponde a este paciente.');
+            return;
+          }
+          this.saveError.set(null);
+          this.patientUpdated.emit(patient);
+          if (patient.version === this.patient().version) this.loadSchedule();
+        },
+        error: () => {
+          if (this.current(key, epoch)) {
+            this.isLoading.set(false);
+            this.loadError.set('No se pudo actualizar la ficha del paciente.');
+          }
+        },
+      });
+  }
+  toggleApplied(dose: PatientVaccinationDose, event: Event) {
+    const target = event.target as HTMLInputElement,
+      applied = target.checked;
+    target.checked = dose.status === 'APLICADA';
+    this.markApplied(dose, applied);
+  }
+  markApplied(dose: PatientVaccinationDose, applied: boolean) {
+    this.persist(dose, applied);
+  }
+  updateDate(dose: PatientVaccinationDose, appliedAt: string, picker?: DatePickerComponent) {
+    // Keep the visible value confirmed by the server while the write is pending.
+    picker?.writeValue(dose.appliedAt);
+    if (dose.status === 'APLICADA') this.persist(dose, true, appliedAt);
+  }
+  private persist(dose: PatientVaccinationDose, applied: boolean, appliedAt?: string) {
+    this.syncContext();
+    const schedule = this.schedule();
+    if (
+      !this.auth.currentUser()?.id ||
+      !this.canSave() ||
+      !schedule ||
+      !this.doses().some((d) => d.id === dose.id)
+    )
+      return;
+    const key = this.context,
+      epoch = this.epoch,
+      id = this.patient().id;
+    this.isSaving.set(true);
+    this.saveError.set(null);
+    this.api
+      .save(id, dose.id, {
+        expectedVersion: schedule.patientVersion,
+        calendarId: dose.calendarId,
+        applied,
+        ...(appliedAt !== undefined ? { appliedAt } : {}),
+      })
+      .pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (saved) => {
+          if (!this.current(key, epoch)) return;
+          this.isSaving.set(false);
+          if (
+            saved.patient.id !== id ||
+            saved.schedule.patientId !== id ||
+            saved.schedule.patientVersion !== saved.patient.version
+          ) {
+            this.saveError.set('La respuesta recibida no corresponde a este paciente.');
+            return;
+          }
+          this.schedule.set(saved.schedule);
+          this.patientUpdated.emit(saved.patient);
+        },
+        error: (error) => {
+          if (!this.current(key, epoch)) return;
+          this.isSaving.set(false);
+          this.saveError.set(
+            error.status === 409
+              ? 'La ficha o el calendario cambiaron. Actualizá antes de volver a guardar.'
+              : (error.error?.message ?? 'No se pudo guardar la aplicación de la vacuna.'),
+          );
+        },
+      });
+  }
+  statusLabel(status: VaccinationStatus) {
+    return {
+      APLICADA: 'Aplicada',
+      PENDIENTE: 'Pendiente',
+      ACTUAL: 'Corresponde ahora',
+      FUTURA: 'Futura',
+    }[status];
   }
 }

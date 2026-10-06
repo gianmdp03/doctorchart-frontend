@@ -47,13 +47,5 @@ export interface FamilyHistory {
 
 export interface ImmunizationAndNutrition {
   vaccinationHistory?: string[];
-  vaccinationRecords?: VaccinationRecord[];
   feedingDiet?: string;
-}
-
-export interface VaccinationRecord {
-  vaccineId: string;
-  applicationKey: string;
-  applied: boolean;
-  appliedAt?: string | null;
 }

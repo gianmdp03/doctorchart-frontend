@@ -48,10 +48,6 @@ export class PatientService {
     return this.http.put<PatientDetailDTO>(`${this.baseUrl}/${id}`, patient);
   }
 
-  updateVaccinations(id: number, expectedVersion: number, records: import('../models/clinical-records.model').VaccinationRecord[]): Observable<PatientDetailDTO> {
-    return this.http.put<PatientDetailDTO>(`${this.baseUrl}/${id}/vaccinations`, { expectedVersion, records });
-  }
-
   deletePatient(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
