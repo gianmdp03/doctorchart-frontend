@@ -1,9 +1,7 @@
 import {
   Component,
   computed,
-  effect,
   EventEmitter,
-  HostListener,
   inject,
   Input,
   Output,
@@ -17,11 +15,8 @@ import {
   lucideShieldAlert,
   lucideCheckCircle2,
   lucidePlus,
-  lucideMoreHorizontal,
   lucideChevronLeft,
   lucideUser,
-  lucideTrendingUp,
-  lucidePrinter,
   lucideCreditCard,
 } from '@ng-icons/lucide';
 import { PatientDetailDTO } from '../../../core/models/patient.model';
@@ -39,11 +34,8 @@ import { PatientRecordActionId } from '../../../core/models/specialty-experience
       lucideShieldAlert,
       lucideCheckCircle2,
       lucidePlus,
-      lucideMoreHorizontal,
       lucideChevronLeft,
       lucideUser,
-      lucideTrendingUp,
-      lucidePrinter,
       lucideCreditCard,
     }),
   ],
@@ -66,8 +58,6 @@ export class PatientBannerComponent {
   @Output() editPatient = new EventEmitter<void>();
   @Output() printSummary = new EventEmitter<void>();
   @Output() viewCurves = new EventEmitter<void>();
-
-  readonly isMenuOpen = signal<boolean>(false);
 
   readonly initials = computed(() => {
     const p = this.patient || this.activePatientService.activePatient();
@@ -190,12 +180,6 @@ export class PatientBannerComponent {
   readonly primaryActions = computed(() =>
     this.availableActions().filter((action) => action.primary),
   );
-  readonly menuActions = computed(() => this.availableActions().filter((action) => action.menu));
-  constructor() {
-    effect(() => {
-      if (!this.menuActions().length) this.isMenuOpen.set(false);
-    });
-  }
 
   runAction(id: PatientRecordActionId): void {
     if (!this.recordActions.has(id)) return;
@@ -206,19 +190,6 @@ export class PatientBannerComponent {
       PRINT_DOCUMENT: () => this.onPrintSummary(),
     };
     handlers[id]();
-  }
-
-  toggleMenu(event: Event): void {
-    if (!this.menuActions().length) return;
-    event.stopPropagation();
-    this.isMenuOpen.update((v) => !v);
-  }
-
-  @HostListener('document:click')
-  onDocumentClick(): void {
-    if (this.isMenuOpen()) {
-      this.isMenuOpen.set(false);
-    }
   }
 
   goBack(): void {
@@ -232,19 +203,16 @@ export class PatientBannerComponent {
 
   onEditPatient(): void {
     if (!this.recordActions.has('EDIT_PATIENT')) return;
-    this.isMenuOpen.set(false);
     this.editPatient.emit();
   }
 
   onPrintSummary(): void {
     if (!this.recordActions.has('PRINT_DOCUMENT')) return;
-    this.isMenuOpen.set(false);
     this.printSummary.emit();
   }
 
   goToCurves(): void {
     if (!this.recordActions.has('VIEW_GROWTH') || !this.isChild()) return;
-    this.isMenuOpen.set(false);
     if (this.viewCurves.observed) {
       this.viewCurves.emit();
     } else {

@@ -104,30 +104,5 @@
         </button>
       }
     }
-    @if (menuActions().length) {
-      <div class="more-menu-container">
-        <button
-          type="button"
-          class="btn-more-options"
-          (click)="toggleMenu($event)"
-          [attr.aria-expanded]="isMenuOpen()"
-          title="Más acciones del paciente"
-        >
-          <ng-icon name="lucideMoreHorizontal" />
-        </button>
-        @if (isMenuOpen()) {
-          <div class="dropdown-actions-menu" (click)="$event.stopPropagation()">
-            @for (action of menuActions(); track action.id) {
-              @if (action.menu; as presentation) {
-                <button type="button" class="dropdown-menu-item" (click)="runAction(action.id)">
-                  <ng-icon [name]="presentation.icon" [class]="presentation.iconCss" />
-                  <span>{{ presentation.label }}</span>
-                </button>
-              }
-            }
-          </div>
-        }
-      </div>
-    }
   </div>
 </header>

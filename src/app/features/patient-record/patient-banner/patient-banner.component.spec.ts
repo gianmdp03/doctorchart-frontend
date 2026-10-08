@@ -74,23 +74,15 @@ describe('PatientBannerComponent', () => {
     fixture.detectChanges();
   });
 
-  it('preserves pediatric action labels and order in both button groups', () => {
+  it('preserves pediatric action labels and order in primary button group and excludes redundant menu', () => {
     expect(
       [...fixture.nativeElement.querySelectorAll('.banner-actions-block > button')].map((el: any) =>
         el.textContent.trim(),
       ),
     ).toEqual(['Editar datos', 'Nueva historia clínica']);
-    component.toggleMenu(new Event('click'));
-    fixture.detectChanges();
-    expect(
-      [...fixture.nativeElement.querySelectorAll('.dropdown-menu-item')].map((el: any) =>
-        el.textContent.trim(),
-      ),
-    ).toEqual([
-      'Editar datos del paciente',
-      'Ver Curvas de Crecimiento OMS',
-      'Imprimir Resumen de Historia Clínica',
-    ]);
+    expect(fixture.nativeElement.querySelector('.more-menu-container')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.btn-more-options')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.dropdown-actions-menu')).toBeNull();
   });
   it('composes selection and order from the configured action IDs', () => {
     configuredActions.set(['PRINT_DOCUMENT', 'NEW_ENCOUNTER', 'EDIT_PATIENT']);
@@ -100,17 +92,8 @@ describe('PatientBannerComponent', () => {
         el.textContent.trim(),
       ),
     ).toEqual(['Nueva historia clínica', 'Editar datos']);
-    component.toggleMenu(new Event('click'));
-    fixture.detectChanges();
-    expect(
-      [...fixture.nativeElement.querySelectorAll('.dropdown-menu-item')].map((el: any) =>
-        el.textContent.trim(),
-      ),
-    ).toEqual(['Imprimir Resumen de Historia Clínica', 'Editar datos del paciente']);
   });
-  it('removes all buttons, closes the menu and blocks handlers when actions are cleared', () => {
-    component.toggleMenu(new Event('click'));
-    fixture.detectChanges();
+  it('removes all buttons and blocks handlers when actions are cleared', () => {
     const edit = vi.spyOn(component.editPatient, 'emit'),
       create = vi.spyOn(component.newEncounter, 'emit'),
       print = vi.spyOn(component.printSummary, 'emit'),
@@ -121,7 +104,6 @@ describe('PatientBannerComponent', () => {
     component.onNewEncounter();
     component.onPrintSummary();
     component.goToCurves();
-    expect(component.isMenuOpen()).toBe(false);
     expect(fixture.nativeElement.querySelector('.banner-actions-block').children).toHaveLength(0);
     for (const spy of [edit, create, print, curves]) expect(spy).not.toHaveBeenCalled();
     expect(routerSpy.navigate).not.toHaveBeenCalled();
@@ -145,12 +127,12 @@ describe('PatientBannerComponent', () => {
       change();
       fixture.detectChanges();
       component.goToCurves();
-      expect(component.menuActions()).toEqual([]);
       expect(routerSpy.navigate).not.toHaveBeenCalled();
     }
     component.patient = mockPatient;
     fixture.detectChanges();
-    expect(component.menuActions().map((action) => action.id)).toEqual(['VIEW_GROWTH']);
+    component.goToCurves();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/curvas']);
   });
   it('should create the patient banner', () => {
     expect(component).toBeTruthy();
