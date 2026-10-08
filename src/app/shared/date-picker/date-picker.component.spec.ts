@@ -58,4 +58,12 @@ describe('DatePickerComponent', () => {
     component.selectDate(new Date(2021, 2, 10)); // 10 Mar 2021
     expect(emitted).toBe('2021-03-10');
   });
+
+  it('should default calendarStart to current date when no value is provided', () => {
+    const start = component.calendarStart();
+    const now = new Date();
+    expect(start).toBeTruthy();
+    expect(start?.getFullYear()).toBe(now.getFullYear());
+    expect(start?.getMonth()).toBe(now.getMonth());
+  });
 });

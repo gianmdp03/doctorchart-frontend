@@ -192,6 +192,7 @@ export class ClinicalTimelineComponent implements OnChanges {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
       return d.toLocaleDateString('es-AR', {
+        timeZone: 'America/Argentina/Buenos_Aires',
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -206,10 +207,14 @@ export class ClinicalTimelineComponent implements OnChanges {
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return '';
-      return d.toLocaleTimeString('es-AR', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }) + ' hs';
+      return (
+        d.toLocaleTimeString('es-AR', {
+          timeZone: 'America/Argentina/Buenos_Aires',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        }) + ' hs'
+      );
     } catch {
       return '';
     }

@@ -239,4 +239,37 @@ describe('DashboardComponent', () => {
     fixture.destroy();
     expect(pending.observed).toBe(false);
   });
+
+  it('debounces rapid directory search input and triggers search with enter key', () => {
+    vi.useFakeTimers();
+    const initialCalls = patientServiceMock.getPatients.mock.calls.length;
+
+    component.onDirectorySearchInput({ target: { value: 'Ro' } } as any);
+    vi.advanceTimersByTime(100);
+    component.onDirectorySearchInput({ target: { value: 'Rossi' } } as any);
+
+    expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(initialCalls);
+
+    vi.advanceTimersByTime(400);
+    expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(initialCalls + 1);
+    expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(
+      0,
+      6,
+      'fullName,asc',
+      'Rossi',
+    );
+
+    // Enter key triggers immediate search
+    component.onDirectorySearchInput({ target: { value: 'Fernandez' } } as any);
+    component.onDirectorySearchEnter();
+    expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(initialCalls + 2);
+    expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(
+      0,
+      6,
+      'fullName,asc',
+      'Fernandez',
+    );
+
+    vi.useRealTimers();
+  });
 });

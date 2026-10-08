@@ -31,7 +31,9 @@
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-full);
   padding: 0.35rem 0.75rem;
-  transition: all var(--md-sys-motion-standard);
+  width: 280px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .directory-search-wrapper:focus-within {
@@ -53,12 +55,9 @@
   font-family: inherit;
   font-size: 0.82rem;
   color: var(--md-sys-color-on-surface);
-  width: 170px;
-  transition: width 0.2s ease;
-}
-
-.directory-search-input:focus {
-  width: 220px;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
 }
 
 .directory-search-input::placeholder {
@@ -95,64 +94,322 @@
   outline-offset: 1px;
 }
 
-/* Patient Card specific styling */
-.patient-card.patient-card-active {
-  border-color: var(--md-sys-color-primary);
-  box-shadow: var(--md-elevation-2);
-}
+/* ==========================================================================
+   PATIENT TABLE - MODERN CLINICAL DATA GRID
+   ========================================================================== */
 
-.patient-card-body {
-  font-size: 0.85rem;
-  margin-bottom: 0.75rem;
-  color: var(--md-sys-color-on-surface);
-  line-height: 1.45;
-}
-
-.patient-card-body p {
-  margin: 0.25rem 0;
-}
-
-.patient-card-body strong {
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-.patient-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid var(--md-sys-color-surface-variant);
-  padding-top: 0.75rem;
-  gap: 0.5rem;
-}
-
-.patient-next-note {
-  font-size: 0.78rem;
-  color: var(--md-sys-color-secondary);
-  white-space: nowrap;
+.patient-table-card {
+  margin-top: 1rem;
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-m);
+  box-shadow: 0 1px 3px rgba(0, 25, 29, 0.06), 0 1px 2px rgba(0, 25, 29, 0.04);
   overflow: hidden;
-  text-overflow: ellipsis;
+  transition: border-color var(--md-sys-motion-standard);
 }
 
-.patient-card-footer .m3-button {
-  padding: 0.35rem 0.8rem;
-  font-size: 0.8rem;
+.patient-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.patient-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.86rem;
   white-space: nowrap;
+}
+
+/* Table Headers */
+.patient-table thead {
+  background-color: var(--md-sys-color-surface-container-low);
+  border-bottom: 1px solid var(--md-sys-color-surface-variant);
+}
+
+.patient-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--md-sys-color-secondary);
+  user-select: none;
+}
+
+.patient-table th.text-right,
+.patient-table td.text-right {
+  text-align: right;
+}
+
+/* Table Rows & Interactive States */
+.patient-row {
+  border-bottom: 1px solid var(--md-sys-color-surface-variant);
+  transition: background-color 0.15s ease;
+}
+
+.patient-row:last-child {
+  border-bottom: none;
+}
+
+.patient-row:hover {
+  background-color: var(--md-sys-color-surface-container-low);
+}
+
+.patient-table td {
+  padding: 0.7rem 1rem;
+  vertical-align: middle;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* Patient Identity Column */
+.patient-cell-flex {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.patient-mini-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--md-shape-s);
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.78rem;
   flex-shrink: 0;
+  letter-spacing: -0.02em;
+  transition: all 0.15s ease;
+}
+
+/* Gender-specific Avatar colors */
+.patient-mini-avatar.avatar-male {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+.patient-mini-avatar.avatar-female {
+  background-color: #fce7f3;
+  color: #be185d;
+  border-color: #f9a8d4;
+}
+
+.patient-mini-avatar.avatar-neutral {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border-color: var(--md-sys-color-outline-variant);
+}
+
+.patient-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.patient-full-name {
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  font-size: 0.88rem;
+}
+
+.patient-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.patient-id-badge {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--md-sys-color-secondary);
+}
+
+.gender-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--md-shape-full);
+  line-height: 1.25;
+}
+
+.gender-pill.gender-pill-male {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+}
+
+.gender-pill.gender-pill-female {
+  background-color: #fdf2f8;
+  color: #db2777;
+  border: 1px solid #fce7f3;
+}
+
+/* DNI Column */
+.dni-number {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.84rem;
+}
+
+/* Age & Birth Date Column */
+.age-data-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.age-primary-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.age-text {
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  font-size: 0.84rem;
+}
+
+.badge-compact {
+  font-size: 0.68rem;
+  padding: 0.1rem 0.4rem;
+  font-weight: 600;
+}
+
+.birth-subtext {
+  font-size: 0.73rem;
+  color: var(--md-sys-color-secondary);
+}
+
+/* Contact Column */
+.contact-info-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.contact-icon {
+  color: var(--md-sys-color-outline);
+  flex-shrink: 0;
+}
+
+.cell-muted {
+  color: var(--md-sys-color-outline);
+}
+
+/* Encounters Status Column */
+.encounter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.22rem 0.6rem;
+  border-radius: var(--md-shape-full);
+}
+
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.encounter-pill.pill-completed {
+  background-color: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.encounter-pill.pill-completed .pill-dot {
+  background-color: #10b981;
+}
+
+.pill-date {
+  font-weight: 400;
+  opacity: 0.88;
+}
+
+.encounter-pill.pill-empty {
+  background-color: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.encounter-pill.pill-empty .pill-dot {
+  background-color: #f59e0b;
+}
+
+/* Vaccines Status Column */
+.vaccine-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--md-shape-full);
+}
+
+.vaccine-chip.chip-pending {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.vaccine-chip.chip-ok {
+  background-color: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+/* Action Button */
+.btn-table-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.32rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-primary);
   cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-table-action:hover {
+  background-color: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  box-shadow: 0 1px 2px rgba(0, 104, 116, 0.2);
+}
+
+.btn-table-action:hover svg {
+  transform: translateX(2px);
+}
+
+.btn-table-action svg {
+  transition: transform 0.15s ease;
 }
 
 /* Empty & Loading States */
-.patient-cards-empty {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 260px;
-  padding: 2.5rem 1.5rem;
-  background-color: var(--md-sys-color-surface-container-lowest);
-  border: 1px dashed var(--md-sys-color-outline-variant);
-  border-radius: var(--md-shape-l);
+.empty-table-cell {
+  padding: 3.5rem 1.5rem !important;
   text-align: center;
+  background-color: var(--md-sys-color-surface-container-lowest);
 }
 
 .empty-state {

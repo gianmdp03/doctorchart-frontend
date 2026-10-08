@@ -20,7 +20,7 @@ export const PATIENT_RECORD_ACTIONS: Record<PatientRecordActionId, RecordActionP
   },
   NEW_ENCOUNTER: {
     id: 'NEW_ENCOUNTER',
-    primary: { label: 'Nueva consulta', icon: 'lucidePlus', css: 'btn-primary-soap' },
+    primary: { label: 'Nueva historia clínica', icon: 'lucidePlus', css: 'btn-primary-soap' },
   },
   VIEW_GROWTH: {
     id: 'VIEW_GROWTH',

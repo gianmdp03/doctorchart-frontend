@@ -17,6 +17,7 @@ import { PatientVaccinationsComponent } from './patient-vaccinations/patient-vac
 import { PatientStudiesComponent } from './patient-studies/patient-studies.component';
 import { PatientSummaryComponent } from './patient-summary/patient-summary.component';
 import { PatientPrescriptionsComponent } from './patient-prescriptions/patient-prescriptions.component';
+import { PatientStudiesStore } from './patient-studies/patient-studies.store';
 import { PatientGrowthService } from '../../core/services/patient-growth.service';
 import { BackendGrowthMeasurement } from '../../core/models/growth-chart.model';
 import { provideHttpClient } from '@angular/common/http';
@@ -282,7 +283,7 @@ describe('PatientRecordComponent', () => {
     history.encounters.set([]);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.btn-new-encounter-cta')).toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('Sin consultas registradas');
+    expect(fixture.nativeElement.textContent).toContain('Sin historias clínicas registradas');
   });
   it('closes edit and new consultation dialogs if their actions are removed', () => {
     component.openEditPatientModal();
@@ -339,7 +340,7 @@ describe('PatientRecordComponent', () => {
   it('preserves pediatric tab labels, order and badges, including numbering with growth disabled', () => {
     expect(component.tabs().map((tab) => tab.label)).toEqual([
       '1. Datos del paciente',
-      '2. Consultas',
+      '2. Historia Clínica',
       '3. Vacunas',
       '4. Evolución y Curvas',
       '5. Recetas y Órdenes',
@@ -355,7 +356,7 @@ describe('PatientRecordComponent', () => {
       ),
     ).toEqual([
       '1. Datos del paciente',
-      '2. Consultas',
+      '2. Historia Clínica',
       '3. Vacunas',
       '5. Recetas y Órdenes',
       '6. Estudios realizados',
@@ -366,7 +367,7 @@ describe('PatientRecordComponent', () => {
     configuredTabs.set(['ENCOUNTERS', 'STUDIES', 'SUMMARY']);
     fixture.detectChanges();
     expect(component.tabs().map((tab) => tab.label)).toEqual([
-      '1. Consultas',
+      '1. Historia Clínica',
       '2. Estudios realizados',
       '3. Datos del paciente',
     ]);
@@ -533,6 +534,60 @@ describe('PatientRecordComponent', () => {
     fixture.detectChanges();
     expect(growth.selectedGrowthMetric()).toBe('HEIGHT');
   });
+
+  it('retains the new clinical history form draft and consultation type when tab components are recreated', async () => {
+    history.startCreatingEncounter();
+    history.setEncounterDraft({ notes: 'Notas del examen físico' }, 'EMERGENCY', '2026-10-07T14:30:00.000Z');
+    component.setTab('historia');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(history.isCreatingEncounter()).toBe(true);
+    expect(history.encounterDraftValues()).toEqual({ notes: 'Notas del examen físico' });
+    expect(history.encounterDraftConsultationType()).toBe('EMERGENCY');
+
+    // Switch to another tab (resumen)
+    component.setTab('resumen');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    // Switch back to historia
+    component.setTab('historia');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(history.isCreatingEncounter()).toBe(true);
+    expect(history.encounterDraftValues()).toEqual({ notes: 'Notas del examen físico' });
+    expect(history.encounterDraftConsultationType()).toBe('EMERGENCY');
+  });
+
+  it('retains the study file and description draft across tab switches', async () => {
+    const studiesStore = fixture.debugElement.injector.get(PatientStudiesStore);
+    const testFile = new File(['pdf-data'], 'lab.pdf', { type: 'application/pdf' });
+    studiesStore.setDraftFile(testFile);
+    studiesStore.setDraftDescription('Análisis de orina completo');
+
+    component.setTab('estudios');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(studiesStore.draftFile()).toBe(testFile);
+    expect(studiesStore.draftDescription()).toBe('Análisis de orina completo');
+
+    // Switch to another tab
+    component.setTab('resumen');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    // Switch back to estudios
+    component.setTab('estudios');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(studiesStore.draftFile()).toBe(testFile);
+    expect(studiesStore.draftDescription()).toBe('Análisis de orina completo');
+  });
+
   it('should load encounters on init', () => {
     expect(encounterServiceSpy.getByPatient).toHaveBeenCalledWith(10492);
     expect(history.encounters().length).toBe(2);

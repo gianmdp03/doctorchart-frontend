@@ -162,7 +162,7 @@
       <div class="content-card patients-directory-card">
         <div class="card-header-row">
           <div class="header-title-wrap"><h2 class="card-title"><ng-icon name="lucideUsers" class="title-icon text-blue-600" /> Acceso rápido a pacientes</h2><p class="card-subtitle">Búsqueda en el padrón de pacientes</p></div>
-          <div class="directory-search-box"><ng-icon name="lucideSearch" class="search-box-icon" /><input type="search" class="directory-search-input" placeholder="Buscar paciente..." [value]="directorySearch()" (input)="onDirectorySearchInput($event)" /></div>
+          <div class="directory-search-box"><ng-icon name="lucideSearch" class="search-box-icon" /><input type="search" class="directory-search-input" placeholder="Buscar paciente..." [value]="directorySearch()" (input)="onDirectorySearchInput($event)" (keydown.enter)="onDirectorySearchEnter()" /></div>
         </div>
         @if (directoryError(); as error) { <p role="alert">{{ error }} <button type="button" class="secondary-outline-btn btn-xs" (click)="loadDirectory(directoryPage(), directorySearch())">Reintentar</button></p> }
         @if (isSearchingDirectory()) {

@@ -19,12 +19,11 @@ import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { PatientDetailDTO } from '../../core/models/patient.model';
 import { PatientBannerComponent } from './patient-banner/patient-banner.component';
-import { NewEncounterDialogComponent } from '../new-encounter-dialog/new-encounter-dialog.component';
-import { NewPatientDialogComponent } from '../new-patient-dialog/new-patient-dialog.component';
 import { PatientEncountersStore } from './patient-encounters/patient-encounters.store';
 import { PatientGrowthStore } from './patient-growth/patient-growth.store';
 import { PatientPrescriptionEditorStore } from './patient-prescriptions/patient-prescription-editor.store';
 import { PatientPrescriptionStore } from './patient-prescriptions/patient-prescription.store';
+import { PatientStudiesStore } from './patient-studies/patient-studies.store';
 import { PatientRecordActionsService } from '../../core/experience/patient-record-actions.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { PatientRecordModuleDirective } from './patient-record-module.directive';
@@ -40,21 +39,20 @@ export interface RecordTabItem {
   module: PatientRecordModule;
 }
 
-/** Composes the record and its dialogs; each clinical module owns its state and operations. */
+/** Composes the record; each clinical module owns its state and operations. */
 @Component({
   selector: 'app-patient-record',
   imports: [
     NgIcon,
     PatientBannerComponent,
     PatientRecordModuleDirective,
-    NewEncounterDialogComponent,
-    NewPatientDialogComponent,
   ],
   providers: [
     PatientEncountersStore,
     PatientGrowthStore,
     PatientPrescriptionStore,
     PatientPrescriptionEditorStore,
+    PatientStudiesStore,
     provideIcons({ lucideUser, lucideUsers, lucidePlus }),
   ],
   templateUrl: './patient-record.component.html',
@@ -112,9 +110,13 @@ export class PatientRecordComponent implements OnInit {
           this.recordContext = context;
           this.isNewEncounterModalOpen.set(false);
           this.isEditPatientModalOpen.set(false);
+          this.history.cancelCreatingEncounter();
         }
         if (!canEdit) this.isEditPatientModalOpen.set(false);
-        if (!canCreate) this.isNewEncounterModalOpen.set(false);
+        if (!canCreate) {
+          this.isNewEncounterModalOpen.set(false);
+          this.history.cancelCreatingEncounter();
+        }
         if (!tabs.some((tab) => tab.id === this.selectedTab())) this.selectedTab.set('resumen');
       });
     });
@@ -134,6 +136,10 @@ export class PatientRecordComponent implements OnInit {
       const tabParam = queryParams.get('tab') as PatientRecordTab | null;
       if (tabParam) {
         this.setTab(tabParam);
+      }
+      if (tabParam === 'historia' && queryParams.get('nueva') === 'true') {
+        this.history.startCreatingEncounter();
+        this.isNewEncounterModalOpen.set(true);
       }
     });
   }
@@ -161,6 +167,12 @@ export class PatientRecordComponent implements OnInit {
     if (!this.recordActions.has('EDIT_PATIENT')) return;
     if (event) event.stopPropagation();
     this.isEditPatientModalOpen.set(true);
+    const patientId = this.activePatientService.patientId();
+    if (patientId) {
+      void this.router.navigate(['/pacientes', patientId, 'editar']);
+    } else {
+      void this.router.navigate(['/pacientes/nuevo']);
+    }
   }
 
   closeEditPatientModal(): void {
@@ -178,10 +190,13 @@ export class PatientRecordComponent implements OnInit {
   openNewEncounterModal(event?: Event): void {
     if (!this.recordActions.has('NEW_ENCOUNTER')) return;
     if (event) event.stopPropagation();
+    this.setTab('historia');
+    this.history.startCreatingEncounter();
     this.isNewEncounterModalOpen.set(true);
   }
 
   closeNewEncounterModal(): void {
+    this.history.cancelCreatingEncounter();
     this.isNewEncounterModalOpen.set(false);
   }
 

@@ -10,7 +10,6 @@ import { EncounterDetailDialogComponent } from './features/encounter-detail-dial
 import { LoginPageComponent } from './features/auth/login-page.component';
 import { UserProfileDialogComponent } from './features/auth/user-profile-dialog.component';
 import { AiAssistantWidgetComponent } from './features/ai-assistant/ai-assistant-widget.component';
-import { PrescriptionPrintLayoutComponent } from './features/prescription-print-layout/prescription-print-layout.component';
 import { WorkspaceStore } from './core/services/workspace.store';
 
 @Component({
@@ -23,7 +22,6 @@ import { WorkspaceStore } from './core/services/workspace.store';
     LoginPageComponent,
     UserProfileDialogComponent,
     AiAssistantWidgetComponent,
-    PrescriptionPrintLayoutComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',

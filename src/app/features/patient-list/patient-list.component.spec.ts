@@ -185,4 +185,46 @@ describe('PatientListComponent', () => {
     expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(calls);
     vi.useRealTimers();
   });
+
+  it('debounces rapid search input and only queries after user pauses typing', () => {
+    vi.useFakeTimers();
+    const response = of({ content: [], totalPages: 0, totalElements: 0 });
+    patientServiceMock.getPatients.mockReturnValue(response);
+    const initialCalls = patientServiceMock.getPatients.mock.calls.length;
+
+    // Rapid keystrokes
+    component.onSearchInput({ target: { value: 'P' } } as any);
+    vi.advanceTimersByTime(100);
+    component.onSearchInput({ target: { value: 'Pe' } } as any);
+    vi.advanceTimersByTime(100);
+    component.onSearchInput({ target: { value: 'Perez' } } as any);
+
+    // No API calls should have been made yet while typing
+    expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(initialCalls);
+
+    // After 400ms pause, exactly 1 call is made with the final query
+    vi.advanceTimersByTime(400);
+    expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(initialCalls + 1);
+    expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(
+      0,
+      component.pageSize,
+      'fullName,asc',
+      'Perez',
+      component.selectedFilter(),
+    );
+
+    // Enter key triggers immediate search without waiting
+    component.onSearchInput({ target: { value: 'Gomez' } } as any);
+    component.onSearchEnter();
+    expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(initialCalls + 2);
+    expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(
+      0,
+      component.pageSize,
+      'fullName,asc',
+      'Gomez',
+      component.selectedFilter(),
+    );
+
+    vi.useRealTimers();
+  });
 });

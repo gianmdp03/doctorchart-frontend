@@ -24,6 +24,7 @@
           aria-label="Buscar pacientes"
           [value]="searchQuery()"
           (input)="onSearchInput($event)"
+          (keydown.enter)="onSearchEnter()"
         />
         @if (searchQuery()) {
           <button
@@ -93,16 +94,6 @@
         </button>
       }
 
-      <!-- Columns configuration trigger -->
-      <button
-        type="button"
-        class="m3-chip btn-columns-trigger"
-        (click)="openColumnsModal()"
-        title="Personalizar campos visibles en el directorio"
-      >
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-1" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>Columnas</span>
-      </button>
       <button type="button" class="m3-button m3-button-tonal" (click)="openNewPatientModal()">
         + Nuevo paciente
       </button>
@@ -111,98 +102,170 @@
 
   @if (loadError(); as error) { <p role="alert">{{ error }} <button type="button" class="m3-chip" (click)="loadInitial()">Reintentar</button></p> }
   <!-- Cards Grid -->
-  <div class="patient-cards-grid">
-    @for (patient of patients(); track patient.id) {
-      <article
-        class="patient-card"
-        [class.patient-card-active]="isActive(patient.id)"
-        [style.border-color]="isActive(patient.id) ? 'var(--md-sys-color-primary)' : null"
-        [style.box-shadow]="isActive(patient.id) ? 'var(--md-elevation-2)' : null"
-      >
-        <div>
-          <div class="patient-card-header">
-            <div
-              class="patient-card-avatar"
-              [style.background-color]="isActive(patient.id) ? 'var(--md-sys-color-primary)' : null"
-              [style.color]="isActive(patient.id) ? '#ffffff' : null"
-            >
-              {{ patient.initials }}
-            </div>
-            <div>
-              <div class="patient-card-name">{{ patient.fullName }} (ID #{{ patient.id }})</div>
-              @if (workspaceStore.isColumnVisible('birthDate')) {
-                <div class="patient-card-age">{{ patient.ageDisplay }} • F. Nac: {{ patient.birthDateDisplay }}</div>
+  <!-- Patients Table -->
+  <div class="patient-table-card">
+    <div class="patient-table-responsive">
+      <table class="patient-table" aria-label="Directorio de pacientes">
+        <thead>
+          <tr>
+            <th class="th-patient" scope="col">Paciente</th>
+            <th class="th-dni" scope="col">DNI</th>
+            <th class="th-age" scope="col">Edad & Nacimiento</th>
+            <th class="th-phone" scope="col">Contacto</th>
+            <th class="th-encounters" scope="col">Controles Previos</th>
+            @if (doctorSpecialtyService.supportsGrowthCharts()) {
+              <th class="th-vaccines" scope="col">Vacunación</th>
+            }
+            <th class="th-actions text-right" scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (patient of patients(); track patient.id) {
+            <tr class="patient-row">
+              <!-- Paciente (Avatar, Nombre, ID, Género) -->
+              <td class="td-patient">
+                <div class="patient-cell-flex">
+                  <div
+                    class="patient-mini-avatar"
+                    [class]="patient.genderAvatarClass"
+                    [title]="'Sexo / Género: ' + patient.genderLabel"
+                  >
+                    {{ patient.initials }}
+                  </div>
+                  <div class="patient-title-group">
+                    <span class="patient-full-name">{{ patient.fullName }}</span>
+                    <div class="patient-meta-row">
+                      <span class="patient-id-badge">ID #{{ patient.id }}</span>
+                      @if (patient.gender === 'male') {
+                        <span class="gender-pill gender-pill-male" title="Varón">♂ Varón</span>
+                      } @else if (patient.gender === 'female') {
+                        <span class="gender-pill gender-pill-female" title="Mujer">♀ Mujer</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- DNI -->
+              <td class="td-dni">
+                <span class="dni-number">{{ patient.rawNationalId || '—' }}</span>
+              </td>
+
+              <!-- Edad & Nacimiento -->
+              <td class="td-age">
+                <div class="age-data-cell">
+                  <div class="age-primary-row">
+                    <span class="age-text">{{ patient.ageDisplay }}</span>
+                    <span class="m3-badge badge-compact" [class]="patient.badgeClass">
+                      {{ patient.badgeText }}
+                    </span>
+                  </div>
+                  <span class="birth-subtext">F. Nac: {{ patient.birthDateDisplay }}</span>
+                </div>
+              </td>
+
+              <!-- Contacto -->
+              <td class="td-phone">
+                @if (patient.rawPhone) {
+                  <div class="contact-info-cell">
+                    <svg class="contact-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                    </svg>
+                    <span>{{ patient.rawPhone }}</span>
+                  </div>
+                } @else {
+                  <span class="cell-muted">—</span>
+                }
+              </td>
+
+              <!-- Controles Clínicos -->
+              <td class="td-encounters">
+                @if (patient.totalEncounters > 0) {
+                  <div class="encounter-pill pill-completed" [title]="patient.lastCheckup">
+                    <span class="pill-dot"></span>
+                    <span class="pill-count">{{ patient.totalEncounters }} {{ patient.totalEncounters === 1 ? 'control' : 'controles' }}</span>
+                    @if (patient.lastEncounterDateDisplay) {
+                      <span class="pill-date">• {{ patient.lastEncounterDateDisplay }}</span>
+                    }
+                  </div>
+                } @else {
+                  <div class="encounter-pill pill-empty" title="Sin consultas registradas previamente">
+                    <span class="pill-dot"></span>
+                    <span>Sin controles previos</span>
+                  </div>
+                }
+              </td>
+
+              <!-- Vacunación -->
+              @if (doctorSpecialtyService.supportsGrowthCharts()) {
+                <td class="td-vaccines">
+                  @if (patient.hasPendingVaccine) {
+                    <span class="vaccine-chip chip-pending">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
+                      Pendiente
+                    </span>
+                  } @else {
+                    <span class="vaccine-chip chip-ok">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      Al día
+                    </span>
+                  }
+                </td>
               }
-            </div>
-            <span
-              class="m3-badge"
-              [class]="patient.badgeClass"
-              style="margin-left: auto;"
-            >
-              {{ patient.badgeText }}
-            </span>
-          </div>
 
-          <div class="patient-card-body">
-            @if (workspaceStore.isColumnVisible('nationalId')) {
-              <p><strong>DNI:</strong> {{ patient.dni }}</p>
-            }
-            @if (workspaceStore.isColumnVisible('phone')) {
-              <p><strong>Contacto:</strong> {{ patient.tutor }}</p>
-            }
-            <p class='patient-controls-row'>
-              <strong>Controles previos:</strong>
-              <span
-                class='controls-status-pill'
-                [class.has-controls]='patient.totalEncounters > 0'
-                [class.no-controls]='patient.totalEncounters === 0'
-              >
-                {{ patient.lastCheckup }}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <div class="patient-card-footer">
-          <span class="patient-next-note">{{ patient.nextCheckupOrNote }}</span>
-          <button
-            type="button"
-            class="m3-button"
-            [class.m3-button-tonal]="isActive(patient.id)"
-            [class.m3-button-outlined]="!isActive(patient.id)"
-            (click)="selectPatient(patient)"
-          >
-            Ver Ficha Clínica
-          </button>
-        </div>
-      </article>
-    } @empty {
-      <div class="patient-cards-empty">
-        @if (isLoading()) {
-          <div class="loading-state">
-            <div class="loading-spinner"></div>
-            <p>Cargando directorio de pacientes...</p>
-          </div>
-        } @else {
-          <div class="empty-state">
-            <div class="empty-state-icon" aria-hidden="true">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-              </svg>
-            </div>
-            <h3>No se encontraron pacientes</h3>
-            <p>
-              No existen pacientes que coincidan con el filtro actual o la búsqueda ingresada.
-            </p>
-            <div class="empty-state-actions">
-              <button type="button" class="m3-button m3-button-tonal" (click)="resetFilters()">
-                Restablecer Filtros
-              </button>
-            </div>
-          </div>
-        }
-      </div>
-    }
+              <!-- Acciones -->
+              <td class="td-actions text-right">
+                <button
+                  type="button"
+                  class="btn-table-action"
+                  (click)="selectPatient(patient)"
+                  [title]="'Abrir ficha clínica de ' + patient.fullName"
+                >
+                  <span>Ver Ficha</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="visibleColumnsCount()" class="empty-table-cell">
+                @if (isLoading()) {
+                  <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>Cargando directorio de pacientes...</p>
+                  </div>
+                } @else {
+                  <div class="empty-state">
+                    <div class="empty-state-icon" aria-hidden="true">
+                      <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                      </svg>
+                    </div>
+                    <h3>No se encontraron pacientes</h3>
+                    <p>
+                      No existen pacientes que coincidan con el filtro actual o la búsqueda ingresada.
+                    </p>
+                    <div class="empty-state-actions">
+                      <button type="button" class="m3-button m3-button-tonal" (click)="resetFilters()">
+                        Restablecer Filtros
+                      </button>
+                    </div>
+                  </div>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Invisible Infinite Scroll Footer & Sentinel -->
@@ -222,16 +285,6 @@
     </div>
   }
 
-  <!-- Patient Columns Configuration Modal -->
-  <app-patient-columns-config
-    [isOpen]="isColumnsModalOpen()"
-    (closeDialog)="closeColumnsModal()"
-  />
-
-  <app-new-patient-dialog
-    [isOpen]="isNewPatientModalOpen()"
-    (closeDialog)="closeNewPatientModal()"
-    (patientCreated)="onPatientCreated()"
-  />
-
 </div>
+
+

@@ -18,18 +18,46 @@
         </div>
       </div>
       @if (definition()) {
-        <div class="progress-copy">
-          <span>{{ activeStepIndex() >= 0 ? 'Paso ' + (activeStepIndex() + 1) + ' de ' + steps().length : 'Organizar categorías' }}</span>
-          <span>{{ activeStep().title }}</span>
+        <div class="progress-section">
+          <div class="progress-copy">
+            <div class="progress-step-info">
+              <span class="step-counter-badge">
+                {{ activeStepIndex() >= 0 ? 'Paso ' + (activeStepIndex() + 1) + ' de ' + steps().length : 'Organizar categorías' }}
+              </span>
+              <span class="step-counter-title">{{ activeStep().title }}</span>
+            </div>
+            @if (activeStepIndex() >= 0) {
+              <span class="progress-percent-label">{{ progressPercentage() }}% completado</span>
+            }
+          </div>
+          <div class="progress-track" role="progressbar" [attr.aria-valuenow]="progressPercentage()" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar-fill" [style.width.%]="progressPercentage()"></div>
+          </div>
         </div>
+
         <ol class="step-navigation" aria-label="Pasos de configuración">
           @for (step of steps(); track step.key; let index = $index) {
-            <li>
-              <button type="button" [class.active]="step.key === activeStepKey()"
+            <li class="step-item">
+              <button type="button"
+                class="step-button"
+                [class.active]="step.key === activeStepKey()"
+                [class.completed]="index < activeStepIndex()"
                 [attr.aria-current]="step.key === activeStepKey() ? 'step' : null"
                 [disabled]="editorReadonly() || (isEditMode() && step.kind === 'specialty')"
                 (click)="goToStep(index)">
-                <span>{{ index + 1 }}</span>{{ step.title }}
+                <span class="step-indicator" aria-hidden="true">
+                  @if (index < activeStepIndex()) {
+                    <svg class="step-check-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3.5 8.5 6.5 11.5 12.5 4.5" />
+                    </svg>
+                  } @else {
+                    <span>{{ index + 1 }}</span>
+                  }
+                </span>
+                <div class="step-content">
+                  <span class="step-kicker">Paso {{ index + 1 }}</span>
+                  <span class="step-title" [title]="step.title">{{ step.title }}</span>
+                </div>
               </button>
             </li>
           }

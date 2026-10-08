@@ -59,15 +59,39 @@
       } @else { <p class="empty-state">Todavía no se registraron aplicaciones detalladas.</p> }
     </section>
 
-    <details class="future-doses" [open]="true">
-      <summary>Próximas vacunas (orden cronológico) ({{ futureDoses().length }})</summary>
-      <ul>
+    <details class="future-doses">
+      <summary class="future-doses-summary">
+        <div class="future-summary-left">
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+          <span class="future-title">Próximas vacunas (orden cronológico)</span>
+          <span class="future-count-badge">{{ futureDoses().length }}</span>
+        </div>
+        <span class="future-hint">Click para ver dosis futuras</span>
+      </summary>
+      <div class="future-doses-content">
         @for (dose of futureDoses(); track dose.id) {
-          <li>
-            <strong>{{ dose.vaccineName }}</strong> · {{ dose.doseLabel }} · <span>Edad prevista: {{ dose.dueAgeLabel }}</span>
-          </li>
+          <article class="dose-card future-card">
+            <div class="dose-copy">
+              <strong>{{ dose.vaccineName }}</strong>
+              <div class="dose-meta">
+                <span class="dose-label-chip">{{ dose.doseLabel }}</span>
+                <span class="dose-age-pill">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span>Edad prevista: {{ dose.dueAgeLabel }}</span>
+                </span>
+              </div>
+            </div>
+            <div class="future-badge-tag">
+              <span>Programada</span>
+            </div>
+          </article>
         }
-      </ul>
+      </div>
     </details>
   }
 </section>

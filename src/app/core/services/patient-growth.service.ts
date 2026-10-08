@@ -16,6 +16,7 @@ import { getOmsPercentiles, OMS_METRIC_CONFIGS } from '../constants/oms-growth-d
 export class PatientGrowthService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/patients`;
+
   /**
    * Normalizes gender strings into 'MALE' | 'FEMALE'.
    * Defaults to 'MALE' if unrecognized or missing.
@@ -62,11 +63,17 @@ export class PatientGrowthService {
     if (!value.includes('T')) return new Date(`${value}T00:00:00Z`);
     const instant = new Date(value);
     if (Number.isNaN(instant.getTime())) return instant;
-    const day = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(instant);
+    const day = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(instant);
     return new Date(`${day}T00:00:00Z`);
   }
+
   /**
-   * Estimates approximate WHO percentile bracket for a specific measurement.
+   * Fallback: Estimates approximate WHO percentile bracket when backend evaluation is unavailable.
    */
   estimatePercentile(
     ageMonths: number,
@@ -105,7 +112,8 @@ export class PatientGrowthService {
   }
 
   /**
-   * Transforms raw backend measurements into PatientGrowthMeasurement items.
+   * Transforms raw backend measurements into PatientGrowthMeasurement items,
+   * prioritizing exact WHO evaluations computed by the backend.
    */
   transformBackendMeasurements(
     backendData: BackendGrowthMeasurement[],
@@ -117,21 +125,40 @@ export class PatientGrowthService {
 
     for (const item of backendData) {
       let rawVal: number | null = null;
+      let evaluation = null;
       switch (metric) {
         case 'WEIGHT':
           rawVal = item.measurements.weightKg ?? null;
+          evaluation = item.evaluations?.weight ?? null;
           break;
         case 'HEIGHT':
           rawVal = item.measurements.heightCm ?? null;
+          evaluation = item.evaluations?.height ?? null;
           break;
         case 'HEAD_CIRCUMFERENCE':
           rawVal = item.measurements.headCircumferenceCm ?? null;
+          evaluation = item.evaluations?.headCircumference ?? null;
           break;
       }
 
       const value = typeof rawVal === 'number' && Number.isFinite(rawVal) ? rawVal : null;
 
       if (value !== null && value > 0) {
+        const percentile = evaluation?.percentile;
+        const zScore = evaluation?.zScore;
+        const interpretation = evaluation?.interpretation;
+
+        let displayPercentile: string;
+        if (percentile !== undefined && percentile !== null) {
+          const zStr =
+            zScore !== undefined && zScore !== null
+              ? ` (Z: ${zScore >= 0 ? '+' : ''}${zScore.toFixed(2)})`
+              : '';
+          displayPercentile = `P${percentile.toFixed(1)}%${zStr}`;
+        } else {
+          displayPercentile = this.estimatePercentile(item.ageMonths, value, sex, metric);
+        }
+
         measurements.push({
           encounterId: item.encounterId ?? undefined,
           date: item.date,
@@ -140,12 +167,14 @@ export class PatientGrowthService {
           ageFormatted: item.ageFormatted || `${item.ageMonths} meses`,
           value,
           unit,
-          approximatePercentile: this.estimatePercentile(item.ageMonths, value, sex, metric),
+          percentile,
+          zScore,
+          interpretation,
+          approximatePercentile: displayPercentile,
         });
       }
     }
 
     return measurements.sort((a, b) => a.ageMonths - b.ageMonths);
   }
-
 }

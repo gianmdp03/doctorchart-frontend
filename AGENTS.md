@@ -2,3 +2,16 @@
 
 - All date inputs and date selectors must use the shared `app-date-picker` Angular Material component. Do not add native HTML `<input type="date">` controls.
 - Dates displayed or entered by users use Argentine format `dd/MM/aaaa`. Convert to the ISO format `YYYY-MM-DD` only at the application/data boundary.
+
+# Feature Flags y Módulos Temporales
+
+## Calculadoras Médicas (`CALCULATORS`)
+El módulo de calculadoras médicas se encuentra **desactivado temporalmente** por código para la versión inicial.
+Cuando el usuario pida reactivar las calculadoras médicas ("activar calculadora", "reactivar calculadora", "habilitar calculadoras", etc.):
+1. Abrir `src/app/core/config/feature-flags.ts`.
+2. Cambiar `CALCULATORS_ENABLED: false` por `CALCULATORS_ENABLED: true`.
+3. Esto reactiva de forma automática y segura:
+   - La opción de navegación "Calculadoras" en el menú lateral (`SidebarComponent` vía `WorkspaceStore.navigation`).
+   - El botón de acceso rápido de calculadora en el banner del paciente activo (`PatientQuickBannerComponent`).
+   - El acceso a la ruta `/calculadoras` en `clinicalNavigationGuard('CALCULATORS')`.
+NO eliminar, reescribir ni desarmar componentes en `src/app/features/medical-calculators/` ya que todo el código, lógica clínica, fórmulas y tests están preservados al 100%.

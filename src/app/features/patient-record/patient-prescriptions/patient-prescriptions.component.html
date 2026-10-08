@@ -490,47 +490,6 @@
           }
         </div>
       </div>
-
-      <!-- Medicación Habitual Registrada -->
-      <div class="clinical-section-card">
-        <div class="sec-card-header">
-          <div class="flex items-center gap-2">
-            <ng-icon name="lucidePill" class="text-teal-600" />
-            <h3 class="sec-card-title">Medicación Habitual del Paciente</h3>
-          </div>
-        </div>
-        <div class="sec-card-body">
-          @if (editor.habitualMedication().length > 0) {
-            <ul class="med-prescriptions-list">
-              @for (med of editor.habitualMedication(); track $index) {
-                <li class="med-prescription-card justify-between">
-                  <div class="flex items-center gap-3">
-                    <ng-icon name="lucidePill" class="text-teal-600 text-lg" />
-                    <div class="med-details">
-                      <strong class="med-name">{{ med }}</strong>
-                      <span class="med-instructions"
-                        >Tratamiento crónico / de base del paciente</span
-                      >
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    class="secondary-outline-btn btn-xs"
-                    (click)="editor.prescribeHabitualMedication(med)"
-                  >
-                    <ng-icon name="lucidePlus" />
-                    <span>Agregar a receta</span>
-                  </button>
-                </li>
-              }
-            </ul>
-          } @else {
-            <p class="text-xs text-slate-500 py-3">
-              Sin medicación crónica o habitual registrada en la ficha del paciente.
-            </p>
-          }
-        </div>
-      </div>
     </div>
   </section>
 }

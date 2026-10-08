@@ -7,8 +7,36 @@
     <div class="encounter-form-scroll">
       <fieldset class="consultation-metadata" [disabled]="readonly()"><legend>Datos de la consulta</legend>
         <label>Fecha <app-date-picker [ngModel]="encounterDay()" (ngModelChange)="encounterDay.set($event)" [disabled]="readonly()" /></label>
-        <label>Hora (Argentina) <input type="time" [ngModel]="encounterTime()" (ngModelChange)="encounterTime.set($event)" /></label>
-        <label>Tipo de consulta <select [ngModel]="consultationType()" (ngModelChange)="consultationType.set($event)">@for (type of consultationTypes; track type.value) { <option [value]="type.value">{{ type.label }}</option> }</select></label>
+        <label>Hora de atención <input type="time" [ngModel]="encounterTime()" (ngModelChange)="encounterTime.set($event)" /></label>
+        <div class="dialog-consultation-type">
+          <label id="dialog-consultation-type-label">Tipo de consulta</label>
+          @if (isFirstVisitLocked()) {
+            <div class="consultation-chips-row" role="radiogroup" aria-labelledby="dialog-consultation-type-label">
+              <div class="consultation-chip locked active" role="radio" aria-checked="true">
+                <span>Primera consulta</span>
+                <span class="locked-badge">Única opción</span>
+              </div>
+            </div>
+            <small class="locked-hint">Fijada automáticamente como Primera Consulta al no contar con atenciones previas.</small>
+          } @else {
+            <div class="consultation-chips-row" role="radiogroup" aria-labelledby="dialog-consultation-type-label">
+              @for (type of availableConsultationTypes(); track type.value) {
+                <button
+                  type="button"
+                  class="consultation-chip"
+                  [class.active]="consultationType() === type.value"
+                  [disabled]="readonly()"
+                  role="radio"
+                  [attr.aria-checked]="consultationType() === type.value"
+                  (click)="selectConsultationType(type.value)"
+                >
+                  @if (consultationType() === type.value) { ✓ }
+                  <span>{{ type.label }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
       </fieldset>
       @if (!dateValid()) { <p role="alert">Ingresá una fecha y hora válidas que no estén en el futuro.</p> }
       @if (definition(); as form) { <app-dynamic-form-renderer [definition]="form" [values]="dynamicFormData()" [readonly]="readonly()" (valuesChange)="onDynamicDataChange($event)" (validityChange)="onDynamicFormValidityChange($event)" /> }

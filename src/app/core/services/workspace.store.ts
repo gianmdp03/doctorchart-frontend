@@ -1,5 +1,6 @@
 import { ClinicalNavigationId, PatientRecordModuleId, PATIENT_RECORD_MODULE_IDS, PatientRecordActionId, PATIENT_RECORD_ACTION_IDS } from '../models/specialty-experience.model';
 import { CLINICAL_NAVIGATION } from '../experience/clinical-navigation';
+import { FEATURE_FLAGS } from '../config/feature-flags';
 import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { firstValueFrom, Observable, timeout } from 'rxjs';
@@ -25,7 +26,12 @@ export class WorkspaceStore {
   readonly definition = computed(() => this.currentSetup()?.definition ?? null);
   readonly draftDefinition = computed(() => this.currentSetup()?.draftDefinition ?? null);
   readonly experience = computed(() => this.currentSetup()?.experience ?? null);
-  readonly navigation = computed(() => (this.experience()?.navigation ?? []).map(id => CLINICAL_NAVIGATION[id]));
+  readonly calculatorsEnabled = signal(FEATURE_FLAGS.CALCULATORS_ENABLED);
+  readonly navigation = computed(() =>
+    (this.experience()?.navigation ?? [])
+      .filter(id => id !== 'CALCULATORS' || this.calculatorsEnabled())
+      .map(id => CLINICAL_NAVIGATION[id])
+  );
   readonly patientRecordTabs = computed(() => this.experience()?.patientRecordTabs ?? []);
   hasRecordTab(id: PatientRecordModuleId): boolean { return this.patientRecordTabs().includes(id); }
   readonly patientRecordActions = computed(() => this.experience()?.patientRecordActions ?? []);
@@ -44,7 +50,12 @@ export class WorkspaceStore {
     const modules = this.activeModules();
     return modules !== null && Object.hasOwn(modules, code) && modules[code as keyof typeof modules] === true;
   }
-  hasNavigation(id: ClinicalNavigationId): boolean { return this.experience()?.navigation.includes(id) ?? false; }
+  hasNavigation(id: ClinicalNavigationId): boolean {
+    if (id === 'CALCULATORS' && !this.calculatorsEnabled()) {
+      return false;
+    }
+    return this.experience()?.navigation.includes(id) ?? false;
+  }
   isColumnVisible(key: string): boolean { return this.patientVisibleColumns()[key] !== false; }
 
   async loadSetup(force = false): Promise<WorkspaceSetup | null> {

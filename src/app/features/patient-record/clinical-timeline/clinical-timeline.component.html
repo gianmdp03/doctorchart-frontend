@@ -79,36 +79,36 @@
 
     <div class="toolbar-right">
       <span class="timeline-count-badge">
-        {{ filteredEncounters().length }} {{ filteredEncounters().length === 1 ? 'consulta' : 'consultas' }}
+        {{ filteredEncounters().length }} {{ filteredEncounters().length === 1 ? 'registro' : 'registros' }}
         @if (hasActiveDateFilter()) {
           <span class="text-xs text-slate-500">(de {{ encounters.length }})</span>
         }
       </span>
       @if (canCreateEncounter()) {
       <button type="button" class="btn-new-encounter-cta" (click)="createEncounter()">
-        <ng-icon name="lucidePlus" /><span>+ Nueva consulta</span>
+        <ng-icon name="lucidePlus" /><span>+ Nueva historia clínica</span>
       </button>
       }
     </div>
   </div>
 
   @if (isLoading) {
-    <div class="timeline-loading-card"><div class="timeline-spinner"></div><span>Cargando consultas...</span></div>
+    <div class="timeline-loading-card"><div class="timeline-spinner"></div><span>Cargando historia clínica...</span></div>
   } @else if (filteredEncounters().length === 0) {
     @if (encounters.length > 0 && hasActiveDateFilter()) {
       <div class="timeline-empty-card">
         <div class="empty-icon-circle"><ng-icon name="lucideCalendar" /></div>
-        <h3>No hay consultas en el rango de fechas</h3>
-        <p>No se encontraron consultas registradas entre las fechas seleccionadas.</p>
+        <h3>No hay registros en el rango de fechas</h3>
+        <p>No se encontraron registros en la historia clínica entre las fechas seleccionadas.</p>
         <button type="button" class="btn-toggle-subtle mt-2" (click)="clearDateFilter()">Quitar filtro de fechas</button>
       </div>
     } @else {
       <div class="timeline-empty-card">
         <div class="empty-icon-circle"><ng-icon name="lucideStethoscope" /></div>
-        <h3>Sin consultas registradas</h3>
-        <p>No se encontraron consultas previas registradas.</p>
+        <h3>Sin historias clínicas registradas</h3>
+        <p>No se encontraron registros previos en la historia clínica.</p>
       @if (canCreateEncounter()) {
-        <button type="button" class="btn-new-encounter-cta mt-3" (click)="createEncounter()"><ng-icon name="lucidePlus" /><span>Crear primera consulta</span></button>
+        <button type="button" class="btn-new-encounter-cta mt-3" (click)="createEncounter()"><ng-icon name="lucidePlus" /><span>+ Nueva historia clínica</span></button>
       }
       </div>
     }
@@ -124,7 +124,7 @@
                 <span class="encounter-datetime"><ng-icon name="lucideCalendar" class="text-slate-400" /><strong>{{ formatDate(encounter.encounterDate) }}</strong>@if (formatTime(encounter.encounterDate)) { <span class="time-part">{{ formatTime(encounter.encounterDate) }}</span> }</span>
                 <span class="consultation-type-badge {{ getConsultationTypeClass(encounter.consultationType) }}">{{ getConsultationTypeLabel(encounter.consultationType) }}</span>
               </div>
-              <button type="button" class="btn-chevron-toggle" (click)="toggleCard(encounter.id); $event.stopPropagation()" [attr.aria-label]="isCardExpanded(encounter.id) ? 'Colapsar consulta' : 'Expandir consulta'"><ng-icon [name]="isCardExpanded(encounter.id) ? 'lucideChevronUp' : 'lucideChevronDown'" /></button>
+              <button type="button" class="btn-chevron-toggle" (click)="toggleCard(encounter.id); $event.stopPropagation()" [attr.aria-label]="isCardExpanded(encounter.id) ? 'Colapsar registro' : 'Expandir registro'"><ng-icon [name]="isCardExpanded(encounter.id) ? 'lucideChevronUp' : 'lucideChevronDown'" /></button>
             </div>
             <div class="card-diagnosis-strip" (click)="toggleCard(encounter.id)"><div class="diag-content"><span class="diag-label">Resumen:</span><strong class="diag-description">{{ getEncounterSummary(encounter) }}</strong></div></div>
 
@@ -135,7 +135,7 @@
                     @for (item of getDynamicEntries(encounter); track item.label) { <p class="chief-complaint-full"><strong>{{ item.label }}:</strong> {{ item.value }}</p> }
                   </div></div>
                 } @else {
-                  <div class="soap-block block-s"><div class="block-content"><h4 class="block-title">Consulta histórica</h4>
+                  <div class="soap-block block-s"><div class="block-content"><h4 class="block-title">Registro histórico</h4>
                     @if (encounter.chiefComplaint) { <p class="chief-complaint-full"><strong>Motivo:</strong> {{ encounter.chiefComplaint }}</p> }
                     @if (encounter.primaryDiagnosisDescription) { <p class="chief-complaint-full"><strong>Diagnóstico:</strong> {{ encounter.primaryDiagnosisDescription }}</p> }
                     @if (encounter.treatmentPlan) { <p class="chief-complaint-full"><strong>Plan:</strong> {{ encounter.treatmentPlan }}</p> }
@@ -145,7 +145,7 @@
             }
             <div class="card-footer-actions"><div></div><div class="actions-right">
               <button type="button" class="btn-action-view" (click)="onViewCard(encounter.id, $event)"><ng-icon name="lucideEye" /><span>Ver detalle</span></button>
-              <button type="button" class="btn-action-delete" (click)="onDeleteCard(encounter.id, $event)" title="Eliminar consulta"><ng-icon name="lucideTrash2" /></button>
+              <button type="button" class="btn-action-delete" (click)="onDeleteCard(encounter.id, $event)" title="Eliminar registro de historia clínica"><ng-icon name="lucideTrash2" /></button>
             </div></div>
           </div>
         </article>

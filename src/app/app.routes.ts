@@ -42,6 +42,22 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'pacientes/nuevo',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () =>
+      import('./features/patient-form/patient-form-page.component').then(
+        (m) => m.PatientFormPageComponent
+      ),
+  },
+  {
+    path: 'pacientes/:id/editar',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () =>
+      import('./features/patient-form/patient-form-page.component').then(
+        (m) => m.PatientFormPageComponent
+      ),
+  },
+  {
     path: 'pacientes/:id',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
@@ -57,6 +73,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/patient-record/patient-record.component').then(
         (m) => m.PatientRecordComponent
+      ),
+  },
+  {
+    path: 'ficha/:id/editar',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () =>
+      import('./features/patient-form/patient-form-page.component').then(
+        (m) => m.PatientFormPageComponent
       ),
   },
   {

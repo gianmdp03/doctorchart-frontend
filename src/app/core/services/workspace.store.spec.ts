@@ -6,6 +6,7 @@ import { WizardDefinition } from '../models/wizard-definition.model';
 import { DoctorSpecialtyService } from './doctor-specialty.service';
 import { WorkspaceService } from './workspace.service';
 import { WorkspaceStore } from './workspace.store';
+import { FEATURE_FLAGS } from '../config/feature-flags';
 
 describe('WorkspaceStore canonical lifecycle', () => {
   const definition: WizardDefinition = {
@@ -67,7 +68,14 @@ describe('WorkspaceStore canonical lifecycle', () => {
     expect(store.hasNavigation('CALCULATORS')).toBe(false);
     store.setSetup({ ...setup, experience: { ...setup.experience, specialtyVersion: 5,
       navigation: ['DASHBOARD', 'CALCULATORS', 'PATIENTS', 'WIZARD'] } });
+    expect(store.navigation().map(item => item.path)).toEqual(['/dashboard', '/pacientes', '/onboarding/setup']);
+    expect(store.hasNavigation('CALCULATORS')).toBe(false);
+
+    store.calculatorsEnabled.set(true);
     expect(store.navigation()[1].path).toBe('/calculadoras');
+    expect(store.hasNavigation('CALCULATORS')).toBe(true);
+    store.calculatorsEnabled.set(false);
+
     expect(store.definition()).toEqual(definition);
     expect(store.currentSetup()?.version).toBe(setup.version);
     store.clearSetup(); expect(store.navigation()).toEqual([]);

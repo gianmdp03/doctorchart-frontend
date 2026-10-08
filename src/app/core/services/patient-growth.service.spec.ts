@@ -107,6 +107,20 @@ describe('PatientGrowthService', () => {
     expect(service.transformBackendMeasurements(values,'WEIGHT','MALE')).toEqual([]);
     expect(service.transformBackendMeasurements([],'WEIGHT','MALE')).toEqual([]);
   });
+  it('extracts exact WHO evaluations from backend when present', () => {
+    const values = [point({
+      evaluations: {
+        weight: { zScore: -0.18, percentile: 42.8, interpretation: 'Adecuado' },
+        height: { zScore: 0.5, percentile: 69.1, interpretation: 'Adecuada' },
+        headCircumference: null,
+      }
+    })];
+    const transformed = service.transformBackendMeasurements(values, 'WEIGHT', 'MALE');
+    expect(transformed[0].percentile).toBe(42.8);
+    expect(transformed[0].zScore).toBe(-0.18);
+    expect(transformed[0].interpretation).toBe('Adecuado');
+    expect(transformed[0].approximatePercentile).toBe('P42.8% (Z: -0.18)');
+  });
   it('propagates backend errors without a local history fallback', () => {
     let failed = false; service.getPatientGrowthCurves(7).subscribe({error:()=>failed=true});
     httpMock.expectOne(req => req.url.endsWith('/patients/7/measurements')).flush({}, {status:403,statusText:'Forbidden'});

@@ -35,7 +35,7 @@ export const PATIENT_RECORD_MODULES: Record<PatientRecordModuleId, PatientRecord
   ENCOUNTERS: {
     id: 'ENCOUNTERS',
     tab: 'historia',
-    label: 'Consultas',
+    label: 'Historia Clínica',
     component: PatientEncountersComponent,
     encounterOutput: 'newEncounter',
   },

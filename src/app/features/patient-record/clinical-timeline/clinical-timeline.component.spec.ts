@@ -102,4 +102,17 @@ describe('ClinicalTimelineComponent', () => {
     component.toggleCard(101);
     expect(component.isCardExpanded(101)).toBe(true);
   });
+
+  it('translates UTC encounter timestamps to Argentine time (America/Argentina/Buenos_Aires)', () => {
+    // 2026-10-07T23:10:00Z (equivalent to 01:10 in Spain during summer time)
+    // In Argentina (UTC-3), it translates to 20:10 hs
+    const spainEncounterUtc = '2026-10-07T23:10:00Z';
+    expect(component.formatDate(spainEncounterUtc)).toBe('07 de oct de 2026');
+    expect(component.formatTime(spainEncounterUtc)).toBe('20:10 hs');
+
+    // 2026-10-07T17:10:00Z -> In Argentina (UTC-3) it translates to 14:10 hs
+    const afternoonEncounterUtc = '2026-10-07T17:10:00Z';
+    expect(component.formatDate(afternoonEncounterUtc)).toBe('07 de oct de 2026');
+    expect(component.formatTime(afternoonEncounterUtc)).toBe('14:10 hs');
+  });
 });

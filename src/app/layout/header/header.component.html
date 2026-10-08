@@ -2,86 +2,12 @@
   <!-- Left: Header spacing / Navigation anchor -->
   <div class="header-left"></div>
 
-  <!-- Center: Omnibox Global Search (Ctrl + K) -->
-  @if (!authService.isSuperAdmin()) {
-  <div class="header-center" role="search">
-    <div class="omnibox-wrapper" [class.is-focused]="isSearchOpen()">
-      <ng-icon name="lucideSearch" class="omnibox-icon" />
-      <input
-        #searchInput
-        type="search"
-        class="omnibox-input"
-        placeholder="Buscar paciente por Nombre o DNI..."
-        [value]="searchQuery()"
-        (input)="onSearchInput($event)"
-        (focus)="onSearchFocus()"
-        aria-label="Buscar paciente por nombre o DNI"
-      />
-
-      <div class="omnibox-right-actions">
-        @if (searchQuery()) {
-          <button
-            type="button"
-            class="omnibox-clear-btn"
-            title="Limpiar búsqueda"
-            (click)="clearSearch($event)"
-          >
-            <ng-icon name="lucideX" />
-          </button>
-        } @else {
-          <kbd class="shortcut-badge" title="Atajo de teclado">Ctrl K</kbd>
-        }
-      </div>
-
-      <!-- Autocomplete Dropdown -->
-      @if (isSearchOpen()) {
-        <div class="search-dropdown-card" (click)="$event.stopPropagation()">
-          @if (isSearching()) {
-            <div class="search-dropdown-loading">
-              <span class="spinner-ring"></span>
-              <span>Buscando pacientes en tiempo real...</span>
-            </div>
-          } @else if (searchError(); as error) {
-            <div class="search-dropdown-empty" role="alert"><p>{{ error }}</p><button type="button" (click)="retrySearch()">Reintentar</button></div>
-          } @else if (searchResults().length > 0) {
-            <div class="search-dropdown-header">
-              <span>Resultados encontrados ({{ searchResults().length }})</span>
-            </div>
-            <div class="search-dropdown-list">
-              @for (p of searchResults(); track p.id) {
-                <div
-                  class="search-result-row"
-                  role="button"
-                  tabindex="0"
-                  (click)="selectPatient(p)"
-                >
-                  <div class="result-avatar">{{ p.fullName.slice(0, 2).toUpperCase() }}</div>
-                  <div class="result-info">
-                    <span class="result-name">{{ p.fullName }}</span>
-                    <span class="result-meta">
-                      @if (p.nationalId) {
-                        DNI: {{ p.nationalId }} •
-                      }
-                      HC: #{{ p.id }} • F. Nac: {{ displayDate(p.birthDate) }}
-                    </span>
-                  </div>
-                  <span class="result-action">Abrir Ficha →</span>
-                </div>
-              }
-            </div>
-          } @else {
-            <div class="search-dropdown-empty">
-              <p>No se encontraron pacientes para "<strong>{{ searchQuery() }}</strong>"</p>
-            </div>
-          }
-        </div>
-      }
-    </div>
+  <!-- Center -->
+  <div class="header-center">
+    @if (authService.isSuperAdmin()) {
+      <span>Administración de especialidades</span>
+    }
   </div>
-
-  } @else {
-    <div class="header-center"><span>Administración de especialidades</span></div>
-  }
 
   <!-- Right: Actions & Profile -->
   <div class="header-right">

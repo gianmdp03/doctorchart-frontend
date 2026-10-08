@@ -13,8 +13,11 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ActivePatientService } from '../../../core/services/active-patient.service';
 import { PatientRecordActionsService } from '../../../core/experience/patient-record-actions.service';
 import { ClinicalEncounterService } from '../../../core/services/clinical-encounter.service';
-import { ClinicalEncounterList } from '../../../core/models/clinical-encounter.model';
+import { ClinicalEncounterList, ConsultationType } from '../../../core/models/clinical-encounter.model';
+import { WizardFormValues } from '../../../core/models/wizard-definition.model';
 import { PrescriptionDocumentType } from '../../../core/models/prescription.model';
+import { ClinicalDocumentPrintService } from '../../../core/services/clinical-document-print.service';
+import { PrintDocumentReference } from '../../../core/models/clinical-print-document.model';
 
 @Injectable()
 export class PatientEncountersStore {
@@ -24,11 +27,42 @@ export class PatientEncountersStore {
   private readonly authService = inject(AuthService);
   private readonly activePatientService = inject(ActivePatientService);
   private readonly clinicalEncounterService = inject(ClinicalEncounterService);
+  private readonly printService = inject(ClinicalDocumentPrintService);
   private encounterRead = 0;
   private recordContext = '';
   readonly encounters = signal<ClinicalEncounterList[]>([]);
-
   readonly isLoadingEncounters = signal<boolean>(false);
+  readonly isCreatingEncounter = signal<boolean>(false);
+
+  readonly encounterDraftValues = signal<WizardFormValues>({});
+  readonly encounterDraftConsultationType = signal<ConsultationType | null>(null);
+  readonly encounterDraftInstant = signal<string | null>(null);
+
+  startCreatingEncounter(): void {
+    this.isCreatingEncounter.set(true);
+  }
+
+  cancelCreatingEncounter(): void {
+    this.isCreatingEncounter.set(false);
+    this.clearEncounterDraft();
+  }
+
+  setEncounterDraft(values: WizardFormValues, consultationType?: ConsultationType, instant?: string): void {
+    this.encounterDraftValues.set(structuredClone(values));
+    if (consultationType) {
+      this.encounterDraftConsultationType.set(consultationType);
+    }
+    if (instant) {
+      this.encounterDraftInstant.set(instant);
+    }
+  }
+
+  clearEncounterDraft(): void {
+    this.encounterDraftValues.set({});
+    this.encounterDraftConsultationType.set(null);
+    this.encounterDraftInstant.set(null);
+  }
+
   constructor() {
     effect(() => {
       const patient = this.activePatientService.activePatient();
@@ -39,6 +73,8 @@ export class PatientEncountersStore {
           this.recordContext = context;
           this.encounterRead++;
           this.encounters.set([]);
+          this.isCreatingEncounter.set(false);
+          this.clearEncounterDraft();
         }
         if (patient?.id) this.loadEncounters(patient.id);
         else {
@@ -126,17 +162,19 @@ export class PatientEncountersStore {
 
   onPrintPrescription(enc: ClinicalEncounterList, type?: PrescriptionDocumentType): void {
     if (!this.recordActions.has('PRINT_DOCUMENT')) return;
+    const ref: PrintDocumentReference = {
+      source: 'ENCOUNTER',
+      id: enc.id,
+      patientId: enc.patientId,
+      ...(type ? { type } : {}),
+    };
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('open-prescription-print-modal', {
-          detail: {
-            source: 'ENCOUNTER',
-            id: enc.id,
-            patientId: enc.patientId,
-            ...(type ? { type } : {}),
-          },
+          detail: ref,
         }),
       );
+      this.printService.openPdfInNewTab(ref);
     }
   }
 }

@@ -12,6 +12,18 @@ export interface OmsPercentilePoint {
   p97: number;
 }
 
+export interface WhoGrowthEvaluation {
+  zScore: number;
+  percentile: number;
+  interpretation: string;
+}
+
+export interface PatientGrowthEvaluations {
+  weight?: WhoGrowthEvaluation | null;
+  height?: WhoGrowthEvaluation | null;
+  headCircumference?: WhoGrowthEvaluation | null;
+}
+
 export interface PatientGrowthMeasurement {
   encounterId?: number;
   date: string; // ISO date string
@@ -20,7 +32,10 @@ export interface PatientGrowthMeasurement {
   ageFormatted: string; // e.g. "3 meses y 12 días"
   value: number; // e.g. 6.2
   unit: string; // e.g. "kg" or "cm"
-  approximatePercentile?: string; // e.g. "~P50", "P15-P50", ">P97", "<P3"
+  percentile?: number; // continuous WHO percentile e.g. 42.8
+  zScore?: number; // standard deviation z-score e.g. -0.18
+  interpretation?: string; // clinical category e.g. "Adecuado", "Bajo peso"
+  approximatePercentile?: string; // formatted display string e.g. "P42.8% (Z: -0.18)"
 }
 
 export interface BackendGrowthMeasurement {
@@ -30,6 +45,7 @@ export interface BackendGrowthMeasurement {
   ageMonths: number;
   ageFormatted: string;
   measurements: AnthropometricMeasurements;
+  evaluations?: PatientGrowthEvaluations | null;
 }
 
 export interface GrowthMetricConfig {

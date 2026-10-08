@@ -87,7 +87,7 @@
             id="studyDescription"
             type="text"
             [ngModel]="description()"
-            (ngModelChange)="description.set($event)"
+            (ngModelChange)="onDescriptionChange($event)"
             name="description"
             maxlength="4000"
             placeholder="Ej: Tomografía de encéfalo con contraste, Ecografía abdominal, etc."

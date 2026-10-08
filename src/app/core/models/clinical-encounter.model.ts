@@ -36,7 +36,6 @@ export interface DiagnosisItem {
 export interface ClinicalEncounterRequest {
   patientId: number;
   workspaceVersion: number;
-  encounterDate: string;
   consultationType: ConsultationType;
   values: WizardFormValues;
 }

@@ -49,12 +49,13 @@ Chart.register(
 export type GrowthAgeRange = '0-2' | '0-5';
 
 /**
- * Creates an offscreen Canvas representing a pediatric heart marker for female consultations
+ * Creates an offscreen Canvas representing a compact pediatric heart marker
+ * Size: 13x13 px (considerably smaller so it does not obscure percentile curves or data points)
  */
-function createHeartPointCanvas(fillColor: string, strokeColor: string): HTMLCanvasElement | 'circle' {
+function createHeartPointCanvas(fillColor: string, strokeColor = '#ffffff'): HTMLCanvasElement | 'circle' {
   if (typeof document === 'undefined') return 'circle';
   try {
-    const size = 48;
+    const size = 13;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -62,6 +63,9 @@ function createHeartPointCanvas(fillColor: string, strokeColor: string): HTMLCan
     if (!ctx) return 'circle';
 
     ctx.save();
+    const scale = size / 48;
+    ctx.scale(scale, scale);
+
     ctx.beginPath();
     ctx.moveTo(24, 40);
     ctx.bezierCurveTo(21, 37, 6, 26, 6, 15);
@@ -72,13 +76,14 @@ function createHeartPointCanvas(fillColor: string, strokeColor: string): HTMLCan
     ctx.bezierCurveTo(42, 26, 27, 37, 24, 40);
     ctx.closePath();
 
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = strokeColor;
-    ctx.stroke();
     ctx.fillStyle = fillColor;
     ctx.fill();
-    ctx.restore();
 
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = strokeColor;
+    ctx.stroke();
+
+    ctx.restore();
     return canvas;
   } catch {
     return 'circle';
@@ -86,52 +91,15 @@ function createHeartPointCanvas(fillColor: string, strokeColor: string): HTMLCan
 }
 
 /**
- * Creates an offscreen Canvas representing a pediatric star marker for male consultations
+ * Trajectory marker colors based on sex:
+ * - Male: Blue (#2563eb)
+ * - Female: Pink (#db2777)
+ * - Neutral / other: Slate (#64748b)
  */
-function createStarPointCanvas(fillColor: string, strokeColor: string): HTMLCanvasElement | 'star' {
-  if (typeof document === 'undefined') return 'star';
-  try {
-    const size = 48;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return 'star';
-
-    ctx.save();
-    ctx.beginPath();
-    const spikes = 5;
-    const outerRadius = 18;
-    const innerRadius = 8;
-    let rot = (Math.PI / 2) * 3;
-    const step = Math.PI / spikes;
-
-    ctx.moveTo(24, 24 - outerRadius);
-    for (let i = 0; i < spikes; i++) {
-      const x = 24 + Math.cos(rot) * outerRadius;
-      const y = 24 + Math.sin(rot) * outerRadius;
-      ctx.lineTo(x, y);
-      rot += step;
-
-      const inX = 24 + Math.cos(rot) * innerRadius;
-      const inY = 24 + Math.sin(rot) * innerRadius;
-      ctx.lineTo(inX, inY);
-      rot += step;
-    }
-    ctx.lineTo(24, 24 - outerRadius);
-    ctx.closePath();
-
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = strokeColor;
-    ctx.stroke();
-    ctx.fillStyle = fillColor;
-    ctx.fill();
-    ctx.restore();
-
-    return canvas;
-  } catch {
-    return 'star';
-  }
+function patientMarkerColor(sex: string | null | undefined): { fill: string; stroke: string; line: string } {
+  if (sex === 'MALE') return { fill: '#2563eb', stroke: '#ffffff', line: '#2563eb' };
+  if (sex === 'FEMALE') return { fill: '#db2777', stroke: '#ffffff', line: '#db2777' };
+  return { fill: '#64748b', stroke: '#ffffff', line: '#64748b' };
 }
 
 @Component({
@@ -165,6 +133,7 @@ export class GrowthChartComponent {
   readonly maxMonths = computed(() => 24);
 
   readonly sexLabel = computed(() => (this.sex() === 'MALE' ? 'Niño (Varón)' : 'Niña (Mujer)'));
+  readonly patientColors = computed(() => patientMarkerColor(this.sex()));
 
   // Main banner title as requested: "Curvas antropométricas desde el nacimiento hasta los 24 meses"
   readonly officialOmsTitle = computed(
@@ -292,11 +261,9 @@ export class GrowthChartComponent {
     // Prepare patient trajectory points
     const patientData = patientPoints.map((p) => ({ x: p.ageMonths, y: p.value }));
 
-    // Configure gender-specific point marker: Star for boys, Heart for girls
-    const isMale = this.sex() === 'MALE';
-    const patientPointStyle = isMale
-      ? createStarPointCanvas('#2563eb', '#ffffff')
-      : createHeartPointCanvas('#db2777', '#ffffff');
+    // Marker color & compact heart canvas: blue for boys, pink for girls, neutral otherwise
+    const markerColor = patientMarkerColor(this.sex());
+    const heartPointStyle = createHeartPointCanvas(markerColor.fill, markerColor.stroke);
 
     // Custom WHO right margin percentile labels plugin (dedicated lane, never covers right Y axis measures)
     const omsRightPercentilePlugin = {
@@ -482,17 +449,17 @@ export class GrowthChartComponent {
             tension: 0.35,
             fill: false,
           },
-          // Index 5: Patient Growth Trajectory (Star for boys, Heart for girls)
+          // Index 5: Patient Growth Trajectory (Compact heart marker)
           {
             label: 'Consulta del Paciente',
             data: patientData,
-            borderColor: isMale ? '#2563eb' : '#db2777',
-            backgroundColor: isMale ? '#2563eb' : '#db2777',
-            borderWidth: 2.5,
-            pointStyle: patientPointStyle,
-            pointRadius: 9,
-            pointHoverRadius: 13,
-            pointHitRadius: 18,
+            borderColor: markerColor.line,
+            backgroundColor: markerColor.fill,
+            borderWidth: 2,
+            pointStyle: heartPointStyle,
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            pointHitRadius: 14,
             tension: 0.25,
             fill: false,
             order: -1, // Render always on top
@@ -551,6 +518,9 @@ export class GrowthChartComponent {
                 ];
                 if (pt.approximatePercentile) {
                   lines.push(`Percentil OMS: ${pt.approximatePercentile}`);
+                }
+                if (pt.interpretation) {
+                  lines.push(`Estado: ${pt.interpretation}`);
                 }
                 return lines;
               },

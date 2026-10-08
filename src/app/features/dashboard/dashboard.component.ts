@@ -134,11 +134,20 @@ export class DashboardComponent implements OnInit {
     return name ? `${prefix}, Dr(a). ${name}` : `${prefix}, Doctor(a)`;
   });
 
+  private directorySearchTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly metricsReads = new AccountReadScope(() => this.loadKpiData());
   private readonly directoryReads = new AccountReadScope(() => {
     this.directorySearch.set('');
     this.loadDirectory(0);
   });
+
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.directorySearchTimer) {
+        clearTimeout(this.directorySearchTimer);
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.loadKpiData();
@@ -199,6 +208,10 @@ export class DashboardComponent implements OnInit {
       });
   }
   loadDirectory(page: number, search?: string): void {
+    if (this.directorySearchTimer) {
+      clearTimeout(this.directorySearchTimer);
+      this.directorySearchTimer = null;
+    }
     const current = this.directoryReads.begin();
     this.directoryPatients.set([]);
     this.directoryError.set(null);
@@ -232,7 +245,20 @@ export class DashboardComponent implements OnInit {
   onDirectorySearchInput(event: Event): void {
     const query = (event.target as HTMLInputElement).value;
     this.directorySearch.set(query);
-    this.loadDirectory(0, query.trim());
+    if (this.directorySearchTimer) {
+      clearTimeout(this.directorySearchTimer);
+    }
+    this.directorySearchTimer = setTimeout(() => {
+      this.loadDirectory(0, query.trim());
+    }, 400);
+  }
+
+  onDirectorySearchEnter(): void {
+    if (this.directorySearchTimer) {
+      clearTimeout(this.directorySearchTimer);
+      this.directorySearchTimer = null;
+    }
+    this.loadDirectory(0, this.directorySearch().trim());
   }
 
   openPatient(patientId: number): void {

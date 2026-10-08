@@ -54,6 +54,13 @@ export class OnboardingWizardComponent implements OnInit {
     key: this.activeStepKey(), title: 'Categorías de la ficha', kind: 'patient',
   });
   readonly isLastStep = computed(() => this.activeStepKey() === 'encounter');
+  readonly progressPercentage = computed(() => {
+    const total = this.steps().length;
+    if (total <= 0) return 0;
+    const current = this.activeStepIndex();
+    if (current < 0) return 0;
+    return Math.min(100, Math.round(((current + 1) / total) * 100));
+  });
 
   async ngOnInit(): Promise<void> { await this.loadInitial(); }
 

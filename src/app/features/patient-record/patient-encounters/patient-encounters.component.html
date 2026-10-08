@@ -1,11 +1,21 @@
-<section class="tab-panel animate-fade-in" aria-label="Historia Clínica de Consultas">
-  <app-clinical-timeline
-    [canCreateEncounter]="recordActions.has('NEW_ENCOUNTER')"
-    [encounters]="history.encounters()"
-    [isLoading]="history.isLoadingEncounters()"
-    (newEncounter)="newEncounter.emit()"
-    (viewDetail)="history.openEncounterDetail($event)"
-    (deleteEncounter)="history.deleteEncounter($event)"
-    (printPrescription)="history.onPrintPrescription($event)"
-  />
+<section class="tab-panel animate-fade-in" aria-label="Historia Clínica">
+  @if (history.isCreatingEncounter()) {
+    <app-encounter-form
+      [patientId]="patientId()"
+      [patientName]="patientName()"
+      [previousEncountersCount]="history.encounters().length"
+      (cancel)="history.cancelCreatingEncounter()"
+      (encounterCreated)="onEncounterCreated($event)"
+    />
+  } @else {
+    <app-clinical-timeline
+      [canCreateEncounter]="recordActions.has('NEW_ENCOUNTER')"
+      [encounters]="history.encounters()"
+      [isLoading]="history.isLoadingEncounters()"
+      (newEncounter)="onNewEncounterTriggered()"
+      (viewDetail)="history.openEncounterDetail($event)"
+      (deleteEncounter)="history.deleteEncounter($event)"
+      (printPrescription)="history.onPrintPrescription($event)"
+    />
+  }
 </section>

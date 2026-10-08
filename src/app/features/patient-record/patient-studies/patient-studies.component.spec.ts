@@ -3,6 +3,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, Subject } from 'rxjs';
 import { PatientStudiesComponent } from './patient-studies.component';
+import { PatientStudiesStore } from './patient-studies.store';
 import { PatientMedicalStudyService } from '../../../core/services/patient-medical-study.service';
 import { PatientMedicalStudy } from '../../../core/models/patient-medical-study.model';
 
@@ -148,4 +149,37 @@ describe('PatientStudiesComponent', () => {
     fixture.destroy();
   });
 
+  it('restores draft file and description from PatientStudiesStore across recreations', async () => {
+    const testFile = new File(['content'], 'test.pdf', { type: 'application/pdf' });
+    const draftStore = {
+      draftFile: signal<File | null>(testFile),
+      draftDescription: signal('Descripción en borrador'),
+      setDraftFile: vi.fn(),
+      setDraftDescription: vi.fn(),
+      clearDraft: vi.fn(),
+    };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [PatientStudiesComponent],
+      providers: [
+        { provide: AuthService, useValue: { currentUser: signal({ id: 'doctor-a' }) } },
+        { provide: PatientMedicalStudyService, useValue: studyServiceMock },
+        { provide: PatientStudiesStore, useValue: draftStore },
+      ],
+    }).compileComponents();
+
+    const draftFixture = TestBed.createComponent(PatientStudiesComponent);
+    draftFixture.componentRef.setInput('patientId', 10);
+    draftFixture.detectChanges();
+
+    expect(draftFixture.componentInstance.selectedFile()).toBe(testFile);
+    expect(draftFixture.componentInstance.description()).toBe('Descripción en borrador');
+
+    draftFixture.componentInstance.onDescriptionChange('Nueva descripción');
+    expect(draftStore.setDraftDescription).toHaveBeenCalledWith('Nueva descripción');
+
+    draftFixture.componentInstance.clearSelectedFile();
+    expect(draftStore.clearDraft).toHaveBeenCalled();
+  });
 });

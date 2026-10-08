@@ -22,7 +22,7 @@ describe('NewEncounterDialogComponent canonical creation', () => {
   it('pins the effective backend definition and sends no specialty, snapshot, projections or template identifier', async () => {
     fill(); component.encounterDay.set('2026-01-01'); component.encounterTime.set('11:03'); workspace.version = 50;
     await component.submitEncounter();
-    expect(service.create).toHaveBeenCalledWith({ patientId: 22, workspaceVersion: 9, encounterDate: '2026-01-01T11:03:00-03:00', consultationType: 'FIRST_VISIT', values: { readingA: 0, readingB: 10, notes: 'Sin aliases' } });
+    expect(service.create).toHaveBeenCalledWith({ patientId: 22, workspaceVersion: 9, consultationType: 'FIRST_VISIT', values: { readingA: 0, readingB: 10, notes: 'Sin aliases' } });
     expect(fixture.nativeElement.querySelector('app-date-picker')).not.toBeNull(); expect(fixture.nativeElement.querySelector('input[type="date"]')).toBeNull();
   });
   it('does not invent a complaint or diagnosis when the encounter form has no categories', async () => {

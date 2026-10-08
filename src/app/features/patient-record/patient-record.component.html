@@ -73,24 +73,5 @@
       </div>
     </div>
   }
-
-  <!-- New Encounter Clinical Modal Dialog -->
-  <app-new-encounter-dialog
-    [isOpen]="isNewEncounterModalOpen()"
-    [patientId]="activePatientService.patientId()"
-    [patientName]="activePatientService.activePatient()?.fullName || ''"
-    [previousEncountersCount]="history.encounters().length"
-    (closeDialog)="closeNewEncounterModal()"
-    (encounterCreated)="onEncounterCreated()"
-  />
-
-  <!-- Edit Patient Modal Dialog -->
-  @if (activePatientService.activePatient(); as currentPatient) {
-    <app-new-patient-dialog
-      [isOpen]="isEditPatientModalOpen()"
-      [patientToEdit]="currentPatient"
-      (closeDialog)="closeEditPatientModal()"
-      (patientUpdated)="onPatientUpdated($event)"
-    />
-  }
 </div>
+

@@ -79,7 +79,7 @@ describe('PatientBannerComponent', () => {
       [...fixture.nativeElement.querySelectorAll('.banner-actions-block > button')].map((el: any) =>
         el.textContent.trim(),
       ),
-    ).toEqual(['Editar datos', 'Nueva consulta']);
+    ).toEqual(['Editar datos', 'Nueva historia clínica']);
     component.toggleMenu(new Event('click'));
     fixture.detectChanges();
     expect(
@@ -99,7 +99,7 @@ describe('PatientBannerComponent', () => {
       [...fixture.nativeElement.querySelectorAll('.banner-actions-block > button')].map((el: any) =>
         el.textContent.trim(),
       ),
-    ).toEqual(['Nueva consulta', 'Editar datos']);
+    ).toEqual(['Nueva historia clínica', 'Editar datos']);
     component.toggleMenu(new Event('click'));
     fixture.detectChanges();
     expect(

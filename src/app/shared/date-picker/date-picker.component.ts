@@ -19,7 +19,17 @@ export class DatePickerComponent implements ControlValueAccessor {
   readonly max = input<string | null | undefined>(null);
   readonly selectedDate = signal<Date | null>(null);
   readonly isDisabled = signal(false);
-  readonly calendarStart = computed(() => this.selectedDate() ?? new Date(new Date().getFullYear() - 10, 0, 1));
+  readonly calendarStart = computed(() => {
+    if (this.selectedDate()) {
+      return this.selectedDate();
+    }
+    const today = new Date();
+    const max = this.maxDate();
+    if (max && today.getTime() > max.getTime()) {
+      return max;
+    }
+    return today;
+  });
 
   private onChange: (value: string) => void = () => undefined;
   private onTouched: () => void = () => undefined;

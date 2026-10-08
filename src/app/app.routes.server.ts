@@ -22,11 +22,23 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Client,
   },
   {
+    path: 'ficha/:id/editar',
+    renderMode: RenderMode.Client,
+  },
+  {
     path: 'pacientes',
     renderMode: RenderMode.Client,
   },
   {
+    path: 'pacientes/nuevo',
+    renderMode: RenderMode.Client,
+  },
+  {
     path: 'pacientes/:id',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'pacientes/:id/editar',
     renderMode: RenderMode.Client,
   },
   {

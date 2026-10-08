@@ -38,9 +38,16 @@
         </div>
         <div class="summary-divider"></div>
         <div class="summary-item">
-          <span class="summary-label">Percentil OMS Estimado</span>
+          <span class="summary-label">Percentil OMS</span>
           <span class="summary-badge">{{ latest.approximatePercentile || 'Normal' }}</span>
         </div>
+        @if (latest.interpretation) {
+          <div class="summary-divider"></div>
+          <div class="summary-item">
+            <span class="summary-label">Estado</span>
+            <span class="summary-value">{{ latest.interpretation }}</span>
+          </div>
+        }
         <div class="summary-divider"></div>
         <div class="summary-item">
           <span class="summary-label">Puntos en Gráfico</span>
@@ -68,19 +75,14 @@
     <!-- Legend & Official WHO Annotations -->
     <footer class="chart-footer">
       <div class="legend-container">
-        <!-- Patient trajectory legend: Star for boys, Heart for girls -->
+        <!-- Patient trajectory legend: compact heart icon, blue for boys, pink for girls, neutral otherwise -->
         <div class="legend-item legend-patient">
-          @if (sex() === 'MALE') {
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.5" class="symbol-patient-icon" aria-hidden="true">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-          } @else {
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="#db2777" stroke="#be185d" stroke-width="1.5" class="symbol-patient-icon" aria-hidden="true">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-            </svg>
-          }
+          <svg viewBox="0 0 24 24" width="14" height="14" class="symbol-patient-icon"
+               [attr.fill]="patientColors().fill" [attr.stroke]="patientColors().line" stroke-width="1.5" aria-hidden="true">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+          </svg>
           <span class="legend-text">
-            <strong>Paciente</strong> ({{ sex() === 'MALE' ? 'Estrella' : 'Corazón' }} - Consulta real)
+            <strong>Paciente</strong> (Corazón - Consulta real)
           </span>
         </div>
         <div class="legend-item">

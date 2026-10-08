@@ -37,7 +37,7 @@ describe('ClinicalEncounterService canonical records', () => {
     expect(service.encounters()).toEqual([record]);
   });
   it('sends only versioned input values on create', () => {
-    const request: ClinicalEncounterRequest = {patientId:1,workspaceVersion:4,encounterDate:record.encounterDate,consultationType:'FIRST_VISIT',values:{arbitrary:0,flag:false}};
+    const request: ClinicalEncounterRequest = {patientId:1,workspaceVersion:4,consultationType:'FIRST_VISIT',values:{arbitrary:0,flag:false}};
     service.create(request).subscribe();
     const pending=http.expectOne(base); expect(pending.request.method).toBe('POST'); expect(pending.request.body).toEqual(request);
     pending.flush(record); expect(service.currentEncounter()).toEqual(record);

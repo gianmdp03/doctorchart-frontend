@@ -22,6 +22,8 @@ import {
   ClinicalEncounterList,
   PrescriptionItem,
 } from '../../../core/models/clinical-encounter.model';
+import { ClinicalDocumentPrintService } from '../../../core/services/clinical-document-print.service';
+import { PrintDocumentReference } from '../../../core/models/clinical-print-document.model';
 export type PrescriptionOrderFormMode = 'MEDICATION' | 'STUDY';
 
 /** Record-scoped editor, independent of the consultation and growth modules. */
@@ -33,6 +35,7 @@ export class PatientPrescriptionEditorStore {
   readonly prescriptionStore = inject(PatientPrescriptionStore);
   readonly activePatientService = inject(ActivePatientService);
   readonly authService = inject(AuthService);
+  private readonly printService = inject(ClinicalDocumentPrintService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   private recordContext = '';
@@ -279,17 +282,19 @@ export class PatientPrescriptionEditorStore {
   ): void {
     if (!this.prescriptionsEnabled() || !this.recordActions.has('PRINT_DOCUMENT') || !this.currentRecordContext() || record.patientId !== this.activePatientService.patientId())
       return;
+    const ref: PrintDocumentReference = {
+      source: 'PRESCRIPTION_RECORD',
+      id: record.id,
+      patientId: record.patientId,
+      type: forcedType || record.type,
+    };
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('open-prescription-print-modal', {
-          detail: {
-            source: 'PRESCRIPTION_RECORD',
-            id: record.id,
-            patientId: record.patientId,
-            type: forcedType || record.type,
-          },
+          detail: ref,
         }),
       );
+      this.printService.openPdfInNewTab(ref);
     }
   }
 
@@ -355,17 +360,19 @@ export class PatientPrescriptionEditorStore {
 
   onPrintPrescription(enc: ClinicalEncounterList, type?: PrescriptionDocumentType): void {
     if (!this.recordActions.has('PRINT_DOCUMENT')) return;
+    const ref: PrintDocumentReference = {
+      source: 'ENCOUNTER',
+      id: enc.id,
+      patientId: enc.patientId,
+      ...(type ? { type } : {}),
+    };
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('open-prescription-print-modal', {
-          detail: {
-            source: 'ENCOUNTER',
-            id: enc.id,
-            patientId: enc.patientId,
-            ...(type ? { type } : {}),
-          },
+          detail: ref,
         }),
       );
+      this.printService.openPdfInNewTab(ref);
     }
   }
 }

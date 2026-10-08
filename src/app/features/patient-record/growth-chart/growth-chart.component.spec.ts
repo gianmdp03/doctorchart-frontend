@@ -14,7 +14,10 @@ describe('GrowthChartComponent', () => {
       ageFormatted: 'Al nacer',
       value: 3.3,
       unit: 'kg',
-      approximatePercentile: '~P50',
+      percentile: 50.0,
+      zScore: 0.0,
+      interpretation: 'Adecuado',
+      approximatePercentile: 'P50.0% (Z: +0.00)',
     },
     {
       date: '2024-04-01',
@@ -23,7 +26,10 @@ describe('GrowthChartComponent', () => {
       ageFormatted: '3 meses',
       value: 6.4,
       unit: 'kg',
-      approximatePercentile: '~P50',
+      percentile: 52.3,
+      zScore: 0.06,
+      interpretation: 'Adecuado',
+      approximatePercentile: 'P52.3% (Z: +0.06)',
     },
   ];
 
@@ -112,6 +118,11 @@ describe('GrowthChartComponent', () => {
 
     const values = fixture.nativeElement.querySelectorAll('.summary-value');
     expect(values[0].textContent).toContain('6.4 kg'); // latest value
+
+    const badge = fixture.nativeElement.querySelector('.summary-badge');
+    expect(badge.textContent).toContain('P52.3%');
+    expect(summaryEl.textContent).toContain('Estado');
+    expect(summaryEl.textContent).toContain('Adecuado');
   });
 
   it('should lock age range to 0-24 months', () => {
@@ -158,18 +169,20 @@ describe('GrowthChartComponent', () => {
     expect(bannerEl.textContent).toContain('Curvas antropométricas desde el nacimiento hasta los 24 meses');
   });
 
-  it('should render star symbol in legend for male and heart symbol for female', () => {
+  it('should render heart symbol in legend with sex-based color styling', () => {
     fixture.componentRef.setInput('metric', 'WEIGHT');
     fixture.componentRef.setInput('sex', 'MALE');
     fixture.detectChanges();
 
     let legendPatient = fixture.nativeElement.querySelector('.legend-patient');
-    expect(legendPatient.textContent).toContain('Estrella');
+    expect(legendPatient.textContent).toContain('Corazón');
+    expect(legendPatient.querySelector('svg')?.getAttribute('fill')).toBe('#2563eb');
 
     fixture.componentRef.setInput('sex', 'FEMALE');
     fixture.detectChanges();
 
     legendPatient = fixture.nativeElement.querySelector('.legend-patient');
     expect(legendPatient.textContent).toContain('Corazón');
+    expect(legendPatient.querySelector('svg')?.getAttribute('fill')).toBe('#db2777');
   });
 });

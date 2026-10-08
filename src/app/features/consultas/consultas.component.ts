@@ -80,12 +80,8 @@ export class ConsultasComponent implements OnInit {
   onSearch(value: string): void {
     this.searchQuery.set(value);
     this.reads.cancel();
-    this.consultations.set([]);
-    this.totalPages.set(0);
-    this.isLoadingMore.set(false);
-    this.isLoading.set(true);
     if (this.searchTimer) clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => this.loadConsultations(), 300);
+    this.searchTimer = setTimeout(() => this.loadConsultations(), 400);
   }
   loadConsultations(): void {
     if (this.searchTimer) {

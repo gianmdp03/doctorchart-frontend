@@ -35,11 +35,35 @@ export class NewEncounterDialogComponent implements OnDestroy {
   readonly hasConflict = signal(false);
   readonly remoteWorkspace = signal<WorkspaceSetup | null>(null);
   readonly readonly = computed(() => !this.isOpen() || this.isLoading() || this.isSubmitting() || this.hasConflict() || this.identity() !== this.owner || this.patientId() !== this.contextPatient);
-  readonly consultationTypes: { value: ConsultationType; label: string }[] = [
+  readonly allConsultationTypes: { value: ConsultationType; label: string }[] = [
     { value: 'FIRST_VISIT', label: 'Primera consulta' }, { value: 'FOLLOW_UP', label: 'Control / seguimiento' }, { value: 'ROUTINE_CHECKUP', label: 'Chequeo de rutina' }, { value: 'EMERGENCY', label: 'Urgencia' }, { value: 'INTERCONSULTATION', label: 'Interconsulta' },
   ];
-  readonly dateValid = computed(() => { const instant = this.currentInstant(); return !!instant && new Date(instant).getTime() <= Date.now(); });
+  readonly isFirstVisitLocked = computed(() => this.previousEncountersCount() <= 0);
+  readonly availableConsultationTypes = computed(() => {
+    if (this.isFirstVisitLocked()) {
+      return this.allConsultationTypes.filter(type => type.value === 'FIRST_VISIT');
+    }
+    return this.allConsultationTypes.filter(type => type.value !== 'FIRST_VISIT');
+  });
+  get consultationTypes(): { value: ConsultationType; label: string }[] {
+    return this.availableConsultationTypes();
+  }
+  selectConsultationType(type: ConsultationType): void {
+    if (this.readonly() || this.isFirstVisitLocked()) return;
+    this.consultationType.set(type);
+  }
+  readonly dateValid = computed(() => { const instant = this.currentInstant(); return !!instant && new Date(instant).getTime() <= Date.now() + 60000; });
   constructor() {
+    effect(() => {
+      const isLocked = this.isFirstVisitLocked();
+      untracked(() => {
+        if (isLocked) {
+          this.consultationType.set('FIRST_VISIT');
+        } else if (this.consultationType() === 'FIRST_VISIT') {
+          this.consultationType.set('FOLLOW_UP');
+        }
+      });
+    });
     effect(() => { const open = this.isOpen(); const patientId = this.patientId(); const identity = this.identity(); untracked(() => {
       this.epoch++; this.owner = identity; this.contextPatient = patientId; this.isLoading.set(false); this.isSubmitting.set(false); this.resetForm();
       if (open && patientId) void this.loadForm();
@@ -63,8 +87,9 @@ export class NewEncounterDialogComponent implements OnDestroy {
     const workspace = this.workspace(); const definition = this.definition(); const patientId = this.patientId(); const encounterDate = this.currentInstant();
     if (!workspace || !definition || !patientId || !encounterDate || !this.dateValid() || !this.isDynamicFormValid() || this.readonly()) return;
     const epoch = this.epoch; this.isSubmitting.set(true); this.errorMessage.set(null);
+    const effectiveConsultationType = this.isFirstVisitLocked() ? 'FIRST_VISIT' : (this.consultationType() === 'FIRST_VISIT' ? 'FOLLOW_UP' : this.consultationType());
     try {
-      const created = await firstValueFrom(this.encounterService.create({ patientId, workspaceVersion: workspace.version, encounterDate, consultationType: this.consultationType(), values: inputValues(definition, this.dynamicFormData()) }));
+      const created = await firstValueFrom(this.encounterService.create({ patientId, workspaceVersion: workspace.version, consultationType: effectiveConsultationType, values: inputValues(definition, this.dynamicFormData()) }));
       if (!this.alive(epoch)) return;
       if (created.patientId !== patientId) throw new Error('La consulta recibida corresponde a otro paciente.');
       this.encounterCreated.emit(created);

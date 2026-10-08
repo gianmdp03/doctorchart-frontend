@@ -31,6 +31,7 @@ import {
 } from '@ng-icons/lucide';
 import { PatientMedicalStudy } from '../../../core/models/patient-medical-study.model';
 import { PatientMedicalStudyService } from '../../../core/services/patient-medical-study.service';
+import { PatientStudiesStore } from './patient-studies.store';
 
 @Component({
   selector: 'app-patient-studies',
@@ -65,8 +66,13 @@ export class PatientStudiesComponent {
   private contextKey(): string { return JSON.stringify([this.auth.currentUser()?.id ?? null,this.patientId()]); }
   private syncContext(): void {
     const context = this.contextKey(); if (context === this.context) return;
+    const isInitial = this.context === '';
     this.changed.next(); this.context = context; this.revision++; this.read++;
-    this.studies.set([]); this.clearSelectedFile(); this.errorMessage.set(null); this.successMessage.set(null);
+    this.studies.set([]);
+    if (!isInitial) {
+      this.clearSelectedFile();
+    }
+    this.errorMessage.set(null); this.successMessage.set(null);
     this.isLoading.set(false); this.isUploading.set(false);
     this.releasePreviews();
   }
@@ -76,6 +82,8 @@ export class PatientStudiesComponent {
   }
   private current(revision: number): boolean { return revision === this.revision && this.context === this.contextKey() && !this.destroyRef.destroyed; }
 
+
+  private readonly studiesStore = inject(PatientStudiesStore, { optional: true });
 
   readonly patientId = input.required<number>();
 
@@ -93,6 +101,13 @@ export class PatientStudiesComponent {
   readonly hasStudies = computed(() => this.studies().length > 0);
 
   constructor() {
+    if (this.studiesStore?.draftFile()) {
+      this.selectedFile.set(this.studiesStore.draftFile());
+    }
+    if (this.studiesStore?.draftDescription()) {
+      this.description.set(this.studiesStore.draftDescription());
+    }
+
     effect(() => {
       const pid = this.patientId(); this.auth.currentUser();
       untracked(() => { this.syncContext(); if (pid) this.loadStudies(pid); });
@@ -126,16 +141,24 @@ export class PatientStudiesComponent {
       if (file.size > 25 * 1024 * 1024) {
         this.errorMessage.set('El archivo supera el tamaño máximo permitido de 25 MB.');
         this.selectedFile.set(null);
+        this.studiesStore?.setDraftFile(null);
         return;
       }
       this.selectedFile.set(file);
+      this.studiesStore?.setDraftFile(file);
       this.errorMessage.set(null);
     }
+  }
+
+  onDescriptionChange(val: string): void {
+    this.description.set(val);
+    this.studiesStore?.setDraftDescription(val);
   }
 
   clearSelectedFile(): void {
     this.selectedFile.set(null);
     this.description.set('');
+    this.studiesStore?.clearDraft();
     const inputEl = this.fileInput()?.nativeElement;
     if (inputEl) {
       inputEl.value = '';
