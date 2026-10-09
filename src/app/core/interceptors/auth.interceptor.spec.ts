@@ -17,7 +17,7 @@ describe('authInterceptor gateway boundary', () => {
   }
 
   it('removes forged internal headers even with a valid session', () => {
-    const names = ['X-Dev-Bypass', 'X-Gateway-Secret', 'X-Internal-Secret', 'X-User-Id', 'X-User-Role', 'X-User-Plan'];
+    const names = ['X-Dev-Bypass', 'X-Gateway-Secret', 'X-Internal-Secret', 'X-User-Id', 'X-User-Role', 'X-User-Plan', 'X-User-Plan-Expires-At'];
     const headers = new HttpHeaders(Object.fromEntries(names.map(name => [name, 'forged'])));
     const request = intercept(environment.aiGatewayUrl, 'test-session-token', headers);
     for (const name of names) expect(request.headers.has(name)).toBe(false);
@@ -34,6 +34,11 @@ describe('authInterceptor gateway boundary', () => {
 
   it('never invents a doctor identity for an unauthenticated request', () => {
     expect(intercept(`${environment.apiUrl}/specialties`, null).headers.keys()).toEqual([]);
+  });
+
+  it('removes a stale bearer supplied by a caller after logout', () => {
+    const request = intercept(`${environment.apiUrl}/patients`, null, new HttpHeaders({ Authorization: 'Bearer stale' }));
+    expect(request.headers.has('Authorization')).toBe(false);
   });
 
   it('excludes clinical and assistant responses from hydration storage even without a token', () => {

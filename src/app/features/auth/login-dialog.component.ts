@@ -149,7 +149,7 @@ export class LoginDialogComponent {
 
       this.closeModal();
       const targetUrl = (!this.router.url || this.router.url === '/') ? '/dashboard' : this.router.url;
-      await this.router.navigateByUrl(targetUrl);
+      await this.router.navigateByUrl(targetUrl, { onSameUrlNavigation: 'reload' });
     } catch (err: unknown) {
       this.isSubmitting.set(false);
       const msg = err instanceof Error ? err.message : 'Error inesperado al iniciar sesión.';
@@ -205,7 +205,7 @@ export class LoginDialogComponent {
         this.successMessage.set('¡Cuenta creada e inicio de sesión exitoso!');
         this.closeModal();
         const targetUrl = (!this.router.url || this.router.url === '/') ? '/dashboard' : this.router.url;
-        await this.router.navigateByUrl(targetUrl);
+        await this.router.navigateByUrl(targetUrl, { onSameUrlNavigation: 'reload' });
       } else {
         this.successMessage.set('¡Cuenta creada con éxito! Por favor inicia sesión.');
         this.mode.set('login');

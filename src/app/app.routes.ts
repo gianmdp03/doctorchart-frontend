@@ -17,6 +17,7 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
     loadComponent: () =>
@@ -26,6 +27,7 @@ export const routes: Routes = [
   },
   {
     path: 'calendario-vacunacion',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicalNavigationGuard('VACCINATION')],
     loadComponent: () =>
       import('./features/vaccination-calendar/calendario-vacunacion.component').then(
@@ -34,6 +36,7 @@ export const routes: Routes = [
   },
   {
     path: 'pacientes',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
     loadComponent: () =>
@@ -43,6 +46,7 @@ export const routes: Routes = [
   },
   {
     path: 'pacientes/nuevo',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () =>
       import('./features/patient-form/patient-form-page.component').then(
@@ -51,6 +55,7 @@ export const routes: Routes = [
   },
   {
     path: 'pacientes/:id/editar',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () =>
       import('./features/patient-form/patient-form-page.component').then(
@@ -59,6 +64,7 @@ export const routes: Routes = [
   },
   {
     path: 'pacientes/:id',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
     loadComponent: () =>
@@ -68,6 +74,7 @@ export const routes: Routes = [
   },
   {
     path: 'ficha',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
     loadComponent: () =>
@@ -77,6 +84,7 @@ export const routes: Routes = [
   },
   {
     path: 'ficha/:id/editar',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () =>
       import('./features/patient-form/patient-form-page.component').then(
@@ -85,6 +93,7 @@ export const routes: Routes = [
   },
   {
     path: 'ficha/:id',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
     loadComponent: () =>
@@ -94,6 +103,7 @@ export const routes: Routes = [
   },
   {
     path: 'consultas',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
     loadComponent: () =>
@@ -103,6 +113,7 @@ export const routes: Routes = [
   },
   {
     path: 'calculadoras',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicalNavigationGuard('CALCULATORS')],
     loadComponent: () =>
       import('./features/medical-calculators/medical-calculators.component').then(
@@ -111,6 +122,7 @@ export const routes: Routes = [
   },
   {
     path: 'onboarding/select-specialty',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, preventCompletedOnboardingGuard],
     loadComponent: () =>
       import('./features/onboarding/specialty-selection/specialty-selection.component').then(
@@ -119,6 +131,7 @@ export const routes: Routes = [
   },
   {
     path: 'onboarding/setup',
+    runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorWizardGuard],
     loadComponent: () =>
       import('./features/onboarding/onboarding-wizard/onboarding-wizard.component').then(

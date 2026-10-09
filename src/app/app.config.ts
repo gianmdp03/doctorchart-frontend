@@ -24,17 +24,7 @@ import {
 } from '@ng-icons/lucide';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { SelectivePreloadingStrategy } from './core/strategies/selective-preloading.strategy';
-import { ArgentinaDateAdapter, DATE_INPUT_FORMAT } from './core/date/argentina-date-adapter';
-
-const ARGENTINA_DATE_FORMATS = {
-  parse: { dateInput: DATE_INPUT_FORMAT },
-  display: {
-    dateInput: DATE_INPUT_FORMAT,
-    monthYearLabel: { month: 'long', year: 'numeric' },
-    dateA11yLabel: { day: 'numeric', month: 'long', year: 'numeric' },
-    monthYearA11yLabel: { month: 'long', year: 'numeric' },
-  },
-};
+import { ArgentinaDateAdapter, ARGENTINA_DATE_FORMATS } from './core/date/argentina-date-adapter';
 
 export const appConfig: ApplicationConfig = {
   providers: [

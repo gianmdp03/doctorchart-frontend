@@ -79,6 +79,18 @@ describe('App recovers the empty entry route after login', () => {
     expect(router.url).toBe('/pacientes');
   });
 
+  it('restores the requested patient route when session initialization cancelled initial navigation', async () => {
+    const previous = window.location.href;
+    window.history.replaceState(null, '', '/pacientes');
+    try {
+      const fixture = TestBed.createComponent(App); fixture.detectChanges();
+      const router = TestBed.inject(Router);
+      expect(await router.navigateByUrl('/')).toBe(false);
+      currentUser.set(doctor); fixture.detectChanges(); await fixture.whenStable();
+      await vi.waitFor(() => expect(router.url).toBe('/pacientes'));
+    } finally { window.history.replaceState(null, '', previous); }
+  });
+
   it('does not resume navigation when the user signed out during account loading', async () => {
     let finish!: (value:null)=>void;
     loadProfile.mockReturnValue(new Promise<null>(resolve=>finish=resolve));
@@ -172,7 +184,8 @@ describe('App administrative entry', () => {
     (profile['error'] as ReturnType<typeof signal>).set(null); (profile['loaded'] as ReturnType<typeof signal>).set(true); (workspace['loaded'] as ReturnType<typeof signal>).set(true); (workspace['preferences'] as ReturnType<typeof signal>).set({}); completed.set(true);
     currentUser.set(user('DOCTOR'));
     const router=TestBed.inject(Router); router.resetConfig([{path:'account-screen',component:AccountSessionProbe}]);
-    const fixture=TestBed.createComponent(App); fixture.detectChanges(); await router.navigateByUrl('/account-screen'); fixture.detectChanges();
+    const fixture=TestBed.createComponent(App); fixture.detectChanges(); await fixture.whenStable(); await router.navigateByUrl('/account-screen'); await fixture.whenStable(); fixture.detectChanges();
+    expect(router.url).toBe('/account-screen');
     const first=fixture.debugElement.query(By.directive(AccountSessionProbe)).componentInstance as AccountSessionProbe;
     first.draft.set('Datos de cuenta A');
     currentUser.set({...user('DOCTOR'),user_metadata:{full_name:'Actualizado'}}); fixture.detectChanges();

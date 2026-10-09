@@ -1,8 +1,10 @@
 # DoctorChart frontend
 
 Frontend Angular con configuración clínica por especialidad. Node 24 verificado.
-La guía completa de servicios, base nueva y comprobaciones está en
-[el cierre de 13d](docs/startup-block-13d.md).
+El backend definitivo es DoctorChart Go. La integración local está lista para
+validar en staging; consultar [la guía Angular + Go](docs/angular-go-staging.md)
+y [el informe de evidencias](../doctorchart-backend-go/integration/REPORT.md).
+El [cierre de 13d](docs/startup-block-13d.md) conserva el contexto histórico.
 
 ## Configuración local
 
@@ -26,7 +28,7 @@ npm start
 
 Abrir `http://localhost:4202/`. Antes deben estar disponibles PostgreSQL, Billing,
 backend DoctorChart, AI gateway y API gateway; ver
-[la preparación del backend](../doctorchart-backend/docs/runtime-configuration.md).
+[la preparación del backend Go](../doctorchart-backend-go/README.md).
 El acceso utiliza cuentas reales de Supabase con sus roles y suscripciones
 administrados en servidor. Las cuentas y contraseñas de prueba no se versionan.
 

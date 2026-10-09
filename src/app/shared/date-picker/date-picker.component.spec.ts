@@ -59,6 +59,33 @@ describe('DatePickerComponent', () => {
     expect(emitted).toBe('2021-03-10');
   });
 
+  it('uses the application Argentine adapter for typed dates without exchanging day and month', () => {
+    const emitted: string[] = [];
+    component.valueChange.subscribe(value => emitted.push(value));
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input');
+    for (const [typed, expected] of [['29/02/2020', '2020-02-29'], ['01/02/2020', '2020-02-01'], ['31/12/2020', '2020-12-31']]) {
+      input.value = typed;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      fixture.detectChanges();
+      expect(emitted.at(-1)).toBe(expected);
+      expect(input.value).toBe(typed);
+    }
+  });
+
+  it('does not convert an impossible typed date into a different birthday', () => {
+    let emitted = 'unchanged';
+    component.valueChange.subscribe(value => emitted = value);
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input');
+    input.value = '01/02/2020';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+    input.value = '31/02/2020';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+    expect(emitted).toBe('');
+    expect(component.selectedDate()).toBeNull();
+  });
+
   it('should default calendarStart to current date when no value is provided', () => {
     const start = component.calendarStart();
     const now = new Date();

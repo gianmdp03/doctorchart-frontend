@@ -1,9 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
-import { signal } from '@angular/core';
+import { ActivatedRouteSnapshot, RouterStateSnapshot, Router, provideRouter } from '@angular/router';
+import { Component, signal } from '@angular/core';
+import { routes } from '../../app.routes';
 import { doctorchartPlanGuard } from './doctorchart-plan.guard';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../../environments/environment';
+
+@Component({ template: '<p>Owned guarded route</p>' })
+class GuardedRouteProbe {}
 
 describe('doctorchartPlanGuard', () => {
   let authServiceMock: {
@@ -40,6 +44,18 @@ describe('doctorchartPlanGuard', () => {
 
   afterEach(() => {
     (window as any).location = originalLocation;
+  });
+
+  it('revalidates entitlement when authentication reloads the existing protected URL', async () => {
+    const dashboard = routes.find(route => route.path === 'dashboard')!;
+    TestBed.configureTestingModule({ providers: [provideRouter([{ ...dashboard, component: GuardedRouteProbe, loadComponent: undefined, canActivate: [doctorchartPlanGuard] }])] });
+    authServiceMock.isLoggedIn.set(true);
+    authServiceMock.hasDoctorchartPlan.set(true);
+    const router = TestBed.inject(Router);
+    expect(await router.navigateByUrl('/dashboard')).toBe(true);
+    authServiceMock.hasDoctorchartPlan.set(false);
+    expect(await router.navigateByUrl('/dashboard', { onSameUrlNavigation: 'reload' })).toBe(false);
+    expect(window.location.href).toBe(environment.syntahPlansUrl);
   });
 
   it('should block access and open login modal when user is not logged in', async () => {

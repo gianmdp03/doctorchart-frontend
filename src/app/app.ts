@@ -36,6 +36,7 @@ export class App {
   private readonly clinicalEncounters = inject(ClinicalEncounterService);
   private identity: string | null = null;
   private adminIdentity = false;
+  private readonly entryPath = typeof window === 'undefined' ? '/' : window.location.pathname;
 
   constructor() {
     effect(() => {
@@ -74,9 +75,8 @@ export class App {
     ]);
     if (!identity || identity !== this.authService.currentUser()?.id || this.authService.isSuperAdmin()
       || results.some(result => result.status === 'rejected')) return;
-    // Initial guards can cancel navigation before login or while identity state is being reset.
-    // Resume only the empty entry route; preserve any page the user has already opened.
-    if (this.router.url === '/') await this.router.navigate(['/dashboard']).catch(() => undefined);
+    // Resume a cancelled initial navigation without replacing its requested medical route.
+    if (this.router.url === '/' && !this.router.currentNavigation()) await this.router.navigateByUrl(this.entryPath === '/' ? '/dashboard' : this.entryPath).catch(() => undefined);
   }
 
   retrySetup(): void { if (!this.authService.isSuperAdmin()) void this.loadIdentity(); }

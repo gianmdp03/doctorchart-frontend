@@ -1,14 +1,20 @@
 import { Component, computed, effect, input, output, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
+import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
+import { ArgentinaDateAdapter, ARGENTINA_DATE_FORMATS } from '../../core/date/argentina-date-adapter';
 
 type CalendarStartView = 'month' | 'year' | 'multi-year';
 
 @Component({
   selector: 'app-date-picker',
-  imports: [MatDatepickerModule, MatNativeDateModule],
-  providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: DatePickerComponent, multi: true }],
+  imports: [MatDatepickerModule],
+  providers: [
+    { provide: NG_VALUE_ACCESSOR, useExisting: DatePickerComponent, multi: true },
+    { provide: DateAdapter, useClass: ArgentinaDateAdapter },
+    { provide: MAT_DATE_LOCALE, useValue: 'es-AR' },
+    { provide: MAT_DATE_FORMATS, useValue: ARGENTINA_DATE_FORMATS },
+  ],
   templateUrl: './date-picker.component.html',
   styleUrl: './date-picker.component.css',
 })

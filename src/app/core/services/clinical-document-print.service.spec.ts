@@ -43,6 +43,7 @@ describe('ClinicalDocumentPrintService', () => {
 
   afterEach(() => {
     httpMock.verify();
+    vi.restoreAllMocks();
   });
 
   it('should fetch prescription document JSON projection via get()', () => {
@@ -95,6 +96,41 @@ describe('ClinicalDocumentPrintService', () => {
 
     expect(req.request.method).toBe('GET');
     req.flush(mockBlob);
+  });
+
+  it('handles a forbidden JSON-as-blob response and closes the empty preview', () => {
+    const close = vi.fn();
+    vi.spyOn(window, 'open').mockReturnValue({ closed: false, document: {}, close } as unknown as Window);
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    service.openPdfInNewTab({ source: 'PRESCRIPTION_RECORD', id: 20, patientId: 3 });
+    const req = httpMock.expectOne(request => request.url.endsWith('/patients/3/prescriptions/20/pdf'));
+    req.flush(new Blob([JSON.stringify({ code: 'FORBIDDEN' })], { type: 'application/json' }), { status: 403, statusText: 'Forbidden' });
+    expect(close).toHaveBeenCalled();
+    expect(alert).toHaveBeenCalledWith(expect.stringContaining('No tenés permiso'));
+  });
+
+  it('discards a PDF delivered after the session changes', () => {
+    const close = vi.fn();
+    vi.spyOn(window, 'open').mockReturnValue({ closed: false, document: {}, close } as unknown as Window);
+    const create = vi.spyOn(URL, 'createObjectURL');
+    service.openPdfInNewTab({ source: 'PRESCRIPTION_RECORD', id: 20, patientId: 3 });
+    const req = httpMock.expectOne(request => request.url.endsWith('/patients/3/prescriptions/20/pdf'));
+    authMock.currentUser.mockReturnValueOnce({ ...mockUser, id: 'other-user' });
+    req.flush(new Blob(['%PDF-synthetic'], { type: 'application/pdf' }));
+    expect(create).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalled();
+  });
+
+  it('reports an unsupported clinical PDF without suggesting a transient retry', () => {
+    const close = vi.fn();
+    vi.spyOn(window, 'open').mockReturnValue({ closed: false, document: {}, close } as unknown as Window);
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    service.openPdfInNewTab({ source: 'PRESCRIPTION_RECORD', id: 20, patientId: 3 });
+    httpMock.expectOne(request => request.url.endsWith('/patients/3/prescriptions/20/pdf')).flush(
+      new Blob([JSON.stringify({ code: 'PDF_UNSUPPORTED_CHARACTER' })], { type: 'application/json' }),
+      { status: 422, statusText: 'Unprocessable Content' });
+    expect(close).toHaveBeenCalled();
+    expect(alert).toHaveBeenCalledWith(expect.stringContaining('los datos guardados no se modificaron'));
   });
 
   it('should open new window and assign blob object URL on openPdfInNewTab()', () => {

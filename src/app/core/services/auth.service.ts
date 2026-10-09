@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, InjectionToken, PLATFORM_ID, signal } from '@angular/core';
+import { computed, DestroyRef, effect, inject, Injectable, InjectionToken, PLATFORM_ID, signal, untracked } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
   AuthResponse,
@@ -41,6 +41,11 @@ export interface DoctorChartModuleInfo {
 export class AuthService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly entitlementClock = signal(Date.now());
+  private entitlementTimer?: ReturnType<typeof setTimeout>;
+  private authSubscription?: { unsubscribe(): void };
+  private destroyed = false;
   private supabaseClient: SupabaseClient | null = inject(SUPABASE_CLIENT, { optional: true }) ?? null;
 
   readonly currentUser = signal<User | null>(null);
@@ -75,12 +80,11 @@ export class AuthService {
 
   readonly userRole = computed<string | null>(() => {
     const role = this.currentUser()?.app_metadata?.['role'];
-    return typeof role === 'string' && role.trim() ? role.trim() : null;
+    return typeof role === 'string' && role.trim() ? role.trim().toUpperCase().replace(/^ROLE_/, '') : null;
   });
 
   readonly isSuperAdmin = computed<boolean>(() => {
-    const role = this.currentUser()?.app_metadata?.['role'];
-    return typeof role === 'string' && role.toUpperCase() === 'SUPER_ADMIN';
+    return this.userRole() === 'SUPER_ADMIN';
   });
   readonly isCompany = computed<boolean>(() => this.userRole()?.toUpperCase() === 'COMPANY');
 
@@ -90,31 +94,17 @@ export class AuthService {
       return null;
     }
 
-    const appMeta = (user.app_metadata || {}) as Record<string, any>;
-    const appModules = appMeta['app_modules'] as Record<string, any> | undefined;
-
-    let mod: any = null;
-    if (appModules && typeof appModules === 'object') {
-      mod = appModules['doctorchart'] || appModules['doctor_chart'];
-    }
-
-    if (!mod || typeof mod !== 'object') {
-      mod = appMeta['doctorchart'] || appMeta['doctor_chart'];
-    }
-
-    if (!mod || typeof mod !== 'object') {
+    const appModules = user.app_metadata?.['app_modules'];
+    const mod = appModules?.['doctorchart'];
+    if (!mod || typeof mod !== 'object' || Array.isArray(mod)) {
       return null;
     }
 
-    const active = mod.active === true || mod.active === 'true';
-    const tier = mod.tier ? String(mod.tier).trim().toUpperCase() : null;
-    const expiresAt = mod.expires_at || mod.expiresAt || null;
-
-    let notExpired = true;
-    if (expiresAt != null) {
-      const parsedTime = new Date(expiresAt).getTime();
-      notExpired = !isNaN(parsedTime) && parsedTime > Date.now();
-    }
+    const active = mod.active === true;
+    const tier = typeof mod.tier === 'string' ? mod.tier.trim().toUpperCase() : null;
+    const expiresAt = typeof mod.expires_at === 'string' ? mod.expires_at : null;
+    const parsedTime = this.expiryTime(expiresAt);
+    const notExpired = Number.isFinite(parsedTime) && parsedTime > this.entitlementClock();
 
     return {
       active,
@@ -132,7 +122,7 @@ export class AuthService {
     if (!mod) {
       return false;
     }
-    return mod.active && mod.notExpired;
+    return mod.active && mod.notExpired && ['FREE_TRIAL', 'BASIC', 'PRO', 'UNLIMITED', 'ENTERPRISE'].includes(mod.tier ?? '');
   });
 
   readonly doctorchartPlanTier = computed<string | null>(() => {
@@ -140,7 +130,7 @@ export class AuthService {
       return 'SUPER_ADMIN';
     }
     const mod = this.doctorchartModule();
-    if (mod && mod.tier) {
+    if (this.hasDoctorchartPlan() && mod?.tier) {
       return mod.tier;
     }
     return null;
@@ -155,7 +145,7 @@ export class AuthService {
     if (isNaN(expTime)) {
       return 0;
     }
-    const diffMs = expTime - Date.now();
+    const diffMs = expTime - this.entitlementClock();
     return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
   });
 
@@ -170,6 +160,20 @@ export class AuthService {
   });
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.destroyed = true;
+      clearTimeout(this.entitlementTimer);
+      this.authSubscription?.unsubscribe();
+    });
+    if (this.isBrowser) {
+      effect(() => {
+        this.currentUser();
+        untracked(() => {
+          this.entitlementClock.set(Date.now());
+          this.scheduleEntitlementClock();
+        });
+      });
+    }
     const supabaseUrl = environment.supabase.url;
     const supabaseAnonKey = environment.supabase.publishableKey;
 
@@ -187,6 +191,25 @@ export class AuthService {
       this.initSession();
       this.initWindowEventListeners();
     }
+  }
+
+  private expiryTime(value: string | null): number {
+    // Match the gateway's RFC3339 contract rather than permissive Date parsing.
+    if (!value || !/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(value)) return NaN;
+    const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+    if (month < 1 || month > 12 || day < 1 || day > new Date(Date.UTC(year, month, 0)).getUTCDate()) return NaN;
+    return Date.parse(value);
+  }
+
+  private scheduleEntitlementClock(): void {
+    clearTimeout(this.entitlementTimer);
+    const expiry = this.expiryTime(this.currentUser()?.app_metadata?.['app_modules']?.['doctorchart']?.expires_at ?? null);
+    const remaining = expiry - Date.now();
+    if (this.destroyed || !Number.isFinite(remaining) || remaining <= 0) return;
+    this.entitlementTimer = setTimeout(() => {
+      this.entitlementClock.set(Date.now());
+      this.scheduleEntitlementClock();
+    }, Math.min(60_000, remaining + 1));
   }
 
   setSupabaseClient(client: SupabaseClient | null): void {
@@ -209,8 +232,17 @@ export class AuthService {
       return;
     }
 
+    let revision = 0;
+    this.authSubscription = this.supabaseClient.auth.onAuthStateChange((_event, session) => {
+      revision++;
+      if (this.destroyed) return;
+      this.session.set(session);
+      this.currentUser.set(session?.user ?? null);
+    }).data.subscription;
+    const initialRevision = revision;
     try {
       const { data, error } = await this.supabaseClient.auth.getSession();
+      if (this.destroyed || revision !== initialRevision) return;
       if (error) {
         console.warn('[DoctorChart AuthService] Error getting initial session:', error);
       }
@@ -227,11 +259,6 @@ export class AuthService {
       this.isAuthInitialized.set(true);
       this.authReadyResolver?.();
     }
-
-    this.supabaseClient.auth.onAuthStateChange((_event, session) => {
-      this.session.set(session);
-      this.currentUser.set(session?.user ?? null);
-    });
   }
 
   openLoginModal(): void {

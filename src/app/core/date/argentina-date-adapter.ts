@@ -3,6 +3,16 @@ import { NativeDateAdapter } from '@angular/material/core';
 
 export const DATE_INPUT_FORMAT = 'dd/MM/yyyy';
 
+export const ARGENTINA_DATE_FORMATS = {
+  parse: { dateInput: DATE_INPUT_FORMAT },
+  display: {
+    dateInput: DATE_INPUT_FORMAT,
+    monthYearLabel: { month: 'long', year: 'numeric' },
+    dateA11yLabel: { day: 'numeric', month: 'long', year: 'numeric' },
+    monthYearA11yLabel: { month: 'long', year: 'numeric' },
+  },
+};
+
 /** Makes every Material date input parse and display the clinical Argentine format. */
 @Injectable()
 export class ArgentinaDateAdapter extends NativeDateAdapter {

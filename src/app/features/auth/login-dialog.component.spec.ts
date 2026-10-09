@@ -3,6 +3,8 @@ import { LoginDialogComponent } from './login-dialog.component';
 import { AuthService } from '../../core/services/auth.service';
 import { PLATFORM_ID, signal } from '@angular/core';
 import { User } from '@supabase/supabase-js';
+import { Router } from '@angular/router';
+import { LoginPageComponent } from './login-page.component';
 
 describe('LoginDialogComponent', () => {
   let component: LoginDialogComponent;
@@ -57,6 +59,17 @@ describe('LoginDialogComponent', () => {
     expect(component.errorMessage()).toBeNull();
     expect(component.successMessage()).toBeNull();
     expect(component.showPassword()).toBe(false);
+  });
+
+  it.each(['dialog', 'page'])('rechecks protected route guards after login on the same URL (%s)', async (kind) => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'url', 'get').mockReturnValue('/dashboard');
+    const navigation = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    authServiceMock.signInWithPassword.mockResolvedValue({ data: { user: mockUser }, error: null });
+    const login = kind === 'page' ? TestBed.createComponent(LoginPageComponent).componentInstance : component;
+    login.loginForm.patchValue({ email: 'fixture@example.test', password: 'FixtureOnly123!' });
+    await login.onLoginSubmit();
+    expect(navigation).toHaveBeenCalledWith('/dashboard', { onSameUrlNavigation: 'reload' });
   });
 
   it('should open modal when window event open-login-modal is dispatched in login mode', () => {

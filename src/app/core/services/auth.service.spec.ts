@@ -59,7 +59,7 @@ describe('AuthService', () => {
         email: 'maria.gonzalez@hospital.com',
         app_metadata: { role: 'DOCTOR' },
         user_metadata: {
-          full_name: 'Dra. María González',
+          full_name: 'Dra. MarÃ­a GonzÃ¡lez',
           dni: '32145678',
           role: 'DOCTOR',
         },
@@ -68,7 +68,7 @@ describe('AuthService', () => {
       service.currentUser.set(mockUser);
 
       expect(service.isLoggedIn()).toBe(true);
-      expect(service.userName()).toBe('Dra. María González');
+      expect(service.userName()).toBe('Dra. MarÃ­a GonzÃ¡lez');
       expect(service.userEmail()).toBe('maria.gonzalez@hospital.com');
       expect(service.userInitial()).toBe('D');
       expect(service.userDni()).toBe('32145678');
@@ -201,38 +201,60 @@ describe('AuthService', () => {
       expect(service.daysRemaining()).toBeGreaterThanOrEqual(9);
     });
 
-    it('should fallback to app_modules.doctor_chart and app_metadata.doctorchart', () => {
-      // Fallback to doctor_chart
-      service.currentUser.set({
-        id: 'doc-fallback-1',
-        app_metadata: {
-          app_modules: {
-            doctor_chart: {
-              active: true,
-              tier: 'BASIC',
-            },
-          },
-        },
-      } as unknown as User);
+    it('rejects legacy aliases and never inherits Pointly benefits', () => {
+      for (const app_metadata of [
+        { app_modules: { doctor_chart: { active: true, tier: 'PRO' } } },
+        { doctorchart: { active: true, tier: 'UNLIMITED' } },
+        { app_modules: { pointly: { active: true, tier: 'PRO', expires_at: '2099-01-01T00:00:00Z' } } },
+      ]) {
+        service.currentUser.set({ id: 'synthetic', app_metadata } as unknown as User);
+        expect(service.doctorchartModule()).toBeNull();
+        expect(service.hasDoctorchartPlan()).toBe(false);
+        expect(service.doctorchartPlanTier()).toBeNull();
+      }
+    });
 
-      expect(service.doctorchartModule()?.tier).toBe('BASIC');
-      expect(service.hasDoctorchartPlan()).toBe(true);
+    it('requires boolean active, a supported tier and a valid future RFC3339 expiry', () => {
+      for (const invalid of [
+        { active: 'true' }, { active: false }, { tier: 'FAKE' }, { tier: 7 },
+        { expires_at: null }, { expires_at: undefined }, { expires_at: 'tomorrow' },
+        { expires_at: '2099-02-30T00:00:00Z' }, { expires_at: '2099-01-01' },
+      ]) {
+        service.currentUser.set({ id: 'synthetic', app_metadata: { app_modules: {
+          doctorchart: { active: true, tier: 'PRO', expires_at: '2099-01-01T00:00:00Z', ...invalid },
+        } } } as unknown as User);
+        expect(service.hasDoctorchartPlan()).toBe(false);
+        expect(service.doctorchartPlanTier()).toBeNull();
+      }
+    });
+
+    it('expires while the JWT and user remain unchanged', async () => {
+      await service.authReady;
+      vi.useFakeTimers();
+      try {
+        service.currentUser.set({ id: 'synthetic', app_metadata: { app_modules: { doctorchart: {
+          active: true, tier: 'PRO', expires_at: new Date(Date.now() + 1000).toISOString(),
+        } } } } as unknown as User);
+        TestBed.tick();
+        expect(service.hasDoctorchartPlan()).toBe(true);
+        vi.advanceTimersByTime(1002);
+        expect(service.hasDoctorchartPlan()).toBe(false);
+        expect(service.doctorchartPlanTier()).toBeNull();
+      } finally { vi.useRealTimers(); }
+    });
+
+    it('updates benefits and bearer on token renewal', async () => {
+      await service.authReady;
+      const callback = mockAuth.onAuthStateChange.mock.calls[0][0];
+      const user = { id: 'synthetic', app_metadata: { app_modules: { doctorchart: {
+        active: true, tier: 'BASIC', expires_at: '2099-01-01T00:00:00Z',
+      } } } } as unknown as User;
+      callback('TOKEN_REFRESHED', { access_token: 'renewed-synthetic', user });
+      expect(service.getAccessToken()).toBe('renewed-synthetic');
       expect(service.doctorchartPlanTier()).toBe('BASIC');
-
-      // Fallback to app_metadata.doctorchart
-      service.currentUser.set({
-        id: 'doc-fallback-2',
-        app_metadata: {
-          doctorchart: {
-            active: true,
-            tier: 'UNLIMITED',
-          },
-        },
-      } as unknown as User);
-
-      expect(service.doctorchartModule()?.tier).toBe('UNLIMITED');
-      expect(service.hasDoctorchartPlan()).toBe(true);
-      expect(service.doctorchartPlanTier()).toBe('UNLIMITED');
+      callback('SIGNED_OUT', null);
+      expect(service.hasDoctorchartPlan()).toBe(false);
+      expect(service.getAccessToken()).toBeNull();
     });
 
     it('should return hasDoctorchartPlan = false if plan is expired', () => {

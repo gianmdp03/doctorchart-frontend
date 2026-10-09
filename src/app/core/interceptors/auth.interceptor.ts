@@ -12,7 +12,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
   const token = inject(AuthService).getAccessToken();
   let headers = req.headers;
-  for (const name of ['X-Dev-Bypass', 'X-Gateway-Secret', 'X-Internal-Secret', 'X-User-Id', 'X-User-Role', 'X-User-Plan']) {
+  for (const name of ['Authorization', 'X-Dev-Bypass', 'X-Gateway-Secret', 'X-Internal-Secret', 'X-User-Id', 'X-User-Role', 'X-User-Plan', 'X-User-Plan-Expires-At']) {
     headers = headers.delete(name);
   }
   if (token) headers = headers.set('Authorization', `Bearer ${token}`);

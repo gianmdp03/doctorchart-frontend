@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { DestroyRef, effect, inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -10,6 +10,23 @@ import { doctorPrintIdentity } from '../models/doctor-print-identity';
 export class ClinicalDocumentPrintService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+  private readonly previews = new Map<string, Window | null>();
+  private owner = this.auth.currentUser()?.id ?? null;
+
+  constructor() {
+    const release = () => {
+      for (const [url, preview] of this.previews) {
+        URL.revokeObjectURL(url);
+        try { if (preview && !preview.closed) preview.close(); } catch {}
+      }
+      this.previews.clear();
+    };
+    effect(() => {
+      const owner = this.auth.currentUser()?.id ?? null;
+      if (owner !== this.owner) { this.owner = owner; release(); }
+    });
+    inject(DestroyRef).onDestroy(release);
+  }
 
   get(reference: PrintDocumentReference): Observable<ClinicalPrintDocument> {
     const collection = reference.source === 'PRESCRIPTION_RECORD' ? 'prescriptions' : 'encounters';
@@ -37,11 +54,13 @@ export class ClinicalDocumentPrintService {
 
   openPdfInNewTab(reference: PrintDocumentReference): void {
     if (typeof window === 'undefined') return;
+    const owner = this.auth.currentUser()?.id ?? null;
 
     let targetWindow: Window | null = null;
     try {
       if (typeof window.open === 'function') {
         targetWindow = window.open('about:blank', '_blank');
+        if (targetWindow) targetWindow.opener = null;
         if (targetWindow && targetWindow.document) {
           targetWindow.document.title = 'Generando receta...';
         }
@@ -52,12 +71,17 @@ export class ClinicalDocumentPrintService {
 
     this.getPdfBlob(reference).subscribe({
       next: (blob) => {
+        if (owner !== (this.auth.currentUser()?.id ?? null)) {
+          try { targetWindow?.close(); } catch {}
+          return;
+        }
         try {
           const blobUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
           if (targetWindow && !targetWindow.closed) {
+            this.previews.set(blobUrl, targetWindow);
             targetWindow.location.href = blobUrl;
           } else if (typeof window.open === 'function') {
-            window.open(blobUrl, '_blank');
+            this.previews.set(blobUrl, window.open(blobUrl, '_blank', 'noopener,noreferrer'));
           }
         } catch (e) {
           console.error('Error handling PDF blob:', e);
@@ -69,8 +93,14 @@ export class ClinicalDocumentPrintService {
             targetWindow.close();
           }
         } catch {}
-        console.error('Error al generar el documento PDF:', err);
-        alert(err?.error?.message || 'Error al generar el documento PDF.');
+        if (owner !== (this.auth.currentUser()?.id ?? null)) return;
+        alert(err?.status === 403
+          ? 'No tenés permiso para acceder a este documento. Verificá tu sesión y suscripción.'
+          : err?.status === 401
+            ? 'Tu sesión expiró. Volvé a iniciar sesión para imprimir.'
+            : err?.status === 422
+              ? 'No se pudo representar el texto clínico de forma segura. El PDF no fue emitido y los datos guardados no se modificaron.'
+              : 'No se pudo generar el documento PDF. Reintentá más tarde.');
       },
     });
   }
