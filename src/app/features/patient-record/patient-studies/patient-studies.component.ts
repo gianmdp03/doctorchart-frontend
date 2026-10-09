@@ -32,6 +32,7 @@ import {
 import { PatientMedicalStudy } from '../../../core/models/patient-medical-study.model';
 import { PatientMedicalStudyService } from '../../../core/services/patient-medical-study.service';
 import { PatientStudiesStore } from './patient-studies.store';
+import { textError } from '../../../core/models/form-validation';
 
 @Component({
   selector: 'app-patient-studies',
@@ -95,6 +96,15 @@ export class PatientStudiesComponent {
 
   readonly selectedFile = signal<File | null>(null);
   readonly description = signal<string>('');
+  readonly descriptionError = computed(() => textError(this.description(), 4000));
+  readonly fileError = computed(() => {
+    const file = this.selectedFile();
+    if (!file) return 'Seleccioná un archivo.';
+    if (!file.size) return 'Seleccioná un archivo que no esté vacío.';
+    if (file.size > 25 * 1024 * 1024) return 'El archivo supera el máximo de 25 MB.';
+    if (!/\.(pdf|jpe?g|png|webp|gif|bmp|tiff?)$/i.test(file.name)) return 'Seleccioná un PDF o una imagen JPG, PNG, WebP, GIF, BMP o TIFF.';
+    return null;
+  });
 
   readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
@@ -137,13 +147,6 @@ export class PatientStudiesComponent {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
-      // Max 25MB check
-      if (file.size > 25 * 1024 * 1024) {
-        this.errorMessage.set('El archivo supera el tamaño máximo permitido de 25 MB.');
-        this.selectedFile.set(null);
-        this.studiesStore?.setDraftFile(null);
-        return;
-      }
       this.selectedFile.set(file);
       this.studiesStore?.setDraftFile(file);
       this.errorMessage.set(null);
@@ -152,6 +155,7 @@ export class PatientStudiesComponent {
 
   onDescriptionChange(val: string): void {
     this.description.set(val);
+    this.errorMessage.set(null);
     this.studiesStore?.setDraftDescription(val);
   }
 
@@ -170,8 +174,8 @@ export class PatientStudiesComponent {
     if (this.isUploading()) return;
     const revision = this.revision;
     const file = this.selectedFile();
-    if (!file) {
-      this.errorMessage.set('Por favor seleccioná un archivo antes de continuar.');
+    if (!file || this.fileError() || this.descriptionError()) {
+      this.errorMessage.set(this.fileError() || this.descriptionError());
       return;
     }
 

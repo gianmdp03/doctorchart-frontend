@@ -3,14 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 import { WizardFieldDefinition, WizardFormDefinition, WizardFormValues, WizardValue, WizardFormulaResults } from '../../core/models/wizard-definition.model';
 import { isWizardFieldVisible } from '../../core/models/wizard-record-display';
+import { isBirthDateField, parseNumberInput, validIsoDate, wizardFieldError } from '../../core/models/form-validation';
+export { validIsoDate } from '../../core/models/form-validation';
 
 export const inputValues = (definition: WizardFormDefinition, values: WizardFormValues): WizardFormValues => Object.fromEntries(
   definition.categories.flatMap(category => category.fields).filter(field => field.type !== 'FORMULA' && Object.prototype.hasOwnProperty.call(values, field.key)).map(field => [field.key, values[field.key]]),
 );
-export const validIsoDate = (value: unknown): boolean => {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const date = new Date(`${value}T00:00:00Z`); return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
-};
 
 @Component({ selector: 'app-dynamic-form-renderer', imports: [FormsModule, DatePickerComponent], templateUrl: './dynamic-form-renderer.component.html', styleUrl: './dynamic-form-renderer.component.css' })
 export class DynamicFormRendererComponent {
@@ -21,6 +19,7 @@ export class DynamicFormRendererComponent {
   readonly valuesChange = output<WizardFormValues>();
   readonly validityChange = output<boolean>();
   readonly currentValues = signal<WizardFormValues>({});
+  private readonly rawNumbers = signal<Record<string, string>>({});
   private readonly resultValues = signal<WizardFormValues>({});
   readonly enabledCategories = computed(() => this.definition().categories.filter(category => category.enabled));
   readonly fields = computed(() => this.definition().categories.flatMap(category => category.fields));
@@ -28,31 +27,36 @@ export class DynamicFormRendererComponent {
   readonly formValid = computed(() => this.fields().every(field => !this.isFieldVisible(field.key) || this.validField(field)));
 
   constructor() {
-    effect(() => { const definition = this.definition(); const values = this.values(); untracked(() => this.currentValues.set(structuredClone(inputValues(definition, values)))); });
+    effect(() => {
+      const definition = this.definition(), values = inputValues(definition, this.values());
+      untracked(() => {
+        this.currentValues.set(structuredClone(values));
+        this.rawNumbers.update(raw => Object.fromEntries(Object.entries(raw).filter(([key, text]) =>
+          definition.categories.some(category => category.fields.some(field => field.key === key && field.type === 'NUMBER')) && Object.is(parseNumberInput(text), values[key]))));
+      });
+    });
     effect(() => { this.formulaResults(); untracked(() => this.resultValues.set(structuredClone(this.values()))); });
     effect(() => this.validityChange.emit(this.formValid()));
   }
   setValue(field: WizardFieldDefinition, value: unknown): void {
     if (this.readonly() || field.type === 'FORMULA') return;
+    this.rawNumbers.update(raw => { const next = { ...raw }; delete next[field.key]; return next; });
     this.currentValues.update(values => ({ ...values, [field.key]: (value === '' ? null : value) as WizardValue }));
     this.valuesChange.emit(structuredClone(inputValues(this.definition(), this.currentValues())));
   }
   isFieldVisible(key: string): boolean { return isWizardFieldVisible(this.definition(), this.currentValues(), key); }
+  setNumberValue(field: WizardFieldDefinition, raw: string): void {
+    if (this.readonly()) return;
+    this.setValue(field, parseNumberInput(raw));
+    this.rawNumbers.update(values => ({ ...values, [field.key]: raw }));
+  }
+  numberInput(field: WizardFieldDefinition): string | number { return this.rawNumbers()[field.key] ?? (this.currentValues()[field.key] as string | number | null) ?? ''; }
+  fieldError(field: WizardFieldDefinition): string | null { return wizardFieldError(field, this.currentValues()[field.key], this.todayIso); }
   validField(field: WizardFieldDefinition): boolean {
-    if (field.type === 'FORMULA') return true;
-    const value = this.currentValues()[field.key];
-    const missing = value === null || value === undefined || (typeof value === 'string' && !value.trim());
-    if (missing) return !field.required;
-    switch (field.type) {
-      case 'TEXT': case 'TEXTAREA': return typeof value === 'string';
-      case 'NUMBER': return typeof value === 'number' && Number.isFinite(value) && (field.minimum === undefined || value >= field.minimum) && (field.maximum === undefined || value <= field.maximum);
-      case 'BOOLEAN': return typeof value === 'boolean';
-      case 'SELECT': return typeof value === 'string' && !!field.options?.some(option => option.value === value);
-      case 'DATE': return validIsoDate(value) && (!this.isBirthDateField(field.key) || (value as string) <= this.todayIso);
-    }
+    return !this.fieldError(field);
   }
   isBirthDateField(key: string): boolean {
-    return key === 'sys_dob' || key === 'born' || key === 'birthDate';
+    return isBirthDateField(key);
   }
   displayValue(field: WizardFieldDefinition): string {
     const value = this.currentValues()[field.key];

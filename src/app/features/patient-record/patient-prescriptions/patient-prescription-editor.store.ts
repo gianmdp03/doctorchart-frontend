@@ -24,6 +24,7 @@ import {
 } from '../../../core/models/clinical-encounter.model';
 import { ClinicalDocumentPrintService } from '../../../core/services/clinical-document-print.service';
 import { PrintDocumentReference } from '../../../core/models/clinical-print-document.model';
+import { parseNumberInput, textError } from '../../../core/models/form-validation';
 export type PrescriptionOrderFormMode = 'MEDICATION' | 'STUDY';
 
 /** Record-scoped editor, independent of the consultation and growth modules. */
@@ -50,7 +51,7 @@ export class PatientPrescriptionEditorStore {
 
   readonly rxAdministrationRoute = signal<string>('Vía Oral');
 
-  readonly rxDurationDays = signal<number | null>(null);
+  readonly rxDurationDays = signal<number | string | null>(null);
 
   readonly rxMedInstructions = signal<string>('');
 
@@ -65,6 +66,25 @@ export class PatientPrescriptionEditorStore {
   readonly draftPrescriptions = signal<PrescriptionItem[]>([]);
 
   readonly draftStudies = signal<string[]>([]);
+
+  readonly medicationErrors = computed(() => ({
+    name: textError(this.rxMedicationName(), 200, true),
+    dosage: textError(this.rxDosage(), 500),
+    frequency: textError(this.rxFrequency(), 200, true),
+    route: textError(this.rxAdministrationRoute(), 200, true),
+    duration: this.rxDurationDays() == null ? null : typeof this.rxDurationDays() !== 'number' || !Number.isInteger(this.rxDurationDays()) || Number(this.rxDurationDays()) < 1 || Number(this.rxDurationDays()) > 2147483647 ? 'Ingresá una duración en días enteros mayor que cero.' : null,
+    instructions: textError(this.rxMedInstructions(), 4000),
+  }));
+  readonly studyErrors = computed(() => ({
+    name: textError(this.rxStudyName(), 2000, true),
+    specification: textError(this.rxStudySpecification(), 2000) || (this.formattedStudy().length > 2000 ? 'El estudio y su especificación admiten hasta 2000 caracteres en total.' : null),
+  }));
+  readonly diagnosisError = computed(() => textError(this.rxDiagnosis(), 4000));
+  readonly generalInstructionsError = computed(() => textError(this.rxGeneralInstructions(), 4000));
+  readonly medicationValid = computed(() => !Object.values(this.medicationErrors()).some(Boolean));
+  readonly studyValid = computed(() => !Object.values(this.studyErrors()).some(Boolean));
+  setDuration(raw: string): void { this.rxDurationDays.set(parseNumberInput(raw)); }
+  private formattedStudy(): string { const name = this.rxStudyName().trim(), spec = this.rxStudySpecification().trim(); return spec ? `${name} — ${spec}` : name; }
 
   readonly savedPrescriptionRecords = this.prescriptionStore.records;
 
@@ -142,8 +162,8 @@ export class PatientPrescriptionEditorStore {
 
   addMedicationToDraft(): void {
     const name = this.rxMedicationName().trim();
-    if (!name) {
-      this.rxErrorMessage.set('Ingresá el nombre del medicamento o principio activo.');
+    if (!this.medicationValid() || this.draftPrescriptions().length >= 100) {
+      this.rxErrorMessage.set(Object.values(this.medicationErrors()).find(Boolean) || 'Podés agregar hasta 100 medicamentos.');
       return;
     }
 
@@ -179,10 +199,8 @@ export class PatientPrescriptionEditorStore {
 
   addStudyToDraft(): void {
     const name = this.rxStudyName().trim();
-    if (!name) {
-      this.rxErrorMessage.set(
-        'Ingresá el nombre del estudio o práctica a solicitar (por ej. Tomografía).',
-      );
+    if (!this.studyValid() || this.draftStudies().length >= 100) {
+      this.rxErrorMessage.set(Object.values(this.studyErrors()).find(Boolean) || 'Podés agregar hasta 100 estudios.');
       return;
     }
 
@@ -201,6 +219,7 @@ export class PatientPrescriptionEditorStore {
   }
 
   prescribeHabitualMedication(medName: string): void {
+    if (textError(medName, 200, true) || this.draftPrescriptions().length >= 100) { this.rxErrorMessage.set('Revisá el medicamento y el límite de 100 elementos por receta.'); return; }
     this.rxFormMode.set('MEDICATION');
     const item: PrescriptionItem = {
       medicationName: medName,
@@ -229,13 +248,21 @@ export class PatientPrescriptionEditorStore {
     this.rxSuccessMessage.set(null);
   }
 
-  private commitPendingRxInputs(): void {
-    if (this.rxMedicationName().trim()) {
+  private commitPendingRxInputs(): boolean {
+    const medicationPending = !!(this.rxMedicationName() || this.rxDosage() || this.rxDurationDays() != null || this.rxMedInstructions());
+    const studyPending = !!(this.rxStudyName() || this.rxStudySpecification());
+    const error = this.diagnosisError() || this.generalInstructionsError()
+      || (medicationPending && Object.values(this.medicationErrors()).find(Boolean))
+      || (studyPending && Object.values(this.studyErrors()).find(Boolean));
+    if (error) { this.rxErrorMessage.set(error); return false; }
+    if ((medicationPending && this.draftPrescriptions().length >= 100) || (studyPending && this.draftStudies().length >= 100)) { this.rxErrorMessage.set('Podés agregar hasta 100 elementos por lista.'); return false; }
+    if (medicationPending) {
       this.addMedicationToDraft();
     }
-    if (this.rxStudyName().trim()) {
+    if (studyPending) {
       this.addStudyToDraft();
     }
+    return true;
   }
 
   saveCurrentRxToHistory(onSaved?: (record: SavedPrescriptionRecord) => void): void {
@@ -245,7 +272,7 @@ export class PatientPrescriptionEditorStore {
       return;
     }
     if (this.rxBusy()) return;
-    this.commitPendingRxInputs();
+    if (!this.commitPendingRxInputs()) return;
     const meds = this.draftPrescriptions();
     const studies = this.draftStudies();
     if (meds.length === 0 && studies.length === 0) {
@@ -328,7 +355,7 @@ export class PatientPrescriptionEditorStore {
     }
 
     if (this.rxBusy()) return;
-    this.commitPendingRxInputs();
+    if (!this.commitPendingRxInputs()) return;
     const currentMeds = this.draftPrescriptions();
     const currentStudies = this.draftStudies();
 

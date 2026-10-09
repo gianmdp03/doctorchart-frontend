@@ -6,8 +6,8 @@
     @if (hasConflict()) { <section class="conflict-review"><p>Tu configuración activa cambió. Las respuestas ingresadas se conservan hasta que revises el formulario actual.</p><button type="button" [disabled]="isLoading()" (click)="reviewRemote()">Consultar configuración actual</button>@if (remoteWorkspace(); as remote) { <p>{{ remote.specialty.name }}. Se conservarán solo los campos que mantengan su significado.</p><button type="button" [disabled]="isLoading()" (click)="useRemoteWorkspace()">Usar formulario actual y conservar respuestas compatibles</button> }</section> }
     <div class="encounter-form-scroll">
       <fieldset class="consultation-metadata" [disabled]="readonly()"><legend>Datos de la consulta</legend>
-        <label>Fecha <app-date-picker [ngModel]="encounterDay()" (ngModelChange)="encounterDay.set($event)" [disabled]="readonly()" /></label>
-        <label>Hora de atención <input type="time" [ngModel]="encounterTime()" (ngModelChange)="encounterTime.set($event)" /></label>
+        <label>Fecha <app-date-picker [showError]="false" [ngModel]="encounterDay()" (ngModelChange)="encounterDay.set($event)" [disabled]="readonly()" />@if (dayError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
+        <label>Hora de atención <input type="time" [ngModel]="encounterTime()" (ngModelChange)="encounterTime.set($event)" />@if (timeError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
         <div class="dialog-consultation-type">
           <label id="dialog-consultation-type-label">Tipo de consulta</label>
           @if (isFirstVisitLocked()) {
@@ -38,7 +38,6 @@
           }
         </div>
       </fieldset>
-      @if (!dateValid()) { <p role="alert">Ingresá una fecha y hora válidas que no estén en el futuro.</p> }
       @if (definition(); as form) { <app-dynamic-form-renderer [definition]="form" [values]="dynamicFormData()" [readonly]="readonly()" (valuesChange)="onDynamicDataChange($event)" (validityChange)="onDynamicFormValidityChange($event)" /> }
       @else if (!isLoading()) { <p>El formulario de consulta no está disponible.</p><button type="button" (click)="loadForm()">Volver a cargar</button> }
     </div>

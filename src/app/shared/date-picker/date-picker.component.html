@@ -6,14 +6,17 @@
     [value]="selectedDate()"
     [max]="maxDate()"
     [disabled]="isDisabled()"
+    [attr.aria-invalid]="!!error()"
+    [class.has-error]="!!error()"
     placeholder="dd/MM/aaaa"
     inputmode="numeric"
     autocomplete="bday"
     (click)="!isDisabled() && picker.open()"
-    (dateInput)="selectDate($event.value)"
-    (dateChange)="selectDate($event.value)"
+    (input)="onTextInput($any($event.target).value)"
+    (dateChange)="selectDate($event.value, $any($event.targetElement).value)"
     (blur)="markTouched()"
   />
   <mat-datepicker-toggle [for]="picker" [disabled]="isDisabled()"></mat-datepicker-toggle>
   <mat-datepicker #picker [startView]="startView()" [startAt]="calendarStart()"></mat-datepicker>
 </div>
+@if (showError() && error() && !isDisabled()) { <span class="field-error" role="alert">{{ error() }}</span> }

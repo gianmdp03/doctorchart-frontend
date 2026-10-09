@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, viewChildren } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { DoctorProfileService } from '../../../core/services/doctor-profile.service';
@@ -26,6 +26,8 @@ export class OnboardingWizardComponent implements OnInit {
   private readonly doctorProfileService = inject(DoctorProfileService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly editors = viewChildren(FormFieldEditorComponent);
+  readonly pendingEditor = computed(() => this.editors().some(editor => editor.pendingChanges()));
 
   readonly workspace = signal<WorkspaceSetup | null>(null);
   readonly definition = signal<WizardDefinition | null>(null);
@@ -216,6 +218,7 @@ export class OnboardingWizardComponent implements OnInit {
   }
 
   private async saveDraft(stepKey: EditableStepKey): Promise<WorkspaceSetup | null> {
+    if (this.pendingEditor()) { this.errorMessage.set('Aplicá o cancelá el campo en edición y completá o quitá la categoría pendiente antes de continuar.'); return null; }
     const workspace = this.workspace();
     const definition = this.definition();
     if (!workspace || !definition || this.editorReadonly()) return null;

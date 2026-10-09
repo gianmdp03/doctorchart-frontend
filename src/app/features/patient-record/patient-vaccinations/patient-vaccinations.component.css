@@ -292,3 +292,4 @@
     display: none;
   }
 }
+.field-error { display: block; margin-top: 6px; color: #b91c1c; font-size: .8rem; }

@@ -82,7 +82,9 @@ describe('DatePickerComponent', () => {
     input.value = '31/02/2020';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     fixture.detectChanges();
-    expect(emitted).toBe('');
+    expect(emitted).toBe('31/02/2020');
+    expect(component.validate()).toEqual({ date: true });
+    expect(fixture.nativeElement.querySelector('.field-error').textContent).toContain('fecha válida');
     expect(component.selectedDate()).toBeNull();
   });
 

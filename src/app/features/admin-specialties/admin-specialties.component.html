@@ -54,8 +54,9 @@
               <button type="button" [disabled]="busy()" (click)="refreshCatalog()">Recuperar revisión actual</button></section>
           }
           <fieldset class="metadata" [disabled]="readonly() || (!creating() && !wizard())">
-            <label>Nombre <input maxlength="120" [ngModel]="name()" (ngModelChange)="updateName($event)" /></label>
+            <label>Nombre <input maxlength="120" [ngModel]="name()" (ngModelChange)="updateName($event)" />@if (nameError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
             <label>Código <input maxlength="80" [ngModel]="code()" (ngModelChange)="updateCode($event)" [readonly]="!creating()" />
+              @if (codeError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
               <span class="hint">{{ creating() ? 'Sugerido a partir del nombre; podés editarlo.' : 'El código identifica esta especialidad y no cambia.' }}</span></label>
             <label class="wide">Descripción <textarea rows="2" [ngModel]="description()" (ngModelChange)="description.set($event)"></textarea></label>
           </fieldset>

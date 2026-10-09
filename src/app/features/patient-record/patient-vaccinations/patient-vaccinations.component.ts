@@ -23,6 +23,7 @@ import {
 import { PatientService } from '../../../core/services/patient.service';
 import { PatientVaccinationService } from '../../../core/services/patient-vaccination.service';
 import { DatePickerComponent } from '../../../shared/date-picker/date-picker.component';
+import { validIsoDate } from '../../../core/models/form-validation';
 @Component({
   selector: 'app-patient-vaccinations',
   imports: [FormsModule, DatePickerComponent],
@@ -44,6 +45,7 @@ export class PatientVaccinationsComponent {
   readonly isSaving = signal(false);
   readonly isLoading = signal(false);
   readonly saveError = signal<string | null>(null);
+  readonly dateErrors = signal<Record<string, string | null>>({});
   readonly loadError = signal<string | null>(null);
   readonly ageLabel = computed(() => this.schedule()?.ageLabel ?? '—');
   readonly doses = computed(() => this.schedule()?.doses ?? []);
@@ -87,6 +89,7 @@ export class PatientVaccinationsComponent {
       JSON.parse(this.context)[0] === this.auth.currentUser()?.id;
     this.changed.next();
     this.epoch++;
+    this.dateErrors.set({});
     this.context = key;
     this.isSaving.set(false);
     this.isLoading.set(false);
@@ -170,6 +173,13 @@ export class PatientVaccinationsComponent {
     this.persist(dose, applied);
   }
   updateDate(dose: PatientVaccinationDose, appliedAt: string, picker?: DatePickerComponent) {
+    const maximum = this.schedule()?.asOfDate;
+    const error = !validIsoDate(appliedAt) ? 'Ingresá una fecha válida con formato dd/MM/aaaa.'
+      : maximum && appliedAt > maximum ? 'La fecha de aplicación no puede ser futura.'
+      : this.patient().birthDate && appliedAt < this.patient().birthDate ? 'La fecha no puede ser anterior al nacimiento.' : null;
+    this.dateErrors.update(errors => ({ ...errors, [dose.id]: error }));
+    if (error) return;
+    if (appliedAt === dose.appliedAt) { picker?.writeValue(dose.appliedAt); return; }
     // Keep the visible value confirmed by the server while the write is pending.
     picker?.writeValue(dose.appliedAt);
     if (dose.status === 'APLICADA') this.persist(dose, true, appliedAt);

@@ -104,6 +104,7 @@
                   (ngModelChange)="editor.rxMedicationName.set($event)"
                   (keydown.enter)="editor.addMedicationToDraft()"
                 />
+                @if (editor.medicationErrors().name; as error) { <span class="field-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field">
@@ -117,6 +118,7 @@
                   (ngModelChange)="editor.rxDosage.set($event)"
                   (keydown.enter)="editor.addMedicationToDraft()"
                 />
+                @if (editor.medicationErrors().dosage; as error) { <span class="field-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field">
@@ -131,6 +133,7 @@
                     <option [value]="freq">{{ freq }}</option>
                   }
                 </select>
+                @if (editor.medicationErrors().frequency; as error) { <span class="field-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field">
@@ -145,19 +148,21 @@
                     <option [value]="route">{{ route }}</option>
                   }
                 </select>
+                @if (editor.medicationErrors().route; as error) { <span class="field-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field">
                 <label class="rx-label" for="rx-med-days">Duración en días (opcional)</label>
                 <input
                   id="rx-med-days"
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputmode="numeric"
                   class="rx-input"
                   placeholder="Ej: 7, 10, 30..."
                   [ngModel]="editor.rxDurationDays()"
-                  (ngModelChange)="editor.rxDurationDays.set($event)"
+                  (ngModelChange)="editor.setDuration($event)"
                 />
+                @if (editor.medicationErrors().duration; as error) { <span class="field-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field rx-field-wide">
@@ -171,6 +176,7 @@
                   (ngModelChange)="editor.rxMedInstructions.set($event)"
                   (keydown.enter)="editor.addMedicationToDraft()"
                 />
+                @if (editor.medicationErrors().instructions; as error) { <span class="field-error" role="alert">{{ error }}</span> }
               </div>
             </div>
 
@@ -267,6 +273,7 @@
                   (ngModelChange)="editor.rxStudyName.set($event)"
                   (keydown.enter)="editor.addStudyToDraft()"
                 />
+                @if (editor.studyErrors().name; as error) { <span class="field-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field">
@@ -282,6 +289,7 @@
                   (ngModelChange)="editor.rxStudySpecification.set($event)"
                   (keydown.enter)="editor.addStudyToDraft()"
                 />
+                @if (editor.studyErrors().specification; as error) { <span class="field-error" role="alert">{{ error }}</span> }
               </div>
             </div>
 
@@ -340,6 +348,7 @@
               [ngModel]="editor.rxDiagnosis()"
               (ngModelChange)="editor.rxDiagnosis.set($event)"
             />
+            @if (editor.diagnosisError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
           </div>
 
           <div class="rx-field">
@@ -354,6 +363,7 @@
               [ngModel]="editor.rxGeneralInstructions()"
               (ngModelChange)="editor.rxGeneralInstructions.set($event)"
             />
+            @if (editor.generalInstructionsError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
           </div>
         </div>
 

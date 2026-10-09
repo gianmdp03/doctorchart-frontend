@@ -1,16 +1,18 @@
 import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { interval, Subscription } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { ActivePatientService } from '../../../core/services/active-patient.service';
 import { WorkspaceStore } from '../../../core/services/workspace.store';
 import { PatientGrowthService } from '../../../core/services/patient-growth.service';
 import {
-  BackendGrowthMeasurement,
   BiologicalSex,
   GrowthMetricType,
+  GrowthObservation,
+  PatientGrowthResponse,
 } from '../../../core/models/growth-chart.model';
 
-/** Record-scoped module state; selectors survive tab changes, reads cannot cross the patient or account. */
+/** Record-scoped state survives tabs; confirmations and responses never cross patients/accounts. */
 @Injectable()
 export class PatientGrowthStore {
   private readonly destroyRef = inject(DestroyRef);
@@ -20,111 +22,191 @@ export class PatientGrowthStore {
   private readonly workspaceStore = inject(WorkspaceStore);
   private growthRead = 0;
   private recordContext = '';
+  private readSubscription?: Subscription;
+  private readonly today = signal(this.argentinaDay());
   readonly selectedGrowthMetric = signal<GrowthMetricType | 'ALL'>('WEIGHT');
-
-  readonly backendGrowthMeasurements = signal<BackendGrowthMeasurement[]>([]);
-
-  readonly isLoadingGrowthCurves = signal<boolean>(false);
-
+  readonly showHistorical = signal(false);
+  readonly response = signal<PatientGrowthResponse | null>(null);
+  readonly confirmedSex = signal<BiologicalSex | null>(null);
+  readonly confirmedModes = signal<Record<string, 'RECUMBENT' | 'STANDING'>>({});
+  readonly isLoadingGrowthCurves = signal(false);
   readonly growthError = signal<string | null>(null);
-
-  readonly patientSex = computed<BiologicalSex>(() =>
-    this.growthService.normalizeGender(this.activePatientService.activePatient()?.gender),
-  );
-
-  readonly weightMeasurements = computed(() =>
-    this.growthService.transformBackendMeasurements(
-      this.backendGrowthMeasurements(),
-      'WEIGHT',
-      this.patientSex(),
+  readonly patientSex = computed(() => this.response()?.referenceSex || null);
+  readonly backendGrowthMeasurements = computed(() => this.response()?.observations ?? []);
+  readonly availableCharts = computed(() =>
+    (this.response()?.charts ?? []).filter(
+      (c) => c.applicable || (this.showHistorical() && c.points.length > 0),
     ),
   );
-
-  readonly heightMeasurements = computed(() =>
-    this.growthService.transformBackendMeasurements(
-      this.backendGrowthMeasurements(),
-      'HEIGHT',
-      this.patientSex(),
+  readonly categories = computed(() => {
+    const categories = new Map<
+      GrowthMetricType,
+      { indicator: GrowthMetricType; title: string; count: number }
+    >();
+    for (const chart of this.availableCharts()) {
+      const d = chart.definition;
+      const category = categories.get(d.indicator) ?? {
+        indicator: d.indicator,
+        title: d.title,
+        count: 0,
+      };
+      category.count += chart.points.length;
+      categories.set(d.indicator, category);
+    }
+    return [...categories.values()];
+  });
+  readonly effectiveMetric = computed(() => {
+    const selected = this.selectedGrowthMetric();
+    return selected === 'ALL' || this.categories().some((c) => c.indicator === selected)
+      ? selected
+      : this.categories()[0]?.indicator;
+  });
+  readonly visibleCharts = computed(() =>
+    this.availableCharts().filter(
+      (c) => this.effectiveMetric() === 'ALL' || c.definition.indicator === this.effectiveMetric(),
     ),
   );
-
-  readonly headCircumferenceMeasurements = computed(() =>
-    this.growthService.transformBackendMeasurements(
-      this.backendGrowthMeasurements(),
-      'HEAD_CIRCUMFERENCE',
-      this.patientSex(),
+  private points(indicators: GrowthMetricType[]) {
+    return (this.response()?.charts ?? [])
+      .filter((c) => indicators.includes(c.definition.indicator))
+      .flatMap((c) => c.points)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+  readonly weightMeasurements = computed(() => this.points(['WEIGHT']));
+  readonly heightMeasurements = computed(() => this.points(['HEIGHT', 'LENGTH']));
+  readonly headCircumferenceMeasurements = computed(() => this.points(['HEAD_CIRCUMFERENCE']));
+  readonly totalMeasurementsCount = computed(() =>
+    this.backendGrowthMeasurements().reduce(
+      (count, o) =>
+        count +
+        [o.weightKg, o.heightCm, o.headCircumferenceCm].filter(
+          (v) => typeof v === 'number' && Number.isFinite(v) && v > 0,
+        ).length,
+      0,
     ),
   );
-
-  readonly totalMeasurementsCount = computed(
+  readonly positionObservations = computed(() =>
+    this.backendGrowthMeasurements().filter(
+      (o) => typeof o.heightCm === 'number' && o.heightCm > 0,
+    ),
+  );
+  readonly unconfirmedPositions = computed(
+    () => this.positionObservations().filter((o) => o.measurementMode === 'UNKNOWN').length,
+  );
+  readonly growthEnabled = computed(
     () =>
-      this.weightMeasurements().length +
-      this.heightMeasurements().length +
-      this.headCircumferenceMeasurements().length,
+      this.workspaceStore.hasRecordTab('GROWTH') &&
+      this.workspaceStore.isModuleActive('GROWTH_CHARTS'),
   );
-
-  readonly growthEnabled = computed(() => this.workspaceStore.hasRecordTab('GROWTH') && this.workspaceStore.isModuleActive('GROWTH_CHARTS'));
   constructor() {
+    interval(60_000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.today.set(this.argentinaDay()));
+    this.destroyRef.onDestroy(() => this.readSubscription?.unsubscribe());
     effect(() => {
       const patient = this.activePatientService.activePatient();
       this.authService.currentUser();
       this.growthEnabled();
+      this.today();
       untracked(() => {
         const context = this.contextKey();
         if (context !== this.recordContext) {
           this.recordContext = context;
           this.growthRead++;
-          this.backendGrowthMeasurements.set([]);
+          this.response.set(null);
           this.growthError.set(null);
+          this.confirmedSex.set(null);
+          this.confirmedModes.set({});
+          this.selectedGrowthMetric.set('WEIGHT');
+          this.showHistorical.set(false);
         }
         if (patient?.id) this.loadGrowthCurves(patient.id);
         else {
+          this.readSubscription?.unsubscribe();
+          this.response.set(null);
           this.isLoadingGrowthCurves.set(false);
-          this.backendGrowthMeasurements.set([]);
         }
       });
     });
   }
+  private argentinaDay(): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  }
   private contextKey(): string {
+    const patient = this.activePatientService.activePatient();
     return JSON.stringify([
       this.authService.currentUser()?.id ?? null,
-      this.activePatientService.patientId(),
+      patient?.id,
+      patient?.birthDate,
+      patient?.gender,
     ]);
+  }
+  observationKey(o: GrowthObservation): string {
+    return o.encounterId === null ? 'BIRTH' : String(o.encounterId);
+  }
+  confirmSex(sex: BiologicalSex): void {
+    this.confirmedSex.set(sex);
+    this.reload();
+  }
+  clearSexConfirmation(): void {
+    this.confirmedSex.set(null);
+    this.reload();
+  }
+  confirmMode(o: GrowthObservation, mode: string): void {
+    const modes = { ...this.confirmedModes() };
+    const key = this.observationKey(o);
+    if (mode === 'RECUMBENT' || mode === 'STANDING') modes[key] = mode;
+    else delete modes[key];
+    this.confirmedModes.set(modes);
+    this.reload();
+  }
+  reload(): void {
+    const id = this.activePatientService.patientId();
+    if (id) this.loadGrowthCurves(id);
   }
   loadGrowthCurves(patientId: number): void {
     const revision = ++this.growthRead;
-    const owner = this.authService.currentUser()?.id;
+    const context = this.contextKey();
+    this.readSubscription?.unsubscribe();
     if (!this.growthEnabled()) {
-      this.backendGrowthMeasurements.set([]);
+      this.response.set(null);
       this.growthError.set(null);
       this.isLoadingGrowthCurves.set(false);
       return;
     }
     this.isLoadingGrowthCurves.set(true);
     this.growthError.set(null);
-    this.growthService
-      .getPatientGrowthCurves(patientId)
+    this.readSubscription = this.growthService
+      .getPatientGrowthCurves(patientId, this.confirmedSex(), this.confirmedModes())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
           if (
             revision !== this.growthRead ||
             patientId !== this.activePatientService.patientId() ||
-            owner !== this.authService.currentUser()?.id
+            context !== this.contextKey()
           )
             return;
-          this.backendGrowthMeasurements.set(data || []);
+          if (!data || data.patientId !== patientId) {
+            this.response.set(null);
+            this.growthError.set('La respuesta de curvas no corresponde a este paciente.');
+          } else this.response.set(data);
           this.isLoadingGrowthCurves.set(false);
         },
         error: () => {
           if (
             revision !== this.growthRead ||
             patientId !== this.activePatientService.patientId() ||
-            owner !== this.authService.currentUser()?.id
+            context !== this.contextKey()
           )
             return;
-          this.backendGrowthMeasurements.set([]);
-          this.growthError.set('No se pudieron cargar las mediciones.');
+          this.response.set(null);
+          this.growthError.set('No se pudieron cargar las curvas y mediciones OMS.');
           this.isLoadingGrowthCurves.set(false);
         },
       });

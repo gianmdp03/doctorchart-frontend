@@ -9,6 +9,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClinicalEncounterDetail, ConsultationType } from '../../core/models/clinical-encounter.model';
 import { WizardFormValues, WizardFormulaResults } from '../../core/models/wizard-definition.model';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
+import { consultationDateError, timeError } from '../../core/models/form-validation';
 import { DynamicFormRendererComponent, inputValues } from '../dynamic-form-renderer/dynamic-form-renderer.component';
 import { argentinaDateTime, conflictKind, encounterInstant, errorMessage } from '../dynamic-form-renderer/clinical-form-ui';
 
@@ -31,6 +32,8 @@ export class EncounterDetailDialogComponent implements OnDestroy {
   readonly errorMessage = signal<string | null>(null);
   readonly readonly = computed(() => !this.isOpen() || !this.isEditing() || this.isLoading() || this.isSubmitting() || this.hasConflict() || this.identity() !== this.owner || this.patientContext !== this.currentPatientId());
   readonly dateValid = computed(() => { const instant = this.currentInstant(); return !!instant && new Date(instant).getTime() <= Date.now(); });
+  readonly dayError = computed(() => consultationDateError(this.encounterDay(), this.encounterTime(), Date.now()));
+  readonly timeError = computed(() => timeError(this.encounterTime()));
   readonly consultationTypes: { value: ConsultationType; label: string }[] = [
     { value: 'FIRST_VISIT', label: 'Primera consulta' }, { value: 'FOLLOW_UP', label: 'Control / seguimiento' }, { value: 'ROUTINE_CHECKUP', label: 'Chequeo de rutina' }, { value: 'EMERGENCY', label: 'Urgencia' }, { value: 'INTERCONSULTATION', label: 'Interconsulta' },
   ];

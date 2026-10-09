@@ -1,281 +1,261 @@
+:host {
+  display: block;
+}
 .growth-chart-card {
-  display: flex;
-  flex-direction: column;
-  background-color: #ffffff;
-  border-radius: 6px;
+  border: 1px solid #bed0e5;
+  border-radius: 12px;
+  background: #fff;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 1.5rem;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  margin: 0 0 24px;
 }
-
-/* Card theme border matching WHO PDF reference sheet */
-.growth-chart-card.theme-girl {
-  border: 2px solid #a4b2de;
-}
-
-.growth-chart-card.theme-boy {
-  border: 2px solid #7ba6db;
-}
-
-/* Top Banner Ribbon matching user reference image */
 .oms-top-banner {
-  padding: 0.75rem 1.25rem;
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.theme-girl .oms-top-banner {
-  background-color: #9faed8;
-}
-
-.theme-boy .oms-top-banner {
-  background-color: #7aa6d9;
-}
-
-.banner-title-text {
-  color: #ffffff;
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* Card Inner Body */
-.chart-card-content {
-  padding: 1rem 1.25rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-}
-
-.chart-title-group {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.chart-title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-/* Controls Toolbar */
-.chart-controls-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   flex-wrap: wrap;
-  gap: 1rem;
+  padding: 16px 20px;
+  background: #789fce;
+  color: white;
 }
-
-.patient-sex-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #1e293b;
+.theme-girl .oms-top-banner {
+  background: #8d92c2;
 }
-
-.indicator-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.theme-girl .indicator-dot {
-  background-color: #be185d;
-}
-
-.theme-boy .indicator-dot {
-  background-color: #0369a1;
-}
-
-/* Scope Badge (0 a 24 meses) */
-.chart-scope-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.65rem;
-  border-radius: 6px;
-  background-color: #f1f5f9;
-  color: #334155;
-  font-size: 0.75rem;
+.oms-top-banner h3 {
+  font-size: 17px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  border: 1px solid #e2e8f0;
+  margin: 0;
 }
-
-/* Summary Bar */
+.oms-top-banner span {
+  font-size: 13px;
+}
+.chart-card-content {
+  padding: 18px 20px;
+}
 .metrics-summary-bar {
   display: flex;
-  align-items: center;
+  gap: 18px;
   flex-wrap: wrap;
-  gap: 1rem;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  padding: 14px 16px;
+  border: 1px solid #e0e7ef;
   border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin-top: 1rem;
-  font-size: 0.8125rem;
+  background: #f8fafc;
+  margin: 0 0 16px;
 }
-
-.summary-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
+.metrics-summary-bar div {
+  flex: 1 1 145px;
 }
-
-.summary-label {
-  font-size: 0.6875rem;
+.metrics-summary-bar dt {
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: #64748b;
-  font-weight: 600;
+  margin-bottom: 5px;
 }
-
-.summary-value {
+.metrics-summary-bar dd {
+  font-size: 13px;
+  color: #17233c;
   font-weight: 600;
-  color: #1e293b;
+  margin: 0;
 }
-
-.summary-value.text-primary {
+.metrics-summary-bar .patient-value {
   color: #2563eb;
 }
-
-.summary-badge {
-  display: inline-block;
-  padding: 0.125rem 0.5rem;
+.notice {
+  background: #eef7fa;
   border-radius: 6px;
-  background-color: #dcfce7;
-  color: #15803d;
-  font-weight: 600;
-  font-size: 0.75rem;
+  color: #35576b;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 10px 14px;
 }
-
-.summary-divider {
-  width: 1px;
-  height: 24px;
-  background-color: #cbd5e1;
-}
-
-/* Empty Notice */
-.empty-measurements-notice {
+.frame-control {
   display: flex;
+  gap: 12px;
   align-items: center;
-  gap: 0.625rem;
-  background-color: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-  padding: 0.625rem 1rem;
-  border-radius: 8px;
-  margin-top: 1rem;
-  font-size: 0.8125rem;
-  line-height: 1.4;
+  flex-wrap: wrap;
+  font-size: 12px;
+  margin-bottom: 14px;
+  color: #5e492c;
 }
-
-.empty-measurements-notice svg {
-  flex-shrink: 0;
-  color: #16a34a;
+.frame-control button {
+  border: 1px solid #c9d6e4;
+  background: white;
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: #165867;
 }
-
-/* Technical Chart Canvas Area (Pure white background, grid drawn on canvas) */
-.chart-canvas-wrapper {
-  position: relative;
-  width: 100%;
-  height: 480px;
-  background-color: #ffffff;
-  margin-top: 1.25rem;
+.chart-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  background: white;
+  padding-top: 6px;
 }
-
-.chart-canvas-wrapper canvas {
-  width: 100% !important;
-  height: 100% !important;
+.growth-svg {
   display: block;
+  width: 100%;
+  min-width: 960px;
+  height: auto;
+  max-height: 640px;
 }
-
-/* Footer & Official Legend */
-.chart-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f1f5f9;
+.grid-line {
+  stroke: #c4cbd4;
+  stroke-width: 0.6;
+  shape-rendering: crispEdges;
 }
-
+.year-grid {
+  stroke: #485568;
+  stroke-width: 1.2;
+}
+.plot-border {
+  stroke: #172033;
+  fill: none;
+  stroke-width: 1.2;
+}
+.tick-label {
+  font-size: 12px;
+  fill: #253044;
+}
+.year-label {
+  font-size: 12px;
+  fill: #253044;
+  font-weight: 600;
+}
+.axis-title {
+  font-size: 12px;
+  fill: #253044;
+  font-weight: 600;
+}
+.reference-curve {
+  fill: none;
+  stroke-width: 1.7;
+  vector-effect: non-scaling-stroke;
+}
+.reference-curve[data-percentile='50'] {
+  stroke-width: 2;
+}
+.patient-line {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 1.7;
+  vector-effect: non-scaling-stroke;
+}
+.patient-point {
+  fill: #2563eb;
+  stroke: white;
+  stroke-width: 1.3;
+  cursor: pointer;
+  vector-effect: non-scaling-stroke;
+}
+.unconfirmed-point {
+  fill: white;
+  stroke: #2563eb;
+  stroke-width: 2;
+}
+.patient-point:focus {
+  outline: none;
+  stroke: #072b76;
+  stroke-width: 3;
+}
+.percentile-label {
+  font-size: 11px;
+  font-weight: 600;
+}
+.point-tooltip {
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 5px;
+  background: #f1f6fc;
+  color: #263e61;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .legend-container {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 1.5rem;
-  font-size: 0.8125rem;
-  color: #334155;
+  gap: 22px;
+  list-style: none;
+  padding: 12px 0 0;
+  margin: 0;
+  font-size: 12px;
+  color: #344155;
 }
-
-.legend-item {
+.legend-container li {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 7px;
 }
-
-.legend-symbol {
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.symbol-patient {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2.5px solid #3730a3;
-}
-
-.symbol-patient-icon {
-  display: inline-block;
-  vertical-align: middle;
-  flex-shrink: 0;
-}
-
-.symbol-p50 {
+.legend-sample {
   width: 24px;
-  height: 4px;
-  background-color: #16a34a;
-  border-radius: 2px;
+  border-top: 3px solid;
 }
-
-.symbol-p85-p15 {
-  width: 24px;
-  height: 3px;
-  background-color: #ea580c;
-  border-radius: 2px;
+.patient {
+  color: #2563eb;
 }
-
-.symbol-p97-p3 {
-  width: 24px;
-  height: 3px;
-  background-color: #d32f2f;
-  border-radius: 2px;
+.median {
+  color: #16a34a;
 }
-
-.chart-disclaimer {
-  font-size: 0.75rem;
+.middle {
+  color: #ea580c;
+}
+.outer {
+  color: #dc2626;
+}
+footer {
+  font-size: 11px;
   color: #64748b;
-  line-height: 1.4;
+  line-height: 1.8;
+  margin: 12px 0;
 }
-
-@media (max-width: 768px) {
-  .chart-controls-bar {
-    flex-direction: column;
-    align-items: flex-start;
+footer a {
+  color: #006778;
+}
+.measurement-details {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+  font-size: 12px;
+}
+.measurement-details summary {
+  cursor: pointer;
+  color: #285265;
+}
+.table-scroll {
+  overflow: auto;
+  max-height: 380px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+th,
+td {
+  text-align: left;
+  padding: 9px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: normal;
+  min-width: 100px;
+}
+th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  color: #344155;
+}
+@media (max-width: 700px) {
+  .chart-card-content {
+    padding: 12px;
   }
-  .chart-canvas-wrapper {
-    height: 340px;
+  .oms-top-banner {
+    padding: 14px;
   }
-  .summary-divider {
-    display: none;
+  .metrics-summary-bar {
+    gap: 12px;
+  }
+  .growth-svg {
+    min-width: 1080px;
+  }
+  .legend-container {
+    gap: 12px;
   }
 }

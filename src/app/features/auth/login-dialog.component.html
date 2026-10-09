@@ -198,7 +198,7 @@
               />
               <label for="reg-fullname">Nombre y Apellido Completo *</label>
               @if (isRegisterInvalid('fullName')) {
-                <span class="error-helper-text">Ingrese su nombre y apellido completo</span>
+                <span class="error-helper-text" role="alert">{{ registerError('fullName') }}</span>
               }
             </div>
 
@@ -212,7 +212,7 @@
               />
               <label for="reg-dni">DNI / Documento de Identidad *</label>
               @if (isRegisterInvalid('dni')) {
-                <span class="error-helper-text">Ingrese un documento válido</span>
+                <span class="error-helper-text" role="alert">{{ registerError('dni') }}</span>
               }
             </div>
 
@@ -227,7 +227,7 @@
               />
               <label for="reg-email">Correo Electrónico *</label>
               @if (isRegisterInvalid('email')) {
-                <span class="error-helper-text">Ingrese un correo electrónico válido</span>
+                <span class="error-helper-text" role="alert">{{ registerError('email') }}</span>
               }
             </div>
 
@@ -259,7 +259,7 @@
                 }
               </button>
               @if (isRegisterInvalid('password')) {
-                <span class="error-helper-text">La contraseña debe tener al menos 6 caracteres</span>
+                <span class="error-helper-text" role="alert">{{ registerError('password') }}</span>
               }
             </div>
 
@@ -274,7 +274,7 @@
               />
               <label for="reg-confirm-password">Confirmar Contraseña *</label>
               @if (isRegisterInvalid('confirmPassword')) {
-                <span class="error-helper-text">Debe confirmar la contraseña</span>
+                <span class="error-helper-text" role="alert">{{ registerError('confirmPassword') }}</span>
               }
             </div>
 

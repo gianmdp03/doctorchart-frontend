@@ -8,6 +8,7 @@ import { ClinicalEncounterDetail, ConsultationType } from '../../core/models/cli
 import { WorkspaceSetup } from '../../core/models/workspace.model';
 import { WizardFormDefinition, WizardFormValues } from '../../core/models/wizard-definition.model';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
+import { consultationDateError, timeError } from '../../core/models/form-validation';
 import { DynamicFormRendererComponent, inputValues } from '../dynamic-form-renderer/dynamic-form-renderer.component';
 import { argentinaDateTime, conflictKind, encounterInstant, errorMessage, retainCompatibleValues } from '../dynamic-form-renderer/clinical-form-ui';
 
@@ -53,6 +54,8 @@ export class NewEncounterDialogComponent implements OnDestroy {
     this.consultationType.set(type);
   }
   readonly dateValid = computed(() => { const instant = this.currentInstant(); return !!instant && new Date(instant).getTime() <= Date.now() + 60000; });
+  readonly dayError = computed(() => consultationDateError(this.encounterDay(), this.encounterTime(), Date.now() + 60000));
+  readonly timeError = computed(() => timeError(this.encounterTime()));
   constructor() {
     effect(() => {
       const isLocked = this.isFirstVisitLocked();

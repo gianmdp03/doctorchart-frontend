@@ -6,3 +6,5 @@
 .date-picker-input::placeholder { color: #94a3b8; }
 mat-datepicker-toggle { margin-right: .25rem; color: #475569; }
 :host(.input-error) .date-picker-shell { border-color: #ef4444; }
+.field-error { display: block; margin-top: 6px; color: #b91c1c; font-size: .8rem; }
+.date-picker-input.has-error { border-color: #b91c1c; }

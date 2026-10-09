@@ -1,5 +1,5 @@
-import { Component, computed, effect, input, output, signal } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, ValidationErrors, Validator } from '@angular/forms';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { ArgentinaDateAdapter, ARGENTINA_DATE_FORMATS } from '../../core/date/argentina-date-adapter';
@@ -11,6 +11,7 @@ type CalendarStartView = 'month' | 'year' | 'multi-year';
   imports: [MatDatepickerModule],
   providers: [
     { provide: NG_VALUE_ACCESSOR, useExisting: DatePickerComponent, multi: true },
+    { provide: NG_VALIDATORS, useExisting: DatePickerComponent, multi: true },
     { provide: DateAdapter, useClass: ArgentinaDateAdapter },
     { provide: MAT_DATE_LOCALE, useValue: 'es-AR' },
     { provide: MAT_DATE_FORMATS, useValue: ARGENTINA_DATE_FORMATS },
@@ -18,13 +19,21 @@ type CalendarStartView = 'month' | 'year' | 'multi-year';
   templateUrl: './date-picker.component.html',
   styleUrl: './date-picker.component.css',
 })
-export class DatePickerComponent implements ControlValueAccessor {
+export class DatePickerComponent implements ControlValueAccessor, Validator {
+  private readonly adapter = inject<DateAdapter<Date>>(DateAdapter);
   readonly value = input<string | null | undefined>('');
   readonly valueChange = output<string>();
   readonly startView = input<CalendarStartView>('month');
   readonly max = input<string | null | undefined>(null);
+  readonly showError = input(true);
   readonly selectedDate = signal<Date | null>(null);
   readonly isDisabled = signal(false);
+  readonly invalidInput = signal(false);
+  readonly error = computed(() => {
+    if (this.invalidInput()) return 'Ingresá una fecha válida con formato dd/MM/aaaa.';
+    const date = this.selectedDate(), max = this.maxDate();
+    return date && max && date > max ? 'La fecha supera el máximo permitido.' : null;
+  });
   readonly calendarStart = computed(() => {
     if (this.selectedDate()) {
       return this.selectedDate();
@@ -39,20 +48,30 @@ export class DatePickerComponent implements ControlValueAccessor {
 
   private onChange: (value: string) => void = () => undefined;
   private onTouched: () => void = () => undefined;
+  private onValidatorChange: () => void = () => undefined;
 
   constructor() {
     effect(() => this.selectedDate.set(this.toDate(this.value())));
+    effect(() => { this.error(); this.onValidatorChange(); });
   }
 
-  writeValue(value: string | null): void { this.selectedDate.set(this.toDate(value)); }
+  writeValue(value: string | null): void { this.selectedDate.set(this.toDate(value)); this.invalidInput.set(!!value && !this.toDate(value)); }
   registerOnChange(fn: (value: string) => void): void { this.onChange = fn; }
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
   setDisabledState(isDisabled: boolean): void { this.isDisabled.set(isDisabled); }
 
-  selectDate(value: Date | null): void {
-    const iso = value ? this.toIsoDate(value) : '';
+  validate(): ValidationErrors | null { return this.error() ? { date: true } : null; }
+  registerOnValidatorChange(fn: () => void): void { this.onValidatorChange = fn; }
+
+  onTextInput(raw: string): void { this.selectDate(this.adapter.parse(raw, ARGENTINA_DATE_FORMATS.parse.dateInput), raw); }
+
+  selectDate(value: Date | null, raw = ''): void {
+    if (this.isDisabled()) return;
+    const iso = value ? this.toIsoDate(value) : raw.trim();
+    this.invalidInput.set(!value && !!raw.trim());
     this.selectedDate.set(value);
     this.onChange(iso);
+    this.onValidatorChange();
     this.valueChange.emit(iso);
   }
 

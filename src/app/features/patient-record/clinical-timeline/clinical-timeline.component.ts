@@ -31,6 +31,7 @@ import {
 } from '@ng-icons/lucide';
 import { ClinicalEncounterList } from '../../../core/models/clinical-encounter.model';
 import { DatePickerComponent } from '../../../shared/date-picker/date-picker.component';
+import { validIsoDate } from '../../../core/models/form-validation';
 
 @Component({
   selector: 'app-clinical-timeline',
@@ -74,6 +75,7 @@ export class ClinicalTimelineComponent implements OnChanges {
   readonly fromDate = signal<string>('');
   readonly toDate = signal<string>('');
   readonly datePreset = signal<'ALL' | 'LAST_30' | 'LAST_90' | 'THIS_YEAR' | 'CUSTOM'>('ALL');
+  readonly dateRangeError = computed(() => validIsoDate(this.fromDate()) && validIsoDate(this.toDate()) && this.fromDate() > this.toDate() ? 'La fecha Desde no puede ser posterior a Hasta.' : null);
 
   readonly hasActiveDateFilter = computed(() => {
     return !!this.fromDate() || !!this.toDate() || this.datePreset() !== 'ALL';
@@ -83,6 +85,7 @@ export class ClinicalTimelineComponent implements OnChanges {
     const list = this.encounters || [];
     const from = this.fromDate();
     const to = this.toDate();
+    if (this.dateRangeError() || (from && !validIsoDate(from)) || (to && !validIsoDate(to))) return list;
 
     if (!from && !to) {
       return list;

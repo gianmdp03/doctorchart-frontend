@@ -24,7 +24,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   private epoch = 0;
   private destroyed = false;
   private readonly editors = viewChildren(FormFieldEditorComponent);
-  readonly pendingEditor = computed(() => this.editors().some(editor => !!editor.fieldDraft() || !!editor.newCategoryTitle().trim()));
+  readonly pendingEditor = computed(() => this.editors().some(editor => editor.pendingChanges()));
   readonly specialties = signal<SpecialtyDetail[]>([]);
   readonly selectedSpecialty = signal<SpecialtyDetail | null>(null);
   readonly wizard = signal<WizardDefaultDetail | null>(null);
@@ -44,6 +44,8 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   readonly validationIssues = signal<ValidationIssue[]>([]);
   readonly editorGeneration = signal(0);
   readonly metadataStale = signal(false);
+  readonly nameError = computed(() => !this.name().trim() ? 'Completá el nombre de la especialidad.' : this.name().length > 120 ? 'Ingresá hasta 120 caracteres.' : null);
+  readonly codeError = computed(() => this.creating() && !/^[a-z][a-z0-9_-]{0,79}$/.test(this.code().trim()) ? 'Usá una letra minúscula inicial, letras, números y guiones; máximo 80 caracteres.' : null);
   readonly capabilities: { key: keyof WizardModulesConfig; label: string }[] = [
     { key: 'MEDICATION_CATALOG', label: 'Catálogo de medicamentos' },
     { key: 'AI_ASSISTANT', label: 'Asistente de IA' },
@@ -234,8 +236,8 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
     return `${location}: ${labels[issue.code] ?? 'Revisá la configuración indicada.'}`;
   }
   private validMetadata(requireCode: boolean): boolean {
-    if (!this.name().trim() || this.name().trim().length > 120) { this.error.set('Ingresá un nombre de hasta 120 caracteres.'); return false; }
-    if (requireCode && !/^[a-z][a-z0-9_-]{0,79}$/.test(this.code().trim())) { this.error.set('El código debe empezar con una letra minúscula y usar letras minúsculas, números, guiones o guiones bajos; máximo 80 caracteres.'); return false; }
+    const error = this.nameError() || (requireCode && this.codeError());
+    if (error) { this.error.set(error); return false; }
     return true;
   }
   private acceptCopy(copy: RemoteCopy): void {

@@ -177,7 +177,7 @@
             />
             <label for="reg-fullname">Nombre y Apellido Completo *</label>
             @if (isRegisterInvalid('fullName')) {
-              <span class="error-helper-text">El nombre es obligatorio</span>
+              <span class="error-helper-text" role="alert">{{ registerError('fullName') }}</span>
             }
           </div>
 
@@ -191,7 +191,7 @@
             />
             <label for="reg-dni">DNI / Documento de Identidad *</label>
             @if (isRegisterInvalid('dni')) {
-              <span class="error-helper-text">El DNI es obligatorio</span>
+              <span class="error-helper-text" role="alert">{{ registerError('dni') }}</span>
             }
           </div>
 
@@ -206,7 +206,7 @@
             />
             <label for="reg-email">Correo Electrónico *</label>
             @if (isRegisterInvalid('email')) {
-              <span class="error-helper-text">Ingrese un correo electrónico válido</span>
+              <span class="error-helper-text" role="alert">{{ registerError('email') }}</span>
             }
           </div>
 
@@ -222,7 +222,7 @@
               />
               <label for="reg-password">Contraseña *</label>
               @if (isRegisterInvalid('password')) {
-                <span class="error-helper-text">Mínimo 6 caracteres</span>
+                <span class="error-helper-text" role="alert">{{ registerError('password') }}</span>
               }
             </div>
 
@@ -237,7 +237,7 @@
               />
               <label for="reg-confirm-password">Confirmar *</label>
               @if (isRegisterInvalid('confirmPassword')) {
-                <span class="error-helper-text">Mínimo 6 caracteres</span>
+                <span class="error-helper-text" role="alert">{{ registerError('confirmPassword') }}</span>
               }
             </div>
           </div>

@@ -59,6 +59,21 @@ describe('PatientStudiesComponent', () => {
     expect(component.hasStudies()).toBe(true);
   });
 
+  it('blocks empty or unsupported files and reacts to corrected descriptions before uploading', () => {
+    component.selectedFile.set(new File([], 'vacio.pdf'));
+    component.submitUpload(); expect(studyServiceMock.uploadStudy).not.toHaveBeenCalled();
+    expect(component.fileError()).toContain('vacío');
+    component.selectedFile.set(new File(['contenido'], 'archivo.exe'));
+    expect(component.fileError()).toContain('PDF');
+    component.selectedFile.set(new File(['contenido'], 'estudio.pdf'));
+    component.onDescriptionChange('x'.repeat(4001)); component.submitUpload();
+    expect(studyServiceMock.uploadStudy).not.toHaveBeenCalled();
+    expect(component.descriptionError()).toContain('4000');
+    component.onDescriptionChange('Control');
+    expect(component.descriptionError()).toBeNull();
+    expect(component.fileError()).toBeNull();
+  });
+
   it('renders the canonical backend upload date in Argentine format', () => {
     expect(fixture.nativeElement.textContent).toContain('01/10/2026');
   });

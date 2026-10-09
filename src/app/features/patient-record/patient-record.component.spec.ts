@@ -19,7 +19,8 @@ import { PatientSummaryComponent } from './patient-summary/patient-summary.compo
 import { PatientPrescriptionsComponent } from './patient-prescriptions/patient-prescriptions.component';
 import { PatientStudiesStore } from './patient-studies/patient-studies.store';
 import { PatientGrowthService } from '../../core/services/patient-growth.service';
-import { BackendGrowthMeasurement } from '../../core/models/growth-chart.model';
+import { PatientGrowthResponse } from '../../core/models/growth-chart.model';
+import { patientGrowthFixture } from '../../core/testing/growth.fixture';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { WorkspaceStore } from '../../core/services/workspace.store';
@@ -57,24 +58,7 @@ describe('PatientRecordComponent', () => {
   const configuredActions = signal<PatientRecordActionId[]>([...PATIENT_RECORD_ACTION_IDS]);
   const configuredTabs = signal<PatientRecordModuleId[]>([...PATIENT_RECORD_MODULE_IDS]);
   const growthEnabledFlag = signal(true);
-  const measurementHistory: BackendGrowthMeasurement[] = [
-    {
-      source: 'BIRTH',
-      encounterId: null,
-      date: '2024-05-10',
-      ageMonths: 0,
-      ageFormatted: 'Al nacer',
-      measurements: { weightKg: 3.35, heightCm: 50, headCircumferenceCm: 35 },
-    },
-    {
-      source: 'ENCOUNTER',
-      encounterId: 1,
-      date: '2026-09-15',
-      ageMonths: 28.2,
-      ageFormatted: '2 años y 4 meses',
-      measurements: { weightKg: 7.95, heightCm: 67.5, headCircumferenceCm: 43.8 },
-    },
-  ];
+  const measurementHistory = patientGrowthFixture();
   const issued = (patientId: number, request: any): SavedPrescriptionRecord => ({
     ...request,
     id: 73,
@@ -245,7 +229,7 @@ describe('PatientRecordComponent', () => {
 
     growthReadSpy = vi
       .spyOn(TestBed.inject(PatientGrowthService), 'getPatientGrowthCurves')
-      .mockReturnValue(of(measurementHistory));
+      .mockImplementation((id: number) => of(patientGrowthFixture(id)));
     activePatientService = TestBed.inject(ActivePatientService);
     activePatientService.setActivePatient(mockPatient);
 
@@ -397,7 +381,7 @@ describe('PatientRecordComponent', () => {
   });
 
   it('removes selected modules immediately and discards their pending growth response', () => {
-    const pending = new Subject<BackendGrowthMeasurement[]>();
+    const pending = new Subject<PatientGrowthResponse>();
     growthReadSpy.mockReturnValueOnce(pending);
     growth.loadGrowthCurves(mockPatient.id);
     component.setTab('curvas');
@@ -619,7 +603,7 @@ describe('PatientRecordComponent', () => {
   });
 
   it('does not recreate local points when the backend history is empty', () => {
-    growthReadSpy.mockReturnValue(of([]));
+    growthReadSpy.mockImplementation((id: number) => of(patientGrowthFixture(id, false)));
     growth.loadGrowthCurves(mockPatient.id);
     expect(growth.weightMeasurements()).toEqual([]);
     expect(growth.heightMeasurements()).toEqual([]);
@@ -629,14 +613,14 @@ describe('PatientRecordComponent', () => {
   it('shows measurement errors and retries without silently using local patient data', () => {
     growthReadSpy
       .mockReturnValueOnce(throwError(() => ({ status: 500 })))
-      .mockReturnValue(of(measurementHistory));
+      .mockImplementation((id: number) => of(patientGrowthFixture(id)));
     growth.loadGrowthCurves(mockPatient.id);
     component.setTab('curvas');
     fixture.detectChanges();
     expect(growth.weightMeasurements()).toEqual([]);
     expect(growth.isLoadingGrowthCurves()).toBe(false);
     const alert = fixture.nativeElement.querySelector('[role="alert"]');
-    expect(alert.textContent).toContain('No se pudieron cargar las mediciones');
+    expect(alert.textContent).toContain('No se pudieron cargar las curvas y mediciones OMS');
     alert.querySelector('button').click();
     fixture.detectChanges();
     expect(growth.growthError()).toBeNull();
@@ -644,14 +628,14 @@ describe('PatientRecordComponent', () => {
     expect(fixture.nativeElement.querySelector('app-growth-chart')).toBeTruthy();
   });
   it('ignores growth responses from a previous patient or account', () => {
-    const pending = new Subject<BackendGrowthMeasurement[]>();
-    growthReadSpy.mockReturnValueOnce(pending).mockReturnValue(of([]));
+    const pending = new Subject<PatientGrowthResponse>();
+    growthReadSpy.mockReturnValueOnce(pending).mockImplementation((id: number) => of(patientGrowthFixture(id, false)));
     growth.loadGrowthCurves(mockPatient.id);
     activePatientService.setActivePatient({ ...mockPatient, id: 99 });
     fixture.detectChanges();
     pending.next(measurementHistory);
     expect(growth.weightMeasurements()).toEqual([]);
-    const denied = new Subject<BackendGrowthMeasurement[]>();
+    const denied = new Subject<PatientGrowthResponse>();
     growthReadSpy.mockReturnValueOnce(denied);
     growth.loadGrowthCurves(99);
     authServiceMock.currentUser.set({ id: 'another-doctor' });
@@ -665,13 +649,50 @@ describe('PatientRecordComponent', () => {
     expect(component.selectedTab()).toBe('curvas');
   });
 
+  it('lets the clinician undo a view-only reference confirmation', () => {
+    growthReadSpy.mockImplementation((id: number, sex: 'MALE' | 'FEMALE' | null) => of({
+      ...patientGrowthFixture(id), referenceSex: sex ?? '',
+      sexSource: sex ? 'VIEW_CONFIRMATION' : '', status: sex ? 'READY' : 'REFERENCE_SEX_REQUIRED',
+      charts: sex ? patientGrowthFixture(id).charts : [],
+    }));
+    component.setTab('curvas'); growth.loadGrowthCurves(mockPatient.id); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Confirmar referencia masculina');
+    growth.confirmSex('MALE'); fixture.detectChanges();
+    fixture.nativeElement.querySelector('[data-testid="reset-growth-reference"]').click(); fixture.detectChanges();
+    expect(growth.confirmedSex()).toBeNull();
+    expect(growthReadSpy).toHaveBeenLastCalledWith(mockPatient.id, null, {});
+    expect(fixture.nativeElement.textContent).toContain('Confirmar referencia masculina');
+  });
+
+  it('clears sex and position confirmations when the patient changes', () => {
+    growth.confirmSex('MALE'); growth.confirmMode(measurementHistory.observations[0], 'RECUMBENT');
+    expect(growth.confirmedModes()).toEqual({ BIRTH: 'RECUMBENT' });
+    growthReadSpy.mockImplementation((id: number) => of(patientGrowthFixture(id, false)));
+    activePatientService.setActivePatient({ ...mockPatient, id: 99 }); fixture.detectChanges();
+    expect(growth.confirmedSex()).toBeNull(); expect(growth.confirmedModes()).toEqual({});
+    expect(growthReadSpy).toHaveBeenLastCalledWith(99, null, {});
+  });
+
+  it('refreshes age-dependent references across midnight in Argentina', () => {
+    fixture.destroy();
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-10-09T02:59:00Z'));
+      fixture = TestBed.createComponent(PatientRecordComponent); component = fixture.componentInstance; fixture.detectChanges();
+      const calls = growthReadSpy.mock.calls.length;
+      vi.advanceTimersByTime(60_000); fixture.detectChanges();
+      expect(growthReadSpy.mock.calls.length).toBe(calls + 1);
+      fixture.destroy();
+    } finally { vi.useRealTimers(); }
+  });
+
   it('should navigate to patient directory when back button is clicked', () => {
     component.navigateToPatients();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/pacientes']);
   });
 
   it('starts a new record with independent module state and cancels reads when the old record closes', () => {
-    const pending = new Subject<BackendGrowthMeasurement[]>();
+    const pending = new Subject<PatientGrowthResponse>();
     growthReadSpy.mockReturnValueOnce(pending);
     growth.loadGrowthCurves(mockPatient.id);
     rx.rxMedicationName.set('Borrador anterior');
@@ -688,7 +709,7 @@ describe('PatientRecordComponent', () => {
     expect(growth).not.toBe(oldGrowth);
     expect(rx.rxMedicationName()).toBe('');
     expect(growth.selectedGrowthMetric()).toBe('WEIGHT');
-    pending.next([]);
+    pending.next(patientGrowthFixture(mockPatient.id, false));
     pending.complete();
     expect(growth.weightMeasurements()).toHaveLength(2);
   });
@@ -769,7 +790,7 @@ describe('PatientRecordComponent', () => {
 
     // Verify pills
     const pills = fixture.nativeElement.querySelectorAll('.growth-pill-btn');
-    expect(pills.length).toBe(4);
+    expect(pills.length).toBe(6);
 
     // Switch metric to HEIGHT
     growth.selectedGrowthMetric.set('HEIGHT');
@@ -780,7 +801,7 @@ describe('PatientRecordComponent', () => {
     growth.selectedGrowthMetric.set('ALL');
     fixture.detectChanges();
     const charts = fixture.nativeElement.querySelectorAll('app-growth-chart');
-    expect(charts.length).toBe(3);
+    expect(charts.length).toBe(5);
   });
 
   it('renders the canonical backend birth and consultation measurements', () => {

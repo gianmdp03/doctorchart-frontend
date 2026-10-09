@@ -3,13 +3,14 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormFieldEditorComponent } from './form-field-editor.component';
 import { WizardFormDefinition, WizardFormulaDefinition } from '../../core/models/wizard-definition.model';
 import { customSpecialtyFixture } from '../onboarding/testing/custom-specialty.fixture';
+import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
 
 describe('FormFieldEditorComponent canonical wizard', () => {
   let fixture: ComponentFixture<FormFieldEditorComponent>;
   let component: FormFieldEditorComponent;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [FormFieldEditorComponent] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [FormFieldEditorComponent, DynamicFormRendererComponent] }).compileComponents();
     fixture = TestBed.createComponent(FormFieldEditorComponent);
     component = fixture.componentInstance;
   });
@@ -27,6 +28,16 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     expect(fixture.nativeElement.textContent).toContain('Consulta inédita');
     expect(fixture.nativeElement.querySelectorAll('.field-card')).toHaveLength(4);
     expect(fixture.nativeElement.querySelector('input[type=date]')).toBeNull();
+  });
+  it('adds an optional documented measurement position without changing existing clinical fields', () => {
+    load({ categories: [{ key: 'measurements', title: 'Mediciones', enabled: true, fields: [{ key: 'heightCm', label: 'Talla', type: 'NUMBER', required: false }] }] });
+    const before = structuredClone(component.allFields()[0]);
+    expect(component.canAddMeasurementMode()).toBe(true);
+    component.addMeasurementMode();
+    expect(component.allFields()[0]).toEqual(before);
+    expect(component.allFields()[1]).toMatchObject({ key: 'heightMeasurementMode', type: 'SELECT', required: false, options: [{ value: 'RECUMBENT', label: 'Longitud recumbente (acostado)' }, { value: 'STANDING', label: 'Estatura de pie' }] });
+    component.addMeasurementMode();
+    expect(component.allFields()).toHaveLength(2);
   });
 
   it('renames, reorders, disables and deletes any category without changing its identity', () => {
@@ -159,6 +170,41 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     component.openField('measurements'); component.updateDraft({ label: 'Peso' }); component.setType('NUMBER');
     component.updateDraft({ unit: 'kg', minimum: 20, maximum: 10 }); component.saveField(); expect(component.error()).toContain('mínimo');
     component.updateDraft({ maximum: 40 }); component.saveField(); expect(component.allFields()[0]).toMatchObject({ unit: 'kg', minimum: 20, maximum: 40 });
+  });
+
+  it('automatically validates a numeric column created in a new family category', () => {
+    load({ categories: [] }, 'patientForm');
+    component.newCategoryTitle.set('Datos familiares'); component.addCategory();
+    const category = component.categories()[0];
+    component.openField(category.key); component.updateDraft({ label: 'Cantidad de familiares', required: true });
+    component.setType('NUMBER'); component.setNumberProperty('minimum', '0'); component.setNumberProperty('maximum', '20');
+    expect(component.draftValidationError()).toBeNull(); component.saveField();
+    const definition = component.working(), field = definition.categories[0].fields[0];
+    const renderer = TestBed.createComponent(DynamicFormRendererComponent);
+    renderer.componentRef.setInput('definition', structuredClone(definition)); renderer.detectChanges();
+    expect(renderer.componentInstance.formValid()).toBe(false);
+    expect(renderer.nativeElement.textContent).toContain('Completá este campo.');
+    renderer.componentInstance.setNumberValue(field, 'familia'); renderer.detectChanges();
+    expect(renderer.nativeElement.textContent).toContain('Ingresá un número válido.');
+    renderer.componentInstance.setNumberValue(field, '21'); renderer.detectChanges();
+    expect(renderer.nativeElement.textContent).toContain('El valor máximo es 20.');
+    renderer.componentInstance.setNumberValue(field, '0'); renderer.detectChanges();
+    expect(renderer.componentInstance.formValid()).toBe(true);
+    expect(renderer.nativeElement.querySelector('.field-error')).toBeNull();
+    renderer.destroy();
+  });
+
+  it('shows draft errors reactively before applying a field', () => {
+    load({ categories: [{ key: 'family', title: 'Familia', enabled: true, fields: [] }] });
+    component.openField('family'); component.updateDraft({ label: 'Dato' }); component.setType('NUMBER');
+    component.setNumberProperty('minimum', 'abc'); fixture.detectChanges();
+    expect(component.numericInputs()['minimum']).toBe('abc');
+    expect(component.draftError('minimum')).toContain('número válido');
+    expect(fixture.nativeElement.querySelector('.dialog-actions .primary').disabled).toBe(true);
+    component.setNumberProperty('minimum', '0'); component.setNumberProperty('maximum', '-1'); fixture.detectChanges();
+    expect(component.draftError('maximum')).toContain('mínimo');
+    component.setNumberProperty('maximum', '20'); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.dialog-actions .primary').disabled).toBe(false);
   });
 
   it('requires distinct option values and preserves labels independently', () => {

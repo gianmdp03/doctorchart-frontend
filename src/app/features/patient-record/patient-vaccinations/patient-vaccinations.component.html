@@ -52,7 +52,7 @@
         @for (dose of appliedDoses(); track dose.id) {
           <article class="dose-card applied-card">
             <div class="dose-copy"><strong>{{ dose.vaccineName }}</strong><span>{{ dose.doseLabel }}</span></div>
-            <label class="date-control">Fecha <app-date-picker #datePicker [ngModel]="dose.appliedAt" (ngModelChange)="updateDate(dose, $event, datePicker)" [disabled]="!canSave()" [max]="schedule()?.asOfDate" /></label>
+            <label class="date-control">Fecha <app-date-picker [showError]="false" #datePicker [ngModel]="dose.appliedAt" (ngModelChange)="updateDate(dose, $event, datePicker)" [disabled]="!canSave()" [max]="schedule()?.asOfDate" />@if (dateErrors()[dose.id]; as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
             <label class="apply-control"><input type="checkbox" [checked]="true" [disabled]="!canSave()" (change)="toggleApplied(dose, $event)" /> Aplicada</label>
           </article>
         }

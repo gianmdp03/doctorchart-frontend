@@ -45,6 +45,7 @@
         </div>
 
         <div class="date-inputs-range">
+          @if (dateRangeError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
           <label class="date-input-label">
             <span>Desde</span>
             <app-date-picker

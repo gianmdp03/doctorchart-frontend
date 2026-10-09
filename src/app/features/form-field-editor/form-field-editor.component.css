@@ -39,3 +39,4 @@ fieldset { border: 0; margin: 0; padding: 0; }
 .dialog-actions { justify-content: flex-end; padding-top: 1rem; margin-top: 1rem; border-top: 1px solid #e2e8f0; }
 @media (max-width: 850px) { .editor-layout { grid-template-columns: 1fr; } .field-card { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 550px) { .control-grid, .option-row { grid-template-columns: 1fr; } .panel-header { align-items: stretch; flex-direction: column; } .field-dialog { padding: 1rem; } }
+.field-error { display: block; color: #b91c1c; font-size: .8rem; margin-top: 4px; }

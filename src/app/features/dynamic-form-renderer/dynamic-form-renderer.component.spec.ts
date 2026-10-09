@@ -18,7 +18,7 @@ describe('DynamicFormRendererComponent canonical fields', () => {
   it('renders unfamiliar stable categories and all seven field types with the shared date selector', () => {
     expect(fixture.nativeElement.querySelector('[data-category-key="new_patient_category"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-field-key="identity"] input')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-field-key="readingA"] input[type="number"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-field-key="readingA"] input[inputmode="decimal"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-field-key="notes"] textarea')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-field-key="group"] select')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-field-key="consent"] select')).not.toBeNull();
@@ -96,5 +96,40 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     fixture.componentRef.setInput('readonly', true); fixture.detectChanges();
     component.setValue(component.fields()[0], 'Alterado'); expect(component.currentValues()['identity']).toBe('Paciente');
     fixture.componentRef.setInput('values', {}); fixture.detectChanges(); expect(component.formValid()).toBe(false);
+  });
+  it('keeps invalid optional numeric input invalid and clears its inline error as it is corrected', async () => {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('[data-field-key="readingA"] input');
+    input.value = 'abc'; input.dispatchEvent(new Event('input')); fixture.detectChanges(); await fixture.whenStable();
+    expect(component.currentValues()['readingA']).toBe('abc');
+    expect(component.formValid()).toBe(false);
+    expect(fixture.nativeElement.querySelector('[data-field-key="readingA"] .field-error').textContent).toContain('número válido');
+    input.value = '12,5'; input.dispatchEvent(new Event('input')); fixture.detectChanges(); await fixture.whenStable();
+    expect(component.currentValues()['readingA']).toBe(12.5);
+    expect(component.formValid()).toBe(true);
+    expect(fixture.nativeElement.querySelector('[data-field-key="readingA"] .field-error')).toBeNull();
+  });
+  it('preserves decimal typing when a parent echoes values and immediately adopts new limits', () => {
+    const field = component.fields().find(field => field.key === 'readingA')!;
+    component.valuesChange.subscribe(values => fixture.componentRef.setInput('values', values));
+    component.setNumberValue(field, '12,'); fixture.detectChanges();
+    expect(component.numberInput(field)).toBe('12,');
+    component.setNumberValue(field, '12,5'); fixture.detectChanges();
+    expect(component.currentValues()['readingA']).toBe(12.5);
+    const updated = structuredClone(definition);
+    updated.categories.flatMap(category => category.fields).find(field => field.key === 'readingA')!.maximum = 10;
+    fixture.componentRef.setInput('definition', updated); fixture.detectChanges();
+    expect(component.formValid()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain('El valor máximo es 10.');
+  });
+  it('rejects an impossible date even when the custom date field is optional', async () => {
+    const updated = structuredClone(definition);
+    updated.categories.flatMap(category => category.fields).find(field => field.key === 'born')!.required = false;
+    fixture.componentRef.setInput('definition', updated); fixture.detectChanges(); await fixture.whenStable();
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('app-date-picker input');
+    input.value = '31/02/2024'; input.dispatchEvent(new Event('input')); fixture.detectChanges(); await fixture.whenStable();
+    expect(component.formValid()).toBe(false);
+    expect(fixture.nativeElement.querySelector('[data-field-key="born"] .field-error').textContent).toContain('fecha válida');
+    input.value = ''; input.dispatchEvent(new Event('input')); fixture.detectChanges(); await fixture.whenStable();
+    expect(component.formValid()).toBe(true);
   });
 });

@@ -2,6 +2,7 @@ import { Component, computed, effect, input, output, signal, untracked } from '@
 import { FormsModule } from '@angular/forms';
 import { A11yModule } from '@angular/cdk/a11y';
 import { WizardFormDefinition, WizardFieldDefinition, WizardFormulaDefinition, WizardFormulaInput } from '../../core/models/wizard-definition.model';
+import { parseNumberInput, textError } from '../../core/models/form-validation';
 
 type FieldType = WizardFieldDefinition['type'];
 type FormulaKind = WizardFormulaDefinition['kind'];
@@ -30,13 +31,47 @@ export class FormFieldEditorComponent {
   readonly selectedKey = signal<string | null>(null);
   readonly error = signal<string | null>(null);
   readonly newCategoryTitle = signal('');
+  readonly newCategoryError = computed(() => textError(this.newCategoryTitle(), 150, true));
+  readonly categoryErrors = signal<Record<string, string | null>>({});
+  readonly pendingChanges = computed(() => !!this.fieldDraft() || !!this.newCategoryTitle().trim() || this.categories().some(category => !!this.categoryErrors()[category.key]));
   readonly editTarget = signal<EditTarget | null>(null);
   readonly fieldDraft = signal<WizardFieldDefinition | null>(null);
+  readonly numericInputs = signal<Record<string, string>>({});
   readonly categories = computed(() => this.working().categories);
   readonly selectedCategory = computed(() => this.categories().find(c => c.key === this.selectedKey()) ?? null);
   readonly allFields = computed(() => this.categories().flatMap(c => c.fields));
   readonly formulaInputs = computed(() => FORMULA_INPUTS[this.fieldDraft()?.formula?.kind ?? 'CUSTOM']);
   readonly visibilityControllers = computed(() => this.allFields().filter(f => f.type === 'BOOLEAN' && f.key !== this.editTarget()?.fieldKey));
+  readonly draftValidationError = computed(() => {
+    const draft = this.fieldDraft(), target = this.editTarget();
+    if (!draft || !target) return null;
+    const next = clone(this.working()), field = clone(draft);
+    const old = this.allFields().find(f => f.key === target.fieldKey);
+    field.key = old && old.type === field.type ? old.key : this.uniqueKey(field.label, new Set(this.allFields().map(f => f.key)), 'field');
+    const category = next.categories.find(c => c.key === target.categoryKey);
+    if (!category) return 'Seleccioná una categoría disponible.';
+    const index = category.fields.findIndex(f => f.key === target.fieldKey);
+    if (index < 0) category.fields.push(field); else category.fields[index] = field;
+    return this.validate(next);
+  });
+  draftError(property: 'label' | 'placeholder' | 'unit' | 'minimum' | 'maximum'): string | null {
+    const field = this.fieldDraft(); if (!field) return null;
+    if (property === 'label') return textError(field.label, 150, true);
+    if (property === 'placeholder') return textError(field.placeholder ?? '', 300);
+    if (property === 'unit') return textError(field.unit ?? '', 30);
+    const value = field[property];
+    if (value !== undefined && !Number.isFinite(value)) return 'Ingresá un número válido.';
+    return field.minimum !== undefined && field.maximum !== undefined && field.minimum > field.maximum ? 'El mínimo no puede superar al máximo.' : null;
+  }
+  optionError(index: number, property: 'label' | 'value'): string | null {
+    const options = this.fieldDraft()?.options ?? [], value = options[index]?.[property] ?? '';
+    return textError(value, property === 'label' ? 150 : 80, true) || (property === 'value' && options.some((option, i) => i !== index && option.value === value) ? 'Este valor ya se usa en otra opción.' : null);
+  }
+  operandError(name: string): string | null {
+    const operand = this.fieldDraft()?.formula?.inputs[name];
+    if (!operand) return 'Elegí el origen de este dato.';
+    return 'constant' in operand && !Number.isFinite(operand.constant) ? 'Ingresá un número fijo válido.' : null;
+  }
   readonly fieldTypes: { value: FieldType; label: string }[] = [
     { value: 'TEXT', label: 'Texto corto' }, { value: 'TEXTAREA', label: 'Texto largo' }, { value: 'NUMBER', label: 'Número' },
     { value: 'DATE', label: 'Fecha' }, { value: 'SELECT', label: 'Selección' }, { value: 'BOOLEAN', label: 'Sí / No' }, { value: 'FORMULA', label: 'Cálculo' },
@@ -64,6 +99,15 @@ export class FormFieldEditorComponent {
   selectCategory(key: string): void { this.selectedKey.set(key); this.error.set(null); this.categorySelected.emit(key); }
   typeLabel(type: FieldType): string { return this.fieldTypes.find(t => t.value === type)?.label ?? type; }
   inputLabel(name: string): string { return INPUT_LABELS[name] ?? name; }
+  readonly canAddMeasurementMode = computed(() => this.allFields().some(field => ['heightCm', 'height'].includes(field.key)) && !this.allFields().some(field => field.key === 'heightMeasurementMode'));
+  addMeasurementMode(): void {
+    const categoryKey = this.selectedKey();
+    if (!categoryKey || this.section() !== 'encounterForm' || !this.canAddMeasurementMode() || this.readonly()) return;
+    this.commit(form => form.categories.find(category => category.key === categoryKey)!.fields.push({
+      key: 'heightMeasurementMode', label: 'Posición de longitud / estatura', type: 'SELECT', required: false,
+      options: [{ value: 'RECUMBENT', label: 'Longitud recumbente (acostado)' }, { value: 'STANDING', label: 'Estatura de pie' }],
+    }));
+  }
   addCategory(): void {
     const title = this.newCategoryTitle().trim();
     if (!title || title.length > 150) { this.error.set('Ingresá un nombre de categoría de hasta 150 caracteres.'); return; }
@@ -73,7 +117,9 @@ export class FormFieldEditorComponent {
   renameCategory(key: string, title: string): void {
     const c = this.categories().find(cat => cat.key === key);
     if (c?.system) return;
-    if (!title.trim() || title.trim().length > 150) { this.error.set('El nombre de categoría no puede estar vacío ni superar 150 caracteres.'); return; }
+    const error = textError(title, 150, true);
+    this.categoryErrors.update(errors => ({ ...errors, [key]: error }));
+    if (error) return;
     this.commit(form => { const cat = form.categories.find(cat => cat.key === key); if (cat) cat.title = title.trim(); });
   }
   toggleCategory(key: string): void {
@@ -108,10 +154,11 @@ export class FormFieldEditorComponent {
     if (this.readonly()) return;
     const existing = this.categories().find(c => c.key === categoryKey)?.fields.find(f => f.key === fieldKey);
     if (existing?.system) return;
+    this.numericInputs.set({});
     this.editTarget.set({ categoryKey, fieldKey }); this.fieldDraft.set(existing ? clone(existing) : { key: '', label: '', type: 'TEXT', required: false }); this.error.set(null);
   }
   closeField(): void { this.editTarget.set(null); this.fieldDraft.set(null); this.error.set(null); }
-  updateDraft(patch: Partial<WizardFieldDefinition>): void { const current = this.fieldDraft(); if (current) this.fieldDraft.set({ ...current, ...patch }); }
+  updateDraft(patch: Partial<WizardFieldDefinition>): void { const current = this.fieldDraft(); if (current) { this.fieldDraft.set({ ...current, ...patch }); this.error.set(null); } }
   setType(type: FieldType): void {
     const draft = this.fieldDraft(); if (!draft) return; const next = clone(draft); next.type = type;
     if (type !== 'SELECT') delete next.options; else next.options ??= [];
@@ -119,11 +166,14 @@ export class FormFieldEditorComponent {
     if (type !== 'NUMBER' && type !== 'FORMULA') delete next.unit;
     if (type !== 'FORMULA') delete next.formula;
     else { next.required = false; next.formula = { kind: 'CUSTOM', operation: 'ADD', inputs: {} }; }
-    this.fieldDraft.set(next);
+    this.numericInputs.set({}); this.fieldDraft.set(next);
   }
   setNumberProperty(property: 'minimum' | 'maximum', value: number | string | null): void {
     const draft = this.fieldDraft(); if (!draft) return; const next = clone(draft);
-    if (value === '' || value === null) delete next[property]; else next[property] = Number(value); this.fieldDraft.set(next);
+    const parsed = typeof value === 'string' ? parseNumberInput(value) : value;
+    this.numericInputs.update(raw => ({ ...raw, [property]: value == null ? '' : String(value) }));
+    if (parsed === null) delete next[property]; else next[property] = typeof parsed === 'number' ? parsed : NaN;
+    this.fieldDraft.set(next); this.error.set(null);
   }
   addOption(): void { const draft = this.fieldDraft(); if (draft) this.updateDraft({ options: [...(draft.options ?? []), { value: '', label: '' }] }); }
   updateOption(index: number, property: 'value' | 'label', value: string): void {
@@ -135,7 +185,7 @@ export class FormFieldEditorComponent {
     if (!fieldKey) delete next.visibleWhen; else next.visibleWhen = { fieldKey, equals: true }; this.fieldDraft.set(next);
   }
   setVisibilityValue(equals: boolean): void { const value = this.fieldDraft()?.visibleWhen; if (value) this.updateDraft({ visibleWhen: { ...value, equals } }); }
-  setFormulaKind(kind: FormulaKind): void { this.updateDraft({ formula: { kind, inputs: {}, ...(kind === 'CUSTOM' ? { operation: 'ADD' as const } : {}) } }); }
+  setFormulaKind(kind: FormulaKind): void { this.numericInputs.set({}); this.updateDraft({ formula: { kind, inputs: {}, ...(kind === 'CUSTOM' ? { operation: 'ADD' as const } : {}) } }); }
   setOperation(operation: NonNullable<WizardFormulaDefinition['operation']>): void {
     const formula = this.fieldDraft()?.formula; if (formula) this.updateDraft({ formula: { ...formula, operation } });
   }
@@ -156,14 +206,17 @@ export class FormFieldEditorComponent {
   }
   operandConstant(name: string): number | null { const operand = this.fieldDraft()?.formula?.inputs[name]; return operand?.constant ?? null; }
   setOperand(name: string, selection: string, constant: number | null = 0): void {
+    this.numericInputs.update(values => { const next = { ...values }; delete next['operand:' + name]; return next; });
     const formula = this.fieldDraft()?.formula; if (!formula) return; const inputs = clone(formula.inputs);
     if (!selection) delete inputs[name]; else if (selection.startsWith('field:')) inputs[name] = { fieldKey: selection.slice(6) };
     else if (selection.startsWith('context:')) inputs[name] = { context: selection.slice(8) } as WizardFormulaInput; else inputs[name] = { constant: constant ?? NaN };
     this.updateDraft({ formula: { ...formula, inputs } });
   }
+  setOperandConstant(name: string, raw: string): void { const value = parseNumberInput(raw); this.setOperand(name, 'constant', typeof value === 'number' ? value : NaN); this.numericInputs.update(values => ({ ...values, ['operand:' + name]: raw })); }
   saveField(): void {
     const target = this.editTarget(); const current = this.fieldDraft(); if (!target || !current || this.readonly()) return;
     const field = clone(current); field.label = field.label.trim();
+    if (this.draftValidationError()) { this.error.set(this.draftValidationError()); return; }
     if (!field.label || field.label.length > 150) { this.error.set('Ingresá una etiqueta de hasta 150 caracteres.'); return; }
     if (!field.placeholder) delete field.placeholder; if (!field.unit) delete field.unit;
     const old = this.allFields().find(f => f.key === target.fieldKey);
@@ -196,6 +249,8 @@ export class FormFieldEditorComponent {
     }
     for (const field of fields) {
       if (!field.label.trim() || field.label.length > 150) return 'Las etiquetas no pueden estar vacías ni superar 150 caracteres.';
+      if (textError(field.placeholder ?? '', 300)) return 'El texto de ayuda admite hasta 300 caracteres.';
+      if (textError(field.unit ?? '', 30)) return 'La unidad admite hasta 30 caracteres.';
       if (field.type === 'SELECT') {
         if (!field.options?.length || field.options.some(o => !o.value.trim() || !o.label.trim() || o.value.length > 80 || o.label.length > 150)) return 'Completá al menos una opción con valor y etiqueta.';
         if (new Set(field.options.map(o => o.value)).size !== field.options.length) return 'Los valores de las opciones no pueden repetirse.';

@@ -12,3 +12,4 @@
 .is-readonly .saved-value.is-empty{color:#94a3b8;font-weight:400;font-style:italic;font-size:.88rem}
 .is-readonly .field.wide{grid-column:1/-1}
 .is-readonly .formula-result{background:#fff;border:1px solid #e2e8f0;color:#0f172a;font-weight:600}
+.field.has-error input,.field.has-error textarea,.field.has-error select { border-color: #b91c1c; }

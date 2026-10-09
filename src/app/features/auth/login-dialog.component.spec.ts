@@ -61,6 +61,22 @@ describe('LoginDialogComponent', () => {
     expect(component.showPassword()).toBe(false);
   });
 
+  it.each(['dialog', 'page'])('validates password confirmation and DNI while editing (%s)', kind => {
+    const login = kind === 'page' ? TestBed.createComponent(LoginPageComponent).componentInstance : component;
+    login.registerForm.patchValue({ fullName: 'Ana Pérez', dni: '12345678', email: 'ana@example.com', password: 'password123', confirmPassword: 'different123' });
+    login.registerForm.controls.confirmPassword.markAsDirty();
+    expect(login.isRegisterInvalid('confirmPassword')).toBe(true);
+    expect(login.registerError('confirmPassword')).toContain('no coinciden');
+    expect(login.registerForm.invalid).toBe(true);
+    login.registerForm.controls.confirmPassword.setValue('password123');
+    expect(login.isRegisterInvalid('confirmPassword')).toBe(false);
+    expect(login.registerForm.valid).toBe(true);
+    login.registerForm.controls.dni.setValue('12.345.678');
+    login.registerForm.controls.dni.markAsDirty();
+    expect(login.isRegisterInvalid('dni')).toBe(true);
+    expect(login.registerError('dni')).toContain('sin puntos');
+  });
+
   it.each(['dialog', 'page'])('rechecks protected route guards after login on the same URL (%s)', async (kind) => {
     const router = TestBed.inject(Router);
     vi.spyOn(router, 'url', 'get').mockReturnValue('/dashboard');

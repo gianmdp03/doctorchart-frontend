@@ -1,134 +1,154 @@
-<section class="tab-panel animate-fade-in" aria-label="Evolución y Curvas de Crecimiento OMS">
-  <div class="growth-toolbar">
-    <div class="growth-selector-pills">
-      <button
-        type="button"
-        class="growth-pill-btn"
-        [class.active]="growth.selectedGrowthMetric() === 'WEIGHT'"
-        (click)="growth.selectedGrowthMetric.set('WEIGHT')"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          class="pill-svg"
-          aria-hidden="true"
-        >
-          <path d="M6 3h12l4 8-10 10L2 11l4-8z" />
-        </svg>
-        <span>Peso para la Edad</span>
-        <span class="pill-badge">{{ growth.weightMeasurements().length }}</span>
-      </button>
-      <button
-        type="button"
-        class="growth-pill-btn"
-        [class.active]="growth.selectedGrowthMetric() === 'HEIGHT'"
-        (click)="growth.selectedGrowthMetric.set('HEIGHT')"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          class="pill-svg"
-          aria-hidden="true"
-        >
-          <path d="M12 2v20M8 5l4-3 4 3M8 19l4 3 4-3" />
-        </svg>
-        <span>Talla / Longitud</span>
-        <span class="pill-badge">{{ growth.heightMeasurements().length }}</span>
-      </button>
-      <button
-        type="button"
-        class="growth-pill-btn"
-        [class.active]="growth.selectedGrowthMetric() === 'HEAD_CIRCUMFERENCE'"
-        (click)="growth.selectedGrowthMetric.set('HEAD_CIRCUMFERENCE')"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          class="pill-svg"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 7v5l3 3" />
-        </svg>
-        <span>Perímetro Cefálico</span>
-        <span class="pill-badge">{{ growth.headCircumferenceMeasurements().length }}</span>
-      </button>
-      <button
-        type="button"
-        class="growth-pill-btn"
-        [class.active]="growth.selectedGrowthMetric() === 'ALL'"
-        (click)="growth.selectedGrowthMetric.set('ALL')"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          class="pill-svg"
-          aria-hidden="true"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <path d="M3 9h18M9 21V9" />
-        </svg>
-        <span>Ver los 3 Gráficos</span>
-      </button>
-    </div>
-  </div>
-
+<section class="tab-panel animate-fade-in" aria-label="Evolución y curvas de crecimiento OMS">
   @if (growth.isLoadingGrowthCurves()) {
-    <p role="status">Cargando mediciones…</p>
+    <p role="status">Cargando referencias y mediciones OMS…</p>
   } @else if (growth.growthError()) {
-    <div role="alert">
+    <div class="growth-state" role="alert">
       <p>{{ growth.growthError() }}</p>
-      <button
-        type="button"
-        class="growth-pill-btn"
-        (click)="growth.loadGrowthCurves(growth.activePatientService.patientId()!)"
-      >
-        Reintentar
-      </button>
+      <button type="button" class="growth-pill-btn" (click)="growth.reload()">Reintentar</button>
     </div>
-  } @else {
-    <!-- Componentes de Gráficos OMS -->
-    @if (growth.selectedGrowthMetric() === 'WEIGHT' || growth.selectedGrowthMetric() === 'ALL') {
-      <app-growth-chart
-        [metric]="'WEIGHT'"
-        [sex]="growth.patientSex()"
-        [measurements]="growth.weightMeasurements()"
-      />
-    }
-
-    @if (growth.selectedGrowthMetric() === 'HEIGHT' || growth.selectedGrowthMetric() === 'ALL') {
-      <app-growth-chart
-        [metric]="'HEIGHT'"
-        [sex]="growth.patientSex()"
-        [measurements]="growth.heightMeasurements()"
-      />
-    }
-
-    @if (
-      growth.selectedGrowthMetric() === 'HEAD_CIRCUMFERENCE' ||
-      growth.selectedGrowthMetric() === 'ALL'
-    ) {
-      <app-growth-chart
-        [metric]="'HEAD_CIRCUMFERENCE'"
-        [sex]="growth.patientSex()"
-        [measurements]="growth.headCircumferenceMeasurements()"
-      />
+  } @else if (growth.response(); as response) {
+    @if (response.status === 'INVALID_BIRTH_DATE') {
+      <p class="growth-state" role="alert">
+        Completá una fecha de nacimiento válida en los datos del paciente para seleccionar sus
+        curvas.
+      </p>
+    } @else if (response.status === 'REFERENCE_SEX_REQUIRED') {
+      <div class="growth-state" role="alert">
+        <p>
+          El registro no permite identificar el sexo de referencia antropométrica. Confirmá qué
+          referencia OMS corresponde a este paciente.
+        </p>
+        <button type="button" class="growth-pill-btn" (click)="growth.confirmSex('FEMALE')">
+          Confirmar referencia femenina
+        </button>
+        <button type="button" class="growth-pill-btn" (click)="growth.confirmSex('MALE')">
+          Confirmar referencia masculina
+        </button>
+        <p class="growth-note">
+          La confirmación se usa en esta ficha y no modifica los datos del paciente.
+        </p>
+      </div>
+    } @else {
+      <div class="growth-context">
+        <span
+          >{{ response.ageFormatted }} · Referencia
+          {{ response.referenceSex === 'FEMALE' ? 'femenina' : 'masculina' }}
+          {{
+            response.sexSource === 'SYSTEM_SEX' ? '(campo Sexo)' : '(confirmada en esta vista)'
+          }}</span
+        >
+        @if (response.sexSource === 'VIEW_CONFIRMATION') {
+          <button
+            type="button"
+            class="growth-pill-btn"
+            data-testid="reset-growth-reference"
+            (click)="growth.clearSexConfirmation()"
+          >
+            Revisar referencia confirmada
+          </button>
+        }
+        <label class="historical-toggle"
+          ><input
+            type="checkbox"
+            [checked]="growth.showHistorical()"
+            (change)="growth.showHistorical.set($any($event.target).checked)"
+          />Consultar también períodos históricos</label
+        >
+      </div>
+      @if (growth.positionObservations().length > 0) {
+        <details class="growth-position-panel">
+          <summary>
+            Posición de longitud / estatura · {{ growth.unconfirmedPositions() }} sin confirmar
+          </summary>
+          <p class="growth-note">
+            Para evaluar longitud, estatura, IMC y peso/longitud o peso/estatura se necesita conocer
+            cómo se midió. Confirmá la posición documentada de cada consulta. Estas confirmaciones
+            se usan en esta vista y no modifican el historial. Para guardar el dato en nuevas
+            consultas, agregá «Posición de longitud / estatura» desde Personalizar fichas.
+          </p>
+          <div class="position-list">
+            @for (
+              observation of growth.positionObservations();
+              track growth.observationKey(observation)
+            ) {
+              <label class="position-row"
+                ><span
+                  >{{ growth.growthService.formatDate(observation.date) }} ·
+                  {{ observation.ageFormatted }} · {{ observation.heightCm }} cm{{
+                    observation.source === 'BIRTH'
+                      ? ' · al nacer'
+                      : ' · consulta #' + observation.encounterId
+                  }}</span
+                ><select
+                  [attr.aria-label]="
+                    'Posición de medición del ' + growth.growthService.formatDate(observation.date)
+                  "
+                  [value]="observation.measurementMode"
+                  (change)="growth.confirmMode(observation, $any($event.target).value)"
+                >
+                  <option value="UNKNOWN">Usar dato original (sin nueva confirmación)</option>
+                  <option value="RECUMBENT">Longitud recumbente (acostado)</option>
+                  <option value="STANDING">Estatura de pie</option>
+                </select></label
+              >
+            }
+          </div>
+        </details>
+      }
+      @if (
+        response.referenceSex === 'FEMALE' && response.ageDays >= 731 && response.ageDays <= 1856
+      ) {
+        <p class="growth-note">
+          El PDF no incluye IMC de niñas de 2 a 5 años. Ese gráfico no se incorpora al catálogo de
+          20 láminas.
+        </p>
+      }
+      @if (growth.categories().length === 0) {
+        <p class="growth-state" role="status">
+          No hay una curva de este catálogo aplicable a la edad actual{{
+            growth.showHistorical()
+              ? ' ni mediciones históricas compatibles'
+              : '. Podés consultar períodos históricos si hay mediciones previas'
+          }}.
+        </p>
+      } @else {
+        <div class="growth-toolbar">
+          <div
+            class="growth-selector-pills"
+            role="group"
+            aria-label="Indicadores de crecimiento disponibles"
+          >
+            @for (category of growth.categories(); track category.indicator) {
+              <button
+                type="button"
+                class="growth-pill-btn"
+                [class.active]="growth.effectiveMetric() === category.indicator"
+                [attr.aria-pressed]="growth.effectiveMetric() === category.indicator"
+                (click)="growth.selectedGrowthMetric.set(category.indicator)"
+              >
+                <span>{{ category.title }}</span
+                ><span class="pill-badge">{{ category.count }}</span>
+              </button>
+            }
+            <button
+              type="button"
+              class="growth-pill-btn"
+              [class.active]="growth.effectiveMetric() === 'ALL'"
+              [attr.aria-pressed]="growth.effectiveMetric() === 'ALL'"
+              (click)="growth.selectedGrowthMetric.set('ALL')"
+            >
+              Ver todos los gráficos disponibles
+            </button>
+          </div>
+        </div>
+        @for (chart of growth.visibleCharts(); track chart.definition.id) {
+          <app-growth-chart [chart]="chart" />
+        }
+      }
+      <p class="growth-note">
+        Edad cronológica calculada con fechas locales de Argentina. El sistema no dispone de una
+        política validada de edad corregida por prematuridad.
+      </p>
     }
   }
 </section>

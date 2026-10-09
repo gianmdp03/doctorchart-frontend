@@ -1,60 +1,78 @@
-import { AnthropometricMeasurements } from './clinical-records.model';
-
-export type GrowthMetricType = 'WEIGHT' | 'HEIGHT' | 'HEAD_CIRCUMFERENCE';
 export type BiologicalSex = 'MALE' | 'FEMALE';
-
-export interface OmsPercentilePoint {
-  ageMonths: number;
-  p3: number;
-  p15: number;
-  p50: number;
-  p85: number;
-  p97: number;
+export type MeasurementMode = 'RECUMBENT' | 'STANDING' | 'UNKNOWN';
+export type GrowthMetricType =
+  'WEIGHT' | 'LENGTH' | 'HEIGHT' | 'HEAD_CIRCUMFERENCE' | 'WEIGHT_LENGTH' | 'WEIGHT_HEIGHT' | 'BMI';
+export interface GrowthAxis {
+  variable: 'AGE' | 'LENGTH' | 'HEIGHT' | 'WEIGHT' | 'HEAD_CIRCUMFERENCE' | 'BMI';
+  unit: string;
+  min: number;
+  max: number;
+  step: number;
+  minorStep: number;
 }
-
-export interface WhoGrowthEvaluation {
+export interface GrowthChartDefinition {
+  id: string;
+  pdfNumber: number;
+  pdfPage: number;
+  indicator: GrowthMetricType;
+  title: string;
+  sex: BiologicalSex;
+  ageMinMonths: number;
+  ageMaxMonths: number;
+  reference: 'WHO 2006' | 'WHO 2007';
+  dataset: string;
+  measurementMode: string;
+  x: GrowthAxis;
+  y: GrowthAxis;
+  percentiles: number[];
+  source: string;
+}
+export interface GrowthEvaluation {
   zScore: number;
-  percentile: number;
-  interpretation: string;
+  percentile: number | null;
+  percentileLimit?: '<0.135' | '>99.865';
 }
-
-export interface PatientGrowthEvaluations {
-  weight?: WhoGrowthEvaluation | null;
-  height?: WhoGrowthEvaluation | null;
-  headCircumference?: WhoGrowthEvaluation | null;
-}
-
-export interface PatientGrowthMeasurement {
-  encounterId?: number;
-  date: string; // ISO date string
-  dateFormatted: string; // DD/MM/AAAA
-  ageMonths: number; // e.g. 3.4
-  ageFormatted: string; // e.g. "3 meses y 12 días"
-  value: number; // e.g. 6.2
-  unit: string; // e.g. "kg" or "cm"
-  percentile?: number; // continuous WHO percentile e.g. 42.8
-  zScore?: number; // standard deviation z-score e.g. -0.18
-  interpretation?: string; // clinical category e.g. "Adecuado", "Bajo peso"
-  approximatePercentile?: string; // formatted display string e.g. "P42.8% (Z: -0.18)"
-}
-
-export interface BackendGrowthMeasurement {
+export interface GrowthObservation {
   source: 'BIRTH' | 'ENCOUNTER';
   encounterId: number | null;
   date: string;
-  ageMonths: number;
+  ageDays: number;
   ageFormatted: string;
-  measurements: AnthropometricMeasurements;
-  evaluations?: PatientGrowthEvaluations | null;
+  weightKg: number | null;
+  heightCm: number | null;
+  headCircumferenceCm: number | null;
+  measurementMode: MeasurementMode;
 }
-
-export interface GrowthMetricConfig {
-  type: GrowthMetricType;
-  title: string;
-  shortTitle: string;
-  unit: string;
-  yAxisLabel: string;
-  minY?: number;
-  maxY?: number;
-  stepSize?: number;
+export interface PatientGrowthPoint extends GrowthObservation {
+  x: number;
+  value: number;
+  evaluation: GrowthEvaluation | null;
+  adjustmentCm?: number;
+  note?: string;
+}
+export interface GrowthCurvePoint {
+  x: number;
+  values: number[];
+}
+export interface GrowthReferenceChart {
+  definition: GrowthChartDefinition;
+  curves: GrowthCurvePoint[];
+  provenance: Record<string, unknown>;
+}
+export interface PatientGrowthChart extends GrowthReferenceChart {
+  applicable: boolean;
+  points: PatientGrowthPoint[];
+  omitted: number;
+}
+export interface PatientGrowthResponse {
+  patientId: number;
+  birthDate: string;
+  asOfDate: string;
+  ageDays: number;
+  ageFormatted: string;
+  referenceSex: BiologicalSex | '';
+  sexSource: 'SYSTEM_SEX' | 'VIEW_CONFIRMATION' | '';
+  status: 'READY' | 'INVALID_BIRTH_DATE' | 'REFERENCE_SEX_REQUIRED';
+  observations: GrowthObservation[];
+  charts: PatientGrowthChart[];
 }

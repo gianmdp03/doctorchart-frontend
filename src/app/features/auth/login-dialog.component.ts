@@ -10,6 +10,7 @@ import {
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { matchingPasswords, trimmedRequired } from '../../core/models/form-validation';
 
 @Component({
   selector: 'app-login-dialog',
@@ -38,12 +39,12 @@ export class LoginDialogComponent {
   });
 
   readonly registerForm = this.fb.group({
-    fullName: ['', [Validators.required, Validators.minLength(2)]],
-    dni: ['', [Validators.required, Validators.minLength(6)]],
+    fullName: ['', [trimmedRequired, Validators.minLength(2), Validators.maxLength(150)]],
+    dni: ['', [trimmedRequired, Validators.pattern(/^\d{6,8}$/)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required, Validators.minLength(6)]],
-  });
+  }, { validators: matchingPasswords });
 
   @HostListener('window:open-login-modal', ['$event'])
   openModal(event?: Event): void {
@@ -95,7 +96,17 @@ export class LoginDialogComponent {
 
   isRegisterInvalid(controlName: string): boolean {
     const control = this.registerForm.get(controlName);
-    return !!(control && control.invalid && (control.dirty || control.touched));
+    return !!(control && (control.invalid || (controlName === 'confirmPassword' && this.registerForm.hasError('passwordMismatch'))) && (control.dirty || control.touched));
+  }
+
+  registerError(name: string): string {
+    const control = this.registerForm.get(name);
+    if (control?.hasError('required')) return 'Completá este campo.';
+    if (name === 'fullName') return 'Ingresá un nombre de 2 a 150 caracteres.';
+    if (name === 'dni') return 'Ingresá un DNI de 6 a 8 dígitos, sin puntos.';
+    if (name === 'email') return 'Ingresá un correo electrónico válido.';
+    if (control?.hasError('minlength')) return 'La contraseña debe tener al menos 6 caracteres.';
+    return 'Las contraseñas no coinciden.';
   }
 
   resetForms(): void {
@@ -160,7 +171,7 @@ export class LoginDialogComponent {
   async onRegisterSubmit(): Promise<void> {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
-      this.errorMessage.set('Por favor complete todos los campos obligatorios.');
+      this.errorMessage.set(this.registerForm.hasError('passwordMismatch') ? 'Las contraseñas no coinciden.' : 'Por favor complete todos los campos obligatorios.');
       return;
     }
 

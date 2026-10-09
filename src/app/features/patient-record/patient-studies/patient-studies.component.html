@@ -76,6 +76,7 @@
               <span class="file-hint">PDF o Imágenes (JPG, PNG, WebP) hasta 25 MB</span>
             }
           </div>
+          @if (fileError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
         </div>
 
         <!-- Descripción o Especificación -->
@@ -93,6 +94,7 @@
             placeholder="Ej: Tomografía de encéfalo con contraste, Ecografía abdominal, etc."
             class="form-input text-input"
           />
+          @if (descriptionError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
         </div>
       </div>
 
@@ -100,7 +102,7 @@
         <button
           type="submit"
           class="btn-primary"
-          [disabled]="!selectedFile() || isUploading()"
+          [disabled]="!!fileError() || !!descriptionError() || isUploading()"
         >
           @if (isUploading()) {
             <span class="spinner-small"></span>
