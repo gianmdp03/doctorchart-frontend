@@ -5,6 +5,20 @@ import { GrowthChartComponent } from './growth-chart.component';
 import { growthReferenceFixture, patientGrowthFixture } from '../../../core/testing/growth.fixture';
 import { PatientGrowthChart } from '../../../core/models/growth-chart.model';
 
+function saveVisual(element: HTMLElement, id: string): void {
+  const output = process.env['GROWTH_VISUAL_DIR'];
+  if (!output) return;
+  mkdirSync(output, { recursive: true });
+  const styles = readFileSync(
+    'src/app/features/patient-record/growth-chart/growth-chart.component.css',
+    'utf8',
+  );
+  writeFileSync(
+    join(output, id + '.html'),
+    `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Curvas OMS · verificación visual</title><style>body{margin:24px;background:#f5f8fc;font-family:Arial,sans-serif}${styles}</style>${element.outerHTML}</html>`,
+  );
+}
+
 describe('GrowthChartComponent — all twenty official references', () => {
   beforeEach(() => TestBed.configureTestingModule({ imports: [GrowthChartComponent] }));
   it('has exactly the twenty PDF definitions with five distinct true percentiles', () => {
@@ -51,18 +65,7 @@ describe('GrowthChartComponent — all twenty official references', () => {
       expect(fixture.nativeElement.querySelector('.notice').textContent).toContain(
         'curvas oficiales',
       );
-      const output = process.env['GROWTH_VISUAL_DIR'];
-      if (output) {
-        mkdirSync(output, { recursive: true });
-        const styles = readFileSync(
-          'src/app/features/patient-record/growth-chart/growth-chart.component.css',
-          'utf8',
-        );
-        writeFileSync(
-          join(output, reference.definition.id + '.html'),
-          `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${reference.definition.title} · ${reference.definition.sex}</title><style>body{margin:24px;background:#f5f8fc;font-family:Arial,sans-serif}${styles}</style>${fixture.nativeElement.outerHTML}</html>`,
-        );
-      }
+      saveVisual(fixture.nativeElement, reference.definition.id);
     });
   }
   it('positions real historical points and provides dates, units, precise percentiles and keyboard tooltips', () => {
@@ -73,7 +76,9 @@ describe('GrowthChartComponent — all twenty official references', () => {
     const c = fixture.componentInstance;
     const points = fixture.nativeElement.querySelectorAll('.patient-point');
     expect(points.length).toBe(2);
-    expect(Number(points[1].getAttribute('cx'))).toBeCloseTo(c.xScale()(chart.points[1].x), 8);
+    expect(points[1].getAttribute('transform')).toBe(
+      `translate(${c.xScale()(chart.points[1].x)} ${c.yScale()(chart.points[1].value)})`,
+    );
     points[1].dispatchEvent(new FocusEvent('focus'));
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.point-tooltip').textContent).toContain(
@@ -99,15 +104,74 @@ describe('GrowthChartComponent — all twenty official references', () => {
   });
   it('does not join the WHO BMI length/height discontinuity at 730/731 days', () => {
     const fixture = TestBed.createComponent(GrowthChartComponent);
-    const reference = growthReferenceFixture[17];
+    const chart = patientGrowthFixture().charts.find((c) => c.definition.id === 'bfa06_boys')!;
+    fixture.componentRef.setInput('chart', chart);
+    fixture.detectChanges();
+    for (const curve of fixture.componentInstance.curvePaths())
+      expect(curve.path.match(/M/g)).toHaveLength(2);
+    expect(fixture.componentInstance.patientPath().match(/M/g)).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('.bmi-transition-note').textContent).toContain(
+      'cambio de referencia OMS',
+    );
+    expect(fixture.nativeElement.querySelectorAll('.bmi-period-label')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('.bmi-transition-line').getAttribute('x1')).toBe(
+      String(fixture.componentInstance.xScale()(24)),
+    );
+    saveVisual(fixture.nativeElement, 'bmi-patient-boys');
+  });
+  it('does not show a two-period transition in a BMI reference ending at two years', () => {
+    const fixture = TestBed.createComponent(GrowthChartComponent);
     fixture.componentRef.setInput('chart', {
-      ...reference,
+      ...growthReferenceFixture.find((c) => c.definition.id === 'bfa06_girls')!,
       applicable: true,
       points: [],
       omitted: 0,
     } as PatientGrowthChart);
     fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.bmi-transition-line')).toBeNull();
     for (const curve of fixture.componentInstance.curvePaths())
-      expect(curve.path.match(/M/g)).toHaveLength(2);
+      expect(curve.path.match(/M/g)).toHaveLength(1);
+  });
+  it('updates hearts and stars with the reference sex, preserving positions and unconfirmed tooltips', () => {
+    const fixture = TestBed.createComponent(GrowthChartComponent);
+    const original = structuredClone(patientGrowthFixture().charts[0]);
+    original.points[1].evaluation = null;
+    original.points[1].note = 'Medición sin evaluación OMS.';
+    const markers: string[] = [];
+    for (const [id, label] of [
+      ['wfa06_girls', 'corazones rosas'],
+      ['wfa06_boys', 'estrellas azules'],
+    ]) {
+      const chart = {
+        ...growthReferenceFixture.find((c) => c.definition.id === id)!,
+        points: original.points,
+        applicable: true,
+        omitted: 0,
+      };
+      fixture.componentRef.setInput('chart', chart);
+      fixture.detectChanges();
+      const c = fixture.componentInstance;
+      const points = fixture.nativeElement.querySelectorAll('path.patient-point');
+      expect(points).toHaveLength(2);
+      expect(fixture.nativeElement.querySelector('circle.patient-point')).toBeNull();
+      markers.push(points[0].getAttribute('d'));
+      for (let i = 0; i < points.length; i++) {
+        expect(points[i].getAttribute('transform')).toBe(
+          `translate(${c.xScale()(chart.points[i].x)} ${c.yScale()(chart.points[i].value)})`,
+        );
+        expect(points[i].getAttribute('tabindex')).toBe('0');
+      }
+      expect(points[1].classList.contains('unconfirmed-point')).toBe(true);
+      points[1].dispatchEvent(new FocusEvent('focus'));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.point-tooltip').textContent).toContain(
+        'Medición sin evaluación OMS.',
+      );
+      expect(fixture.nativeElement.querySelector('.legend-container').textContent).toContain(label);
+      expect(fixture.nativeElement.querySelector('desc').textContent).toContain(label);
+      saveVisual(fixture.nativeElement, id + '-markers');
+    }
+    expect(markers[0]).not.toBe(markers[1]);
+    expect(original.points[1].value).toBe(11.4);
   });
 });

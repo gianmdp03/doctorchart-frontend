@@ -2,11 +2,17 @@
   display: block;
 }
 .growth-chart-card {
+  --patient-color: #2563eb;
+  --patient-focus: #072b76;
   border: 1px solid #bed0e5;
   border-radius: 12px;
   background: #fff;
   overflow: hidden;
   margin: 0 0 24px;
+}
+.theme-girl {
+  --patient-color: #ec4899;
+  --patient-focus: #9d174d;
 }
 .oms-top-banner {
   display: flex;
@@ -107,6 +113,34 @@
   stroke: #485568;
   stroke-width: 1.2;
 }
+.bmi-chart .grid-line {
+  stroke: #e2e8f0;
+  stroke-width: 0.5;
+}
+.bmi-chart .major-grid {
+  stroke: #bdc9d8;
+  stroke-width: 0.7;
+}
+.bmi-chart .year-grid {
+  stroke: #8798ad;
+  stroke-width: 1;
+}
+.bmi-transition-line {
+  stroke: #64748b;
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+}
+.bmi-period-label {
+  fill: #475569;
+  font-size: 10px;
+  font-weight: 600;
+}
+.bmi-transition-note {
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 12px 0;
+}
 .plot-border {
   stroke: #172033;
   fill: none;
@@ -136,12 +170,12 @@
 }
 .patient-line {
   fill: none;
-  stroke: #2563eb;
+  stroke: var(--patient-color);
   stroke-width: 1.7;
   vector-effect: non-scaling-stroke;
 }
 .patient-point {
-  fill: #2563eb;
+  fill: var(--patient-color);
   stroke: white;
   stroke-width: 1.3;
   cursor: pointer;
@@ -149,12 +183,12 @@
 }
 .unconfirmed-point {
   fill: white;
-  stroke: #2563eb;
+  stroke: var(--patient-color);
   stroke-width: 2;
 }
 .patient-point:focus {
   outline: none;
-  stroke: #072b76;
+  stroke: var(--patient-focus);
   stroke-width: 3;
 }
 .percentile-label {
@@ -189,8 +223,10 @@
   width: 24px;
   border-top: 3px solid;
 }
-.patient {
-  color: #2563eb;
+.legend-marker {
+  width: 14px;
+  height: 14px;
+  fill: var(--patient-color);
 }
 .median {
   color: #16a34a;

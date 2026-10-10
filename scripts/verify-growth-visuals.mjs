@@ -57,7 +57,9 @@ try {
           (p) => p.parentElement.getAttribute('clip-path') === `url(#${clip.id})`,
         ),
         clippedLabels: [
-          ...document.querySelectorAll('.tick-label,.year-label,.axis-title,.percentile-label'),
+          ...document.querySelectorAll(
+            '.tick-label,.year-label,.axis-title,.percentile-label,.bmi-period-label',
+          ),
         ].some((p) => {
           const b = p.getBoundingClientRect();
           return (
@@ -80,8 +82,59 @@ try {
     await page.screenshot({ path: path.join(output, definition.id + '.png'), fullPage: true });
     checks.push(state);
   }
+  for (const [id, color] of [
+    ['wfa06_girls-markers', 'rgb(236, 72, 153)'],
+    ['wfa06_boys-markers', 'rgb(37, 99, 235)'],
+    ['bmi-patient-boys', 'rgb(37, 99, 235)'],
+  ]) {
+    await page.goto(pathToFileURL(path.join(output, id + '.html')).href);
+    const state = await page.evaluate(() => ({
+      markers: [...document.querySelectorAll('.patient-point')].map((point) => {
+        const bounds = point.getBBox();
+        const style = getComputedStyle(point);
+        return {
+          width: bounds.width,
+          height: bounds.height,
+          fill: style.fill,
+          stroke: style.stroke,
+          unconfirmed: point.classList.contains('unconfirmed-point'),
+          focusable: point.getAttribute('tabindex') === '0',
+          labeled: Boolean(point.getAttribute('aria-label')),
+        };
+      }),
+      bmiPeriods: document.querySelectorAll('.bmi-period-label').length,
+      referenceSegments: [...document.querySelectorAll('.reference-curve')].map(
+        (curve) => (curve.getAttribute('d').match(/M/g) || []).length,
+      ),
+      patientSegments: (document.querySelector('.patient-line').getAttribute('d').match(/M/g) || [])
+        .length,
+    }));
+    if (
+      state.markers.length !== 2 ||
+      state.markers.some(
+        (marker) =>
+          Math.abs(marker.width - 9) > 0.01 ||
+          Math.abs(marker.height - 9) > 0.01 ||
+          !marker.focusable ||
+          !marker.labeled ||
+          (marker.unconfirmed
+            ? marker.stroke !== color || marker.fill !== 'rgb(255, 255, 255)'
+            : marker.fill !== color),
+      )
+    )
+      throw new Error('Markers: ' + id + ' ' + JSON.stringify(state));
+    if (
+      id === 'bmi-patient-boys' &&
+      (state.bmiPeriods !== 2 ||
+        state.patientSegments !== 2 ||
+        state.referenceSegments.some((n) => n !== 2))
+    )
+      throw new Error('BMI transition: ' + JSON.stringify(state));
+    await page.screenshot({ path: path.join(output, id + '.png'), fullPage: true });
+    checks.push({ chart: id, ...state });
+  }
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const id of ['wfa06_girls', 'hfa07_boys', 'wfl06_boys']) {
+  for (const id of ['wfa06_girls', 'hfa07_boys', 'wfl06_boys', 'bmi-patient-boys']) {
     await page.goto(pathToFileURL(path.join(output, id + '.html')).href);
     const state = await page.evaluate(() => ({
       viewport: innerWidth,
@@ -98,12 +151,14 @@ try {
   fs.writeFileSync(
     path.join(output, 'checks.json'),
     JSON.stringify(
-      { generated: new Date().toISOString(), desktop: 20, mobile: 3, checks },
+      { generated: new Date().toISOString(), desktop: 20, markers: 3, mobile: 4, checks },
       null,
       2,
     ) + '\n',
   );
-  console.log(`PASS: 20 desktop charts and 3 mobile layouts. Review images in ${output}`);
+  console.log(
+    `PASS: 20 reference charts, 3 patient views and 4 mobile layouts. Review images in ${output}`,
+  );
 } finally {
   await browser.close();
 }

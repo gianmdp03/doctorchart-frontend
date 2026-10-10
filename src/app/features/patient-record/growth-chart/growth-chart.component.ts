@@ -10,6 +10,11 @@ import {
 } from '../../../core/models/growth-chart.model';
 
 const COLORS = ['#dc2626', '#ea580c', '#16a34a', '#ea580c', '#dc2626'];
+// Both markers occupy the same 9 × 9 SVG-unit frame as the previous dots.
+const HEART =
+  'M0 4.5 C-1 3.5 -4.5 1 -4.5 -1.5 C-4.5 -3.157 -3.157 -4.5 -1.5 -4.5 C-0.75 -4.5 0 -3.75 0 -2.5 C0 -3.75 0.75 -4.5 1.5 -4.5 C3.157 -4.5 4.5 -3.157 4.5 -1.5 C4.5 1 1 3.5 0 4.5 Z';
+const STAR =
+  'M0 -4.5 L1.39 -1.37 L4.5 -1.06 L2.25 1.29 L2.78 4.5 L0 2.88 L-2.78 4.5 L-2.25 1.29 L-4.5 -1.06 L-1.39 -1.37 Z';
 
 /** D3 computes geometry; Angular owns the SVG DOM, accessibility and state. */
 @Component({
@@ -28,6 +33,10 @@ export class GrowthChartComponent {
   readonly definition = computed(() => this.chart().definition);
   readonly latestMeasurement = computed(() => this.chart().points.at(-1) ?? null);
   readonly sexLabel = computed(() => (this.definition().sex === 'FEMALE' ? 'Niñas' : 'Niños'));
+  readonly markerPath = computed(() => (this.definition().sex === 'FEMALE' ? HEART : STAR));
+  readonly markerLabel = computed(() =>
+    this.definition().sex === 'FEMALE' ? 'corazones rosas' : 'estrellas azules',
+  );
   readonly rangeLabel = computed(() => {
     const d = this.definition();
     return `${d.ageMinMonths === 0 ? 'Nacimiento' : `${d.ageMinMonths / 12} años`} a ${d.ageMaxMonths / 12} años`;
@@ -85,15 +94,16 @@ export class GrowthChartComponent {
   readonly visiblePoints = computed(() =>
     this.chart().points.filter((p) => this.inFrame(p, this.axes().x, this.axes().y)),
   );
+  readonly hasBMITransition = computed(
+    () =>
+      this.definition().dataset.startsWith('bfa06') &&
+      this.chart().curves.some((p) => p.x < 24) &&
+      this.chart().curves.some((p) => p.x > 24) &&
+      this.axes().x.min < 24 &&
+      this.axes().x.max > 24,
+  );
   readonly curvePaths = computed(() => {
-    const points: (GrowthCurvePoint | null)[] = [];
-    const breakAtTwoYears = this.definition().dataset.startsWith('bfa06');
-    let previous: GrowthCurvePoint | undefined;
-    for (const point of this.chart().curves) {
-      if (breakAtTwoYears && previous && previous.x < 24 && point.x > 24) points.push(null);
-      points.push(point);
-      previous = point;
-    }
+    const points = this.splitBMITransition(this.chart().curves);
     return this.definition().percentiles.map((percentile, i) => ({
       percentile,
       color: COLORS[i],
@@ -109,10 +119,10 @@ export class GrowthChartComponent {
   });
   readonly patientPath = computed(
     () =>
-      line<PatientGrowthPoint>()
-        .defined((p) => this.inFrame(p, this.axes().x, this.axes().y))
-        .x((p) => this.xScale()(p.x))
-        .y((p) => this.yScale()(p.value))(this.chart().points) ?? '',
+      line<PatientGrowthPoint | null>()
+        .defined((p) => p !== null && this.inFrame(p, this.axes().x, this.axes().y))
+        .x((p) => this.xScale()(p!.x))
+        .y((p) => this.yScale()(p!.value))(this.splitBMITransition(this.chart().points)) ?? '',
   );
   readonly xTitle = computed(() =>
     this.definition().x.variable === 'AGE'
@@ -146,6 +156,20 @@ export class GrowthChartComponent {
     return Array.from({ length: Math.ceil(count / stride) }, (_, i) =>
       Number((first + i * step * stride).toFixed(6)),
     );
+  }
+  private splitBMITransition<T extends { x: number }>(points: T[]): (T | null)[] {
+    if (!this.hasBMITransition()) return points;
+    const segments: (T | null)[] = [];
+    let previous: T | undefined;
+    for (const point of points) {
+      if (previous && previous.x < 24 && point.x >= 24) segments.push(null);
+      segments.push(point);
+      previous = point;
+    }
+    return segments;
+  }
+  isMajorTick(value: number, axis: GrowthAxis): boolean {
+    return Math.abs(value / axis.step - Math.round(value / axis.step)) < 1e-6;
   }
   private inFrame(p: PatientGrowthPoint, x: GrowthAxis, y: GrowthAxis): boolean {
     return (
