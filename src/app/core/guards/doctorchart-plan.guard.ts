@@ -22,8 +22,8 @@ export const doctorchartPlanGuard: CanActivateFn = async (route, state) => {
   }
 
   // User is logged in but does not have an active DoctorChart plan
-  // Redirect immediately to Syntah to pay/subscribe
-  const redirectUrl = environment.syntahPlansUrl || 'http://localhost:4200/company-panel#plans-catalog';
+  // Redirect immediately to ByCode to pay/subscribe
+  const redirectUrl = environment.bycodePlansUrl || 'http://localhost:4200/company-panel#plans-catalog';
   if (typeof window !== 'undefined') {
     window.location.href = redirectUrl;
   }

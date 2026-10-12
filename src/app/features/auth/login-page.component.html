@@ -70,7 +70,7 @@
       @if (mode() === 'login') {
         <form [formGroup]="loginForm" class="auth-form" (ngSubmit)="onLoginSubmit()">
           <p class="auth-subtitle">
-            Accede a tu ficha clínica unificada con tus credenciales de Syntah.
+            Accede a tu ficha clínica unificada con tus credenciales de ByCode.
           </p>
 
           <!-- Google OAuth Button -->
@@ -163,7 +163,7 @@
       @if (mode() === 'register') {
         <form [formGroup]="registerForm" class="auth-form" (ngSubmit)="onRegisterSubmit()">
           <p class="auth-subtitle">
-            Crea tu cuenta profesional en Syntah para gestionar historias clínicas.
+            Crea tu cuenta profesional en ByCode para gestionar historias clínicas.
           </p>
 
           <div class="m3-textfield" [class.has-error]="isRegisterInvalid('fullName')">

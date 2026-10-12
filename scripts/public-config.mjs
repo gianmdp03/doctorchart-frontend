@@ -42,7 +42,7 @@ export function parsePublicConfig(env) {
     appUrl: url('PUBLIC_APP_URL'),
     apiUrl,
     aiGatewayUrl,
-    syntahPlansUrl: url('PUBLIC_SYNTAH_PLANS_URL', { fragment: true }),
+    bycodePlansUrl: url('PUBLIC_BYCODE_PLANS_URL', { fragment: true }),
     supabase: { url: supabaseUrl, publishableKey },
   };
 }

@@ -55,7 +55,7 @@ describe('doctorchartPlanGuard', () => {
     expect(await router.navigateByUrl('/dashboard')).toBe(true);
     authServiceMock.hasDoctorchartPlan.set(false);
     expect(await router.navigateByUrl('/dashboard', { onSameUrlNavigation: 'reload' })).toBe(false);
-    expect(window.location.href).toBe(environment.syntahPlansUrl);
+    expect(window.location.href).toBe(environment.bycodePlansUrl);
   });
 
   it('should block access and open login modal when user is not logged in', async () => {
@@ -104,7 +104,7 @@ describe('doctorchartPlanGuard', () => {
     expect(window.location.href).toBe('');
   });
 
-  it('should block and redirect to Syntah when logged in without active plan', async () => {
+  it('should block and redirect to ByCode when logged in without active plan', async () => {
     authServiceMock.isLoggedIn.set(true);
     authServiceMock.hasDoctorchartPlan.set(false);
 
@@ -114,6 +114,6 @@ describe('doctorchartPlanGuard', () => {
 
     expect(canActivate).toBe(false);
     expect(authServiceMock.openLoginModal).not.toHaveBeenCalled();
-    expect(window.location.href).toBe(environment.syntahPlansUrl);
+    expect(window.location.href).toBe(environment.bycodePlansUrl);
   });
 });

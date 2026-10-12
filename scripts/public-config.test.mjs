@@ -9,7 +9,7 @@ const valid = () => ({
   PUBLIC_APP_URL: 'http://localhost:4202',
   PUBLIC_API_URL: 'http://localhost:8000/api/doctorchart',
   PUBLIC_AI_GATEWAY_URL: 'http://localhost:8000/api/ai/doctorchart/chat',
-  PUBLIC_SYNTAH_PLANS_URL: 'http://localhost:4200/company-panel#plans-catalog',
+  PUBLIC_BYCODE_PLANS_URL: 'http://localhost:4200/company-panel#plans-catalog',
   PUBLIC_SUPABASE_URL: 'https://project.supabase.co',
   PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
 });

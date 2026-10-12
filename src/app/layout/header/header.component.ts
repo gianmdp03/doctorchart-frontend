@@ -72,7 +72,7 @@ export class HeaderComponent implements OnDestroy {
   readonly isSearchOpen = signal(false);
   readonly isProfileMenuOpen = signal(false);
 
-  readonly syntahPlansUrl = environment.syntahPlansUrl;
+  readonly bycodePlansUrl = environment.bycodePlansUrl;
 
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly searchReads = new AccountReadScope(() => this.clearSearch());

@@ -39,7 +39,7 @@ describe('HeaderComponent', () => {
       isLoggedIn: signal(true),
       isSuperAdmin: signal(false),
       userName: signal('Dr. Santiago'),
-      userEmail: signal('santiago@syntah.io'),
+      userEmail: signal('santiago@bycode.io'),
       hasDoctorchartPlan: signal(true),
       doctorchartPlanTier: signal('PROFESSIONAL'),
       signOut: vi.fn(),

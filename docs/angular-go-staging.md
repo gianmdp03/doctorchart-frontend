@@ -11,7 +11,7 @@ Completar `.env.production` desde su ejemplo o definir estas variables durante e
 | `PUBLIC_APP_URL` | Origen público Angular/SSR |
 | `PUBLIC_API_URL` | Gateway con base `/api/doctorchart` |
 | `PUBLIC_AI_GATEWAY_URL` | Gateway con `/api/ai/doctorchart/chat` |
-| `PUBLIC_SYNTAH_PLANS_URL` | URL real del catálogo de planes |
+| `PUBLIC_BYCODE_PLANS_URL` | URL real del catálogo de planes |
 | `PUBLIC_SUPABASE_URL` | Proyecto Supabase del entorno |
 | `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clave publicable del mismo proyecto |
 
