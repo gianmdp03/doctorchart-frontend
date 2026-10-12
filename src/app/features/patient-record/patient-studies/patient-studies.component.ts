@@ -34,6 +34,8 @@ import { PatientMedicalStudyService } from '../../../core/services/patient-medic
 import { PatientStudiesStore } from './patient-studies.store';
 import { textError } from '../../../core/models/form-validation';
 
+const MAX_STUDY_FILE_BYTES = 10_000_000;
+
 @Component({
   selector: 'app-patient-studies',
   imports: [CommonModule, FormsModule, NgIcon],
@@ -144,9 +146,19 @@ export class PatientStudiesComponent {
   }
 
   onFileChange(event: Event): void {
+	if (this.isUploading()) return;
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
+<<<<<<< Updated upstream
+=======
+      if (file.size > MAX_STUDY_FILE_BYTES) {
+        this.errorMessage.set('El archivo supera el tamaño máximo permitido de 10 MB.');
+        this.selectedFile.set(null);
+        this.studiesStore?.setDraftFile(null);
+        return;
+      }
+>>>>>>> Stashed changes
       this.selectedFile.set(file);
       this.studiesStore?.setDraftFile(file);
       this.errorMessage.set(null);
@@ -178,6 +190,10 @@ export class PatientStudiesComponent {
       this.errorMessage.set(this.fileError() || this.descriptionError());
       return;
     }
+    if (file.size > MAX_STUDY_FILE_BYTES) {
+      this.errorMessage.set('El archivo supera el tamaño máximo permitido de 10 MB.');
+      return;
+    }
 
     const pid = this.patientId();
     this.isUploading.set(true);
@@ -198,13 +214,14 @@ export class PatientStudiesComponent {
         if (!this.current(revision)) return;
         this.isUploading.set(false);
         const messages: Record<string, string> = {
-          STUDY_FILE_TOO_LARGE: 'El archivo supera el tamaño máximo permitido de 25 MB.',
+          STUDY_FILE_TOO_LARGE: 'El archivo supera el tamaño máximo permitido de 10 MB.',
           INVALID_STUDY_FILE: 'El archivo debe ser un PDF sin cifrar o una imagen válida (JPG, PNG, WebP, GIF, BMP o TIFF).',
           EMPTY_STUDY_FILE: 'Seleccioná un archivo que no esté vacío.',
           INVALID_STUDY_FILENAME: 'El nombre del archivo no es válido.',
           STUDY_DESCRIPTION_TOO_LONG: 'La descripción admite hasta 4000 caracteres.',
           STUDY_IMAGE_TOO_LARGE: 'La imagen supera la resolución máxima permitida.',
           STUDY_VALIDATION_BUSY: 'Hay otras cargas en proceso. Reintentá en unos segundos.',
+          IMAGE_CONVERTER_UNAVAILABLE: 'El servicio de imágenes no está disponible. Reintentá en unos segundos.',
         };
         this.errorMessage.set(messages[error?.error?.code] ?? 'Error al subir el estudio médico. Verificá la conexión y reintentá.');
       },

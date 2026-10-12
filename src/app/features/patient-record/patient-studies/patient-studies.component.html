@@ -50,10 +50,12 @@
               accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff"
               (change)="onFileChange($event)"
               class="hidden-file-input"
+              [disabled]="isUploading()"
             />
             <button
               type="button"
               class="file-select-btn"
+              [disabled]="isUploading()"
               (click)="fileInput.click()"
             >
               <ng-icon name="lucideUpload" />
@@ -68,12 +70,13 @@
                   class="clear-file-btn"
                   (click)="clearSelectedFile()"
                   title="Quitar archivo"
+                  [disabled]="isUploading()"
                 >
                   ✕
                 </button>
               </div>
             } @else {
-              <span class="file-hint">PDF o Imágenes (JPG, PNG, WebP) hasta 25 MB</span>
+              <span class="file-hint">PDF o Imágenes (JPG, PNG, WebP) hasta 10 MB</span>
             }
           </div>
           @if (fileError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
@@ -93,6 +96,7 @@
             maxlength="4000"
             placeholder="Ej: Tomografía de encéfalo con contraste, Ecografía abdominal, etc."
             class="form-input text-input"
+            [disabled]="isUploading()"
           />
           @if (descriptionError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
         </div>
@@ -106,13 +110,18 @@
         >
           @if (isUploading()) {
             <span class="spinner-small"></span>
-            <span>Subiendo estudio…</span>
+            <span>Subiendo y procesando estudio…</span>
           } @else {
             <ng-icon name="lucideUpload" />
             <span>Subir y Guardar Estudio</span>
           }
         </button>
       </div>
+      @if (isUploading()) {
+        <p class="file-hint" role="status" aria-live="polite">
+          Tu archivo se está procesando. Si hay otras cargas, puede tardar un poco más.
+        </p>
+      }
     </form>
   </section>
 
