@@ -57,6 +57,9 @@ describe('PatientMedicalStudyService', () => {
     const req = httpTesting.expectOne(`${environment.apiUrl}/patients/10/studies`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body instanceof FormData).toBe(true);
+    expect(req.request.body.get('file')).toBe(file);
+    expect(req.request.body.get('description')).toBe('Foto de tomografía');
+    expect(Array.from(req.request.body.keys())).toEqual(['file', 'description']);
     req.flush({
       id: 2,
       patientId: 10,

@@ -10,6 +10,19 @@ import { PatientMedicalStudy } from '../../../core/models/patient-medical-study.
 describe('PatientStudiesComponent', () => {
   let component: PatientStudiesComponent;
   let fixture: ComponentFixture<PatientStudiesComponent>;
+  let draftStore: {
+    draftFile: ReturnType<typeof signal<File | null>>;
+    draftDescription: ReturnType<typeof signal<string>>;
+    setDraftFile: ReturnType<typeof vi.fn>;
+    setDraftDescription: ReturnType<typeof vi.fn>;
+    clearDraft: ReturnType<typeof vi.fn>;
+  };
+
+  function fileWithSize(size: number): File {
+    const file = new File(['content'], 'estudio.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'size', { value: size });
+    return file;
+  }
 
   const mockStudies: PatientMedicalStudy[] = [
     {
@@ -31,6 +44,18 @@ describe('PatientStudiesComponent', () => {
   };
 
   beforeEach(async () => {
+    const draftFile = signal<File | null>(null);
+    const draftDescription = signal('');
+    draftStore = {
+      draftFile,
+      draftDescription,
+      setDraftFile: vi.fn((file: File | null) => draftFile.set(file)),
+      setDraftDescription: vi.fn((description: string) => draftDescription.set(description)),
+      clearDraft: vi.fn(() => {
+        draftFile.set(null);
+        draftDescription.set('');
+      }),
+    };
     studyServiceMock = {
       getStudies: vi.fn().mockReturnValue(of(mockStudies)),
       uploadStudy: vi.fn(),
@@ -43,6 +68,7 @@ describe('PatientStudiesComponent', () => {
       providers: [
         {provide:AuthService,useValue:{currentUser:signal({id:'doctor-a'})}},
         { provide: PatientMedicalStudyService, useValue: studyServiceMock },
+        { provide: PatientStudiesStore, useValue: draftStore },
       ],
     }).compileComponents();
 
@@ -57,6 +83,61 @@ describe('PatientStudiesComponent', () => {
     expect(studyServiceMock.getStudies).toHaveBeenCalledWith(10);
     expect(component.studies().length).toBe(1);
     expect(component.hasStudies()).toBe(true);
+  });
+
+  it('rejects files above 10,000,000 bytes and removes the previous draft file', () => {
+    component.onFileChange({ target: { files: [fileWithSize(100)] } } as unknown as Event);
+    component.onDescriptionChange('Descripción conservada');
+
+    component.onFileChange({ target: { files: [fileWithSize(10_000_001)] } } as unknown as Event);
+
+    expect(component.selectedFile()).toBeNull();
+    expect(draftStore.draftFile()).toBeNull();
+    expect(component.description()).toBe('Descripción conservada');
+    expect(draftStore.draftDescription()).toBe('Descripción conservada');
+    expect(component.errorMessage()).toContain('10 MB');
+    component.submitUpload();
+    expect(studyServiceMock.uploadStudy).not.toHaveBeenCalled();
+  });
+
+  it('validates an oversized restored draft reactively and blocks its upload', () => {
+    component.selectedFile.set(fileWithSize(10_000_001));
+    fixture.detectChanges();
+
+    expect(component.fileError()).toContain('10 MB');
+    expect(fixture.nativeElement.querySelector('button[type="submit"]').disabled).toBe(true);
+    component.submitUpload();
+    expect(component.errorMessage()).toContain('10 MB');
+    expect(studyServiceMock.uploadStudy).not.toHaveBeenCalled();
+  });
+
+  it('uploads the exact 10,000,000-byte limit while preserving draft and pending-upload state', () => {
+    const pending = new Subject<PatientMedicalStudy>();
+    studyServiceMock.uploadStudy.mockReturnValue(pending);
+    const file = fileWithSize(10_000_000);
+    component.onFileChange({ target: { files: [file] } } as unknown as Event);
+    component.onDescriptionChange('Control');
+    expect(component.fileError()).toBeNull();
+    expect(draftStore.draftFile()).toBe(file);
+
+    component.submitUpload();
+    fixture.detectChanges();
+    expect(component.isUploading()).toBe(true);
+    expect(fixture.nativeElement.querySelector('input[type="file"]').disabled).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Subiendo y procesando estudio');
+    component.onFileChange({ target: { files: [fileWithSize(100)] } } as unknown as Event);
+    component.submitUpload();
+    expect(component.selectedFile()).toBe(file);
+    expect(draftStore.draftFile()).toBe(file);
+    expect(studyServiceMock.uploadStudy).toHaveBeenCalledExactlyOnceWith(10, file, 'Control');
+
+    pending.next({ ...mockStudies[0], id: 2, fileSize: file.size, description: 'Control' });
+    expect(component.isUploading()).toBe(false);
+    expect(component.selectedFile()).toBeNull();
+    expect(draftStore.draftFile()).toBeNull();
+    expect(draftStore.draftDescription()).toBe('');
+    expect(component.successMessage()).toContain('exitosamente');
+    expect(component.studies()[0].id).toBe(2);
   });
 
   it('blocks empty or unsupported files and reacts to corrected descriptions before uploading', () => {

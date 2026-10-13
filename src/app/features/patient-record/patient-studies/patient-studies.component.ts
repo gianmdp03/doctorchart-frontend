@@ -103,7 +103,7 @@ export class PatientStudiesComponent {
     const file = this.selectedFile();
     if (!file) return 'Seleccioná un archivo.';
     if (!file.size) return 'Seleccioná un archivo que no esté vacío.';
-    if (file.size > 25 * 1024 * 1024) return 'El archivo supera el máximo de 25 MB.';
+    if (file.size > MAX_STUDY_FILE_BYTES) return 'El archivo supera el tamaño máximo permitido de 10 MB.';
     if (!/\.(pdf|jpe?g|png|webp|gif|bmp|tiff?)$/i.test(file.name)) return 'Seleccioná un PDF o una imagen JPG, PNG, WebP, GIF, BMP o TIFF.';
     return null;
   });
@@ -150,15 +150,12 @@ export class PatientStudiesComponent {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
-<<<<<<< Updated upstream
-=======
       if (file.size > MAX_STUDY_FILE_BYTES) {
         this.errorMessage.set('El archivo supera el tamaño máximo permitido de 10 MB.');
         this.selectedFile.set(null);
         this.studiesStore?.setDraftFile(null);
         return;
       }
->>>>>>> Stashed changes
       this.selectedFile.set(file);
       this.studiesStore?.setDraftFile(file);
       this.errorMessage.set(null);
