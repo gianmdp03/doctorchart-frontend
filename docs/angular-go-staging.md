@@ -4,16 +4,16 @@ DoctorChart Go es el backend definitivo. La integración local Angular → copia
 
 ## Configuración pública y frontera de confianza
 
-Completar `.env.production` desde su ejemplo o definir estas variables durante el build:
+Editar `src/environments/environment.base.ts` antes del build:
 
 | Variable | Valor del entorno |
 | --- | --- |
-| `PUBLIC_APP_URL` | Origen público Angular/SSR |
-| `PUBLIC_API_URL` | Gateway con base `/api/doctorchart` |
-| `PUBLIC_AI_GATEWAY_URL` | Gateway con `/api/ai/doctorchart/chat` |
-| `PUBLIC_BYCODE_PLANS_URL` | URL real del catálogo de planes |
-| `PUBLIC_SUPABASE_URL` | Proyecto Supabase del entorno |
-| `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clave publicable del mismo proyecto |
+| `appUrl` | Origen público Angular/SSR |
+| `apiUrl` | Gateway con base `/api/doctorchart` |
+| `aiGatewayUrl` | Gateway con `/api/ai/doctorchart/chat` |
+| `bycodePlansUrl` | URL real del catálogo de planes |
+| `supabase.url` | Proyecto Supabase del entorno |
+| `supabase.publishableKey` | Clave publicable del mismo proyecto |
 
 La configuración local usada para pruebas apunta a servicios sintéticos; reconstruirla con los valores de staging. El bundle no cambia por modificar variables después del build. Nunca incluir claves Supabase de servicio, Gemini, credenciales PostgreSQL/S3 ni secretos Gateway/Billing en Angular.
 
@@ -29,6 +29,6 @@ Usar `app-date-picker` y el adaptador argentino: entrada `dd/MM/aaaa`, ISO al pe
 
 ## Antes de publicar staging
 
-Fijar una revisión del Gateway, actualmente en refactor, y repetir las regresiones si cambia. Configurar issuer/audience/CORS/secretos en servidor y reconstruir el frontend con las URLs definitivas. Ejecutar `npm test -- --watch=false`, `npm run build`, typecheck, `npm run test:config` y `npm run test:ssr` con esa configuración.
+Fijar una revisión del Gateway, actualmente en refactor, y repetir las regresiones si cambia. Configurar issuer/audience/CORS/secretos en servidor y reconstruir el frontend con las URLs definitivas. Ejecutar `npm test -- --watch=false`, `npm run build`, typecheck y `npm run test:ssr` con esa configuración.
 
 Validar allí con datos sintéticos: Supabase/OAuth y rotación JWKS, renovación automática prolongada, Billing/pagos y cambios de plan, AWS/R2 y recuperación de eliminación durable, Gemini, impresión en dispositivos objetivo y estudios representativos. Esos proveedores reales no fueron ejecutados localmente; la redirección a planes se comprobó contra una URL de fixture cuyo 404 terminal es intencional. La reproducción de los controles locales está en [README Go](../../doctorchart-backend-go/README.md).

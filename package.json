@@ -8,13 +8,6 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:doctorchart-frontend": "node dist/doctorchart-frontend/server/server.mjs",
-    "config:development": "node scripts/public-config.mjs development",
-    "config:production": "node scripts/public-config.mjs production",
-    "prestart": "npm run config:development",
-    "prebuild": "npm run config:production",
-    "prewatch": "npm run config:development",
-    "pretest": "node scripts/public-config.mjs test",
-    "test:config": "node --test scripts/public-config.test.mjs",
     "test:ssr": "node --test scripts/ssr-smoke.test.mjs",
     "test:growth:visual": "node scripts/verify-growth-visuals.mjs"
   },

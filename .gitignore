@@ -48,7 +48,6 @@ Thumbs.db
 .env
 .env.*
 !.env*.example
-/src/environments/environment.generated.ts
 /block13a-*.log
 
 /block13b-*.log

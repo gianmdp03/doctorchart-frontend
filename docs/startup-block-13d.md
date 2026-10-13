@@ -1,5 +1,7 @@
 # Cierre de 13d — base nueva, arranque y verificación conectada
 
+Nota actual (13/10/2026): el frontend volvió a `src/environments/environment.base.ts` como fuente única de configuración pública. Los pasos `.env.*`, `PUBLIC_*` y `test:config` de este informe son históricos y ya no aplican; ver el README actual.
+
 Fecha de verificación: 06/10/2026. Se conserva la experiencia pediátrica y la
 configuración de especialidades y wizard. No se migraron datos, se agregaron
 adaptadores ni se hicieron commits.

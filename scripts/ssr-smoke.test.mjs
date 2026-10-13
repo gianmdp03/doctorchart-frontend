@@ -6,11 +6,11 @@ import { createServer } from 'node:net';
 import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
+import { baseEnvironment } from '../src/environments/environment.base.ts';
 
-// Run after the production build, with the same PUBLIC_APP_URL used by that build.
+// Run after the production build, using its shared base configuration.
 test('production server accepts its configured host and rejects foreign hosts', { timeout: 20_000 }, async (t) => {
-  assert.ok(process.env.PUBLIC_APP_URL, 'Provide the PUBLIC_APP_URL used for the production build.');
-  const hostname = new URL(process.env.PUBLIC_APP_URL).hostname;
+  const hostname = new URL(baseEnvironment.appUrl).hostname;
   const reservation = createServer();
   reservation.listen(0, '127.0.0.1');
   await once(reservation, 'listening');

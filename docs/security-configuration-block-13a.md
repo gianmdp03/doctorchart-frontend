@@ -1,5 +1,7 @@
 # Bloque 13a — Seguridad y configuración
 
+Nota actual (13/10/2026): el frontend usa `src/environments/environment.base.ts` directamente. La generación y los pasos `.env.*`/`PUBLIC_*` de este informe son históricos; consultar el README actual.
+
 Estado: completado. Este cierre comprende configuración y autenticación de DoctorChart,
 `api-gateway` y `ai-gateway`; los archivos clínicos, almacenamiento del navegador,
 base nueva y comprobación del circuito completo siguen en 13b, 13c y 13d.
