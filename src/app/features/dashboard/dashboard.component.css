@@ -115,7 +115,9 @@
   flex-direction: column;
   gap: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .kpi-card:hover {
@@ -228,7 +230,7 @@
 /* --- 3. Split Layout (65% / 35%) --- */
 .dashboard-main-split {
   display: grid;
-  grid-template-columns: 65% 35%;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 1.5rem;
   flex: 1;
   align-items: stretch;
@@ -241,6 +243,7 @@
 }
 
 .dashboard-primary-col {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -254,6 +257,7 @@
 }
 
 .dashboard-side-col {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -854,10 +858,489 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Recent activity is a full-width, server-paginated feed. */
+.recent-activity-card {
+  border-color: #dce8eb;
+  box-shadow: 0 4px 20px rgb(15 23 42 / 3%);
+}
+.recent-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 26px 20px;
+}
+.recent-heading-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: #e7f5f4;
+  color: #007b7b;
+  font-size: 1.375rem;
+}
+.recent-heading-text {
+  min-width: 0;
+}
+.recent-eyebrow {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  color: #007b7b;
+}
+.recent-heading-text h2 {
+  margin: 3px 0 4px;
+  color: #17233b;
+  font-size: 1.125rem;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+.recent-heading-text p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+.recent-history-link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #006874;
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.recent-history-link:hover {
+  text-decoration: underline;
+}
+.recent-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 26px 20px;
+}
+.recent-search-wrap {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #dde5eb;
+  border-radius: 10px;
+  padding: 10px 13px;
+  background: #f8fafb;
+  color: #8191a5;
+}
+.recent-search-wrap:focus-within {
+  border-color: #00838a;
+  background: white;
+  box-shadow: 0 0 0 3px rgb(0 131 138 / 9%);
+}
+.recent-search-wrap input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: #17233b;
+  background: transparent;
+}
+.recent-search-wrap input::placeholder {
+  color: #8290a3;
+}
+.recent-size-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+.recent-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid #dde5eb;
+  border-radius: 9px;
+  background: white;
+  color: #52647a;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.recent-refresh-btn:hover:not(:disabled) {
+  border-color: #00838a;
+  color: #006874;
+}
+.recent-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.recent-size-label select {
+  border: 1px solid #dde5eb;
+  border-radius: 9px;
+  padding: 10px;
+  color: #334155;
+  font: inherit;
+  background: white;
+  cursor: pointer;
+}
+.recent-column-labels,
+.recent-consultation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) 12.125rem;
+  gap: 24px;
+}
+.recent-column-labels {
+  padding: 11px 26px;
+  background: #f8fafb;
+  border-block: 1px solid #edf1f4;
+  color: #7a899e;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.recent-column-labels span:last-child {
+  text-align: right;
+}
+.recent-consultation {
+  position: relative;
+  align-items: center;
+  padding: 19px 26px;
+  border-bottom: 1px solid #edf1f4;
+  transition: background 0.15s;
+}
+.recent-consultation:last-child {
+  border-bottom: none;
+}
+.recent-consultation:hover {
+  background: #f7fbfb;
+}
+.recent-consultation.consultation-today::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 22px;
+  bottom: 22px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #00a29b;
+}
+.recent-patient {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+}
+.recent-avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #edf4f7;
+  color: #3d6274;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.consultation-today .recent-avatar {
+  background: #e5f6f2;
+  color: #008077;
+}
+.recent-patient-info {
+  min-width: 0;
+}
+.recent-patient-info h3 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.45;
+  color: #17233b;
+  overflow-wrap: anywhere;
+}
+.recent-patient-info p {
+  margin: 4px 0 7px;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: #748398;
+  overflow-wrap: anywhere;
+}
+.recent-patient-info .consultation-type-pill {
+  max-width: 100%;
+  white-space: normal;
+  font-size: 0.625rem;
+  line-height: 1.5;
+  padding: 2px 8px;
+}
+.recent-clinical-summary {
+  min-width: 0;
+}
+.recent-clinical-summary p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 4px 0;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: #607087;
+  overflow-wrap: anywhere;
+}
+.recent-clinical-summary b {
+  font-weight: 600;
+  color: #35445c;
+}
+.recent-date-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+.recent-date {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  color: #35445c;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.recent-time {
+  font-size: 0.6875rem;
+  color: #8191a5;
+}
+.recent-actions {
+  display: flex;
+  gap: 7px;
+  margin-top: 8px;
+}
+.recent-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 7px;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.recent-detail-btn {
+  color: #007577;
+  background: #edf8f6;
+  border: 1px solid #d9efea;
+}
+.recent-detail-btn:hover {
+  background: #dff2ed;
+  border-color: #8dcabf;
+}
+.recent-record-btn {
+  color: #52647a;
+  background: white;
+  border: 1px solid #dde5eb;
+}
+.recent-record-btn:hover {
+  background: #f1f5f9;
+  border-color: #aebfcf;
+}
+.recent-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 17px 26px;
+  border-top: 1px solid #edf1f4;
+  background: #fcfdfd;
+}
+.recent-count {
+  font-size: 0.75rem;
+  color: #718096;
+}
+.recent-count b {
+  color: #35445c;
+  font-weight: 600;
+}
+.recent-count > span {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.625rem;
+  color: #8796a8;
+}
+.recent-page-buttons {
+  display: flex;
+  gap: 5px;
+  padding-right: 2rem;
+}
+.recent-page-buttons button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #66788e;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.recent-page-buttons button:hover:not(:disabled) {
+  background: #edf8f6;
+  color: #006874;
+}
+.recent-page-buttons button.current-page {
+  background: #006874;
+  border-color: #006874;
+  color: white;
+}
+.recent-page-buttons button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.recent-activity-card button:focus-visible,
+.recent-history-link:focus-visible,
+.recent-size-label select:focus-visible {
+  outline: 2px solid #00838a;
+  outline-offset: 3px;
+}
+.recent-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  min-height: 280px;
+  color: #718096;
+  font-size: 0.8125rem;
+}
+.recent-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 260px;
+  padding: 26px;
+  text-align: center;
+}
+.recent-empty > ng-icon {
+  font-size: 1.75rem;
+  color: #00958e;
+}
+.recent-empty h3 {
+  font-size: 0.9375rem;
+  color: #35445c;
+  margin: 0;
+}
+.recent-empty p {
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: #718096;
+  margin: 0;
+  max-width: 380px;
+}
+@media (max-width: 1100px) {
+  .recent-column-labels {
+    display: none;
+  }
+  .recent-consultation {
+    grid-template-columns: minmax(0, 1fr) 12.125rem;
+    gap: 12px 20px;
+  }
+  .recent-patient {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .recent-date-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .recent-clinical-summary {
+    grid-column: 1 / -1;
+    padding-left: 52px;
+  }
+}
+@media (max-width: 600px) {
+  .recent-card-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 18px;
+    gap: 10px;
+  }
+  .recent-heading-text {
+    flex: 1;
+  }
+  .recent-heading-text h2 {
+    font-size: 1rem;
+  }
+  .recent-history-link {
+    margin-left: 54px;
+  }
+  .recent-toolbar {
+    padding: 0 18px 18px;
+  }
+  .recent-search-wrap {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+  .recent-size-label {
+    margin-left: auto;
+  }
+  .recent-consultation {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 18px;
+  }
+  .recent-date-actions {
+    grid-column: 1;
+    grid-row: 3;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .recent-clinical-summary {
+    padding-left: 0;
+  }
+  .recent-actions {
+    width: 100%;
+    margin-top: 2px;
+  }
+  .recent-actions button {
+    flex: 1;
+    padding: 10px;
+  }
+  .recent-pagination {
+    padding: 16px 18px;
+  }
+  .recent-page-buttons button:not(:first-child):not(:last-child):not(.current-page) {
+    display: none;
+  }
 }

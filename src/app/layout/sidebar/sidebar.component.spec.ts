@@ -100,6 +100,24 @@ describe('SidebarComponent', () => {
     expect(component.isCollapsed()).toBe(false);
   });
 
+  it('compacts mobile navigation, closes it after selection and restores desktop preference', () => {
+    const originalWidth = window.innerWidth;
+    try {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+      window.dispatchEvent(new Event('resize'));
+      expect(component.isCollapsed()).toBe(true);
+      component.toggleCollapse();
+      expect(component.isCollapsed()).toBe(false);
+      component.collapseAfterNavigation();
+      expect(component.isCollapsed()).toBe(true);
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+      window.dispatchEvent(new Event('resize'));
+      expect(component.isCollapsed()).toBe(false);
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
+    }
+  });
+
   it('offers administration without clinical navigation for a super admin', () => {
     authServiceMock.isSuperAdmin.set(true);
     fixture.detectChanges();

@@ -143,35 +143,3 @@
   line-height: 1.7;
   color: #62758c;
 }
-.growth-position-panel {
-  padding: 12px 16px;
-  border: 1px solid #d9e3ec;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 13px;
-}
-.growth-position-panel summary {
-  cursor: pointer;
-  color: #255567;
-  font-weight: 600;
-}
-.position-list {
-  max-height: 300px;
-  overflow: auto;
-}
-.position-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 9px 0;
-  border-bottom: 1px solid #edf1f5;
-}
-.position-row select {
-  padding: 7px;
-  border: 1px solid #c7d5e5;
-  border-radius: 6px;
-  background: white;
-  max-width: 100%;
-}

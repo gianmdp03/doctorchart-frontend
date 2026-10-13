@@ -181,6 +181,55 @@
   cursor: pointer;
   vector-effect: non-scaling-stroke;
 }
+.point-hit-area {
+  fill: transparent;
+  pointer-events: all;
+  cursor: pointer;
+}
+.consultation-tooltip {
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid #bed0e5;
+  border-top: 3px solid #2563eb;
+  border-radius: 10px;
+  background: white;
+  color: #17233c;
+  box-shadow: 0 8px 28px rgb(15 23 42 / 18%);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.consultation-tooltip.tooltip-girl {
+  border-top-color: #ec4899;
+}
+.consultation-tooltip header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.consultation-tooltip header strong {
+  font-size: 14px;
+}
+.consultation-tooltip header span,
+.consultation-type {
+  color: #64748b;
+}
+.consultation-tooltip p {
+  margin: 8px 0 0;
+}
+.consultation-measurements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 8px 0;
+  margin-top: 8px;
+  border-block: 1px solid #e2e8f0;
+}
+.consultation-percentile {
+  color: #35576b;
+}
 .unconfirmed-point {
   fill: white;
   stroke: var(--patient-color);

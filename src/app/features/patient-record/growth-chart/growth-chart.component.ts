@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
+import { CdkScrollable } from '@angular/cdk/scrolling';
+import {
+  ClinicalEncounterList,
+  ConsultationType,
+} from '../../../core/models/clinical-encounter.model';
 import { scaleLinear } from 'd3-scale';
 import { line } from 'd3-shape';
 import {
@@ -19,15 +25,26 @@ const STAR =
 /** D3 computes geometry; Angular owns the SVG DOM, accessibility and state. */
 @Component({
   selector: 'app-growth-chart',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, CdkConnectedOverlay, CdkOverlayOrigin, CdkScrollable],
   templateUrl: './growth-chart.component.html',
   styleUrl: './growth-chart.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GrowthChartComponent {
   readonly chart = input.required<PatientGrowthChart>();
+  readonly encounters = input<ReadonlyMap<number, ClinicalEncounterList>>(new Map());
   readonly expandedFrame = signal(false);
   readonly focusedPoint = signal<PatientGrowthPoint | null>(null);
+  readonly tooltipOrigin = signal<CdkOverlayOrigin | null>(null);
+  readonly focusedEncounter = computed(() => {
+    const id = this.focusedPoint()?.encounterId;
+    return id == null ? null : (this.encounters().get(id) ?? null);
+  });
+  readonly tooltipPositions: ConnectedPosition[] = [
+    { originX: 'center', originY: 'top', overlayX: 'center', overlayY: 'bottom', offsetY: -12 },
+    { originX: 'center', originY: 'bottom', overlayX: 'center', overlayY: 'top', offsetY: 12 },
+  ];
+  private hideTimer?: ReturnType<typeof setTimeout>;
   readonly clipId = computed(() => `oms-plot-${this.definition().id}`);
   readonly plot = { left: 68, right: 976, top: 24, bottom: 420 };
   readonly definition = computed(() => this.chart().definition);
@@ -141,11 +158,44 @@ export class GrowthChartComponent {
       })[this.definition().y.variable] + ` (${this.definition().y.unit})`,
   );
   constructor() {
-    effect(() => {
+    effect((onCleanup) => {
       this.chart();
       this.expandedFrame.set(false);
-      this.focusedPoint.set(null);
+      this.hidePoint();
+      onCleanup(() => this.cancelHide());
     });
+  }
+  showPoint(point: PatientGrowthPoint, origin: CdkOverlayOrigin): void {
+    this.cancelHide();
+    this.tooltipOrigin.set(origin);
+    this.focusedPoint.set(point);
+  }
+  cancelHide(): void {
+    clearTimeout(this.hideTimer);
+    this.hideTimer = undefined;
+  }
+  scheduleHide(): void {
+    this.cancelHide();
+    // Let the pointer cross the small gap to the summary without dismissing it.
+    this.hideTimer = setTimeout(() => this.hidePoint(), 150);
+  }
+  hidePoint(): void {
+    this.cancelHide();
+    this.focusedPoint.set(null);
+    this.tooltipOrigin.set(null);
+  }
+  consultationLabel(type: ConsultationType): string {
+    return {
+      FIRST_VISIT: 'Primera consulta',
+      FOLLOW_UP: 'Seguimiento',
+      ROUTINE_CHECKUP: 'Control de rutina',
+      EMERGENCY: 'Urgencia',
+      INTERCONSULTATION: 'Interconsulta',
+    }[type];
+  }
+  brief(value: string): string {
+    const text = value.trim().replace(/\s+/g, ' ');
+    return text.length > 160 ? text.slice(0, 157).trimEnd() + '…' : text;
   }
   private ticks(axis: GrowthAxis, minor: boolean): number[] {
     const step = minor ? axis.minorStep : axis.step;
