@@ -19,6 +19,7 @@
  * ============================================================================
  */
 export const FEATURE_FLAGS = {
+  AI_ASSISTANT_ENABLED: false,
   CALCULATORS_ENABLED: false,
 };
 

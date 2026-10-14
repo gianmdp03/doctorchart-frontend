@@ -7,6 +7,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { AiAssistantWidgetComponent } from './ai-assistant-widget.component';
 import { AiChatService } from '../../core/services/ai-chat.service';
+import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 
 describe('AiAssistantWidgetComponent', () => {
   let component: AiAssistantWidgetComponent;
@@ -14,6 +15,7 @@ describe('AiAssistantWidgetComponent', () => {
   let chatService: AiChatService;
 
   beforeEach(async () => {
+    FEATURE_FLAGS.AI_ASSISTANT_ENABLED = true;
     await TestBed.configureTestingModule({
       imports: [AiAssistantWidgetComponent],
       providers: [
@@ -31,6 +33,8 @@ describe('AiAssistantWidgetComponent', () => {
     chatService = TestBed.inject(AiChatService);
     fixture.detectChanges();
   });
+
+  afterEach(() => { FEATURE_FLAGS.AI_ASSISTANT_ENABLED = false; });
 
   it('should create the component', () => {
     expect(component).toBeTruthy();

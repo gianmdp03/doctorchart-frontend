@@ -74,7 +74,7 @@
 
   <app-encounter-detail-dialog />
   <app-user-profile-dialog />
-  @if (workspaceStore.isModuleActive('AI_ASSISTANT')) {
+  @if (featureFlags.AI_ASSISTANT_ENABLED && workspaceStore.isModuleActive('AI_ASSISTANT')) {
     <app-ai-assistant-widget />
   }
 }

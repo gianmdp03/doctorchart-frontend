@@ -5,6 +5,7 @@ import { WorkspaceStore } from './workspace.store';
 import { DestroyRef, effect, Injectable, inject, signal, untracked } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { FEATURE_FLAGS } from '../config/feature-flags';
 
 export interface ChatMessage {
   id: string;
@@ -64,6 +65,7 @@ export class AiChatService {
   ];
 
   toggleChat(): void {
+    if (!FEATURE_FLAGS.AI_ASSISTANT_ENABLED) return;
     if (!this.workspace.isModuleActive('AI_ASSISTANT')) return;
     const next = !this.isOpen();
     this.isOpen.set(next);
@@ -73,6 +75,7 @@ export class AiChatService {
   }
 
   openChat(): void {
+    if (!FEATURE_FLAGS.AI_ASSISTANT_ENABLED) return;
     if (!this.workspace.isModuleActive('AI_ASSISTANT')) return;
     this.isOpen.set(true);
     this.hasUnread.set(false);
@@ -96,6 +99,7 @@ export class AiChatService {
   }
 
   sendMessage(userText: string): void {
+    if (!FEATURE_FLAGS.AI_ASSISTANT_ENABLED) return;
     this.syncContext();
     if (!this.auth.currentUser()?.id || !this.workspace.isModuleActive('AI_ASSISTANT')) return;
     const revision = this.contextRevision();

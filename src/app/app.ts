@@ -12,6 +12,7 @@ import { LoginPageComponent } from './features/auth/login-page.component';
 import { UserProfileDialogComponent } from './features/auth/user-profile-dialog.component';
 import { AiAssistantWidgetComponent } from './features/ai-assistant/ai-assistant-widget.component';
 import { WorkspaceStore } from './core/services/workspace.store';
+import { FEATURE_FLAGS } from './core/config/feature-flags';
 
 @Component({
   selector: 'app-root',
@@ -28,6 +29,7 @@ import { WorkspaceStore } from './core/services/workspace.store';
   styleUrl: './app.css',
 })
 export class App {
+  readonly featureFlags = FEATURE_FLAGS;
   private readonly themeService = inject(ThemeService);
   readonly authService = inject(AuthService);
   readonly doctorProfileService = inject(DoctorProfileService);

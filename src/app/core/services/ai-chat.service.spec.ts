@@ -7,6 +7,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 import { AiChatService } from './ai-chat.service';
 import { environment } from '../../../environments/environment';
+import { FEATURE_FLAGS } from '../config/feature-flags';
 
 describe('AiChatService', () => {
   let service: AiChatService;
@@ -15,6 +16,7 @@ describe('AiChatService', () => {
   let specialtyCode: ReturnType<typeof signal<string>>;
 
   beforeEach(() => {
+    FEATURE_FLAGS.AI_ASSISTANT_ENABLED = true; // Exercise the preserved implementation.
     aiEnabled = signal(true);
     specialtyCode = signal('pediatrics');
     TestBed.configureTestingModule({
@@ -33,7 +35,18 @@ describe('AiChatService', () => {
   });
 
   afterEach(() => {
+    FEATURE_FLAGS.AI_ASSISTANT_ENABLED = false;
     httpMock.verify();
+  });
+
+  it('blocks opening and HTTP calls even with an active clinical module', () => {
+    FEATURE_FLAGS.AI_ASSISTANT_ENABLED = false;
+    service.openChat();
+    service.toggleChat();
+    service.sendMessage('synthetic prompt');
+    expect(service.isOpen()).toBe(false);
+    expect(service.isTyping()).toBe(false);
+    httpMock.expectNone(environment.aiGatewayUrl);
   });
 
   it('should be created and have initial state', () => {
