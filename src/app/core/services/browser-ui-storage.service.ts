@@ -2,11 +2,22 @@ import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 
 export type FontSizeLevel = 'normal' | 'large' | 'xlarge';
+export type ColorTheme = 'light' | 'dark';
 
 /** Browser storage is limited to display preferences and a revalidated selection ID. */
 @Injectable({ providedIn: 'root' })
 export class BrowserUiStorageService {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
+  readTheme(): ColorTheme {
+    return this.read('localStorage', 'doctorchart_theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  writeTheme(value: ColorTheme): void {
+    if (value === 'light' || value === 'dark') {
+      this.write('localStorage', 'doctorchart_theme', value);
+    }
+  }
 
   readFontSize(): FontSizeLevel {
     const value = this.read('localStorage', 'doctorchart_font_size');

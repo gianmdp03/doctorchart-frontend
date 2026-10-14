@@ -1,4 +1,5 @@
 import { takeUntil } from 'rxjs';
+import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { AccountReadScope } from '../../core/services/account-read-scope';
 import { displayLocalDate } from '../../core/date/display-date';
 import {
@@ -35,7 +36,7 @@ import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-header',
-  imports: [NgIcon],
+  imports: [NgIcon, ThemeToggleComponent],
   providers: [
     provideIcons({
       lucideSearch,

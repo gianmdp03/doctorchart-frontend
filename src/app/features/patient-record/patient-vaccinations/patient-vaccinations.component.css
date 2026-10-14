@@ -3,8 +3,8 @@
 }
 
 .vaccines-panel {
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--dc-surface, #fff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
   border-radius: 16px;
   padding: 24px;
 }
@@ -17,19 +17,19 @@
 }
 
 .vaccines-header h3 {
-  color: #0f172a;
+  color: var(--dc-ink, #0f172a);
   font-size: 1.1rem;
   margin: 2px 0 5px;
 }
 
 .vaccines-header p {
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
   font-size: 0.85rem;
   margin: 0;
 }
 
 .eyebrow {
-  color: #0284c7 !important;
+  color: var(--dc-blue-ink, #0284c7) !important;
   font-size: 0.72rem !important;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -46,8 +46,8 @@
 }
 
 .saving {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--dc-blue-surface, #e0f2fe);
+  color: var(--dc-blue-ink, #0369a1);
 }
 
 .vaccines-summary {
@@ -58,18 +58,18 @@
 }
 
 .pending {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--dc-error-surface, #fee2e2);
+  color: var(--dc-error-ink, #991b1b);
 }
 
 .current {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--dc-warning-surface, #fef3c7);
+  color: var(--dc-warning-ink, #92400e);
 }
 
 .applied {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--dc-success-surface, #dcfce7);
+  color: var(--dc-success-ink, #166534);
 }
 
 .dose-group {
@@ -77,14 +77,14 @@
 }
 
 .dose-group h4 {
-  color: #334155;
+  color: var(--dc-ink-secondary, #334155);
   font-size: 0.9rem;
   margin: 0 0 9px;
 }
 
 .dose-card {
   align-items: center;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--dc-outline, #e2e8f0);
   border-left: 4px solid #94a3b8;
   border-radius: 10px;
   display: flex;
@@ -108,7 +108,7 @@
 
 .future-card {
   border-left-color: #0284c7;
-  background: #fcfdfe;
+  background: var(--dc-surface-low, #fcfdfe);
 }
 
 .dose-copy {
@@ -117,36 +117,36 @@
 }
 
 .dose-copy strong {
-  color: #1e293b;
+  color: var(--dc-ink, #1e293b);
   font-size: 0.86rem;
 }
 
 .dose-copy span,
 .empty-state {
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
   font-size: 0.8rem;
 }
 
 .apply-control,
 .date-control {
-  color: #334155;
+  color: var(--dc-ink-secondary, #334155);
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .date-control input {
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--dc-outline, #cbd5e1);
   border-radius: 6px;
   margin-left: 5px;
   padding: 4px;
 }
 
 .save-error {
-  background: #fef2f2;
+  background: var(--dc-error-surface, #fef2f2);
   border: 1px solid #fecaca;
   border-radius: 8px;
-  color: #b91c1c;
+  color: var(--dc-error-ink, #b91c1c);
   font-size: 0.82rem;
   padding: 9px 12px;
 }
@@ -154,10 +154,10 @@
 /* Future doses collapsible styling */
 .future-doses {
   margin-top: 24px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--dc-outline, #e2e8f0);
   border-radius: 12px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--dc-surface, #ffffff);
 }
 
 .future-doses-summary {
@@ -165,17 +165,17 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: #f8fafc;
+  background: var(--dc-surface-low, #f8fafc);
   cursor: pointer;
   list-style: none;
   font-weight: 600;
-  color: #334155;
+  color: var(--dc-ink-secondary, #334155);
   user-select: none;
   transition: background-color 0.15s ease;
 }
 
 .future-doses-summary:hover {
-  background: #f1f5f9;
+  background: var(--dc-surface-high, #f1f5f9);
 }
 
 .future-doses-summary::-webkit-details-marker {
@@ -191,7 +191,7 @@
 .chevron-icon {
   width: 18px;
   height: 18px;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
   transition: transform 0.2s ease;
   flex-shrink: 0;
 }
@@ -203,12 +203,12 @@
 .future-title {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--dc-ink, #1e293b);
 }
 
 .future-count-badge {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--dc-blue-surface, #e0f2fe);
+  color: var(--dc-blue-ink, #0369a1);
   font-size: 0.75rem;
   font-weight: 700;
   padding: 2px 8px;
@@ -217,14 +217,14 @@
 
 .future-hint {
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--dc-ink-muted, #94a3b8);
   font-weight: 500;
 }
 
 .future-doses-content {
   padding: 14px;
-  background: #ffffff;
-  border-top: 1px solid #f1f5f9;
+  background: var(--dc-surface, #ffffff);
+  border-top: 1px solid var(--dc-outline, #f1f5f9);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -240,9 +240,9 @@
 
 .dose-label-chip {
   font-size: 0.78rem;
-  color: #475569;
+  color: var(--dc-ink-secondary, #475569);
   font-weight: 600;
-  background: #f1f5f9;
+  background: var(--dc-surface-high, #f1f5f9);
   padding: 2px 8px;
   border-radius: 6px;
 }
@@ -252,8 +252,8 @@
   align-items: center;
   gap: 4px;
   font-size: 0.78rem;
-  color: #0369a1;
-  background: #f0f9ff;
+  color: var(--dc-blue-ink, #0369a1);
+  background: var(--dc-blue-surface, #f0f9ff);
   border: 1px solid #e0f2fe;
   padding: 2px 8px;
   border-radius: 6px;
@@ -264,9 +264,9 @@
   align-items: center;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #64748b;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  color: var(--dc-ink-muted, #64748b);
+  background: var(--dc-surface-low, #f8fafc);
+  border: 1px solid var(--dc-outline, #e2e8f0);
   padding: 3px 10px;
   border-radius: 9999px;
   white-space: nowrap;
@@ -292,4 +292,4 @@
     display: none;
   }
 }
-.field-error { display: block; margin-top: 6px; color: #b91c1c; font-size: .8rem; }
+.field-error { display: block; margin-top: 6px; color: var(--dc-error-ink, #b91c1c); font-size: .8rem; }

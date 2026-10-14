@@ -4,8 +4,8 @@
   align-self: stretch;
   flex-shrink: 0;
   min-height: 100vh;
-  background-color: #ffffff;
-  border-right: 1px solid #e2e8f0;
+  background-color: var(--dc-surface, #ffffff);
+  border-right: 1px solid var(--dc-outline, #e2e8f0);
   z-index: 40;
 }
 
@@ -15,7 +15,7 @@
   height: 100%;
   position: sticky;
   top: 0;
-  background-color: #ffffff;
+  background-color: var(--dc-surface, #ffffff);
   display: flex;
   flex-direction: column;
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -33,7 +33,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--dc-outline, #f1f5f9);
 }
 
 .brand-logo-icon {
@@ -59,15 +59,15 @@
 .brand-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--dc-ink, #0f172a);
   letter-spacing: -0.02em;
 }
 
 .brand-specialty-pill {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #006874;
-  background-color: #e6f6f8;
+  color: var(--dc-teal-ink, #006874);
+  background-color: var(--dc-teal-surface, #e6f6f8);
   padding: 1px 6px;
   border-radius: 9999px;
   width: fit-content;
@@ -89,7 +89,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #94a3b8;
+  color: var(--dc-ink-muted, #94a3b8);
   padding: 0.5rem 0.5rem 0.25rem 0.5rem;
 }
 
@@ -99,7 +99,7 @@
   gap: 0.75rem;
   padding: 0.6rem 0.75rem;
   border-radius: 8px;
-  color: #475569;
+  color: var(--dc-ink-secondary, #475569);
   text-decoration: none;
   font-size: 0.88rem;
   font-weight: 500;
@@ -110,13 +110,13 @@
 }
 
 .nav-item:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink, #0f172a);
 }
 
 .nav-item.active {
-  background-color: #f0fdfa;
-  color: #006874;
+  background-color: var(--dc-teal-surface, #f0fdfa);
+  color: var(--dc-teal-ink, #006874);
   font-weight: 600;
 }
 
@@ -148,15 +148,15 @@
 .nav-badge {
   font-size: 0.68rem;
   font-weight: 600;
-  background-color: #e0f2fe;
-  color: #0369a1;
+  background-color: var(--dc-blue-surface, #e0f2fe);
+  color: var(--dc-blue-ink, #0369a1);
   padding: 2px 6px;
   border-radius: 6px;
 }
 
 .nav-divider {
   height: 1px;
-  background-color: #f1f5f9;
+  background-color: var(--dc-surface-high, #f1f5f9);
   margin: 0.5rem 0.25rem;
 }
 
@@ -173,11 +173,11 @@
 .sidebar-footer {
   margin-top: auto;
   padding: 0.65rem;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--dc-outline, #f1f5f9);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  background-color: #ffffff;
+  background-color: var(--dc-surface, #ffffff);
 }
 
 .sidebar-container.is-collapsed .sidebar-footer {
@@ -188,9 +188,9 @@
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #64748b;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  background: var(--dc-surface, #ffffff);
+  color: var(--dc-ink-muted, #64748b);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -200,6 +200,6 @@
 }
 
 .collapse-toggle-btn:hover {
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink, #0f172a);
 }

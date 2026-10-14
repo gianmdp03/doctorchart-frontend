@@ -125,8 +125,8 @@
   margin-bottom: 0.85rem;
   font-size: 0.82rem;
   font-weight: 500;
-  background-color: #ffdad6;
-  color: #410002;
+  background-color: var(--dc-error-surface, #ffdad6);
+  color: var(--dc-error-ink, #410002);
   border: 1px solid #ff5449;
 }
 

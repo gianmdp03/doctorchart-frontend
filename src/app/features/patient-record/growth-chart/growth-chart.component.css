@@ -4,9 +4,9 @@
 .growth-chart-card {
   --patient-color: #2563eb;
   --patient-focus: #072b76;
-  border: 1px solid #bed0e5;
+  border: 1px solid var(--dc-outline, #bed0e5);
   border-radius: 12px;
-  background: #fff;
+  background: var(--dc-surface, #fff);
   overflow: hidden;
   margin: 0 0 24px;
 }
@@ -43,9 +43,9 @@
   gap: 18px;
   flex-wrap: wrap;
   padding: 14px 16px;
-  border: 1px solid #e0e7ef;
+  border: 1px solid var(--dc-outline, #e0e7ef);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--dc-surface-low, #f8fafc);
   margin: 0 0 16px;
 }
 .metrics-summary-bar div {
@@ -55,22 +55,22 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
   margin-bottom: 5px;
 }
 .metrics-summary-bar dd {
   font-size: 13px;
-  color: #17233c;
+  color: var(--dc-ink, #17233c);
   font-weight: 600;
   margin: 0;
 }
 .metrics-summary-bar .patient-value {
-  color: #2563eb;
+  color: var(--dc-blue-ink, #2563eb);
 }
 .notice {
-  background: #eef7fa;
+  background: var(--dc-teal-surface, #eef7fa);
   border-radius: 6px;
-  color: #35576b;
+  color: var(--dc-ink-secondary, #35576b);
   font-size: 13px;
   line-height: 1.6;
   padding: 10px 14px;
@@ -82,19 +82,19 @@
   flex-wrap: wrap;
   font-size: 12px;
   margin-bottom: 14px;
-  color: #5e492c;
+  color: var(--dc-warning-ink, #5e492c);
 }
 .frame-control button {
-  border: 1px solid #c9d6e4;
-  background: white;
+  border: 1px solid var(--dc-outline, #c9d6e4);
+  background: var(--dc-surface, white);
   border-radius: 6px;
   padding: 7px 10px;
-  color: #165867;
+  color: var(--dc-ink-secondary, #165867);
 }
 .chart-scroll {
   overflow-x: auto;
   max-width: 100%;
-  background: white;
+  background: var(--dc-surface, white);
   padding-top: 6px;
 }
 .growth-svg {
@@ -114,7 +114,7 @@
   stroke-width: 1.2;
 }
 .bmi-chart .grid-line {
-  stroke: #e2e8f0;
+  stroke: var(--dc-outline, #e2e8f0);
   stroke-width: 0.5;
 }
 .bmi-chart .major-grid {
@@ -131,12 +131,12 @@
   stroke-dasharray: 5 4;
 }
 .bmi-period-label {
-  fill: #475569;
+  fill: var(--dc-ink-secondary, #475569);
   font-size: 10px;
   font-weight: 600;
 }
 .bmi-transition-note {
-  color: #475569;
+  color: var(--dc-ink-secondary, #475569);
   font-size: 12px;
   line-height: 1.6;
   margin: 12px 0;
@@ -148,16 +148,16 @@
 }
 .tick-label {
   font-size: 12px;
-  fill: #253044;
+  fill: var(--dc-ink, #253044);
 }
 .year-label {
   font-size: 12px;
-  fill: #253044;
+  fill: var(--dc-ink, #253044);
   font-weight: 600;
 }
 .axis-title {
   font-size: 12px;
-  fill: #253044;
+  fill: var(--dc-ink, #253044);
   font-weight: 600;
 }
 .reference-curve {
@@ -199,8 +199,8 @@
   min-height: 36px;
   padding: 8px 12px;
   border-radius: 5px;
-  background: #f1f6fc;
-  color: #263e61;
+  background: var(--dc-surface-low, #f1f6fc);
+  color: var(--dc-ink-secondary, #263e61);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -212,7 +212,7 @@
   padding: 12px 0 0;
   margin: 0;
   font-size: 12px;
-  color: #344155;
+  color: var(--dc-ink-secondary, #344155);
 }
 .legend-container li {
   display: flex;
@@ -229,31 +229,31 @@
   fill: var(--patient-color);
 }
 .median {
-  color: #16a34a;
+  color: var(--dc-success-ink, #16a34a);
 }
 .middle {
-  color: #ea580c;
+  color: var(--dc-warning-ink, #ea580c);
 }
 .outer {
-  color: #dc2626;
+  color: var(--dc-error-ink, #dc2626);
 }
 footer {
   font-size: 11px;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
   line-height: 1.8;
   margin: 12px 0;
 }
 footer a {
-  color: #006778;
+  color: var(--dc-teal-ink, #006778);
 }
 .measurement-details {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--dc-outline, #e2e8f0);
   padding-top: 12px;
   font-size: 12px;
 }
 .measurement-details summary {
   cursor: pointer;
-  color: #285265;
+  color: var(--dc-ink-secondary, #285265);
 }
 .table-scroll {
   overflow: auto;
@@ -268,15 +268,15 @@ th,
 td {
   text-align: left;
   padding: 9px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--dc-outline, #e2e8f0);
   white-space: normal;
   min-width: 100px;
 }
 th {
   position: sticky;
   top: 0;
-  background: #f8fafc;
-  color: #344155;
+  background: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink-secondary, #344155);
 }
 @media (max-width: 700px) {
   .chart-card-content {

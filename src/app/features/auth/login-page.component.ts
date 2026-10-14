@@ -1,4 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
+import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { Component, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,7 +8,7 @@ import { matchingPasswords, trimmedRequired } from '../../core/models/form-valid
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ThemeToggleComponent],
   templateUrl: './login-page.component.html',
   styleUrl: './login-page.component.css',
 })

@@ -49,10 +49,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  background-color: #f1f5f9;
+  background-color: var(--dc-surface-high, #f1f5f9);
   padding: 0.375rem;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--dc-outline, #e2e8f0);
 }
 
 .growth-pill-btn {
@@ -63,7 +63,7 @@
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: #475569;
+  color: var(--dc-ink-secondary, #475569);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -71,13 +71,13 @@
 }
 
 .growth-pill-btn:hover {
-  color: #0f172a;
+  color: var(--dc-ink, #0f172a);
   background-color: rgba(255, 255, 255, 0.6);
 }
 
 .growth-pill-btn.active {
-  background-color: #ffffff;
-  color: #2563eb;
+  background-color: var(--dc-surface, #ffffff);
+  color: var(--dc-blue-ink, #2563eb);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -90,15 +90,15 @@
   height: 20px;
   padding: 0 0.375rem;
   border-radius: 9999px;
-  background-color: #e2e8f0;
-  color: #475569;
+  background-color: var(--dc-surface-high, #e2e8f0);
+  color: var(--dc-ink-secondary, #475569);
   font-size: 0.75rem;
   font-weight: 600;
 }
 
 .growth-pill-btn.active .pill-badge {
-  background-color: #dbeafe;
-  color: #1d4ed8;
+  background-color: var(--dc-blue-surface, #dbeafe);
+  color: var(--dc-blue-ink, #1d4ed8);
 }
 
 @media (max-width: 640px) {
@@ -117,7 +117,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  color: #4c6079;
+  color: var(--dc-ink-secondary, #4c6079);
   font-size: 13px;
   margin-bottom: 16px;
 }
@@ -131,8 +131,8 @@
   padding: 18px;
   border: 1px solid #d9e3ec;
   border-radius: 8px;
-  background: #f8fafc;
-  color: #344155;
+  background: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink-secondary, #344155);
   margin: 16px 0;
 }
 .growth-state button {
@@ -141,7 +141,7 @@
 .growth-note {
   font-size: 12px;
   line-height: 1.7;
-  color: #62758c;
+  color: var(--dc-ink-muted, #62758c);
 }
 .growth-position-panel {
   padding: 12px 16px;
@@ -152,7 +152,7 @@
 }
 .growth-position-panel summary {
   cursor: pointer;
-  color: #255567;
+  color: var(--dc-teal-ink, #255567);
   font-weight: 600;
 }
 .position-list {
@@ -172,6 +172,6 @@
   padding: 7px;
   border: 1px solid #c7d5e5;
   border-radius: 6px;
-  background: white;
+  background: var(--dc-surface, white);
   max-width: 100%;
 }

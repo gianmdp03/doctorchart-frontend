@@ -189,14 +189,14 @@
 
 /* Gender-specific Avatar colors */
 .patient-mini-avatar.avatar-male {
-  background-color: #dbeafe;
-  color: #1d4ed8;
+  background-color: var(--dc-blue-surface, #dbeafe);
+  color: var(--dc-blue-ink, #1d4ed8);
   border-color: #93c5fd;
 }
 
 .patient-mini-avatar.avatar-female {
-  background-color: #fce7f3;
-  color: #be185d;
+  background-color: var(--dc-pink-surface, #fce7f3);
+  color: var(--dc-pink-ink, #be185d);
   border-color: #f9a8d4;
 }
 
@@ -239,14 +239,14 @@
 }
 
 .gender-pill.gender-pill-male {
-  background-color: #eff6ff;
-  color: #2563eb;
+  background-color: var(--dc-blue-surface, #eff6ff);
+  color: var(--dc-blue-ink, #2563eb);
   border: 1px solid #dbeafe;
 }
 
 .gender-pill.gender-pill-female {
-  background-color: #fdf2f8;
-  color: #db2777;
+  background-color: var(--dc-pink-surface, #fdf2f8);
+  color: var(--dc-pink-ink, #db2777);
   border: 1px solid #fce7f3;
 }
 
@@ -326,8 +326,8 @@
 }
 
 .encounter-pill.pill-completed {
-  background-color: #ecfdf5;
-  color: #065f46;
+  background-color: var(--dc-teal-surface, #ecfdf5);
+  color: var(--dc-teal-ink, #065f46);
   border: 1px solid #a7f3d0;
 }
 
@@ -341,8 +341,8 @@
 }
 
 .encounter-pill.pill-empty {
-  background-color: #fffbeb;
-  color: #92400e;
+  background-color: var(--dc-warning-surface, #fffbeb);
+  color: var(--dc-warning-ink, #92400e);
   border: 1px solid #fde68a;
 }
 
@@ -362,14 +362,14 @@
 }
 
 .vaccine-chip.chip-pending {
-  background-color: #fef2f2;
-  color: #b91c1c;
+  background-color: var(--dc-error-surface, #fef2f2);
+  color: var(--dc-error-ink, #b91c1c);
   border: 1px solid #fecaca;
 }
 
 .vaccine-chip.chip-ok {
-  background-color: #f0fdf4;
-  color: #15803d;
+  background-color: var(--dc-success-surface, #f0fdf4);
+  color: var(--dc-success-ink, #15803d);
   border: 1px solid #bbf7d0;
 }
 
@@ -530,13 +530,13 @@
 }
 
 .controls-status-pill.has-controls {
-  background-color: #ecfdf5;
-  color: #065f46;
+  background-color: var(--dc-teal-surface, #ecfdf5);
+  color: var(--dc-teal-ink, #065f46);
   border: 1px solid #a7f3d0;
 }
 
 .controls-status-pill.no-controls {
-  background-color: #fffbeb;
-  color: #92400e;
+  background-color: var(--dc-warning-surface, #fffbeb);
+  color: var(--dc-warning-ink, #92400e);
   border: 1px solid #fde68a;
 }

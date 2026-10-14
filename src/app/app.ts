@@ -1,4 +1,5 @@
 import { ClinicalEncounterService } from './core/services/clinical-encounter.service';
+import { ThemeService } from './core/services/theme.service';
 import { ActivePatientService } from './core/services/active-patient.service';
 import { Component, computed, effect, inject, untracked } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
@@ -27,6 +28,7 @@ import { WorkspaceStore } from './core/services/workspace.store';
   styleUrl: './app.css',
 })
 export class App {
+  private readonly themeService = inject(ThemeService);
   readonly authService = inject(AuthService);
   readonly doctorProfileService = inject(DoctorProfileService);
   readonly workspaceStore = inject(WorkspaceStore);

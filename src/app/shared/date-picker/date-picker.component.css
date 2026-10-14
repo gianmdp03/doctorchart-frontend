@@ -3,8 +3,8 @@
 .date-picker-shell:hover { border-color: #94a3b8; }
 .date-picker-shell:focus-within { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15); }
 .date-picker-input { min-width: 0; width: 100%; padding: .5rem 0 .5rem .75rem; border: 0; outline: 0; background: transparent; color: var(--color-on-surface, #0f172a); font: inherit; cursor: pointer; }
-.date-picker-input::placeholder { color: #94a3b8; }
-mat-datepicker-toggle { margin-right: .25rem; color: #475569; }
+.date-picker-input::placeholder { color: var(--dc-ink-muted, #94a3b8); }
+mat-datepicker-toggle { margin-right: .25rem; color: var(--dc-ink-secondary, #475569); }
 :host(.input-error) .date-picker-shell { border-color: #ef4444; }
-.field-error { display: block; margin-top: 6px; color: #b91c1c; font-size: .8rem; }
+.field-error { display: block; margin-top: 6px; color: var(--dc-error-ink, #b91c1c); font-size: .8rem; }
 .date-picker-input.has-error { border-color: #b91c1c; }

@@ -4,8 +4,8 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.875rem 1.5rem;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--dc-surface, #ffffff);
+  border-bottom: 1px solid var(--dc-outline, #e2e8f0);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
@@ -28,9 +28,9 @@
   gap: 0.25rem;
   padding: 0.4rem 0.65rem;
   border-radius: 0.5rem;
-  border: 1px solid #cbd5e1;
-  background-color: #f8fafc;
-  color: #475569;
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  background-color: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink-secondary, #475569);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -39,8 +39,8 @@
 }
 
 .btn-nav-back:hover {
-  background-color: #e2e8f0;
-  color: #0f172a;
+  background-color: var(--dc-surface-high, #e2e8f0);
+  color: var(--dc-ink, #0f172a);
 }
 
 .patient-avatar-circle {
@@ -76,7 +76,7 @@
 .patient-fullname {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--dc-ink, #0f172a);
   margin: 0;
   line-height: 1.25;
   white-space: nowrap;
@@ -87,11 +87,11 @@
 .hc-number-chip {
   font-size: 0.6875rem;
   font-weight: 700;
-  color: #475569;
-  background-color: #f1f5f9;
+  color: var(--dc-ink-secondary, #475569);
+  background-color: var(--dc-surface-high, #f1f5f9);
   padding: 0.15rem 0.45rem;
   border-radius: 0.25rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--dc-outline, #e2e8f0);
   letter-spacing: 0.025em;
 }
 
@@ -107,15 +107,15 @@
 }
 
 .coverage-chip.insured {
-  background-color: #f0fdf4;
+  background-color: var(--dc-success-surface, #f0fdf4);
   border: 1px solid #bbf7d0;
-  color: #166534;
+  color: var(--dc-success-ink, #166534);
 }
 
 .coverage-chip.particular {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: #64748b;
+  background-color: var(--dc-surface-low, #f8fafc);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  color: var(--dc-ink-muted, #64748b);
 }
 
 .coverage-divider {
@@ -123,7 +123,7 @@
 }
 
 .coverage-affiliate {
-  color: #15803d;
+  color: var(--dc-success-ink, #15803d);
   font-weight: 500;
 }
 
@@ -132,12 +132,12 @@
   align-items: center;
   gap: 0.45rem;
   font-size: 0.8125rem;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
   flex-wrap: wrap;
 }
 
 .demo-item strong {
-  color: #334155;
+  color: var(--dc-ink-secondary, #334155);
 }
 
 .demo-bullet {
@@ -172,21 +172,21 @@
 }
 
 .safety-badge.danger {
-  background-color: #fef2f2;
+  background-color: var(--dc-error-surface, #fef2f2);
   border: 1px solid #fecaca;
-  color: #b91c1c;
+  color: var(--dc-error-ink, #b91c1c);
 }
 
 .safety-badge.warning {
-  background-color: #fffbeb;
+  background-color: var(--dc-warning-surface, #fffbeb);
   border: 1px solid #fde68a;
-  color: #b45309;
+  color: var(--dc-warning-ink, #b45309);
 }
 
 .safety-badge.neutral {
-  background-color: #f0fdf4;
+  background-color: var(--dc-success-surface, #f0fdf4);
   border: 1px solid #bbf7d0;
-  color: #15803d;
+  color: var(--dc-success-ink, #15803d);
 }
 
 .safety-dot-pulse {
@@ -234,11 +234,11 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.55rem 0.85rem;
-  background-color: #ffffff;
-  color: #334155;
+  background-color: var(--dc-surface, #ffffff);
+  color: var(--dc-ink-secondary, #334155);
   font-size: 0.8125rem;
   font-weight: 600;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--dc-outline, #cbd5e1);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -246,8 +246,8 @@
 }
 
 .btn-secondary-edit:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink, #0f172a);
   border-color: #94a3b8;
   transform: translateY(-1px);
 }

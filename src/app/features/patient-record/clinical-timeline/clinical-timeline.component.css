@@ -12,8 +12,8 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem 1rem;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
   border-radius: 0.75rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
@@ -29,8 +29,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #f8fafc;
-  border: 1px solid #cbd5e1;
+  background-color: var(--dc-surface-low, #f8fafc);
+  border: 1px solid var(--dc-outline, #cbd5e1);
   border-radius: 0.5rem;
   padding: 0.25rem 0.5rem;
 }
@@ -39,7 +39,7 @@
   border: none;
   background: transparent;
   font-size: 0.8125rem;
-  color: #334155;
+  color: var(--dc-ink-secondary, #334155);
   font-weight: 500;
   outline: none;
   cursor: pointer;
@@ -55,7 +55,7 @@
 .btn-toggle-subtle {
   border: none;
   background: transparent;
-  color: #0d9488;
+  color: var(--dc-teal-ink, #0d9488);
   font-weight: 600;
   cursor: pointer;
   padding: 0.2rem 0.4rem;
@@ -64,7 +64,7 @@
 }
 
 .btn-toggle-subtle:hover {
-  background-color: #f0fdfa;
+  background-color: var(--dc-teal-surface, #f0fdfa);
   text-decoration: underline;
 }
 
@@ -101,17 +101,17 @@
   align-items: center;
   justify-content: center;
   padding: 3.5rem 2rem;
-  background-color: #ffffff;
-  border: 1px dashed #cbd5e1;
+  background-color: var(--dc-surface, #ffffff);
+  border: 1px dashed var(--dc-outline, #cbd5e1);
   border-radius: 0.75rem;
   text-align: center;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
 }
 
 .timeline-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #e2e8f0;
+  border: 3px solid var(--dc-outline, #e2e8f0);
   border-top-color: #0d9488;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -126,8 +126,8 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background-color: #f0fdfa;
-  color: #0d9488;
+  background-color: var(--dc-teal-surface, #f0fdfa);
+  color: var(--dc-teal-ink, #0d9488);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -174,9 +174,9 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background-color: #ffffff;
+  background-color: var(--dc-surface, #ffffff);
   border: 2px solid #0d9488;
-  color: #0d9488;
+  color: var(--dc-teal-ink, #0d9488);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -186,8 +186,8 @@
 
 /* Timeline Card */
 .timeline-card {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
   border-radius: 0.75rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
   overflow: hidden;
@@ -195,7 +195,7 @@
 }
 
 .timeline-card:hover {
-  border-color: #cbd5e1;
+  border-color: var(--dc-outline, #cbd5e1);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
 }
 
@@ -206,8 +206,8 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.875rem 1.25rem;
-  background-color: #f8fafc;
-  border-bottom: 1px solid #f1f5f9;
+  background-color: var(--dc-surface-low, #f8fafc);
+  border-bottom: 1px solid var(--dc-outline, #f1f5f9);
   cursor: pointer;
   user-select: none;
 }
@@ -222,8 +222,8 @@
 .encounter-code {
   font-size: 0.6875rem;
   font-weight: 700;
-  color: #64748b;
-  background-color: #e2e8f0;
+  color: var(--dc-ink-muted, #64748b);
+  background-color: var(--dc-surface-high, #e2e8f0);
   padding: 0.15rem 0.4rem;
   border-radius: 0.25rem;
 }
@@ -233,11 +233,11 @@
   align-items: center;
   gap: 0.35rem;
   font-size: 0.8125rem;
-  color: #334155;
+  color: var(--dc-ink-secondary, #334155);
 }
 
 .time-part {
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
   font-size: 0.75rem;
 }
 
@@ -249,14 +249,14 @@
   border-radius: 9999px;
 }
 
-.badge-pediatrics { background-color: #fef3c7; color: #92400e; }
-.badge-cardiology { background-color: #fee2e2; color: #991b1b; }
-.badge-gynecology { background-color: #fce7f3; color: #9d174d; }
-.badge-general { background-color: #e0f2fe; color: #075985; }
-.badge-ophthalmology { background-color: #ede9fe; color: #5b21b6; }
-.badge-psychiatry { background-color: #f3e8ff; color: #6b21a8; }
-.badge-dermatology { background-color: #ffedd5; color: #9a3412; }
-.badge-traumatology { background-color: #ccfbf1; color: #115e59; }
+.badge-pediatrics { background-color: var(--dc-warning-surface, #fef3c7); color: var(--dc-warning-ink, #92400e); }
+.badge-cardiology { background-color: var(--dc-error-surface, #fee2e2); color: var(--dc-error-ink, #991b1b); }
+.badge-gynecology { background-color: var(--dc-pink-surface, #fce7f3); color: var(--dc-pink-ink, #9d174d); }
+.badge-general { background-color: var(--dc-blue-surface, #e0f2fe); color: var(--dc-blue-ink, #075985); }
+.badge-ophthalmology { background-color: var(--dc-purple-surface, #ede9fe); color: var(--dc-purple-ink, #5b21b6); }
+.badge-psychiatry { background-color: var(--dc-purple-surface, #f3e8ff); color: var(--dc-purple-ink, #6b21a8); }
+.badge-dermatology { background-color: var(--dc-warning-surface, #ffedd5); color: var(--dc-warning-ink, #9a3412); }
+.badge-traumatology { background-color: var(--dc-teal-surface, #ccfbf1); color: var(--dc-teal-ink, #115e59); }
 
 .consultation-type-badge {
   font-size: 0.6875rem;
@@ -265,14 +265,14 @@
   border-radius: 0.375rem;
 }
 
-.chip-routine { background-color: #f1f5f9; color: #475569; }
-.chip-first-visit { background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-.chip-emergency { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.chip-routine { background-color: var(--dc-surface-high, #f1f5f9); color: var(--dc-ink-secondary, #475569); }
+.chip-first-visit { background-color: var(--dc-teal-surface, #ecfdf5); color: var(--dc-teal-ink, #065f46); border: 1px solid #a7f3d0; }
+.chip-emergency { background-color: var(--dc-error-surface, #fef2f2); color: var(--dc-error-ink, #991b1b); border: 1px solid #fecaca; }
 
 .btn-chevron-toggle {
   background: transparent;
   border: none;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
   font-size: 1.125rem;
   cursor: pointer;
   padding: 0.25rem;
@@ -286,7 +286,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem 1.25rem;
-  background-color: #f0fdfa;
+  background-color: var(--dc-teal-surface, #f0fdfa);
   border-bottom: 1px solid #ccfbf1;
   cursor: pointer;
   flex-wrap: wrap;
@@ -303,7 +303,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #0f766e;
+  color: var(--dc-teal-ink, #0f766e);
   letter-spacing: 0.05em;
 }
 
@@ -318,7 +318,7 @@
 
 .diag-description {
   font-size: 0.9375rem;
-  color: #134e4a;
+  color: var(--dc-teal-ink, #134e4a);
 }
 
 .diag-chief-complaint-preview {
@@ -326,12 +326,12 @@
   align-items: center;
   gap: 0.35rem;
   font-size: 0.8125rem;
-  color: #475569;
+  color: var(--dc-ink-secondary, #475569);
 }
 
 .complaint-label {
   font-weight: 600;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
 }
 
 .complaint-text {
@@ -348,7 +348,7 @@
   flex-direction: column;
   gap: 0.875rem;
   padding: 1.25rem;
-  background-color: #ffffff;
+  background-color: var(--dc-surface, #ffffff);
 }
 
 .soap-block {
@@ -356,8 +356,8 @@
   gap: 0.875rem;
   padding: 0.75rem;
   border-radius: 0.5rem;
-  background-color: #f8fafc;
-  border: 1px solid #f1f5f9;
+  background-color: var(--dc-surface-low, #f8fafc);
+  border: 1px solid var(--dc-outline, #f1f5f9);
 }
 
 .block-tag {
@@ -372,9 +372,9 @@
   flex-shrink: 0;
 }
 
-.block-s .block-tag { background-color: #dbeafe; color: #1e40af; }
-.block-o .block-tag { background-color: #d1fae5; color: #065f46; }
-.block-p .block-tag { background-color: #ccfbf1; color: #0f766e; }
+.block-s .block-tag { background-color: var(--dc-blue-surface, #dbeafe); color: var(--dc-blue-ink, #1e40af); }
+.block-o .block-tag { background-color: var(--dc-teal-surface, #d1fae5); color: var(--dc-teal-ink, #065f46); }
+.block-p .block-tag { background-color: var(--dc-teal-surface, #ccfbf1); color: var(--dc-teal-ink, #0f766e); }
 
 .block-content {
   flex: 1 1 auto;
@@ -385,7 +385,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #475569;
+  color: var(--dc-ink-secondary, #475569);
   letter-spacing: 0.025em;
   margin-bottom: 0.35rem;
 }
@@ -394,7 +394,7 @@
 .hpi-text,
 .treatment-plan-text {
   font-size: 0.8125rem;
-  color: #334155;
+  color: var(--dc-ink-secondary, #334155);
   line-height: 1.4;
   margin: 0 0 0.25rem 0;
 }
@@ -411,8 +411,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
   border-radius: 0.375rem;
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
@@ -420,17 +420,17 @@
 
 .v-label {
   font-weight: 600;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
 }
 
 .v-value {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--dc-ink, #0f172a);
 }
 
 .v-value small {
   font-weight: 400;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
 }
 
 .bmi-chip {
@@ -440,10 +440,10 @@
   font-size: 0.75rem;
 }
 
-.bmi-success { background-color: #dcfce7; color: #166534; }
-.bmi-warning { background-color: #fef3c7; color: #92400e; }
-.bmi-danger { background-color: #fee2e2; color: #991b1b; }
-.bmi-neutral { background-color: #f1f5f9; color: #475569; }
+.bmi-success { background-color: var(--dc-success-surface, #dcfce7); color: var(--dc-success-ink, #166534); }
+.bmi-warning { background-color: var(--dc-warning-surface, #fef3c7); color: var(--dc-warning-ink, #92400e); }
+.bmi-danger { background-color: var(--dc-error-surface, #fee2e2); color: var(--dc-error-ink, #991b1b); }
+.bmi-neutral { background-color: var(--dc-surface-high, #f1f5f9); color: var(--dc-ink-secondary, #475569); }
 
 /* Prescriptions Grid */
 .rx-items-grid {
@@ -458,8 +458,8 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.5rem 0.65rem;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
   border-radius: 0.375rem;
 }
 
@@ -471,16 +471,16 @@
 
 .rx-drug-name {
   font-size: 0.8125rem;
-  color: #0f172a;
+  color: var(--dc-ink, #0f172a);
 }
 
 .rx-posology {
   font-size: 0.75rem;
-  color: #475569;
+  color: var(--dc-ink-secondary, #475569);
 }
 
 .follow-up-box {
-  background-color: #fef3c7;
+  background-color: var(--dc-warning-surface, #fef3c7);
   border: 1px solid #fde68a;
   border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
@@ -492,8 +492,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.625rem 1.25rem;
-  background-color: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background-color: var(--dc-surface-low, #f8fafc);
+  border-top: 1px solid var(--dc-outline, #e2e8f0);
 }
 
 .btn-action-print {
@@ -501,9 +501,9 @@
   align-items: center;
   gap: 0.35rem;
   padding: 0.35rem 0.75rem;
-  background-color: #f0fdfa;
+  background-color: var(--dc-teal-surface, #f0fdfa);
   border: 1px solid #99f6e4;
-  color: #0f766e;
+  color: var(--dc-teal-ink, #0f766e);
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 0.375rem;
@@ -512,8 +512,8 @@
 }
 
 .btn-action-print:hover {
-  background-color: #ccfbf1;
-  color: #115e59;
+  background-color: var(--dc-teal-surface, #ccfbf1);
+  color: var(--dc-teal-ink, #115e59);
 }
 
 .actions-right {
@@ -527,9 +527,9 @@
   align-items: center;
   gap: 0.25rem;
   padding: 0.35rem 0.65rem;
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #334155;
+  background-color: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  color: var(--dc-ink-secondary, #334155);
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 0.375rem;
@@ -538,15 +538,15 @@
 }
 
 .btn-action-view:hover {
-  background-color: #f1f5f9;
-  color: #0f172a;
+  background-color: var(--dc-surface-high, #f1f5f9);
+  color: var(--dc-ink, #0f172a);
 }
 
 .btn-action-delete {
   padding: 0.35rem 0.5rem;
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #ef4444;
+  background-color: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  color: var(--dc-error-ink, #ef4444);
   font-size: 0.75rem;
   border-radius: 0.375rem;
   cursor: pointer;
@@ -554,7 +554,7 @@
 }
 
 .btn-action-delete:hover {
-  background-color: #fee2e2;
+  background-color: var(--dc-error-surface, #fee2e2);
   border-color: #fca5a5;
 }
 
@@ -585,16 +585,16 @@
   border-radius: 9999px;
   font-size: 0.72rem;
   font-weight: 600;
-  border: 1px solid #e2e8f0;
-  background-color: #f8fafc;
-  color: #64748b;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  background-color: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink-muted, #64748b);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .preset-chip:hover {
-  background-color: #f1f5f9;
-  color: #0f172a;
+  background-color: var(--dc-surface-high, #f1f5f9);
+  color: var(--dc-ink, #0f172a);
 }
 
 .preset-chip.active {
@@ -615,16 +615,16 @@
   gap: 0.25rem;
   font-size: 0.72rem;
   font-weight: 500;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
 }
 
 .timeline-date-input {
   padding: 0.2rem 0.45rem;
   font-size: 0.75rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--dc-outline, #cbd5e1);
   border-radius: 6px;
-  color: #1e293b;
-  background-color: #ffffff;
+  color: var(--dc-ink, #1e293b);
+  background-color: var(--dc-surface, #ffffff);
   outline: none;
 }
 
@@ -634,17 +634,17 @@
 
 .btn-clear-date-filter {
   background: transparent;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--dc-outline, #cbd5e1);
   border-radius: 6px;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #dc2626;
+  color: var(--dc-error-ink, #dc2626);
   padding: 0.2rem 0.45rem;
   cursor: pointer;
 }
 
 .btn-clear-date-filter:hover {
-  background-color: #fef2f2;
+  background-color: var(--dc-error-surface, #fef2f2);
   border-color: #f87171;
 }
 
@@ -657,6 +657,6 @@
 .timeline-count-badge {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
 }
-.field-error { display: block; margin-top: 6px; color: #b91c1c; font-size: .8rem; }
+.field-error { display: block; margin-top: 6px; color: var(--dc-error-ink, #b91c1c); font-size: .8rem; }

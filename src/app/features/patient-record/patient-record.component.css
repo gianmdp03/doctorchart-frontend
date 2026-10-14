@@ -35,9 +35,9 @@
 }
 .flattened-tabs-nav {
   display: flex;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--dc-outline, #e2e8f0);
   gap: 0.5rem;
-  background: #ffffff;
+  background: var(--dc-surface, #ffffff);
   padding: 0 0.5rem;
   border-radius: 10px 10px 0 0;
   overflow-x: auto;
@@ -54,25 +54,25 @@
   margin-bottom: -2px;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
 
 .flat-tab-btn:hover {
-  color: #0f172a;
+  color: var(--dc-ink, #0f172a);
 }
 
 .flat-tab-btn.active {
-  color: #006874;
+  color: var(--dc-teal-ink, #006874);
   border-bottom-color: #006874;
 }
 
 .tab-counter-badge {
   font-size: 0.7rem;
-  background: #e6f6f8;
-  color: #006874;
+  background: var(--dc-teal-surface, #e6f6f8);
+  color: var(--dc-teal-ink, #006874);
   padding: 2px 6px;
   border-radius: 6px;
 }
@@ -90,9 +90,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #334155;
+  background: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  color: var(--dc-ink-secondary, #334155);
   border-radius: 8px;
   padding: 0.45rem 0.85rem;
   font-size: 0.82rem;
@@ -102,12 +102,12 @@
 }
 
 .secondary-outline-btn:hover {
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink, #0f172a);
 }
 .no-patient-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
   border-radius: 14px;
   padding: 3.5rem 1.5rem;
   text-align: center;
@@ -121,8 +121,8 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #f0fdfa;
-  color: #006874;
+  background: var(--dc-teal-surface, #f0fdfa);
+  color: var(--dc-teal-ink, #006874);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,13 +133,13 @@
 .no-patient-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--dc-ink, #0f172a);
   margin: 0;
 }
 
 .no-patient-desc {
   font-size: 0.88rem;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
   max-width: 480px;
   margin: 0;
 }
@@ -158,13 +158,13 @@
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  color: #64748b;
+  color: var(--dc-ink-muted, #64748b);
 }
 
 .record-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid #e2e8f0;
+  border: 3px solid var(--dc-outline, #e2e8f0);
   border-top-color: #006874;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
