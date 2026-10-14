@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { GrowthChartComponent } from './growth-chart.component';
 import { growthReferenceFixture, patientGrowthFixture } from '../../../core/testing/growth.fixture';
 import { PatientGrowthChart } from '../../../core/models/growth-chart.model';
+import { ClinicalEncounterList } from '../../../core/models/clinical-encounter.model';
 
 function saveVisual(element: HTMLElement, id: string): void {
   const output = process.env['GROWTH_VISUAL_DIR'];
@@ -86,6 +87,95 @@ describe('GrowthChartComponent — all twenty official references', () => {
     );
     expect(fixture.nativeElement.querySelector('.point-tooltip').textContent).toContain('858 días');
     expect(points[1].getAttribute('aria-label')).toContain('kg');
+  });
+  for (const sex of ['girls', 'boys']) {
+    it(`shows the matching consultation on ${sex} marker hover without clicking and dismisses with Escape`, () => {
+      const fixture = TestBed.createComponent(GrowthChartComponent);
+      const chart = {
+        ...patientGrowthFixture().charts[0],
+        definition: growthReferenceFixture.find((c) => c.definition.id === `wfa06_${sex}`)!
+          .definition,
+      };
+      fixture.componentRef.setInput('chart', chart);
+      fixture.componentRef.setInput(
+        'encounters',
+        new Map([
+          [
+            1,
+            {
+              id: 1,
+              consultationType: 'FOLLOW_UP',
+              chiefComplaint: 'Control de alimentación',
+              primaryDiagnosisDescription: 'Evolución favorable',
+            } as ClinicalEncounterList,
+          ],
+          [
+            2,
+            {
+              id: 2,
+              chiefComplaint: 'Otra consulta que no debe mostrarse',
+            } as ClinicalEncounterList,
+          ],
+        ]),
+      );
+      fixture.detectChanges();
+      expect(document.querySelector('.consultation-tooltip')).toBeNull();
+      const marker = fixture.nativeElement.querySelectorAll('.patient-point')[1];
+      marker.parentElement.dispatchEvent(new MouseEvent('mouseenter'));
+      fixture.detectChanges();
+      const summary = document.querySelector('.consultation-tooltip')!;
+      expect(summary.getAttribute('role')).toBe('tooltip');
+      expect(summary.id).toBe(marker.getAttribute('aria-describedby'));
+      expect(summary.textContent).toContain('15/09/2026');
+      expect(summary.textContent).toContain('2 años, 4 meses');
+      expect(summary.textContent).toContain('Seguimiento');
+      expect(summary.textContent).toContain('11.4 kg');
+      expect(summary.textContent).toContain('86 cm');
+      expect(summary.textContent).toContain('48 cm');
+      expect(summary.textContent).toContain('Control de alimentación');
+      expect(summary.textContent).toContain('Evolución favorable');
+      expect(summary.textContent).not.toContain('Otra consulta');
+      marker.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+      expect(document.querySelector('.consultation-tooltip')).toBeNull();
+    });
+  }
+  it('keeps birth and unavailable consultations useful, clears summaries when the chart changes', () => {
+    const fixture = TestBed.createComponent(GrowthChartComponent);
+    const chart = patientGrowthFixture().charts[0];
+    fixture.componentRef.setInput('chart', chart);
+    fixture.detectChanges();
+    const markers = fixture.nativeElement.querySelectorAll('.patient-point');
+    markers[0].dispatchEvent(new FocusEvent('focus'));
+    fixture.detectChanges();
+    expect(document.querySelector('.consultation-tooltip')!.textContent).toContain(
+      'Mediciones al nacer',
+    );
+    expect(document.querySelector('.consultation-tooltip')!.textContent).not.toContain('Motivo:');
+    markers[1].dispatchEvent(new FocusEvent('focus'));
+    fixture.detectChanges();
+    expect(document.querySelector('.consultation-tooltip')!.textContent).toContain(
+      'Consulta clínica',
+    );
+    fixture.componentRef.setInput('chart', { ...chart, points: [] });
+    fixture.detectChanges();
+    expect(document.querySelector('.consultation-tooltip')).toBeNull();
+  });
+  it('lets the pointer enter the summary, then closes it when leaving', async () => {
+    const fixture = TestBed.createComponent(GrowthChartComponent);
+    fixture.componentRef.setInput('chart', patientGrowthFixture().charts[0]);
+    fixture.detectChanges();
+    const marker = fixture.nativeElement.querySelectorAll('.patient-point')[1];
+    marker.parentElement.dispatchEvent(new MouseEvent('mouseenter'));
+    fixture.detectChanges();
+    marker.parentElement.dispatchEvent(new MouseEvent('mouseleave'));
+    document.querySelector('.consultation-tooltip')!.dispatchEvent(new MouseEvent('mouseenter'));
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    fixture.detectChanges();
+    expect(document.querySelector('.consultation-tooltip')).not.toBeNull();
+    document.querySelector('.consultation-tooltip')!.dispatchEvent(new MouseEvent('mouseleave'));
+    fixture.detectChanges();
+    expect(document.querySelector('.consultation-tooltip')).toBeNull();
   });
   it('keeps out-of-frame measurements visible in the detail and can expand axes without moving their values', () => {
     const fixture = TestBed.createComponent(GrowthChartComponent);

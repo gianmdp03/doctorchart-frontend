@@ -62,8 +62,7 @@
     }
     @if (chart().omitted > 0) {
       <p class="notice">
-        {{ chart().omitted }} consultas sin los datos o la posición de medición necesarios para este
-        indicador.
+        {{ chart().omitted }} consultas sin los datos compatibles necesarios para este indicador.
       </p>
     }
     @if (hasBMITransition()) {
@@ -84,6 +83,7 @@
     }
     <div
       class="chart-scroll"
+      cdkScrollable
       tabindex="0"
       [attr.aria-label]="definition().title + ': gráfico desplazable'"
     >
@@ -227,25 +227,109 @@
           }
         }
         @for (point of visiblePoints(); track $index) {
-          <path
-            class="patient-point"
-            [class.unconfirmed-point]="!point.evaluation"
-            [attr.d]="markerPath()"
-            [attr.transform]="'translate(' + xScale()(point.x) + ' ' + yScale()(point.value) + ')'"
-            tabindex="0"
-            role="img"
-            [attr.aria-label]="tooltip(point)"
-            (mouseenter)="focusedPoint.set(point)"
-            (mouseleave)="focusedPoint.set(null)"
-            (focus)="focusedPoint.set(point)"
-            (blur)="focusedPoint.set(null)"
-            (click)="focusedPoint.set(point)"
+          <g
+            cdkOverlayOrigin
+            #origin="cdkOverlayOrigin"
+            (mouseenter)="showPoint(point, origin)"
+            (mouseleave)="scheduleHide()"
           >
-            <title>{{ tooltip(point) }}</title>
-          </path>
+            <circle
+              class="point-hit-area"
+              [attr.cx]="xScale()(point.x)"
+              [attr.cy]="yScale()(point.value)"
+              r="9"
+              aria-hidden="true"
+            />
+            <path
+              class="patient-point"
+              [class.unconfirmed-point]="!point.evaluation"
+              [attr.d]="markerPath()"
+              [attr.transform]="
+                'translate(' + xScale()(point.x) + ' ' + yScale()(point.value) + ')'
+              "
+              tabindex="0"
+              role="img"
+              [attr.aria-label]="tooltip(point)"
+              [attr.aria-describedby]="focusedPoint() === point ? clipId() + '-consultation' : null"
+              (focus)="showPoint(point, origin)"
+              (blur)="hidePoint()"
+              (keydown.escape)="hidePoint()"
+              (click)="showPoint(point, origin)"
+            />
+          </g>
         }
       </svg>
     </div>
+    @if (tooltipOrigin(); as origin) {
+      <ng-template
+        cdkConnectedOverlay
+        [cdkConnectedOverlayOrigin]="origin"
+        [cdkConnectedOverlayOpen]="!!focusedPoint()"
+        [cdkConnectedOverlayPositions]="tooltipPositions"
+        [cdkConnectedOverlayPush]="true"
+        [cdkConnectedOverlayViewportMargin]="12"
+        (overlayKeydown)="$event.key === 'Escape' && hidePoint()"
+      >
+        @if (focusedPoint(); as point) {
+          <div
+            class="consultation-tooltip"
+            [class.tooltip-girl]="definition().sex === 'FEMALE'"
+            [attr.id]="clipId() + '-consultation'"
+            role="tooltip"
+            (mouseenter)="cancelHide()"
+            (mouseleave)="hidePoint()"
+          >
+            <header>
+              <strong>{{ formatDate(point.date) }}</strong>
+              <span>{{ point.ageFormatted }}</span>
+            </header>
+            <p class="consultation-type">
+              {{
+                point.source === 'BIRTH'
+                  ? 'Mediciones al nacer'
+                  : focusedEncounter()
+                    ? consultationLabel(focusedEncounter()!.consultationType)
+                    : 'Consulta clínica'
+              }}
+            </p>
+            <div class="consultation-measurements">
+              @if (point.weightKg !== null) {
+                <span><b>Peso</b> {{ point.weightKg | number: '1.0-2' }} kg</span>
+              }
+              @if (point.heightCm !== null) {
+                <span><b>Talla</b> {{ point.heightCm | number: '1.0-1' }} cm</span>
+              }
+              @if (point.headCircumferenceCm !== null) {
+                <span
+                  ><b>Perímetro cefálico</b>
+                  {{ point.headCircumferenceCm | number: '1.0-1' }} cm</span
+                >
+              }
+            </div>
+            @if (focusedEncounter(); as encounter) {
+              @if (encounter.chiefComplaint?.trim()) {
+                <p><b>Motivo:</b> {{ brief(encounter.chiefComplaint!) }}</p>
+              }
+              @if (encounter.primaryDiagnosisDescription?.trim()) {
+                <p><b>Evaluación:</b> {{ brief(encounter.primaryDiagnosisDescription!) }}</p>
+              }
+            }
+            <p class="consultation-percentile">
+              {{ yTitle() }} · {{ point.value | number: '1.0-3' }} · {{ percentileLabel(point) }}
+              @if (point.evaluation) {
+                · Z {{ point.evaluation.zScore | number: '1.2-3' }}
+              }
+            </p>
+            @if (point.adjustmentCm) {
+              <p>Conversión: {{ point.adjustmentCm > 0 ? '+' : '' }}{{ point.adjustmentCm }} cm.</p>
+            }
+            @if (point.note) {
+              <p>{{ brief(point.note) }}</p>
+            }
+          </div>
+        }
+      </ng-template>
+    }
     <div class="point-tooltip" role="status">
       {{
         focusedPoint()

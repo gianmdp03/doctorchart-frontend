@@ -15,7 +15,7 @@
   </div>
 
   <!-- Main Navigation Links -->
-  <nav class="sidebar-nav" aria-label="Navegación principal">
+  <nav class="sidebar-nav" aria-label="Navegación principal" (click)="collapseAfterNavigation()">
     @if (authService.isSuperAdmin()) {
       <div class="nav-group-label" [class.sr-only]="isCollapsed()">Administración</div>
       <a routerLink="/admin/especialidades" routerLinkActive="active" class="nav-item" title="Especialidades y wizards">

@@ -55,46 +55,6 @@
           />Consultar también períodos históricos</label
         >
       </div>
-      @if (growth.positionObservations().length > 0) {
-        <details class="growth-position-panel">
-          <summary>
-            Posición de longitud / estatura · {{ growth.unconfirmedPositions() }} sin confirmar
-          </summary>
-          <p class="growth-note">
-            Para evaluar longitud, estatura, IMC y peso/longitud o peso/estatura se necesita conocer
-            cómo se midió. Confirmá la posición documentada de cada consulta. Estas confirmaciones
-            se usan en esta vista y no modifican el historial. Para guardar el dato en nuevas
-            consultas, agregá «Posición de longitud / estatura» desde Personalizar fichas.
-          </p>
-          <div class="position-list">
-            @for (
-              observation of growth.positionObservations();
-              track growth.observationKey(observation)
-            ) {
-              <label class="position-row"
-                ><span
-                  >{{ growth.growthService.formatDate(observation.date) }} ·
-                  {{ observation.ageFormatted }} · {{ observation.heightCm }} cm{{
-                    observation.source === 'BIRTH'
-                      ? ' · al nacer'
-                      : ' · consulta #' + observation.encounterId
-                  }}</span
-                ><select
-                  [attr.aria-label]="
-                    'Posición de medición del ' + growth.growthService.formatDate(observation.date)
-                  "
-                  [value]="observation.measurementMode"
-                  (change)="growth.confirmMode(observation, $any($event.target).value)"
-                >
-                  <option value="UNKNOWN">Usar dato original (sin nueva confirmación)</option>
-                  <option value="RECUMBENT">Longitud recumbente (acostado)</option>
-                  <option value="STANDING">Estatura de pie</option>
-                </select></label
-              >
-            }
-          </div>
-        </details>
-      }
       @if (
         response.referenceSex === 'FEMALE' && response.ageDays >= 731 && response.ageDays <= 1856
       ) {
@@ -142,7 +102,7 @@
           </div>
         </div>
         @for (chart of growth.visibleCharts(); track chart.definition.id) {
-          <app-growth-chart [chart]="chart" />
+          <app-growth-chart [chart]="chart" [encounters]="encounters()" />
         }
       }
       <p class="growth-note">

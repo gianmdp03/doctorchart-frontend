@@ -660,17 +660,77 @@ describe('PatientRecordComponent', () => {
     growth.confirmSex('MALE'); fixture.detectChanges();
     fixture.nativeElement.querySelector('[data-testid="reset-growth-reference"]').click(); fixture.detectChanges();
     expect(growth.confirmedSex()).toBeNull();
-    expect(growthReadSpy).toHaveBeenLastCalledWith(mockPatient.id, null, {});
+    expect(growthReadSpy).toHaveBeenLastCalledWith(mockPatient.id, null);
     expect(fixture.nativeElement.textContent).toContain('Confirmar referencia masculina');
   });
 
-  it('clears sex and position confirmations when the patient changes', () => {
-    growth.confirmSex('MALE'); growth.confirmMode(measurementHistory.observations[0], 'RECUMBENT');
-    expect(growth.confirmedModes()).toEqual({ BIRTH: 'RECUMBENT' });
+  it('clears the reference sex confirmation when the patient changes', () => {
+    growth.confirmSex('MALE');
     growthReadSpy.mockImplementation((id: number) => of(patientGrowthFixture(id, false)));
     activePatientService.setActivePatient({ ...mockPatient, id: 99 }); fixture.detectChanges();
-    expect(growth.confirmedSex()).toBeNull(); expect(growth.confirmedModes()).toEqual({});
-    expect(growthReadSpy).toHaveBeenLastCalledWith(99, null, {});
+    expect(growth.confirmedSex()).toBeNull();
+    expect(growthReadSpy).toHaveBeenLastCalledWith(99, null);
+  });
+
+  it('shows BMI measurements without a position confirmation panel or request', () => {
+    component.setTab('curvas');
+    growth.selectedGrowthMetric.set('BMI');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.growth-position-panel')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.patient-point').length).toBeGreaterThan(0);
+    expect(growthReadSpy).toHaveBeenLastCalledWith(mockPatient.id, null);
+  });
+
+  it('automatically asks the API to evaluate missing positions and renders its BMI points', () => {
+    const unpositioned = structuredClone(patientGrowthFixture(mockPatient.id));
+    for (const observation of unpositioned.observations) observation.measurementMode = 'UNKNOWN';
+    for (const chart of unpositioned.charts) {
+      if (['BMI', 'WEIGHT_LENGTH', 'WEIGHT_HEIGHT'].includes(chart.definition.indicator)) {
+        chart.omitted = chart.points.length;
+        chart.points = [];
+      }
+    }
+    const evaluated = patientGrowthFixture(mockPatient.id);
+    growthReadSpy.mockImplementation((_id: number, _sex: unknown, modes: unknown) =>
+      of(modes ? evaluated : unpositioned),
+    );
+    growth.loadGrowthCurves(mockPatient.id);
+    component.setTab('curvas');
+    growth.selectedGrowthMetric.set('BMI');
+    fixture.detectChanges();
+    expect(growthReadSpy).toHaveBeenLastCalledWith(mockPatient.id, null, { BIRTH: 'RECUMBENT', '1': 'STANDING' });
+    expect(growth.response()).toBe(evaluated);
+    expect(fixture.nativeElement.querySelectorAll('.patient-point')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('.growth-position-panel')).toBeNull();
+  });
+
+  it('preserves documented positions and reports a failed automatic evaluation', () => {
+    const unpositioned = structuredClone(patientGrowthFixture(mockPatient.id));
+    unpositioned.observations[0].measurementMode = 'UNKNOWN';
+    growthReadSpy.mockImplementation((_id: number, _sex: unknown, modes: unknown) =>
+      modes ? throwError(() => ({ status: 503 })) : of(unpositioned),
+    );
+    growth.loadGrowthCurves(mockPatient.id);
+    expect(growthReadSpy).toHaveBeenLastCalledWith(mockPatient.id, null, { BIRTH: 'RECUMBENT' });
+    expect(growth.response()).toBeNull();
+    expect(growth.growthError()).toContain('No se pudieron cargar');
+    expect(growth.isLoadingGrowthCurves()).toBe(false);
+  });
+
+  it('discards a pending automatic evaluation after switching patients', () => {
+    const unpositioned = structuredClone(patientGrowthFixture(mockPatient.id));
+    unpositioned.observations[0].measurementMode = 'UNKNOWN';
+    const pending = new Subject<PatientGrowthResponse>();
+    growthReadSpy.mockImplementation((id: number, _sex: unknown, modes: unknown) =>
+      id === mockPatient.id ? modes ? pending : of(unpositioned) : of(patientGrowthFixture(id, false)),
+    );
+    growth.loadGrowthCurves(mockPatient.id);
+    expect(growth.isLoadingGrowthCurves()).toBe(true);
+    activePatientService.setActivePatient({ ...mockPatient, id: 99 });
+    fixture.detectChanges();
+    pending.next(patientGrowthFixture(mockPatient.id));
+    expect(growth.response()?.patientId).toBe(99);
+    expect(growth.backendGrowthMeasurements()).toEqual([]);
   });
 
   it('refreshes age-dependent references across midnight in Argentina', () => {

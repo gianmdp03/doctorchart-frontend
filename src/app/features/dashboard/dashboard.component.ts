@@ -23,6 +23,7 @@ import {
   lucideEye,
   lucideFileText,
   lucideSearch,
+  lucideRefreshCw,
   lucideSparkles,
   lucideStethoscope,
   lucideUserPlus,
@@ -39,7 +40,7 @@ import {
   ClinicalEncounterList,
   DashboardRecentEncounter,
 } from '../../core/models/clinical-encounter.model';
-import { getTotalPages } from '../../core/models/api-response.model';
+import { getTotalElements, getTotalPages } from '../../core/models/api-response.model';
 
 export interface ClinicalHighlightItem {
   label: string;
@@ -77,6 +78,7 @@ export interface RecentEncounterItem {
       lucideEye,
       lucideFileText,
       lucideSearch,
+      lucideRefreshCw,
       lucideSparkles,
       lucideStethoscope,
       lucideUserPlus,
@@ -101,6 +103,39 @@ export class DashboardComponent implements OnInit {
   readonly isLoadingMetrics = signal<boolean>(true);
 
   readonly recentEncounters = signal<RecentEncounterItem[]>([]);
+  private readonly recentRecords = signal<ClinicalEncounterList[]>([]);
+  private readonly activityDay = signal(this.argentinaDay());
+  readonly recentSearch = signal('');
+  readonly recentPage = signal(0);
+  readonly recentPageSize = signal(5);
+  readonly recentTotal = signal(0);
+  readonly recentTotalPages = signal(1);
+  readonly recentPageError = signal<string | null>(null);
+  readonly isLoadingRecentPage = signal(true);
+  readonly recentPageItems = computed(() =>
+    this.recentRecords().map((encounter) => {
+      const date = new Date(encounter.encounterDate);
+      const localDate = Number.isFinite(date.getTime()) ? this.argentinaDay(date) : '';
+      const item = this.mapToRecentEncounterItem(
+        { encounter, encounterLocalDate: localDate, patientAgeLabel: '', patientNationalId: null },
+        this.activityDay(),
+      );
+      const known = this.recentEncounters().find(
+        (e) => e.patientId === encounter.patientId && e.patientName === item.patientName,
+      );
+      return { ...item, patientMeta: known?.patientMeta ?? item.patientMeta };
+    }),
+  );
+  readonly recentRange = computed(() => {
+    const count = this.recentPageItems().length;
+    const start = count ? this.recentPage() * this.recentPageSize() + 1 : 0;
+    return `${start}–${count ? start + count - 1 : 0} de ${this.recentTotal()}`;
+  });
+  readonly recentPageNumbers = computed(() => {
+    const count = Math.min(5, this.recentTotalPages());
+    const start = Math.max(0, Math.min(this.recentPage() - 2, this.recentTotalPages() - count));
+    return Array.from({ length: count }, (_, i) => start + i);
+  });
   readonly isLoadingRecent = signal<boolean>(true);
   readonly metricsError = signal<string | null>(null);
   readonly directoryError = signal<string | null>(null);
@@ -135,6 +170,12 @@ export class DashboardComponent implements OnInit {
   });
 
   private directorySearchTimer: ReturnType<typeof setTimeout> | null = null;
+  private recentSearchTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly recentReads = new AccountReadScope(() => {
+    this.recentSearch.set('');
+    this.recentPageSize.set(5);
+    this.loadRecentPage(0);
+  });
   private readonly metricsReads = new AccountReadScope(() => this.loadKpiData());
   private readonly directoryReads = new AccountReadScope(() => {
     this.directorySearch.set('');
@@ -146,11 +187,13 @@ export class DashboardComponent implements OnInit {
       if (this.directorySearchTimer) {
         clearTimeout(this.directorySearchTimer);
       }
+      if (this.recentSearchTimer) clearTimeout(this.recentSearchTimer);
     });
   }
 
   ngOnInit(): void {
     this.loadKpiData();
+    this.loadRecentPage(0);
     this.loadDirectory(0);
     this.hydrateNotes();
   }
@@ -164,6 +207,7 @@ export class DashboardComponent implements OnInit {
   @HostListener('window:auth-success')
   onClinicalDataChanged(): void {
     this.loadKpiData();
+    this.loadRecentPage(0);
     this.loadDirectory(0, this.directorySearch());
   }
 
@@ -188,6 +232,7 @@ export class DashboardComponent implements OnInit {
         next: (activity) => {
           if (!current()) return;
           this.totalPatients.set(activity.totalPatients);
+          this.activityDay.set(activity.asOfDate);
           this.encountersMonthCount.set(activity.encountersThisMonth);
           this.encountersTodayCount.set(activity.encountersToday);
           this.recentEncounters.set(
@@ -206,6 +251,80 @@ export class DashboardComponent implements OnInit {
           }
         },
       });
+  }
+  private argentinaDay(date = new Date()): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(date);
+  }
+  loadRecentPage(page: number): void {
+    if (this.recentSearchTimer) clearTimeout(this.recentSearchTimer);
+    this.recentSearchTimer = null;
+    const current = this.recentReads.begin();
+    this.recentRecords.set([]);
+    this.recentPageError.set(null);
+    this.recentPage.set(Math.max(0, page));
+    this.recentTotal.set(0);
+    this.recentTotalPages.set(1);
+    if (!this.recentReads.authenticated()) {
+      this.isLoadingRecentPage.set(false);
+      return;
+    }
+    this.isLoadingRecentPage.set(true);
+    this.clinicalEncounterService
+      .getAll(
+        this.recentPage(),
+        this.recentPageSize(),
+        'encounterDate,desc',
+        this.recentSearch().trim(),
+      )
+      .pipe(takeUntil(this.recentReads.canceled))
+      .subscribe({
+        next: (response) => {
+          if (!current()) return;
+          const totalPages = Math.max(1, getTotalPages(response));
+          if (page >= totalPages && getTotalElements(response) > 0) {
+            this.loadRecentPage(totalPages - 1);
+            return;
+          }
+          this.recentRecords.set(response.content);
+          this.recentTotal.set(getTotalElements(response));
+          this.recentTotalPages.set(totalPages);
+          this.isLoadingRecentPage.set(false);
+        },
+        error: () => {
+          if (!current()) return;
+          this.recentPageError.set(
+            'No se pudieron cargar las consultas. Reintentá para continuar.',
+          );
+          this.isLoadingRecentPage.set(false);
+        },
+      });
+  }
+  onRecentSearchInput(event: Event): void {
+    this.recentSearch.set((event.target as HTMLInputElement).value);
+    this.recentReads.cancel();
+    this.recentRecords.set([]);
+    this.isLoadingRecentPage.set(true);
+    if (this.recentSearchTimer) clearTimeout(this.recentSearchTimer);
+    this.recentSearchTimer = setTimeout(() => this.loadRecentPage(0), 350);
+  }
+  clearRecentSearch(): void {
+    this.recentSearch.set('');
+    this.loadRecentPage(0);
+  }
+  refreshRecentActivity(): void {
+    this.loadKpiData();
+    this.loadRecentPage(this.recentPage());
+  }
+  changeRecentPageSize(value: string): void {
+    const size = Number(value);
+    if (![5, 10, 20].includes(size)) return;
+    this.recentPageSize.set(size);
+    this.loadRecentPage(0);
   }
   loadDirectory(page: number, search?: string): void {
     if (this.directorySearchTimer) {

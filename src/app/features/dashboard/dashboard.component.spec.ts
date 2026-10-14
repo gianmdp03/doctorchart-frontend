@@ -99,6 +99,7 @@ describe('DashboardComponent', () => {
         }),
       ),
       getByPatient: vi.fn().mockReturnValue(of([])),
+      getAll: vi.fn().mockReturnValue(of({ content: [], page: { totalElements: 0, totalPages: 0 } })),
     };
 
     workspaceStoreMock = {
@@ -194,6 +195,76 @@ describe('DashboardComponent', () => {
     expect(component.recentEncounters()[0].encounterDateOnly).toBe('24/09/2026');
     expect(component.recentEncounters()[0].isToday).toBe(false);
     expect(clinicalEncounterServiceMock.getByPatient).not.toHaveBeenCalled();
+  });
+
+  it('paginates the complete history using server totals and keeps each consultation action', () => {
+    const encounter = { ...clinicalFormFixture(), id: 101, patientId: 1, patientFullName: 'Mateo Rossi', encounterDate: '2026-09-24T10:00:00Z', consultationType: 'FIRST_VISIT', chiefComplaint: 'Control clínico' };
+    clinicalEncounterServiceMock.getAll.mockReturnValue(of({
+      content: [encounter], page: { totalElements: 1560, totalPages: 312, number: 0, size: 5 },
+    }));
+    component.loadRecentPage(0);
+    fixture.detectChanges();
+    expect(clinicalEncounterServiceMock.getAll).toHaveBeenLastCalledWith(0, 5, 'encounterDate,desc', '');
+    expect(component.recentTotal()).toBe(1560);
+    expect(component.recentTotalPages()).toBe(312);
+    expect(fixture.nativeElement.querySelectorAll('.recent-consultation')).toHaveLength(1);
+    expect(fixture.nativeElement.querySelector('.recent-count').textContent).toContain('1–1 de 1560');
+    expect(fixture.nativeElement.querySelector('.recent-patient-info').textContent).toContain('DNI 50123456');
+    const detail = vi.spyOn(component, 'openEncounterDetail').mockImplementation(() => {});
+    const record = vi.spyOn(component, 'openPatient').mockImplementation(() => {});
+    fixture.nativeElement.querySelector('.recent-detail-btn').click();
+    fixture.nativeElement.querySelector('.recent-record-btn').click();
+    expect(detail.mock.calls[0][0]).toBe(101);
+    expect(record).toHaveBeenCalledWith(1);
+    component.loadRecentPage(1);
+    expect(clinicalEncounterServiceMock.getAll).toHaveBeenLastCalledWith(1, 5, 'encounterDate,desc', '');
+    expect(component.recentRange()).toBe('6–6 de 1560');
+  });
+
+  it('debounces history searches, searches on Enter, and resets the page when its size changes', () => {
+    vi.useFakeTimers();
+    try {
+      const count = clinicalEncounterServiceMock.getAll.mock.calls.length;
+      component.onRecentSearchInput({ target: { value: 'Ma' } } as any);
+      vi.advanceTimersByTime(200);
+      component.onRecentSearchInput({ target: { value: 'Mateo' } } as any);
+      vi.advanceTimersByTime(350);
+      expect(clinicalEncounterServiceMock.getAll.mock.calls.length).toBe(count + 1);
+      expect(clinicalEncounterServiceMock.getAll).toHaveBeenLastCalledWith(0, 5, 'encounterDate,desc', 'Mateo');
+      component.onRecentSearchInput({ target: { value: 'Rinitis' } } as any);
+      component.loadRecentPage(0);
+      component.changeRecentPageSize('10');
+      expect(clinicalEncounterServiceMock.getAll).toHaveBeenLastCalledWith(0, 10, 'encounterDate,desc', 'Rinitis');
+      component.clearRecentSearch();
+      expect(clinicalEncounterServiceMock.getAll).toHaveBeenLastCalledWith(0, 10, 'encounterDate,desc', '');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('cancels superseded history pages and rejects replies after an account switch', () => {
+    const older = new Subject<any>(), latest = new Subject<any>();
+    clinicalEncounterServiceMock.getAll.mockReturnValueOnce(older).mockReturnValueOnce(latest);
+    component.loadRecentPage(0);
+    component.loadRecentPage(1);
+    expect(older.observed).toBe(false);
+    authServiceMock.currentUser.set({ id: 'doctor-b' });
+    latest.next({ content: [{ patientFullName: 'Private result' }], page: { totalElements: 999, totalPages: 999 } });
+    expect(component.recentPageItems()).toEqual([]);
+    fixture.detectChanges();
+    expect(latest.observed).toBe(false);
+    expect(component.recentPage()).toBe(0);
+    expect(component.recentSearch()).toBe('');
+  });
+
+  it('distinguishes a history failure from an empty search and supports retry', () => {
+    component.recentSearch.set('Inexistente');
+    clinicalEncounterServiceMock.getAll.mockReturnValueOnce(throwError(() => ({ status: 503 })));
+    component.loadRecentPage(0);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.recent-empty[role="alert"]')).not.toBeNull();
+    fixture.nativeElement.querySelector('.recent-empty button').click();
+    fixture.detectChanges();
+    expect(component.recentPageError()).toBeNull();
+    expect(fixture.nativeElement.querySelector('.recent-empty').textContent).toContain('No encontramos esas consultas');
   });
   it('shows an error without turning failed statistics into zero activity', () => {
     clinicalEncounterServiceMock.getDashboard.mockReturnValue(throwError(() => ({ status: 500 })));

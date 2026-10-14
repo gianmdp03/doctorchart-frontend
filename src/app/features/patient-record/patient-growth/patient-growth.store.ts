@@ -1,6 +1,6 @@
 import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { interval, Subscription } from 'rxjs';
+import { interval, of, Subscription, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { ActivePatientService } from '../../../core/services/active-patient.service';
 import { WorkspaceStore } from '../../../core/services/workspace.store';
@@ -8,7 +8,6 @@ import { PatientGrowthService } from '../../../core/services/patient-growth.serv
 import {
   BiologicalSex,
   GrowthMetricType,
-  GrowthObservation,
   PatientGrowthResponse,
 } from '../../../core/models/growth-chart.model';
 
@@ -28,7 +27,6 @@ export class PatientGrowthStore {
   readonly showHistorical = signal(false);
   readonly response = signal<PatientGrowthResponse | null>(null);
   readonly confirmedSex = signal<BiologicalSex | null>(null);
-  readonly confirmedModes = signal<Record<string, 'RECUMBENT' | 'STANDING'>>({});
   readonly isLoadingGrowthCurves = signal(false);
   readonly growthError = signal<string | null>(null);
   readonly patientSex = computed(() => this.response()?.referenceSex || null);
@@ -85,14 +83,6 @@ export class PatientGrowthStore {
       0,
     ),
   );
-  readonly positionObservations = computed(() =>
-    this.backendGrowthMeasurements().filter(
-      (o) => typeof o.heightCm === 'number' && o.heightCm > 0,
-    ),
-  );
-  readonly unconfirmedPositions = computed(
-    () => this.positionObservations().filter((o) => o.measurementMode === 'UNKNOWN').length,
-  );
   readonly growthEnabled = computed(
     () =>
       this.workspaceStore.hasRecordTab('GROWTH') &&
@@ -116,7 +106,6 @@ export class PatientGrowthStore {
           this.response.set(null);
           this.growthError.set(null);
           this.confirmedSex.set(null);
-          this.confirmedModes.set({});
           this.selectedGrowthMetric.set('WEIGHT');
           this.showHistorical.set(false);
         }
@@ -146,23 +135,12 @@ export class PatientGrowthStore {
       patient?.gender,
     ]);
   }
-  observationKey(o: GrowthObservation): string {
-    return o.encounterId === null ? 'BIRTH' : String(o.encounterId);
-  }
   confirmSex(sex: BiologicalSex): void {
     this.confirmedSex.set(sex);
     this.reload();
   }
   clearSexConfirmation(): void {
     this.confirmedSex.set(null);
-    this.reload();
-  }
-  confirmMode(o: GrowthObservation, mode: string): void {
-    const modes = { ...this.confirmedModes() };
-    const key = this.observationKey(o);
-    if (mode === 'RECUMBENT' || mode === 'STANDING') modes[key] = mode;
-    else delete modes[key];
-    this.confirmedModes.set(modes);
     this.reload();
   }
   reload(): void {
@@ -172,6 +150,7 @@ export class PatientGrowthStore {
   loadGrowthCurves(patientId: number): void {
     const revision = ++this.growthRead;
     const context = this.contextKey();
+    const referenceSex = this.confirmedSex();
     this.readSubscription?.unsubscribe();
     if (!this.growthEnabled()) {
       this.response.set(null);
@@ -182,8 +161,40 @@ export class PatientGrowthStore {
     this.isLoadingGrowthCurves.set(true);
     this.growthError.set(null);
     this.readSubscription = this.growthService
-      .getPatientGrowthCurves(patientId, this.confirmedSex(), this.confirmedModes())
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .getPatientGrowthCurves(patientId, referenceSex)
+      .pipe(
+        switchMap((data) => {
+          if (
+            !data ||
+            data.patientId !== patientId ||
+            data.status !== 'READY' ||
+            revision !== this.growthRead ||
+            context !== this.contextKey()
+          )
+            return of(data);
+          // Supply the standard measuring workflow when the API has no stored
+          // position. All derived values and evaluations still come from Go.
+          const modes: Record<string, 'RECUMBENT' | 'STANDING'> = {};
+          for (const observation of data.observations) {
+            if (
+              observation.measurementMode !== 'UNKNOWN' ||
+              !Number.isFinite(observation.heightCm) ||
+              (observation.heightCm ?? 0) <= 0 ||
+              !Number.isInteger(observation.ageDays) ||
+              observation.ageDays < 0
+            )
+              continue;
+            const key = observation.source === 'BIRTH' ? 'BIRTH' : String(observation.encounterId);
+            if (key !== 'BIRTH' && (!observation.encounterId || observation.encounterId <= 0))
+              continue;
+            modes[key] = observation.ageDays <= 730 ? 'RECUMBENT' : 'STANDING';
+          }
+          return Object.keys(modes).length
+            ? this.growthService.getPatientGrowthCurves(patientId, referenceSex, modes)
+            : of(data);
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
         next: (data) => {
           if (
