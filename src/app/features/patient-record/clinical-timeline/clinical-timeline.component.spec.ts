@@ -39,6 +39,8 @@ describe('ClinicalTimelineComponent', () => {
   ];
 
   beforeEach(async () => {
+    const options = new Intl.DateTimeFormat().resolvedOptions();
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ ...options, timeZone: 'America/Argentina/Buenos_Aires' });
     await TestBed.configureTestingModule({
       imports: [ClinicalTimelineComponent],
     }).compileComponents();
@@ -107,12 +109,20 @@ describe('ClinicalTimelineComponent', () => {
     // 2026-10-07T23:10:00Z (equivalent to 01:10 in Spain during summer time)
     // In Argentina (UTC-3), it translates to 20:10 hs
     const spainEncounterUtc = '2026-10-07T23:10:00Z';
-    expect(component.formatDate(spainEncounterUtc)).toBe('07 de oct de 2026');
+    expect(component.formatDate(spainEncounterUtc)).toBe('07/10/2026');
     expect(component.formatTime(spainEncounterUtc)).toBe('20:10 hs');
 
     // 2026-10-07T17:10:00Z -> In Argentina (UTC-3) it translates to 14:10 hs
     const afternoonEncounterUtc = '2026-10-07T17:10:00Z';
-    expect(component.formatDate(afternoonEncounterUtc)).toBe('07 de oct de 2026');
+    expect(component.formatDate(afternoonEncounterUtc)).toBe('07/10/2026');
     expect(component.formatTime(afternoonEncounterUtc)).toBe('14:10 hs');
+  });
+  it('filters by the displayed day instead of slicing the UTC date', () => {
+    const localEvening = { ...mockEncounters[0], encounterDate: '2026-10-08T01:30:00Z' };
+    component.encounters = [localEvening];
+    component.fromDate.set('2026-10-07'); component.toDate.set('2026-10-07');
+    expect(component.filteredEncounters()).toEqual([localEvening]);
+    component.fromDate.set('2026-10-08'); component.toDate.set('2026-10-08');
+    expect(component.filteredEncounters()).toEqual([]);
   });
 });

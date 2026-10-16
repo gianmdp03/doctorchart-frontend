@@ -1,3 +1,4 @@
+import { UserClockService } from '../../core/services/user-clock.service';
 import {
   Component,
   computed,
@@ -21,7 +22,7 @@ import { WorkspaceSetup } from '../../core/models/workspace.model';
 import { WizardFormDefinition, WizardFormValues } from '../../core/models/wizard-definition.model';
 import { DynamicFormRendererComponent, inputValues } from '../dynamic-form-renderer/dynamic-form-renderer.component';
 import {
-  argentinaDateTime,
+  userDateTime,
   conflictKind,
   errorMessage,
   retainCompatibleValues,
@@ -52,17 +53,19 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
   readonly encounterCreated = output<ClinicalEncounterDetail>();
 
   readonly consultationType = signal<ConsultationType>('FIRST_VISIT');
+  private readonly clock = inject(UserClockService);
+  get timeZone(): string { return this.clock.timeZone(); }
   readonly recordedInstant = signal<string>(new Date().toISOString());
   readonly encounterDay = computed(() => {
     try {
-      return argentinaDateTime(this.recordedInstant()).day;
+      return userDateTime(this.recordedInstant()).day;
     } catch {
       return '';
     }
   });
   readonly encounterTime = computed(() => {
     try {
-      return argentinaDateTime(this.recordedInstant()).time;
+      return userDateTime(this.recordedInstant()).time;
     } catch {
       return '';
     }
@@ -81,7 +84,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
     const instant = this.recordedInstant();
     if (!instant) return '';
     try {
-      const parts = argentinaDateTime(instant);
+      const parts = userDateTime(instant);
       const match = parts.day.match(/^(\d{4})-(\d{2})-(\d{2})$/);
       if (!match) return `${parts.day} ${parts.time} hs`;
       return `${match[3]}/${match[2]}/${match[1]} a las ${parts.time} hs`;
@@ -128,10 +131,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
     this.historyStore?.setEncounterDraft(this.dynamicFormData(), type, this.recordedInstant());
   }
 
-  readonly dateValid = computed(() => {
-    const instant = this.currentInstant();
-    return !!instant && new Date(instant).getTime() <= Date.now() + 60000;
-  });
+
 
   constructor() {
     effect(() => {
@@ -220,21 +220,18 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
     this.isDynamicFormValid.set(valid);
   }
 
-  currentInstant(): string {
-    return this.recordedInstant();
-  }
+
 
   async submitEncounter(): Promise<void> {
     const workspace = this.workspace();
     const definition = this.definition();
     const patientId = this.patientId();
-    const encounterDate = this.currentInstant();
+
 
     if (
       !workspace ||
       !definition ||
       !patientId ||
-      !this.dateValid() ||
       !this.isDynamicFormValid() ||
       this.readonly()
     ) {

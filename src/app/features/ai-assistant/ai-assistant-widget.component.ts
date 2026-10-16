@@ -1,3 +1,4 @@
+import { instantParts } from '../../core/date/user-time-zone';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +8,6 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -30,7 +30,6 @@ import { AiChatService } from '../../core/services/ai-chat.service';
   selector: 'app-ai-assistant-widget',
   imports: [
     FormsModule,
-    DatePipe,
     NgIcon,
     HlmButton,
     HlmInput,
@@ -54,6 +53,7 @@ import { AiChatService } from '../../core/services/ai-chat.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AiAssistantWidgetComponent {
+  readonly messageTime = (instant: string | Date) => instantParts(instant).time;
   protected readonly chatService = inject(AiChatService);
 
   private draftRevision = this.chatService.contextRevision();

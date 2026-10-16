@@ -111,8 +111,6 @@ h1, h2, h3, p { margin: 0; }
 .header-copy p { color: var(--on-surface-variant); font-size: .95rem; margin: 6px 0 16px; }
 .header-meta { border-top: 1px solid var(--header-border); display: flex; flex-wrap: wrap; gap: 10px; padding-top: 14px; }
 .header-meta span { background: var(--surface-container); border: 1px solid var(--outline-variant); border-radius: 999px; color: var(--header-text); font-size: .82rem; font-weight: 500; padding: 6px 14px; }
-.theme-toggle { align-self: flex-start; background: var(--surface-container); border: 1px solid var(--outline); border-radius: 999px; color: var(--on-surface); cursor: pointer; font: inherit; font-size: .82rem; font-weight: 500; padding: 8px 14px; white-space: nowrap; }
-.theme-toggle:hover, .theme-toggle:focus-visible { background: var(--surface-container-high); outline: 2px solid var(--header-text); outline-offset: 2px; }
 
 .table-scrollbar-container {
   align-items: center;
@@ -235,7 +233,6 @@ tbody td { border-bottom: 1px solid var(--row-divider); border-right: 1px solid 
   .vaccination-calendar { padding: 16px; }
   .header-card, .notes-container { border-radius: 16px; padding: 22px 20px; }
   .header-card { flex-direction: column-reverse; gap: 16px; }
-  .theme-toggle { align-self: flex-end; }
   .header-copy h1 { font-size: 1.45rem; }
   .notes-grid { grid-template-columns: 1fr; gap: 24px; }
 }

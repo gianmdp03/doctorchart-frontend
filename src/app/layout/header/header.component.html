@@ -12,6 +12,10 @@
   <!-- Right: Actions & Profile -->
   <div class="header-right">
     <app-theme-toggle />
+    <a [href]="bycodeUrl" class="bycode-link" aria-label="Ir a ByCode" title="Ir a ByCode">
+      <img src="/bycode-logo.svg" alt="" aria-hidden="true" />
+      <span>ByCode</span>
+    </a>
     <!-- Visual Accessibility Font Switcher -->
     <div class="accessibility-ctrl">
       <button
@@ -49,6 +53,7 @@
             }
           </div>
 
+          <p class="timezone-label">Horario del dispositivo: {{ timeZone }}</p>
           <div class="profile-menu-divider"></div>
 
           @if (!authService.isSuperAdmin()) {

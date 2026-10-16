@@ -1,3 +1,4 @@
+import { formatInstant } from '../../core/date/user-time-zone';
 import {
   DestroyRef,
   Component,
@@ -152,12 +153,7 @@ export class ConsultasComponent implements OnInit {
       patientName: e.patientFullName || 'Paciente #' + e.patientId,
       encounterDate: Number.isNaN(date.getTime())
         ? '—'
-        : date.toLocaleDateString('es-AR', {
-            timeZone: 'America/Argentina/Buenos_Aires',
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          }),
+        : formatInstant(date),
       consultationType: labels[e.consultationType] || e.consultationType,
       chiefComplaint: e.chiefComplaint || '—',
       primaryDiagnosis: e.primaryDiagnosisDescription || '—',

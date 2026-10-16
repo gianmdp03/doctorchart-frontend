@@ -1,13 +1,12 @@
 <div class="login-page-wrapper">
   <div class="login-page-card">
+    <a routerLink="/" class="login-back-link">← Volver a DoctorChart</a>
     <div class="login-theme-control"><app-theme-toggle /></div>
     <!-- Header with DoctorChart Branding -->
     <div class="login-card-header">
       <div class="brand-logo-row">
         <div class="brand-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
-          </svg>
+          <img class="doctorchart-logo" src="/doctorchart-logo.svg" width="52" height="52" alt="DoctorChart" />
         </div>
         <div>
           <h1 class="brand-title">DoctorChart</h1>
@@ -71,7 +70,7 @@
       @if (mode() === 'login') {
         <form [formGroup]="loginForm" class="auth-form" (ngSubmit)="onLoginSubmit()">
           <p class="auth-subtitle">
-            Accede a tu ficha clínica unificada con tus credenciales de ByCode.
+            Tu cuenta sirve para ByCode, Pointly y DoctorChart. Si ya tenés cuenta en alguno, usá esa misma cuenta para iniciar sesión acá. Cada producto tiene su propio plan.
           </p>
 
           <!-- Google OAuth Button -->
@@ -263,7 +262,7 @@
     </div>
 
     <div class="login-card-footer">
-      <span class="footer-note">Acceso exclusivo a profesionales de la salud. Todos los datos están cifrados de extremo a extremo.</span>
+      <span class="footer-note">Acceso para profesionales de la salud con un plan DoctorChart activo.</span>
     </div>
   </div>
 </div>

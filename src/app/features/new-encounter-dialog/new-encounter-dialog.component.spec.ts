@@ -20,10 +20,10 @@ describe('NewEncounterDialogComponent canonical creation', () => {
   });
   function fill(): void { component.onDynamicDataChange({ readingA: 0, readingB: 10, notes: 'Sin aliases', result: 999, unknown: 'No enviar' }); component.onDynamicFormValidityChange(true); }
   it('pins the effective backend definition and sends no specialty, snapshot, projections or template identifier', async () => {
-    fill(); component.encounterDay.set('2026-01-01'); component.encounterTime.set('11:03'); workspace.version = 50;
+    fill(); workspace.version = 50;
     await component.submitEncounter();
     expect(service.create).toHaveBeenCalledWith({ patientId: 22, workspaceVersion: 9, consultationType: 'FIRST_VISIT', values: { readingA: 0, readingB: 10, notes: 'Sin aliases' } });
-    expect(fixture.nativeElement.querySelector('app-date-picker')).not.toBeNull(); expect(fixture.nativeElement.querySelector('input[type="date"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-date-picker')).toBeNull(); expect(fixture.nativeElement.querySelector('input[type="date"]')).toBeNull();
   });
   it('does not invent a complaint or diagnosis when the encounter form has no categories', async () => {
     component.definition.set({ categories: [] }); component.onDynamicFormValidityChange(true); await component.submitEncounter();
@@ -39,10 +39,8 @@ describe('NewEncounterDialogComponent canonical creation', () => {
     await component.submitEncounter(); expect(service.create).toHaveBeenCalledTimes(1);
     component.useRemoteWorkspace(); expect(component.dynamicFormData()).toEqual({ readingA: 0, notes: 'Sin aliases' }); expect(component.workspace()?.version).toBe(20);
   });
-  it('rejects future or invalid metadata and blocks simultaneous creates', async () => {
-    fill(); component.encounterDay.set('9999-01-01'); await component.submitEncounter(); expect(service.create).not.toHaveBeenCalled();
-    component.encounterDay.set('2026-01-01'); component.encounterTime.set('25:00'); await component.submitEncounter(); expect(service.create).not.toHaveBeenCalled();
-    component.encounterTime.set('12:00'); const pending = new Subject<ClinicalEncounterDetail>(); service.create.mockReturnValueOnce(pending);
+  it('does not accept date controls and blocks simultaneous creates', async () => {
+    fill(); const pending = new Subject<ClinicalEncounterDetail>(); service.create.mockReturnValueOnce(pending);
     const request = component.submitEncounter(); await component.submitEncounter(); expect(service.create).toHaveBeenCalledTimes(1);
     pending.error({ status: 500 }); await request; expect(component.isSubmitting()).toBe(false); expect(component.dynamicFormData()['readingA']).toBe(0);
   });

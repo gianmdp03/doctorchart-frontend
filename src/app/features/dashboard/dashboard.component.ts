@@ -1,3 +1,5 @@
+import { UserClockService } from '../../core/services/user-clock.service';
+import { userTimeZone, instantParts } from '../../core/date/user-time-zone';
 import { AccountReadScope } from '../../core/services/account-read-scope';
 import { displayLocalDate } from '../../core/date/display-date';
 import { wizardRecordEntries } from '../../core/models/wizard-record-display';
@@ -5,6 +7,8 @@ import {
   DestroyRef,
   Component,
   computed,
+  effect,
+  untracked,
   HostListener,
   inject,
   OnInit,
@@ -104,7 +108,8 @@ export class DashboardComponent implements OnInit {
 
   readonly recentEncounters = signal<RecentEncounterItem[]>([]);
   private readonly recentRecords = signal<ClinicalEncounterList[]>([]);
-  private readonly activityDay = signal(this.argentinaDay());
+  private readonly clock = inject(UserClockService);
+  private readonly activityDay = signal(this.userDay());
   readonly recentSearch = signal('');
   readonly recentPage = signal(0);
   readonly recentPageSize = signal(5);
@@ -115,7 +120,7 @@ export class DashboardComponent implements OnInit {
   readonly recentPageItems = computed(() =>
     this.recentRecords().map((encounter) => {
       const date = new Date(encounter.encounterDate);
-      const localDate = Number.isFinite(date.getTime()) ? this.argentinaDay(date) : '';
+      const localDate = Number.isFinite(date.getTime()) ? this.userDay(date) : '';
       const item = this.mapToRecentEncounterItem(
         { encounter, encounterLocalDate: localDate, patientAgeLabel: '', patientNationalId: null },
         this.activityDay(),
@@ -153,7 +158,8 @@ export class DashboardComponent implements OnInit {
   readonly isNotesSaved = signal<boolean>(false);
 
   readonly todayDateString = computed(() =>
-    new Date().toLocaleDateString('es-AR', {
+    new Date(this.clock.now()).toLocaleDateString('es-AR', {
+      timeZone: userTimeZone(),
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -162,7 +168,7 @@ export class DashboardComponent implements OnInit {
   );
 
   readonly greeting = computed(() => {
-    const hour = new Date().getHours();
+    const hour = new Date(this.clock.now()).getHours();
     const prefix =
       hour >= 20 || hour < 6 ? 'Buenas noches' : hour >= 13 ? 'Buenas tardes' : 'Buen día';
     const name = this.authService.userName();
@@ -183,6 +189,15 @@ export class DashboardComponent implements OnInit {
   });
 
   constructor() {
+    let observedDay = this.clock.day();
+    let observedZone = this.clock.timeZone();
+    effect(() => {
+      const day = this.clock.day();
+      const zone = this.clock.timeZone();
+      if (day !== observedDay || zone !== observedZone) {
+        observedDay = day; observedZone = zone; untracked(() => this.loadKpiData());
+      }
+    });
     this.destroyRef.onDestroy(() => {
       if (this.directorySearchTimer) {
         clearTimeout(this.directorySearchTimer);
@@ -252,9 +267,9 @@ export class DashboardComponent implements OnInit {
         },
       });
   }
-  private argentinaDay(date = new Date()): string {
+  private userDay(date = new Date()): string {
     return new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Argentina/Buenos_Aires',
+      timeZone: userTimeZone(),
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -429,11 +444,7 @@ export class DashboardComponent implements OnInit {
     const isToday = recent.encounterLocalDate === asOfDate;
     const encounterDateOnly = displayLocalDate(recent.encounterLocalDate);
     const encounterTimeOnly = validDate
-      ? date.toLocaleTimeString('es-AR', {
-          timeZone: 'America/Argentina/Buenos_Aires',
-          hour: '2-digit',
-          minute: '2-digit',
-        }) + ' hs'
+      ? instantParts(date).time + ' hs'
       : '';
     const encounterDate = encounterTimeOnly
       ? encounterDateOnly + ' • ' + encounterTimeOnly

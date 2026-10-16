@@ -1,3 +1,4 @@
+import { formatInstant } from '../../../core/date/user-time-zone';
 import {
   computed,
   DestroyRef,
@@ -330,15 +331,7 @@ export class PatientPrescriptionEditorStore {
     this.prescriptionStore.delete(recordId);
   }
 
-  formatRxDate(isoString: string): string {
-    try {
-      const d = new Date(isoString);
-      if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      }
-    } catch {}
-    return isoString;
-  }
+  formatRxDate(isoString: string): string { return formatInstant(isoString, false); }
 
   printRecord(
     latestEncounter?: ClinicalEncounterList,

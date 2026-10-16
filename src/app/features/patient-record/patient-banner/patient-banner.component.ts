@@ -1,3 +1,4 @@
+import { UserClockService } from '../../../core/services/user-clock.service';
 import {
   Component,
   computed,
@@ -43,6 +44,7 @@ import { PatientRecordActionId } from '../../../core/models/specialty-experience
   styleUrl: './patient-banner.component.css',
 })
 export class PatientBannerComponent {
+  private readonly clock = inject(UserClockService);
   private readonly router = inject(Router);
   readonly activePatientService = inject(ActivePatientService);
   readonly recordActions = inject(PatientRecordActionsService);
@@ -77,8 +79,8 @@ export class PatientBannerComponent {
   readonly isChild = computed(() => {
     const p = this.patient || this.activePatientService.activePatient();
     if (!p?.birthDate) return false;
-    const birth = new Date(p.birthDate);
-    const today = new Date();
+    const birth = new Date(p.birthDate + 'T00:00:00');
+    const today = new Date(this.clock.day() + 'T00:00:00');
     let age = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
@@ -91,8 +93,8 @@ export class PatientBannerComponent {
     const p = this.patient || this.activePatientService.activePatient();
     if (!p?.birthDate) return 'Edad desconocida';
 
-    const birth = new Date(p.birthDate);
-    const today = new Date();
+    const birth = new Date(p.birthDate + 'T00:00:00');
+    const today = new Date(this.clock.day() + 'T00:00:00');
 
     let years = today.getFullYear() - birth.getFullYear();
     let months = today.getMonth() - birth.getMonth();

@@ -1,3 +1,4 @@
+import { UserClockService } from './user-clock.service';
 import { Subscription } from 'rxjs';
 import { AuthService } from './auth.service';
 import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
@@ -9,6 +10,7 @@ import { BrowserUiStorageService } from './browser-ui-storage.service';
   providedIn: 'root',
 })
 export class ActivePatientService {
+  private readonly clock = inject(UserClockService);
   private readonly patientService = inject(PatientService);
   private readonly storage = inject(BrowserUiStorageService);
 
@@ -49,7 +51,7 @@ export class ActivePatientService {
     const birth = new Date(raw + 'T00:00:00');
     if (isNaN(birth.getTime())) return '—';
 
-    const now = new Date();
+    const now = new Date(this.clock.day() + 'T00:00:00');
     let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
     if (now.getDate() < birth.getDate()) {
       months--;
@@ -57,7 +59,7 @@ export class ActivePatientService {
 
     if (months < 0) return 'Recién nacido';
     if (months === 0) {
-      const diffTime = Math.abs(now.getTime() - birth.getTime());
+      const diffTime = Math.max(0, Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(birth.getFullYear(), birth.getMonth(), birth.getDate()));
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return `${diffDays} días`;
     }
@@ -74,7 +76,7 @@ export class ActivePatientService {
     if (!raw) return 0;
     const birth = new Date(raw + 'T00:00:00');
     if (isNaN(birth.getTime())) return 0;
-    const now = new Date();
+    const now = new Date(this.clock.day() + 'T00:00:00');
     let years = now.getFullYear() - birth.getFullYear();
     const m = now.getMonth() - birth.getMonth();
     if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {

@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { JSDOM, VirtualConsole } from 'jsdom';
+const virtualConsole = new VirtualConsole();
+virtualConsole.on('jsdomError', error => { if (error.message !== 'Could not parse CSS stylesheet') throw error; });
+import site from '../src/app/core/config/site.config.json' with { type: 'json' };
+const output = resolve('dist/doctorchart-frontend/browser');
+for (const path of site.publicPaths) {
+  const html = readFileSync(resolve(output, '.' + path, 'index.html'), 'utf8');
+  const doc = new JSDOM(html, { virtualConsole }).window.document;
+  assert.equal(doc.querySelectorAll('h1').length, 1, path + ': one principal heading');
+  assert.ok(['es', 'es-AR'].includes(doc.documentElement.lang));
+  assert.ok(doc.title);
+  const tag = selector => doc.querySelector(selector)?.getAttribute('content');
+  assert.ok(tag('meta[name="description"]'));
+  assert.equal(tag('meta[name="robots"]'), 'index, follow');
+  assert.equal(doc.querySelectorAll('meta[name="robots"]').length, 1);
+  assert.equal(doc.title, tag('meta[property="og:title"]'));
+  const canonical = doc.querySelector('link[rel="canonical"]')?.getAttribute('href');
+  assert.equal(canonical, new URL(path, site.publicSiteUrl).href);
+  assert.equal(tag('meta[property="og:url"]'), canonical);
+  assert.equal(tag('meta[name="twitter:card"]'), 'summary_large_image');
+  const image = new URL(tag('meta[property="og:image"]'));
+  assert.ok(existsSync(resolve(output, '.' + image.pathname)));
+  const schema = JSON.parse(doc.getElementById('public-page-schema').textContent);
+  assert.equal(schema.url, canonical);
+  assert.equal(schema['@type'], 'WebPage');
+  assert.ok(doc.querySelector('main')?.contains(doc.querySelector('h1')), path + ': main contains principal heading');
+  assert.doesNotMatch(html, /sb_secret_|service_role|access_token"\s*:/);
+}
+const shell = new JSDOM(readFileSync(resolve(output, 'index.csr.html'), 'utf8'), { virtualConsole }).window.document;
+assert.equal(shell.querySelector('meta[name="robots"]')?.getAttribute('content'), 'noindex, follow');
+const sitemap = new JSDOM(readFileSync(resolve(output, 'sitemap.xml'), 'utf8'), { contentType: 'application/xml' }).window.document;
+assert.deepEqual([...sitemap.querySelectorAll('loc')].map(node => node.textContent).sort(), site.publicPaths.map(path => new URL(path, site.publicSiteUrl).href).sort());
+assert.ok(readFileSync(resolve(output, 'robots.txt'), 'utf8').includes(new URL('/sitemap.xml', site.publicSiteUrl).href));
+console.log('Verified HTML structure, social assets, schema, indexing and exact sitemap URLs.');

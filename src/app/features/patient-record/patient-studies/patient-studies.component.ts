@@ -1,3 +1,4 @@
+import { formatInstant } from '../../../core/date/user-time-zone';
 import { Subject, takeUntil } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/services/auth.service';
@@ -296,21 +297,7 @@ export class PatientStudiesComponent {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
-  formatDate(dateStr: string): string {
-    if (!dateStr) return '';
-    try {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return dateStr;
-    }
-  }
+  formatDate(dateStr: string): string { return dateStr ? formatInstant(dateStr) : ''; }
 
   isImage(contentType: string): boolean {
     return !!contentType && contentType.startsWith('image/');

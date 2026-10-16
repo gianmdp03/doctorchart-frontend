@@ -55,12 +55,10 @@
   width: 64px;
   height: 64px;
   border-radius: 18px;
-  background: linear-gradient(135deg, var(--md-sys-color-primary, #006874), #004d56);
-  color: #ffffff;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 16px rgba(0, 104, 116, 0.25);
 }
 
 .splash-title {

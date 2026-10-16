@@ -3,7 +3,7 @@ import { LoginDialogComponent } from './login-dialog.component';
 import { AuthService } from '../../core/services/auth.service';
 import { PLATFORM_ID, signal } from '@angular/core';
 import { User } from '@supabase/supabase-js';
-import { Router } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { LoginPageComponent } from './login-page.component';
 
 describe('LoginDialogComponent', () => {
@@ -42,6 +42,7 @@ describe('LoginDialogComponent', () => {
     await TestBed.configureTestingModule({
       imports: [LoginDialogComponent],
       providers: [
+        provideRouter([]),
         { provide: AuthService, useValue: authServiceMock },
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],

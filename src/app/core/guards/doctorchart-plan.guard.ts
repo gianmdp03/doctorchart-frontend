@@ -14,7 +14,7 @@ export const doctorchartPlanGuard: CanActivateFn = async (route, state) => {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('open-login-modal'));
     }
-    return false;
+    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
   }
 
   if (authService.hasDoctorchartPlan()) {
@@ -23,7 +23,7 @@ export const doctorchartPlanGuard: CanActivateFn = async (route, state) => {
 
   // User is logged in but does not have an active DoctorChart plan
   // Redirect immediately to ByCode to pay/subscribe
-  const redirectUrl = environment.bycodePlansUrl || 'http://localhost:4200/company-panel#plans-catalog';
+  const redirectUrl = environment.bycodePlansUrl || 'http://localhost:4200/panel#plans-catalog';
   if (typeof window !== 'undefined') {
     window.location.href = redirectUrl;
   }

@@ -19,7 +19,7 @@ describe('doctorchartPlanGuard', () => {
   };
 
   const routeMock = {} as ActivatedRouteSnapshot;
-  const stateMock = {} as RouterStateSnapshot;
+  const stateMock = { url: '/pacientes/42' } as RouterStateSnapshot;
   let originalLocation: Location;
 
   beforeEach(() => {
@@ -33,6 +33,7 @@ describe('doctorchartPlanGuard', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         { provide: AuthService, useValue: authServiceMock },
       ],
     });
@@ -68,7 +69,7 @@ describe('doctorchartPlanGuard', () => {
       doctorchartPlanGuard(routeMock, stateMock)
     );
 
-    expect(canActivate).toBe(false);
+    expect(TestBed.inject(Router).serializeUrl(canActivate as import('@angular/router').UrlTree)).toBe('/login?returnUrl=%2Fpacientes%2F42');
     expect(authServiceMock.openLoginModal).toHaveBeenCalled();
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'open-login-modal' })

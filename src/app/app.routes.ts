@@ -1,8 +1,24 @@
-import { clinicalNavigationGuard } from './core/guards/clinical-navigation.guard';
-import { Routes } from '@angular/router';
-import { doctorchartPlanGuard } from './core/guards/doctorchart-plan.guard';
-import { doctorOnboardingGuard, doctorWizardGuard, preventCompletedOnboardingGuard } from './core/guards/doctor-onboarding.guard';
-import { superAdminGuard } from './core/guards/super-admin.guard';
+import { CanActivateFn, Routes } from '@angular/router';
+import { EnvironmentInjector, inject, runInInjectionContext } from '@angular/core';
+import { firstValueFrom, isObservable } from 'rxjs';
+import { publicEntryGuard } from './core/guards/public-entry.guard';
+
+
+function lazyGuard(load: () => Promise<CanActivateFn>): CanActivateFn {
+  return (route, state) => {
+    const injector = inject(EnvironmentInjector);
+    return load().then(guard => {
+      const result = runInInjectionContext(injector, () => guard(route, state));
+      return isObservable(result) ? firstValueFrom(result) : result;
+    });
+  };
+}
+const clinicalNavigationGuard = (module: Parameters<typeof import('./core/guards/clinical-navigation.guard').clinicalNavigationGuard>[0]) => lazyGuard(() => import('./core/guards/clinical-navigation.guard').then(m => m.clinicalNavigationGuard(module)));
+const doctorchartPlanGuard = lazyGuard(() => import('./core/guards/doctorchart-plan.guard').then(m => m.doctorchartPlanGuard));
+const doctorOnboardingGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.doctorOnboardingGuard));
+const doctorWizardGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.doctorWizardGuard));
+const preventCompletedOnboardingGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.preventCompletedOnboardingGuard));
+const superAdminGuard = lazyGuard(() => import('./core/guards/super-admin.guard').then(m => m.superAdminGuard));
 
 export const routes: Routes = [
   {
@@ -13,7 +29,13 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'dashboard',
+    canActivate: [publicEntryGuard],
+    loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent),
+  },
+  {
+    path: 'login',
+    canActivate: [publicEntryGuard],
+    loadComponent: () => import('./features/auth/login-page.component').then(m => m.LoginPageComponent),
   },
   {
     path: 'dashboard',
@@ -140,6 +162,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'dashboard',
+    loadComponent: () => import('./pages/not-found/not-found.component').then(m => m.NotFoundComponent),
   },
 ];

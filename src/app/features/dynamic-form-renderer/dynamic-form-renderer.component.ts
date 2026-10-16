@@ -1,3 +1,4 @@
+import { todayDate } from '../../core/date/user-time-zone';
 import { Component, computed, effect, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
@@ -23,7 +24,7 @@ export class DynamicFormRendererComponent {
   private readonly resultValues = signal<WizardFormValues>({});
   readonly enabledCategories = computed(() => this.definition().categories.filter(category => category.enabled));
   readonly fields = computed(() => this.definition().categories.flatMap(category => category.fields));
-  readonly todayIso = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  readonly todayIso = todayDate();
   readonly formValid = computed(() => this.fields().every(field => !this.isFieldVisible(field.key) || this.validField(field)));
 
   constructor() {

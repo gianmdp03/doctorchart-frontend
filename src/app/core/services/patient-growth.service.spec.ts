@@ -8,6 +8,8 @@ describe('PatientGrowthService', () => {
   let service: PatientGrowthService;
   let http: HttpTestingController;
   beforeEach(() => {
+    const options = new Intl.DateTimeFormat().resolvedOptions();
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ ...options, timeZone: 'America/Argentina/Buenos_Aires' });
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });

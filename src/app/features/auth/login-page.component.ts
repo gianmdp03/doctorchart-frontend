@@ -2,13 +2,13 @@ import { isPlatformBrowser } from '@angular/common';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { Component, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { matchingPasswords, trimmedRequired } from '../../core/models/form-validation';
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule, ThemeToggleComponent],
+  imports: [ReactiveFormsModule, ThemeToggleComponent, RouterLink],
   templateUrl: './login-page.component.html',
   styleUrl: './login-page.component.css',
 })
@@ -101,7 +101,7 @@ export class LoginPageComponent {
         );
       }
 
-      const targetUrl = (!this.router.url || this.router.url === '/') ? '/dashboard' : this.router.url;
+      const targetUrl = this.loginDestination();
       await this.router.navigateByUrl(targetUrl, { onSameUrlNavigation: 'reload' });
     } catch (err: unknown) {
       this.isSubmitting.set(false);
@@ -156,7 +156,7 @@ export class LoginPageComponent {
 
       if (response.data.session) {
         this.successMessage.set('¡Cuenta creada e inicio de sesión exitoso!');
-        const targetUrl = (!this.router.url || this.router.url === '/') ? '/dashboard' : this.router.url;
+        const targetUrl = this.loginDestination();
         await this.router.navigateByUrl(targetUrl, { onSameUrlNavigation: 'reload' });
       } else {
         this.successMessage.set('¡Cuenta creada con éxito! Por favor inicia sesión.');
@@ -188,6 +188,12 @@ export class LoginPageComponent {
       const msg = err instanceof Error ? err.message : 'No se pudo iniciar sesión con Google.';
       this.errorMessage.set(msg);
     }
+  }
+
+  private loginDestination(): string {
+    const requested = this.router.parseUrl(this.router.url).queryParams['returnUrl'];
+    if (typeof requested === 'string' && requested.startsWith('/') && !requested.startsWith('//') && !['/', '/login'].includes(requested.split(/[?#]/)[0])) return requested;
+    return !this.router.url || ['/', '/login'].includes(this.router.url.split(/[?#]/)[0]) ? '/dashboard' : this.router.url;
   }
 
   private translateAuthError(message: string): string {

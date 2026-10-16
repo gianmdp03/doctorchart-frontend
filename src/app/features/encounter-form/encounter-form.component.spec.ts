@@ -19,6 +19,8 @@ describe('EncounterFormComponent inline clinical creation', () => {
   const user = signal<{ id: string } | null>(null);
 
   beforeEach(async () => {
+    const options = new Intl.DateTimeFormat().resolvedOptions();
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ ...options, timeZone: 'America/Argentina/Buenos_Aires' });
     user.set({ id: 'doctor-a' });
     workspace = dialogWorkspace();
     service = { create: vi.fn().mockReturnValue(of(dialogEncounter())) };
@@ -89,7 +91,7 @@ describe('EncounterFormComponent inline clinical creation', () => {
     expect(component.recordedInstant()).toBeTruthy();
     expect(component.encounterDay()).toBeTruthy();
     expect(component.encounterTime()).toBeTruthy();
-    expect(component.dateValid()).toBe(true);
+
 
     await component.submitEncounter();
     expect(service.create).toHaveBeenCalledWith(

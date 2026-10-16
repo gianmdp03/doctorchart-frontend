@@ -57,10 +57,3 @@ export function wizardFieldError(field: WizardFieldDefinition, value: unknown, t
 }
 
 export const isBirthDateField = (key: string): boolean => ['sys_dob', 'birthDate', 'birth', 'born', 'patient.birthDate'].includes(key);
-
-export const timeError = (value: string): string | null => !/^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? 'Ingresá una hora válida con formato HH:mm.' : null;
-export function consultationDateError(day: string, time: string, maximumInstant: number): string | null {
-  if (!day) return 'Completá la fecha de la consulta.';
-  if (!validIsoDate(day)) return 'Ingresá una fecha válida con formato dd/MM/aaaa.';
-  return !timeError(time) && new Date(`${day}T${time}:00-03:00`).getTime() > maximumInstant ? 'La fecha y hora de la consulta no pueden ser futuras.' : null;
-}

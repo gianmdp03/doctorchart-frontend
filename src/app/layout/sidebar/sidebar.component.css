@@ -41,12 +41,10 @@
   height: 38px;
   min-width: 38px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #006874 0%, #004f58 100%);
-  color: #ffffff;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 104, 116, 0.25);
 }
 
 .brand-text-wrap {

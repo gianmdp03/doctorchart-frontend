@@ -1,0 +1,177 @@
+<a class="skip-link" href="#contenido">Ir al contenido</a>
+<header class="landing-header">
+  <div class="header-inner">
+    <a routerLink="/" class="brand" aria-label="DoctorChart, inicio"
+      ><span class="brand-mark"><img class="doctorchart-logo" src="/doctorchart-logo.svg" width="35" height="35" alt="" aria-hidden="true" /></span>DoctorChart</a
+    >
+    <nav aria-label="Navegación de presentación">
+      <a href="#funciones">Funciones</a><a href="#como-funciona">Cómo funciona</a
+      ><a href="#preguntas">Preguntas frecuentes</a>
+    </nav>
+    <div class="header-actions">
+      <app-theme-toggle /><a routerLink="/login" class="button button-small"
+        >Iniciar sesión <ng-icon name="lucideArrowRight"
+      /></a>
+    </div>
+  </div>
+</header>
+<main id="contenido">
+  <section class="hero section-width" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="status-dot"></span> TU ESPACIO CLÍNICO DIGITAL</span>
+      <h1 id="hero-title">Historias clínicas digitales.<br /><span>Tus pacientes, en un mismo lugar.</span></h1>
+      <p class="hero-description">
+        Registrá consultas, organizá la información de cada paciente y personalizá tus fichas
+        clínicas. DoctorChart acompaña tu trabajo en cada atención.
+      </p>
+      <div class="hero-actions">
+        <a routerLink="/login" class="button"
+          >Ingresar a DoctorChart <ng-icon name="lucideArrowRight" /></a
+        ><a href="#funciones" class="text-link"
+          >Conocé las funciones <span aria-hidden="true">↗</span></a
+        >
+      </div>
+      <div class="hero-note">
+        <ng-icon name="lucideStethoscope" /> Pensado para profesionales de la salud
+      </div>
+    </div>
+    <div class="preview-stage">
+      <div class="preview-label">
+        <span class="status-dot"></span> UNA MIRADA A TU ESPACIO DE TRABAJO
+      </div>
+      <div
+        class="record-preview"
+        role="img"
+        aria-label="Ejemplo ilustrativo de una ficha con datos del paciente, historia clínica, recetas y estudios. Datos ficticios."
+      >
+        <div class="preview-topbar">
+          <span class="preview-brand"><img class="doctorchart-logo" src="/doctorchart-logo.svg" width="35" height="35" alt="" aria-hidden="true" /> DoctorChart</span
+          ><span class="example-pill">EJEMPLO</span>
+        </div>
+        <div class="preview-breadcrumb">Pacientes <span>/</span> Ficha del paciente</div>
+        <div class="preview-patient">
+          <div class="avatar">PE</div>
+          <div>
+            <strong>Paciente de ejemplo</strong><span>Ficha clínica · Datos ficticios</span>
+          </div>
+          <ng-icon name="lucideClipboardList" />
+        </div>
+        <div class="preview-tabs">
+          <span>Datos del paciente</span><span class="active">Historia clínica</span
+          ><span>Recetas</span><span>Estudios</span>
+        </div>
+        <div class="preview-body">
+          <div class="preview-section-title">
+            <strong>Historia clínica</strong
+            ><span class="preview-add"><ng-icon name="lucidePlus" /> Consulta</span>
+          </div>
+          <div class="preview-encounter">
+            <div class="encounter-marker"><ng-icon name="lucideStethoscope" /></div>
+            <div class="encounter-content">
+              <span class="preview-date">14/10/2026</span><strong>Consulta de seguimiento</strong>
+              <p>Registro de evolución del paciente</p>
+              <div class="record-lines"><i></i><i></i></div>
+            </div>
+          </div>
+          <div class="preview-encounter previous">
+            <div class="encounter-marker"><ng-icon name="lucideClipboardList" /></div>
+            <div class="encounter-content">
+              <span class="preview-date">02/10/2026</span><strong>Primera consulta</strong>
+              <p>Antecedentes y motivo de consulta</p>
+            </div>
+          </div>
+        </div>
+        <div class="preview-footer">
+          <ng-icon name="lucideFolderOpen" /> Información y seguimiento en la ficha del paciente
+        </div>
+      </div>
+      <div class="floating-note">
+        <span class="floating-icon"><ng-icon name="lucideCheck" /></span>
+        <div>
+          <strong>Tu forma de trabajar</strong><span>Fichas y consultas personalizables</span>
+        </div>
+      </div>
+      <p class="preview-disclaimer">Vista ilustrativa con datos ficticios.</p>
+    </div>
+  </section>
+  <div class="intro-strip">
+    <div class="section-width">
+      <span>Del primer registro al seguimiento.</span>
+      <p>La información clínica, organizada alrededor del paciente.</p>
+    </div>
+  </div>
+  <section
+    id="funciones"
+    class="features section-width section-space"
+    aria-labelledby="features-title"
+  >
+    <div class="section-heading">
+      <span class="eyebrow">HERRAMIENTAS PARA TU DÍA A DÍA</span>
+      <h2 id="features-title">Más orden en cada consulta.</h2>
+      <p>Conocé lo que podés hacer dentro de DoctorChart.</p>
+    </div>
+    <div class="feature-grid">
+      @for (feature of features; track feature.title) {
+        <article class="feature-card">
+          <span class="feature-icon"><ng-icon [name]="feature.icon" /></span>
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.description }}</p>
+        </article>
+      }
+    </div>
+    <p class="module-note">
+      Los módulos disponibles dependen de tu especialidad y de la configuración de tu espacio
+      clínico.
+    </p>
+  </section>
+  <section id="como-funciona" class="workflow section-width" aria-labelledby="workflow-title">
+    <div class="workflow-intro">
+      <span class="eyebrow">CÓMO FUNCIONA</span>
+      <h2 id="workflow-title">Un espacio que se adapta<br />a tu práctica.</h2>
+      <p>
+        Empezá por tu especialidad. Después, construí la historia clínica de cada paciente, consulta
+        a consulta.
+      </p>
+      <a routerLink="/login" class="text-link"
+        >Ir a iniciar sesión <ng-icon name="lucideArrowRight"
+      /></a>
+    </div>
+    <div class="steps">
+      @for (step of steps; track step.number) {
+        <article class="step">
+          <span class="step-number">{{ step.number }}</span>
+          <div>
+            <h3>{{ step.title }}</h3>
+            <p>{{ step.description }}</p>
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+  <section id="preguntas" class="faq section-width section-space" aria-labelledby="faq-title">
+    <div class="section-heading">
+      <span class="eyebrow">ANTES DE EMPEZAR</span>
+      <h2 id="faq-title">Preguntas frecuentes.</h2>
+    </div>
+    <div class="faq-list">
+      @for (faq of faqs; track faq.question) {
+        <details>
+          <summary>{{ faq.question }}<span class="faq-plus" aria-hidden="true">+</span></summary>
+          <p>{{ faq.answer }}</p>
+        </details>
+      }
+    </div>
+  </section>
+  <section class="closing section-width">
+    <span class="eyebrow">DOCTORCHART</span>
+    <h2>Tu próxima consulta,<br />con la historia a mano.</h2>
+    <p>Ingresá a tu espacio clínico y continuá el seguimiento de tus pacientes.</p>
+    <a routerLink="/login" class="button">Iniciar sesión <ng-icon name="lucideArrowRight" /></a>
+  </section>
+</main>
+<footer class="landing-footer section-width">
+  <a routerLink="/" class="brand"
+    ><span class="brand-mark"><img class="doctorchart-logo" src="/doctorchart-logo.svg" width="35" height="35" alt="" aria-hidden="true" /></span>DoctorChart</a
+  ><span>Un espacio para tu práctica clínica.</span
+  ><a routerLink="/login">Iniciar sesión <span aria-hidden="true">↗</span></a>
+</footer>

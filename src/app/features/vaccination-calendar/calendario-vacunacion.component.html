@@ -11,15 +11,6 @@
         </div>
       </div>
 
-      <button
-        class="theme-toggle"
-        type="button"
-        (click)="toggleTheme()"
-        [attr.aria-pressed]="isDarkMode()"
-        [attr.aria-label]="isDarkMode() ? 'Activar modo claro' : 'Activar modo oscuro'"
-      >
-        {{ isDarkMode() ? 'Modo claro' : 'Modo oscuro' }}
-      </button>
     </header>
 
     <div class="table-scrollbar-container" aria-label="Desplazamiento horizontal de la tabla">

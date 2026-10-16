@@ -15,6 +15,8 @@ describe('EncounterDetailDialogComponent saved snapshot editing', () => {
   const printEnabled=signal(true);
   let service: { getById: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }; const user = signal<{ id: string } | null>(null);
   beforeEach(async () => {
+    const options = new Intl.DateTimeFormat().resolvedOptions();
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ ...options, timeZone: 'America/Argentina/Buenos_Aires' });
     printEnabled.set(true);
     user.set({ id: 'doctor-a' }); record = dialogEncounter(); service = { getById: vi.fn().mockImplementation(() => of(structuredClone(record))), update: vi.fn().mockImplementation((_id, request) => of({ ...record, version: 7, formValues: request.values, encounterDate: request.encounterDate })) };
     await TestBed.configureTestingModule({ imports: [EncounterDetailDialogComponent], providers: [{ provide: PatientRecordActionsService, useValue: { has: () => printEnabled() } },{provide:ActivePatientService,useValue:{activePatient:signal(null)}},{ provide: ClinicalEncounterService, useValue: service }, { provide: AuthService, useValue: { currentUser: user } }] }).compileComponents();
@@ -36,12 +38,12 @@ describe('EncounterDetailDialogComponent saved snapshot editing', () => {
     expect(fixture.nativeElement.textContent).toContain('5');
     expect(component.encounter()?.formDefinitionSnapshot).toEqual(record.formDefinitionSnapshot);
   });
-  it('updates only canonical values and record revision, preserving the original exact instant until edited', async () => {
+  it('updates only canonical values and record revision, preserving the server-assigned instant despite attempted edits', async () => {
     edit(); await component.save();
     expect(service.update).toHaveBeenCalledWith(77, { expectedVersion: 6, encounterDate: '2026-01-01T14:03:45.123Z', consultationType: 'FOLLOW_UP', values: { readingA: 0, readingB: 20, notes: 'Edición local' } });
     expect(component.encounter()?.version).toBe(7); expect(component.isEditing()).toBe(false);
-    component.startEditing(); component.encounterTime.set('12:15'); component.formValid.set(true); await component.save();
-    expect(service.update).toHaveBeenLastCalledWith(77, expect.objectContaining({ expectedVersion: 7, encounterDate: '2026-01-01T12:15:00-03:00' }));
+    component.startEditing(); fixture.detectChanges(); expect(fixture.nativeElement.querySelector('input[type="time"]')).toBeNull(); component.formValid.set(true); await component.save();
+    expect(service.update).toHaveBeenLastCalledWith(77, expect.objectContaining({ expectedVersion: 7, encounterDate: '2026-01-01T14:03:45.123Z' }));
   });
   it('preserves local edits and revision after a record conflict until explicit server adoption', async () => {
     edit(); service.update.mockReturnValueOnce(throwError(() => ({ status: 409, error: { code: 'VERSION_CONFLICT' } })));

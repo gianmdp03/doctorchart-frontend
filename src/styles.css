@@ -4,7 +4,6 @@
 @import 'tailwindcss/utilities.css';
 
 @import '@spartan-ng/brain/hlm-tailwind-preset.css';
-@import '@angular/material/prebuilt-themes/azure-blue.css';
 @custom-variant dark (&:where(.dark, .dark *));
 /* You can add global styles to this file, and also import other style files */
 
@@ -128,4 +127,14 @@
   html.font-size-xlarge {
     font-size: 20px;
   }
+}
+
+/* Keep the two-color DoctorChart mark legible in both themes. */
+.doctorchart-logo {
+  display: inline-block;
+  flex-shrink: 0;
+  object-fit: contain;
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 6px;
 }

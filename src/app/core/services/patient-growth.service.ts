@@ -1,3 +1,4 @@
+import { userTimeZone } from '../date/user-time-zone';
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -33,7 +34,7 @@ export class PatientGrowthService {
       const instant = new Date(value);
       if (!Number.isFinite(instant.getTime())) return value;
       day = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Argentina/Buenos_Aires',
+        timeZone: userTimeZone(),
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',

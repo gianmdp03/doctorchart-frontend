@@ -10,6 +10,7 @@ import { DashboardComponent } from '../../features/dashboard/dashboard.component
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 import { GrowthChartComponent } from '../../features/patient-record/growth-chart/growth-chart.component';
 import { growthReferenceFixture } from './growth.fixture';
+import { clinicalFormFixture } from '../models/clinical-form.fixture';
 import { AuthService } from '../services/auth.service';
 import { PatientService } from '../services/patient.service';
 import { ActivePatientService } from '../services/active-patient.service';
@@ -52,7 +53,16 @@ describe('Theme integration', () => {
       } },
       { provide: ClinicalEncounterService, useValue: { getDashboard: () => of({
         totalPatients: 24, encountersThisMonth: 12, encountersToday: 3, recentEncounters: [], asOfDate: '2026-10-13',
-      }) } },
+      }), getAll: () => of({ content: [{
+        ...clinicalFormFixture(), id: 101, patientId: 1, patientFullName: 'Paciente de ejemplo',
+        encounterDate: '2026-10-01T15:00:00Z', consultationType: 'FOLLOW_UP',
+        chiefComplaint: 'Control de crecimiento', primaryDiagnosisDescription: 'Control clínico',
+        formValues: { evolution: 'Evolución favorable. Control de crecimiento.', weight: 14.77 },
+        formDefinitionSnapshot: { categories: [{ key: 'consultation', title: 'Consulta', enabled: true, fields: [
+          { key: 'evolution', label: 'Evolución', type: 'TEXTAREA', required: false },
+          { key: 'weight', label: 'Peso', type: 'NUMBER', required: false, unit: 'kg' },
+        ] }] },
+      }], page: { totalElements: 1, totalPages: 1 } }) } },
       { provide: WorkspaceStore, useValue: { quickNotes: signal('Recordatorio de ejemplo'), navigation: signal([
         { id: 'DASHBOARD', path: '/dashboard', label: 'Inicio', title: 'Inicio', icon: 'lucideLayoutDashboard' },
         { id: 'PATIENTS', path: '/pacientes', label: 'Pacientes', title: 'Pacientes', icon: 'lucideUsers' },
@@ -80,6 +90,8 @@ describe('Theme integration', () => {
     expect(document.documentElement.classList.contains('dark')).toBe(true);
     expect(fixture.nativeElement.querySelector('.date-picker-input').value).toBe('13/10/2026');
     expect(fixture.nativeElement.querySelectorAll('.reference-curve').length).toBe(5);
+    expect(fixture.nativeElement.querySelector('.recent-patient-info h3')?.textContent).toContain('Paciente de ejemplo');
+    expect(fixture.nativeElement.querySelector('.recent-clinical-summary b')?.textContent).toContain('Evolución');
     saveWorkspace('dark');
     button.click(); fixture.detectChanges();
     expect(document.documentElement.classList.contains('dark')).toBe(false);

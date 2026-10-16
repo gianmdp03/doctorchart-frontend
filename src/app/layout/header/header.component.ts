@@ -1,3 +1,4 @@
+import { UserClockService } from '../../core/services/user-clock.service';
 import { takeUntil } from 'rxjs';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { AccountReadScope } from '../../core/services/account-read-scope';
@@ -55,6 +56,8 @@ import { environment } from '../../../environments/environment';
   styleUrl: './header.component.css',
 })
 export class HeaderComponent implements OnDestroy {
+  private readonly clock = inject(UserClockService);
+  get timeZone(): string { return this.clock.timeZone(); }
   readonly authService = inject(AuthService);
   readonly activePatientService = inject(ActivePatientService);
   private readonly patientService = inject(PatientService);
@@ -74,6 +77,7 @@ export class HeaderComponent implements OnDestroy {
   readonly isProfileMenuOpen = signal(false);
 
   readonly bycodePlansUrl = environment.bycodePlansUrl;
+  readonly bycodeUrl = new URL('/', environment.bycodePlansUrl).href;
 
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly searchReads = new AccountReadScope(() => this.clearSearch());

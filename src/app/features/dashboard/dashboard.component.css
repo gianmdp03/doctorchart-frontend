@@ -875,7 +875,7 @@
 
 /* Recent activity is a full-width, server-paginated feed. */
 .recent-activity-card {
-  border-color: #dce8eb;
+  border-color: var(--dc-outline, #dce8eb);
   box-shadow: 0 4px 20px rgb(15 23 42 / 3%);
 }
 .recent-card-heading {
@@ -891,8 +891,8 @@
   height: 44px;
   flex-shrink: 0;
   border-radius: 13px;
-  background: #e7f5f4;
-  color: #007b7b;
+  background: var(--dc-teal-surface, #e7f5f4);
+  color: var(--dc-teal-ink, #007b7b);
   font-size: 1.375rem;
 }
 .recent-heading-text {
@@ -902,11 +902,11 @@
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.13em;
-  color: #007b7b;
+  color: var(--dc-teal-ink, #007b7b);
 }
 .recent-heading-text h2 {
   margin: 3px 0 4px;
-  color: #17233b;
+  color: var(--dc-ink, #17233b);
   font-size: 1.125rem;
   font-weight: 750;
   letter-spacing: -0.025em;
@@ -914,14 +914,14 @@
 .recent-heading-text p {
   margin: 0;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--dc-ink-secondary, #64748b);
 }
 .recent-history-link {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #006874;
+  color: var(--dc-teal-ink, #006874);
   font-size: 0.75rem;
   font-weight: 650;
   text-decoration: none;
@@ -943,15 +943,15 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid #dde5eb;
+  border: 1px solid var(--dc-outline, #dde5eb);
   border-radius: 10px;
   padding: 10px 13px;
-  background: #f8fafb;
-  color: #8191a5;
+  background: var(--dc-surface, #f8fafb);
+  color: var(--dc-ink-muted, #8191a5);
 }
 .recent-search-wrap:focus-within {
-  border-color: #00838a;
-  background: white;
+  border-color: var(--dc-teal-ink, #00838a);
+  background: var(--dc-surface, white);
   box-shadow: 0 0 0 3px rgb(0 131 138 / 9%);
 }
 .recent-search-wrap input {
@@ -961,47 +961,47 @@
   outline: 0;
   font: inherit;
   font-size: 0.8125rem;
-  color: #17233b;
+  color: var(--dc-ink, #17233b);
   background: transparent;
 }
 .recent-search-wrap input::placeholder {
-  color: #8290a3;
+  color: var(--dc-ink-muted, #8290a3);
 }
 .recent-size-label {
   display: flex;
   align-items: center;
   gap: 9px;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--dc-ink-secondary, #64748b);
 }
 .recent-refresh-btn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 10px 12px;
-  border: 1px solid #dde5eb;
+  border: 1px solid var(--dc-outline, #dde5eb);
   border-radius: 9px;
-  background: white;
-  color: #52647a;
+  background: var(--dc-surface, white);
+  color: var(--dc-ink-secondary, #52647a);
   font: inherit;
   font-size: 0.75rem;
   cursor: pointer;
 }
 .recent-refresh-btn:hover:not(:disabled) {
-  border-color: #00838a;
-  color: #006874;
+  border-color: var(--dc-teal-ink, #00838a);
+  color: var(--dc-teal-ink, #006874);
 }
 .recent-refresh-btn:disabled {
   opacity: 0.5;
   cursor: default;
 }
 .recent-size-label select {
-  border: 1px solid #dde5eb;
+  border: 1px solid var(--dc-outline, #dde5eb);
   border-radius: 9px;
   padding: 10px;
-  color: #334155;
+  color: var(--dc-ink-secondary, #334155);
   font: inherit;
-  background: white;
+  background: var(--dc-surface, white);
   cursor: pointer;
 }
 .recent-column-labels,
@@ -1012,9 +1012,9 @@
 }
 .recent-column-labels {
   padding: 11px 26px;
-  background: #f8fafb;
-  border-block: 1px solid #edf1f4;
-  color: #7a899e;
+  background: var(--dc-surface, #f8fafb);
+  border-block: 1px solid var(--dc-outline, #edf1f4);
+  color: var(--dc-ink-muted, #7a899e);
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.07em;
@@ -1027,14 +1027,14 @@
   position: relative;
   align-items: center;
   padding: 19px 26px;
-  border-bottom: 1px solid #edf1f4;
+  border-bottom: 1px solid var(--dc-outline, #edf1f4);
   transition: background 0.15s;
 }
 .recent-consultation:last-child {
   border-bottom: none;
 }
 .recent-consultation:hover {
-  background: #f7fbfb;
+  background: var(--dc-surface-high, #f7fbfb);
 }
 .recent-consultation.consultation-today::before {
   content: '';
@@ -1059,14 +1059,14 @@
   height: 40px;
   flex-shrink: 0;
   border-radius: 12px;
-  background: #edf4f7;
-  color: #3d6274;
+  background: var(--dc-surface, #edf4f7);
+  color: var(--dc-ink-secondary, #3d6274);
   font-size: 0.75rem;
   font-weight: 700;
 }
 .consultation-today .recent-avatar {
-  background: #e5f6f2;
-  color: #008077;
+  background: var(--dc-teal-surface, #e5f6f2);
+  color: var(--dc-teal-ink, #008077);
 }
 .recent-patient-info {
   min-width: 0;
@@ -1076,14 +1076,14 @@
   font-size: 0.875rem;
   font-weight: 650;
   line-height: 1.45;
-  color: #17233b;
+  color: var(--dc-ink, #17233b);
   overflow-wrap: anywhere;
 }
 .recent-patient-info p {
   margin: 4px 0 7px;
   font-size: 0.6875rem;
   line-height: 1.5;
-  color: #748398;
+  color: var(--dc-ink-muted, #748398);
   overflow-wrap: anywhere;
 }
 .recent-patient-info .consultation-type-pill {
@@ -1104,12 +1104,12 @@
   margin: 4px 0;
   font-size: 0.75rem;
   line-height: 1.6;
-  color: #607087;
+  color: var(--dc-ink-secondary, #607087);
   overflow-wrap: anywhere;
 }
 .recent-clinical-summary b {
   font-weight: 600;
-  color: #35445c;
+  color: var(--dc-ink, #35445c);
 }
 .recent-date-actions {
   display: flex;
@@ -1123,13 +1123,13 @@
   align-items: center;
   justify-content: flex-end;
   gap: 7px;
-  color: #35445c;
+  color: var(--dc-ink, #35445c);
   font-size: 0.75rem;
   font-weight: 600;
 }
 .recent-time {
   font-size: 0.6875rem;
-  color: #8191a5;
+  color: var(--dc-ink-muted, #8191a5);
 }
 .recent-actions {
   display: flex;
@@ -1153,22 +1153,22 @@
     border-color 0.15s;
 }
 .recent-detail-btn {
-  color: #007577;
-  background: #edf8f6;
-  border: 1px solid #d9efea;
+  color: var(--dc-teal-ink, #007577);
+  background: var(--dc-teal-surface, #edf8f6);
+  border: 1px solid var(--dc-outline, #d9efea);
 }
 .recent-detail-btn:hover {
-  background: #dff2ed;
-  border-color: #8dcabf;
+  background: var(--dc-teal-surface, #dff2ed);
+  border-color: var(--dc-outline, #8dcabf);
 }
 .recent-record-btn {
-  color: #52647a;
-  background: white;
-  border: 1px solid #dde5eb;
+  color: var(--dc-ink-secondary, #52647a);
+  background: var(--dc-surface, white);
+  border: 1px solid var(--dc-outline, #dde5eb);
 }
 .recent-record-btn:hover {
-  background: #f1f5f9;
-  border-color: #aebfcf;
+  background: var(--dc-surface-high, #f1f5f9);
+  border-color: var(--dc-outline, #aebfcf);
 }
 .recent-pagination {
   display: flex;
@@ -1177,22 +1177,22 @@
   align-items: center;
   gap: 14px;
   padding: 17px 26px;
-  border-top: 1px solid #edf1f4;
-  background: #fcfdfd;
+  border-top: 1px solid var(--dc-outline, #edf1f4);
+  background: var(--dc-surface, #fcfdfd);
 }
 .recent-count {
   font-size: 0.75rem;
-  color: #718096;
+  color: var(--dc-ink-muted, #718096);
 }
 .recent-count b {
-  color: #35445c;
+  color: var(--dc-ink, #35445c);
   font-weight: 600;
 }
 .recent-count > span {
   display: block;
   margin-top: 3px;
   font-size: 0.625rem;
-  color: #8796a8;
+  color: var(--dc-ink-muted, #8796a8);
 }
 .recent-page-buttons {
   display: flex;
@@ -1204,9 +1204,9 @@
   place-items: center;
   width: 32px;
   height: 32px;
-  border: 1px solid #e2e8f0;
-  background: white;
-  color: #66788e;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  background: var(--dc-surface, white);
+  color: var(--dc-ink-muted, #66788e);
   border-radius: 8px;
   font: inherit;
   font-size: 0.75rem;
@@ -1214,8 +1214,8 @@
   cursor: pointer;
 }
 .recent-page-buttons button:hover:not(:disabled) {
-  background: #edf8f6;
-  color: #006874;
+  background: var(--dc-teal-surface, #edf8f6);
+  color: var(--dc-teal-ink, #006874);
 }
 .recent-page-buttons button.current-page {
   background: #006874;
@@ -1229,7 +1229,7 @@
 .recent-activity-card button:focus-visible,
 .recent-history-link:focus-visible,
 .recent-size-label select:focus-visible {
-  outline: 2px solid #00838a;
+  outline: 2px solid var(--dc-teal-ink, #00838a);
   outline-offset: 3px;
 }
 .recent-loading {
@@ -1238,7 +1238,7 @@
   align-items: center;
   gap: 10px;
   min-height: 280px;
-  color: #718096;
+  color: var(--dc-ink-muted, #718096);
   font-size: 0.8125rem;
 }
 .recent-empty {
@@ -1253,17 +1253,17 @@
 }
 .recent-empty > ng-icon {
   font-size: 1.75rem;
-  color: #00958e;
+  color: var(--dc-teal-ink, #00958e);
 }
 .recent-empty h3 {
   font-size: 0.9375rem;
-  color: #35445c;
+  color: var(--dc-ink, #35445c);
   margin: 0;
 }
 .recent-empty p {
   font-size: 0.75rem;
   line-height: 1.7;
-  color: #718096;
+  color: var(--dc-ink-muted, #718096);
   margin: 0;
   max-width: 380px;
 }

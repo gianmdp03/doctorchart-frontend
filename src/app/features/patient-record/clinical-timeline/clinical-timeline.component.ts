@@ -1,3 +1,4 @@
+import { todayDate, shiftCalendarDate, instantParts, formatInstant } from '../../../core/date/user-time-zone';
 import { wizardRecordEntries } from '../../../core/models/wizard-record-display';
 import {
   Component,
@@ -93,7 +94,7 @@ export class ClinicalTimelineComponent implements OnChanges {
 
     return list.filter((enc) => {
       if (!enc.encounterDate) return false;
-      const encDateStr = enc.encounterDate.slice(0, 10);
+      const encDateStr = instantParts(enc.encounterDate).day;
       if (from && encDateStr < from) return false;
       if (to && encDateStr > to) return false;
       return true;
@@ -104,8 +105,8 @@ export class ClinicalTimelineComponent implements OnChanges {
 
   setPreset(preset: 'ALL' | 'LAST_30' | 'LAST_90' | 'THIS_YEAR'): void {
     this.datePreset.set(preset);
-    const today = new Date();
-    const toStr = today.toISOString().slice(0, 10);
+
+    const toStr = todayDate();
 
     if (preset === 'ALL') {
       this.fromDate.set('');
@@ -114,23 +115,19 @@ export class ClinicalTimelineComponent implements OnChanges {
     }
 
     if (preset === 'LAST_30') {
-      const d = new Date();
-      d.setDate(d.getDate() - 30);
-      this.fromDate.set(d.toISOString().slice(0, 10));
+      this.fromDate.set(shiftCalendarDate(todayDate(), -30));
       this.toDate.set(toStr);
       return;
     }
 
     if (preset === 'LAST_90') {
-      const d = new Date();
-      d.setDate(d.getDate() - 90);
-      this.fromDate.set(d.toISOString().slice(0, 10));
+      this.fromDate.set(shiftCalendarDate(todayDate(), -90));
       this.toDate.set(toStr);
       return;
     }
 
     if (preset === 'THIS_YEAR') {
-      const year = today.getFullYear();
+      const year = todayDate().slice(0, 4);
       this.fromDate.set(year + '-01-01');
       this.toDate.set(toStr);
       return;
@@ -189,39 +186,9 @@ export class ClinicalTimelineComponent implements OnChanges {
     this.expandedCardIds.set(new Set());
   }
 
-  formatDate(dateStr: string): string {
-    if (!dateStr) return '—';
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString('es-AR', {
-        timeZone: 'America/Argentina/Buenos_Aires',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-    } catch {
-      return dateStr;
-    }
-  }
+  formatDate(dateStr: string): string { return dateStr ? formatInstant(dateStr, false) : '—'; }
 
-  formatTime(dateStr: string): string {
-    if (!dateStr) return '';
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return '';
-      return (
-        d.toLocaleTimeString('es-AR', {
-          timeZone: 'America/Argentina/Buenos_Aires',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        }) + ' hs'
-      );
-    } catch {
-      return '';
-    }
-  }
+  formatTime(dateStr: string): string { const time = instantParts(dateStr).time; return time ? time + ' hs' : ''; }
 
   getConsultationTypeLabel(type: string): string {
     switch (type) {

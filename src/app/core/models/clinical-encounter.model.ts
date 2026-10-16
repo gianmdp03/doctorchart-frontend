@@ -41,7 +41,7 @@ export interface ClinicalEncounterRequest {
 }
 export interface ClinicalEncounterUpdateRequest {
   expectedVersion: number;
-  encounterDate: string;
+  encounterDate?: string;
   consultationType: ConsultationType;
   values: WizardFormValues;
 }

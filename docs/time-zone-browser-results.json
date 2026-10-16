@@ -1,0 +1,23 @@
+[
+  {
+    "timeZone": "America/Argentina/Buenos_Aires",
+    "display": "14/10/2026 22:30",
+    "requestZone": "America/Buenos_Aires",
+    "requests": 6,
+    "status": "PASS"
+  },
+  {
+    "timeZone": "Europe/Madrid",
+    "display": "15/10/2026 03:30",
+    "requestZone": "Europe/Madrid",
+    "requests": 6,
+    "status": "PASS"
+  },
+  {
+    "timeZone": "America/Los_Angeles",
+    "display": "14/10/2026 18:30",
+    "requestZone": "America/Los_Angeles",
+    "requests": 6,
+    "status": "PASS"
+  }
+]

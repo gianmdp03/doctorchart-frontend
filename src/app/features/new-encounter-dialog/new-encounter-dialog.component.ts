@@ -1,3 +1,4 @@
+import { UserClockService } from '../../core/services/user-clock.service';
 import { Component, computed, effect, inject, input, OnDestroy, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -7,18 +8,16 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClinicalEncounterDetail, ConsultationType } from '../../core/models/clinical-encounter.model';
 import { WorkspaceSetup } from '../../core/models/workspace.model';
 import { WizardFormDefinition, WizardFormValues } from '../../core/models/wizard-definition.model';
-import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
-import { consultationDateError, timeError } from '../../core/models/form-validation';
-import { DynamicFormRendererComponent, inputValues } from '../dynamic-form-renderer/dynamic-form-renderer.component';
-import { argentinaDateTime, conflictKind, encounterInstant, errorMessage, retainCompatibleValues } from '../dynamic-form-renderer/clinical-form-ui';
 
-@Component({ selector: 'app-new-encounter-dialog', imports: [FormsModule, DatePickerComponent, DynamicFormRendererComponent], templateUrl: './new-encounter-dialog.component.html', styleUrl: './new-encounter-dialog.component.css' })
+import { DynamicFormRendererComponent, inputValues } from '../dynamic-form-renderer/dynamic-form-renderer.component';
+import { conflictKind, errorMessage, retainCompatibleValues } from '../dynamic-form-renderer/clinical-form-ui';
+
+@Component({ selector: 'app-new-encounter-dialog', imports: [FormsModule, DynamicFormRendererComponent], templateUrl: './new-encounter-dialog.component.html', styleUrl: './new-encounter-dialog.component.css' })
 export class NewEncounterDialogComponent implements OnDestroy {
   private readonly encounterService = inject(ClinicalEncounterService);
   private readonly workspaceStore = inject(WorkspaceStore);
   private readonly auth = inject(AuthService);
   private epoch = 0; private destroyed = false; private owner = ''; private contextPatient: number | null = null;
-  private originalInstant = ''; private originalDay = ''; private originalTime = '';
   readonly isOpen = input(false);
   readonly patientId = input<number | null>(null);
   readonly patientName = input('');
@@ -26,7 +25,6 @@ export class NewEncounterDialogComponent implements OnDestroy {
   readonly closeDialog = output<void>();
   readonly encounterCreated = output<ClinicalEncounterDetail>();
   readonly consultationType = signal<ConsultationType>('FIRST_VISIT');
-  readonly encounterDay = signal(''); readonly encounterTime = signal('');
   readonly definition = signal<WizardFormDefinition | null>(null);
   readonly workspace = signal<WorkspaceSetup | null>(null);
   readonly dynamicFormData = signal<WizardFormValues>({});
@@ -53,9 +51,8 @@ export class NewEncounterDialogComponent implements OnDestroy {
     if (this.readonly() || this.isFirstVisitLocked()) return;
     this.consultationType.set(type);
   }
-  readonly dateValid = computed(() => { const instant = this.currentInstant(); return !!instant && new Date(instant).getTime() <= Date.now() + 60000; });
-  readonly dayError = computed(() => consultationDateError(this.encounterDay(), this.encounterTime(), Date.now() + 60000));
-  readonly timeError = computed(() => timeError(this.encounterTime()));
+  private readonly clock = inject(UserClockService);
+  get timeZone(): string { return this.clock.timeZone(); }
   constructor() {
     effect(() => {
       const isLocked = this.isFirstVisitLocked();
@@ -85,10 +82,9 @@ export class NewEncounterDialogComponent implements OnDestroy {
   }
   onDynamicDataChange(values: WizardFormValues): void { if (!this.readonly()) this.dynamicFormData.set(structuredClone(values)); }
   onDynamicFormValidityChange(valid: boolean): void { this.isDynamicFormValid.set(valid); }
-  currentInstant(): string | null { return this.encounterDay() === this.originalDay && this.encounterTime() === this.originalTime ? this.originalInstant : encounterInstant(this.encounterDay(), this.encounterTime()); }
   async submitEncounter(): Promise<void> {
-    const workspace = this.workspace(); const definition = this.definition(); const patientId = this.patientId(); const encounterDate = this.currentInstant();
-    if (!workspace || !definition || !patientId || !encounterDate || !this.dateValid() || !this.isDynamicFormValid() || this.readonly()) return;
+    const workspace = this.workspace(); const definition = this.definition(); const patientId = this.patientId();
+    if (!workspace || !definition || !patientId || !this.isDynamicFormValid() || this.readonly()) return;
     const epoch = this.epoch; this.isSubmitting.set(true); this.errorMessage.set(null);
     const effectiveConsultationType = this.isFirstVisitLocked() ? 'FIRST_VISIT' : (this.consultationType() === 'FIRST_VISIT' ? 'FOLLOW_UP' : this.consultationType());
     try {
@@ -116,7 +112,6 @@ export class NewEncounterDialogComponent implements OnDestroy {
   resetForm(): void {
     this.workspace.set(null); this.definition.set(null); this.dynamicFormData.set({}); this.isDynamicFormValid.set(false); this.errorMessage.set(null); this.hasConflict.set(false); this.remoteWorkspace.set(null);
     this.consultationType.set(this.previousEncountersCount() === 0 ? 'FIRST_VISIT' : 'FOLLOW_UP');
-    this.originalInstant = new Date().toISOString(); const parts = argentinaDateTime(this.originalInstant); this.originalDay = parts.day; this.originalTime = parts.time; this.encounterDay.set(parts.day); this.encounterTime.set(parts.time);
   }
   close(): void { if (!this.isSubmitting()) { this.epoch++; this.resetForm(); this.closeDialog.emit(); } }
   private identity(): string { return this.auth.currentUser()?.id ?? ''; }

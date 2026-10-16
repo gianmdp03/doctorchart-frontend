@@ -65,7 +65,7 @@
             </svg>
             <span class="datetime-value">{{ formattedCurrentDateTime() }}</span>
           </div>
-          <span class="field-hint">Registrada automáticamente en este momento (horario argentino).</span>
+          <span class="field-hint">Vista previa en {{ timeZone }}. La fecha y hora definitivas las registra el servidor al guardar.</span>
         </div>
 
         <div class="metadata-field consultation-type-container">
@@ -117,11 +117,7 @@
       </div>
     </fieldset>
 
-    @if (!dateValid()) {
-      <div class="alert-banner alert-warning" role="alert">
-        Ingresá una fecha y hora válidas que no estén en el futuro.
-      </div>
-    }
+
 
     <!-- Dynamic Form Fields from Active Specialty Configuration -->
     @if (definition(); as form) {
@@ -155,7 +151,7 @@
     <button
       type="button"
       class="btn-primary"
-      [disabled]="readonly() || !definition() || !isDynamicFormValid() || !dateValid()"
+      [disabled]="readonly() || !definition() || !isDynamicFormValid()"
       (click)="submitEncounter()"
     >
       {{ isSubmitting() ? 'Guardando...' : 'Guardar historia clínica' }}

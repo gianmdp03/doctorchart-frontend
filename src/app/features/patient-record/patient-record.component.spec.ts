@@ -733,11 +733,11 @@ describe('PatientRecordComponent', () => {
     expect(growth.backendGrowthMeasurements()).toEqual([]);
   });
 
-  it('refreshes age-dependent references across midnight in Argentina', () => {
+  it('refreshes age-dependent references across midnight in the device zone', () => {
     fixture.destroy();
     vi.useFakeTimers();
     try {
-      vi.setSystemTime(new Date('2026-10-09T02:59:00Z'));
+      vi.setSystemTime(new Date('2026-10-08T23:59:00'));
       fixture = TestBed.createComponent(PatientRecordComponent); component = fixture.componentInstance; fixture.detectChanges();
       const calls = growthReadSpy.mock.calls.length;
       vi.advanceTimersByTime(60_000); fixture.detectChanges();

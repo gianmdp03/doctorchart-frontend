@@ -54,3 +54,6 @@ Thumbs.db
 /block13b-*.log
 /block13c-*.log
 /block13d-*.log
+
+# Generated deployment configuration
+src/environments/environment.deploy.ts

@@ -8,7 +8,7 @@ El [cierre de 13d](docs/startup-block-13d.md) conserva el contexto histórico.
 
 ## Configuración y arranque
 
-Editar `src/environments/environment.base.ts`: es la única fuente de URLs y configuración pública para desarrollo, producción y tests. `environment.development.ts` y `environment.ts` lo importan y sólo cambian `production`.
+Editar `src/environments/environment.base.ts`: contiene las URLs locales y configuración pública para desarrollo y tests; el despliegue utiliza site.config.json. `environment.development.ts` y `environment.ts` lo importan y sólo cambian `production`.
 
 Configurar `appUrl`, `apiUrl` (Gateway con `/api/doctorchart`), `aiGatewayUrl` (mismo Gateway con `/api/ai/doctorchart/chat`), `bycodePlansUrl` y el proyecto/clave publicable de Supabase. Para acceso desde otra computadora, usar la URL pública vigente del Gateway. Los valores `localhost` apuntan al equipo del navegador.
 
@@ -30,12 +30,12 @@ Antes deben estar disponibles Billing, DoctorChart Go y el Gateway; ver [la prep
 ```powershell
 npm test -- --watch=false
 npm run build
-npm run test:ssr
+npm run test:seo
+npm run test:static
+npm run test:config
 ```
 
-Antes del build de producción, ajustar el archivo base con las URLs del despliegue. El bundle queda en `dist/doctorchart-frontend`; cambiar el archivo después del build requiere recompilar. El servidor SSR se ejecuta con `npm run serve:ssr:doctorchart-frontend` y acepta exclusivamente el hostname de `baseEnvironment.appUrl`.
-
-El smoke SSR levanta el artefacto en un puerto temporal, verifica rutas públicas y protegidas sin datos clínicos en HTML, rechaza un Host ajeno y detiene el proceso. Detrás de un proxy, conservar el Host público configurado.
+Para revisar localmente usar `npm run build` y `npm run preview`. Para un despliegue futuro usar `npm run build:deploy` después de completar la configuración pública; ver [la guía estática](docs/frontend-estatico.md). No se publica nada desde estos comandos.
 
 ## Convenciones y documentación
 
@@ -47,3 +47,11 @@ preferencias y referencias descritas en [13c](docs/browser-storage-block-13c.md)
 Consultar [el plan y estado de los bloques](docs/refactor-plan.md),
 [seguridad y configuración](docs/security-configuration-block-13a.md) y
 [almacenamiento privado de estudios](docs/study-storage-block-13b.md).
+
+## SEO y salida estática
+
+Las páginas comerciales se prerenderizan; las rutas funcionales se renderizan en cliente. No hay runtime SSR en producción. Ver [la guía de configuración, comandos y pendientes](docs/frontend-estatico.md). El dominio de DoctorChart es provisional y la URL pública del backend todavía está pendiente.
+
+## UTC y zonas horarias
+
+Los instantes se muestran en la zona del dispositivo; el backend asigna la fecha de creación y los documentos conservan su zona de emisión. Ver [implementación, pruebas y requisitos del backend](docs/zonas-horarias.md).

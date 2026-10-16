@@ -18,6 +18,7 @@ import {
   Vacuna,
 } from './calendario.types';
 import { VaccinationCalendarService } from './calendario.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 interface ReferenceTooltip {
   title: string;
@@ -45,10 +46,11 @@ interface ReferenceTooltip {
 })
 export class VaccinationCalendarComponent implements OnInit {
   private readonly vaccinationCalendarService = inject(VaccinationCalendarService);
+  private readonly themeService = inject(ThemeService);
 
   /** Optional caller-supplied calendar. It overrides the service response. */
   readonly data = input<CalendarioVacunacionJSON | null>(null);
-  readonly isDarkMode = signal(false);
+  readonly isDarkMode = computed(() => this.themeService.theme() === 'dark');
   readonly activeTooltip = signal<ReferenceTooltip | null>(null);
 
   /** The effective calendar, either injected by the caller or fetched remotely. */
@@ -101,10 +103,6 @@ export class VaccinationCalendarComponent implements OnInit {
     if (!this.data()) {
       this.vaccinationCalendarService.load();
     }
-  }
-
-  toggleTheme(): void {
-    this.isDarkMode.update((isDark) => !isDark);
   }
 
   showTooltip(event: MouseEvent | FocusEvent, title: string, content: string): void {

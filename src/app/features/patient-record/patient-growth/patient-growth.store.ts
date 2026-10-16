@@ -1,3 +1,4 @@
+import { userTimeZone } from '../../../core/date/user-time-zone';
 import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, of, Subscription, switchMap } from 'rxjs';
@@ -22,7 +23,7 @@ export class PatientGrowthStore {
   private growthRead = 0;
   private recordContext = '';
   private readSubscription?: Subscription;
-  private readonly today = signal(this.argentinaDay());
+  private readonly today = signal(this.userDay());
   readonly selectedGrowthMetric = signal<GrowthMetricType | 'ALL'>('WEIGHT');
   readonly showHistorical = signal(false);
   readonly response = signal<PatientGrowthResponse | null>(null);
@@ -91,7 +92,7 @@ export class PatientGrowthStore {
   constructor() {
     interval(60_000)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.today.set(this.argentinaDay()));
+      .subscribe(() => this.today.set(this.userDay()));
     this.destroyRef.onDestroy(() => this.readSubscription?.unsubscribe());
     effect(() => {
       const patient = this.activePatientService.activePatient();
@@ -118,9 +119,9 @@ export class PatientGrowthStore {
       });
     });
   }
-  private argentinaDay(): string {
+  private userDay(): string {
     return new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Argentina/Buenos_Aires',
+      timeZone: userTimeZone(),
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

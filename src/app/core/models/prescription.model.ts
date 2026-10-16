@@ -13,4 +13,5 @@ export interface SavedPrescriptionRecord extends PrescriptionRequest {
   patientId: number;
   authorUserId: string;
   createdAt: string;
+  issuanceZone?: string;
 }
