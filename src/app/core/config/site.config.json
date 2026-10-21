@@ -8,14 +8,14 @@
     "^/(pacientes|ficha)/[^/]+(/editar)?$"
   ],
   "redirects": {},
-  "apiGatewayOrigin": "",
+  "apiGatewayOrigin": "https://api.bycode.com.ar",
   "applicationUrls": {
     "bycode": "https://bycode.com.ar",
     "pointly": "https://pointly.bycode.com.ar",
     "doctorchart": "https://doctorchart.bycode.com.ar"
   },
   "supabase": {
-    "url": "",
+    "url": "https://api.bycode.com.ar",
     "publishableKey": ""
   }
 }
