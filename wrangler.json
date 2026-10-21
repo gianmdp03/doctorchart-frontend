@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "doctorchart-frontend",
+  "compatibility_date": "2026-10-21",
+  "assets": {
+    "directory": "./dist/doctorchart-frontend/browser",
+    "not_found_handling": "404-page",
+    "run_worker_first": false
+  }
+}

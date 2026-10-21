@@ -1,0 +1,16 @@
+/login /index.csr 200
+/sin-plan /index.csr 200
+/dashboard /index.csr 200
+/consultas /index.csr 200
+/calendario-vacunacion /index.csr 200
+/calculadoras /index.csr 200
+/pacientes /index.csr 200
+/pacientes/nuevo /index.csr 200
+/pacientes/:id/editar /index.csr 200
+/pacientes/:id /index.csr 200
+/ficha /index.csr 200
+/ficha/:id/editar /index.csr 200
+/ficha/:id /index.csr 200
+/admin/especialidades /index.csr 200
+/onboarding/select-specialty /index.csr 200
+/onboarding/setup /index.csr 200

@@ -1,0 +1,66 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/login
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/sin-plan
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/dashboard
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/consultas
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/calendario-vacunacion
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/calculadoras
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/pacientes
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/pacientes/nuevo
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/pacientes/*
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/ficha
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/ficha/*
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/admin/especialidades
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/onboarding/select-specialty
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/onboarding/setup
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/index.csr
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/404.html
+  X-Robots-Tag: noindex, follow
