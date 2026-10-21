@@ -1,3 +1,5 @@
+import { GOOGLE_AUTH_ENABLED, LOCAL_REGISTRATION_ENABLED } from '../../auth-policy';
+import { environment } from '../../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import {
   Component,
@@ -19,6 +21,12 @@ import { matchingPasswords, trimmedRequired } from '../../core/models/form-valid
   styleUrl: './login-dialog.component.css',
 })
 export class LoginDialogComponent {
+  readonly googleAuthEnabled = GOOGLE_AUTH_ENABLED;
+  readonly bycodeRegisterUrl = environment.bycodePlansUrl.replace(/\/panel\/?$/, '') + '/register';
+  goToBycodeRegistration(): void {
+    if (isPlatformBrowser(this.platformId)) window.location.assign(this.bycodeRegisterUrl);
+  }
+
   private readonly fb = inject(FormBuilder);
   readonly authService = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
@@ -50,7 +58,8 @@ export class LoginDialogComponent {
   openModal(event?: Event): void {
     const customEvent = event as CustomEvent | undefined;
     if (customEvent?.detail?.mode === 'register') {
-      this.mode.set('register');
+      this.goToBycodeRegistration();
+      return;
     } else {
       this.mode.set('login');
     }
@@ -80,6 +89,7 @@ export class LoginDialogComponent {
   }
 
   setMode(newMode: 'login' | 'register'): void {
+    if (newMode === 'register') { this.goToBycodeRegistration(); return; }
     this.mode.set(newMode);
     this.errorMessage.set(null);
     this.successMessage.set(null);
@@ -169,6 +179,7 @@ export class LoginDialogComponent {
   }
 
   async onRegisterSubmit(): Promise<void> {
+    if (!LOCAL_REGISTRATION_ENABLED) { this.goToBycodeRegistration(); return; }
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
       this.errorMessage.set(this.registerForm.hasError('passwordMismatch') ? 'Las contraseñas no coinciden.' : 'Por favor complete todos los campos obligatorios.');
@@ -231,6 +242,7 @@ export class LoginDialogComponent {
   }
 
   async handleGoogleOAuth(): Promise<void> {
+    if (!GOOGLE_AUTH_ENABLED) return;
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.isSubmitting.set(true);

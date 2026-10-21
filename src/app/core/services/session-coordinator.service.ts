@@ -16,6 +16,7 @@ export class SessionCoordinatorService {
   private readonly clinicalEncounters = inject(ClinicalEncounterService);
   private identity: string | null = null;
   private adminIdentity = false;
+  private planActive = false;
   private entryPath = '/';
   setEntryPath(path: string): void { this.entryPath = path; }
 
@@ -23,24 +24,26 @@ export class SessionCoordinatorService {
     effect(() => {
       const identity = this.authService.currentUser()?.id ?? null;
       const adminIdentity = this.authService.isSuperAdmin();
-      if (identity === this.identity && adminIdentity === this.adminIdentity) return;
+      const planActive = this.authService.hasDoctorchartPlan();
+      if (identity === this.identity && adminIdentity === this.adminIdentity && planActive === this.planActive) return;
       this.identity = identity;
       this.adminIdentity = adminIdentity;
+      this.planActive = planActive;
       untracked(() => {
-        if (adminIdentity) this.activePatient.clear();
+        if (adminIdentity || !planActive) this.activePatient.clear();
         this.clinicalEncounters.clear();
         this.doctorProfileService.clearProfile();
         this.workspaceStore.clearSetup();
         if (identity && adminIdentity) {
           void this.router.navigate(['/admin/especialidades']).catch(() => undefined);
-        } else if (identity) {
+        } else if (identity && planActive) {
           void this.loadIdentity();
           if (this.router.url.startsWith('/admin/')) void this.router.navigate(['/dashboard']).catch(() => undefined);
         }
       });
     });
     effect(() => {
-      if (this.authService.currentUser()?.id && !this.authService.isSuperAdmin() && this.workspaceStore.isOnboardingCompleted()
+      if (this.authService.currentUser()?.id && this.authService.hasDoctorchartPlan() && !this.authService.isSuperAdmin() && this.workspaceStore.isOnboardingCompleted()
         && !this.workspaceStore.preferences() && !this.workspaceStore.preferencesError()
         && !this.workspaceStore.isLoading()) {
         untracked(() => { void this.workspaceStore.loadPreferences().catch(() => undefined); });
@@ -54,7 +57,7 @@ export class SessionCoordinatorService {
       this.doctorProfileService.loadProfile(),
       this.workspaceStore.loadSetup().then(setup => setup ? this.workspaceStore.loadPreferences() : null),
     ]);
-    if (!identity || identity !== this.authService.currentUser()?.id || this.authService.isSuperAdmin()
+    if (!identity || identity !== this.authService.currentUser()?.id || !this.authService.hasDoctorchartPlan() || this.authService.isSuperAdmin()
       || results.some(result => result.status === 'rejected')) return;
     // Resume a cancelled initial navigation without replacing its requested medical route.
     if (['/', '/login'].includes(this.router.url.split(/[?#]/)[0]) && !this.router.currentNavigation()) {
@@ -65,5 +68,5 @@ export class SessionCoordinatorService {
     }
   }
 
-  retrySetup(): void { if (!this.authService.isSuperAdmin()) void this.loadIdentity(); }
+  retrySetup(): void { if (this.authService.hasDoctorchartPlan() && !this.authService.isSuperAdmin()) void this.loadIdentity(); }
 }

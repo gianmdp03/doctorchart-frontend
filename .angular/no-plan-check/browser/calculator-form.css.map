@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/medical-calculators/calculators/calculator-form.css"],
+  "sourcesContent": [":host {\n  display: contents;\n}\n\n.field-hint {\n  font-size: 0.725rem;\n  color: #64748b;\n}\n"],
+  "mappings": ";AAAA;AACE,WAAA;AACF;AAEA,CAAA;AACE,aAAA;AACA,SAAA;AACF;",
+  "names": []
+}

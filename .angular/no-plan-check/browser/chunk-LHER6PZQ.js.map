@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "sources": [
+    "src/app/core/guards/clinical-navigation.guard.ts"
+  ],
+  "sourcesContent": [
+    "import { inject } from '@angular/core';\nimport { CanActivateFn, Router } from '@angular/router';\nimport { AuthService } from '../services/auth.service';\nimport { WorkspaceStore } from '../services/workspace.store';\nimport { ClinicalNavigationId } from '../models/specialty-experience.model';\nimport { FEATURE_FLAGS } from '../config/feature-flags';\n\n/** Availability of a specialty screen, independent of patient authorization in backend services. */\nexport const clinicalNavigationGuard = (entry: ClinicalNavigationId): CanActivateFn => async () => {\n  const auth = inject(AuthService);\n  const workspace = inject(WorkspaceStore);\n  const router = inject(Router);\n  await auth.authReady;\n  if (!auth.isLoggedIn()) return true;\n  if (auth.isSuperAdmin()) return router.createUrlTree(['/admin/especialidades']);\n  if (entry === 'CALCULATORS' && !workspace.calculatorsEnabled()) {\n    return router.createUrlTree(['/dashboard']);\n  }\n  try {\n    const setup = await workspace.loadSetup();\n    if (!setup?.onboardingCompleted) return router.createUrlTree([setup ? '/onboarding/setup' : '/onboarding/select-specialty']);\n    return setup.experience.navigation.includes(entry) ? true : router.createUrlTree(['/dashboard']);\n  } catch { return false; }\n};\n"
+  ],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAQO,IAAM,0BAA0B,CAAC,UAA+C,YAAY;AACjG,QAAM,OAAO,OAAO,WAAW;AAC/B,QAAM,YAAY,OAAO,cAAc;AACvC,QAAM,SAAS,OAAO,MAAM;AAC5B,QAAM,KAAK;AACX,MAAI,CAAC,KAAK,WAAW,EAAG,QAAO;AAC/B,MAAI,KAAK,aAAa,EAAG,QAAO,OAAO,cAAc,CAAC,uBAAuB,CAAC;AAC9E,MAAI,UAAU,iBAAiB,CAAC,UAAU,mBAAmB,GAAG;AAC9D,WAAO,OAAO,cAAc,CAAC,YAAY,CAAC;AAAA,EAC5C;AACA,MAAI;AACF,UAAM,QAAQ,MAAM,UAAU,UAAU;AACxC,QAAI,CAAC,OAAO,oBAAqB,QAAO,OAAO,cAAc,CAAC,QAAQ,sBAAsB,8BAA8B,CAAC;AAC3H,WAAO,MAAM,WAAW,WAAW,SAAS,KAAK,IAAI,OAAO,OAAO,cAAc,CAAC,YAAY,CAAC;AAAA,EACjG,QAAQ;AAAE,WAAO;AAAA,EAAO;AAC1B;",
+  "names": [],
+  "debugId": "7352217b-8329-51e2-b676-19bd6865dfa4"
+}

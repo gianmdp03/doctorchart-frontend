@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "sources": [
+    "src/app/core/guards/doctorchart-plan.guard.ts"
+  ],
+  "sourcesContent": [
+    "import { inject } from '@angular/core';\nimport { CanActivateFn, Router } from '@angular/router';\nimport { AuthService } from '../services/auth.service';\n\nexport const doctorchartPlanGuard: CanActivateFn = async (route, state) => {\n  const authService = inject(AuthService);\n  const router = inject(Router);\n\n  await authService.authReady;\n\n  if (!authService.isLoggedIn()) {\n    authService.openLoginModal();\n    if (typeof window !== 'undefined') {\n      window.dispatchEvent(new CustomEvent('open-login-modal'));\n    }\n    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });\n  }\n\n  if (authService.hasDoctorchartPlan()) {\n    return true;\n  }\n\n  return router.createUrlTree(['/sin-plan'], { queryParams: { returnUrl: state.url } });\n};\n\nexport const doctorchartNoPlanGuard: CanActivateFn = async () => {\n  const auth = inject(AuthService);\n  const router = inject(Router);\n  await auth.authReady;\n  if (!auth.isLoggedIn()) return router.createUrlTree(['/login']);\n  return auth.hasDoctorchartPlan() ? router.createUrlTree(['/dashboard']) : true;\n};\n"
+  ],
+  "mappings": ";;;;;;;;;;;;;;AAIO,IAAM,uBAAsC,OAAO,OAAO,UAAU;AACzE,QAAM,cAAc,OAAO,WAAW;AACtC,QAAM,SAAS,OAAO,MAAM;AAE5B,QAAM,YAAY;AAElB,MAAI,CAAC,YAAY,WAAW,GAAG;AAC7B,gBAAY,eAAe;AAC3B,QAAI,OAAO,WAAW,aAAa;AACjC,aAAO,cAAc,IAAI,YAAY,kBAAkB,CAAC;AAAA,IAC1D;AACA,WAAO,OAAO,cAAc,CAAC,QAAQ,GAAG,EAAE,aAAa,EAAE,WAAW,MAAM,IAAI,EAAE,CAAC;AAAA,EACnF;AAEA,MAAI,YAAY,mBAAmB,GAAG;AACpC,WAAO;AAAA,EACT;AAEA,SAAO,OAAO,cAAc,CAAC,WAAW,GAAG,EAAE,aAAa,EAAE,WAAW,MAAM,IAAI,EAAE,CAAC;AACtF;AAEO,IAAM,yBAAwC,YAAY;AAC/D,QAAM,OAAO,OAAO,WAAW;AAC/B,QAAM,SAAS,OAAO,MAAM;AAC5B,QAAM,KAAK;AACX,MAAI,CAAC,KAAK,WAAW,EAAG,QAAO,OAAO,cAAc,CAAC,QAAQ,CAAC;AAC9D,SAAO,KAAK,mBAAmB,IAAI,OAAO,cAAc,CAAC,YAAY,CAAC,IAAI;AAC5E;",
+  "names": [],
+  "debugId": "6f5f4925-0300-5790-a7d3-455dede440d8"
+}

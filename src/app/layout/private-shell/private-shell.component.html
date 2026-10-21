@@ -21,6 +21,8 @@
       </main>
     </div>
   </div>
+} @else if (!authService.hasDoctorchartPlan()) {
+  <app-no-plan />
 } @else if (doctorProfileService.error() || (!workspaceStore.loaded() && workspaceStore.error()) || (!workspaceStore.preferences() && workspaceStore.preferencesError())) {
   <div class="app-splash-screen" role="alert">
     <div class="splash-content">

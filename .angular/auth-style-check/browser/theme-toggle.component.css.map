@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["theme-toggle.component.ts"],
+  "sourcesContent": ["\n    :host { display: inline-flex; }\n    button {\n      display: inline-flex; align-items: center; justify-content: center; gap: .4rem;\n      min-height: 36px; padding: .4rem .65rem; border-radius: 8px;\n      border: 1px solid var(--md-sys-color-outline-variant);\n      background: var(--md-sys-color-surface-container-low);\n      color: var(--md-sys-color-on-surface); font: inherit; font-size: .8rem;\n      font-weight: 600; cursor: pointer;\n    }\n    button:hover { background: var(--md-sys-color-surface-container-high); }\n    button:focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 3px; }\n    ng-icon { font-size: 1rem; }\n    @media (max-width: 600px) { span { display: none; } button { min-width: 36px; } }\n  "],
+  "mappings": ";AACI;AAAQ,WAAA;AAAsB;AAC9B;AACE,WAAA;AAAsB,eAAA;AAAqB,mBAAA;AAAyB,OAAA;AACpE,cAAA;AAAkB,WAAA,MAAA;AAAuB,iBAAA;AACzC,UAAA,IAAA,MAAA,IAAA;AACA,cAAA,IAAA;AACA,SAAA,IAAA;AAAuC,QAAA;AAAe,aAAA;AACtD,eAAA;AAAkB,UAAA;AACpB;AACA,MAAA;AAAe,cAAA,IAAA;AAAwD;AACvE,MAAA;AAAuB,WAAA,IAAA,MAAA,IAAA;AAAgD,kBAAA;AAAqB;AAC5F;AAAU,aAAA;AAAiB;AAC3B,QAAA,WAAA;AAA4B;AAAO,aAAA;AAAe;AAAE;AAAS,eAAA;AAAiB;AAAE;",
+  "names": []
+}

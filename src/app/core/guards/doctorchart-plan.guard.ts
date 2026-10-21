@@ -1,7 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { environment } from '../../../environments/environment';
 
 export const doctorchartPlanGuard: CanActivateFn = async (route, state) => {
   const authService = inject(AuthService);
@@ -21,11 +20,13 @@ export const doctorchartPlanGuard: CanActivateFn = async (route, state) => {
     return true;
   }
 
-  // User is logged in but does not have an active DoctorChart plan
-  // Redirect immediately to ByCode to pay/subscribe
-  const redirectUrl = environment.bycodePlansUrl || 'http://localhost:4200/panel#plans-catalog';
-  if (typeof window !== 'undefined') {
-    window.location.href = redirectUrl;
-  }
-  return false;
+  return router.createUrlTree(['/sin-plan'], { queryParams: { returnUrl: state.url } });
+};
+
+export const doctorchartNoPlanGuard: CanActivateFn = async () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  await auth.authReady;
+  if (!auth.isLoggedIn()) return router.createUrlTree(['/login']);
+  return auth.hasDoctorchartPlan() ? router.createUrlTree(['/dashboard']) : true;
 };

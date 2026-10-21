@@ -22,6 +22,11 @@ const superAdminGuard = lazyGuard(() => import('./core/guards/super-admin.guard'
 
 export const routes: Routes = [
   {
+    path: 'sin-plan',
+    canActivate: [lazyGuard(() => import('./core/guards/doctorchart-plan.guard').then(m => m.doctorchartNoPlanGuard))],
+    loadComponent: () => import('./features/auth/no-plan.component').then(m => m.NoPlanComponent),
+  },
+  {
     path: 'admin/especialidades',
     canActivate: [superAdminGuard],
     loadComponent: () => import('./features/admin-specialties/admin-specialties.component').then(m => m.AdminSpecialtiesComponent),

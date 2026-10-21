@@ -57,3 +57,11 @@ Thumbs.db
 
 # Generated deployment configuration
 src/environments/environment.deploy.ts
+
+# Per-machine public frontend configuration
+config/local.public.json
+src/environments/environment.local.generated.ts
+
+# Isolated production-build verification
+/.angular/production-check/
+/.angular/local-environment-backup.ts

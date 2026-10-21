@@ -4,16 +4,17 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --port 4202",
-    "build": "ng build",
+    "build": "node scripts/build-deploy.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:growth:visual": "node scripts/verify-growth-visuals.mjs",
     "test:seo": "node scripts/verify-seo.mjs",
-    "postbuild": "node scripts/generate-seo.mjs && node scripts/generate-hosting.mjs",
     "preview": "node scripts/preview.mjs",
     "test:static": "node --test scripts/static-smoke.test.mjs",
     "build:deploy": "node scripts/build-deploy.mjs",
-    "test:config": "node --test scripts/production-config.test.mjs"
+    "test:config": "node --test scripts/production-config.test.mjs",
+    "configure:local": "node scripts/configure-local.mjs",
+    "prestart": "npm run configure:local"
   },
   "private": true,
   "packageManager": "npm@12.0.2",

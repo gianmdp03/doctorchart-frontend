@@ -1,3 +1,4 @@
+import { GOOGLE_AUTH_ENABLED, LOCAL_REGISTRATION_ENABLED } from '../../auth-policy';
 import { computed, DestroyRef, effect, inject, Injectable, InjectionToken, PLATFORM_ID, signal, untracked } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
@@ -290,13 +291,17 @@ export class AuthService {
   }
 
   async signUp(params: SignUpParams): Promise<AuthResponse> {
+    if (!LOCAL_REGISTRATION_ENABLED) throw new Error('Creá tu cuenta en Bycode.');
     if (!this.supabaseClient) {
       throw new Error('Supabase client is not available in this environment.');
     }
     const response = await this.supabaseClient.auth.signUp({
       email: params.email,
       password: params.password,
-      options: params.options,
+      options: {
+        ...params.options,
+        emailRedirectTo: params.options?.emailRedirectTo || (this.isBrowser ? window.location.origin : environment.appUrl) + '/login',
+      },
     });
     if (response.data?.session) {
       this.session.set(response.data.session);
@@ -306,6 +311,7 @@ export class AuthService {
   }
 
   async signInWithOAuth(provider: 'google' = 'google'): Promise<OAuthResponse> {
+    if (!GOOGLE_AUTH_ENABLED) { throw new Error('El acceso con Google está deshabilitado temporalmente.'); }
     if (!this.supabaseClient) {
       throw new Error('Supabase client is not available in this environment.');
     }
@@ -315,6 +321,16 @@ export class AuthService {
         redirectTo: this.isBrowser ? window.location.origin : undefined,
       },
     });
+  }
+
+  async refreshPlan(): Promise<void> {
+    const identity = this.currentUser()?.id;
+    if (!this.supabaseClient || !identity) throw new Error('No hay una sesión activa.');
+    const { data, error } = await this.supabaseClient.auth.refreshSession();
+    if (error || !data.session) throw new Error('No pudimos actualizar tu plan. Reintentá en unos momentos.');
+    if (this.currentUser()?.id !== identity) throw new Error('La sesión cambió. Volvé a iniciar sesión.');
+    this.session.set(data.session);
+    this.currentUser.set(data.session.user);
   }
 
   async signOut(): Promise<{ error: Error | null }> {

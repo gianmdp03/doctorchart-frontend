@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/layout/main-nav/main-nav.component.css"],
+  "sourcesContent": [":host {\n  display: block;\n}\n\n.m3-tab-item.tab-active {\n  color: var(--md-sys-color-primary);\n  border-bottom-color: var(--md-sys-color-primary);\n  font-weight: 700;\n  background-color: rgba(0, 104, 116, 0.08);\n}\n"],
+  "mappings": ";AAAA;AACE,WAAA;AACF;AAEA,CAAA,WAAA,CAAA;AACE,SAAA,IAAA;AACA,uBAAA,IAAA;AACA,eAAA;AACA,oBAAA,KAAA,CAAA,EAAA,GAAA,EAAA,GAAA,EAAA;AACF;",
+  "names": []
+}

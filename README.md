@@ -55,3 +55,7 @@ Las páginas comerciales se prerenderizan; las rutas funcionales se renderizan e
 ## UTC y zonas horarias
 
 Los instantes se muestran en la zona del dispositivo; el backend asigna la fecha de creación y los documentos conservan su zona de emisión. Ver [implementación, pruebas y requisitos del backend](docs/zonas-horarias.md).
+
+## Docker local y VPS
+
+Ver [configuración de entornos y autenticación](docs/conexion-entornos.md). `npm start` usa la configuración pública local y `npm run build` requiere la configuración pública definitiva de producción.

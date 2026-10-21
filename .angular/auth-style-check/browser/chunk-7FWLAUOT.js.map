@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "sources": [
+    "src/app/core/services/account-read-scope.ts"
+  ],
+  "sourcesContent": [
+    "import { DestroyRef, effect, inject, untracked } from '@angular/core';\nimport { Subject } from 'rxjs';\nimport { AuthService } from './auth.service';\n\n/** Cancels superseded reads and rejects replies from another account, even before effects run. */\nexport class AccountReadScope {\n  private readonly auth = inject(AuthService);\n  private readonly destroyRef = inject(DestroyRef);\n  private owner = this.auth.currentUser()?.id ?? null;\n  private generation = 0;\n  readonly canceled = new Subject<void>();\n\n  constructor(onAccountChange: () => void) {\n    effect(() => {\n      const owner = this.auth.currentUser()?.id ?? null;\n      untracked(() => {\n        if (owner === this.owner) return;\n        this.owner = owner;\n        this.cancel();\n        onAccountChange();\n      });\n    });\n    this.destroyRef.onDestroy(() => {\n      this.cancel();\n      this.canceled.complete();\n    });\n  }\n\n  authenticated() {\n    return !!this.auth.currentUser()?.id;\n  }\n  cancel() {\n    this.generation++;\n    this.canceled.next();\n  }\n  begin(): () => boolean {\n    this.cancel();\n    const generation = this.generation,\n      owner = this.auth.currentUser()?.id;\n    return () =>\n      !this.destroyRef.destroyed &&\n      generation === this.generation &&\n      owner === this.auth.currentUser()?.id;\n  }\n}\n"
+  ],
+  "mappings": ";;;;;;;;;;;;AAKO,IAAM,mBAAN,MAAuB;AAAA,EACX,OAAO,OAAO,WAAW;AAAA,EACzB,aAAa,OAAO,UAAU;AAAA,EACvC,QAAQ,KAAK,KAAK,YAAY,GAAG,MAAM;AAAA,EACvC,aAAa;AAAA,EACZ,WAAW,IAAI,QAAc;AAAA,EAEtC,YAAY,iBAA6B;AACvC,WAAO,MAAM;AACX,YAAM,QAAQ,KAAK,KAAK,YAAY,GAAG,MAAM;AAC7C,gBAAU,MAAM;AACd,YAAI,UAAU,KAAK,MAAO;AAC1B,aAAK,QAAQ;AACb,aAAK,OAAO;AACZ,wBAAgB;AAAA,MAClB,CAAC;AAAA,IACH,CAAC;AACD,SAAK,WAAW,UAAU,MAAM;AAC9B,WAAK,OAAO;AACZ,WAAK,SAAS,SAAS;AAAA,IACzB,CAAC;AAAA,EACH;AAAA,EAEA,gBAAgB;AACd,WAAO,CAAC,CAAC,KAAK,KAAK,YAAY,GAAG;AAAA,EACpC;AAAA,EACA,SAAS;AACP,SAAK;AACL,SAAK,SAAS,KAAK;AAAA,EACrB;AAAA,EACA,QAAuB;AACrB,SAAK,OAAO;AACZ,UAAM,aAAa,KAAK,YACtB,QAAQ,KAAK,KAAK,YAAY,GAAG;AACnC,WAAO,MACL,CAAC,KAAK,WAAW,aACjB,eAAe,KAAK,cACpB,UAAU,KAAK,KAAK,YAAY,GAAG;AAAA,EACvC;AACF;",
+  "names": [],
+  "debugId": "20959cc5-f872-59ec-af40-750b9aad5ad5"
+}

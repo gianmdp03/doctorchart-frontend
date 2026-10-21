@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "sources": [
+    "src/app/core/guards/doctorchart-plan.guard.ts"
+  ],
+  "sourcesContent": [
+    "import { inject } from '@angular/core';\nimport { CanActivateFn, Router } from '@angular/router';\nimport { AuthService } from '../services/auth.service';\nimport { environment } from '../../../environments/environment';\n\nexport const doctorchartPlanGuard: CanActivateFn = async (route, state) => {\n  const authService = inject(AuthService);\n  const router = inject(Router);\n\n  await authService.authReady;\n\n  if (!authService.isLoggedIn()) {\n    authService.openLoginModal();\n    if (typeof window !== 'undefined') {\n      window.dispatchEvent(new CustomEvent('open-login-modal'));\n    }\n    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });\n  }\n\n  if (authService.hasDoctorchartPlan()) {\n    return true;\n  }\n\n  // User is logged in but does not have an active DoctorChart plan\n  // Redirect immediately to ByCode to pay/subscribe\n  const redirectUrl = environment.bycodePlansUrl || 'http://localhost:4200/panel#plans-catalog';\n  if (typeof window !== 'undefined') {\n    window.location.href = redirectUrl;\n  }\n  return false;\n};\n"
+  ],
+  "mappings": ";;;;;;;;;;;;;;;;AAKO,IAAM,uBAAsC,OAAO,OAAO,UAAU;AACzE,QAAM,cAAc,OAAO,WAAW;AACtC,QAAM,SAAS,OAAO,MAAM;AAE5B,QAAM,YAAY;AAElB,MAAI,CAAC,YAAY,WAAW,GAAG;AAC7B,gBAAY,eAAe;AAC3B,QAAI,OAAO,WAAW,aAAa;AACjC,aAAO,cAAc,IAAI,YAAY,kBAAkB,CAAC;AAAA,IAC1D;AACA,WAAO,OAAO,cAAc,CAAC,QAAQ,GAAG,EAAE,aAAa,EAAE,WAAW,MAAM,IAAI,EAAE,CAAC;AAAA,EACnF;AAEA,MAAI,YAAY,mBAAmB,GAAG;AACpC,WAAO;AAAA,EACT;AAIA,QAAM,cAAc,YAAY,kBAAkB;AAClD,MAAI,OAAO,WAAW,aAAa;AACjC,WAAO,SAAS,OAAO;AAAA,EACzB;AACA,SAAO;AACT;",
+  "names": [],
+  "debugId": "e4829944-05b6-54c9-a8f3-4f0b5295bc76"
+}

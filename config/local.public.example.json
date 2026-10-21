@@ -1,0 +1,13 @@
+{
+  "publicSiteUrl": "http://localhost:4202",
+  "apiGatewayOrigin": "https://bycode.local:7999",
+  "applicationUrls": {
+    "bycode": "http://localhost:4200",
+    "pointly": "http://localhost:4201",
+    "doctorchart": "http://localhost:4202"
+  },
+  "supabase": {
+    "url": "https://bycode.local:7999",
+    "publishableKey": "REEMPLAZAR_POR_CLAVE_ANON_PUBLICA"
+  }
+}

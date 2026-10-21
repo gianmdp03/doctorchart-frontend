@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "sources": [
+    "src/app/core/services/theme.service.ts"
+  ],
+  "sourcesContent": [
+    "import { DOCUMENT } from '@angular/common';\nimport { Injectable, afterNextRender, inject, signal } from '@angular/core';\nimport { BrowserUiStorageService, ColorTheme } from './browser-ui-storage.service';\n\n@Injectable({ providedIn: 'root' })\nexport class ThemeService {\n  private readonly document = inject(DOCUMENT);\n  private readonly storage = inject(BrowserUiStorageService);\n  private readonly currentTheme = signal<ColorTheme>('light');\n  readonly theme = this.currentTheme.asReadonly();\n\n  constructor() {\n    // Keep the server and hydration markup identical, then restore the preference.\n    afterNextRender(() => this.apply(this.storage.readTheme()));\n  }\n\n  toggle(): void {\n    const theme = this.theme() === 'dark' ? 'light' : 'dark';\n    this.apply(theme);\n    this.storage.writeTheme(theme);\n  }\n\n  private apply(theme: ColorTheme): void {\n    this.currentTheme.set(theme);\n    this.document.documentElement.classList.toggle('dark', theme === 'dark');\n  }\n}\n"
+  ],
+  "mappings": ";;;;;;;;;;;;;;AAKM,IAAO,eAAP,MAAO,cAAY;EACN,WAAW,OAAO,QAAQ;EAC1B,UAAU,OAAO,uBAAuB;EACxC,eAAe;IAAmB;;;;;;EAC1C,QAAQ,KAAK,aAAa,WAAU;EAE7C,cAAA;AAEE,oBAAgB,MAAM,KAAK,MAAM,KAAK,QAAQ,UAAS,CAAE,CAAC;EAC5D;EAEA,SAAc;AACZ,UAAM,QAAQ,KAAK,MAAK,MAAO,SAAS,UAAU;AAClD,SAAK,MAAM,KAAK;AAChB,SAAK,QAAQ,WAAW,KAAK;EAC/B;EAEQ,MAAM,OAAwB;AACpC,SAAK,aAAa,IAAI,KAAK;AAC3B,SAAK,SAAS,gBAAgB,UAAU,OAAO,QAAQ,UAAU,MAAM;EACzE;;qCApBW,eAAY;EAAA;4EAAZ,eAAY,SAAZ,cAAY,WAAA,YADC,OAAM,CAAA;;;sEACnB,cAAY,CAAA;UADxB;WAAW,EAAE,YAAY,OAAM,CAAE;;;",
+  "names": [],
+  "debugId": "1a24810f-def2-57e0-bc50-66aceb377d10"
+}

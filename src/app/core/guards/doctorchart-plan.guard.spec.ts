@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, RouterStateSnapshot, Router, provideRouter } from '@angular/router';
 import { Component, signal } from '@angular/core';
 import { routes } from '../../app.routes';
-import { doctorchartPlanGuard } from './doctorchart-plan.guard';
+import { doctorchartPlanGuard, doctorchartNoPlanGuard } from './doctorchart-plan.guard';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -49,14 +49,15 @@ describe('doctorchartPlanGuard', () => {
 
   it('revalidates entitlement when authentication reloads the existing protected URL', async () => {
     const dashboard = routes.find(route => route.path === 'dashboard')!;
-    TestBed.configureTestingModule({ providers: [provideRouter([{ ...dashboard, component: GuardedRouteProbe, loadComponent: undefined, canActivate: [doctorchartPlanGuard] }])] });
+    TestBed.configureTestingModule({ providers: [provideRouter([{ ...dashboard, component: GuardedRouteProbe, loadComponent: undefined, canActivate: [doctorchartPlanGuard] }, {path:'sin-plan',component:GuardedRouteProbe}])] });
     authServiceMock.isLoggedIn.set(true);
     authServiceMock.hasDoctorchartPlan.set(true);
     const router = TestBed.inject(Router);
     expect(await router.navigateByUrl('/dashboard')).toBe(true);
     authServiceMock.hasDoctorchartPlan.set(false);
-    expect(await router.navigateByUrl('/dashboard', { onSameUrlNavigation: 'reload' })).toBe(false);
-    expect(window.location.href).toBe(environment.bycodePlansUrl);
+    expect(await router.navigateByUrl('/dashboard', { onSameUrlNavigation: 'reload' })).toBe(true);
+    expect(router.url).toBe('/sin-plan?returnUrl=%2Fdashboard');
+    expect(window.location.href).toBe('');
   });
 
   it('should block access and open login modal when user is not logged in', async () => {
@@ -105,7 +106,7 @@ describe('doctorchartPlanGuard', () => {
     expect(window.location.href).toBe('');
   });
 
-  it('should block and redirect to ByCode when logged in without active plan', async () => {
+  it('keeps signed-in accounts without a plan inside DoctorChart', async () => {
     authServiceMock.isLoggedIn.set(true);
     authServiceMock.hasDoctorchartPlan.set(false);
 
@@ -113,8 +114,17 @@ describe('doctorchartPlanGuard', () => {
       doctorchartPlanGuard(routeMock, stateMock)
     );
 
-    expect(canActivate).toBe(false);
+    expect(TestBed.inject(Router).serializeUrl(canActivate as import('@angular/router').UrlTree)).toBe('/sin-plan?returnUrl=%2Fpacientes%2F42');
     expect(authServiceMock.openLoginModal).not.toHaveBeenCalled();
-    expect(window.location.href).toBe(environment.bycodePlansUrl);
+    expect(window.location.href).toBe('');
+  });
+  it('allows the no-plan page only for a signed-in account without a plan', async () => {
+    const router = TestBed.inject(Router);
+    const run = () => TestBed.runInInjectionContext(() => doctorchartNoPlanGuard(routeMock, stateMock));
+    expect(router.serializeUrl(await run() as import('@angular/router').UrlTree)).toBe('/login');
+    authServiceMock.isLoggedIn.set(true);
+    expect(await run()).toBe(true);
+    authServiceMock.hasDoctorchartPlan.set(true);
+    expect(router.serializeUrl(await run() as import('@angular/router').UrlTree)).toBe('/dashboard');
   });
 });

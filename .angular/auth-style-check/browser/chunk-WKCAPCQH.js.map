@@ -1,0 +1,14 @@
+{
+  "version": 3,
+  "sources": [
+    "src/environments/environment.base.ts",
+    "src/environments/environment.local.generated.ts"
+  ],
+  "sourcesContent": [
+    "export const baseEnvironment = {};\n",
+    "import { baseEnvironment } from './environment.base';\nexport const environment = { ...baseEnvironment, ...{\n  \"production\": false,\n  \"appUrl\": \"http://localhost:4202\",\n  \"supabase\": {\n    \"url\": \"https://bycode.local:7999\",\n    \"publishableKey\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyNTk3OTM3LCJleHAiOjE4MjQxMzM5Mzd9.MLN0yom_KUaT2Tgk_7QFnFm9GX6dvmketGefpLD4lTc\"\n  },\n  \"apiUrl\": \"https://bycode.local:7999/api/doctorchart\",\n  \"aiGatewayUrl\": \"https://bycode.local:7999/api/ai/doctorchart/chat\",\n  \"bycodePlansUrl\": \"http://localhost:4200/panel\"\n} };\n"
+  ],
+  "mappings": ";;;;;AAAO,IAAM,kBAAkB,CAAC;;;ACCzB,IAAM,cAAc,kCAAK,kBAAoB;AAAA,EAClD,cAAc;AAAA,EACd,UAAU;AAAA,EACV,YAAY;AAAA,IACV,OAAO;AAAA,IACP,kBAAkB;AAAA,EACpB;AAAA,EACA,UAAU;AAAA,EACV,gBAAgB;AAAA,EAChB,kBAAkB;AACpB;",
+  "names": [],
+  "debugId": "77b7ad2f-98ed-53fa-9806-3f13380299c5"
+}

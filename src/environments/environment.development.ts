@@ -1,4 +1,1 @@
-import { baseEnvironment } from './environment.base';
-
-export const environment = { ...baseEnvironment, production: false };
-
+export { environment } from './environment.local.generated';

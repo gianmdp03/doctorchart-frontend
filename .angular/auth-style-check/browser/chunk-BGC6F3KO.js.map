@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "sources": [
+    "src/app/core/models/api-response.model.ts"
+  ],
+  "sourcesContent": [
+    "export interface PagedResponse<T> {\r\n  content: T[];\r\n  totalElements?: number;\r\n  totalPages?: number;\r\n  size?: number;\r\n  number?: number;\r\n  first?: boolean;\r\n  last?: boolean;\r\n  empty?: boolean;\r\n  page?: {\r\n    size?: number;\r\n    number?: number;\r\n    totalElements?: number;\r\n    totalPages?: number;\r\n  };\r\n}\r\n\r\nexport function getTotalElements<T>(res: PagedResponse<T> | null | undefined): number {\r\n  if (!res) return 0;\r\n  if (typeof res.totalElements === 'number') return res.totalElements;\r\n  if (typeof res.page?.totalElements === 'number') return res.page.totalElements;\r\n  if (Array.isArray(res.content)) return res.content.length;\r\n  return 0;\r\n}\r\n\r\nexport function getTotalPages<T>(res: PagedResponse<T> | null | undefined): number {\r\n  if (!res) return 1;\r\n  if (typeof res.totalPages === 'number') return res.totalPages;\r\n  if (typeof res.page?.totalPages === 'number') return res.page.totalPages;\r\n  return 1;\r\n}\r\n\r\nexport interface ProblemDetail {\r\n  type?: string;\r\n  title?: string;\r\n  status: number;\r\n  detail?: string;\r\n  instance?: string;\r\n  invalidFields?: Record<string, string>;\r\n  timestamp?: string;\r\n}\r\n"
+  ],
+  "mappings": ";AAiBO,SAAS,iBAAoB,KAAkD;AACpF,MAAI,CAAC,IAAK,QAAO;AACjB,MAAI,OAAO,IAAI,kBAAkB,SAAU,QAAO,IAAI;AACtD,MAAI,OAAO,IAAI,MAAM,kBAAkB,SAAU,QAAO,IAAI,KAAK;AACjE,MAAI,MAAM,QAAQ,IAAI,OAAO,EAAG,QAAO,IAAI,QAAQ;AACnD,SAAO;AACT;AAEO,SAAS,cAAiB,KAAkD;AACjF,MAAI,CAAC,IAAK,QAAO;AACjB,MAAI,OAAO,IAAI,eAAe,SAAU,QAAO,IAAI;AACnD,MAAI,OAAO,IAAI,MAAM,eAAe,SAAU,QAAO,IAAI,KAAK;AAC9D,SAAO;AACT;",
+  "names": [],
+  "debugId": "abf85884-9750-5a20-904a-927c4985bb10"
+}

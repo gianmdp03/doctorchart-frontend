@@ -6,6 +6,7 @@ import { Session, User } from '@supabase/supabase-js';
 describe('AuthService', () => {
   let service: AuthService;
   let mockAuth: {
+    refreshSession: ReturnType<typeof vi.fn>;
     signInWithPassword: ReturnType<typeof vi.fn>;
     signInWithOAuth: ReturnType<typeof vi.fn>;
     signUp: ReturnType<typeof vi.fn>;
@@ -17,6 +18,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     mockAuth = {
+      refreshSession: vi.fn(),
       signInWithPassword: vi.fn(),
       signInWithOAuth: vi.fn(),
       signUp: vi.fn(),
@@ -367,49 +369,14 @@ describe('AuthService', () => {
       expect(service.currentUser()).toEqual(mockUser);
     });
 
-    it('should sign in with OAuth provider (default google)', async () => {
-      mockAuth.signInWithOAuth.mockResolvedValue({
-        data: { provider: 'google', url: 'https://accounts.google.com/o/oauth2' },
-        error: null,
-      });
-
-      const res = await service.signInWithOAuth('google');
-
-      expect(mockAuth.signInWithOAuth).toHaveBeenCalledWith({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        },
-      });
-      expect(res.data.url).toBe('https://accounts.google.com/o/oauth2');
+    it('blocks Google before contacting Supabase', async () => {
+      await expect(service.signInWithOAuth('google')).rejects.toThrow('deshabilitado');
+      expect(mockAuth.signInWithOAuth).not.toHaveBeenCalled();
     });
 
-    it('should register with signUp and update state if session is returned', async () => {
-      const mockUser = { id: 'new-user', email: 'new@example.com' } as unknown as User;
-      const mockSession = { access_token: 'new-token', user: mockUser } as unknown as Session;
-
-      mockAuth.signUp.mockResolvedValue({
-        data: { user: mockUser, session: mockSession },
-        error: null,
-      });
-
-      const res = await service.signUp({
-        email: 'new@example.com',
-        password: 'password123',
-        options: {
-          data: { full_name: 'New Doctor', dni: '44555666' },
-        },
-      });
-
-      expect(mockAuth.signUp).toHaveBeenCalledWith({
-        email: 'new@example.com',
-        password: 'password123',
-        options: {
-          data: { full_name: 'New Doctor', dni: '44555666' },
-        },
-      });
-      expect(service.session()).toEqual(mockSession);
-      expect(service.currentUser()).toEqual(mockUser);
+    it('blocks local registration before contacting Supabase', async () => {
+      await expect(service.signUp({email: 'fixture@example.test', password: 'fixture-password'})).rejects.toThrow('Bycode');
+      expect(mockAuth.signUp).not.toHaveBeenCalled();
     });
 
     it('should sign out and clear session and currentUser', async () => {
@@ -435,11 +402,27 @@ describe('AuthService', () => {
 
       await expect(
         service.signInWithOAuth('google')
-      ).rejects.toThrow('Supabase client is not available');
+      ).rejects.toThrow('deshabilitado');
 
       await expect(
         service.signUp({ email: 'a@b.com', password: '123' })
-      ).rejects.toThrow('Supabase client is not available');
+      ).rejects.toThrow('Bycode');
     });
   });
+  it('refreshes the session to use the newly activated plan', async () => {
+    service.currentUser.set({id:'plan-user',app_metadata:{}} as User);
+    const user={id:'plan-user',app_metadata:{app_modules:{doctorchart:{active:true,tier:'PRO',expires_at:'2099-01-01T00:00:00Z'}}}} as unknown as User;
+    const session={user,access_token:'fixture-token'} as Session;
+    mockAuth.refreshSession.mockResolvedValue({data:{session},error:null});
+    await service.refreshPlan();
+    expect(service.hasDoctorchartPlan()).toBe(true);
+    expect(service.session()).toBe(session);
+  });
+  it('preserves the account when plan refresh fails', async () => {
+    const user={id:'plan-user',app_metadata:{}} as User; service.currentUser.set(user);
+    mockAuth.refreshSession.mockResolvedValue({data:{session:null},error:new Error('offline')});
+    await expect(service.refreshPlan()).rejects.toThrow('No pudimos actualizar');
+    expect(service.currentUser()).toBe(user);
+  });
+
 });

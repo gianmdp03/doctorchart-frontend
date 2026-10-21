@@ -1,3 +1,4 @@
+import { NoPlanComponent } from './features/auth/no-plan.component';
 import { By } from '@angular/platform-browser';
 import { ActivePatientService } from './core/services/active-patient.service';
 import { ClinicalEncounterService } from './core/services/clinical-encounter.service';
@@ -113,6 +114,7 @@ describe('App administrative entry', () => {
     isSuperAdmin: computed(() => currentUser()?.app_metadata['role'] === 'SUPER_ADMIN'),
     isLoggedIn: computed(() => currentUser() !== null),
     isAuthInitialized: signal(true),
+    hasDoctorchartPlan: vi.fn(() => true),
     signOut: vi.fn(),
   };
   let profile: { [key: string]: ReturnType<typeof signal> | ReturnType<typeof vi.fn> };
@@ -121,6 +123,7 @@ describe('App administrative entry', () => {
   beforeEach(async () => {
     currentUser.set(null);
     completed.set(false);
+    auth.hasDoctorchartPlan.mockReturnValue(true);
     profile = {
       clearProfile: vi.fn(), loadProfile: vi.fn().mockResolvedValue(null),
       error: signal('Unrelated clinical load error'), loaded: signal(false), loading: signal(false),
@@ -141,7 +144,7 @@ describe('App administrative entry', () => {
         { provide: DoctorProfileService, useValue: profile },
         { provide: WorkspaceStore, useValue: workspace },
       ],
-    }).overrideComponent(App, { set: { imports: [RouterOutlet, PrivateShellComponent], schemas: [CUSTOM_ELEMENTS_SCHEMA] } }).overrideComponent(PrivateShellComponent, { set: { imports: [RouterOutlet], schemas: [CUSTOM_ELEMENTS_SCHEMA] } }).compileComponents();
+    }).overrideComponent(App, { set: { imports: [RouterOutlet, PrivateShellComponent], schemas: [CUSTOM_ELEMENTS_SCHEMA] } }).overrideComponent(PrivateShellComponent, { set: { imports: [RouterOutlet, NoPlanComponent], schemas: [CUSTOM_ELEMENTS_SCHEMA] } }).compileComponents();
     vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   });
 
@@ -196,6 +199,19 @@ describe('App administrative entry', () => {
     currentUser.set({...user('DOCTOR'),id:'doctor-b'}); fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
     const second=fixture.debugElement.query(By.directive(AccountSessionProbe)).componentInstance as AccountSessionProbe;
     expect(second).not.toBe(first); expect(second.draft()).toBe('Borrador nuevo');
+  });
+
+  it('shows the no-plan screen instead of the generic profile error immediately after login', async () => {
+    auth.hasDoctorchartPlan.mockReturnValue(false);
+    currentUser.set(user('COMPANY'));
+    const fixture=TestBed.createComponent(App);
+    fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Sin plan activo');
+    expect(fixture.nativeElement.textContent).toContain('Iniciaste sesión correctamente');
+    expect(fixture.nativeElement.textContent).not.toContain('No pudimos cargar tu cuenta');
+    expect(profile['loadProfile']).not.toHaveBeenCalled();
+    expect(workspace['loadSetup']).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('app-sidebar')).toBeNull();
   });
 
 });

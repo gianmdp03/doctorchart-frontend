@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["not-found.component.ts"],
+  "sourcesContent": [".not-found{max-width:42rem;margin:5rem auto;padding:2rem;font-family:system-ui;line-height:1.6}.not-found h1{font-size:2rem}.not-found a{display:inline-block;padding:1rem;text-decoration:underline}.not-found a:focus-visible{outline:3px solid currentColor;outline-offset:3px}"],
+  "mappings": ";AAAA,CAAA;AAAW,aAAA;AAAgB,UAAA,KAAA;AAAiB,WAAA;AAAa,eAAA;AAAsB,eAAA;AAAe;AAAC,CAA/F,UAA+F;AAAc,aAAA;AAAc;AAAC,CAA5H,UAA4H;AAAa,WAAA;AAAqB,WAAA;AAAa,mBAAA;AAAyB;AAAC,CAArM,UAAqM,CAAA;AAA2B,WAAA,IAAA,MAAA;AAA+B,kBAAA;AAAkB;",
+  "names": []
+}

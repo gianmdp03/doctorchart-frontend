@@ -62,7 +62,7 @@ describe('LoginDialogComponent', () => {
     expect(component.showPassword()).toBe(false);
   });
 
-  it.each(['dialog', 'page'])('validates password confirmation and DNI while editing (%s)', kind => {
+  it.each(['dialog', 'page'])('preserves dormant registration validation (%s)', kind => {
     const login = kind === 'page' ? TestBed.createComponent(LoginPageComponent).componentInstance : component;
     login.registerForm.patchValue({ fullName: 'Ana Pérez', dni: '12345678', email: 'ana@example.com', password: 'password123', confirmPassword: 'different123' });
     login.registerForm.controls.confirmPassword.markAsDirty();
@@ -96,13 +96,6 @@ describe('LoginDialogComponent', () => {
     expect(authServiceMock.openLoginModal).toHaveBeenCalled();
   });
 
-  it('should open modal in register mode when event detail requests register', () => {
-    window.dispatchEvent(
-      new CustomEvent('open-login-modal', { detail: { mode: 'register' } })
-    );
-    expect(component.isOpen()).toBe(true);
-    expect(component.mode()).toBe('register');
-  });
 
   it('should open modal when authService.isLoginModalOpen signal is set to true', () => {
     authServiceMock.isLoginModalOpen.set(true);
@@ -171,18 +164,6 @@ describe('LoginDialogComponent', () => {
     expect(component.isOpen()).toBe(true);
   });
 
-  it('should switch mode between login and register and reset error and success messages', () => {
-    component.errorMessage.set('Error previo');
-    component.successMessage.set('Éxito previo');
-
-    component.setMode('register');
-    expect(component.mode()).toBe('register');
-    expect(component.errorMessage()).toBeNull();
-    expect(component.successMessage()).toBeNull();
-
-    component.setMode('login');
-    expect(component.mode()).toBe('login');
-  });
 
   it('should toggle password visibility flag', () => {
     expect(component.showPassword()).toBe(false);
@@ -265,143 +246,36 @@ describe('LoginDialogComponent', () => {
     expect(component.errorMessage()).toContain('Network connection failed');
   });
 
-  it('should not submit register if form is invalid and set error message', async () => {
-    component.openModal();
-    component.setMode('register');
-    component.registerForm.patchValue({
-      fullName: '',
-      dni: '',
-      email: 'invalid-email',
-      password: '',
-      confirmPassword: '',
-    });
 
-    await component.onRegisterSubmit();
 
+
+
+
+
+  it.each(['dialog', 'page'])('routes registration to Bycode without signing up (%s)', async kind => {
+    const login = kind === 'page' ? TestBed.createComponent(LoginPageComponent).componentInstance : component;
+    const redirect = vi.spyOn(login, 'goToBycodeRegistration').mockImplementation(() => {});
+    login.setMode('register');
+    expect(redirect).toHaveBeenCalledOnce();
+    expect(login.mode()).toBe('login');
+    await login.onRegisterSubmit();
+    expect(redirect).toHaveBeenCalledTimes(2);
     expect(authServiceMock.signUp).not.toHaveBeenCalled();
-    expect(component.errorMessage()).toContain('Por favor complete todos los campos obligatorios');
+    await login.handleGoogleOAuth();
+    expect(authServiceMock.signInWithOAuth).not.toHaveBeenCalled();
   });
-
-  it('should reject register submission if passwords do not match', async () => {
-    component.openModal();
-    component.setMode('register');
-    component.registerForm.patchValue({
-      fullName: 'Dr. Lucas Albarracín',
-      dni: '38111222',
-      email: 'lucas@hospital.com',
-      password: 'password123',
-      confirmPassword: 'differentPassword456',
-    });
-
-    await component.onRegisterSubmit();
-
+  it('does not render Google or a local registration form', () => {
+    component.openModal(); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Continuar con Google');
+    expect(fixture.nativeElement.querySelector('input[formControlName="fullName"]')).toBeNull();
+    const link = fixture.nativeElement.querySelector('a[href$="/register"]');
+    expect(link?.textContent).toContain('Bycode');
+    expect(link?.getAttribute('href')).toBe(component.bycodeRegisterUrl);
+  });
+  it('redirects register modal events to Bycode', () => {
+    const redirect = vi.spyOn(component, 'goToBycodeRegistration').mockImplementation(() => {});
+    component.openModal(new CustomEvent('open-login-modal', { detail: { mode: 'register' } }));
+    expect(redirect).toHaveBeenCalledOnce();
     expect(authServiceMock.signUp).not.toHaveBeenCalled();
-    expect(component.errorMessage()).toContain('Las contraseñas no coinciden');
-  });
-
-  it('should submit register successfully with auto-session, dispatch event and close modal', async () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-    authServiceMock.signUp.mockResolvedValue({
-      data: { user: mockUser, session: { access_token: 'new-session' } },
-      error: null,
-    });
-
-    component.openModal();
-    component.setMode('register');
-    component.registerForm.patchValue({
-      fullName: 'Dr. Lucas Albarracín',
-      dni: '38111222',
-      email: 'lucas@hospital.com',
-      password: 'password123',
-      confirmPassword: 'password123',
-    });
-
-    await component.onRegisterSubmit();
-
-    expect(authServiceMock.signUp).toHaveBeenCalledWith({
-      email: 'lucas@hospital.com',
-      password: 'password123',
-      options: {
-        data: {
-          full_name: 'Dr. Lucas Albarracín',
-          dni: '38111222',
-        },
-      },
-    });
-
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'auth-register-success' })
-    );
-    expect(component.isOpen()).toBe(false);
-
-    dispatchSpy.mockRestore();
-  });
-
-  it('should submit register without session (email confirmation) and switch to login mode', async () => {
-    authServiceMock.signUp.mockResolvedValue({
-      data: { user: mockUser, session: null },
-      error: null,
-    });
-
-    component.openModal();
-    component.setMode('register');
-    component.registerForm.patchValue({
-      fullName: 'Dr. Lucas Albarracín',
-      dni: '38111222',
-      email: 'lucas@hospital.com',
-      password: 'password123',
-      confirmPassword: 'password123',
-    });
-
-    await component.onRegisterSubmit();
-
-    expect(component.mode()).toBe('login');
-    expect(component.loginForm.get('email')?.value).toBe('lucas@hospital.com');
-    expect(component.successMessage()).toContain('¡Cuenta creada con éxito!');
-  });
-
-  it('should handle signUp error response by showing translated error message', async () => {
-    authServiceMock.signUp.mockResolvedValue({
-      data: { user: null, session: null },
-      error: { message: 'User already registered' },
-    });
-
-    component.openModal();
-    component.setMode('register');
-    component.registerForm.patchValue({
-      fullName: 'Dr. Lucas Albarracín',
-      dni: '38111222',
-      email: 'lucas@hospital.com',
-      password: 'password123',
-      confirmPassword: 'password123',
-    });
-
-    await component.onRegisterSubmit();
-
-    expect(component.isSubmitting()).toBe(false);
-    expect(component.errorMessage()).toContain('Ya existe una cuenta registrada');
-  });
-
-  it('should handle Google OAuth button click', async () => {
-    authServiceMock.signInWithOAuth.mockResolvedValue({
-      data: { provider: 'google', url: 'https://oauth.google.com' },
-      error: null,
-    });
-
-    await component.handleGoogleOAuth();
-
-    expect(authServiceMock.signInWithOAuth).toHaveBeenCalledWith('google');
-  });
-
-  it('should handle Google OAuth error gracefully', async () => {
-    authServiceMock.signInWithOAuth.mockResolvedValue({
-      data: { provider: 'google', url: null },
-      error: { message: 'OAuth provider disabled' },
-    });
-
-    await component.handleGoogleOAuth();
-
-    expect(component.errorMessage()).toBe('OAuth provider disabled');
-    expect(component.isSubmitting()).toBe(false);
   });
 });

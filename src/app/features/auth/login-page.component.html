@@ -16,10 +16,10 @@
     </div>
 
     <!-- Segmented Mode Switcher -->
-    <div class="auth-mode-switcher" role="tablist">
+    <div class="auth-mode-switcher" aria-label="Acceso a la cuenta">
       <button
         type="button"
-        role="tab"
+
         class="mode-switch-btn"
         [class.active]="mode() === 'login'"
         [attr.aria-selected]="mode() === 'login'"
@@ -31,20 +31,12 @@
         </svg>
         <span>Iniciar Sesión</span>
       </button>
-      <button
-        type="button"
-        role="tab"
-        class="mode-switch-btn"
-        [class.active]="mode() === 'register'"
-        [attr.aria-selected]="mode() === 'register'"
-        (click)="setMode('register')"
-        [disabled]="isSubmitting()"
-      >
+      <a class="mode-switch-btn" [href]="bycodeRegisterUrl">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
         </svg>
-        <span>Crear Cuenta</span>
-      </button>
+        <span>Crear cuenta en Bycode</span>
+      </a>
     </div>
 
     <div class="login-card-body">
@@ -73,7 +65,8 @@
             Tu cuenta sirve para ByCode, Pointly y DoctorChart. Si ya tenés cuenta en alguno, usá esa misma cuenta para iniciar sesión acá. Cada producto tiene su propio plan.
           </p>
 
-          <!-- Google OAuth Button -->
+          @if (googleAuthEnabled) {
+<!-- Google OAuth Button -->
           <button
             type="button"
             class="m3-oauth-btn google-btn"
@@ -92,6 +85,8 @@
           <div class="auth-divider">
             <span>o con tu correo institucional</span>
           </div>
+}
+
 
           <!-- Email -->
           <div class="m3-textfield" [class.has-error]="isLoginInvalid('email')">
@@ -160,105 +155,8 @@
       }
 
       <!-- REGISTER VIEW -->
-      @if (mode() === 'register') {
-        <form [formGroup]="registerForm" class="auth-form" (ngSubmit)="onRegisterSubmit()">
-          <p class="auth-subtitle">
-            Crea tu cuenta profesional en ByCode para gestionar historias clínicas.
-          </p>
+      <p class="auth-registration-note">Las cuentas se crean en Bycode. Después podés iniciar sesión en DoctorChart con esa misma cuenta.</p>
 
-          <div class="m3-textfield" [class.has-error]="isRegisterInvalid('fullName')">
-            <input
-              type="text"
-              id="reg-fullname"
-              formControlName="fullName"
-              placeholder=" "
-              autocomplete="name"
-              required
-            />
-            <label for="reg-fullname">Nombre y Apellido Completo *</label>
-            @if (isRegisterInvalid('fullName')) {
-              <span class="error-helper-text" role="alert">{{ registerError('fullName') }}</span>
-            }
-          </div>
-
-          <div class="m3-textfield" [class.has-error]="isRegisterInvalid('dni')">
-            <input
-              type="text"
-              id="reg-dni"
-              formControlName="dni"
-              placeholder=" "
-              required
-            />
-            <label for="reg-dni">DNI / Documento de Identidad *</label>
-            @if (isRegisterInvalid('dni')) {
-              <span class="error-helper-text" role="alert">{{ registerError('dni') }}</span>
-            }
-          </div>
-
-          <div class="m3-textfield" [class.has-error]="isRegisterInvalid('email')">
-            <input
-              type="email"
-              id="reg-email"
-              formControlName="email"
-              placeholder=" "
-              autocomplete="email"
-              required
-            />
-            <label for="reg-email">Correo Electrónico *</label>
-            @if (isRegisterInvalid('email')) {
-              <span class="error-helper-text" role="alert">{{ registerError('email') }}</span>
-            }
-          </div>
-
-          <div class="form-grid-2">
-            <div class="m3-textfield" [class.has-error]="isRegisterInvalid('password')">
-              <input
-                type="password"
-                id="reg-password"
-                formControlName="password"
-                placeholder=" "
-                autocomplete="new-password"
-                required
-              />
-              <label for="reg-password">Contraseña *</label>
-              @if (isRegisterInvalid('password')) {
-                <span class="error-helper-text" role="alert">{{ registerError('password') }}</span>
-              }
-            </div>
-
-            <div class="m3-textfield" [class.has-error]="isRegisterInvalid('confirmPassword')">
-              <input
-                type="password"
-                id="reg-confirm-password"
-                formControlName="confirmPassword"
-                placeholder=" "
-                autocomplete="new-password"
-                required
-              />
-              <label for="reg-confirm-password">Confirmar *</label>
-              @if (isRegisterInvalid('confirmPassword')) {
-                <span class="error-helper-text" role="alert">{{ registerError('confirmPassword') }}</span>
-              }
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            class="m3-button m3-button-filled auth-submit-btn"
-            [disabled]="isSubmitting()"
-          >
-            @if (isSubmitting()) {
-              <span class="spinner-small" aria-hidden="true"></span>
-              <span>Creando cuenta...</span>
-            } @else {
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-              </svg>
-              <span>Registrar Cuenta Profesional</span>
-            }
-          </button>
-        </form>
-      }
     </div>
 
     <div class="login-card-footer">

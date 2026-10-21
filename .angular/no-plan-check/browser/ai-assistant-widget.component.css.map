@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/ai-assistant/ai-assistant-widget.component.css"],
+  "sourcesContent": ["/* Scrollbar customizations and markdown container styles */\n.chat-markdown p {\n  margin: 0;\n}\n\n.scrollbar-none::-webkit-scrollbar {\n  display: none;\n}\n\n.scrollbar-none {\n  -ms-overflow-style: none;\n  scrollbar-width: none;\n}\n"],
+  "mappings": ";AACA,CAAA,cAAA;AACE,UAAA;AACF;AAEA,CAAA,cAAA;AACE,WAAA;AACF;AAEA,CAJA;AAKE,sBAAA;AACA,mBAAA;AACF;",
+  "names": []
+}

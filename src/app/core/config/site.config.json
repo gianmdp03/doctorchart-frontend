@@ -4,7 +4,7 @@
     "/"
   ],
   "clientPatterns": [
-    "^/(login|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",
+    "^/(login|sin-plan|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",
     "^/(pacientes|ficha)/[^/]+(/editar)?$"
   ],
   "redirects": {},
@@ -13,5 +13,9 @@
     "bycode": "https://bycode.com.ar",
     "pointly": "https://pointly.bycode.com.ar",
     "doctorchart": "https://doctorchart.bycode.com.ar"
+  },
+  "supabase": {
+    "url": "",
+    "publishableKey": ""
   }
 }

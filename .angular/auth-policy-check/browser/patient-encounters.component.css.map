@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/features/patient-record/patient-encounters/patient-encounters.component.css"],
+  "sourcesContent": [":host {\n  display: block;\n  min-width: 0;\n}\n.tab-panel {\n  display: flex;\n  flex-direction: column;\n  gap: 1.25rem;\n}\n\n@keyframes spin {\n  to {\n    transform: rotate(360deg);\n  }\n}\n\n@keyframes pulse {\n  0%,\n  100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.4;\n  }\n}\n\n.animate-fade-in {\n  animation: fadeIn 0.15s ease-in-out;\n}\n\n@keyframes fadeIn {\n  from {\n    opacity: 0;\n    transform: translateY(3px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n"],
+  "mappings": ";AAAA;AACE,WAAA;AACA,aAAA;AACF;AACA,CAAA;AACE,WAAA;AACA,kBAAA;AACA,OAAA;AACF;AAEA,WAAA;AACE;AACE,eAAA,OAAA;AACF;AACF;AAEA,WAAA;AACE;AAEE,aAAA;AACF;AACA;AACE,aAAA;AACF;AACF;AAEA,CAAA;AACE,aAAA,OAAA,MAAA;AACF;AAEA,WAHE;AAIA;AACE,aAAA;AACA,eAAA,WAAA;AACF;AACA;AACE,aAAA;AACA,eAAA,WAAA;AACF;AACF;",
+  "names": []
+}

@@ -1,0 +1,991 @@
+<!DOCTYPE html><html lang="es-AR"><head>
+  <meta charset="utf-8">
+  <title>DoctorChart | Historias clínicas digitales y pacientes</title>
+  <meta name="description" content="Organizá las fichas de tus pacientes, registrá consultas y personalizá tus formularios clínicos con DoctorChart.">
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="index, follow">
+  <script src="theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=2" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/svg+xml" href="doctorchart-logo.svg">
+  <!-- Google Fonts: Google Sans & Roboto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&amp;family=Roboto:wght@300;400;500;700&amp;display=optional" rel="stylesheet">
+<link rel="stylesheet" href="styles.css"><style ng-app-id="ng">
+.app-layout-shell[_ngcontent-ng-c3580351362] {
+  display: flex;
+  flex: 1;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--dc-surface-low, #f8fafc);
+  align-items: stretch;
+}
+.app-main-viewport[_ngcontent-ng-c3580351362] {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+.app-main-content[_ngcontent-ng-c3580351362] {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+@media (max-width: 768px) {
+  .app-main-content[_ngcontent-ng-c3580351362] {
+    padding: 1rem 0.75rem;
+  }
+}
+.app-splash-screen[_ngcontent-ng-c3580351362] {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(
+      135deg,
+      var(--dc-surface-low, #f0f7f8) 0%,
+      var(--dc-surface-low, #eaf4f5) 100%);
+}
+.splash-content[_ngcontent-ng-c3580351362] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.splash-logo[_ngcontent-ng-c3580351362] {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.splash-title[_ngcontent-ng-c3580351362] {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--md-sys-color-on-surface, #191c1d);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+.splash-spinner[_ngcontent-ng-c3580351362] {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(0, 104, 116, 0.2);
+  border-top-color: var(--md-sys-color-primary, #006874);
+  border-radius: 50%;
+  animation: _ngcontent-ng-c3580351362_spin 0.7s linear infinite;
+}
+.splash-text[_ngcontent-ng-c3580351362] {
+  font-size: 0.88rem;
+  color: var(--md-sys-color-secondary, #4a6267);
+  margin: 0;
+}
+@keyframes _ngcontent-ng-c3580351362_spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media print {
+  .app-layout-shell[_ngcontent-ng-c3580351362], 
+   .app-splash-screen[_ngcontent-ng-c3580351362] {
+    display: none !important;
+  }
+}
+/*# sourceMappingURL=/app.css.map */</style><style ng-app-id="ng">
+.scroll-to-top[_ngcontent-ng-c2680069453] {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 16px;
+  background: var(--dc-surface, #fff);
+  color: var(--md-sys-color-primary, #006874);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.scroll-to-top[_ngcontent-ng-c2680069453]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+}
+.scroll-to-top[_ngcontent-ng-c2680069453]:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary, #006874);
+  outline-offset: 3px;
+}
+@media (min-width: 640px) {
+  .scroll-to-top[_ngcontent-ng-c2680069453] {
+    right: max(2rem, env(safe-area-inset-right));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-to-top[_ngcontent-ng-c2680069453] {
+    transition: none;
+  }
+  .scroll-to-top[_ngcontent-ng-c2680069453]:hover {
+    transform: none;
+  }
+}
+@media print {
+  .scroll-to-top[_ngcontent-ng-c2680069453] {
+    display: none;
+  }
+}
+/*# sourceMappingURL=/scroll-to-top.component.css.map */</style><style ng-app-id="ng">
+[_nghost-ng-c4031893873] {
+  display: block;
+  --ink: var(--md-sys-color-on-surface, #172b2e);
+  --muted: var(--md-sys-color-on-surface-variant, #526568);
+  --teal: var(--md-sys-color-primary, #006874);
+  --soft: var(--md-sys-color-surface-container-low, #f0f7f7);
+  --surface: var(--md-sys-color-surface, #fff);
+  --line: var(--md-sys-color-outline-variant, #d8e4e5);
+  color: var(--ink);
+  background: var(--surface);
+  font-family: var(--font-sans);
+}
+*[_ngcontent-ng-c4031893873] {
+  box-sizing: border-box;
+}
+a[_ngcontent-ng-c4031893873] {
+  color: inherit;
+  text-decoration: none;
+}
+ng-icon[_ngcontent-ng-c4031893873] {
+  flex-shrink: 0;
+}
+a[_ngcontent-ng-c4031893873]:focus-visible, 
+summary[_ngcontent-ng-c4031893873]:focus-visible {
+  outline: 3px solid var(--teal);
+  outline-offset: 5px;
+  border-radius: 5px;
+}
+.section-width[_ngcontent-ng-c4031893873] {
+  width: min(1160px, calc(100% - 80px));
+  margin-inline: auto;
+}
+.skip-link[_ngcontent-ng-c4031893873] {
+  position: fixed;
+  top: -80px;
+  left: 20px;
+  z-index: 100;
+  padding: 12px 20px;
+  background: var(--surface);
+  color: var(--teal);
+}
+.skip-link[_ngcontent-ng-c4031893873]:focus {
+  top: 15px;
+}
+.landing-header[_ngcontent-ng-c4031893873] {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.header-inner[_ngcontent-ng-c4031893873] {
+  width: min(1320px, calc(100% - 64px));
+  margin: auto;
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
+.brand[_ngcontent-ng-c4031893873] {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.8px;
+}
+.brand-mark[_ngcontent-ng-c4031893873] {
+  width: 35px;
+  height: 35px;
+  border-radius: 11px;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 25px;
+}
+.brand-mark[_ngcontent-ng-c4031893873]   .doctorchart-logo[_ngcontent-ng-c4031893873] {
+  width: 100%;
+  height: 100%;
+}
+nav[_ngcontent-ng-c4031893873] {
+  display: flex;
+  gap: 28px;
+  font-size: 13px;
+  color: var(--muted);
+}
+nav[_ngcontent-ng-c4031893873]   a[_ngcontent-ng-c4031893873]:hover, 
+.text-link[_ngcontent-ng-c4031893873]:hover {
+  color: var(--teal);
+}
+.header-actions[_ngcontent-ng-c4031893873] {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.button[_ngcontent-ng-c4031893873] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--teal);
+  color: var(--md-sys-color-on-primary, white);
+  border: 1px solid var(--teal);
+  padding: 16px 24px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.button[_ngcontent-ng-c4031893873]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--teal) 18%, transparent);
+}
+.button[_ngcontent-ng-c4031893873]   ng-icon[_ngcontent-ng-c4031893873] {
+  font-size: 18px;
+}
+.button-small[_ngcontent-ng-c4031893873] {
+  font-size: 13px;
+  padding: 11px 19px;
+}
+.hero[_ngcontent-ng-c4031893873] {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  align-items: center;
+  gap: 68px;
+  padding-block: 88px 80px;
+}
+.eyebrow[_ngcontent-ng-c4031893873] {
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  font-weight: 750;
+  color: var(--teal);
+  display: inline-flex;
+  gap: 9px;
+  align-items: center;
+}
+.status-dot[_ngcontent-ng-c4031893873] {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  display: inline-block;
+}
+h1[_ngcontent-ng-c4031893873] {
+  font-size: clamp(38px, 4.2vw, 56px);
+  line-height: 1.12;
+  font-weight: 650;
+  letter-spacing: -2.6px;
+  margin: 23px 0;
+}
+h1[_ngcontent-ng-c4031893873]   span[_ngcontent-ng-c4031893873] {
+  color: var(--teal);
+}
+.hero-description[_ngcontent-ng-c4031893873] {
+  font-size: 16px;
+  color: var(--muted);
+  line-height: 1.8;
+  max-width: 465px;
+}
+.hero-actions[_ngcontent-ng-c4031893873] {
+  margin-top: 30px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.text-link[_ngcontent-ng-c4031893873] {
+  font-size: 13px;
+  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.hero-note[_ngcontent-ng-c4031893873] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 23px;
+}
+.hero-note[_ngcontent-ng-c4031893873]   ng-icon[_ngcontent-ng-c4031893873] {
+  color: var(--teal);
+  font-size: 16px;
+}
+.preview-stage[_ngcontent-ng-c4031893873] {
+  position: relative;
+  padding: 26px 23px 36px;
+  border-radius: 28px;
+  background:
+    radial-gradient(
+      ellipse at 80% 10%,
+      color-mix(in srgb, var(--teal) 12%, var(--surface)),
+      var(--soft) 75%);
+}
+.preview-label[_ngcontent-ng-c4031893873] {
+  font-size: 8px;
+  letter-spacing: 1.3px;
+  color: var(--teal);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 19px 5px;
+}
+.record-preview[_ngcontent-ng-c4031893873] {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: 0 18px 45px color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.preview-topbar[_ngcontent-ng-c4031893873] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.preview-brand[_ngcontent-ng-c4031893873] {
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.preview-brand[_ngcontent-ng-c4031893873]   .doctorchart-logo[_ngcontent-ng-c4031893873] {
+  width: 24px;
+  height: 24px;
+}
+.example-pill[_ngcontent-ng-c4031893873] {
+  font-size: 7px;
+  letter-spacing: 1px;
+  border: 1px solid var(--line);
+  padding: 4px 7px;
+  border-radius: 4px;
+  color: var(--muted);
+}
+.preview-breadcrumb[_ngcontent-ng-c4031893873] {
+  color: var(--muted);
+  font-size: 8px;
+  padding: 17px 18px 0;
+}
+.preview-breadcrumb[_ngcontent-ng-c4031893873]   span[_ngcontent-ng-c4031893873] {
+  margin: 0 7px;
+}
+.preview-patient[_ngcontent-ng-c4031893873] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 17px 18px;
+}
+.avatar[_ngcontent-ng-c4031893873] {
+  height: 37px;
+  width: 37px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 700;
+}
+.preview-patient[_ngcontent-ng-c4031893873]   strong[_ngcontent-ng-c4031893873] {
+  font-size: 13px;
+  display: block;
+}
+.preview-patient[_ngcontent-ng-c4031893873]   div[_ngcontent-ng-c4031893873]   span[_ngcontent-ng-c4031893873] {
+  display: block;
+  font-size: 8px;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.preview-patient[_ngcontent-ng-c4031893873]    > ng-icon[_ngcontent-ng-c4031893873] {
+  margin-left: auto;
+  color: var(--teal);
+}
+.preview-tabs[_ngcontent-ng-c4031893873] {
+  padding: 0 18px;
+  display: flex;
+  gap: 17px;
+  font-size: 8px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+.preview-tabs[_ngcontent-ng-c4031893873]   span[_ngcontent-ng-c4031893873] {
+  padding: 8px 0 10px;
+  white-space: nowrap;
+}
+.preview-tabs[_ngcontent-ng-c4031893873]   .active[_ngcontent-ng-c4031893873] {
+  color: var(--teal);
+  border-bottom: 2px solid var(--teal);
+  font-weight: 700;
+}
+.preview-body[_ngcontent-ng-c4031893873] {
+  padding: 18px;
+}
+.preview-section-title[_ngcontent-ng-c4031893873] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  margin-bottom: 17px;
+}
+.preview-add[_ngcontent-ng-c4031893873] {
+  color: var(--teal);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  background: var(--soft);
+  padding: 6px 8px;
+  border-radius: 5px;
+}
+.preview-encounter[_ngcontent-ng-c4031893873] {
+  display: flex;
+  gap: 11px;
+}
+.encounter-marker[_ngcontent-ng-c4031893873] {
+  color: var(--teal);
+  background: var(--soft);
+  border: 1px solid var(--line);
+  height: 27px;
+  width: 27px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.encounter-content[_ngcontent-ng-c4031893873] {
+  flex: 1;
+  padding-bottom: 15px;
+}
+.preview-date[_ngcontent-ng-c4031893873] {
+  font-size: 7px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 5px;
+}
+.encounter-content[_ngcontent-ng-c4031893873]   strong[_ngcontent-ng-c4031893873] {
+  display: block;
+  font-size: 10px;
+}
+.encounter-content[_ngcontent-ng-c4031893873]   p[_ngcontent-ng-c4031893873] {
+  font-size: 8px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.record-lines[_ngcontent-ng-c4031893873] {
+  display: grid;
+  gap: 5px;
+  margin-top: 11px;
+}
+.record-lines[_ngcontent-ng-c4031893873]   i[_ngcontent-ng-c4031893873] {
+  height: 4px;
+  background: var(--soft);
+  border-radius: 5px;
+  width: 90%;
+}
+.record-lines[_ngcontent-ng-c4031893873]   i[_ngcontent-ng-c4031893873]:last-child {
+  width: 65%;
+}
+.previous[_ngcontent-ng-c4031893873] {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.previous[_ngcontent-ng-c4031893873]   .encounter-content[_ngcontent-ng-c4031893873] {
+  padding-bottom: 0;
+}
+.preview-footer[_ngcontent-ng-c4031893873] {
+  background: var(--soft);
+  border-top: 1px solid var(--line);
+  padding: 11px 18px;
+  font-size: 7px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.floating-note[_ngcontent-ng-c4031893873] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: absolute;
+  bottom: 19px;
+  right: -15px;
+  padding: 13px 17px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 8px 25px color-mix(in srgb, var(--ink) 9%, transparent);
+}
+.floating-icon[_ngcontent-ng-c4031893873] {
+  display: grid;
+  place-items: center;
+  height: 29px;
+  width: 29px;
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--teal);
+}
+.floating-note[_ngcontent-ng-c4031893873]   strong[_ngcontent-ng-c4031893873] {
+  font-size: 10px;
+  display: block;
+}
+.floating-note[_ngcontent-ng-c4031893873]   div[_ngcontent-ng-c4031893873]   span[_ngcontent-ng-c4031893873] {
+  font-size: 8px;
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.preview-disclaimer[_ngcontent-ng-c4031893873] {
+  font-size: 8px;
+  color: var(--muted);
+  position: absolute;
+  bottom: -23px;
+  left: 0;
+}
+.intro-strip[_ngcontent-ng-c4031893873] {
+  border-block: 1px solid var(--line);
+}
+.intro-strip[_ngcontent-ng-c4031893873]    > div[_ngcontent-ng-c4031893873] {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding-block: 22px;
+}
+.intro-strip[_ngcontent-ng-c4031893873]   span[_ngcontent-ng-c4031893873] {
+  font-size: 13px;
+  font-weight: 650;
+}
+.intro-strip[_ngcontent-ng-c4031893873]   p[_ngcontent-ng-c4031893873] {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+.section-space[_ngcontent-ng-c4031893873] {
+  padding-block: 80px;
+}
+section[id][_ngcontent-ng-c4031893873] {
+  scroll-margin-top: 24px;
+}
+.section-heading[_ngcontent-ng-c4031893873] {
+  margin-bottom: 36px;
+}
+h2[_ngcontent-ng-c4031893873] {
+  font-size: clamp(28px, 3vw, 37px);
+  letter-spacing: -1.2px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 15px 0;
+}
+.section-heading[_ngcontent-ng-c4031893873]    > p[_ngcontent-ng-c4031893873], 
+.workflow-intro[_ngcontent-ng-c4031893873]    > p[_ngcontent-ng-c4031893873] {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.feature-grid[_ngcontent-ng-c4031893873] {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.feature-card[_ngcontent-ng-c4031893873] {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 27px;
+}
+.feature-icon[_ngcontent-ng-c4031893873] {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--teal);
+  background: var(--soft);
+  font-size: 22px;
+}
+h3[_ngcontent-ng-c4031893873] {
+  font-size: 16px;
+  font-weight: 650;
+  margin: 21px 0 10px;
+  letter-spacing: -0.3px;
+}
+.feature-card[_ngcontent-ng-c4031893873]   p[_ngcontent-ng-c4031893873], 
+.step[_ngcontent-ng-c4031893873]   p[_ngcontent-ng-c4031893873] {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted);
+  margin: 0;
+}
+.module-note[_ngcontent-ng-c4031893873] {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 20px 0 0;
+}
+.workflow[_ngcontent-ng-c4031893873] {
+  border-radius: 25px;
+  background: var(--soft);
+  padding: 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 65px;
+}
+.workflow-intro[_ngcontent-ng-c4031893873]    > p[_ngcontent-ng-c4031893873] {
+  max-width: 340px;
+}
+.workflow-intro[_ngcontent-ng-c4031893873]   .text-link[_ngcontent-ng-c4031893873] {
+  color: var(--teal);
+  margin-top: 20px;
+}
+.steps[_ngcontent-ng-c4031893873] {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.step[_ngcontent-ng-c4031893873] {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding-block: 22px;
+}
+.step[_ngcontent-ng-c4031893873]    + .step[_ngcontent-ng-c4031893873] {
+  border-top: 1px solid var(--line);
+}
+.step-number[_ngcontent-ng-c4031893873] {
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 700;
+  padding-top: 3px;
+}
+.step[_ngcontent-ng-c4031893873]   h3[_ngcontent-ng-c4031893873] {
+  margin: 0 0 8px;
+}
+.faq[_ngcontent-ng-c4031893873] {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 60px;
+}
+.faq-list[_ngcontent-ng-c4031893873]   details[_ngcontent-ng-c4031893873] {
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+}
+.faq-list[_ngcontent-ng-c4031893873]   details[_ngcontent-ng-c4031893873]:first-child {
+  padding-top: 8px;
+}
+summary[_ngcontent-ng-c4031893873] {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  font-size: 14px;
+  font-weight: 600;
+}
+summary[_ngcontent-ng-c4031893873]::-webkit-details-marker {
+  display: none;
+}
+.faq-plus[_ngcontent-ng-c4031893873] {
+  font-size: 23px;
+  font-weight: 400;
+  color: var(--teal);
+}
+details[open][_ngcontent-ng-c4031893873]   .faq-plus[_ngcontent-ng-c4031893873] {
+  transform: rotate(45deg);
+}
+.faq-list[_ngcontent-ng-c4031893873]   p[_ngcontent-ng-c4031893873] {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 15px 30px 0 0;
+}
+.closing[_ngcontent-ng-c4031893873] {
+  padding: 55px 30px;
+  text-align: center;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 25px;
+}
+.closing[_ngcontent-ng-c4031893873]   h2[_ngcontent-ng-c4031893873] {
+  font-size: 39px;
+}
+.closing[_ngcontent-ng-c4031893873]   p[_ngcontent-ng-c4031893873] {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 25px;
+}
+.landing-footer[_ngcontent-ng-c4031893873] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding-block: 38px;
+  margin-top: 25px;
+}
+.landing-footer[_ngcontent-ng-c4031893873]   .brand[_ngcontent-ng-c4031893873] {
+  font-size: 18px;
+}
+.landing-footer[_ngcontent-ng-c4031893873]   .brand-mark[_ngcontent-ng-c4031893873] {
+  height: 28px;
+  width: 28px;
+  font-size: 20px;
+}
+.landing-footer[_ngcontent-ng-c4031893873]    > span[_ngcontent-ng-c4031893873], 
+.landing-footer[_ngcontent-ng-c4031893873]    > a[_ngcontent-ng-c4031893873]:last-child {
+  font-size: 11px;
+  color: var(--muted);
+}
+@media (min-width: 1450px) {
+  .hero[_ngcontent-ng-c4031893873] {
+    padding-block: 110px;
+  }
+}
+@media (max-width: 1050px) {
+  nav[_ngcontent-ng-c4031893873] {
+    gap: 16px;
+  }
+  .header-inner[_ngcontent-ng-c4031893873] {
+    gap: 15px;
+  }
+  .hero[_ngcontent-ng-c4031893873] {
+    gap: 35px;
+  }
+  h1[_ngcontent-ng-c4031893873] {
+    font-size: 44px;
+  }
+  .hero-actions[_ngcontent-ng-c4031893873] {
+    gap: 16px;
+  }
+  .preview-tabs[_ngcontent-ng-c4031893873] {
+    gap: 10px;
+  }
+  .workflow[_ngcontent-ng-c4031893873] {
+    gap: 35px;
+    padding: 35px;
+  }
+}
+@media (max-width: 850px) {
+  nav[_ngcontent-ng-c4031893873] {
+    display: none;
+  }
+  .hero[_ngcontent-ng-c4031893873] {
+    grid-template-columns: 1fr;
+    gap: 45px;
+    padding-block: 55px 65px;
+  }
+  .hero-copy[_ngcontent-ng-c4031893873] {
+    max-width: 600px;
+  }
+  h1[_ngcontent-ng-c4031893873] {
+    font-size: 52px;
+  }
+  .hero-description[_ngcontent-ng-c4031893873] {
+    max-width: 540px;
+  }
+  .preview-stage[_ngcontent-ng-c4031893873] {
+    max-width: 520px;
+    width: 100%;
+    margin-inline: auto;
+  }
+  .feature-grid[_ngcontent-ng-c4031893873] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .intro-strip[_ngcontent-ng-c4031893873]    > div[_ngcontent-ng-c4031893873] {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .faq[_ngcontent-ng-c4031893873] {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .workflow[_ngcontent-ng-c4031893873] {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .workflow-intro[_ngcontent-ng-c4031893873]    > p[_ngcontent-ng-c4031893873] {
+    max-width: 100%;
+  }
+  .section-space[_ngcontent-ng-c4031893873] {
+    padding-block: 60px;
+  }
+  .landing-footer[_ngcontent-ng-c4031893873]    > span[_ngcontent-ng-c4031893873] {
+    display: none;
+  }
+}
+@media (max-width: 520px) {
+  .section-width[_ngcontent-ng-c4031893873] {
+    width: calc(100% - 36px);
+  }
+  .header-inner[_ngcontent-ng-c4031893873] {
+    width: calc(100% - 32px);
+    min-height: 74px;
+    gap: 8px;
+  }
+  .brand[_ngcontent-ng-c4031893873] {
+    font-size: 18px;
+    gap: 7px;
+  }
+  .brand-mark[_ngcontent-ng-c4031893873] {
+    width: 29px;
+    height: 29px;
+    border-radius: 9px;
+    font-size: 22px;
+  }
+  .header-actions[_ngcontent-ng-c4031893873] {
+    gap: 6px;
+  }
+  .button-small[_ngcontent-ng-c4031893873] {
+    font-size: 11px;
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  .button-small[_ngcontent-ng-c4031893873]   ng-icon[_ngcontent-ng-c4031893873] {
+    display: none;
+  }
+  .hero[_ngcontent-ng-c4031893873] {
+    padding-top: 40px;
+  }
+  h1[_ngcontent-ng-c4031893873] {
+    font-size: 39px;
+    letter-spacing: -1.7px;
+  }
+  .hero-description[_ngcontent-ng-c4031893873] {
+    font-size: 15px;
+  }
+  .eyebrow[_ngcontent-ng-c4031893873] {
+    font-size: 9px;
+    letter-spacing: 1.3px;
+  }
+  .hero-actions[_ngcontent-ng-c4031893873] {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 19px;
+  }
+  .preview-stage[_ngcontent-ng-c4031893873] {
+    padding: 20px 12px 42px;
+    border-radius: 20px;
+  }
+  .floating-note[_ngcontent-ng-c4031893873] {
+    right: 5px;
+    bottom: 15px;
+  }
+  .preview-tabs[_ngcontent-ng-c4031893873] {
+    gap: 9px;
+    padding-inline: 12px;
+    font-size: 7px;
+  }
+  .preview-patient[_ngcontent-ng-c4031893873], 
+   .preview-body[_ngcontent-ng-c4031893873] {
+    padding-inline: 12px;
+  }
+  .preview-label[_ngcontent-ng-c4031893873] {
+    font-size: 7px;
+  }
+  .feature-grid[_ngcontent-ng-c4031893873] {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .feature-card[_ngcontent-ng-c4031893873] {
+    padding: 23px;
+  }
+  .feature-card[_ngcontent-ng-c4031893873]   h3[_ngcontent-ng-c4031893873] {
+    margin-top: 16px;
+  }
+  .section-space[_ngcontent-ng-c4031893873] {
+    padding-block: 48px;
+  }
+  .workflow[_ngcontent-ng-c4031893873] {
+    padding: 27px 24px;
+  }
+  .step[_ngcontent-ng-c4031893873] {
+    gap: 15px;
+  }
+  .closing[_ngcontent-ng-c4031893873] {
+    padding: 38px 20px;
+  }
+  .closing[_ngcontent-ng-c4031893873]   h2[_ngcontent-ng-c4031893873] {
+    font-size: 30px;
+  }
+  .landing-footer[_ngcontent-ng-c4031893873] {
+    gap: 10px;
+    padding-block: 25px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .button[_ngcontent-ng-c4031893873] {
+    transition: none;
+  }
+  .button[_ngcontent-ng-c4031893873]:hover {
+    transform: none;
+  }
+}
+/*# sourceMappingURL=/landing.component.css.map */</style><style ng-app-id="ng">
+[_nghost-ng-c964463867] {
+  display: inline-flex;
+}
+button[_ngcontent-ng-c964463867] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  min-height: 36px;
+  padding: .4rem .65rem;
+  border-radius: 8px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+button[_ngcontent-ng-c964463867]:hover {
+  background: var(--md-sys-color-surface-container-high);
+}
+button[_ngcontent-ng-c964463867]:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 3px;
+}
+ng-icon[_ngcontent-ng-c964463867] {
+  font-size: 1rem;
+}
+@media (max-width: 600px) {
+  span[_ngcontent-ng-c964463867] {
+    display: none;
+  }
+  button[_ngcontent-ng-c964463867] {
+    min-width: 36px;
+  }
+}
+/*# sourceMappingURL=/theme-toggle.component.css.map */</style><style ng-app-id="ng">[_nghost-ng-c572653062]{display:inline-block;width:var(--ng-icon__size, 1em);height:var(--ng-icon__size, 1em);line-height:initial;vertical-align:initial;overflow:hidden}[_nghost-ng-c572653062]     svg{width:inherit;height:inherit;vertical-align:inherit}@layer ng-icon{[_nghost-ng-c572653062]{color:var(--ng-icon__color, currentColor)}}</style><link rel="canonical" href="https://doctorchart.bycode.com.ar/"><script id="public-page-schema" type="application/ld+json">{"@id":"https://doctorchart.bycode.com.ar/#webpage","about":{"@type":"SoftwareApplication","name":"DoctorChart","applicationCategory":"HealthApplication","operatingSystem":"Web","url":"https://doctorchart.bycode.com.ar/"},"@context":"https://schema.org","@type":"WebPage","url":"https://doctorchart.bycode.com.ar/","name":"DoctorChart | Historias clínicas digitales y pacientes","description":"Organizá las fichas de tus pacientes, registrá consultas y personalizá tus formularios clínicos con DoctorChart.","inLanguage":"es-AR","isPartOf":{"@type":"WebSite","publisher":{"@type":"Organization","name":"ByCode Software","url":"https://bycode.com.ar/"},"url":"https://doctorchart.bycode.com.ar/","name":"DoctorChart"}}</script><meta property="og:title" content="DoctorChart | Historias clínicas digitales y pacientes"><meta property="og:description" content="Organizá las fichas de tus pacientes, registrá consultas y personalizá tus formularios clínicos con DoctorChart."><meta property="og:type" content="website"><meta property="og:url" content="https://doctorchart.bycode.com.ar/"><meta property="og:image" content="https://doctorchart.bycode.com.ar/social/og-default.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="DoctorChart | Historias clínicas digitales y pacientes"><meta property="og:site_name" content="DoctorChart"><meta property="og:locale" content="es_AR"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://doctorchart.bycode.com.ar/social/og-default.jpg"><meta name="twitter:image:alt" content="DoctorChart | Historias clínicas digitales y pacientes"><meta name="twitter:title" content="DoctorChart | Historias clínicas digitales y pacientes"><meta name="twitter:description" content="Organizá las fichas de tus pacientes, registrá consultas y personalizá tus formularios clínicos con DoctorChart."></head>
+<body><!--nghm--><script type="text/javascript" id="ng-event-dispatch-contract">(()=>{function p(t,n,r,o,e,i,f,m){return{eventType:t,event:n,targetElement:r,eic:o,timeStamp:e,eia:i,eirp:f,eiack:m}}function u(t){let n=[],r=e=>{n.push(e)};return{c:t,q:n,et:[],etc:[],d:r,h:e=>{r(p(e.type,e,e.target,t,Date.now()))}}}function s(t,n,r){for(let o=0;o<n.length;o++){let e=n[o];(r?t.etc:t.et).push(e),t.c.addEventListener(e,t.h,r)}}function c(t,n,r,o,e=window){let i=u(t);e._ejsas||(e._ejsas={}),e._ejsas[n]=i,s(i,r),s(i,o,!0)}window.__jsaction_bootstrap=c;})();
+</script><script>window.__jsaction_bootstrap(document.body,"ng",["click"],[]);</script>
+  <app-root ng-version="22.2.2" _nghost-ng-c3580351362="" ngh="3" ng-server-context="ssg"><router-outlet _ngcontent-ng-c3580351362=""></router-outlet><app-landing _nghost-ng-c4031893873="" ngh="1"><a _ngcontent-ng-c4031893873="" href="#contenido" class="skip-link">Ir al contenido</a><header _ngcontent-ng-c4031893873="" class="landing-header"><div _ngcontent-ng-c4031893873="" class="header-inner"><a _ngcontent-ng-c4031893873="" routerlink="/" aria-label="DoctorChart, inicio" class="brand" href="/" jsaction="click:;"><span _ngcontent-ng-c4031893873="" class="brand-mark"><img _ngcontent-ng-c4031893873="" src="/doctorchart-logo.svg" width="35" height="35" alt="" aria-hidden="true" class="doctorchart-logo"></span>DoctorChart</a><nav _ngcontent-ng-c4031893873="" aria-label="Navegación de presentación"><a _ngcontent-ng-c4031893873="" href="#funciones">Funciones</a><a _ngcontent-ng-c4031893873="" href="#como-funciona">Cómo funciona</a><a _ngcontent-ng-c4031893873="" href="#preguntas">Preguntas frecuentes</a></nav><div _ngcontent-ng-c4031893873="" class="header-actions"><app-theme-toggle _ngcontent-ng-c4031893873="" _nghost-ng-c964463867="" ngh="0"><button _ngcontent-ng-c964463867="" type="button" title="Activar modo oscuro" aria-pressed="false" aria-label="Activar modo oscuro" jsaction="click:;"><ng-icon _ngcontent-ng-c964463867="" role="img" aria-hidden="true" _nghost-ng-c572653062="" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"></path></svg></ng-icon><span _ngcontent-ng-c964463867="">Modo oscuro</span></button></app-theme-toggle><a _ngcontent-ng-c4031893873="" routerlink="/login" class="button button-small" href="/login" jsaction="click:;">Iniciar sesión <ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucideArrowRight" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></ng-icon></a></div></div></header><main _ngcontent-ng-c4031893873="" id="contenido"><section _ngcontent-ng-c4031893873="" aria-labelledby="hero-title" class="hero section-width"><div _ngcontent-ng-c4031893873="" class="hero-copy"><span _ngcontent-ng-c4031893873="" class="eyebrow"><span _ngcontent-ng-c4031893873="" class="status-dot"></span> TU ESPACIO CLÍNICO DIGITAL</span><h1 _ngcontent-ng-c4031893873="" id="hero-title">Historias clínicas digitales.<br _ngcontent-ng-c4031893873=""><span _ngcontent-ng-c4031893873="">Tus pacientes, en un mismo lugar.</span></h1><p _ngcontent-ng-c4031893873="" class="hero-description"> Registrá consultas, organizá la información de cada paciente y personalizá tus fichas clínicas. DoctorChart acompaña tu trabajo en cada atención. </p><div _ngcontent-ng-c4031893873="" class="hero-actions"><a _ngcontent-ng-c4031893873="" routerlink="/login" class="button" href="/login" jsaction="click:;">Ingresar a DoctorChart <ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucideArrowRight" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></ng-icon></a><a _ngcontent-ng-c4031893873="" href="#funciones" class="text-link">Conocé las funciones <span _ngcontent-ng-c4031893873="" aria-hidden="true">↗</span></a></div><div _ngcontent-ng-c4031893873="" class="hero-note"><ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucideStethoscope" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M11 2v2"></path><path d="M5 2v2"></path><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"></path><path d="M8 15a6 6 0 0 0 12 0v-3"></path><circle cx="20" cy="10" r="2"></circle></svg></ng-icon> Pensado para profesionales de la salud </div></div><div _ngcontent-ng-c4031893873="" class="preview-stage"><div _ngcontent-ng-c4031893873="" class="preview-label"><span _ngcontent-ng-c4031893873="" class="status-dot"></span> UNA MIRADA A TU ESPACIO DE TRABAJO </div><div _ngcontent-ng-c4031893873="" role="img" aria-label="Ejemplo ilustrativo de una ficha con datos del paciente, historia clínica, recetas y estudios. Datos ficticios." class="record-preview"><div _ngcontent-ng-c4031893873="" class="preview-topbar"><span _ngcontent-ng-c4031893873="" class="preview-brand"><img _ngcontent-ng-c4031893873="" src="/doctorchart-logo.svg" width="35" height="35" alt="" aria-hidden="true" class="doctorchart-logo"> DoctorChart</span><span _ngcontent-ng-c4031893873="" class="example-pill">EJEMPLO</span></div><div _ngcontent-ng-c4031893873="" class="preview-breadcrumb">Pacientes <span _ngcontent-ng-c4031893873="">/</span> Ficha del paciente</div><div _ngcontent-ng-c4031893873="" class="preview-patient"><div _ngcontent-ng-c4031893873="" class="avatar">PE</div><div _ngcontent-ng-c4031893873=""><strong _ngcontent-ng-c4031893873="">Paciente de ejemplo</strong><span _ngcontent-ng-c4031893873="">Ficha clínica · Datos ficticios</span></div><ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucideClipboardList" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg></ng-icon></div><div _ngcontent-ng-c4031893873="" class="preview-tabs"><span _ngcontent-ng-c4031893873="">Datos del paciente</span><span _ngcontent-ng-c4031893873="" class="active">Historia clínica</span><span _ngcontent-ng-c4031893873="">Recetas</span><span _ngcontent-ng-c4031893873="">Estudios</span></div><div _ngcontent-ng-c4031893873="" class="preview-body"><div _ngcontent-ng-c4031893873="" class="preview-section-title"><strong _ngcontent-ng-c4031893873="">Historia clínica</strong><span _ngcontent-ng-c4031893873="" class="preview-add"><ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucidePlus" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></ng-icon> Consulta</span></div><div _ngcontent-ng-c4031893873="" class="preview-encounter"><div _ngcontent-ng-c4031893873="" class="encounter-marker"><ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucideStethoscope" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M11 2v2"></path><path d="M5 2v2"></path><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"></path><path d="M8 15a6 6 0 0 0 12 0v-3"></path><circle cx="20" cy="10" r="2"></circle></svg></ng-icon></div><div _ngcontent-ng-c4031893873="" class="encounter-content"><span _ngcontent-ng-c4031893873="" class="preview-date">14/10/2026</span><strong _ngcontent-ng-c4031893873="">Consulta de seguimiento</strong><p _ngcontent-ng-c4031893873="">Registro de evolución del paciente</p><div _ngcontent-ng-c4031893873="" class="record-lines"><i _ngcontent-ng-c4031893873=""></i><i _ngcontent-ng-c4031893873=""></i></div></div></div><div _ngcontent-ng-c4031893873="" class="preview-encounter previous"><div _ngcontent-ng-c4031893873="" class="encounter-marker"><ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucideClipboardList" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg></ng-icon></div><div _ngcontent-ng-c4031893873="" class="encounter-content"><span _ngcontent-ng-c4031893873="" class="preview-date">02/10/2026</span><strong _ngcontent-ng-c4031893873="">Primera consulta</strong><p _ngcontent-ng-c4031893873="">Antecedentes y motivo de consulta</p></div></div></div><div _ngcontent-ng-c4031893873="" class="preview-footer"><ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucideFolderOpen" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"></path></svg></ng-icon> Información y seguimiento en la ficha del paciente </div></div><div _ngcontent-ng-c4031893873="" class="floating-note"><span _ngcontent-ng-c4031893873="" class="floating-icon"><ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucideCheck" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M20 6 9 17l-5-5"></path></svg></ng-icon></span><div _ngcontent-ng-c4031893873=""><strong _ngcontent-ng-c4031893873="">Tu forma de trabajar</strong><span _ngcontent-ng-c4031893873="">Fichas y consultas personalizables</span></div></div><p _ngcontent-ng-c4031893873="" class="preview-disclaimer">Vista ilustrativa con datos ficticios.</p></div></section><div _ngcontent-ng-c4031893873="" class="intro-strip"><div _ngcontent-ng-c4031893873="" class="section-width"><span _ngcontent-ng-c4031893873="">Del primer registro al seguimiento.</span><p _ngcontent-ng-c4031893873="">La información clínica, organizada alrededor del paciente.</p></div></div><section _ngcontent-ng-c4031893873="" id="funciones" aria-labelledby="features-title" class="features section-width section-space"><div _ngcontent-ng-c4031893873="" class="section-heading"><span _ngcontent-ng-c4031893873="" class="eyebrow">HERRAMIENTAS PARA TU DÍA A DÍA</span><h2 _ngcontent-ng-c4031893873="" id="features-title">Más orden en cada consulta.</h2><p _ngcontent-ng-c4031893873="">Conocé lo que podés hacer dentro de DoctorChart.</p></div><div _ngcontent-ng-c4031893873="" class="feature-grid"><article _ngcontent-ng-c4031893873="" class="feature-card"><span _ngcontent-ng-c4031893873="" class="feature-icon"><ng-icon _ngcontent-ng-c4031893873="" role="img" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><path d="M16 3.128a4 4 0 0 1 0 7.744"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><circle cx="9" cy="7" r="4"></circle></svg></ng-icon></span><h3 _ngcontent-ng-c4031893873="">Cada paciente, su ficha</h3><p _ngcontent-ng-c4031893873="">Registrá pacientes, buscá en tu directorio y consultá sus datos desde una ficha individual.</p></article><article _ngcontent-ng-c4031893873="" class="feature-card"><span _ngcontent-ng-c4031893873="" class="feature-icon"><ng-icon _ngcontent-ng-c4031893873="" role="img" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg></ng-icon></span><h3 _ngcontent-ng-c4031893873="">Una historia que continúa</h3><p _ngcontent-ng-c4031893873="">Documentá consultas y revisá los registros anteriores para seguir la historia clínica de cada paciente.</p></article><article _ngcontent-ng-c4031893873="" class="feature-card"><span _ngcontent-ng-c4031893873="" class="feature-icon"><ng-icon _ngcontent-ng-c4031893873="" role="img" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M10 5H3"></path><path d="M12 19H3"></path><path d="M14 3v4"></path><path d="M16 17v4"></path><path d="M21 12h-9"></path><path d="M21 19h-5"></path><path d="M21 5h-7"></path><path d="M8 10v4"></path><path d="M8 12H3"></path></svg></ng-icon></span><h3 _ngcontent-ng-c4031893873="">Fichas a tu medida</h3><p _ngcontent-ng-c4031893873="">Seleccioná tu especialidad y personalizá las categorías y campos de tus fichas y consultas.</p></article><article _ngcontent-ng-c4031893873="" class="feature-card"><span _ngcontent-ng-c4031893873="" class="feature-icon"><ng-icon _ngcontent-ng-c4031893873="" role="img" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg></ng-icon></span><h3 _ngcontent-ng-c4031893873="">Recetas y órdenes</h3><p _ngcontent-ng-c4031893873="">Prepará recetas y órdenes de estudios, guardalas en el historial e imprimilas desde la ficha.</p></article><article _ngcontent-ng-c4031893873="" class="feature-card"><span _ngcontent-ng-c4031893873="" class="feature-icon"><ng-icon _ngcontent-ng-c4031893873="" role="img" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"></path></svg></ng-icon></span><h3 _ngcontent-ng-c4031893873="">Estudios en su lugar</h3><p _ngcontent-ng-c4031893873="">Adjuntá PDFs e imágenes a la ficha del paciente para consultar y descargar sus estudios.</p></article><article _ngcontent-ng-c4031893873="" class="feature-card"><span _ngcontent-ng-c4031893873="" class="feature-icon"><ng-icon _ngcontent-ng-c4031893873="" role="img" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"></path></svg></ng-icon></span><h3 _ngcontent-ng-c4031893873="">Seguimiento clínico</h3><p _ngcontent-ng-c4031893873="">Registrá vacunas y consultá la evolución y las curvas en las especialidades que tienen estos módulos disponibles.</p></article><!--container--></div><p _ngcontent-ng-c4031893873="" class="module-note"> Los módulos disponibles dependen de tu especialidad y de la configuración de tu espacio clínico. </p></section><section _ngcontent-ng-c4031893873="" id="como-funciona" aria-labelledby="workflow-title" class="workflow section-width"><div _ngcontent-ng-c4031893873="" class="workflow-intro"><span _ngcontent-ng-c4031893873="" class="eyebrow">CÓMO FUNCIONA</span><h2 _ngcontent-ng-c4031893873="" id="workflow-title">Un espacio que se adapta<br _ngcontent-ng-c4031893873="">a tu práctica.</h2><p _ngcontent-ng-c4031893873=""> Empezá por tu especialidad. Después, construí la historia clínica de cada paciente, consulta a consulta. </p><a _ngcontent-ng-c4031893873="" routerlink="/login" class="text-link" href="/login" jsaction="click:;">Ir a iniciar sesión <ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucideArrowRight" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></ng-icon></a></div><div _ngcontent-ng-c4031893873="" class="steps"><article _ngcontent-ng-c4031893873="" class="step"><span _ngcontent-ng-c4031893873="" class="step-number">01</span><div _ngcontent-ng-c4031893873=""><h3 _ngcontent-ng-c4031893873="">Configurá tu espacio</h3><p _ngcontent-ng-c4031893873="">Seleccioná tu especialidad y adaptá tus fichas y formularios de consulta.</p></div></article><article _ngcontent-ng-c4031893873="" class="step"><span _ngcontent-ng-c4031893873="" class="step-number">02</span><div _ngcontent-ng-c4031893873=""><h3 _ngcontent-ng-c4031893873="">Registrá tus pacientes</h3><p _ngcontent-ng-c4031893873="">Creá sus fichas con la información que necesitás para la atención.</p></div></article><article _ngcontent-ng-c4031893873="" class="step"><span _ngcontent-ng-c4031893873="" class="step-number">03</span><div _ngcontent-ng-c4031893873=""><h3 _ngcontent-ng-c4031893873="">Dale continuidad a la atención</h3><p _ngcontent-ng-c4031893873="">Agregá consultas y volvé al historial, los documentos y los estudios de cada paciente.</p></div></article><!--container--></div></section><section _ngcontent-ng-c4031893873="" id="preguntas" aria-labelledby="faq-title" class="faq section-width section-space"><div _ngcontent-ng-c4031893873="" class="section-heading"><span _ngcontent-ng-c4031893873="" class="eyebrow">ANTES DE EMPEZAR</span><h2 _ngcontent-ng-c4031893873="" id="faq-title">Preguntas frecuentes.</h2></div><div _ngcontent-ng-c4031893873="" class="faq-list"><details _ngcontent-ng-c4031893873=""><summary _ngcontent-ng-c4031893873="">¿Para quién es DoctorChart?<span _ngcontent-ng-c4031893873="" aria-hidden="true" class="faq-plus">+</span></summary><p _ngcontent-ng-c4031893873="">DoctorChart es un espacio de trabajo para profesionales de la salud que necesitan organizar fichas de pacientes y registrar su atención clínica.</p></details><details _ngcontent-ng-c4031893873=""><summary _ngcontent-ng-c4031893873="">¿Puedo personalizar las fichas?<span _ngcontent-ng-c4031893873="" aria-hidden="true" class="faq-plus">+</span></summary><p _ngcontent-ng-c4031893873="">Sí. Podés seleccionar tu especialidad y configurar las categorías y los campos que usás en las fichas y consultas.</p></details><details _ngcontent-ng-c4031893873=""><summary _ngcontent-ng-c4031893873="">¿Todas las especialidades tienen los mismos módulos?<span _ngcontent-ng-c4031893873="" aria-hidden="true" class="faq-plus">+</span></summary><p _ngcontent-ng-c4031893873="">Los módulos disponibles dependen de la especialidad y de la configuración de tu espacio. Vacunación y curvas de evolución se muestran cuando corresponden a esa configuración.</p></details><details _ngcontent-ng-c4031893873=""><summary _ngcontent-ng-c4031893873="">¿Cómo ingreso?<span _ngcontent-ng-c4031893873="" aria-hidden="true" class="faq-plus">+</span></summary><p _ngcontent-ng-c4031893873="">Desde Iniciar sesión podés acceder con tu cuenta de ByCode, por correo y contraseña o con Google. También podés crear una cuenta. Para entrar al espacio clínico necesitás un plan DoctorChart activo; crear la cuenta no activa un plan por sí solo.</p></details><!--container--></div></section><section _ngcontent-ng-c4031893873="" class="closing section-width"><span _ngcontent-ng-c4031893873="" class="eyebrow">DOCTORCHART</span><h2 _ngcontent-ng-c4031893873="">Tu próxima consulta,<br _ngcontent-ng-c4031893873="">con la historia a mano.</h2><p _ngcontent-ng-c4031893873="">Ingresá a tu espacio clínico y continuá el seguimiento de tus pacientes.</p><a _ngcontent-ng-c4031893873="" routerlink="/login" class="button" href="/login" jsaction="click:;">Iniciar sesión <ng-icon _ngcontent-ng-c4031893873="" role="img" name="lucideArrowRight" _nghost-ng-c572653062="" aria-hidden="true" data-ng-icon-ssr="" ngh="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></ng-icon></a></section></main><footer _ngcontent-ng-c4031893873="" class="landing-footer section-width"><a _ngcontent-ng-c4031893873="" routerlink="/" class="brand" href="/" jsaction="click:;"><span _ngcontent-ng-c4031893873="" class="brand-mark"><img _ngcontent-ng-c4031893873="" src="/doctorchart-logo.svg" width="35" height="35" alt="" aria-hidden="true" class="doctorchart-logo"></span>DoctorChart</a><span _ngcontent-ng-c4031893873="">Un espacio para tu práctica clínica.</span><a _ngcontent-ng-c4031893873="" routerlink="/login" href="/login" jsaction="click:;">Iniciar sesión <span _ngcontent-ng-c4031893873="" aria-hidden="true">↗</span></a></footer></app-landing><!--container--><!--container--><!--container--><!--container--><app-scroll-to-top _ngcontent-ng-c3580351362="" _nghost-ng-c2680069453="" ngh="2"><!--container--></app-scroll-to-top></app-root>
+<link rel="modulepreload" href="chunk-Y3XT3YWV.js"><link rel="modulepreload" href="chunk-YTAXUAO7.js"><link rel="modulepreload" href="chunk-KGUDCUHJ.js"><link rel="modulepreload" href="chunk-WKCAPCQH.js"><link rel="modulepreload" href="chunk-5V3TTGBI.js"><link rel="modulepreload" href="chunk-Z3UJ4PSI.js"><link rel="modulepreload" href="chunk-WBCHXDEU.js"><link rel="modulepreload" href="chunk-XM57RTTR.js"><link rel="modulepreload" href="chunk-YAYJVLGH.js"><link rel="modulepreload" href="chunk-SYX7XZ26.js"><script src="main.js" type="module"></script>
+<link rel="modulepreload" href="chunk-TV7TBR5E.js">
+<link rel="modulepreload" href="chunk-GDDBOYJO.js">
+
+
+<script id="ng-state" type="application/json">{"__nghData__":[{},{"t":{"137":"t2","155":"t3","164":"t4"},"c":{"137":[{"i":"t2","r":1,"x":6}],"155":[{"i":"t3","r":1,"x":3}],"164":[{"i":"t4","r":1,"x":4}]}},{"t":{"0":"t6"},"c":{"0":[]}},{"t":{"1":"t0"},"c":{"1":[{"i":"t0","r":5,"t":{"0":"t1","1":"t5"},"c":{"0":[{"i":"t1","r":3,"c":{"0":[{"i":"c4031893873","r":1}]}}],"1":[]}}]}}]}</script></body></html>

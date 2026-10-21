@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "sources": [
+    "src/app/core/date/display-date.ts"
+  ],
+  "sourcesContent": [
+    "export function displayLocalDate(value: string | null | undefined): string {\n  const match = value?.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);\n  return match ? match[3] + '/' + match[2] + '/' + match[1] : '—';\n}\n"
+  ],
+  "mappings": ";AAAO,SAAS,iBAAiB,OAA0C;AACzE,QAAM,QAAQ,OAAO,MAAM,2BAA2B;AACtD,SAAO,QAAQ,MAAM,CAAC,IAAI,MAAM,MAAM,CAAC,IAAI,MAAM,MAAM,CAAC,IAAI;AAC9D;",
+  "names": [],
+  "debugId": "97db573f-a870-5371-9256-fcb24e0bf8bf"
+}
