@@ -36,7 +36,7 @@ export function wizardFieldError(field: WizardFieldDefinition, value: unknown, t
     case 'TEXT': case 'TEXTAREA':
       if (typeof value !== 'string') return 'Ingresá un texto válido.';
       if (['sys_email', 'email', 'patient.email'].includes(field.key) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Ingresá un correo electrónico válido.';
-      if (['sys_dni', 'nationalId', 'patient.nationalId', 'patient.guardianInfo.firstGuardianNationalId', 'patient.guardianInfo.secondGuardianNationalId'].includes(field.key) && !/^\d{6,8}$/.test(value.trim())) return 'Ingresá un DNI de 6 a 8 dígitos, sin puntos.';
+      if (['sys_dni', 'nationalId', 'patient.nationalId'].includes(field.key) && !/^\d{6,8}$/.test(value.trim())) return 'Ingresá un DNI de 6 a 8 dígitos, sin puntos.';
       if (['sys_phone', 'phone', 'patient.phone', 'primaryContactPhone', 'patient.guardianInfo.primaryContactPhone'].includes(field.key) && (!/^[+\d\s().-]+$/.test(value.trim()) || value.replace(/\D/g, '').length < 6 || value.replace(/\D/g, '').length > 15)) return 'Ingresá un teléfono de 6 a 15 dígitos.';
       return null;
     case 'NUMBER':

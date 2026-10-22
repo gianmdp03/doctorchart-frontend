@@ -73,7 +73,7 @@ export class PatientBannerComponent {
 
   readonly nationalId = computed(() => {
     const p = this.patient || this.activePatientService.activePatient();
-    return p?.nationalId || p?.guardianInfo?.firstGuardianNationalId || '—';
+    return p?.nationalId || '—';
   });
 
   readonly isChild = computed(() => {

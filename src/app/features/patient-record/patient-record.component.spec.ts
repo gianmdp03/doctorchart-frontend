@@ -78,13 +78,10 @@ describe('PatientRecordComponent', () => {
     address: 'Av. Corrientes 1234, CABA',
     nationalId: '36.812.904',
     guardianInfo: {
-      firstGuardianFullName: 'Carla Lucía Benítez (Madre)',
-      firstGuardianPhone: '11-4567-8901',
-      firstGuardianNationalId: '36.812.904',
-      secondGuardianFullName: 'Esteban Gabriel Rossi (Padre)',
-      secondGuardianPhone: '11-4567-8902',
-      secondGuardianNationalId: '34.567.890',
-      address: 'Av. Santa Fe 3421, Piso 4B, CABA',
+      motherFullName: 'Carla Lucía Benítez',
+      fatherFullName: 'Esteban Gabriel Rossi',
+      primaryGuardian: 'Madre',
+      primaryContactPhone: '11-4567-8901',
     },
     personalHistory: {
       birthMeasurements: {
@@ -97,12 +94,9 @@ describe('PatientRecordComponent', () => {
       habitualMedication: ['Vitamina D3 400 UI/día'],
     },
     familyHistory: {
-      familyChronicDiseases: ['Hipertensión arterial (abuelo paterno)'],
-      familyAllergies: ['Rinitis alérgica (madre)'],
-      geneticDiseases: ['Sin antecedentes genéticos'],
-    },
-    immunizationAndNutrition: {
-      feedingDiet: 'Lactancia materna exclusiva',
+      paternalDiseases: ['Hipertensión arterial (abuelo paterno)'],
+      maternalDiseases: ['Rinitis alérgica (madre)'],
+      siblingDiseases: ['Sin antecedentes genéticos'],
     },
     latestMeasurements: {
       weightKg: 7.95,

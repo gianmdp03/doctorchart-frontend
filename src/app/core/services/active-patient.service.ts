@@ -88,14 +88,12 @@ export class ActivePatientService {
   readonly primaryGuardian = computed(() => {
     const info = this.activePatient()?.guardianInfo;
     if (!info) return '—';
+    if (info.primaryGuardian) return info.primaryGuardian;
     if (info.fatherFullName) {
       return info.fatherFullName;
     }
     if (info.motherFullName) {
       return info.motherFullName;
-    }
-    if (info.firstGuardianFullName) {
-      return info.firstGuardianFullName;
     }
     return '—';
   });

@@ -31,6 +31,10 @@ describe('Active patient session ownership', () => {
     expect(sessionStorage.getItem('doctorchart_active_patient_data')).toBeNull();
     expect(localStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
   });
+  it('uses the current primary guardian instead of the retired guardian record', () => {
+    service.setActivePatient({...patient(1), guardianInfo: {primaryGuardian:'Madre',fatherFullName:'Padre de prueba'}});
+    expect(service.primaryGuardian()).toBe('Madre');
+  });
   it('does not restore cleared data after a late response', () => {
     service.loadPatient(1); service.clear(); pending.get(1)!.next(patient(1));
     expect(service.activePatient()).toBeNull(); expect(service.isLoading()).toBe(false);

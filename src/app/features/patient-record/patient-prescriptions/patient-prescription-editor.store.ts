@@ -124,7 +124,7 @@ export class PatientPrescriptionEditorStore {
   ];
   readonly patientNationalId = computed(() => {
     const p = this.activePatientService.activePatient();
-    return p?.nationalId || p?.guardianInfo?.firstGuardianNationalId || '—';
+    return p?.nationalId || '—';
   });
 
   readonly habitualMedication = computed(() => {

@@ -2,8 +2,6 @@ import {
   AnthropometricMeasurements,
   FamilyHistory,
   GuardianInfo,
-  ImmunizationAndNutrition,
-  PerinatalHistory,
   PersonalHistory,
 } from './clinical-records.model';
 import { ClinicalFormRecord, WizardFormValues } from './wizard-definition.model';
@@ -30,15 +28,12 @@ export interface PatientDetailDTO extends ClinicalFormRecord {
   phone?: string | null;
   email?: string | null;
   address?: string | null;
-  emergencyContact?: any | null;
   insuranceInfo?: InsuranceInfo | null;
   allergies?: string[] | null;
   chronicConditions?: string[] | null;
   guardianInfo?: GuardianInfo | null;
-  perinatalHistory?: PerinatalHistory | null;
   personalHistory?: PersonalHistory | null;
   familyHistory?: FamilyHistory | null;
-  immunizationAndNutrition?: ImmunizationAndNutrition | null;
   latestMeasurements?: AnthropometricMeasurements | null;
 }
 
