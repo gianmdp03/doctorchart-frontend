@@ -2,6 +2,17 @@ import { TestBed } from '@angular/core/testing';
 import { DoctorSpecialtyService } from './doctor-specialty.service';
 
 describe('DoctorSpecialtyService metadata and capabilities', () => {
+  it('identifies pediatrics by its stable code, independently of its name or growth capability', () => {
+    const service = TestBed.inject(DoctorSpecialtyService);
+    expect(service.isPediatrics()).toBe(false);
+    service.setSpecialty({ id: 1, code: 'pediatrics', name: 'Nombre editable', description: null });
+    expect(service.isPediatrics()).toBe(true);
+    expect(service.supportsGrowthCharts()).toBe(false);
+    service.setSpecialty({ id: 2, code: 'cardiology', name: 'Pediatría', description: null });
+    expect(service.isPediatrics()).toBe(false);
+    service.clearSpecialty();
+    expect(service.isPediatrics()).toBe(false);
+  });
   it('accepts unknown specialty metadata without resolving a predefined mode', () => {
     const service = TestBed.inject(DoctorSpecialtyService);
     service.setSpecialty({ id: 10, code: 'unexpected-specialty', name: 'Nombre editable', description: null });

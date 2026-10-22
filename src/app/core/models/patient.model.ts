@@ -37,11 +37,11 @@ export interface PatientDetailDTO extends ClinicalFormRecord {
   latestMeasurements?: AnthropometricMeasurements | null;
 }
 
-export type PatientDirectoryFilter = 'ALL' | 'ADULT' | 'MINOR' | 'INFANT' | 'TODDLER' | 'VACCINE_PENDING';
+export type PatientDirectoryFilter = 'ALL' | 'ADULT' | 'MINOR' | 'INFANT' | 'TODDLER' | 'VACCINE_PENDING' | 'NEONATAL' | 'EARLY_CHILDHOOD' | 'CHILD' | 'ADOLESCENT';
 export interface PatientListDTO {
   ageInMonths: number | null;
   ageDisplay: string;
-  ageGroup: 'ADULT' | 'NEONATAL' | 'INFANT' | 'CHILD' | 'ADOLESCENT' | 'UNKNOWN';
+  ageGroup: 'ADULT' | 'NEONATAL' | 'INFANT' | 'CHILD' | 'ADOLESCENT' | 'UNKNOWN' | 'EARLY_CHILDHOOD';
   hasPendingVaccine: boolean;
   id: number;
   fullName: string;

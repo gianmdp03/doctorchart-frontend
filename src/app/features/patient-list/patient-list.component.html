@@ -48,7 +48,21 @@
         Todos
       </button>
 
-      @if (doctorSpecialtyService.supportsGrowthCharts()) {
+      @if (doctorSpecialtyService.isPediatrics()) {
+        @for (filter of pediatricFilters; track filter.value) {
+          <button
+            type="button"
+            class="m3-chip"
+            [class.filter-active]="selectedFilter() === filter.value"
+            [attr.aria-pressed]="selectedFilter() === filter.value"
+            [title]="filter.description"
+            (click)="setFilter(filter.value)"
+          >{{ filter.label }}</button>
+        }
+        <button type="button" class="m3-chip"
+          [class.filter-active]="selectedFilter() === 'VACCINE_PENDING'"
+          (click)="setFilter('VACCINE_PENDING')">Vacunación Pendiente</button>
+      } @else if (doctorSpecialtyService.supportsGrowthCharts()) {
         <button
           type="button"
           class="m3-chip"

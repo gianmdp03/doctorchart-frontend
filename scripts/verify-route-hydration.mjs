@@ -20,7 +20,7 @@ if (process.env.PLAYWRIGHT_CHROME_CHANNEL) options.channel = process.env.PLAYWRI
 if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE) options.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 let browser;
 const definition = { schemaVersion: 1, patientForm: { categories: [] }, encounterForm: { categories: [] }, modulesConfig: { MEDICATION_CATALOG: false, AI_ASSISTANT: false, GROWTH_CHARTS: false } };
-const specialty = { id: 1, code: 'FIXTURE', name: 'Fixture', version: 1 };
+const specialty = { id: 1, code: 'pediatrics', name: 'Fixture', version: 1 };
 const setup = { id: 1, version: 1, specialty, experience: { specialtyId: 1, specialtyVersion: 1, navigation: ['DASHBOARD', 'PATIENTS', 'WIZARD'], patientRecordTabs: ['SUMMARY', 'ENCOUNTERS'], patientRecordActions: [] }, onboardingCompleted: true, currentStepKey: 'completed', definition, draftDefinition: null };
 try {
   browser = await chromium.launch(options);
@@ -38,6 +38,7 @@ try {
         if (url.pathname.endsWith('/workspace')) json = setup;
         else if (url.pathname.endsWith('/workspace/preferences')) json = { version: 1, patientColumnsConfig: {}, quickNotes: null };
         else if (url.pathname.endsWith('/doctor/profile')) json = { id: 1, specialty, isSpecialtyLocked: true };
+        else if (url.pathname.endsWith('/patients')) json = { content: [{ id: 1, fullName: 'Paciente ficticio', birthDate: '2024-07-11', ageDisplay: '2 años 3m', ageInMonths: 27, ageGroup: 'EARLY_CHILDHOOD', hasPendingVaccine: false }], totalElements: 1, totalPages: 1 };
         else if (/patients|encounters/.test(url.pathname)) json = { content: [], totalElements: 0, totalPages: 0 };
         await route.fulfill({ json });
       });
@@ -67,6 +68,7 @@ try {
           await page.locator(selector).waitFor();
           assert.equal(await page.locator('app-landing').count(), 0);
         }
+        if (account === 'doctor') await verifyPediatricDirectory(page);
         assert.deepEqual(errors, [], `${account}: browser errors`);
         console.log(`PASS ${account}, API delay ${delay} ms`);
       } finally { await page.close(); }
@@ -75,4 +77,26 @@ try {
 } finally {
   await browser?.close();
   await new Promise(resolve => server.close(resolve));
+}
+
+async function verifyPediatricDirectory(page) {
+  await page.locator('app-sidebar a[href="/pacientes"]').first().click();
+  await page.locator('app-patient-list').waitFor();
+  await page.getByText('Primera infancia', { exact: true }).waitFor();
+  const labels = ['Recién nacidos (0–27 días)', 'Lactantes (28 días–<1 año)', 'Primera infancia (0–8 años)', 'Niñez (1–9 años)', 'Adolescentes (10–19 años)'];
+  const filters = ['NEONATAL', 'INFANT', 'EARLY_CHILDHOOD', 'CHILD', 'ADOLESCENT'];
+  for (let i = 0; i < labels.length; i++) {
+    const request = page.waitForRequest(request => new URL(request.url()).searchParams.get('filter') === filters[i]);
+    await page.getByRole('button', { name: labels[i], exact: true }).click();
+    await request;
+  }
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 850 });
+    // Resizing starts the existing sidebar width animation; measure settled layout.
+    await page.waitForFunction(expected => Math.abs(document.querySelector('.sidebar-container').getBoundingClientRect().width - expected) < 1, width <= 768 ? 68 : 248);
+    for (const label of labels) {
+      const box = await page.getByRole('button', { name: label, exact: true }).boundingBox();
+      assert.ok(box && box.x >= 0 && box.x + box.width <= width + 1, `${label} exceeds viewport ${width}`);
+    }
+  }
 }

@@ -22,6 +22,7 @@ describe('PatientListComponent', () => {
   };
   let doctorSpecialtyServiceMock: {
     supportsGrowthCharts: ReturnType<typeof signal<boolean>>;
+    isPediatrics: ReturnType<typeof signal<boolean>>;
   };
   let workspaceStoreMock: {
     patientVisibleColumns: ReturnType<typeof signal<Record<string, boolean>>>;
@@ -59,6 +60,7 @@ describe('PatientListComponent', () => {
 
     doctorSpecialtyServiceMock = {
       supportsGrowthCharts: signal<boolean>(false),
+      isPediatrics: signal<boolean>(false),
     };
 
     workspaceStoreMock = {
@@ -92,6 +94,53 @@ describe('PatientListComponent', () => {
     expect(patientServiceMock.getPatients).toHaveBeenCalled();
     expect(component.patients().length).toBe(1);
     expect(component.patients()[0].fullName).toBe('Ana García');
+  });
+
+  it('shows the complete pediatric filters even when growth charts are disabled', () => {
+    doctorSpecialtyServiceMock.isPediatrics.set(true);
+    fixture.detectChanges();
+    const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+    for (const filter of component.pediatricFilters) {
+      const button = buttons.find(button => button.textContent?.trim() === filter.label)!;
+      expect(button).toBeTruthy();
+      button.click(); fixture.detectChanges();
+      expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(0, 20, 'fullName,asc', '', filter.value);
+      expect(button.getAttribute('aria-pressed')).toBe('true');
+    }
+    expect(fixture.nativeElement.textContent).not.toContain('Adultos (≥ 18 años)');
+  });
+
+  it('does not introduce pediatric categories into another specialty with growth enabled', () => {
+    doctorSpecialtyServiceMock.supportsGrowthCharts.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Recién nacidos');
+    expect(fixture.nativeElement.textContent).not.toContain('Adolescentes (10–19 años)');
+    expect(fixture.nativeElement.textContent).toContain('Lactantes (0-12m)');
+    expect(component.patients()[0].badgeText).toBe('Niñez');
+  });
+
+  it('renders pediatric badges from the server without recategorizing dates in the browser', () => {
+    doctorSpecialtyServiceMock.isPediatrics.set(true);
+    const groups = ['NEONATAL', 'INFANT', 'EARLY_CHILDHOOD', 'CHILD', 'ADOLESCENT', 'ADULT', 'UNKNOWN'];
+    patientServiceMock.getPatients.mockReturnValue(of({ content: groups.map((ageGroup, id) => ({
+      id, fullName: `Paciente ${id}`, birthDate: '2024-07-11', ageDisplay: '2 años 3m', ageGroup, hasPendingVaccine: false,
+    })), totalElements: 7, totalPages: 1 }));
+    component.loadInitial(); fixture.detectChanges();
+    expect(component.patients().map(patient => patient.badgeText)).toEqual([
+      'Recién nacido', 'Lactante', 'Primera infancia', 'Niñez', 'Adolescente', 'Adulto', '—',
+    ]);
+    expect(fixture.nativeElement.textContent).toContain('Primera infancia');
+  });
+
+  it('does not carry a pediatric-only filter into another account', () => {
+    doctorSpecialtyServiceMock.isPediatrics.set(true);
+    component.setFilter('EARLY_CHILDHOOD');
+    doctorSpecialtyServiceMock.isPediatrics.set(false);
+    TestBed.inject(AuthService).currentUser.set({ id: 'doctor-b' } as any);
+    fixture.detectChanges();
+    expect(component.selectedFilter()).toBe('ALL');
+    expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(0, 20, 'fullName,asc', '', 'ALL');
+    expect(fixture.nativeElement.textContent).not.toContain('Recién nacidos');
   });
 
   it('should toggle columns modal visibility', () => {

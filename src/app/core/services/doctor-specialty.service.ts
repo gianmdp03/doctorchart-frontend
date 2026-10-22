@@ -7,6 +7,7 @@ export class DoctorSpecialtyService {
   readonly specialty = signal<SpecialtySummary | null>(null);
   readonly definition = signal<WizardDefinition | null>(null);
   readonly activeSpecialty = computed(() => this.specialty()?.code ?? null);
+  readonly isPediatrics = computed(() => this.activeSpecialty()?.toLowerCase() === 'pediatrics');
   readonly supportsGrowthCharts = computed(() => this.definition()?.modulesConfig.GROWTH_CHARTS === true);
   readonly hasFamilyInformation = computed(() => this.definition()?.patientForm.categories
     .some(category => category.enabled && (

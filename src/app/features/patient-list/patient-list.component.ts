@@ -77,12 +77,13 @@ function resolveGender(gender?: string | null): { gender: PatientGender; label: 
   return { gender: 'other', label: 'Indefinido', avatarClass: 'avatar-neutral' };
 }
 
-function mapDtoToCardItem(dto: PatientListDTO): PatientCardItem {
+function mapDtoToCardItem(dto: PatientListDTO, pediatrics: boolean): PatientCardItem {
   const badges = {
     ADULT: 'Adulto',
-    NEONATAL: 'Neonatal',
+    NEONATAL: pediatrics ? 'Recién nacido' : 'Neonatal',
     INFANT: 'Lactante',
     CHILD: 'Niñez',
+    EARLY_CHILDHOOD: 'Primera infancia',
     ADOLESCENT: 'Adolescente',
     UNKNOWN: '—',
   };
@@ -132,6 +133,13 @@ export class PatientListComponent implements OnInit {
   readonly activePatientService = inject(ActivePatientService);
   readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
   readonly workspaceStore = inject(WorkspaceStore);
+  readonly pediatricFilters: ReadonlyArray<{ value: PatientDirectoryFilter; label: string; description: string }> = [
+    { value: 'NEONATAL', label: 'Recién nacidos (0–27 días)', description: 'Desde el nacimiento hasta antes de cumplir 28 días.' },
+    { value: 'INFANT', label: 'Lactantes (28 días–<1 año)', description: 'Desde los 28 días hasta antes del primer cumpleaños.' },
+    { value: 'EARLY_CHILDHOOD', label: 'Primera infancia (0–8 años)', description: 'Edades cumplidas de 0 a 8 años, antes del noveno cumpleaños. Incluye recién nacidos, lactantes y parte de la niñez.' },
+    { value: 'CHILD', label: 'Niñez (1–9 años)', description: 'Desde el primer cumpleaños hasta antes de cumplir 10 años. Incluye parte de la primera infancia.' },
+    { value: 'ADOLESCENT', label: 'Adolescentes (10–19 años)', description: 'Desde el décimo cumpleaños hasta antes de cumplir 20 años. Etapa clínica, independiente de la mayoría de edad legal.' },
+  ];
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
@@ -160,7 +168,13 @@ export class PatientListComponent implements OnInit {
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private observer: IntersectionObserver | null = null;
   readonly loadError = signal<string | null>(null);
-  private readonly reads = new AccountReadScope(() => this.loadInitial());
+  private readonly reads = new AccountReadScope(() => {
+    // An account change may also change specialty; never reuse an exclusive filter.
+    if (['NEONATAL', 'EARLY_CHILDHOOD', 'CHILD', 'ADOLESCENT'].includes(this.selectedFilter())) {
+      this.selectedFilter.set('ALL');
+    }
+    this.loadInitial();
+  });
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -262,7 +276,7 @@ export class PatientListComponent implements OnInit {
       .subscribe({
         next: (response) => {
           if (!current()) return;
-          const items = response.content.map(mapDtoToCardItem);
+          const items = response.content.map(dto => mapDtoToCardItem(dto, this.doctorSpecialtyService.isPediatrics()));
           this.patients.update((existing) =>
             append
               ? [...existing, ...items.filter((item) => !existing.some((p) => p.id === item.id))]
