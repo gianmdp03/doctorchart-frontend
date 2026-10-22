@@ -136,8 +136,8 @@ export class PatientListComponent implements OnInit {
   readonly pediatricFilters: ReadonlyArray<{ value: PatientDirectoryFilter; label: string; description: string }> = [
     { value: 'NEONATAL', label: 'Recién nacidos (0–27 días)', description: 'Desde el nacimiento hasta antes de cumplir 28 días.' },
     { value: 'INFANT', label: 'Lactantes (28 días–<1 año)', description: 'Desde los 28 días hasta antes del primer cumpleaños.' },
-    { value: 'EARLY_CHILDHOOD', label: 'Primera infancia (0–8 años)', description: 'Edades cumplidas de 0 a 8 años, antes del noveno cumpleaños. Incluye recién nacidos, lactantes y parte de la niñez.' },
-    { value: 'CHILD', label: 'Niñez (1–9 años)', description: 'Desde el primer cumpleaños hasta antes de cumplir 10 años. Incluye parte de la primera infancia.' },
+    { value: 'EARLY_CHILDHOOD', label: 'Primera infancia (1–4 años)', description: 'Desde el primer cumpleaños hasta antes de cumplir 5 años.' },
+    { value: 'CHILD', label: 'Niñez (5–9 años)', description: 'Desde el quinto cumpleaños hasta antes de cumplir 10 años.' },
     { value: 'ADOLESCENT', label: 'Adolescentes (10–19 años)', description: 'Desde el décimo cumpleaños hasta antes de cumplir 20 años. Etapa clínica, independiente de la mayoría de edad legal.' },
   ];
   private readonly router = inject(Router);

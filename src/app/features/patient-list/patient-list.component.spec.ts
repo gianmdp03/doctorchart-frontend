@@ -110,6 +110,13 @@ describe('PatientListComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Adultos (≥ 18 años)');
   });
 
+  it('labels pediatric age categories with consecutive non-overlapping ranges', () => {
+    expect(component.pediatricFilters.map(filter => filter.label)).toEqual([
+      'Recién nacidos (0–27 días)', 'Lactantes (28 días–<1 año)',
+      'Primera infancia (1–4 años)', 'Niñez (5–9 años)', 'Adolescentes (10–19 años)',
+    ]);
+  });
+
   it('does not introduce pediatric categories into another specialty with growth enabled', () => {
     doctorSpecialtyServiceMock.supportsGrowthCharts.set(true);
     fixture.detectChanges();
@@ -141,6 +148,21 @@ describe('PatientListComponent', () => {
     expect(component.selectedFilter()).toBe('ALL');
     expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(0, 20, 'fullName,asc', '', 'ALL');
     expect(fixture.nativeElement.textContent).not.toContain('Recién nacidos');
+  });
+
+  it('does not report missing patients when a pediatric filter request fails', () => {
+    doctorSpecialtyServiceMock.isPediatrics.set(true);
+    patientServiceMock.getPatients.mockReturnValueOnce(throwError(() => ({ status: 400 })));
+    component.setFilter('EARLY_CHILDHOOD');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.empty-state')).toBeNull();
+
+    patientServiceMock.getPatients.mockReturnValueOnce(of({ content: [], totalElements: 0, totalPages: 0 }));
+    component.loadInitial();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.empty-state')).toBeTruthy();
   });
 
   it('should toggle columns modal visibility', () => {

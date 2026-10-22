@@ -256,7 +256,7 @@
                     <div class="loading-spinner"></div>
                     <p>Cargando directorio de pacientes...</p>
                   </div>
-                } @else {
+                } @else if (!doctorSpecialtyService.isPediatrics() || !loadError()) {
                   <div class="empty-state">
                     <div class="empty-state-icon" aria-hidden="true">
                       <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor">

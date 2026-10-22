@@ -22,6 +22,13 @@ let browser;
 const definition = { schemaVersion: 1, patientForm: { categories: [] }, encounterForm: { categories: [] }, modulesConfig: { MEDICATION_CATALOG: false, AI_ASSISTANT: false, GROWTH_CHARTS: false } };
 const specialty = { id: 1, code: 'pediatrics', name: 'Fixture', version: 1 };
 const setup = { id: 1, version: 1, specialty, experience: { specialtyId: 1, specialtyVersion: 1, navigation: ['DASHBOARD', 'PATIENTS', 'WIZARD'], patientRecordTabs: ['SUMMARY', 'ENCOUNTERS'], patientRecordActions: [] }, onboardingCompleted: true, currentStepKey: 'completed', definition, draftDefinition: null };
+const patientFixtures = [
+  { id: 1, fullName: 'Recién nacido ficticio', birthDate: '2026-10-12', ageInMonths: 0, ageDisplay: '10 días', ageGroup: 'NEONATAL' },
+  { id: 2, fullName: 'Lactante ficticio', birthDate: '2026-04-22', ageInMonths: 6, ageDisplay: '6 meses', ageGroup: 'INFANT' },
+  { id: 3, fullName: 'Paciente ficticio de dos años', birthDate: '2024-07-11', ageInMonths: 27, ageDisplay: '2 años 3m', ageGroup: 'EARLY_CHILDHOOD' },
+  { id: 4, fullName: 'Niño ficticio', birthDate: '2019-10-22', ageInMonths: 84, ageDisplay: '7 años', ageGroup: 'CHILD' },
+  { id: 5, fullName: 'Adolescente ficticio', birthDate: '2011-10-22', ageInMonths: 180, ageDisplay: '15 años', ageGroup: 'ADOLESCENT' },
+].map(patient => ({ ...patient, hasPendingVaccine: false }));
 try {
   browser = await chromium.launch(options);
   for (const account of ['anonymous', 'doctor', 'admin', 'no-plan']) {
@@ -38,7 +45,11 @@ try {
         if (url.pathname.endsWith('/workspace')) json = setup;
         else if (url.pathname.endsWith('/workspace/preferences')) json = { version: 1, patientColumnsConfig: {}, quickNotes: null };
         else if (url.pathname.endsWith('/doctor/profile')) json = { id: 1, specialty, isSpecialtyLocked: true };
-        else if (url.pathname.endsWith('/patients')) json = { content: [{ id: 1, fullName: 'Paciente ficticio', birthDate: '2024-07-11', ageDisplay: '2 años 3m', ageInMonths: 27, ageGroup: 'EARLY_CHILDHOOD', hasPendingVaccine: false }], totalElements: 1, totalPages: 1 };
+        else if (url.pathname.endsWith('/patients')) {
+          const filter = url.searchParams.get('filter');
+          const content = patientFixtures.filter(patient => !filter || filter === 'ALL' || patient.ageGroup === filter);
+          json = { content, page: { totalElements: content.length, totalPages: content.length ? 1 : 0, size: 20, number: 0 } };
+        }
         else if (/patients|encounters/.test(url.pathname)) json = { content: [], totalElements: 0, totalPages: 0 };
         await route.fulfill({ json });
       });
@@ -83,13 +94,22 @@ async function verifyPediatricDirectory(page) {
   await page.locator('app-sidebar a[href="/pacientes"]').first().click();
   await page.locator('app-patient-list').waitFor();
   await page.getByText('Primera infancia', { exact: true }).waitFor();
-  const labels = ['Recién nacidos (0–27 días)', 'Lactantes (28 días–<1 año)', 'Primera infancia (0–8 años)', 'Niñez (1–9 años)', 'Adolescentes (10–19 años)'];
+  const labels = ['Recién nacidos (0–27 días)', 'Lactantes (28 días–<1 año)', 'Primera infancia (1–4 años)', 'Niñez (5–9 años)', 'Adolescentes (10–19 años)'];
   const filters = ['NEONATAL', 'INFANT', 'EARLY_CHILDHOOD', 'CHILD', 'ADOLESCENT'];
   for (let i = 0; i < labels.length; i++) {
-    const request = page.waitForRequest(request => new URL(request.url()).searchParams.get('filter') === filters[i]);
+    const response = page.waitForResponse(response => new URL(response.url()).pathname.endsWith('/patients') && new URL(response.url()).searchParams.get('filter') === filters[i]);
     await page.getByRole('button', { name: labels[i], exact: true }).click();
-    await request;
+    assert.equal((await response).status(), 200);
+    const row = page.locator('app-patient-list .patient-row');
+    await row.filter({ hasText: patientFixtures[i].fullName }).waitFor();
+    assert.equal(await row.count(), 1, `${filters[i]} must display only its own category`);
+    assert.equal(await page.getByText('Paciente ficticio de dos años', { exact: true }).count(), filters[i] === 'EARLY_CHILDHOOD' ? 1 : 0);
+    assert.equal(await page.locator('app-patient-list [role="alert"]').count(), 0);
   }
+  await page.getByRole('button', { name: labels[2], exact: true }).click();
+  await page.getByText('Paciente ficticio de dos años', { exact: true }).waitFor();
+  await page.reload();
+  await page.getByText('Paciente ficticio de dos años', { exact: true }).waitFor();
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 850 });
     // Resizing starts the existing sidebar width animation; measure settled layout.
