@@ -50,15 +50,15 @@ describe('ClinicalTimelineComponent', () => {
     fixture.componentRef.setInput('canCreateEncounter', true);
   });
 
-  it('should initialize and expand the first two encounters by default', () => {
+  it('starts with every encounter collapsed', () => {
     component.encounters = mockEncounters;
     component.ngOnChanges({
       encounters: new SimpleChange(null, mockEncounters, true),
     });
     fixture.detectChanges();
 
-    expect(component.isCardExpanded(101)).toBe(true);
-    expect(component.isCardExpanded(102)).toBe(true);
+    expect(component.isCardExpanded(101)).toBe(false);
+    expect(component.isCardExpanded(102)).toBe(false);
     expect(component.isCardExpanded(103)).toBe(false);
   });
 
@@ -96,13 +96,13 @@ describe('ClinicalTimelineComponent', () => {
       encounters: new SimpleChange(null, mockEncounters, true),
     });
 
-    expect(component.isCardExpanded(101)).toBe(true);
-
-    component.toggleCard(101);
     expect(component.isCardExpanded(101)).toBe(false);
 
     component.toggleCard(101);
     expect(component.isCardExpanded(101)).toBe(true);
+
+    component.toggleCard(101);
+    expect(component.isCardExpanded(101)).toBe(false);
   });
 
   it('translates UTC encounter timestamps to Argentine time (America/Argentina/Buenos_Aires)', () => {
@@ -124,5 +124,19 @@ describe('ClinicalTimelineComponent', () => {
     expect(component.filteredEncounters()).toEqual([localEvening]);
     component.fromDate.set('2026-10-08'); component.toDate.set('2026-10-08');
     expect(component.filteredEncounters()).toEqual([]);
+  });
+  it('keeps collapsed cards closed on refresh and summarizes patient and date without an empty body', () => {
+    fixture.componentRef.setInput('patientName', 'Ana García');
+    fixture.componentRef.setInput('encounters', mockEncounters); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.entry-patient').textContent).toBe('Ana García');
+    expect(fixture.nativeElement.querySelector('.encounter-datetime').textContent).toContain('15/03/2026');
+    expect(fixture.nativeElement.querySelector('.card-soap-body')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.card-footer-actions')).toBeNull();
+    component.expandAll(); fixture.detectChanges(); expect(fixture.nativeElement.querySelectorAll('.card-soap-body').length).toBe(3);
+    component.collapseAll(); fixture.componentRef.setInput('encounters', [...mockEncounters]); fixture.detectChanges();
+    expect(component.expandedCardIds().size).toBe(0);
+    const toggle = fixture.nativeElement.querySelector('.entry-toggle') as HTMLButtonElement; toggle.click(); fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(fixture.nativeElement.querySelectorAll('.card-soap-body').length).toBe(1);
   });
 });

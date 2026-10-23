@@ -56,14 +56,16 @@ export class LoginPageComponent {
     this.showPassword.update((val) => !val);
   }
 
+  readonly loginAttempted = signal(false);
+  readonly registerAttempted = signal(false);
   isLoginInvalid(controlName: string): boolean {
     const control = this.loginForm.get(controlName);
-    return !!(control && control.invalid && (control.dirty || control.touched));
+    return !!(control && control.invalid && this.loginAttempted());
   }
 
   isRegisterInvalid(controlName: string): boolean {
     const control = this.registerForm.get(controlName);
-    return !!(control && (control.invalid || (controlName === 'confirmPassword' && this.registerForm.hasError('passwordMismatch'))) && (control.dirty || control.touched));
+    return !!(control && (control.invalid || (controlName === 'confirmPassword' && this.registerForm.hasError('passwordMismatch'))) && this.registerAttempted());
   }
 
   registerError(name: string): string {
@@ -77,6 +79,7 @@ export class LoginPageComponent {
   }
 
   async onLoginSubmit(): Promise<void> {
+    this.loginAttempted.set(true);
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       this.errorMessage.set('Por favor ingrese un correo válido y su contraseña.');
@@ -120,6 +123,7 @@ export class LoginPageComponent {
   }
 
   async onRegisterSubmit(): Promise<void> {
+    this.registerAttempted.set(true);
     if (!LOCAL_REGISTRATION_ENABLED) { this.goToBycodeRegistration(); return; }
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();

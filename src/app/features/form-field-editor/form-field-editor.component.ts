@@ -31,6 +31,8 @@ export class FormFieldEditorComponent {
   readonly selectedKey = signal<string | null>(null);
   readonly error = signal<string | null>(null);
   readonly newCategoryTitle = signal('');
+  readonly categoryAttempted = signal(false);
+  readonly fieldAttempted = signal(false);
   readonly newCategoryError = computed(() => textError(this.newCategoryTitle(), 150, true));
   readonly categoryErrors = signal<Record<string, string | null>>({});
   readonly pendingChanges = computed(() => !!this.fieldDraft() || !!this.newCategoryTitle().trim() || this.categories().some(category => !!this.categoryErrors()[category.key]));
@@ -110,10 +112,12 @@ export class FormFieldEditorComponent {
     }));
   }
   addCategory(): void {
+    if (this.readonly()) return;
+    this.categoryAttempted.set(true);
     const title = this.newCategoryTitle().trim();
     if (!title || title.length > 150) { this.error.set('Ingresá un nombre de categoría de hasta 150 caracteres.'); return; }
     const key = this.uniqueKey(title, new Set(this.categories().map(c => c.key)), 'category');
-    if (this.commit(form => form.categories.push({ key, title, enabled: true, fields: [] }))) { this.selectedKey.set(key); this.newCategoryTitle.set(''); }
+    if (this.commit(form => form.categories.push({ key, title, enabled: true, fields: [] }))) { this.selectedKey.set(key); this.newCategoryTitle.set(''); this.categoryAttempted.set(false); }
   }
   renameCategory(key: string, title: string): void {
     const c = this.categories().find(cat => cat.key === key);
@@ -155,10 +159,11 @@ export class FormFieldEditorComponent {
     if (this.readonly()) return;
     const existing = this.categories().find(c => c.key === categoryKey)?.fields.find(f => f.key === fieldKey);
     if (existing?.system) return;
+    this.fieldAttempted.set(false);
     this.numericInputs.set({});
     this.editTarget.set({ categoryKey, fieldKey }); this.fieldDraft.set(existing ? clone(existing) : { key: '', label: '', type: 'TEXT', required: false }); this.error.set(null);
   }
-  closeField(): void { this.editTarget.set(null); this.fieldDraft.set(null); this.error.set(null); }
+  closeField(): void { this.fieldAttempted.set(false); this.editTarget.set(null); this.fieldDraft.set(null); this.error.set(null); }
   updateDraft(patch: Partial<WizardFieldDefinition>): void { const current = this.fieldDraft(); if (current) { this.fieldDraft.set({ ...current, ...patch }); this.error.set(null); } }
   setType(type: FieldType): void {
     const draft = this.fieldDraft(); if (!draft) return; const next = clone(draft); next.type = type;
@@ -216,6 +221,7 @@ export class FormFieldEditorComponent {
   setOperandConstant(name: string, raw: string): void { const value = parseNumberInput(raw); this.setOperand(name, 'constant', typeof value === 'number' ? value : NaN); this.numericInputs.update(values => ({ ...values, ['operand:' + name]: raw })); }
   saveField(): void {
     const target = this.editTarget(); const current = this.fieldDraft(); if (!target || !current || this.readonly()) return;
+    this.fieldAttempted.set(true);
     const field = clone(current); field.label = field.label.trim();
     if (this.draftValidationError()) { this.error.set(this.draftValidationError()); return; }
     if (!field.label || field.label.length > 150) { this.error.set('Ingresá una etiqueta de hasta 150 caracteres.'); return; }

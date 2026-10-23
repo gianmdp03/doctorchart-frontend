@@ -119,18 +119,15 @@
         <article class="timeline-entry" [class.is-expanded]="isCardExpanded(encounter.id)">
           <div class="timeline-node-marker"><div class="node-icon-circle"><ng-icon name="lucideStethoscope" /></div></div>
           <div class="timeline-card">
-            <div class="card-header" (click)="toggleCard(encounter.id)">
-              <div class="header-left">
-                <span class="encounter-code">#C-{{ encounter.id }}</span>
-                <span class="encounter-datetime"><ng-icon name="lucideCalendar" class="text-slate-400" /><strong>{{ formatDate(encounter.encounterDate) }}</strong>@if (formatTime(encounter.encounterDate)) { <span class="time-part">{{ formatTime(encounter.encounterDate) }}</span> }</span>
-                <span class="consultation-type-badge {{ getConsultationTypeClass(encounter.consultationType) }}">{{ getConsultationTypeLabel(encounter.consultationType) }}</span>
-              </div>
-              <button type="button" class="btn-chevron-toggle" (click)="toggleCard(encounter.id); $event.stopPropagation()" [attr.aria-label]="isCardExpanded(encounter.id) ? 'Colapsar registro' : 'Expandir registro'"><ng-icon [name]="isCardExpanded(encounter.id) ? 'lucideChevronUp' : 'lucideChevronDown'" /></button>
+            <div class="entry-heading">
+              <button type="button" class="card-header entry-toggle" (click)="toggleCard(encounter.id)" [attr.aria-expanded]="isCardExpanded(encounter.id)" [attr.aria-controls]="isCardExpanded(encounter.id) ? 'encounter-body-' + encounter.id : null">
+                <span class="entry-identity"><strong class="entry-patient">{{ encounterPatientName(encounter) }}</strong><span class="encounter-datetime"><ng-icon name="lucideCalendar" /><span>{{ formatDate(encounter.encounterDate) }}@if (formatTime(encounter.encounterDate); as time) { · {{ time }} }</span></span></span>
+                <ng-icon class="entry-chevron" [name]="isCardExpanded(encounter.id) ? 'lucideChevronUp' : 'lucideChevronDown'" />
+              </button>
+              <button type="button" class="btn-action-view compact-detail" (click)="onViewCard(encounter.id, $event)"><ng-icon name="lucideEye" /><span>Ver detalle</span></button>
             </div>
-            <div class="card-diagnosis-strip" (click)="toggleCard(encounter.id)"><div class="diag-content"><span class="diag-label">Resumen:</span><strong class="diag-description">{{ getEncounterSummary(encounter) }}</strong></div></div>
-
             @if (isCardExpanded(encounter.id)) {
-              <div class="card-soap-body animate-fade-in">
+              <div class="card-soap-body animate-fade-in" [id]="'encounter-body-' + encounter.id">
                 @if (getDynamicEntries(encounter).length > 0) {
                   <div class="soap-block block-s"><div class="block-content"><h4 class="block-title">Datos registrados</h4>
                     @for (item of getDynamicEntries(encounter); track item.label) { <p class="chief-complaint-full"><strong>{{ item.label }}:</strong> {{ item.value }}</p> }
@@ -144,10 +141,10 @@
                 }
               </div>
             }
-            <div class="card-footer-actions"><div></div><div class="actions-right">
+            @if (isCardExpanded(encounter.id)) { <div class="card-footer-actions"><div></div><div class="actions-right">
               <button type="button" class="btn-action-view" (click)="onViewCard(encounter.id, $event)"><ng-icon name="lucideEye" /><span>Ver detalle</span></button>
               <button type="button" class="btn-action-delete" (click)="onDeleteCard(encounter.id, $event)" title="Eliminar registro de historia clínica"><ng-icon name="lucideTrash2" /></button>
-            </div></div>
+            </div></div> }
           </div>
         </article>
       }

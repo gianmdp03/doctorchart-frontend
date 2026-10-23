@@ -1,6 +1,6 @@
 import { UserClockService } from '../../core/services/user-clock.service';
 import { PatientRecordActionsService } from '../../core/experience/patient-record-actions.service';
-import { Component, computed, DestroyRef, effect, inject, OnDestroy, OnInit, PLATFORM_ID, signal, untracked } from '@angular/core';
+import { Component, computed, DestroyRef, effect, inject, OnDestroy, OnInit, PLATFORM_ID, signal, viewChild, untracked } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -41,6 +41,8 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   readonly formulaResults = signal<WizardFormulaResults>({});
   readonly consultationType = signal<ConsultationType>('FIRST_VISIT');
   readonly formValid = signal(false);
+  readonly submissionAttempted = signal(false);
+  private readonly formRenderer = viewChild(DynamicFormRendererComponent);
   readonly hasConflict = signal(false);
   readonly remoteRecord = signal<ClinicalEncounterDetail | null>(null);
   readonly errorMessage = signal<string | null>(null);
@@ -77,6 +79,7 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void { this.destroyed = true; this.epoch++; }
   private reset(): void {
     this.epoch++;
+    this.submissionAttempted.set(false);
     this.encounter.set(null); this.values.set({}); this.formulaResults.set({});
     this.isLoading.set(false); this.isSubmitting.set(false); this.isEditing.set(false);
     this.hasConflict.set(false); this.remoteRecord.set(null); this.errorMessage.set(null);
@@ -100,13 +103,16 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   private acceptRecord(record: ClinicalEncounterDetail): void {
     this.encounter.set(structuredClone(record)); this.values.set(structuredClone(record.formValues));
     this.formulaResults.set(structuredClone(record.formulaResults)); this.consultationType.set(record.consultationType);
-    this.formValid.set(false); this.errorMessage.set(null); this.hasConflict.set(false); this.remoteRecord.set(null);
+    this.submissionAttempted.set(false); this.formValid.set(false); this.errorMessage.set(null); this.hasConflict.set(false); this.remoteRecord.set(null);
   }
-  startEditing(): void { if (this.encounter() && !this.isLoading() && !this.isSubmitting() && this.identity() === this.owner) this.isEditing.set(true); }
+  startEditing(): void { this.submissionAttempted.set(false); if (this.encounter() && !this.isLoading() && !this.isSubmitting() && this.identity() === this.owner) this.isEditing.set(true); }
   cancelEditing(): void { const record = this.encounter(); if (!record || this.isSubmitting() || this.isLoading()) return; this.acceptRecord(record); this.isEditing.set(false); }
   onValuesChange(values: WizardFormValues): void { if (!this.readonly()) { this.values.set(structuredClone(values)); this.formulaResults.set({}); } }
   currentInstant(): string | null { return this.encounter()?.encounterDate ?? null; }
   async save(): Promise<void> {
+    if (this.readonly()) return;
+    this.submissionAttempted.set(true);
+    if (!this.formValid()) { this.formRenderer()?.focusFirstInvalidField(); return; }
     const record = this.encounter(); const encounterDate = this.currentInstant();
     if (!record || !encounterDate || !this.formValid() || this.readonly()) return;
     this.isSubmitting.set(true); this.errorMessage.set(null); const epoch = this.epoch;

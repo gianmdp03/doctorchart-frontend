@@ -4,6 +4,7 @@ import {
   OnInit,
   computed,
   inject,
+  viewChild,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -54,6 +55,8 @@ export class PatientFormPageComponent implements OnInit {
   readonly values = signal<WizardFormValues>({});
   readonly formulaResults = signal<WizardFormulaResults>({});
   readonly isFormValid = signal(false);
+  readonly submissionAttempted = signal(false);
+  private readonly formRenderer = viewChild(DynamicFormRendererComponent);
   readonly isSubmitting = signal(false);
   readonly isLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -92,6 +95,7 @@ export class PatientFormPageComponent implements OnInit {
     });
 
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      this.submissionAttempted.set(false);
       const idParam = params.get('id');
       if (idParam) {
         const id = Number(idParam);
@@ -173,6 +177,9 @@ export class PatientFormPageComponent implements OnInit {
   }
 
   async submit(): Promise<void> {
+    if (this.readonly()) return;
+    this.submissionAttempted.set(true);
+    if (!this.isFormValid()) { this.formRenderer()?.focusFirstInvalidField(); return; }
     const definition = this.definition();
     const record = this.record();
     const workspace = this.workspace();

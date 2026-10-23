@@ -1119,4 +1119,15 @@ describe('PatientRecordComponent', () => {
     });
     expect(prescriptionApi.create).not.toHaveBeenCalled();
   });
+  it('keeps a new prescription neutral until adding a medication and resets validation after success', async () => {
+    component.setTab('recetas'); fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
+    rx.addMedicationToDraft(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-error')).not.toBeNull();
+    expect(rx.draftPrescriptions().length).toBe(0);
+    rx.rxMedicationName.set('Medicamento de ejemplo'); rx.addMedicationToDraft(); fixture.detectChanges();
+    expect(rx.draftPrescriptions().length).toBe(1); expect(rx.medicationAttempted()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
+    rx.clearRxForm(); expect(rx.documentAttempted()).toBe(false); expect(rx.studyAttempted()).toBe(false);
+  });
 });

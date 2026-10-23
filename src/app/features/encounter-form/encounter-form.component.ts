@@ -8,6 +8,7 @@ import {
   OnDestroy,
   OnInit,
   output,
+  viewChild,
   signal,
   untracked,
 } from '@angular/core';
@@ -74,6 +75,8 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
   readonly workspace = signal<WorkspaceSetup | null>(null);
   readonly dynamicFormData = signal<WizardFormValues>({});
   readonly isDynamicFormValid = signal(false);
+  readonly submissionAttempted = signal(false);
+  private readonly formRenderer = viewChild(DynamicFormRendererComponent);
   readonly isLoading = signal(false);
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -223,6 +226,9 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
 
 
   async submitEncounter(): Promise<void> {
+    if (this.readonly()) return;
+    this.submissionAttempted.set(true);
+    if (!this.isDynamicFormValid()) { this.formRenderer()?.focusFirstInvalidField(); return; }
     const workspace = this.workspace();
     const definition = this.definition();
     const patientId = this.patientId();
@@ -341,6 +347,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
   }
 
   resetForm(force = false): void {
+    this.submissionAttempted.set(false);
     this.workspace.set(null);
     this.definition.set(null);
     this.errorMessage.set(null);
@@ -355,7 +362,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
       this.dynamicFormData.set(structuredClone(draftValues));
     } else {
       this.dynamicFormData.set({});
-      this.isDynamicFormValid.set(false);
+      this.isDynamicFormValid.set(false); this.submissionAttempted.set(false);
     }
 
     if (draftType) {

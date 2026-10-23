@@ -86,7 +86,7 @@
     @if (definition(); as form) {
       <main class="form-card">
         <app-dynamic-form-renderer
-          [definition]="form"
+          [showErrors]="submissionAttempted()" [definition]="form"
           [values]="values()"
           [formulaResults]="formulaResults()"
           [readonly]="readonly()"
@@ -108,7 +108,7 @@
         <button
           type="button"
           class="btn-submit"
-          [disabled]="readonly() || !definition() || !isFormValid()"
+          [disabled]="readonly() || !definition()"
           (click)="submit()"
         >
           {{ isSubmitting() ? 'Guardando...' : isEditMode() ? 'Guardar Cambios' : 'Crear Paciente' }}

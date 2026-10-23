@@ -90,4 +90,14 @@ describe('PatientFormPageComponent dedicated page', () => {
     expect(patientService.createPatient).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith(['/pacientes', patient.id]);
   });
+  it('allows an incomplete save attempt, shows missing fields and never sends invalid data', async () => {
+    fixture = TestBed.createComponent(PatientFormPageComponent); component = fixture.componentInstance;
+    fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.btn-submit').disabled).toBe(false);
+    await component.submit(); fixture.detectChanges();
+    expect(component.submissionAttempted()).toBe(true);
+    expect(fixture.nativeElement.querySelector('.field-error')).not.toBeNull();
+    expect(patientService.createPatient).not.toHaveBeenCalled();
+  });
 });

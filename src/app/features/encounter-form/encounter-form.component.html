@@ -123,7 +123,7 @@
     @if (definition(); as form) {
       <div class="dynamic-form-container">
         <app-dynamic-form-renderer
-          [definition]="form"
+          [showErrors]="submissionAttempted()" [definition]="form"
           [values]="dynamicFormData()"
           [readonly]="readonly()"
           (valuesChange)="onDynamicDataChange($event)"
@@ -151,7 +151,7 @@
     <button
       type="button"
       class="btn-primary"
-      [disabled]="readonly() || !definition() || !isDynamicFormValid()"
+      [disabled]="readonly() || !definition()"
       (click)="submitEncounter()"
     >
       {{ isSubmitting() ? 'Guardando...' : 'Guardar historia clínica' }}

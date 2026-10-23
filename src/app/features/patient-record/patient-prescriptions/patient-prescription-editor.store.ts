@@ -68,6 +68,9 @@ export class PatientPrescriptionEditorStore {
 
   readonly draftStudies = signal<string[]>([]);
 
+  readonly medicationAttempted = signal(false);
+  readonly studyAttempted = signal(false);
+  readonly documentAttempted = signal(false);
   readonly medicationErrors = computed(() => ({
     name: textError(this.rxMedicationName(), 200, true),
     dosage: textError(this.rxDosage(), 500),
@@ -162,6 +165,7 @@ export class PatientPrescriptionEditorStore {
   }
 
   addMedicationToDraft(): void {
+    this.medicationAttempted.set(true);
     const name = this.rxMedicationName().trim();
     if (!this.medicationValid() || this.draftPrescriptions().length >= 100) {
       this.rxErrorMessage.set(Object.values(this.medicationErrors()).find(Boolean) || 'Podés agregar hasta 100 medicamentos.');
@@ -181,6 +185,7 @@ export class PatientPrescriptionEditorStore {
     };
 
     this.draftPrescriptions.update((list) => [...list, newItem]);
+    this.medicationAttempted.set(false);
     this.rxMedicationName.set('');
     this.rxDosage.set('');
     this.rxDurationDays.set(null);
@@ -199,6 +204,7 @@ export class PatientPrescriptionEditorStore {
   }
 
   addStudyToDraft(): void {
+    this.studyAttempted.set(true);
     const name = this.rxStudyName().trim();
     if (!this.studyValid() || this.draftStudies().length >= 100) {
       this.rxErrorMessage.set(Object.values(this.studyErrors()).find(Boolean) || 'Podés agregar hasta 100 estudios.');
@@ -209,6 +215,7 @@ export class PatientPrescriptionEditorStore {
     const formattedStudy = spec ? `${name} — ${spec}` : name;
 
     this.draftStudies.update((list) => [...list, formattedStudy]);
+    this.studyAttempted.set(false);
     this.rxStudyName.set('');
     this.rxStudySpecification.set('');
     this.rxErrorMessage.set(null);
@@ -235,6 +242,7 @@ export class PatientPrescriptionEditorStore {
   }
 
   clearRxForm(): void {
+    this.medicationAttempted.set(false); this.studyAttempted.set(false); this.documentAttempted.set(false);
     this.rxMedicationName.set('');
     this.rxDosage.set('');
     this.rxDurationDays.set(null);
@@ -250,8 +258,11 @@ export class PatientPrescriptionEditorStore {
   }
 
   private commitPendingRxInputs(): boolean {
+    this.documentAttempted.set(true);
     const medicationPending = !!(this.rxMedicationName() || this.rxDosage() || this.rxDurationDays() != null || this.rxMedInstructions());
     const studyPending = !!(this.rxStudyName() || this.rxStudySpecification());
+    if (medicationPending) this.medicationAttempted.set(true);
+    if (studyPending) this.studyAttempted.set(true);
     const error = this.diagnosisError() || this.generalInstructionsError()
       || (medicationPending && Object.values(this.medicationErrors()).find(Boolean))
       || (studyPending && Object.values(this.studyErrors()).find(Boolean));

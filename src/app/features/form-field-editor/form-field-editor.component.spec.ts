@@ -181,7 +181,7 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     expect(component.draftValidationError()).toBeNull(); component.saveField();
     const definition = component.working(), field = definition.categories[0].fields[0];
     const renderer = TestBed.createComponent(DynamicFormRendererComponent);
-    renderer.componentRef.setInput('definition', structuredClone(definition)); renderer.detectChanges();
+    renderer.componentRef.setInput('showErrors', true); renderer.componentRef.setInput('definition', structuredClone(definition)); renderer.detectChanges();
     expect(renderer.componentInstance.formValid()).toBe(false);
     expect(renderer.nativeElement.textContent).toContain('Completá este campo.');
     renderer.componentInstance.setNumberValue(field, 'familia'); renderer.detectChanges();
@@ -194,13 +194,16 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     renderer.destroy();
   });
 
-  it('shows draft errors reactively before applying a field', () => {
+  it('reveals draft errors after applying and clears them when corrected', () => {
     load({ categories: [{ key: 'family', title: 'Familia', enabled: true, fields: [] }] });
     component.openField('family'); component.updateDraft({ label: 'Dato' }); component.setType('NUMBER');
     component.setNumberProperty('minimum', 'abc'); fixture.detectChanges();
     expect(component.numericInputs()['minimum']).toBe('abc');
     expect(component.draftError('minimum')).toContain('número válido');
-    expect(fixture.nativeElement.querySelector('.field-page-actions .primary').disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.field-page-actions .primary').disabled).toBe(false);
+    component.saveField(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-error')?.textContent).toContain('número válido');
     component.setNumberProperty('minimum', '0'); component.setNumberProperty('maximum', '-1'); fixture.detectChanges();
     expect(component.draftError('maximum')).toContain('mínimo');
     component.setNumberProperty('maximum', '20'); fixture.detectChanges();
@@ -271,5 +274,14 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     component.moveField('new_encounter_category', 'readingA', 1); component.deleteField('new_encounter_category', 'notes'); component.duplicateField('new_encounter_category', 'notes');
     component.openField('new_encounter_category', 'notes'); expect(component.fieldDraft()).toBeNull();
     expect(component.working()).toEqual(original); expect(output).not.toHaveBeenCalled();
+  });
+  it('opens category and field creation without errors and validates only on apply', () => {
+    load({ categories: [{ key: 'family', title: 'Familia', enabled: true, fields: [] }] }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
+    component.addCategory(); fixture.detectChanges(); expect(component.categoryAttempted()).toBe(true);
+    component.newCategoryTitle.set('Nueva'); component.addCategory(); fixture.detectChanges(); expect(component.categoryAttempted()).toBe(false);
+    component.openField('family'); fixture.detectChanges(); expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
+    component.saveField(); fixture.detectChanges(); expect(fixture.nativeElement.querySelector('.field-error')).not.toBeNull();
+    component.closeField(); component.openField('family'); fixture.detectChanges(); expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
   });
 });

@@ -37,6 +37,7 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     expect(fixture.nativeElement.textContent).toContain('Grupo A'); expect(fixture.nativeElement.textContent).toContain('No');
   });
   it('accepts a future follow-up, rejects invalid typed dates, and clears an optional date as null', () => {
+    fixture.componentRef.setInput('showErrors', true);
     fixture.componentRef.setInput('definition', { categories: [{ key: 'plan', title: 'Plan e indicaciones', enabled: true, fields: [
       { key: 'followUpDate', label: 'Próximo control', type: 'DATE', required: false },
     ] }] });
@@ -121,6 +122,7 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     fixture.componentRef.setInput('values', {}); fixture.detectChanges(); expect(component.formValid()).toBe(false);
   });
   it('keeps invalid optional numeric input invalid and clears its inline error as it is corrected', async () => {
+    fixture.componentRef.setInput('showErrors', true);
     const input: HTMLInputElement = fixture.nativeElement.querySelector('[data-field-key="readingA"] input');
     input.value = 'abc'; input.dispatchEvent(new Event('input')); fixture.detectChanges(); await fixture.whenStable();
     expect(component.currentValues()['readingA']).toBe('abc');
@@ -132,6 +134,7 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     expect(fixture.nativeElement.querySelector('[data-field-key="readingA"] .field-error')).toBeNull();
   });
   it('preserves decimal typing when a parent echoes values and immediately adopts new limits', () => {
+    fixture.componentRef.setInput('showErrors', true);
     const field = component.fields().find(field => field.key === 'readingA')!;
     component.valuesChange.subscribe(values => fixture.componentRef.setInput('values', values));
     component.setNumberValue(field, '12,'); fixture.detectChanges();
@@ -145,6 +148,7 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     expect(fixture.nativeElement.textContent).toContain('El valor máximo es 10.');
   });
   it('rejects an impossible date even when the custom date field is optional', async () => {
+    fixture.componentRef.setInput('showErrors', true);
     const updated = structuredClone(definition);
     updated.categories.flatMap(category => category.fields).find(field => field.key === 'born')!.required = false;
     fixture.componentRef.setInput('definition', updated); fixture.detectChanges(); await fixture.whenStable();
@@ -154,5 +158,16 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     expect(fixture.nativeElement.querySelector('[data-field-key="born"] .field-error').textContent).toContain('fecha válida');
     input.value = ''; input.dispatchEvent(new Event('input')); fixture.detectChanges(); await fixture.whenStable();
     expect(component.formValid()).toBe(true);
+  });
+  it('keeps an incomplete form neutral until submission and removes each visible error when corrected', () => {
+    fixture.componentRef.setInput('values', {}); fixture.detectChanges();
+    expect(component.formValid()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.field-error, .has-error')).toBeNull();
+    fixture.componentRef.setInput('showErrors', true); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-field-key="identity"] .field-error')).not.toBeNull();
+    component.setValue(definition.categories[0].fields.find(field => field.key === 'identity')!, 'Ana García'); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-field-key="identity"] .field-error')).toBeNull();
+    fixture.componentRef.setInput('showErrors', false); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-error, .has-error')).toBeNull();
   });
 });

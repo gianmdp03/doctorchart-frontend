@@ -64,14 +64,16 @@ export class ClinicalTimelineComponent implements OnChanges {
   @Input() set encounters(value: ClinicalEncounterList[]) { this.encounterRows.set(value); }
   get encounters(): ClinicalEncounterList[] { return this.encounterRows(); }
   @Input() isLoading = false;
+  @Input() patientName = '';
+  encounterPatientName(encounter: ClinicalEncounterList): string { return this.patientName || encounter.patientFullName || 'Paciente #' + encounter.patientId; }
   @Output() newEncounter = new EventEmitter<void>();
   @Output() viewDetail = new EventEmitter<number>();
   @Output() deleteEncounter = new EventEmitter<number>();
   @Output() printPrescription = new EventEmitter<ClinicalEncounterList>();
 
-  // Track which timeline card accordions are expanded (default: top 2 expanded)
+  // Cards start closed; retain explicit expansion while the same records refresh.
   readonly expandedCardIds = signal<Set<number>>(new Set());
-  private hasInitializedExpanded = false;
+
 
   readonly fromDate = signal<string>('');
   readonly toDate = signal<string>('');
@@ -151,13 +153,9 @@ export class ClinicalTimelineComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['encounters'] && this.encounters && this.encounters.length > 0) {
-      const current = this.expandedCardIds();
-      const hasAny = this.encounters.some((e) => current.has(e.id));
-      if (!this.hasInitializedExpanded || !hasAny) {
-        this.expandedCardIds.set(new Set(this.encounters.slice(0, 2).map((e) => e.id)));
-        this.hasInitializedExpanded = true;
-      }
+    if (changes['encounters']) {
+      const available = new Set(this.encounters.map(row => row.id));
+      this.expandedCardIds.update(current => new Set([...current].filter(id => available.has(id))));
     }
   }
 

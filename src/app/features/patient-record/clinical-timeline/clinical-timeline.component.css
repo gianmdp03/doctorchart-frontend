@@ -678,3 +678,23 @@
   .preset-chip, .btn-toggle-subtle { min-height: 36px; }
   .toolbar-right { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 }
+
+/* Compact collapsed row: patient and date stay together, details expand below. */
+.entry-heading { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+.entry-toggle.card-header { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--dc-ink, #0f172a); font: inherit; text-align: left; }
+.entry-identity { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.entry-patient { font-size: 1rem; overflow-wrap: anywhere; }
+.entry-chevron { flex-shrink: 0; color: var(--dc-ink-muted, #64748b); }
+.compact-detail { flex-shrink: 0; min-height: 40px; }
+.is-expanded .entry-heading { border-bottom: 1px solid var(--dc-outline, #e2e8f0); }
+.entry-toggle:focus-visible { outline: 2px solid var(--dc-teal-ink, #006874); outline-offset: 6px; border-radius: 4px; }
+@media (max-width: 600px) {
+  .entry-heading { padding: 16px; gap: 10px; flex-wrap: wrap; }
+  .entry-toggle.card-header { flex-basis: 100%; }
+  .compact-detail { width: 100%; justify-content: center; min-height: 44px; }
+  .entry-identity .encounter-datetime { font-size: 12px; flex-wrap: wrap; }
+}
+
+.timeline-toolbar { flex-wrap: wrap; }
+.toolbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.timeline-count-badge, .btn-new-encounter-cta { white-space: nowrap; }

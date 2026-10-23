@@ -1,5 +1,5 @@
 import { todayDate } from '../../core/date/user-time-zone';
-import { Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 import { WizardFieldDefinition, WizardFormDefinition, WizardFormValues, WizardValue, WizardFormulaResults } from '../../core/models/wizard-definition.model';
@@ -13,10 +13,18 @@ export const inputValues = (definition: WizardFormDefinition, values: WizardForm
 
 @Component({ selector: 'app-dynamic-form-renderer', imports: [FormsModule, DatePickerComponent], templateUrl: './dynamic-form-renderer.component.html', styleUrl: './dynamic-form-renderer.component.css' })
 export class DynamicFormRendererComponent {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  focusFirstInvalidField(): void {
+    const field = this.fields().find(field => this.isFieldVisible(field.key) && !this.validField(field));
+    const row = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('[data-field-key]')).find(row => row.dataset['fieldKey'] === field?.key);
+    row?.querySelector<HTMLElement>('input, select, textarea')?.focus();
+  }
   readonly definition = input<WizardFormDefinition>({ categories: [] });
   readonly values = input<WizardFormValues>({});
   readonly formulaResults = input<WizardFormulaResults>({});
   readonly readonly = input(false);
+  readonly showErrors = input(false);
+  visibleFieldError(field: WizardFieldDefinition): string | null { return this.showErrors() && !this.readonly() ? this.fieldError(field) : null; }
   readonly valuesChange = output<WizardFormValues>();
   readonly validityChange = output<boolean>();
   readonly currentValues = signal<WizardFormValues>({});

@@ -1,0 +1,378 @@
+<!doctype html><html><head><style type="text/css"></style><style>
+[_nghost-a-c1421880424] {
+  display: block;
+  width: 100%;
+}
+.encounter-page[_ngcontent-a-c1421880424] {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+.breadcrumbs[_ngcontent-a-c1421880424] {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--dc-ink-secondary, #52647a);
+  font-size: .75rem;
+}
+.breadcrumbs[_ngcontent-a-c1421880424]   a[_ngcontent-a-c1421880424] {
+  color: var(--dc-teal-ink, #006874);
+  text-decoration: none;
+}
+.page-heading[_ngcontent-a-c1421880424] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.eyebrow[_ngcontent-a-c1421880424] {
+  color: var(--dc-teal-ink, #006874);
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+h1[_ngcontent-a-c1421880424] {
+  margin: 6px 0 8px;
+  color: var(--dc-ink, #0f172a);
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -.03em;
+}
+.page-heading[_ngcontent-a-c1421880424]   p[_ngcontent-a-c1421880424], 
+.patient-heading[_ngcontent-a-c1421880424]   p[_ngcontent-a-c1421880424] {
+  margin: 0;
+  color: var(--dc-ink-secondary, #52647a);
+  font-size: .8125rem;
+  line-height: 1.6;
+}
+.encounter-overview[_ngcontent-a-c1421880424] {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 24px;
+  background: var(--dc-surface, #fff);
+  border: 1px solid var(--dc-outline, #dce7e9);
+  border-radius: 16px;
+}
+.patient-mark[_ngcontent-a-c1421880424] {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: var(--dc-teal-surface, #e8f5f2);
+  color: var(--dc-teal-ink, #006874);
+  font-weight: 700;
+  font-size: .875rem;
+}
+.patient-heading[_ngcontent-a-c1421880424] {
+  flex: 1;
+  min-width: 160px;
+}
+h2[_ngcontent-a-c1421880424] {
+  margin: 0 0 6px;
+  color: var(--dc-ink, #0f172a);
+  font-size: 1.125rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.recorded-at[_ngcontent-a-c1421880424] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 18px;
+  color: var(--dc-ink, #0f172a);
+  font-size: .8125rem;
+}
+.recorded-at[_ngcontent-a-c1421880424]   span[_ngcontent-a-c1421880424] {
+  font-size: .6875rem;
+  color: var(--dc-ink-secondary, #52647a);
+}
+.page-button[_ngcontent-a-c1421880424] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: .8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.secondary[_ngcontent-a-c1421880424] {
+  border: 1px solid var(--dc-outline, #dce7e9);
+  background: var(--dc-surface, #fff);
+  color: var(--dc-ink-secondary, #52647a);
+}
+.primary[_ngcontent-a-c1421880424] {
+  border: 1px solid var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+.page-button[_ngcontent-a-c1421880424]:focus-visible, 
+a[_ngcontent-a-c1421880424]:focus-visible, 
+select[_ngcontent-a-c1421880424]:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 3px;
+}
+.page-button[_ngcontent-a-c1421880424]:disabled {
+  opacity: .55;
+  cursor: default;
+}
+.consultation-metadata[_ngcontent-a-c1421880424], 
+.encounter-content.is-editing[_ngcontent-a-c1421880424] {
+  padding: 24px;
+  border: 1px solid var(--dc-outline, #dce7e9);
+  border-radius: 14px;
+  background: var(--dc-surface, #fff);
+}
+.consultation-metadata[_ngcontent-a-c1421880424]   p[_ngcontent-a-c1421880424] {
+  color: var(--dc-ink-secondary, #52647a);
+  font-size: .8125rem;
+}
+.consultation-metadata[_ngcontent-a-c1421880424]   label[_ngcontent-a-c1421880424] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 400px;
+  margin-top: 16px;
+  font-size: .8125rem;
+  color: var(--dc-ink, #0f172a);
+}
+select[_ngcontent-a-c1421880424] {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--dc-outline, #dce7e9);
+  color: inherit;
+  background: var(--dc-surface-low, #f8fafc);
+}
+.page-actions[_ngcontent-a-c1421880424] {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px 0;
+  border-top: 1px solid var(--dc-outline, #dce7e9);
+}
+.page-actions[_ngcontent-a-c1421880424]    > span[_ngcontent-a-c1421880424] {
+  margin-right: auto;
+  color: var(--dc-ink-secondary, #52647a);
+  font-size: .75rem;
+}
+.feedback[_ngcontent-a-c1421880424] {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 12px;
+  background: var(--dc-warning-surface, #fff7ed);
+  color: var(--dc-warning-ink, #92400e);
+  font-size: .8125rem;
+}
+.loading[_ngcontent-a-c1421880424] {
+  color: var(--dc-ink-secondary, #52647a);
+  padding: 32px;
+}
+@media (max-width: 600px) {
+  .encounter-page[_ngcontent-a-c1421880424] {
+    gap: 18px;
+  }
+  h1[_ngcontent-a-c1421880424] {
+    font-size: 1.35rem;
+  }
+  .encounter-overview[_ngcontent-a-c1421880424] {
+    padding: 18px;
+    gap: 14px;
+  }
+  .recorded-at[_ngcontent-a-c1421880424] {
+    flex-basis: 100%;
+  }
+  .page-actions[_ngcontent-a-c1421880424]    > span[_ngcontent-a-c1421880424] {
+    flex-basis: 100%;
+  }
+  .page-actions[_ngcontent-a-c1421880424]   .page-button[_ngcontent-a-c1421880424] {
+    flex: 1;
+  }
+  .encounter-content.is-editing[_ngcontent-a-c1421880424] {
+    padding: 16px;
+  }
+}
+@media print {
+  .breadcrumbs[_ngcontent-a-c1421880424], 
+   .page-heading[_ngcontent-a-c1421880424]    > a[_ngcontent-a-c1421880424], 
+   .page-actions[_ngcontent-a-c1421880424], 
+   .encounter-overview[_ngcontent-a-c1421880424]    > a[_ngcontent-a-c1421880424] {
+    display: none;
+  }
+  .encounter-page[_ngcontent-a-c1421880424] {
+    color: #111;
+  }
+}</style><style>
+.form-category[_ngcontent-a-c776445590] {
+  margin: 0 0 24px;
+}
+.form-category[_ngcontent-a-c776445590]   h3[_ngcontent-a-c776445590] {
+  margin: 0 0 16px;
+  color: var(--dc-ink-secondary, #334155);
+  font-size: 1rem;
+  border-bottom: 1px solid var(--dc-outline, #e2e8f0);
+  padding-bottom: 10px;
+}
+.fields-grid[_ngcontent-a-c776445590] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.field[_ngcontent-a-c776445590] {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.field.wide[_ngcontent-a-c776445590] {
+  grid-column: 1/-1;
+}
+.field[_ngcontent-a-c776445590]   label[_ngcontent-a-c776445590] {
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--dc-ink-secondary, #475569);
+}
+.field[_ngcontent-a-c776445590]   input[_ngcontent-a-c776445590], 
+.field[_ngcontent-a-c776445590]   textarea[_ngcontent-a-c776445590], 
+.field[_ngcontent-a-c776445590]   select[_ngcontent-a-c776445590] {
+  box-sizing: border-box;
+  width: 100%;
+  font: inherit;
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--dc-surface, white);
+  color: var(--dc-ink, #0f172a);
+}
+.field[_ngcontent-a-c776445590]   input[_ngcontent-a-c776445590]:focus, 
+.field[_ngcontent-a-c776445590]   textarea[_ngcontent-a-c776445590]:focus, 
+.field[_ngcontent-a-c776445590]   select[_ngcontent-a-c776445590]:focus {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 2px;
+}
+.number-with-unit[_ngcontent-a-c776445590] {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.number-with-unit[_ngcontent-a-c776445590]   span[_ngcontent-a-c776445590] {
+  color: var(--dc-ink-muted, #64748b);
+  font-size: .8rem;
+}
+.saved-value[_ngcontent-a-c776445590] {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.formula-result[_ngcontent-a-c776445590] {
+  background: var(--dc-surface-high, #f1f5f9);
+  padding: 11px;
+  border-radius: 8px;
+  color: var(--dc-ink-secondary, #475569);
+}
+.field-error[_ngcontent-a-c776445590] {
+  font-size: .8rem;
+  color: var(--dc-error-ink, #b91c1c);
+}
+.empty-form[_ngcontent-a-c776445590] {
+  color: var(--dc-ink-muted, #64748b);
+}
+@media (max-width: 600px) {
+  .fields-grid[_ngcontent-a-c776445590] {
+    grid-template-columns: 1fr;
+  }
+}
+.is-readonly[_ngcontent-a-c776445590] {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.is-readonly[_ngcontent-a-c776445590]   .form-category[_ngcontent-a-c776445590] {
+  margin: 0;
+  background: var(--dc-surface, #fff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+  overflow: hidden;
+}
+.is-readonly[_ngcontent-a-c776445590]   .form-category[_ngcontent-a-c776445590]   h3[_ngcontent-a-c776445590] {
+  margin: 0;
+  padding: 14px 20px;
+  background: var(--dc-surface, #fff);
+  border-bottom: 1px solid var(--dc-outline, #e2e8f0);
+  color: var(--dc-ink-secondary, #334155);
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.is-readonly[_ngcontent-a-c776445590]   .fields-grid[_ngcontent-a-c776445590] {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0;
+  padding: 6px;
+}
+.is-readonly[_ngcontent-a-c776445590]   .field[_ngcontent-a-c776445590] {
+  gap: 4px;
+  padding: 12px 14px;
+  margin: 4px;
+  border-radius: 10px;
+  background: var(--dc-surface-low, #f8fafc);
+  border: 1px solid transparent;
+  transition: background .15s ease, border-color .15s ease;
+}
+.is-readonly[_ngcontent-a-c776445590]   .field[_ngcontent-a-c776445590]:hover {
+  background: var(--dc-surface-high, #f1f5f9);
+  border-color: var(--dc-outline, #e2e8f0);
+}
+.is-readonly[_ngcontent-a-c776445590]   .field[_ngcontent-a-c776445590]   label[_ngcontent-a-c776445590] {
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--dc-ink-muted, #64748b);
+}
+.is-readonly[_ngcontent-a-c776445590]   .saved-value[_ngcontent-a-c776445590] {
+  font-size: .98rem;
+  font-weight: 500;
+  color: var(--dc-ink, #0f172a);
+  line-height: 1.4;
+}
+.is-readonly[_ngcontent-a-c776445590]   .saved-value.is-empty[_ngcontent-a-c776445590] {
+  color: var(--dc-ink-muted, #94a3b8);
+  font-weight: 400;
+  font-style: italic;
+  font-size: .88rem;
+}
+.is-readonly[_ngcontent-a-c776445590]   .field.wide[_ngcontent-a-c776445590] {
+  grid-column: 1/-1;
+}
+.is-readonly[_ngcontent-a-c776445590]   .formula-result[_ngcontent-a-c776445590] {
+  background: var(--dc-surface, #fff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  color: var(--dc-ink, #0f172a);
+  font-weight: 600;
+}
+.field.has-error[_ngcontent-a-c776445590]   input[_ngcontent-a-c776445590], 
+.field.has-error[_ngcontent-a-c776445590]   textarea[_ngcontent-a-c776445590], 
+.field.has-error[_ngcontent-a-c776445590]   select[_ngcontent-a-c776445590] {
+  border-color: #b91c1c;
+}
+.field-hint[_ngcontent-a-c776445590] {
+  color: var(--dc-ink-secondary, #52647a);
+  font-size: .75rem;
+  line-height: 1.6;
+}</style></head><body><div id="root10" ng-version="22.2.2" _nghost-a-c1421880424=""><section _ngcontent-a-c1421880424="" aria-labelledby="encounter-title" class="encounter-page"><nav _ngcontent-a-c1421880424="" aria-label="Ubicación" class="breadcrumbs"><a _ngcontent-a-c1421880424="" href="/pacientes/22?tab=historia">Ana García</a><!--container--><!--container--><span _ngcontent-a-c1421880424="" aria-hidden="true">/</span><span _ngcontent-a-c1421880424="">Detalle de consulta</span></nav><header _ngcontent-a-c1421880424="" class="page-heading"><div _ngcontent-a-c1421880424=""><span _ngcontent-a-c1421880424="" class="eyebrow">HISTORIA CLÍNICA</span><h1 _ngcontent-a-c1421880424="" id="encounter-title">Detalle de la consulta</h1><p _ngcontent-a-c1421880424="">La atención, su evolución y el próximo control, en un solo lugar.</p></div><a _ngcontent-a-c1421880424="" class="page-button secondary" href="/pacientes/22?tab=historia">← Volver a la historia del paciente</a><!--container--></header><!--container--><!--container--><div _ngcontent-a-c1421880424="" class="encounter-overview"><div _ngcontent-a-c1421880424="" aria-hidden="true" class="patient-mark">HC</div><div _ngcontent-a-c1421880424="" class="patient-heading"><h2 _ngcontent-a-c1421880424="">Ana García</h2><p _ngcontent-a-c1421880424="">Especialidad ficticia de validación · Control / seguimiento</p></div><div _ngcontent-a-c1421880424="" class="recorded-at"><span _ngcontent-a-c1421880424="">Fecha de atención</span><strong _ngcontent-a-c1421880424="">01/01/2026 11:03</strong></div><a _ngcontent-a-c1421880424="" class="page-button secondary" href="/pacientes/22">Ver ficha del paciente →</a></div><!--container--><!--container--><div _ngcontent-a-c1421880424="" class="encounter-content"><app-dynamic-form-renderer _ngcontent-a-c1421880424="" _nghost-a-c776445590=""><div _ngcontent-a-c776445590="" class="dynamic-form is-readonly"><section _ngcontent-a-c776445590="" class="form-category" data-category-key="new_encounter_category"><h3 _ngcontent-a-c776445590="">Consulta inédita</h3><div _ngcontent-a-c776445590="" class="fields-grid"><div _ngcontent-a-c776445590="" class="field" data-field-key="readingA"><label _ngcontent-a-c776445590="" for="field-readingA">Lectura A <!--container--></label><!--container--><p _ngcontent-a-c776445590="" class="saved-value">0</p><!--container--><!--container--></div><!--container--><div _ngcontent-a-c776445590="" class="field" data-field-key="readingB"><label _ngcontent-a-c776445590="" for="field-readingB">Lectura B <!--container--></label><!--container--><p _ngcontent-a-c776445590="" class="saved-value">10</p><!--container--><!--container--></div><!--container--><div _ngcontent-a-c776445590="" class="field" data-field-key="result"><label _ngcontent-a-c776445590="" for="field-result">Promedio <!--container--></label><output _ngcontent-a-c776445590="" class="formula-result">5</output><!--container--><!--container--><!--container--></div><!--container--><div _ngcontent-a-c776445590="" class="field wide" data-field-key="notes"><label _ngcontent-a-c776445590="" for="field-notes">Observaciones <!--container--></label><!--container--><p _ngcontent-a-c776445590="" class="saved-value">Consulta guardada</p><!--container--><!--container--></div><!--container--><!--container--></div></section><!--container--><!--container--></div></app-dynamic-form-renderer></div><footer _ngcontent-a-c1421880424="" class="page-actions"><span _ngcontent-a-c1421880424="">Información registrada en la historia clínica.</span><!--container--><button _ngcontent-a-c1421880424="" type="button" class="page-button secondary">Imprimir</button><!--container--><button _ngcontent-a-c1421880424="" type="button" class="page-button primary">Editar consulta</button><!--container--></footer><!--container--></section></div></body></html>

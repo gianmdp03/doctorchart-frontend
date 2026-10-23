@@ -19,7 +19,7 @@
       } @empty { <p class="hint">Todavía no hay categorías.</p> }
       <label class="control">Nueva categoría
         <input maxlength="150" [ngModel]="newCategoryTitle()" (ngModelChange)="newCategoryTitle.set($event)" [disabled]="readonly()" (keydown.enter)="addCategory()" placeholder="Nombre de la categoría" />
-        @if (newCategoryError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
+        @if (categoryAttempted() && newCategoryError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
       </label>
       <button type="button" class="primary" (click)="addCategory()" [disabled]="readonly()">Agregar categoría</button>
     </aside>
@@ -79,25 +79,25 @@
         <header class="panel-header"><h1 #fieldPageHeading tabindex="-1" id="field-editor-title">{{ editTarget()?.fieldKey ? 'Editar campo' : 'Agregar campo' }}</h1><button type="button" (click)="closeField()" aria-label="Volver a los campos">← Volver a los campos</button></header>
         <fieldset [disabled]="readonly()">
           <div class="control-grid">
-            <label class="control">Etiqueta <input maxlength="150" [ngModel]="field.label" (ngModelChange)="updateDraft({ label: $event })" />@if (draftError('label'); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
+            <label class="control">Etiqueta <input maxlength="150" [ngModel]="field.label" (ngModelChange)="updateDraft({ label: $event })" />@if (fieldAttempted() && draftError('label'); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
             <label class="control">Tipo <select [ngModel]="field.type" (ngModelChange)="setType($event)">@for (type of fieldTypes; track type.value) { <option [value]="type.value">{{ type.label }}</option> }</select></label>
-            <label class="control wide">Texto de ayuda <input maxlength="300" [ngModel]="field.placeholder ?? ''" (ngModelChange)="updateDraft({ placeholder: $event })" />@if (draftError('placeholder'); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
+            <label class="control wide">Texto de ayuda <input maxlength="300" [ngModel]="field.placeholder ?? ''" (ngModelChange)="updateDraft({ placeholder: $event })" />@if (fieldAttempted() && draftError('placeholder'); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
           </div>
           @if (editTarget()?.fieldKey) { <p class="hint">Cambiar el tipo reemplaza el campo por uno nuevo. Primero desvinculá las condiciones y cálculos que lo usan.</p> }
           @if (field.type !== 'FORMULA') {
             <label class="checkbox-control"><input type="checkbox" [ngModel]="field.required" (ngModelChange)="updateDraft({ required: $event })" />Respuesta obligatoria</label>
           }
           @if (field.type === 'NUMBER' || field.type === 'FORMULA') {
-            <label class="control">Unidad <input maxlength="30" [ngModel]="field.unit ?? ''" (ngModelChange)="updateDraft({ unit: $event })" />@if (draftError('unit'); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
+            <label class="control">Unidad <input maxlength="30" [ngModel]="field.unit ?? ''" (ngModelChange)="updateDraft({ unit: $event })" />@if (fieldAttempted() && draftError('unit'); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
           }
           @if (field.type === 'NUMBER') {
-            <div class="control-grid">@for (property of ['minimum', 'maximum']; track property) { <label class="control">{{ property === 'minimum' ? 'Mínimo' : 'Máximo' }}<input type="text" inputmode="decimal" [ngModel]="numericInputs()[property] ?? $any(field)[property] ?? ''" (ngModelChange)="setNumberProperty($any(property), $event)" />@if (draftError($any(property)); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label> }</div>
+            <div class="control-grid">@for (property of ['minimum', 'maximum']; track property) { <label class="control">{{ property === 'minimum' ? 'Mínimo' : 'Máximo' }}<input type="text" inputmode="decimal" [ngModel]="numericInputs()[property] ?? $any(field)[property] ?? ''" (ngModelChange)="setNumberProperty($any(property), $event)" />@if (fieldAttempted() && draftError($any(property)); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label> }</div>
           }
           @if (field.type === 'DATE') { <p class="hint">Las fechas se ingresan con el selector del sistema y se muestran como dd/MM/aaaa.</p> }
           @if (field.type === 'SELECT') {
             <h4>Opciones</h4>
             @for (option of field.options ?? []; track $index; let oi = $index) {
-              <div class="option-row">@for (property of ['label', 'value']; track property) { <label class="control">{{ property === 'label' ? 'Etiqueta' : 'Valor' }}<input [maxlength]="property === 'label' ? 150 : 80" [ngModel]="$any(option)[property]" (ngModelChange)="updateOption(oi, $any(property), $event)" />@if (optionError(oi, $any(property)); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label> }<button type="button" class="danger" (click)="deleteOption(oi)" [attr.aria-label]="'Eliminar opción ' + option.label">Eliminar</button></div>
+              <div class="option-row">@for (property of ['label', 'value']; track property) { <label class="control">{{ property === 'label' ? 'Etiqueta' : 'Valor' }}<input [maxlength]="property === 'label' ? 150 : 80" [ngModel]="$any(option)[property]" (ngModelChange)="updateOption(oi, $any(property), $event)" />@if (fieldAttempted() && optionError(oi, $any(property)); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label> }<button type="button" class="danger" (click)="deleteOption(oi)" [attr.aria-label]="'Eliminar opción ' + option.label">Eliminar</button></div>
             }
             <button type="button" (click)="addOption()">Agregar opción</button>
           }
@@ -108,7 +108,7 @@
             @for (name of formulaInputs(); track name) {
               <div class="control-grid"><label class="control">{{ inputLabel(name) }}<select [ngModel]="operandValue(name)" (ngModelChange)="setOperand(name, $event)"><option value="">Elegir origen</option>@for (choice of operandChoices(name); track choice.value) { <option [value]="choice.value">{{ choice.label }}</option> }</select></label>
                 @if (operandValue(name) === 'constant') { <label class="control">Número fijo <input type="text" inputmode="decimal" [ngModel]="numericInputs()['operand:' + name] ?? operandConstant(name)" (ngModelChange)="setOperandConstant(name, $event)" /></label> }
-                @if (operandError(name); as error) { <span class="field-error" role="alert">{{ error }}</span> }
+                @if (fieldAttempted() && operandError(name); as error) { <span class="field-error" role="alert">{{ error }}</span> }
               </div>
             }
             <p class="hint">El resultado lo calcula el sistema. Las entradas deben indicar los campos o datos del paciente que corresponden.</p>
@@ -117,8 +117,8 @@
           <label class="control">Respuesta que controla la visibilidad <select [ngModel]="field.visibleWhen?.fieldKey ?? ''" (ngModelChange)="setVisibility($event)"><option value="">Mostrar siempre</option>@for (controller of visibilityControllers(); track controller.key) { <option [value]="controller.key">{{ controller.label }}</option> }</select></label>
           @if (field.visibleWhen) { <label class="control">Mostrar cuando la respuesta sea <select [ngModel]="field.visibleWhen.equals" (ngModelChange)="setVisibilityValue($event)"><option [ngValue]="true">Sí</option><option [ngValue]="false">No</option></select></label> }
         </fieldset>
-        @if (draftValidationError(); as error) { <p class="error" role="alert">{{ error }}</p> }
-        <footer class="field-page-actions"><button type="button" (click)="closeField()">Cancelar</button><button type="button" class="primary" (click)="saveField()" [disabled]="readonly() || !!draftValidationError()">Aplicar campo</button></footer>
+        @if (fieldAttempted() && draftValidationError(); as error) { <p class="error" role="alert">{{ error }}</p> }
+        <footer class="field-page-actions"><button type="button" (click)="closeField()">Cancelar</button><button type="button" class="primary" (click)="saveField()" [disabled]="readonly()">Aplicar campo</button></footer>
       </section>
   }
 </section>

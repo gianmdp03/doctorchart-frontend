@@ -33,6 +33,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   readonly definition = signal<WizardDefinition | null>(null);
   readonly creating = signal(false);
   readonly name = signal('');
+  readonly metadataAttempted = signal(false);
   readonly code = signal('');
   readonly description = signal('');
   readonly codeEdited = signal(false);
@@ -112,7 +113,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
     const epoch = ++this.epoch;
     if (selection.kind === 'create') {
       this.selectedSpecialty.set(null); this.wizard.set(null); this.definition.set(defaultDefinition());
-      this.creating.set(true); this.name.set(''); this.code.set(''); this.description.set(''); this.codeEdited.set(false);
+      this.metadataAttempted.set(false); this.creating.set(true); this.name.set(''); this.code.set(''); this.description.set(''); this.codeEdited.set(false);
       this.clearFeedback(); this.editorGeneration.update(n => n + 1); return;
     }
     const specialty = this.specialties().find(item => item.id === selection.id);
@@ -238,11 +239,13 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
     return `${location}: ${labels[issue.code] ?? 'Revisá la configuración indicada.'}`;
   }
   private validMetadata(requireCode: boolean): boolean {
+    this.metadataAttempted.set(true);
     const error = this.nameError() || (requireCode && this.codeError());
     if (error) { this.error.set(error); return false; }
     return true;
   }
   private acceptCopy(copy: RemoteCopy): void {
+    this.metadataAttempted.set(false);
     if (copy.wizard.specialtyId !== copy.specialty.id) throw new Error('La configuración recibida corresponde a otra especialidad.');
     this.selectedSpecialty.set(clone(copy.specialty)); this.wizard.set(clone(copy.wizard)); this.definition.set(clone(copy.wizard.draftDefinition));
     this.creating.set(false); this.metadataStale.set(false); this.name.set(copy.specialty.name); this.code.set(copy.specialty.code); this.description.set(copy.specialty.description ?? ''); this.editorGeneration.update(n => n + 1);

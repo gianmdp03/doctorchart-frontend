@@ -18,7 +18,7 @@
   } @else {
     <app-clinical-timeline
       [canCreateEncounter]="recordActions.has('NEW_ENCOUNTER')"
-      [encounters]="history.encounters()"
+      [encounters]="history.encounters()" [patientName]="patientName()"
       [isLoading]="history.isLoadingEncounters()"
       (newEncounter)="onNewEncounterTriggered()"
       (viewDetail)="history.openEncounterDetail($event)"

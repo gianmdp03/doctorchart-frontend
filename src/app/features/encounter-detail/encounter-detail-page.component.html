@@ -1,8 +1,8 @@
 <section class="encounter-page" aria-labelledby="encounter-title">
-  <nav class="breadcrumbs" aria-label="Ubicación"><a routerLink="/consultas">Consultas</a><span aria-hidden="true">/</span><span>Detalle de consulta</span></nav>
+  <nav class="breadcrumbs" aria-label="Ubicación">@if (encounter(); as record) { <a [routerLink]="['/pacientes', record.patientId]" [queryParams]="{ tab: 'historia' }">{{ record.patientFullName || 'Ficha del paciente' }}</a> } @else { <span>Historia clínica</span> }<span aria-hidden="true">/</span><span>Detalle de consulta</span></nav>
   <header class="page-heading">
     <div><span class="eyebrow">HISTORIA CLÍNICA</span><h1 id="encounter-title">{{ isEditing() ? 'Editar consulta' : 'Detalle de la consulta' }}</h1><p>La atención, su evolución y el próximo control, en un solo lugar.</p></div>
-    <a class="page-button secondary" routerLink="/consultas">← Volver al historial</a>
+    @if (encounter(); as record) { <a class="page-button secondary" [routerLink]="['/pacientes', record.patientId]" [queryParams]="{ tab: 'historia' }">← Volver a la historia del paciente</a> }
   </header>
   @if (errorMessage(); as message) { <div class="feedback" role="alert"><span>{{ message }}</span>@if (!encounter() && requestedId()) { <button class="page-button secondary" type="button" (click)="loadEncounter(requestedId()!)">Reintentar</button> }</div> }
   @if (isLoading()) { <p class="loading" role="status">Cargando consulta...</p> }
@@ -21,12 +21,12 @@
     @if (isEditing()) {
       <fieldset class="consultation-metadata" [disabled]="readonly()"><legend>Datos de la consulta</legend><p>Fecha registrada por el servidor: {{ formatDate(record.encounterDate) }} ({{ timeZone }}).</p><label>Tipo de atención<select [ngModel]="consultationType()" (ngModelChange)="consultationType.set($event)">@for (type of consultationTypes; track type.value) { <option [value]="type.value">{{ type.label }}</option> }</select></label></fieldset>
     }
-    <div class="encounter-content" [class.is-editing]="isEditing()"><app-dynamic-form-renderer [definition]="record.formDefinitionSnapshot" [values]="values()" [formulaResults]="formulaResults()" [readonly]="readonly()" (valuesChange)="onValuesChange($event)" (validityChange)="formValid.set($event)" /></div>
+    <div class="encounter-content" [class.is-editing]="isEditing()"><app-dynamic-form-renderer [showErrors]="submissionAttempted()" [definition]="record.formDefinitionSnapshot" [values]="values()" [formulaResults]="formulaResults()" [readonly]="readonly()" (valuesChange)="onValuesChange($event)" (validityChange)="formValid.set($event)" /></div>
     <footer class="page-actions">
       <span>{{ isEditing() ? 'Los cambios se aplican a esta consulta.' : 'Información registrada en la historia clínica.' }}</span>
       @if (isEditing()) {
         <button type="button" class="page-button secondary" [disabled]="isSubmitting()" (click)="cancelEditing()">Cancelar edición</button>
-        <button type="button" class="page-button primary" [disabled]="readonly() || !formValid()" (click)="save()">{{ isSubmitting() ? 'Guardando...' : 'Guardar cambios' }}</button>
+        <button type="button" class="page-button primary" [disabled]="readonly()" (click)="save()">{{ isSubmitting() ? 'Guardando...' : 'Guardar cambios' }}</button>
       } @else {
         @if (recordActions.has('PRINT_DOCUMENT')) { <button type="button" class="page-button secondary" (click)="printEncounter()">Imprimir</button> }
         <button type="button" class="page-button primary" (click)="startEditing()">Editar consulta</button>
