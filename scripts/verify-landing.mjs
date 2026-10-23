@@ -15,7 +15,7 @@ try {
   assert.equal(await page.locator('.feature-card').count(), 6);
   for (const theme of ['light', 'dark']) {
     if (theme === 'dark') await page.getByRole('button', { name: /Activar modo oscuro/ }).click();
-    for (const width of [1440, 390, 320]) {
+    for (const width of [1440, 768, 430, 390, 360, 320]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.screenshot({ path: `${output}/${theme}-${width}.png`, fullPage: true });
       assert.ok(
@@ -24,6 +24,15 @@ try {
       );
       const login = page.locator('.header-actions a');
       assert.ok(await login.isVisible());
+      if (width <= 768) {
+        assert.equal(await page.locator('a[href="/login"]:visible').count(), 1, 'Only the header offers login on mobile');
+        assert.equal(await page.locator('.landing-footer').isVisible(), false);
+        await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+        assert.equal(await page.locator('.landing-footer a[href="/login"]:visible').count(), 0);
+        await page.screenshot({ path: `${output}/footer-${theme}-${width}.png` });
+        await page.evaluate(() => scrollTo(0, 0));
+        await page.screenshot({ path: `${output}/header-${theme}-${width}.png` });
+      }
     }
   }
   await page
@@ -43,7 +52,7 @@ try {
   await page.locator('#login-email').waitFor();
   assert.deepEqual(errors, []);
   console.log(
-    'Verified: light/dark at 1440, 390, 320px; FAQ; login; reload; return link; protected patient redirect; no browser errors.',
+    'Verified: light/dark at 1440, 768, 430, 390, 360, 320px; single mobile header login, no mobile footer; login controls at five mobile widths; FAQ; login; reload; return link; protected patient redirect; no browser errors.',
   );
 } finally {
   await browser.close();

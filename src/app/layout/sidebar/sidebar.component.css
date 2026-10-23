@@ -201,3 +201,20 @@
   background: var(--dc-surface-low, #f8fafc);
   color: var(--dc-ink, #0f172a);
 }
+
+.sidebar-container.is-collapsed .nav-label,
+.sidebar-container.is-collapsed .brand-text-wrap { display: none; }
+@media (max-width: 768px) {
+  :host { width: 100%; min-height: 0; border-right: 0; border-bottom: 1px solid var(--dc-outline, #e2e8f0); }
+  .sidebar-container, .sidebar-container.is-collapsed { position: static; width: 100%; min-height: 0; height: auto; }
+  .sidebar-brand { height: 56px; padding: 0 12px; }
+  .brand-logo-icon { width: 32px; height: 32px; min-width: 32px; }
+  .brand-logo-icon img { width: 32px; height: 32px; }
+  .sidebar-container.is-collapsed .brand-text-wrap { display: flex; }
+  .sidebar-container.is-collapsed .nav-label { display: block; }
+  .sidebar-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 4px; padding: 8px; overflow: visible; }
+  .nav-item { min-height: 52px; padding: 6px; flex-direction: column; justify-content: center; gap: 5px; white-space: normal; text-align: center; }
+  .nav-label { flex: none; font-size: 11px; line-height: 1.3; overflow: visible; }
+  .nav-item.active::before { left: 25%; right: 25%; top: auto; bottom: 0; height: 2px; width: auto; border-radius: 2px; }
+  .nav-group-label, .sidebar-footer { display: none; }
+}

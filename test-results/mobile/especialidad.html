@@ -1,0 +1,286 @@
+<!doctype html><html><head><style>
+.onboarding-container[_ngcontent-a-c784613122] {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  background: var(--dc-surface-low, #f8fafc);
+}
+.onboarding-card[_ngcontent-a-c784613122] {
+  width: 100%;
+  max-width: 960px;
+  background: var(--dc-surface, #ffffff);
+  border-radius: 1.25rem;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+.onboarding-header[_ngcontent-a-c784613122] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.header-top-row[_ngcontent-a-c784613122] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.brand-pill[_ngcontent-a-c784613122] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  background: var(--dc-surface-high, #f1f5f9);
+  color: var(--dc-ink-secondary, #475569);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.btn-signout-onboarding[_ngcontent-a-c784613122] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 0.5rem;
+  color: var(--dc-ink-muted, #64748b);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+.btn-signout-onboarding[_ngcontent-a-c784613122]:hover {
+  background: var(--dc-surface-high, #f1f5f9);
+  color: var(--dc-ink, #0f172a);
+  border-color: var(--dc-outline, #cbd5e1);
+}
+.title[_ngcontent-a-c784613122] {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--dc-ink, #0f172a);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+.subtitle[_ngcontent-a-c784613122] {
+  font-size: 0.9375rem;
+  color: var(--dc-ink-muted, #64748b);
+  margin: 0;
+  line-height: 1.5;
+}
+.immutability-warning-banner[_ngcontent-a-c784613122] {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  background: var(--dc-warning-surface, #fffbeb);
+  border: 1px solid #fde68a;
+  border-left: 4px solid #d97706;
+  border-radius: 0.75rem;
+  color: var(--dc-warning-ink, #92400e);
+}
+.warning-icon-wrapper[_ngcontent-a-c784613122] {
+  color: var(--dc-warning-ink, #d97706);
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+.warning-content[_ngcontent-a-c784613122] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.warning-content[_ngcontent-a-c784613122]   strong[_ngcontent-a-c784613122] {
+  color: var(--dc-warning-ink, #78350f);
+  font-weight: 700;
+}
+.error-banner[_ngcontent-a-c784613122] {
+  padding: 0.875rem 1.25rem;
+  background: var(--dc-error-surface, #fef2f2);
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  border-radius: 0.75rem;
+  color: var(--dc-error-ink, #991b1b);
+  font-size: 0.875rem;
+}
+.loading-state[_ngcontent-a-c784613122] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 1rem;
+  color: var(--dc-ink-muted, #64748b);
+  font-size: 0.9375rem;
+}
+.spinner[_ngcontent-a-c784613122] {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid var(--dc-outline, #e2e8f0);
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: _ngcontent-a-c784613122_spin 0.8s linear infinite;
+}
+.spinner-sm[_ngcontent-a-c784613122] {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: _ngcontent-a-c784613122_spin 0.8s linear infinite;
+}
+@keyframes _ngcontent-a-c784613122_spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.specialty-grid[_ngcontent-a-c784613122] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.specialty-card[_ngcontent-a-c784613122] {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1.125rem;
+  border-radius: 0.875rem;
+  border: 1.5px solid var(--dc-outline, #e2e8f0);
+  background: var(--dc-surface, #ffffff);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+.specialty-card[_ngcontent-a-c784613122]:hover {
+  border-color: #93c5fd;
+  background: var(--dc-surface-low, #f8fafc);
+  transform: translateY(-1px);
+}
+.specialty-card.selected[_ngcontent-a-c784613122] {
+  border-color: #2563eb;
+  background: var(--dc-blue-surface, #eff6ff);
+  box-shadow: 0 0 0 1px #2563eb;
+}
+.card-radio[_ngcontent-a-c784613122] {
+  margin-top: 0.125rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  border: 2px solid var(--dc-outline, #cbd5e1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.specialty-card.selected[_ngcontent-a-c784613122]   .card-radio[_ngcontent-a-c784613122] {
+  border-color: #2563eb;
+}
+.radio-circle[_ngcontent-a-c784613122] {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.specialty-card.selected[_ngcontent-a-c784613122]   .radio-circle[_ngcontent-a-c784613122] {
+  background: #2563eb;
+}
+.card-body[_ngcontent-a-c784613122] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.card-title[_ngcontent-a-c784613122] {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--dc-ink, #0f172a);
+  margin: 0;
+}
+.card-desc[_ngcontent-a-c784613122] {
+  font-size: 0.8125rem;
+  color: var(--dc-ink-muted, #64748b);
+  margin: 0;
+  line-height: 1.4;
+}
+.onboarding-footer[_ngcontent-a-c784613122] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--dc-outline, #f1f5f9);
+}
+.footer-status[_ngcontent-a-c784613122] {
+  font-size: 0.875rem;
+  color: var(--dc-ink-secondary, #475569);
+}
+.prompt-text[_ngcontent-a-c784613122] {
+  color: var(--dc-ink-muted, #94a3b8);
+  font-style: italic;
+}
+.btn-confirm[_ngcontent-a-c784613122] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.625rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.btn-confirm[_ngcontent-a-c784613122]:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+.btn-confirm[_ngcontent-a-c784613122]:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.specialty-card[_ngcontent-a-c784613122]:disabled {
+  cursor: not-allowed;
+  opacity: .65;
+}
+button[_ngcontent-a-c784613122]:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .onboarding-footer[_ngcontent-a-c784613122] {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+@media (max-width: 640px) {
+  .onboarding-container[_ngcontent-a-c784613122] {
+    padding: 16px 12px;
+    align-items: flex-start;
+  }
+  .onboarding-card[_ngcontent-a-c784613122] {
+    padding: 24px 16px;
+    gap: 24px;
+  }
+  .header-top-row[_ngcontent-a-c784613122] {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .specialty-grid[_ngcontent-a-c784613122] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .specialty-card[_ngcontent-a-c784613122] {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}</style></head><body><div id="root6" ng-version="22.2.2" _nghost-a-c784613122=""><main _ngcontent-a-c784613122="" class="onboarding-container"><section _ngcontent-a-c784613122="" aria-labelledby="specialty-title" class="onboarding-card"><header _ngcontent-a-c784613122="" class="onboarding-header"><div _ngcontent-a-c784613122="" class="header-top-row"><span _ngcontent-a-c784613122="" class="brand-pill">Configuración inicial · Especialidad</span><button _ngcontent-a-c784613122="" type="button" class="btn-signout-onboarding">Cerrar sesión</button></div><h1 _ngcontent-a-c784613122="" id="specialty-title" class="title">Elegí tu especialidad médica</h1><p _ngcontent-a-c784613122="" class="subtitle">Vas a recibir los formularios iniciales de tu especialidad para personalizar sus categorías y campos.</p><div _ngcontent-a-c784613122="" class="immutability-warning-banner"><div _ngcontent-a-c784613122="" class="warning-content"><strong _ngcontent-a-c784613122="">Podés cambiar la especialidad durante la configuración inicial.</strong><span _ngcontent-a-c784613122="">Quedará confirmada al finalizar. Tus formularios seguirán siendo editables.</span></div></div></header><!--container--><!--container--><!--container--><section _ngcontent-a-c784613122="" aria-label="Especialidades disponibles" class="specialty-grid"><button _ngcontent-a-c784613122="" type="button" class="specialty-card selected" aria-pressed="true"><span _ngcontent-a-c784613122="" aria-hidden="true" class="card-radio"><span _ngcontent-a-c784613122="" class="radio-circle"></span></span><div _ngcontent-a-c784613122="" class="card-body"><h2 _ngcontent-a-c784613122="" class="card-title">Especialidad ficticia de validación</h2><p _ngcontent-a-c784613122="" class="card-desc">Solo fixture: nunca se carga en el catálogo ni en el seeder.</p><!--container--></div></button><!--container--></section><footer _ngcontent-a-c784613122="" class="onboarding-footer"><div _ngcontent-a-c784613122="" class="footer-status"><span _ngcontent-a-c784613122="">Especialidad seleccionada: <strong _ngcontent-a-c784613122="">Especialidad ficticia de validación</strong></span><!--container--><!--container--></div><button _ngcontent-a-c784613122="" type="button" class="btn-confirm"><!--container--> Continuar <!--container--></button></footer><!--container--><!--container--></section></main></div></body></html>

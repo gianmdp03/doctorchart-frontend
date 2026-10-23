@@ -288,3 +288,19 @@
     justify-content: flex-end;
   }
 }
+
+@media (max-width: 600px) {
+  .patient-clinical-banner { position: static; padding: 16px; border: 1px solid var(--dc-outline, #dce7e9); border-radius: 16px; }
+  .banner-left-block { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 12px; }
+  .btn-nav-back { grid-column: 1 / -1; justify-self: start; min-height: 44px; }
+  .patient-fullname { width: 100%; white-space: normal; overflow-wrap: anywhere; }
+  .patient-demographics-row { gap: 6px 12px; margin-top: 6px; }
+  .demo-bullet { display: none; }
+  .demo-item { overflow-wrap: anywhere; }
+  .coverage-chip { flex-wrap: wrap; line-height: 1.4; max-width: 100%; overflow-wrap: anywhere; }
+  .safety-badge { max-width: 100%; align-items: flex-start; padding: 8px 10px; border-radius: 10px; }
+  .safety-text { min-width: 0; overflow-wrap: anywhere; }
+  .safety-badge > ng-icon, .safety-dot-pulse { flex-shrink: 0; margin-top: 3px; }
+  .banner-actions-block { flex-wrap: wrap; justify-content: stretch; }
+  .banner-actions-block button { flex: 1 1 140px; min-height: 44px; justify-content: center; white-space: normal; }
+}

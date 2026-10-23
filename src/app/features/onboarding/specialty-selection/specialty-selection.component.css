@@ -288,3 +288,11 @@
 .specialty-card:disabled { cursor: not-allowed; opacity: .65; }
 button:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
 @media (max-width: 640px) { .onboarding-footer { align-items: stretch; flex-direction: column; } }
+
+@media (max-width: 640px) {
+  .onboarding-container { padding: 16px 12px; align-items: flex-start; }
+  .onboarding-card { padding: 24px 16px; gap: 24px; }
+  .header-top-row { flex-wrap: wrap; gap: 12px; }
+  .specialty-grid { grid-template-columns: minmax(0, 1fr); }
+  .specialty-card { min-width: 0; overflow-wrap: anywhere; }
+}

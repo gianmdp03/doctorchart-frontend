@@ -1,0 +1,651 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+[_nghost-a-c4086733384] {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+}
+.directory-subtitle[_ngcontent-a-c4086733384] {
+  font-size: 0.85rem;
+  color: var(--md-sys-color-secondary);
+  margin-top: 0.25rem;
+}
+.filter-count-note[_ngcontent-a-c4086733384] {
+  font-style: italic;
+  color: var(--md-sys-color-outline);
+}
+.directory-actions-group[_ngcontent-a-c4086733384] {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.directory-filters[_ngcontent-a-c4086733384] {
+  flex: 1 0 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 65%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-low) 65%, var(--md-sys-color-surface-container-lowest));
+}
+.directory-filters-heading[_ngcontent-a-c4086733384] {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+}
+.directory-filters-heading[_ngcontent-a-c4086733384]   svg[_ngcontent-a-c4086733384] {
+  color: var(--md-sys-color-primary);
+  flex-shrink: 0;
+}
+.directory-filter-options[_ngcontent-a-c4086733384] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 0.5rem;
+}
+.directory-filter[_ngcontent-a-c4086733384] {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.375rem;
+  min-width: 0;
+  min-height: 74px;
+  padding: 0.875rem 1.625rem 0.875rem 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 65%, transparent);
+  border-radius: 12px;
+  background: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-on-surface);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.directory-filter[_ngcontent-a-c4086733384]:hover {
+  border-color: color-mix(in srgb, var(--md-sys-color-primary) 55%, var(--md-sys-color-outline-variant));
+  background: color-mix(in srgb, var(--md-sys-color-primary) 5%, var(--md-sys-color-surface-container-lowest));
+}
+.directory-filter.filter-active[_ngcontent-a-c4086733384] {
+  border-color: var(--md-sys-color-primary);
+  background: color-mix(in srgb, var(--md-sys-color-primary) 12%, var(--md-sys-color-surface-container-lowest));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-sys-color-primary) 15%, transparent);
+}
+.directory-filter.filter-active[_ngcontent-a-c4086733384]::after {
+  content: "\2713";
+  position: absolute;
+  top: 0.65rem;
+  right: 0.6rem;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.directory-filter[_ngcontent-a-c4086733384]:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 3px;
+}
+.filter-name[_ngcontent-a-c4086733384] {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.filter-range[_ngcontent-a-c4086733384] {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+.filter-active[_ngcontent-a-c4086733384]   .filter-name[_ngcontent-a-c4086733384] {
+  color: var(--md-sys-color-primary);
+}
+.filter-status-dot[_ngcontent-a-c4086733384] {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--md-sys-color-warning, #995700);
+}
+@media (max-width: 600px) {
+  .directory-actions-group[_ngcontent-a-c4086733384] {
+    width: 100%;
+  }
+  .directory-search-wrapper[_ngcontent-a-c4086733384] {
+    flex: 1 1 100%;
+  }
+  .directory-filters[_ngcontent-a-c4086733384] {
+    padding: 0.75rem;
+    border-radius: 14px;
+  }
+  .directory-filter-options[_ngcontent-a-c4086733384] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .directory-filter[_ngcontent-a-c4086733384] {
+    min-height: 68px;
+    padding-left: 0.75rem;
+  }
+  .directory-filter-vaccine[_ngcontent-a-c4086733384]:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .directory-filter[_ngcontent-a-c4086733384] {
+    transition: none;
+  }
+}
+.directory-search-wrapper[_ngcontent-a-c4086733384] {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-full);
+  padding: 0.35rem 0.75rem;
+  width: 280px;
+  box-sizing: border-box;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.directory-search-wrapper[_ngcontent-a-c4086733384]:focus-within {
+  border-color: var(--md-sys-color-primary);
+  background-color: var(--md-sys-color-surface-container-lowest);
+  box-shadow: 0 0 0 2px rgba(0, 104, 116, 0.15);
+}
+.search-icon[_ngcontent-a-c4086733384] {
+  color: var(--md-sys-color-on-surface-variant);
+  margin-right: 0.4rem;
+  flex-shrink: 0;
+}
+.directory-search-input[_ngcontent-a-c4086733384] {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: var(--md-sys-color-on-surface);
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+.directory-search-input[_ngcontent-a-c4086733384]::placeholder {
+  color: var(--md-sys-color-outline);
+}
+.clear-search-btn[_ngcontent-a-c4086733384] {
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-outline);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.clear-search-btn[_ngcontent-a-c4086733384]:hover {
+  color: var(--md-sys-color-error);
+}
+.m3-chip[_ngcontent-a-c4086733384] {
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.m3-chip[_ngcontent-a-c4086733384]:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 1px;
+}
+.patient-table-card[_ngcontent-a-c4086733384] {
+  margin-top: 1rem;
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-m);
+  box-shadow: 0 1px 3px rgba(0, 25, 29, 0.06), 0 1px 2px rgba(0, 25, 29, 0.04);
+  overflow: hidden;
+  transition: border-color var(--md-sys-motion-standard);
+}
+.patient-table-responsive[_ngcontent-a-c4086733384] {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.patient-table[_ngcontent-a-c4086733384] {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+.patient-table[_ngcontent-a-c4086733384]   thead[_ngcontent-a-c4086733384] {
+  background-color: var(--md-sys-color-surface-container-low);
+  border-bottom: 1px solid var(--md-sys-color-surface-variant);
+}
+.patient-table[_ngcontent-a-c4086733384]   th[_ngcontent-a-c4086733384] {
+  padding: 0.75rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--md-sys-color-secondary);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.patient-table[_ngcontent-a-c4086733384]   th.text-right[_ngcontent-a-c4086733384], 
+.patient-table[_ngcontent-a-c4086733384]   td.text-right[_ngcontent-a-c4086733384] {
+  text-align: right;
+}
+.patient-row[_ngcontent-a-c4086733384] {
+  border-bottom: 1px solid var(--md-sys-color-surface-variant);
+  transition: background-color 0.15s ease;
+}
+.patient-row[_ngcontent-a-c4086733384]:last-child {
+  border-bottom: none;
+}
+.patient-row[_ngcontent-a-c4086733384]:hover {
+  background-color: var(--md-sys-color-surface-container-low);
+}
+.patient-table[_ngcontent-a-c4086733384]   td[_ngcontent-a-c4086733384] {
+  padding: 0.7rem 1rem;
+  vertical-align: middle;
+  color: var(--md-sys-color-on-surface);
+}
+.patient-cell-flex[_ngcontent-a-c4086733384] {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.patient-mini-avatar[_ngcontent-a-c4086733384] {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--md-shape-s);
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+  transition: all 0.15s ease;
+}
+.patient-mini-avatar.avatar-male[_ngcontent-a-c4086733384] {
+  background-color: var(--dc-blue-surface, #dbeafe);
+  color: var(--dc-blue-ink, #1d4ed8);
+  border-color: #93c5fd;
+}
+.patient-mini-avatar.avatar-female[_ngcontent-a-c4086733384] {
+  background-color: var(--dc-pink-surface, #fce7f3);
+  color: var(--dc-pink-ink, #be185d);
+  border-color: #f9a8d4;
+}
+.patient-mini-avatar.avatar-neutral[_ngcontent-a-c4086733384] {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border-color: var(--md-sys-color-outline-variant);
+}
+.patient-title-group[_ngcontent-a-c4086733384] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.patient-full-name[_ngcontent-a-c4086733384] {
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  font-size: 0.88rem;
+}
+.patient-meta-row[_ngcontent-a-c4086733384] {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.patient-id-badge[_ngcontent-a-c4086733384] {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--md-sys-color-secondary);
+}
+.gender-pill[_ngcontent-a-c4086733384] {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--md-shape-full);
+  line-height: 1.25;
+}
+.gender-pill.gender-pill-male[_ngcontent-a-c4086733384] {
+  background-color: var(--dc-blue-surface, #eff6ff);
+  color: var(--dc-blue-ink, #2563eb);
+  border: 1px solid #dbeafe;
+}
+.gender-pill.gender-pill-female[_ngcontent-a-c4086733384] {
+  background-color: var(--dc-pink-surface, #fdf2f8);
+  color: var(--dc-pink-ink, #db2777);
+  border: 1px solid #fce7f3;
+}
+.dni-number[_ngcontent-a-c4086733384] {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.84rem;
+}
+.age-data-cell[_ngcontent-a-c4086733384] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.age-primary-row[_ngcontent-a-c4086733384] {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.age-text[_ngcontent-a-c4086733384] {
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  font-size: 0.84rem;
+}
+.badge-compact[_ngcontent-a-c4086733384] {
+  font-size: 0.68rem;
+  padding: 0.1rem 0.4rem;
+  font-weight: 600;
+}
+.birth-subtext[_ngcontent-a-c4086733384] {
+  font-size: 0.73rem;
+  color: var(--md-sys-color-secondary);
+}
+.contact-info-cell[_ngcontent-a-c4086733384] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.contact-icon[_ngcontent-a-c4086733384] {
+  color: var(--md-sys-color-outline);
+  flex-shrink: 0;
+}
+.cell-muted[_ngcontent-a-c4086733384] {
+  color: var(--md-sys-color-outline);
+}
+.encounter-pill[_ngcontent-a-c4086733384] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.22rem 0.6rem;
+  border-radius: var(--md-shape-full);
+}
+.pill-dot[_ngcontent-a-c4086733384] {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.encounter-pill.pill-completed[_ngcontent-a-c4086733384] {
+  background-color: var(--dc-teal-surface, #ecfdf5);
+  color: var(--dc-teal-ink, #065f46);
+  border: 1px solid #a7f3d0;
+}
+.encounter-pill.pill-completed[_ngcontent-a-c4086733384]   .pill-dot[_ngcontent-a-c4086733384] {
+  background-color: #10b981;
+}
+.pill-date[_ngcontent-a-c4086733384] {
+  font-weight: 400;
+  opacity: 0.88;
+}
+.encounter-pill.pill-empty[_ngcontent-a-c4086733384] {
+  background-color: var(--dc-warning-surface, #fffbeb);
+  color: var(--dc-warning-ink, #92400e);
+  border: 1px solid #fde68a;
+}
+.encounter-pill.pill-empty[_ngcontent-a-c4086733384]   .pill-dot[_ngcontent-a-c4086733384] {
+  background-color: #f59e0b;
+}
+.vaccine-chip[_ngcontent-a-c4086733384] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--md-shape-full);
+}
+.vaccine-chip.chip-pending[_ngcontent-a-c4086733384] {
+  background-color: var(--dc-error-surface, #fef2f2);
+  color: var(--dc-error-ink, #b91c1c);
+  border: 1px solid #fecaca;
+}
+.vaccine-chip.chip-ok[_ngcontent-a-c4086733384] {
+  background-color: var(--dc-success-surface, #f0fdf4);
+  color: var(--dc-success-ink, #15803d);
+  border: 1px solid #bbf7d0;
+}
+.btn-table-action[_ngcontent-a-c4086733384] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.32rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-table-action[_ngcontent-a-c4086733384]:hover {
+  background-color: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  box-shadow: 0 1px 2px rgba(0, 104, 116, 0.2);
+}
+.btn-table-action[_ngcontent-a-c4086733384]:hover   svg[_ngcontent-a-c4086733384] {
+  transform: translateX(2px);
+}
+.btn-table-action[_ngcontent-a-c4086733384]   svg[_ngcontent-a-c4086733384] {
+  transition: transform 0.15s ease;
+}
+.empty-table-cell[_ngcontent-a-c4086733384] {
+  padding: 3.5rem 1.5rem !important;
+  text-align: center;
+  background-color: var(--md-sys-color-surface-container-lowest);
+}
+.empty-state[_ngcontent-a-c4086733384] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.empty-state-icon[_ngcontent-a-c4086733384] {
+  color: var(--md-sys-color-outline);
+}
+.empty-state[_ngcontent-a-c4086733384]   h3[_ngcontent-a-c4086733384] {
+  margin: 0.5rem 0 0.25rem;
+  color: var(--md-sys-color-on-surface);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.empty-state[_ngcontent-a-c4086733384]   p[_ngcontent-a-c4086733384] {
+  margin: 0;
+  color: var(--md-sys-color-secondary);
+  font-size: 0.875rem;
+  max-width: 440px;
+}
+.empty-state-actions[_ngcontent-a-c4086733384] {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.loading-state[_ngcontent-a-c4086733384] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: var(--md-sys-color-secondary);
+  font-size: 0.9rem;
+}
+.loading-spinner[_ngcontent-a-c4086733384] {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--md-sys-color-surface-variant);
+  border-top-color: var(--md-sys-color-primary);
+  border-radius: 50%;
+  animation: _ngcontent-a-c4086733384_spin 0.8s linear infinite;
+}
+@keyframes _ngcontent-a-c4086733384_spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.infinite-scroll-footer[_ngcontent-a-c4086733384] {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+.loading-more-box[_ngcontent-a-c4086733384] {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--md-sys-color-primary, #006874);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.6rem 1.25rem;
+  background-color: var(--md-sys-color-surface-container-high, #e6ecec);
+  border-radius: var(--md-shape-full, 9999px);
+}
+.mini-spinner[_ngcontent-a-c4086733384] {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+.scroll-sentinel[_ngcontent-a-c4086733384] {
+  width: 100%;
+  height: 1px;
+  pointer-events: none;
+  visibility: hidden;
+}
+.end-of-directory[_ngcontent-a-c4086733384] {
+  font-size: 0.8rem;
+  color: var(--md-sys-color-secondary, #4a6267);
+  padding: 0.5rem 1rem;
+  background-color: var(--md-sys-color-surface-container-low, #f2f7f8);
+  border-radius: var(--md-shape-full, 9999px);
+}
+.patient-controls-row[_ngcontent-a-c4086733384] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+.controls-status-pill[_ngcontent-a-c4086733384] {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  width: fit-content;
+}
+.controls-status-pill.has-controls[_ngcontent-a-c4086733384] {
+  background-color: var(--dc-teal-surface, #ecfdf5);
+  color: var(--dc-teal-ink, #065f46);
+  border: 1px solid #a7f3d0;
+}
+.controls-status-pill.no-controls[_ngcontent-a-c4086733384] {
+  background-color: var(--dc-warning-surface, #fffbeb);
+  color: var(--dc-warning-ink, #92400e);
+  border: 1px solid #fde68a;
+}
+@media (max-width: 768px) {
+  .patient-table-card[_ngcontent-a-c4086733384] {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+  .patient-table-responsive[_ngcontent-a-c4086733384] {
+    overflow: visible;
+  }
+  .patient-table[_ngcontent-a-c4086733384], 
+   .patient-table[_ngcontent-a-c4086733384]   tbody[_ngcontent-a-c4086733384] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .patient-table[_ngcontent-a-c4086733384]   thead[_ngcontent-a-c4086733384] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .patient-table[_ngcontent-a-c4086733384]   .patient-row[_ngcontent-a-c4086733384] {
+    display: block;
+    margin-bottom: 12px;
+    padding: 4px 16px;
+    border: 1px solid var(--dc-outline, #dce7e9);
+    border-radius: 16px;
+    background: var(--dc-surface, #fff);
+  }
+  .patient-table[_ngcontent-a-c4086733384]   .patient-row[_ngcontent-a-c4086733384]   td[_ngcontent-a-c4086733384] {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    padding: 12px 0;
+    white-space: normal;
+    border-bottom: 1px solid var(--dc-outline, #dce7e9);
+  }
+  .patient-table[_ngcontent-a-c4086733384]   .patient-row[_ngcontent-a-c4086733384]   td[_ngcontent-a-c4086733384]:last-child {
+    border-bottom: 0;
+  }
+  .patient-row[_ngcontent-a-c4086733384]   td[data-label][_ngcontent-a-c4086733384]::before {
+    content: attr(data-label);
+    flex: 0 0 94px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--dc-ink-muted, #64748b);
+  }
+  .patient-row[_ngcontent-a-c4086733384]   td[_ngcontent-a-c4086733384]    > *[_ngcontent-a-c4086733384] {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .patient-row[_ngcontent-a-c4086733384]   .patient-full-name[_ngcontent-a-c4086733384] {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .patient-row[_ngcontent-a-c4086733384]   .age-primary-row[_ngcontent-a-c4086733384] {
+    flex-wrap: wrap;
+  }
+  .patient-row[_ngcontent-a-c4086733384]   .btn-view-record[_ngcontent-a-c4086733384] {
+    min-height: 44px;
+  }
+}</style></head><body><div id="root13" ng-version="22.2.2" _nghost-a-c4086733384=""><div _ngcontent-a-c4086733384="" id="view-patient-list" class="app-view"><div _ngcontent-a-c4086733384="" class="patient-directory-controls"><div _ngcontent-a-c4086733384=""><h2 _ngcontent-a-c4086733384="">Directorio de Pacientes</h2><p _ngcontent-a-c4086733384="" class="directory-subtitle"> 1 pacientes en seguimiento clínico <!--container--></p></div><div _ngcontent-a-c4086733384="" class="directory-actions-group"><div _ngcontent-a-c4086733384="" role="search" class="directory-search-wrapper"><svg _ngcontent-a-c4086733384="" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="search-icon"><path _ngcontent-a-c4086733384="" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg><input _ngcontent-a-c4086733384="" type="search" placeholder="Buscar por DNI, nombre o teléfono..." aria-label="Buscar pacientes" class="directory-search-input" value=""><!--container--></div><button _ngcontent-a-c4086733384="" type="button" class="m3-button m3-button-tonal"> + Nuevo paciente </button></div><section _ngcontent-a-c4086733384="" aria-label="Categorías de pacientes" class="directory-filters"><div _ngcontent-a-c4086733384="" class="directory-filters-heading"><svg _ngcontent-a-c4086733384="" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path _ngcontent-a-c4086733384="" d="M4 7h16M7 12h10M10 17h4"></path></svg><span _ngcontent-a-c4086733384="">Filtrar pacientes</span></div><div _ngcontent-a-c4086733384="" role="group" aria-label="Filtrar por categoría" class="directory-filter-options"><button _ngcontent-a-c4086733384="" type="button" class="directory-filter directory-filter-all filter-active" aria-pressed="true"><span _ngcontent-a-c4086733384="" class="filter-name">Todos</span><span _ngcontent-a-c4086733384="" class="filter-range">Todas las edades</span></button><!--container--><!--container--><button _ngcontent-a-c4086733384="" type="button" class="directory-filter" aria-pressed="false"><span _ngcontent-a-c4086733384="" class="filter-name">Adultos</span><span _ngcontent-a-c4086733384="" class="filter-range"> (≥ 18 años)</span></button><button _ngcontent-a-c4086733384="" type="button" class="directory-filter" aria-pressed="false"><span _ngcontent-a-c4086733384="" class="filter-name">Menores</span><span _ngcontent-a-c4086733384="" class="filter-range"> (&lt; 18 años)</span></button><!--container--></div></section></div><!--container--><div _ngcontent-a-c4086733384="" class="patient-table-card"><div _ngcontent-a-c4086733384="" class="patient-table-responsive"><table _ngcontent-a-c4086733384="" aria-label="Directorio de pacientes" class="patient-table"><thead _ngcontent-a-c4086733384=""><tr _ngcontent-a-c4086733384=""><th _ngcontent-a-c4086733384="" scope="col" class="th-patient">Paciente</th><th _ngcontent-a-c4086733384="" scope="col" class="th-dni">DNI</th><th _ngcontent-a-c4086733384="" scope="col" class="th-age">Edad &amp; Nacimiento</th><th _ngcontent-a-c4086733384="" scope="col" class="th-phone">Contacto</th><th _ngcontent-a-c4086733384="" scope="col" class="th-encounters">Controles Previos</th><!--container--><th _ngcontent-a-c4086733384="" scope="col" class="th-actions text-right">Acciones</th></tr></thead><tbody _ngcontent-a-c4086733384=""><tr _ngcontent-a-c4086733384="" class="patient-row"><td _ngcontent-a-c4086733384="" class="td-patient"><div _ngcontent-a-c4086733384="" class="patient-cell-flex"><div _ngcontent-a-c4086733384="" class="patient-mini-avatar avatar-neutral" title="Sexo / Género: Indefinido"> AG </div><div _ngcontent-a-c4086733384="" class="patient-title-group"><span _ngcontent-a-c4086733384="" class="patient-full-name">Ana García</span><div _ngcontent-a-c4086733384="" class="patient-meta-row"><span _ngcontent-a-c4086733384="" class="patient-id-badge">ID #1</span><!--container--><!--container--></div></div></div></td><td _ngcontent-a-c4086733384="" data-label="DNI" class="td-dni"><span _ngcontent-a-c4086733384="" class="dni-number">45123987</span></td><td _ngcontent-a-c4086733384="" data-label="Edad y nacimiento" class="td-age"><div _ngcontent-a-c4086733384="" class="age-data-cell"><div _ngcontent-a-c4086733384="" class="age-primary-row"><span _ngcontent-a-c4086733384="" class="age-text">6 años 4m</span><span _ngcontent-a-c4086733384="" class="m3-badge badge-compact badge-info"> Niñez </span></div><span _ngcontent-a-c4086733384="" class="birth-subtext">F. Nac: 12/05/2020</span></div></td><td _ngcontent-a-c4086733384="" data-label="Contacto" class="td-phone"><div _ngcontent-a-c4086733384="" class="contact-info-cell"><svg _ngcontent-a-c4086733384="" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="contact-icon"><path _ngcontent-a-c4086733384="" d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"></path></svg><span _ngcontent-a-c4086733384="">1123456789</span></div><!--container--><!--container--></td><td _ngcontent-a-c4086733384="" data-label="Controles previos" class="td-encounters"><!--container--><div _ngcontent-a-c4086733384="" title="Sin consultas registradas previamente" class="encounter-pill pill-empty"><span _ngcontent-a-c4086733384="" class="pill-dot"></span><span _ngcontent-a-c4086733384="">Sin controles previos</span></div><!--container--></td><!--container--><td _ngcontent-a-c4086733384="" data-label="Acciones" class="td-actions text-right"><button _ngcontent-a-c4086733384="" type="button" class="btn-table-action" title="Abrir ficha clínica de Ana García"><span _ngcontent-a-c4086733384="">Ver Ficha</span><svg _ngcontent-a-c4086733384="" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline _ngcontent-a-c4086733384="" points="9 18 15 12 9 6"></polyline></svg></button></td></tr><!--container--><!--container--></tbody></table></div></div><div _ngcontent-a-c4086733384="" class="infinite-scroll-footer"><div _ngcontent-a-c4086733384="" aria-hidden="true" class="scroll-sentinel"></div><!--container--><!--container--></div><!--container--></div></div></body></html>

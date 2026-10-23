@@ -45,16 +45,16 @@
           <tbody>
             @for (c of consultations(); track c.id) {
               <tr>
-                <td><strong>#E-{{ c.id }}</strong></td>
-                <td><span class="text-slate-600 font-medium">{{ c.encounterDate }}</span></td>
-                <td>
-                  <span class="patient-link" (click)="openPatientRecord(c.patientId)">
+                <td data-label="Consulta"><strong>#E-{{ c.id }}</strong></td>
+                <td data-label="Fecha"><span class="text-slate-600 font-medium">{{ c.encounterDate }}</span></td>
+                <td data-label="Paciente">
+                  <button type="button" class="patient-link" (click)="openPatientRecord(c.patientId)">
                     {{ c.patientName }}
-                  </span>
+                  </button>
                 </td>
-                <td><span class="text-xs text-slate-600">{{ c.consultationType }}</span></td>
-                <td><span class="complaint-text" [title]="c.chiefComplaint">{{ c.chiefComplaint }}</span></td>
-                <td>
+                <td data-label="Tipo"><span class="text-xs text-slate-600">{{ c.consultationType }}</span></td>
+                <td data-label="Motivo"><span class="complaint-text" [title]="c.chiefComplaint">{{ c.chiefComplaint }}</span></td>
+                <td data-label="Diagnóstico">
                   <div class="diag-group">
                     @if (c.primaryDiagnosisCode) {
                       <span class="diag-code">{{ c.primaryDiagnosisCode }}</span>
@@ -62,7 +62,7 @@
                     <span class="diag-desc" [title]="c.primaryDiagnosis">{{ c.primaryDiagnosis }}</span>
                   </div>
                 </td>
-                <td>
+                <td data-label="Acciones">
                   <div class="actions-group">
                     <button
                       type="button"

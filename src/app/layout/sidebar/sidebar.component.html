@@ -4,12 +4,10 @@
     <div class="brand-logo-icon" title="DoctorChart">
       <img class="doctorchart-logo" src="/doctorchart-logo.svg" width="38" height="38" alt="DoctorChart" />
     </div>
-    @if (!isCollapsed()) {
-      <div class="brand-text-wrap">
-        <span class="brand-title">DoctorChart</span>
-        <span class="brand-specialty-pill">{{ authService.isSuperAdmin() ? 'Administración' : specialtyService.currentSpecialtyOption().shortLabel }}</span>
-      </div>
-    }
+    <div class="brand-text-wrap">
+      <span class="brand-title">DoctorChart</span>
+      <span class="brand-specialty-pill">{{ authService.isSuperAdmin() ? 'Administración' : specialtyService.currentSpecialtyOption().shortLabel }}</span>
+    </div>
   </div>
 
   <!-- Main Navigation Links -->
@@ -18,7 +16,7 @@
       <div class="nav-group-label" [class.sr-only]="isCollapsed()">Administración</div>
       <a routerLink="/admin/especialidades" routerLinkActive="active" class="nav-item" title="Especialidades y wizards">
         <ng-icon name="lucideSliders" class="nav-icon" />
-        @if (!isCollapsed()) { <span class="nav-label">Especialidades y wizards</span> }
+        <span class="nav-label">Especialidades y wizards</span>
       </a>
     } @else {
     <div class="nav-group-label" [class.sr-only]="isCollapsed()">
@@ -28,9 +26,9 @@
     </div>
 
     @for (item of workspace.navigation(); track item.id) {
-      <a [routerLink]="item.path" routerLinkActive="active" class="nav-item" [title]="item.title">
+      <a [routerLink]="item.path" routerLinkActive="active" class="nav-item" [title]="item.title" [attr.aria-label]="item.title">
         <ng-icon [name]="item.icon" class="nav-icon" />
-        @if (!isCollapsed()) { <span class="nav-label">{{ item.label }}</span> }
+        <span class="nav-label">{{ item.label }}</span>
       </a>
     }
     }

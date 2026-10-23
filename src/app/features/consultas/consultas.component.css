@@ -249,3 +249,20 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+button.patient-link { border: 0; padding: 0; background: transparent; font: inherit; text-align: left; }
+@media (max-width: 768px) {
+  .consultas-table-card { border: 0; background: transparent; box-shadow: none; overflow: visible; }
+  .table-container { overflow: visible; }
+  .clinical-table, .clinical-table tbody { display: block; width: 100%; min-width: 0; }
+  .clinical-table thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+  .clinical-table tr { display: block; padding: 4px 16px; margin-bottom: 12px; border: 1px solid var(--dc-outline, #dce7e9); border-radius: 16px; background: var(--dc-surface, #fff); }
+  .clinical-table td { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; width: 100%; min-width: 0; padding: 12px 0; white-space: normal; }
+  .clinical-table td[data-label]::before { content: attr(data-label); flex: 0 0 80px; font-size: 12px; font-weight: 500; color: var(--dc-ink-muted, #64748b); }
+  .clinical-table td:last-child { border-bottom: 0; }
+  .clinical-table td > * { min-width: 0; overflow-wrap: anywhere; }
+  .clinical-table .complaint-text, .clinical-table .diag-desc { max-width: none; white-space: normal; overflow: visible; }
+  .actions-group { flex-wrap: wrap; }
+  .btn-detail, .btn-view-patient { min-height: 44px; }
+  .consultas-loading, .consultas-empty { padding: 24px 16px; }
+}

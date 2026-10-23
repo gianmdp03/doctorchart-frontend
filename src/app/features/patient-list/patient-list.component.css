@@ -686,3 +686,18 @@
   color: var(--dc-warning-ink, #92400e);
   border: 1px solid #fde68a;
 }
+
+@media (max-width: 768px) {
+  .patient-table-card { border: 0; background: transparent; box-shadow: none; overflow: visible; }
+  .patient-table-responsive { overflow: visible; }
+  .patient-table, .patient-table tbody { display: block; width: 100%; min-width: 0; }
+  .patient-table thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+  .patient-table .patient-row { display: block; margin-bottom: 12px; padding: 4px 16px; border: 1px solid var(--dc-outline, #dce7e9); border-radius: 16px; background: var(--dc-surface, #fff); }
+  .patient-table .patient-row td { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; width: 100%; min-width: 0; padding: 12px 0; white-space: normal; text-align: left; border-bottom: 1px solid var(--dc-outline, #dce7e9); }
+  .patient-table .patient-row td:last-child { border-bottom: 0; }
+  .patient-row td[data-label]::before { content: attr(data-label); flex: 0 0 94px; font-size: 12px; font-weight: 500; color: var(--dc-ink-muted, #64748b); }
+  .patient-row td > * { min-width: 0; overflow-wrap: anywhere; }
+  .patient-row .patient-full-name { white-space: normal; overflow-wrap: anywhere; }
+  .patient-row .age-primary-row { flex-wrap: wrap; }
+  .patient-row .btn-table-action { min-height: 44px; }
+}

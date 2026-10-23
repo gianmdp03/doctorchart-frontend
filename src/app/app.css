@@ -95,3 +95,5 @@
   }
 }
 
+
+@media (max-width: 768px) { .app-layout-shell { flex-direction: column; } .app-main-viewport { min-height: 0; overflow-x: clip; } }

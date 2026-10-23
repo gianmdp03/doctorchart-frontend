@@ -1,0 +1,541 @@
+<!doctype html><html><head><style>
+[_nghost-a-c2949129371] {
+  display: block;
+  color: var(--dc-ink, #172b4d);
+}
+.admin-specialties[_ngcontent-a-c2949129371] {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+.page-header[_ngcontent-a-c2949129371], 
+.section-heading[_ngcontent-a-c2949129371] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.page-header[_ngcontent-a-c2949129371] {
+  margin-bottom: 24px;
+}
+.page-header[_ngcontent-a-c2949129371]   h1[_ngcontent-a-c2949129371] {
+  font-size: 1.9rem;
+  margin: 6px 0;
+}
+.page-header[_ngcontent-a-c2949129371]   p[_ngcontent-a-c2949129371], 
+.hint[_ngcontent-a-c2949129371] {
+  color: var(--dc-ink-muted, #64748b);
+}
+.eyebrow[_ngcontent-a-c2949129371] {
+  text-transform: uppercase;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--dc-purple-ink, #4f46e5);
+}
+.admin-layout[_ngcontent-a-c2949129371] {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.catalog[_ngcontent-a-c2949129371], 
+.edit-panel[_ngcontent-a-c2949129371] {
+  background: var(--dc-surface, white);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 16px;
+  padding: 20px;
+}
+.catalog[_ngcontent-a-c2949129371]   .section-heading[_ngcontent-a-c2949129371] {
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.catalog[_ngcontent-a-c2949129371]   h2[_ngcontent-a-c2949129371] {
+  font-size: 1.1rem;
+  margin: 0;
+}
+.catalog[_ngcontent-a-c2949129371]   .section-heading[_ngcontent-a-c2949129371]   button[_ngcontent-a-c2949129371] {
+  font-size: .75rem;
+  padding: 6px;
+}
+.catalog-item[_ngcontent-a-c2949129371] {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-start;
+  text-align: left;
+  margin-top: 10px;
+  padding: 13px;
+  background: var(--dc-surface-low, #f8fafc);
+}
+.catalog-item.selected[_ngcontent-a-c2949129371] {
+  border-color: var(--dc-purple-ink, #4f46e5);
+  background: var(--dc-purple-surface, #eef2ff);
+}
+.catalog-item[_ngcontent-a-c2949129371]   span[_ngcontent-a-c2949129371] {
+  font-size: .8rem;
+  color: var(--dc-ink-muted, #64748b);
+  overflow-wrap: anywhere;
+}
+.status[_ngcontent-a-c2949129371] {
+  background: var(--dc-surface-high, #f1f5f9);
+  border-radius: 20px;
+  padding: 3px 8px;
+}
+.status.active[_ngcontent-a-c2949129371] {
+  background: var(--dc-success-surface, #dcfce7);
+  color: var(--dc-success-ink, #166534);
+}
+.publication[_ngcontent-a-c2949129371] {
+  font-size: .8rem;
+  color: var(--dc-ink-muted, #64748b);
+}
+.metadata[_ngcontent-a-c2949129371] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  margin: 24px 0 12px;
+}
+.metadata[_ngcontent-a-c2949129371]   label[_ngcontent-a-c2949129371] {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-weight: 600;
+}
+.metadata[_ngcontent-a-c2949129371]   .wide[_ngcontent-a-c2949129371] {
+  grid-column: 1/-1;
+}
+.metadata[_ngcontent-a-c2949129371]   .hint[_ngcontent-a-c2949129371] {
+  font-size: .8rem;
+  font-weight: 400;
+}
+.metadata[_ngcontent-a-c2949129371]   input[_ngcontent-a-c2949129371], 
+.metadata[_ngcontent-a-c2949129371]   textarea[_ngcontent-a-c2949129371] {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  border-radius: 8px;
+  padding: 10px;
+  font: inherit;
+  background: var(--dc-surface, white);
+}
+.metadata[_ngcontent-a-c2949129371]   input[readonly][_ngcontent-a-c2949129371] {
+  background: var(--dc-surface-high, #f1f5f9);
+}
+.capabilities[_ngcontent-a-c2949129371] {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 22px 0;
+}
+.capabilities[_ngcontent-a-c2949129371]   label[_ngcontent-a-c2949129371] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.actions[_ngcontent-a-c2949129371] {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.wizard-actions[_ngcontent-a-c2949129371] {
+  border-top: 1px solid var(--dc-outline, #e2e8f0);
+  margin-top: 24px;
+  padding-top: 20px;
+  justify-content: flex-end;
+}
+button[_ngcontent-a-c2949129371] {
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  border-radius: 8px;
+  background: var(--dc-surface, white);
+  color: var(--dc-ink-secondary, #334155);
+  padding: 10px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+button.primary[_ngcontent-a-c2949129371] {
+  background: #4f46e5;
+  border-color: var(--dc-purple-ink, #4f46e5);
+  color: white;
+}
+button.danger[_ngcontent-a-c2949129371] {
+  color: var(--dc-error-ink, #b91c1c);
+  border-color: #fecaca;
+}
+button[_ngcontent-a-c2949129371]:disabled {
+  opacity: .5;
+  cursor: default;
+}
+button[_ngcontent-a-c2949129371]:focus-visible, 
+input[_ngcontent-a-c2949129371]:focus-visible, 
+textarea[_ngcontent-a-c2949129371]:focus-visible {
+  outline: 3px solid #a5b4fc;
+  outline-offset: 2px;
+}
+.error[_ngcontent-a-c2949129371], 
+.validation-errors[_ngcontent-a-c2949129371] {
+  background: var(--dc-error-surface, #fef2f2);
+  color: var(--dc-error-ink, #991b1b);
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 14px;
+}
+.validation-errors[_ngcontent-a-c2949129371] {
+  padding-left: 32px;
+}
+.validation-errors[_ngcontent-a-c2949129371]   li[_ngcontent-a-c2949129371] {
+  margin: 7px 0;
+  overflow-wrap: anywhere;
+}
+.success[_ngcontent-a-c2949129371] {
+  background: var(--dc-success-surface, #f0fdf4);
+  color: var(--dc-success-ink, #166534);
+  border: 1px solid #bbf7d0;
+  padding: 14px;
+  border-radius: 10px;
+}
+.notice[_ngcontent-a-c2949129371], 
+.confirmation[_ngcontent-a-c2949129371] {
+  background: var(--dc-warning-surface, #fffbeb);
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 16px 0;
+}
+.confirmation[_ngcontent-a-c2949129371]   button[_ngcontent-a-c2949129371] {
+  margin-right: 10px;
+  margin-top: 8px;
+}
+.empty-state[_ngcontent-a-c2949129371] {
+  padding: 60px 12px;
+  text-align: center;
+  color: var(--dc-ink-muted, #64748b);
+}
+.edit-panel[_ngcontent-a-c2949129371]   h3[_ngcontent-a-c2949129371] {
+  margin-top: 26px;
+}
+.hint[_ngcontent-a-c2949129371] {
+  font-size: .875rem;
+  line-height: 1.5;
+}
+fieldset[_ngcontent-a-c2949129371]:disabled {
+  opacity: .65;
+}
+@media (max-width: 850px) {
+  .admin-layout[_ngcontent-a-c2949129371] {
+    grid-template-columns: 1fr;
+  }
+  .page-header[_ngcontent-a-c2949129371] {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .catalog[_ngcontent-a-c2949129371] {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .catalog[_ngcontent-a-c2949129371]   .section-heading[_ngcontent-a-c2949129371] {
+    width: 100%;
+  }
+  .catalog-item[_ngcontent-a-c2949129371] {
+    width: auto;
+    flex: 1;
+    min-width: 180px;
+  }
+  .admin-specialties[_ngcontent-a-c2949129371] {
+    padding: 20px 12px;
+  }
+  .metadata[_ngcontent-a-c2949129371] {
+    grid-template-columns: 1fr;
+  }
+  .section-heading[_ngcontent-a-c2949129371] {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .edit-panel[_ngcontent-a-c2949129371] {
+    padding: 16px;
+  }
+}
+.field-error[_ngcontent-a-c2949129371] {
+  display: block;
+  margin-top: 6px;
+  color: var(--dc-error-ink, #b91c1c);
+  font-size: .8rem;
+}
+.admin-specialties.field-editor-open[_ngcontent-a-c2949129371]    > .page-header[_ngcontent-a-c2949129371], 
+.field-editor-open[_ngcontent-a-c2949129371]   .admin-layout[_ngcontent-a-c2949129371]    > .catalog[_ngcontent-a-c2949129371], 
+.field-editor-open[_ngcontent-a-c2949129371]   .edit-panel[_ngcontent-a-c2949129371]    > [_ngcontent-a-c2949129371]:not(app-form-field-editor), 
+.field-editor-open[_ngcontent-a-c2949129371]   .edit-panel[_ngcontent-a-c2949129371]    > app-form-field-editor.inactive-field-editor[_ngcontent-a-c2949129371] {
+  display: none;
+}
+.field-editor-open[_ngcontent-a-c2949129371]   .admin-layout[_ngcontent-a-c2949129371] {
+  grid-template-columns: minmax(0, 1fr);
+}</style><style>
+[_nghost-a-c750114938] {
+  display: block;
+  color: var(--color-on-surface, #0f172a);
+}
+.editor[_ngcontent-a-c750114938] {
+  width: 100%;
+}
+.editor-layout[_ngcontent-a-c750114938] {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) 1fr;
+  gap: 1.5rem;
+}
+.category-manager[_ngcontent-a-c750114938] {
+  background: var(--color-surface-container-low, #f8fafc);
+  padding: 1rem;
+  border: 1px solid var(--color-outline-variant, #e2e8f0);
+  border-radius: 1rem;
+}
+h3[_ngcontent-a-c750114938], 
+h4[_ngcontent-a-c750114938] {
+  font-weight: 650;
+  margin: 0 0 .75rem;
+}
+h4[_ngcontent-a-c750114938] {
+  margin-top: 1.25rem;
+}
+.hint[_ngcontent-a-c750114938] {
+  color: var(--color-on-surface-variant, #64748b);
+  font-size: .8125rem;
+  line-height: 1.5;
+  margin: .5rem 0;
+}
+.category-row[_ngcontent-a-c750114938] {
+  padding: .6rem;
+  border: 1px solid transparent;
+  border-radius: .75rem;
+  margin: .5rem 0;
+}
+.category-row.selected[_ngcontent-a-c750114938] {
+  border-color: #93c5fd;
+  background: var(--dc-blue-surface, #eff6ff);
+}
+.category-row.inactive[_ngcontent-a-c750114938]   .category-name[_ngcontent-a-c750114938] {
+  color: var(--dc-ink-muted, #64748b);
+}
+.category-name[_ngcontent-a-c750114938] {
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-weight: 600;
+}
+.category-name[_ngcontent-a-c750114938]   span[_ngcontent-a-c750114938] {
+  display: block;
+  margin-top: .25rem;
+  font-size: .75rem;
+  font-weight: 400;
+}
+.category-actions[_ngcontent-a-c750114938], 
+.field-actions[_ngcontent-a-c750114938], 
+.field-page-actions[_ngcontent-a-c750114938] {
+  display: flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+  margin-top: .6rem;
+}
+button[_ngcontent-a-c750114938] {
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  border-radius: .55rem;
+  padding: .45rem .7rem;
+  background: var(--dc-surface, #fff);
+  font-size: .8125rem;
+  cursor: pointer;
+}
+button[_ngcontent-a-c750114938]:disabled {
+  opacity: .45;
+  cursor: default;
+}
+button[_ngcontent-a-c750114938]:focus-visible, 
+input[_ngcontent-a-c750114938]:focus-visible, 
+select[_ngcontent-a-c750114938]:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.primary[_ngcontent-a-c750114938] {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+.danger[_ngcontent-a-c750114938] {
+  color: var(--dc-error-ink, #b91c1c);
+}
+.control[_ngcontent-a-c750114938] {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  font-size: .8125rem;
+  margin: .75rem 0;
+  min-width: 0;
+}
+input[_ngcontent-a-c750114938]:not([type=checkbox]), 
+select[_ngcontent-a-c750114938] {
+  width: 100%;
+  padding: .6rem .7rem;
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  border-radius: .5rem;
+  background: var(--color-surface, white);
+  color: inherit;
+  min-height: 2.5rem;
+}
+.panel-header[_ngcontent-a-c750114938] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.category-title[_ngcontent-a-c750114938] {
+  flex: 1;
+  margin-top: 0;
+}
+.field-card[_ngcontent-a-c750114938] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: .75rem;
+  padding: 1rem;
+  margin-bottom: .75rem;
+}
+.field-summary[_ngcontent-a-c750114938] {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.field-summary[_ngcontent-a-c750114938]   strong[_ngcontent-a-c750114938] {
+  overflow-wrap: anywhere;
+}
+.binding[_ngcontent-a-c750114938] {
+  font-size: .75rem;
+  color: var(--dc-blue-ink, #1d4ed8);
+}
+.notice[_ngcontent-a-c750114938], 
+.error[_ngcontent-a-c750114938] {
+  padding: .75rem;
+  border-radius: .5rem;
+  font-size: .875rem;
+}
+.notice[_ngcontent-a-c750114938] {
+  background: var(--dc-surface-high, #f1f5f9);
+}
+.error[_ngcontent-a-c750114938] {
+  background: var(--dc-error-surface, #fef2f2);
+  color: var(--dc-error-ink, #991b1b);
+  margin-top: 1rem;
+}
+.empty-fields[_ngcontent-a-c750114938] {
+  padding: 2rem 1rem;
+  color: var(--dc-ink-muted, #64748b);
+  text-align: center;
+  border: 1px dashed var(--dc-outline, #cbd5e1);
+  border-radius: .75rem;
+  margin: 1rem 0;
+}
+.field-editor-page[_ngcontent-a-c750114938] {
+  background: var(--color-surface, white);
+  width: min(100%, 650px);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px #0003;
+}
+fieldset[_ngcontent-a-c750114938] {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.control-grid[_ngcontent-a-c750114938] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+.wide[_ngcontent-a-c750114938] {
+  grid-column: 1 / -1;
+}
+.checkbox-control[_ngcontent-a-c750114938] {
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+  margin: .75rem 0;
+  font-size: .875rem;
+}
+.option-row[_ngcontent-a-c750114938] {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: .75rem;
+  align-items: end;
+}
+.option-row[_ngcontent-a-c750114938]   button[_ngcontent-a-c750114938] {
+  margin-bottom: .75rem;
+}
+.field-page-actions[_ngcontent-a-c750114938] {
+  justify-content: flex-end;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--dc-outline, #e2e8f0);
+}
+@media (max-width: 850px) {
+  .editor-layout[_ngcontent-a-c750114938] {
+    grid-template-columns: 1fr;
+  }
+  .field-card[_ngcontent-a-c750114938] {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media (max-width: 550px) {
+  .control-grid[_ngcontent-a-c750114938], 
+   .option-row[_ngcontent-a-c750114938] {
+    grid-template-columns: 1fr;
+  }
+  .panel-header[_ngcontent-a-c750114938] {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .field-editor-page[_ngcontent-a-c750114938] {
+    padding: 1rem;
+  }
+}
+.field-error[_ngcontent-a-c750114938] {
+  display: block;
+  color: var(--dc-error-ink, #b91c1c);
+  font-size: .8rem;
+  margin-top: 4px;
+}
+.field-editor-page[_ngcontent-a-c750114938] {
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.field-editor-page[_ngcontent-a-c750114938]    > .panel-header[_ngcontent-a-c750114938] {
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--dc-outline, #dce7e9);
+}
+.field-editor-page[_ngcontent-a-c750114938]   h1[_ngcontent-a-c750114938] {
+  margin: 0;
+  color: var(--dc-ink, #0f172a);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+.field-editor-page[_ngcontent-a-c750114938]   .primary[_ngcontent-a-c750114938] {
+  background: var(--dc-primary, #006874);
+  border-color: var(--dc-primary, #006874);
+  color: var(--dc-on-primary, #fff);
+}</style></head><body><div id="root16" ng-version="22.2.2" _nghost-a-c2949129371=""><main _ngcontent-a-c2949129371="" class="admin-specialties"><header _ngcontent-a-c2949129371="" class="page-header"><div _ngcontent-a-c2949129371=""><span _ngcontent-a-c2949129371="" class="eyebrow">Administración</span><h1 _ngcontent-a-c2949129371="">Especialidades y wizard</h1><p _ngcontent-a-c2949129371="">Creá especialidades y configurá las fichas y consultas que reciben los médicos al elegirlas.</p></div><button _ngcontent-a-c2949129371="" type="button" class="primary">Crear especialidad</button></header><!--container--><!--container--><!--container--><!--container--><!--container--><!--container--><div _ngcontent-a-c2949129371="" class="admin-layout"><aside _ngcontent-a-c2949129371="" aria-label="Catálogo administrativo" class="catalog"><div _ngcontent-a-c2949129371="" class="section-heading"><h2 _ngcontent-a-c2949129371="">Catálogo</h2><button _ngcontent-a-c2949129371="" type="button">Actualizar lista</button></div><button _ngcontent-a-c2949129371="" type="button" class="catalog-item selected"><strong _ngcontent-a-c2949129371="">Especialidad ficticia de validación</strong><span _ngcontent-a-c2949129371="">contract_test_xyz</span><span _ngcontent-a-c2949129371="" class="status">Inactiva / borrador</span></button><!--container--><!--container--></aside><section _ngcontent-a-c2949129371="" aria-label="Editar especialidad" class="edit-panel"><div _ngcontent-a-c2949129371="" class="section-heading"><h2 _ngcontent-a-c2949129371="">Especialidad ficticia de validación</h2><span _ngcontent-a-c2949129371="" class="publication">Publicación 0 · sin publicar</span><!--container--></div><p _ngcontent-a-c2949129371="" class="hint">Los cambios del wizard se guardan como borrador. Publicar los habilita para nuevas selecciones y conserva las copias personales de los médicos existentes.</p><!--container--><!--container--><fieldset _ngcontent-a-c2949129371="" class="metadata"><label _ngcontent-a-c2949129371="">Nombre <input _ngcontent-a-c2949129371="" maxlength="120" class="ng-untouched ng-pristine ng-valid"><!--container--></label><label _ngcontent-a-c2949129371="">Código <input _ngcontent-a-c2949129371="" maxlength="80" readonly="" class="ng-untouched ng-pristine ng-valid"><!--container--><span _ngcontent-a-c2949129371="" class="hint">El código identifica esta especialidad y no cambia.</span></label><label _ngcontent-a-c2949129371="" class="wide">Descripción <textarea _ngcontent-a-c2949129371="" rows="2" class="ng-untouched ng-pristine ng-valid"></textarea></label></fieldset><div _ngcontent-a-c2949129371="" class="actions metadata-actions"><button _ngcontent-a-c2949129371="" type="button" disabled="">Guardar nombre y descripción</button><button _ngcontent-a-c2949129371="" type="button">Activar especialidad</button></div><!--container--><!--container--><fieldset _ngcontent-a-c2949129371="" class="capabilities"><legend _ngcontent-a-c2949129371="">Funciones disponibles</legend><label _ngcontent-a-c2949129371=""><input _ngcontent-a-c2949129371="" type="checkbox" class="ng-untouched ng-pristine ng-valid">Catálogo de medicamentos</label><label _ngcontent-a-c2949129371=""><input _ngcontent-a-c2949129371="" type="checkbox" class="ng-untouched ng-pristine ng-valid">Asistente de IA</label><label _ngcontent-a-c2949129371=""><input _ngcontent-a-c2949129371="" type="checkbox" class="ng-untouched ng-pristine ng-valid">Gráficos de crecimiento</label><!--container--></fieldset><h3 _ngcontent-a-c2949129371="">Ficha del paciente</h3><app-form-field-editor _ngcontent-a-c2949129371="" section="patientForm" _nghost-a-c750114938=""><section _ngcontent-a-c750114938="" aria-label="Editor de categorías y campos" class="editor"><div _ngcontent-a-c750114938="" class="editor-layout"><aside _ngcontent-a-c750114938="" aria-label="Categorías del formulario" class="category-manager"><h3 _ngcontent-a-c750114938="">Categorías</h3><p _ngcontent-a-c750114938="" class="hint">Podés cambiar su nombre, orden y contenido.</p><div _ngcontent-a-c750114938="" class="category-row selected"><button _ngcontent-a-c750114938="" type="button" class="category-name" aria-pressed="true"> Categoría inédita de prueba <span _ngcontent-a-c750114938="">4 campos</span></button><div _ngcontent-a-c750114938="" class="category-actions"><button _ngcontent-a-c750114938="" type="button" disabled="" aria-label="Subir categoría Categoría inédita de prueba">↑</button><button _ngcontent-a-c750114938="" type="button" disabled="" aria-label="Bajar categoría Categoría inédita de prueba">↓</button><button _ngcontent-a-c750114938="" type="button" aria-pressed="true">Activa</button></div></div><!--container--><!--container--><label _ngcontent-a-c750114938="" class="control">Nueva categoría <input _ngcontent-a-c750114938="" maxlength="150" placeholder="Nombre de la categoría" class="ng-untouched ng-pristine ng-valid"><span _ngcontent-a-c750114938="" role="alert" class="field-error">Completá este campo.</span><!--container--></label><button _ngcontent-a-c750114938="" type="button" class="primary">Agregar categoría</button></aside><main _ngcontent-a-c750114938="" class="fields-panel"><header _ngcontent-a-c750114938="" class="panel-header"><label _ngcontent-a-c750114938="" class="control category-title">Nombre de la categoría <input _ngcontent-a-c750114938="" maxlength="150"><!--container--></label><button _ngcontent-a-c750114938="" type="button" class="danger">Eliminar categoría</button><!--container--></header><!--container--><!--container--><div _ngcontent-a-c750114938="" class="fields-list"><!--container--><article _ngcontent-a-c750114938="" class="field-card" data-field-key="identity"><div _ngcontent-a-c750114938="" class="field-summary"><strong _ngcontent-a-c750114938="">Nombre completo</strong><span _ngcontent-a-c750114938="" class="hint">Texto corto · Obligatorio</span><!--container--><!--container--></div><div _ngcontent-a-c750114938="" class="field-actions"><button _ngcontent-a-c750114938="" type="button" disabled="" aria-label="Subir campo Nombre completo">↑</button><button _ngcontent-a-c750114938="" type="button" aria-label="Bajar campo Nombre completo">↓</button><button _ngcontent-a-c750114938="" type="button">Editar</button><button _ngcontent-a-c750114938="" type="button">Duplicar</button><button _ngcontent-a-c750114938="" type="button" class="danger" aria-label="Eliminar campo Nombre completo">Eliminar</button><!--container--><!--container--></div></article><article _ngcontent-a-c750114938="" class="field-card" data-field-key="born"><div _ngcontent-a-c750114938="" class="field-summary"><strong _ngcontent-a-c750114938="">Nacimiento</strong><span _ngcontent-a-c750114938="" class="hint">Fecha · Obligatorio</span><!--container--><!--container--></div><div _ngcontent-a-c750114938="" class="field-actions"><button _ngcontent-a-c750114938="" type="button" aria-label="Subir campo Nacimiento">↑</button><button _ngcontent-a-c750114938="" type="button" aria-label="Bajar campo Nacimiento">↓</button><button _ngcontent-a-c750114938="" type="button">Editar</button><button _ngcontent-a-c750114938="" type="button">Duplicar</button><button _ngcontent-a-c750114938="" type="button" class="danger" aria-label="Eliminar campo Nacimiento">Eliminar</button><!--container--><!--container--></div></article><article _ngcontent-a-c750114938="" class="field-card" data-field-key="consent"><div _ngcontent-a-c750114938="" class="field-summary"><strong _ngcontent-a-c750114938="">Respuesta obligatoria de prueba</strong><span _ngcontent-a-c750114938="" class="hint">Sí / No · Obligatorio</span><!--container--><!--container--></div><div _ngcontent-a-c750114938="" class="field-actions"><button _ngcontent-a-c750114938="" type="button" aria-label="Subir campo Respuesta obligatoria de prueba">↑</button><button _ngcontent-a-c750114938="" type="button" aria-label="Bajar campo Respuesta obligatoria de prueba">↓</button><button _ngcontent-a-c750114938="" type="button">Editar</button><button _ngcontent-a-c750114938="" type="button">Duplicar</button><button _ngcontent-a-c750114938="" type="button" class="danger" aria-label="Eliminar campo Respuesta obligatoria de prueba">Eliminar</button><!--container--><!--container--></div></article><article _ngcontent-a-c750114938="" class="field-card" data-field-key="group"><div _ngcontent-a-c750114938="" class="field-summary"><strong _ngcontent-a-c750114938="">Grupo de prueba</strong><span _ngcontent-a-c750114938="" class="hint">Selección · Opcional</span><!--container--><!--container--></div><div _ngcontent-a-c750114938="" class="field-actions"><button _ngcontent-a-c750114938="" type="button" aria-label="Subir campo Grupo de prueba">↑</button><button _ngcontent-a-c750114938="" type="button" disabled="" aria-label="Bajar campo Grupo de prueba">↓</button><button _ngcontent-a-c750114938="" type="button">Editar</button><button _ngcontent-a-c750114938="" type="button">Duplicar</button><button _ngcontent-a-c750114938="" type="button" class="danger" aria-label="Eliminar campo Grupo de prueba">Eliminar</button><!--container--><!--container--></div></article><!--container--><!--container--></div><button _ngcontent-a-c750114938="" type="button" class="primary">Agregar campo</button><!--container--><!--container--></main></div><!--container--><!--container--><!--container--></section></app-form-field-editor><h3 _ngcontent-a-c2949129371="">Historia Clínica</h3><p _ngcontent-a-c2949129371="" class="hint">Esta sección está presente en todas las especialidades. Organizá sus categorías y campos para cada consulta.</p><app-form-field-editor _ngcontent-a-c2949129371="" section="encounterForm" _nghost-a-c750114938=""><section _ngcontent-a-c750114938="" aria-label="Editor de categorías y campos" class="editor"><div _ngcontent-a-c750114938="" class="editor-layout"><aside _ngcontent-a-c750114938="" aria-label="Categorías del formulario" class="category-manager"><h3 _ngcontent-a-c750114938="">Categorías</h3><p _ngcontent-a-c750114938="" class="hint">Podés cambiar su nombre, orden y contenido.</p><div _ngcontent-a-c750114938="" class="category-row selected"><button _ngcontent-a-c750114938="" type="button" class="category-name" aria-pressed="true"> Consulta inédita <span _ngcontent-a-c750114938="">4 campos</span></button><div _ngcontent-a-c750114938="" class="category-actions"><button _ngcontent-a-c750114938="" type="button" disabled="" aria-label="Subir categoría Consulta inédita">↑</button><button _ngcontent-a-c750114938="" type="button" disabled="" aria-label="Bajar categoría Consulta inédita">↓</button><button _ngcontent-a-c750114938="" type="button" aria-pressed="true">Activa</button></div></div><!--container--><!--container--><label _ngcontent-a-c750114938="" class="control">Nueva categoría <input _ngcontent-a-c750114938="" maxlength="150" placeholder="Nombre de la categoría" class="ng-untouched ng-pristine ng-valid"><span _ngcontent-a-c750114938="" role="alert" class="field-error">Completá este campo.</span><!--container--></label><button _ngcontent-a-c750114938="" type="button" class="primary">Agregar categoría</button></aside><main _ngcontent-a-c750114938="" class="fields-panel"><header _ngcontent-a-c750114938="" class="panel-header"><label _ngcontent-a-c750114938="" class="control category-title">Nombre de la categoría <input _ngcontent-a-c750114938="" maxlength="150"><!--container--></label><button _ngcontent-a-c750114938="" type="button" class="danger">Eliminar categoría</button><!--container--></header><!--container--><!--container--><div _ngcontent-a-c750114938="" class="fields-list"><!--container--><article _ngcontent-a-c750114938="" class="field-card" data-field-key="readingA"><div _ngcontent-a-c750114938="" class="field-summary"><strong _ngcontent-a-c750114938="">Lectura A</strong><span _ngcontent-a-c750114938="" class="hint">Número · Opcional</span><!--container--><!--container--></div><div _ngcontent-a-c750114938="" class="field-actions"><button _ngcontent-a-c750114938="" type="button" disabled="" aria-label="Subir campo Lectura A">↑</button><button _ngcontent-a-c750114938="" type="button" aria-label="Bajar campo Lectura A">↓</button><button _ngcontent-a-c750114938="" type="button">Editar</button><button _ngcontent-a-c750114938="" type="button">Duplicar</button><button _ngcontent-a-c750114938="" type="button" class="danger" aria-label="Eliminar campo Lectura A">Eliminar</button><!--container--><!--container--></div></article><article _ngcontent-a-c750114938="" class="field-card" data-field-key="readingB"><div _ngcontent-a-c750114938="" class="field-summary"><strong _ngcontent-a-c750114938="">Lectura B</strong><span _ngcontent-a-c750114938="" class="hint">Número · Opcional</span><!--container--><!--container--></div><div _ngcontent-a-c750114938="" class="field-actions"><button _ngcontent-a-c750114938="" type="button" aria-label="Subir campo Lectura B">↑</button><button _ngcontent-a-c750114938="" type="button" aria-label="Bajar campo Lectura B">↓</button><button _ngcontent-a-c750114938="" type="button">Editar</button><button _ngcontent-a-c750114938="" type="button">Duplicar</button><button _ngcontent-a-c750114938="" type="button" class="danger" aria-label="Eliminar campo Lectura B">Eliminar</button><!--container--><!--container--></div></article><article _ngcontent-a-c750114938="" class="field-card" data-field-key="result"><div _ngcontent-a-c750114938="" class="field-summary"><strong _ngcontent-a-c750114938="">Promedio</strong><span _ngcontent-a-c750114938="" class="hint">Cálculo · Opcional</span><!--container--><!--container--></div><div _ngcontent-a-c750114938="" class="field-actions"><button _ngcontent-a-c750114938="" type="button" aria-label="Subir campo Promedio">↑</button><button _ngcontent-a-c750114938="" type="button" aria-label="Bajar campo Promedio">↓</button><button _ngcontent-a-c750114938="" type="button">Editar</button><button _ngcontent-a-c750114938="" type="button">Duplicar</button><button _ngcontent-a-c750114938="" type="button" class="danger" aria-label="Eliminar campo Promedio">Eliminar</button><!--container--><!--container--></div></article><article _ngcontent-a-c750114938="" class="field-card" data-field-key="notes"><div _ngcontent-a-c750114938="" class="field-summary"><strong _ngcontent-a-c750114938="">Observaciones</strong><span _ngcontent-a-c750114938="" class="hint">Texto largo · Opcional</span><!--container--><!--container--></div><div _ngcontent-a-c750114938="" class="field-actions"><button _ngcontent-a-c750114938="" type="button" aria-label="Subir campo Observaciones">↑</button><button _ngcontent-a-c750114938="" type="button" disabled="" aria-label="Bajar campo Observaciones">↓</button><button _ngcontent-a-c750114938="" type="button">Editar</button><button _ngcontent-a-c750114938="" type="button">Duplicar</button><button _ngcontent-a-c750114938="" type="button" class="danger" aria-label="Eliminar campo Observaciones">Eliminar</button><!--container--><!--container--></div></article><!--container--><!--container--></div><button _ngcontent-a-c750114938="" type="button" class="primary">Agregar campo</button><!--container--><!--container--></main></div><!--container--><!--container--><!--container--></section></app-form-field-editor><!--container--><!--container--><footer _ngcontent-a-c2949129371="" class="actions wizard-actions"><!--container--><button _ngcontent-a-c2949129371="" type="button">Guardar borrador del wizard</button><button _ngcontent-a-c2949129371="" type="button" class="primary">Guardar y publicar wizard</button><!--container--></footer><!--container--><!--container--><!--container--></section></div><!--container--></main></div></body></html>

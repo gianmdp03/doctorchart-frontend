@@ -1,0 +1,800 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css"></style><style>
+[_nghost-a-c3867494518] {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+}
+.patient-record-page[_ngcontent-a-c3867494518] {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  flex: 1;
+}
+.cta-primary-btn[_ngcontent-a-c3867494518] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background-color: #006874;
+  color: #ffffff;
+  border: none;
+  border-radius: 9px;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 104, 116, 0.25);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.cta-primary-btn[_ngcontent-a-c3867494518]:hover {
+  background-color: #00505a;
+}
+.flattened-tabs-nav[_ngcontent-a-c3867494518] {
+  display: flex;
+  border-bottom: 2px solid var(--dc-outline, #e2e8f0);
+  gap: 0.5rem;
+  background: var(--dc-surface, #ffffff);
+  padding: 0 0.5rem;
+  border-radius: 10px 10px 0 0;
+  overflow-x: auto;
+}
+.flat-tab-btn[_ngcontent-a-c3867494518] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--dc-ink-muted, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.flat-tab-btn[_ngcontent-a-c3867494518]:hover {
+  color: var(--dc-ink, #0f172a);
+}
+.flat-tab-btn.active[_ngcontent-a-c3867494518] {
+  color: var(--dc-teal-ink, #006874);
+  border-bottom-color: #006874;
+}
+.tab-counter-badge[_ngcontent-a-c3867494518] {
+  font-size: 0.7rem;
+  background: var(--dc-teal-surface, #e6f6f8);
+  color: var(--dc-teal-ink, #006874);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.tab-content-area[_ngcontent-a-c3867494518] {
+  width: 100%;
+}
+.tab-panel[_ngcontent-a-c3867494518] {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.secondary-outline-btn[_ngcontent-a-c3867494518] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  color: var(--dc-ink-secondary, #334155);
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.secondary-outline-btn[_ngcontent-a-c3867494518]:hover {
+  background: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink, #0f172a);
+}
+.no-patient-card[_ngcontent-a-c3867494518] {
+  background: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 14px;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.no-patient-circle[_ngcontent-a-c3867494518] {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--dc-teal-surface, #f0fdfa);
+  color: var(--dc-teal-ink, #006874);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+.no-patient-title[_ngcontent-a-c3867494518] {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--dc-ink, #0f172a);
+  margin: 0;
+}
+.no-patient-desc[_ngcontent-a-c3867494518] {
+  font-size: 0.88rem;
+  color: var(--dc-ink-muted, #64748b);
+  max-width: 480px;
+  margin: 0;
+}
+.no-patient-actions[_ngcontent-a-c3867494518] {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.record-loading-card[_ngcontent-a-c3867494518] {
+  padding: 3.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--dc-ink-muted, #64748b);
+}
+.record-spinner[_ngcontent-a-c3867494518] {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--dc-outline, #e2e8f0);
+  border-top-color: #006874;
+  border-radius: 50%;
+  animation: _ngcontent-a-c3867494518_spin 0.7s linear infinite;
+}
+@keyframes _ngcontent-a-c3867494518_spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes _ngcontent-a-c3867494518_pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.animate-fade-in[_ngcontent-a-c3867494518] {
+  animation: _ngcontent-a-c3867494518_fadeIn 0.15s ease-in-out;
+}
+@keyframes _ngcontent-a-c3867494518_fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media print {
+  .flattened-tabs-nav[_ngcontent-a-c3867494518], 
+   .cta-primary-btn[_ngcontent-a-c3867494518] {
+    display: none !important;
+  }
+}
+.module-outlet[_ngcontent-a-c3867494518] {
+  display: contents;
+}
+@media (max-width: 600px) {
+  .flattened-tabs-nav[_ngcontent-a-c3867494518] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 8px;
+    overflow: visible;
+    border: 1px solid var(--dc-outline, #dce7e9);
+    border-radius: 14px;
+  }
+  .flat-tab-btn[_ngcontent-a-c3867494518] {
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 8px;
+    white-space: normal;
+    text-align: left;
+    font-size: 12px;
+    border-radius: 8px;
+    margin: 0;
+  }
+  .flat-tab-btn.active[_ngcontent-a-c3867494518] {
+    background: var(--dc-teal-surface, #e6f6f8);
+  }
+}</style><style>
+.patient-clinical-banner[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1.5rem;
+  background-color: var(--dc-surface, #ffffff);
+  border-bottom: 1px solid var(--dc-outline, #e2e8f0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  transition: all 0.2s ease;
+}
+.banner-left-block[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.btn-nav-back[_ngcontent-a-c92380119] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  background-color: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink-secondary, #475569);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-nav-back[_ngcontent-a-c92380119]:hover {
+  background-color: var(--dc-surface-high, #e2e8f0);
+  color: var(--dc-ink, #0f172a);
+}
+.patient-avatar-circle[_ngcontent-a-c92380119] {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background:
+    linear-gradient(
+      135deg,
+      #0d9488,
+      #0f766e);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.025em;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.2);
+}
+.patient-core-info[_ngcontent-a-c92380119] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.patient-name-row[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+.patient-fullname[_ngcontent-a-c92380119] {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--dc-ink, #0f172a);
+  margin: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hc-number-chip[_ngcontent-a-c92380119] {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--dc-ink-secondary, #475569);
+  background-color: var(--dc-surface-high, #f1f5f9);
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  letter-spacing: 0.025em;
+}
+.coverage-chip[_ngcontent-a-c92380119] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.coverage-chip.insured[_ngcontent-a-c92380119] {
+  background-color: var(--dc-success-surface, #f0fdf4);
+  border: 1px solid #bbf7d0;
+  color: var(--dc-success-ink, #166534);
+}
+.coverage-chip.particular[_ngcontent-a-c92380119] {
+  background-color: var(--dc-surface-low, #f8fafc);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  color: var(--dc-ink-muted, #64748b);
+}
+.coverage-divider[_ngcontent-a-c92380119] {
+  color: #86efac;
+}
+.coverage-affiliate[_ngcontent-a-c92380119] {
+  color: var(--dc-success-ink, #15803d);
+  font-weight: 500;
+}
+.patient-demographics-row[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  color: var(--dc-ink-muted, #64748b);
+  flex-wrap: wrap;
+}
+.demo-item[_ngcontent-a-c92380119]   strong[_ngcontent-a-c92380119] {
+  color: var(--dc-ink-secondary, #334155);
+}
+.demo-bullet[_ngcontent-a-c92380119] {
+  color: #cbd5e1;
+}
+.banner-safety-block[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.alerts-group[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.safety-badge[_ngcontent-a-c92380119] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.safety-badge.danger[_ngcontent-a-c92380119] {
+  background-color: var(--dc-error-surface, #fef2f2);
+  border: 1px solid #fecaca;
+  color: var(--dc-error-ink, #b91c1c);
+}
+.safety-badge.warning[_ngcontent-a-c92380119] {
+  background-color: var(--dc-warning-surface, #fffbeb);
+  border: 1px solid #fde68a;
+  color: var(--dc-warning-ink, #b45309);
+}
+.safety-badge.neutral[_ngcontent-a-c92380119] {
+  background-color: var(--dc-success-surface, #f0fdf4);
+  border: 1px solid #bbf7d0;
+  color: var(--dc-success-ink, #15803d);
+}
+.safety-dot-pulse[_ngcontent-a-c92380119] {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  display: inline-block;
+  animation: _ngcontent-a-c92380119_pulse-alert 1.8s infinite;
+}
+.safety-dot-pulse.red[_ngcontent-a-c92380119] {
+  background-color: #ef4444;
+}
+@keyframes _ngcontent-a-c92380119_pulse-alert {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+.safety-icon[_ngcontent-a-c92380119] {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+.banner-actions-block[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.btn-secondary-edit[_ngcontent-a-c92380119] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.85rem;
+  background-color: var(--dc-surface, #ffffff);
+  color: var(--dc-ink-secondary, #334155);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-secondary-edit[_ngcontent-a-c92380119]:hover {
+  background-color: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink, #0f172a);
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+.btn-primary-soap[_ngcontent-a-c92380119] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  background:
+    linear-gradient(
+      135deg,
+      #0d9488,
+      #0f766e);
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.25);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-primary-soap[_ngcontent-a-c92380119]:hover {
+  background:
+    linear-gradient(
+      135deg,
+      #0f766e,
+      #115e59);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(13, 148, 136, 0.3);
+}
+@media (max-width: 960px) {
+  .patient-clinical-banner[_ngcontent-a-c92380119] {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .banner-safety-block[_ngcontent-a-c92380119] {
+    justify-content: flex-start;
+  }
+  .banner-actions-block[_ngcontent-a-c92380119] {
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 600px) {
+  .patient-clinical-banner[_ngcontent-a-c92380119] {
+    position: static;
+    padding: 16px;
+    border: 1px solid var(--dc-outline, #dce7e9);
+    border-radius: 16px;
+  }
+  .banner-left-block[_ngcontent-a-c92380119] {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+  }
+  .btn-nav-back[_ngcontent-a-c92380119] {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-height: 44px;
+  }
+  .patient-fullname[_ngcontent-a-c92380119] {
+    width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .patient-demographics-row[_ngcontent-a-c92380119] {
+    gap: 6px 12px;
+    margin-top: 6px;
+  }
+  .demo-bullet[_ngcontent-a-c92380119] {
+    display: none;
+  }
+  .demo-item[_ngcontent-a-c92380119] {
+    overflow-wrap: anywhere;
+  }
+  .coverage-chip[_ngcontent-a-c92380119] {
+    flex-wrap: wrap;
+    line-height: 1.4;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .safety-badge[_ngcontent-a-c92380119] {
+    max-width: 100%;
+    align-items: flex-start;
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+  .safety-text[_ngcontent-a-c92380119] {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .safety-badge[_ngcontent-a-c92380119]    > ng-icon[_ngcontent-a-c92380119], 
+   .safety-dot-pulse[_ngcontent-a-c92380119] {
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .banner-actions-block[_ngcontent-a-c92380119] {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+  .banner-actions-block[_ngcontent-a-c92380119]   button[_ngcontent-a-c92380119] {
+    flex: 1 1 140px;
+    min-height: 44px;
+    justify-content: center;
+    white-space: normal;
+  }
+}</style><style>[_nghost-a-c572653062]{display:inline-block;width:var(--ng-icon__size, 1em);height:var(--ng-icon__size, 1em);line-height:initial;vertical-align:initial;overflow:hidden}[_nghost-a-c572653062]     svg{width:inherit;height:inherit;vertical-align:inherit}@layer ng-icon{[_nghost-a-c572653062]{color:var(--ng-icon__color, currentColor)}}</style><style>
+[_nghost-a-c1416807782] {
+  display: block;
+  min-width: 0;
+}
+.tab-panel[_ngcontent-a-c1416807782] {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+@keyframes _ngcontent-a-c1416807782_spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes _ngcontent-a-c1416807782_pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.animate-fade-in[_ngcontent-a-c1416807782] {
+  animation: _ngcontent-a-c1416807782_fadeIn 0.15s ease-in-out;
+}
+@keyframes _ngcontent-a-c1416807782_fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tab-panel-toolbar[_ngcontent-a-c1416807782] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1.25rem;
+  margin-bottom: 1.25rem;
+  background-color: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+.tab-panel-toolbar-text[_ngcontent-a-c1416807782] {
+  display: flex;
+  flex-direction: column;
+}
+.panel-section-title[_ngcontent-a-c1416807782] {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--dc-ink, #1e293b);
+}
+.panel-section-subtitle[_ngcontent-a-c1416807782] {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--dc-ink-muted, #64748b);
+}
+.btn-tab-edit[_ngcontent-a-c1416807782] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  background-color: var(--dc-surface, #ffffff);
+  color: var(--dc-teal-ink, #0f766e);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid #99f6e4;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-tab-edit[_ngcontent-a-c1416807782]:hover {
+  background-color: var(--dc-teal-surface, #f0fdfa);
+  border-color: #5eead4;
+  color: var(--dc-teal-ink, #0d9488);
+  transform: translateY(-1px);
+}
+@media (max-width: 600px) {
+  .tab-panel-toolbar[_ngcontent-a-c1416807782] {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  .btn-tab-edit[_ngcontent-a-c1416807782] {
+    min-height: 44px;
+    justify-content: center;
+  }
+}</style><style>
+.form-category[_ngcontent-a-c2264669983] {
+  margin: 0 0 24px;
+}
+.form-category[_ngcontent-a-c2264669983]   h3[_ngcontent-a-c2264669983] {
+  margin: 0 0 16px;
+  color: var(--dc-ink-secondary, #334155);
+  font-size: 1rem;
+  border-bottom: 1px solid var(--dc-outline, #e2e8f0);
+  padding-bottom: 10px;
+}
+.fields-grid[_ngcontent-a-c2264669983] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.field[_ngcontent-a-c2264669983] {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.field.wide[_ngcontent-a-c2264669983] {
+  grid-column: 1/-1;
+}
+.field[_ngcontent-a-c2264669983]   label[_ngcontent-a-c2264669983] {
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--dc-ink-secondary, #475569);
+}
+.field[_ngcontent-a-c2264669983]   input[_ngcontent-a-c2264669983], 
+.field[_ngcontent-a-c2264669983]   textarea[_ngcontent-a-c2264669983], 
+.field[_ngcontent-a-c2264669983]   select[_ngcontent-a-c2264669983] {
+  box-sizing: border-box;
+  width: 100%;
+  font: inherit;
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--dc-surface, white);
+  color: var(--dc-ink, #0f172a);
+}
+.field[_ngcontent-a-c2264669983]   input[_ngcontent-a-c2264669983]:focus, 
+.field[_ngcontent-a-c2264669983]   textarea[_ngcontent-a-c2264669983]:focus, 
+.field[_ngcontent-a-c2264669983]   select[_ngcontent-a-c2264669983]:focus {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 2px;
+}
+.number-with-unit[_ngcontent-a-c2264669983] {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.number-with-unit[_ngcontent-a-c2264669983]   span[_ngcontent-a-c2264669983] {
+  color: var(--dc-ink-muted, #64748b);
+  font-size: .8rem;
+}
+.saved-value[_ngcontent-a-c2264669983] {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.formula-result[_ngcontent-a-c2264669983] {
+  background: var(--dc-surface-high, #f1f5f9);
+  padding: 11px;
+  border-radius: 8px;
+  color: var(--dc-ink-secondary, #475569);
+}
+.field-error[_ngcontent-a-c2264669983] {
+  font-size: .8rem;
+  color: var(--dc-error-ink, #b91c1c);
+}
+.empty-form[_ngcontent-a-c2264669983] {
+  color: var(--dc-ink-muted, #64748b);
+}
+@media (max-width: 600px) {
+  .fields-grid[_ngcontent-a-c2264669983] {
+    grid-template-columns: 1fr;
+  }
+}
+.is-readonly[_ngcontent-a-c2264669983] {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.is-readonly[_ngcontent-a-c2264669983]   .form-category[_ngcontent-a-c2264669983] {
+  margin: 0;
+  background: var(--dc-surface, #fff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+  overflow: hidden;
+}
+.is-readonly[_ngcontent-a-c2264669983]   .form-category[_ngcontent-a-c2264669983]   h3[_ngcontent-a-c2264669983] {
+  margin: 0;
+  padding: 14px 20px;
+  background: var(--dc-surface, #fff);
+  border-bottom: 1px solid var(--dc-outline, #e2e8f0);
+  color: var(--dc-ink-secondary, #334155);
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.is-readonly[_ngcontent-a-c2264669983]   .fields-grid[_ngcontent-a-c2264669983] {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0;
+  padding: 6px;
+}
+.is-readonly[_ngcontent-a-c2264669983]   .field[_ngcontent-a-c2264669983] {
+  gap: 4px;
+  padding: 12px 14px;
+  margin: 4px;
+  border-radius: 10px;
+  background: var(--dc-surface-low, #f8fafc);
+  border: 1px solid transparent;
+  transition: background .15s ease, border-color .15s ease;
+}
+.is-readonly[_ngcontent-a-c2264669983]   .field[_ngcontent-a-c2264669983]:hover {
+  background: var(--dc-surface-high, #f1f5f9);
+  border-color: var(--dc-outline, #e2e8f0);
+}
+.is-readonly[_ngcontent-a-c2264669983]   .field[_ngcontent-a-c2264669983]   label[_ngcontent-a-c2264669983] {
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--dc-ink-muted, #64748b);
+}
+.is-readonly[_ngcontent-a-c2264669983]   .saved-value[_ngcontent-a-c2264669983] {
+  font-size: .98rem;
+  font-weight: 500;
+  color: var(--dc-ink, #0f172a);
+  line-height: 1.4;
+}
+.is-readonly[_ngcontent-a-c2264669983]   .saved-value.is-empty[_ngcontent-a-c2264669983] {
+  color: var(--dc-ink-muted, #94a3b8);
+  font-weight: 400;
+  font-style: italic;
+  font-size: .88rem;
+}
+.is-readonly[_ngcontent-a-c2264669983]   .field.wide[_ngcontent-a-c2264669983] {
+  grid-column: 1/-1;
+}
+.is-readonly[_ngcontent-a-c2264669983]   .formula-result[_ngcontent-a-c2264669983] {
+  background: var(--dc-surface, #fff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  color: var(--dc-ink, #0f172a);
+  font-weight: 600;
+}
+.field.has-error[_ngcontent-a-c2264669983]   input[_ngcontent-a-c2264669983], 
+.field.has-error[_ngcontent-a-c2264669983]   textarea[_ngcontent-a-c2264669983], 
+.field.has-error[_ngcontent-a-c2264669983]   select[_ngcontent-a-c2264669983] {
+  border-color: #b91c1c;
+}
+.field-hint[_ngcontent-a-c2264669983] {
+  color: var(--dc-ink-secondary, #52647a);
+  font-size: .75rem;
+  line-height: 1.6;
+}</style></head><body><div id="root58" ng-version="22.2.2" _nghost-a-c3867494518=""><div _ngcontent-a-c3867494518="" class="patient-record-page"><!--container--><app-patient-banner _ngcontent-a-c3867494518="" _nghost-a-c92380119=""><header _ngcontent-a-c92380119="" role="banner" aria-label="Cabecera clínica del paciente" class="patient-clinical-banner"><div _ngcontent-a-c92380119="" class="banner-left-block"><button _ngcontent-a-c92380119="" type="button" title="Volver al Directorio de Pacientes" class="btn-nav-back"><ng-icon _ngcontent-a-c92380119="" role="img" name="lucideChevronLeft" class="text-slate-500" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="m15 18-6-6 6-6"></path></svg></ng-icon><span _ngcontent-a-c92380119="">Directorio</span></button><div _ngcontent-a-c92380119="" class="patient-avatar-circle"> MR </div><div _ngcontent-a-c92380119="" class="patient-core-info"><div _ngcontent-a-c92380119="" class="patient-name-row"><h1 _ngcontent-a-c92380119="" class="patient-fullname"> Mateo Rossi </h1><span _ngcontent-a-c92380119="" class="hc-number-chip">HC #10492</span><span _ngcontent-a-c92380119="" title="Atención Particular / Sin Cobertura Registrada" class="coverage-chip particular"><ng-icon _ngcontent-a-c92380119="" role="img" name="lucideCreditCard" class="text-slate-400" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><rect width="20" height="14" x="2" y="5" rx="2"></rect><line x1="2" x2="22" y1="10" y2="10"></line></svg></ng-icon><span _ngcontent-a-c92380119="">Particular</span></span><!--container--><!--container--></div><div _ngcontent-a-c92380119="" class="patient-demographics-row"><span _ngcontent-a-c92380119="" class="demo-item"><strong _ngcontent-a-c92380119="">DNI:</strong> 36.812.904</span><span _ngcontent-a-c92380119="" class="demo-bullet">•</span><span _ngcontent-a-c92380119="" class="demo-item"><strong _ngcontent-a-c92380119="">Edad:</strong> 2a 5m</span><span _ngcontent-a-c92380119="" class="demo-bullet">•</span><span _ngcontent-a-c92380119="" class="demo-item"><strong _ngcontent-a-c92380119="">Sexo:</strong> Masculino</span><span _ngcontent-a-c92380119="" class="demo-bullet">•</span><span _ngcontent-a-c92380119="" class="demo-item"><strong _ngcontent-a-c92380119="">Grupo:</strong> O+</span><!--container--><!--container--></div></div></div><div _ngcontent-a-c92380119="" role="region" aria-label="Alertas médicas críticas de seguridad" class="banner-safety-block"><div _ngcontent-a-c92380119="" class="alerts-group allergies-group"><div _ngcontent-a-c92380119="" class="safety-badge danger" title="Alergia severa reportada: Amoxicilina"><span _ngcontent-a-c92380119="" class="safety-dot-pulse red"></span><ng-icon _ngcontent-a-c92380119="" role="img" name="lucideShieldAlert" class="safety-icon text-red-600" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg></ng-icon><span _ngcontent-a-c92380119="" class="safety-text"><strong _ngcontent-a-c92380119="">ALERGIA:</strong> Amoxicilina</span></div><!--container--></div><!--container--><div _ngcontent-a-c92380119="" class="alerts-group chronic-group"><div _ngcontent-a-c92380119="" class="safety-badge warning" title="Condición médica de base: Bronquiolitis leve a los 3 meses"><ng-icon _ngcontent-a-c92380119="" role="img" name="lucideAlertTriangle" class="safety-icon text-amber-600" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></ng-icon><span _ngcontent-a-c92380119="" class="safety-text"><strong _ngcontent-a-c92380119="">ANTECEDENTE:</strong> Bronquiolitis leve a los 3 meses</span></div><!--container--></div><!--container--></div><div _ngcontent-a-c92380119="" class="banner-actions-block"><button _ngcontent-a-c92380119="" type="button" class="btn-secondary-edit" title="Editar datos filiatorios y clínicos del paciente"><ng-icon _ngcontent-a-c92380119="" role="img" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></ng-icon><span _ngcontent-a-c92380119="">Editar datos</span></button><!--container--><button _ngcontent-a-c92380119="" type="button" class="btn-primary-soap"><ng-icon _ngcontent-a-c92380119="" role="img" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></ng-icon><span _ngcontent-a-c92380119="">Nueva historia clínica</span></button><!--container--><!--container--></div></header></app-patient-banner><nav _ngcontent-a-c3867494518="" aria-label="Secciones de la ficha clínica" class="flattened-tabs-nav"><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn active"><span _ngcontent-a-c3867494518="">1. Datos del paciente</span><!--container--></button><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn"><span _ngcontent-a-c3867494518="">2. Historia Clínica</span><span _ngcontent-a-c3867494518="" class="tab-counter-badge">2</span><!--container--></button><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn"><span _ngcontent-a-c3867494518="">3. Vacunas</span><!--container--></button><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn"><span _ngcontent-a-c3867494518="">4. Evolución y Curvas</span><span _ngcontent-a-c3867494518="" class="tab-counter-badge">6</span><!--container--></button><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn"><span _ngcontent-a-c3867494518="">5. Recetas y Órdenes</span><!--container--></button><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn"><span _ngcontent-a-c3867494518="">6. Estudios realizados</span><!--container--></button><!--container--></nav><div _ngcontent-a-c3867494518="" class="tab-content-area"><section _ngcontent-a-c3867494518="" class="module-outlet"><app-patient-summary _nghost-a-c1416807782=""><section _ngcontent-a-c1416807782="" aria-label="Datos del paciente" class="tab-panel animate-fade-in"><div _ngcontent-a-c1416807782="" class="tab-panel-toolbar"><div _ngcontent-a-c1416807782="" class="tab-panel-toolbar-text"><h3 _ngcontent-a-c1416807782="" class="panel-section-title">Datos Filiatorios y Clínicos</h3><p _ngcontent-a-c1416807782="" class="panel-section-subtitle"> Información general, tutores y antecedentes registrados del paciente. </p></div><button _ngcontent-a-c1416807782="" type="button" title="Editar datos filiatorios y clínicos del paciente" class="btn-tab-edit"><ng-icon _ngcontent-a-c1416807782="" role="img" name="lucideUser" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></ng-icon><span _ngcontent-a-c1416807782="">Editar datos</span></button><!--container--></div><app-dynamic-form-renderer _ngcontent-a-c1416807782="" _nghost-a-c2264669983=""><div _ngcontent-a-c2264669983="" class="dynamic-form is-readonly"><!--container--><p _ngcontent-a-c2264669983="" class="empty-form">No hay categorías activas en este formulario.</p><!--container--></div></app-dynamic-form-renderer></section><!--container--></app-patient-summary><!--ng-container--></section><!--container--></div><!--container--><!--container--></div></div></body></html>

@@ -794,3 +794,15 @@ details[open] .faq-plus {
     transform: none;
   }
 }
+
+/* En celular el acceso a la cuenta se concentra en la cabecera. */
+@media (max-width: 768px) {
+  .secondary-login { display: none; }
+  .landing-footer { display: none; }
+  .header-actions .button-small { min-height: 44px; }
+}
+@media (max-width: 360px) {
+  .header-inner { width: calc(100% - 24px); }
+  .landing-header .brand { font-size: 16px; gap: 5px; }
+  .landing-header .brand-mark { width: 26px; height: 26px; }
+}

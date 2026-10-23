@@ -185,12 +185,12 @@
               </td>
 
               <!-- DNI -->
-              <td class="td-dni">
+              <td data-label="DNI" class="td-dni">
                 <span class="dni-number">{{ patient.rawNationalId || '—' }}</span>
               </td>
 
               <!-- Edad & Nacimiento -->
-              <td class="td-age">
+              <td data-label="Edad y nacimiento" class="td-age">
                 <div class="age-data-cell">
                   <div class="age-primary-row">
                     <span class="age-text">{{ patient.ageDisplay }}</span>
@@ -203,7 +203,7 @@
               </td>
 
               <!-- Contacto -->
-              <td class="td-phone">
+              <td data-label="Contacto" class="td-phone">
                 @if (patient.rawPhone) {
                   <div class="contact-info-cell">
                     <svg class="contact-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -217,7 +217,7 @@
               </td>
 
               <!-- Controles Clínicos -->
-              <td class="td-encounters">
+              <td data-label="Controles previos" class="td-encounters">
                 @if (patient.totalEncounters > 0) {
                   <div class="encounter-pill pill-completed" [title]="patient.lastCheckup">
                     <span class="pill-dot"></span>
@@ -236,7 +236,7 @@
 
               <!-- Vacunación -->
               @if (doctorSpecialtyService.supportsGrowthCharts()) {
-                <td class="td-vaccines">
+                <td data-label="Vacunación" class="td-vaccines">
                   @if (patient.hasPendingVaccine) {
                     <span class="vaccine-chip chip-pending">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -258,7 +258,7 @@
               }
 
               <!-- Acciones -->
-              <td class="td-actions text-right">
+              <td data-label="Acciones" class="td-actions text-right">
                 <button
                   type="button"
                   class="btn-table-action"

@@ -52,7 +52,7 @@ describe('Theme integration', () => {
         currentSpecialtyOption: signal({ shortLabel: 'Pediatría', label: 'Pediatría', value: 'PEDIATRICS' }),
       } },
       { provide: ClinicalEncounterService, useValue: { getDashboard: () => of({
-        totalPatients: 24, encountersThisMonth: 12, encountersToday: 3, recentEncounters: [], asOfDate: '2026-10-13',
+        totalPatients: 24, encountersThisMonth: 12, encountersToday: 3, recentEncounters: [], upcomingFollowUps: [{ encounterId: 101, patientId: 1, patientFullName: 'Mateo Rossi', followUpDate: '2026-10-24' }], asOfDate: '2026-10-23',
       }), getAll: () => of({ content: [{
         ...clinicalFormFixture(), id: 101, patientId: 1, patientFullName: 'Paciente de ejemplo',
         encounterDate: '2026-10-01T15:00:00Z', consultationType: 'FOLLOW_UP',
@@ -66,6 +66,8 @@ describe('Theme integration', () => {
       { provide: WorkspaceStore, useValue: { quickNotes: signal('Recordatorio de ejemplo'), navigation: signal([
         { id: 'DASHBOARD', path: '/dashboard', label: 'Inicio', title: 'Inicio', icon: 'lucideLayoutDashboard' },
         { id: 'PATIENTS', path: '/pacientes', label: 'Pacientes', title: 'Pacientes', icon: 'lucideUsers' },
+        { id: 'VACCINATION', path: '/calendario-vacunacion', label: 'Vacunación', title: 'Vacunación', icon: 'lucideCalendarDays' },
+        { id: 'WIZARD', path: '/onboarding/setup', label: 'Personalizar Fichas', title: 'Personalizar Fichas', icon: 'lucideSliders' },
       ]) } },
     ] }).compileComponents();
     const fixture = TestBed.createComponent(ThemeVisualHost);

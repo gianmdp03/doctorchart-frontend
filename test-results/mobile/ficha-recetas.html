@@ -1,0 +1,1062 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css"></style><style>
+[_nghost-a-c3867494518] {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+}
+.patient-record-page[_ngcontent-a-c3867494518] {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  flex: 1;
+}
+.cta-primary-btn[_ngcontent-a-c3867494518] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background-color: #006874;
+  color: #ffffff;
+  border: none;
+  border-radius: 9px;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 104, 116, 0.25);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.cta-primary-btn[_ngcontent-a-c3867494518]:hover {
+  background-color: #00505a;
+}
+.flattened-tabs-nav[_ngcontent-a-c3867494518] {
+  display: flex;
+  border-bottom: 2px solid var(--dc-outline, #e2e8f0);
+  gap: 0.5rem;
+  background: var(--dc-surface, #ffffff);
+  padding: 0 0.5rem;
+  border-radius: 10px 10px 0 0;
+  overflow-x: auto;
+}
+.flat-tab-btn[_ngcontent-a-c3867494518] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--dc-ink-muted, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.flat-tab-btn[_ngcontent-a-c3867494518]:hover {
+  color: var(--dc-ink, #0f172a);
+}
+.flat-tab-btn.active[_ngcontent-a-c3867494518] {
+  color: var(--dc-teal-ink, #006874);
+  border-bottom-color: #006874;
+}
+.tab-counter-badge[_ngcontent-a-c3867494518] {
+  font-size: 0.7rem;
+  background: var(--dc-teal-surface, #e6f6f8);
+  color: var(--dc-teal-ink, #006874);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.tab-content-area[_ngcontent-a-c3867494518] {
+  width: 100%;
+}
+.tab-panel[_ngcontent-a-c3867494518] {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.secondary-outline-btn[_ngcontent-a-c3867494518] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  color: var(--dc-ink-secondary, #334155);
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.secondary-outline-btn[_ngcontent-a-c3867494518]:hover {
+  background: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink, #0f172a);
+}
+.no-patient-card[_ngcontent-a-c3867494518] {
+  background: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 14px;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.no-patient-circle[_ngcontent-a-c3867494518] {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--dc-teal-surface, #f0fdfa);
+  color: var(--dc-teal-ink, #006874);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+.no-patient-title[_ngcontent-a-c3867494518] {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--dc-ink, #0f172a);
+  margin: 0;
+}
+.no-patient-desc[_ngcontent-a-c3867494518] {
+  font-size: 0.88rem;
+  color: var(--dc-ink-muted, #64748b);
+  max-width: 480px;
+  margin: 0;
+}
+.no-patient-actions[_ngcontent-a-c3867494518] {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.record-loading-card[_ngcontent-a-c3867494518] {
+  padding: 3.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--dc-ink-muted, #64748b);
+}
+.record-spinner[_ngcontent-a-c3867494518] {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--dc-outline, #e2e8f0);
+  border-top-color: #006874;
+  border-radius: 50%;
+  animation: _ngcontent-a-c3867494518_spin 0.7s linear infinite;
+}
+@keyframes _ngcontent-a-c3867494518_spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes _ngcontent-a-c3867494518_pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.animate-fade-in[_ngcontent-a-c3867494518] {
+  animation: _ngcontent-a-c3867494518_fadeIn 0.15s ease-in-out;
+}
+@keyframes _ngcontent-a-c3867494518_fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media print {
+  .flattened-tabs-nav[_ngcontent-a-c3867494518], 
+   .cta-primary-btn[_ngcontent-a-c3867494518] {
+    display: none !important;
+  }
+}
+.module-outlet[_ngcontent-a-c3867494518] {
+  display: contents;
+}
+@media (max-width: 600px) {
+  .flattened-tabs-nav[_ngcontent-a-c3867494518] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 8px;
+    overflow: visible;
+    border: 1px solid var(--dc-outline, #dce7e9);
+    border-radius: 14px;
+  }
+  .flat-tab-btn[_ngcontent-a-c3867494518] {
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 8px;
+    white-space: normal;
+    text-align: left;
+    font-size: 12px;
+    border-radius: 8px;
+    margin: 0;
+  }
+  .flat-tab-btn.active[_ngcontent-a-c3867494518] {
+    background: var(--dc-teal-surface, #e6f6f8);
+  }
+}</style><style>
+.patient-clinical-banner[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1.5rem;
+  background-color: var(--dc-surface, #ffffff);
+  border-bottom: 1px solid var(--dc-outline, #e2e8f0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  transition: all 0.2s ease;
+}
+.banner-left-block[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.btn-nav-back[_ngcontent-a-c92380119] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  background-color: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink-secondary, #475569);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-nav-back[_ngcontent-a-c92380119]:hover {
+  background-color: var(--dc-surface-high, #e2e8f0);
+  color: var(--dc-ink, #0f172a);
+}
+.patient-avatar-circle[_ngcontent-a-c92380119] {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background:
+    linear-gradient(
+      135deg,
+      #0d9488,
+      #0f766e);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.025em;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.2);
+}
+.patient-core-info[_ngcontent-a-c92380119] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.patient-name-row[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+.patient-fullname[_ngcontent-a-c92380119] {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--dc-ink, #0f172a);
+  margin: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hc-number-chip[_ngcontent-a-c92380119] {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--dc-ink-secondary, #475569);
+  background-color: var(--dc-surface-high, #f1f5f9);
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  letter-spacing: 0.025em;
+}
+.coverage-chip[_ngcontent-a-c92380119] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.coverage-chip.insured[_ngcontent-a-c92380119] {
+  background-color: var(--dc-success-surface, #f0fdf4);
+  border: 1px solid #bbf7d0;
+  color: var(--dc-success-ink, #166534);
+}
+.coverage-chip.particular[_ngcontent-a-c92380119] {
+  background-color: var(--dc-surface-low, #f8fafc);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  color: var(--dc-ink-muted, #64748b);
+}
+.coverage-divider[_ngcontent-a-c92380119] {
+  color: #86efac;
+}
+.coverage-affiliate[_ngcontent-a-c92380119] {
+  color: var(--dc-success-ink, #15803d);
+  font-weight: 500;
+}
+.patient-demographics-row[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  color: var(--dc-ink-muted, #64748b);
+  flex-wrap: wrap;
+}
+.demo-item[_ngcontent-a-c92380119]   strong[_ngcontent-a-c92380119] {
+  color: var(--dc-ink-secondary, #334155);
+}
+.demo-bullet[_ngcontent-a-c92380119] {
+  color: #cbd5e1;
+}
+.banner-safety-block[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.alerts-group[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.safety-badge[_ngcontent-a-c92380119] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.safety-badge.danger[_ngcontent-a-c92380119] {
+  background-color: var(--dc-error-surface, #fef2f2);
+  border: 1px solid #fecaca;
+  color: var(--dc-error-ink, #b91c1c);
+}
+.safety-badge.warning[_ngcontent-a-c92380119] {
+  background-color: var(--dc-warning-surface, #fffbeb);
+  border: 1px solid #fde68a;
+  color: var(--dc-warning-ink, #b45309);
+}
+.safety-badge.neutral[_ngcontent-a-c92380119] {
+  background-color: var(--dc-success-surface, #f0fdf4);
+  border: 1px solid #bbf7d0;
+  color: var(--dc-success-ink, #15803d);
+}
+.safety-dot-pulse[_ngcontent-a-c92380119] {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  display: inline-block;
+  animation: _ngcontent-a-c92380119_pulse-alert 1.8s infinite;
+}
+.safety-dot-pulse.red[_ngcontent-a-c92380119] {
+  background-color: #ef4444;
+}
+@keyframes _ngcontent-a-c92380119_pulse-alert {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+.safety-icon[_ngcontent-a-c92380119] {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+.banner-actions-block[_ngcontent-a-c92380119] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.btn-secondary-edit[_ngcontent-a-c92380119] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.85rem;
+  background-color: var(--dc-surface, #ffffff);
+  color: var(--dc-ink-secondary, #334155);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-secondary-edit[_ngcontent-a-c92380119]:hover {
+  background-color: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink, #0f172a);
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+.btn-primary-soap[_ngcontent-a-c92380119] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  background:
+    linear-gradient(
+      135deg,
+      #0d9488,
+      #0f766e);
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.25);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-primary-soap[_ngcontent-a-c92380119]:hover {
+  background:
+    linear-gradient(
+      135deg,
+      #0f766e,
+      #115e59);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(13, 148, 136, 0.3);
+}
+@media (max-width: 960px) {
+  .patient-clinical-banner[_ngcontent-a-c92380119] {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .banner-safety-block[_ngcontent-a-c92380119] {
+    justify-content: flex-start;
+  }
+  .banner-actions-block[_ngcontent-a-c92380119] {
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 600px) {
+  .patient-clinical-banner[_ngcontent-a-c92380119] {
+    position: static;
+    padding: 16px;
+    border: 1px solid var(--dc-outline, #dce7e9);
+    border-radius: 16px;
+  }
+  .banner-left-block[_ngcontent-a-c92380119] {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+  }
+  .btn-nav-back[_ngcontent-a-c92380119] {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-height: 44px;
+  }
+  .patient-fullname[_ngcontent-a-c92380119] {
+    width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .patient-demographics-row[_ngcontent-a-c92380119] {
+    gap: 6px 12px;
+    margin-top: 6px;
+  }
+  .demo-bullet[_ngcontent-a-c92380119] {
+    display: none;
+  }
+  .demo-item[_ngcontent-a-c92380119] {
+    overflow-wrap: anywhere;
+  }
+  .coverage-chip[_ngcontent-a-c92380119] {
+    flex-wrap: wrap;
+    line-height: 1.4;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .safety-badge[_ngcontent-a-c92380119] {
+    max-width: 100%;
+    align-items: flex-start;
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+  .safety-text[_ngcontent-a-c92380119] {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .safety-badge[_ngcontent-a-c92380119]    > ng-icon[_ngcontent-a-c92380119], 
+   .safety-dot-pulse[_ngcontent-a-c92380119] {
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .banner-actions-block[_ngcontent-a-c92380119] {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+  .banner-actions-block[_ngcontent-a-c92380119]   button[_ngcontent-a-c92380119] {
+    flex: 1 1 140px;
+    min-height: 44px;
+    justify-content: center;
+    white-space: normal;
+  }
+}</style><style>[_nghost-a-c572653062]{display:inline-block;width:var(--ng-icon__size, 1em);height:var(--ng-icon__size, 1em);line-height:initial;vertical-align:initial;overflow:hidden}[_nghost-a-c572653062]     svg{width:inherit;height:inherit;vertical-align:inherit}@layer ng-icon{[_nghost-a-c572653062]{color:var(--ng-icon__color, currentColor)}}</style><style>.mat-focus-indicator {
+  position: relative;
+}
+.mat-focus-indicator::before {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+  display: var(--mat-focus-indicator-display, none);
+  border-width: var(--mat-focus-indicator-border-width, 3px);
+  border-style: var(--mat-focus-indicator-border-style, solid);
+  border-color: var(--mat-focus-indicator-border-color, transparent);
+  border-radius: var(--mat-focus-indicator-border-radius, 4px);
+}
+.mat-focus-indicator:focus-visible::before {
+  content: "";
+}
+
+@media (forced-colors: active) {
+  html {
+    --mat-focus-indicator-display: block;
+    --mat-focus-indicator-fallback-border-style: none;
+  }
+}
+</style><style>
+[_nghost-a-c2259499982] {
+  display: block;
+  min-width: 0;
+}
+.cta-primary-btn[_ngcontent-a-c2259499982] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background-color: #006874;
+  color: #ffffff;
+  border: none;
+  border-radius: 9px;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 104, 116, 0.25);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.cta-primary-btn[_ngcontent-a-c2259499982]:hover {
+  background-color: #00505a;
+}
+.cta-primary-btn.btn-sm[_ngcontent-a-c2259499982] {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+.tab-panel[_ngcontent-a-c2259499982] {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.panel-grid-cards[_ngcontent-a-c2259499982] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+.clinical-section-card[_ngcontent-a-c2259499982] {
+  background: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+.sec-card-header[_ngcontent-a-c2259499982] {
+  padding: 0.95rem 1.25rem;
+  border-bottom: 1px solid var(--dc-outline, #f1f5f9);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.sec-card-title[_ngcontent-a-c2259499982] {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--dc-ink, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+}
+.sec-card-body[_ngcontent-a-c2259499982] {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.sec-subdivider[_ngcontent-a-c2259499982] {
+  height: 1px;
+  background: var(--dc-surface-high, #f1f5f9);
+  margin: 0.5rem 0;
+}
+.secondary-outline-btn[_ngcontent-a-c2259499982] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  color: var(--dc-ink-secondary, #334155);
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.secondary-outline-btn[_ngcontent-a-c2259499982]:hover {
+  background: var(--dc-surface-low, #f8fafc);
+  color: var(--dc-ink, #0f172a);
+}
+.med-prescriptions-list[_ngcontent-a-c2259499982] {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.med-prescription-card[_ngcontent-a-c2259499982] {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 8px;
+  background: var(--dc-surface-low, #fbfcfd);
+}
+.med-details[_ngcontent-a-c2259499982] {
+  display: flex;
+  flex-direction: column;
+}
+.med-name[_ngcontent-a-c2259499982] {
+  font-size: 0.88rem;
+  color: var(--dc-ink, #0f172a);
+}
+.med-instructions[_ngcontent-a-c2259499982] {
+  font-size: 0.75rem;
+  color: var(--dc-ink-muted, #64748b);
+}
+.med-prescription-card.justify-between[_ngcontent-a-c2259499982] {
+  justify-content: space-between;
+}
+.btn-xs[_ngcontent-a-c2259499982] {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+}
+.rx-builder-card[_ngcontent-a-c2259499982] {
+  border-color: var(--dc-outline, #cbd5e1);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.rx-card-header[_ngcontent-a-c2259499982] {
+  background:
+    linear-gradient(
+      180deg,
+      var(--dc-surface-low, #f8fafc) 0%,
+      var(--dc-surface, #ffffff) 100%);
+  padding: 1.1rem 1.35rem;
+  flex-wrap: wrap;
+}
+.rx-header-title-group[_ngcontent-a-c2259499982], 
+.rx-header-actions[_ngcontent-a-c2259499982], 
+.rx-feedback-banner[_ngcontent-a-c2259499982], 
+.rx-item-title-row[_ngcontent-a-c2259499982], 
+.rx-bottom-right-btns[_ngcontent-a-c2259499982], 
+.rx-history-top[_ngcontent-a-c2259499982], 
+.rx-history-actions[_ngcontent-a-c2259499982] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.rx-header-title-group[_ngcontent-a-c2259499982] {
+  gap: 0.85rem;
+}
+.rx-header-icon-badge[_ngcontent-a-c2259499982] {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--dc-teal-surface, #e6f6f8);
+  color: var(--dc-teal-ink, #006874);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.rx-header-subtitle[_ngcontent-a-c2259499982], 
+.rx-history-date[_ngcontent-a-c2259499982], 
+.rx-history-diag[_ngcontent-a-c2259499982] {
+  margin: 0.15rem 0 0;
+  font-size: 0.76rem;
+  color: var(--dc-ink-muted, #64748b);
+}
+.rx-builder-body[_ngcontent-a-c2259499982] {
+  padding: 1.35rem;
+  gap: 1.1rem;
+}
+.rx-mode-selector[_ngcontent-a-c2259499982] {
+  display: inline-flex;
+  align-items: center;
+  background: var(--dc-surface-high, #f1f5f9);
+  padding: 0.3rem;
+  border-radius: 10px;
+  gap: 0.3rem;
+  align-self: flex-start;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+}
+.rx-mode-tab[_ngcontent-a-c2259499982] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--dc-ink-secondary, #475569);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.rx-mode-tab[_ngcontent-a-c2259499982]:hover {
+  color: var(--dc-ink, #0f172a);
+}
+.rx-mode-tab.active[_ngcontent-a-c2259499982] {
+  background: var(--dc-surface, #ffffff);
+  color: var(--dc-teal-ink, #006874);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+.rx-mode-count[_ngcontent-a-c2259499982] {
+  background: #006874;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9999px;
+}
+.rx-feedback-banner[_ngcontent-a-c2259499982] {
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.rx-feedback-banner.rx-error[_ngcontent-a-c2259499982] {
+  background: var(--dc-error-surface, #fff1f2);
+  border: 1px solid #fecdd3;
+  color: var(--dc-error-ink, #be123c);
+}
+.rx-feedback-banner.rx-success[_ngcontent-a-c2259499982] {
+  background: var(--dc-success-surface, #f0fdf4);
+  border: 1px solid #bbf7d0;
+  color: var(--dc-success-ink, #15803d);
+}
+.rx-form-section[_ngcontent-a-c2259499982], 
+.rx-field[_ngcontent-a-c2259499982], 
+.rx-quick-studies-bar[_ngcontent-a-c2259499982], 
+.rx-draft-items-box[_ngcontent-a-c2259499982], 
+.rx-draft-list[_ngcontent-a-c2259499982], 
+.rx-history-list[_ngcontent-a-c2259499982], 
+.rx-history-info[_ngcontent-a-c2259499982] {
+  display: flex;
+  flex-direction: column;
+}
+.rx-form-section[_ngcontent-a-c2259499982] {
+  gap: 1rem;
+}
+.rx-form-grid-med[_ngcontent-a-c2259499982] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+.rx-field-wide[_ngcontent-a-c2259499982] {
+  grid-column: span 2;
+}
+.rx-form-grid-study[_ngcontent-a-c2259499982], 
+.rx-form-grid-footer[_ngcontent-a-c2259499982] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+@media (max-width: 768px) {
+  .rx-form-grid-med[_ngcontent-a-c2259499982], 
+   .rx-form-grid-study[_ngcontent-a-c2259499982], 
+   .rx-form-grid-footer[_ngcontent-a-c2259499982] {
+    grid-template-columns: 1fr;
+  }
+  .rx-field-wide[_ngcontent-a-c2259499982] {
+    grid-column: span 1;
+  }
+}
+.rx-field[_ngcontent-a-c2259499982] {
+  gap: 0.35rem;
+}
+.rx-label[_ngcontent-a-c2259499982] {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--dc-ink-secondary, #334155);
+}
+.rx-input[_ngcontent-a-c2259499982] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.58rem 0.85rem;
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--dc-ink, #0f172a);
+  background: var(--dc-surface, #ffffff);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.rx-input[_ngcontent-a-c2259499982]:focus {
+  outline: none;
+  border-color: #006874;
+  box-shadow: 0 0 0 3px rgba(0, 104, 116, 0.12);
+}
+.rx-quick-studies-bar[_ngcontent-a-c2259499982], 
+.rx-draft-items-box[_ngcontent-a-c2259499982] {
+  gap: 0.5rem;
+  background: var(--dc-surface-low, #f8fafc);
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--dc-outline, #e2e8f0);
+}
+.rx-quick-label[_ngcontent-a-c2259499982], 
+.rx-draft-box-title[_ngcontent-a-c2259499982] {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--dc-ink-secondary, #475569);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.rx-quick-chips[_ngcontent-a-c2259499982] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.rx-quick-chip[_ngcontent-a-c2259499982] {
+  background: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #cbd5e1);
+  color: var(--dc-ink, #0f172a);
+  font-size: 0.76rem;
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.rx-quick-chip[_ngcontent-a-c2259499982]:hover {
+  background: var(--dc-teal-surface, #e6f6f8);
+  border-color: #006874;
+  color: var(--dc-teal-ink, #006874);
+}
+.rx-add-row[_ngcontent-a-c2259499982] {
+  display: flex;
+}
+.rx-btn-add-item[_ngcontent-a-c2259499982] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--dc-teal-surface, #f0fdfa);
+  border: 1px dashed #0d9488;
+  color: var(--dc-teal-ink, #0f766e);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.rx-btn-add-item[_ngcontent-a-c2259499982]:hover {
+  background: var(--dc-teal-surface, #ccfbf1);
+  border-style: solid;
+}
+.rx-draft-list[_ngcontent-a-c2259499982], 
+.rx-history-list[_ngcontent-a-c2259499982] {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  gap: 0.5rem;
+}
+.rx-draft-item[_ngcontent-a-c2259499982], 
+.rx-history-card[_ngcontent-a-c2259499982] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--dc-surface, #ffffff);
+  border: 1px solid var(--dc-outline, #e2e8f0);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+}
+.rx-draft-item-main[_ngcontent-a-c2259499982] {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.rx-item-index[_ngcontent-a-c2259499982] {
+  font-weight: 700;
+  color: var(--dc-teal-ink, #006874);
+  font-size: 0.85rem;
+}
+.rx-item-title-row[_ngcontent-a-c2259499982] {
+  flex-wrap: wrap;
+}
+.rx-item-name[_ngcontent-a-c2259499982], 
+.rx-history-items[_ngcontent-a-c2259499982] {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dc-ink, #0f172a);
+}
+.rx-item-badge[_ngcontent-a-c2259499982], 
+.rx-item-route[_ngcontent-a-c2259499982], 
+.rx-history-type-badge[_ngcontent-a-c2259499982] {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--dc-teal-surface, #e6f6f8);
+  color: var(--dc-teal-ink, #006874);
+  padding: 1px 7px;
+  border-radius: 5px;
+}
+.rx-item-route[_ngcontent-a-c2259499982] {
+  color: var(--dc-ink-muted, #64748b);
+  background: var(--dc-surface-high, #f1f5f9);
+}
+.rx-item-sub[_ngcontent-a-c2259499982] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  color: var(--dc-ink-muted, #64748b);
+  margin-top: 0.15rem;
+}
+.rx-btn-remove[_ngcontent-a-c2259499982] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--dc-error-ink, #ef4444);
+  padding: 0.35rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.rx-btn-remove[_ngcontent-a-c2259499982]:hover {
+  background: var(--dc-error-surface, #fee2e2);
+}
+.rx-bottom-actions[_ngcontent-a-c2259499982] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--dc-outline, #f1f5f9);
+}
+.rx-bottom-right-btns[_ngcontent-a-c2259499982] {
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+.rx-history-info[_ngcontent-a-c2259499982] {
+  gap: 0.2rem;
+}
+.rx-history-type-badge[_ngcontent-a-c2259499982] {
+  text-transform: uppercase;
+}
+.rx-history-type-badge.study[_ngcontent-a-c2259499982] {
+  background: var(--dc-blue-surface, #eff6ff);
+  color: var(--dc-blue-ink, #1d4ed8);
+}
+@keyframes _ngcontent-a-c2259499982_spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes _ngcontent-a-c2259499982_pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.animate-fade-in[_ngcontent-a-c2259499982] {
+  animation: _ngcontent-a-c2259499982_fadeIn 0.15s ease-in-out;
+}
+@keyframes _ngcontent-a-c2259499982_fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media print {
+  .cta-primary-btn[_ngcontent-a-c2259499982] {
+    display: none !important;
+  }
+  .clinical-section-card[_ngcontent-a-c2259499982] {
+    box-shadow: none !important;
+    border: 1px solid #000000 !important;
+  }
+}
+.field-error[_ngcontent-a-c2259499982] {
+  display: block;
+  margin-top: 6px;
+  color: #b91c1c;
+  font-size: .8rem;
+}</style></head><body><div id="root58" ng-version="22.2.2" _nghost-a-c3867494518=""><div _ngcontent-a-c3867494518="" class="patient-record-page"><!--container--><app-patient-banner _ngcontent-a-c3867494518="" _nghost-a-c92380119=""><header _ngcontent-a-c92380119="" role="banner" aria-label="Cabecera clínica del paciente" class="patient-clinical-banner"><div _ngcontent-a-c92380119="" class="banner-left-block"><button _ngcontent-a-c92380119="" type="button" title="Volver al Directorio de Pacientes" class="btn-nav-back"><ng-icon _ngcontent-a-c92380119="" role="img" name="lucideChevronLeft" class="text-slate-500" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="m15 18-6-6 6-6"></path></svg></ng-icon><span _ngcontent-a-c92380119="">Directorio</span></button><div _ngcontent-a-c92380119="" class="patient-avatar-circle"> MR </div><div _ngcontent-a-c92380119="" class="patient-core-info"><div _ngcontent-a-c92380119="" class="patient-name-row"><h1 _ngcontent-a-c92380119="" class="patient-fullname"> Mateo Rossi </h1><span _ngcontent-a-c92380119="" class="hc-number-chip">HC #10492</span><span _ngcontent-a-c92380119="" title="Atención Particular / Sin Cobertura Registrada" class="coverage-chip particular"><ng-icon _ngcontent-a-c92380119="" role="img" name="lucideCreditCard" class="text-slate-400" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><rect width="20" height="14" x="2" y="5" rx="2"></rect><line x1="2" x2="22" y1="10" y2="10"></line></svg></ng-icon><span _ngcontent-a-c92380119="">Particular</span></span><!--container--><!--container--></div><div _ngcontent-a-c92380119="" class="patient-demographics-row"><span _ngcontent-a-c92380119="" class="demo-item"><strong _ngcontent-a-c92380119="">DNI:</strong> 36.812.904</span><span _ngcontent-a-c92380119="" class="demo-bullet">•</span><span _ngcontent-a-c92380119="" class="demo-item"><strong _ngcontent-a-c92380119="">Edad:</strong> 2a 5m</span><span _ngcontent-a-c92380119="" class="demo-bullet">•</span><span _ngcontent-a-c92380119="" class="demo-item"><strong _ngcontent-a-c92380119="">Sexo:</strong> Masculino</span><span _ngcontent-a-c92380119="" class="demo-bullet">•</span><span _ngcontent-a-c92380119="" class="demo-item"><strong _ngcontent-a-c92380119="">Grupo:</strong> O+</span><!--container--><!--container--></div></div></div><div _ngcontent-a-c92380119="" role="region" aria-label="Alertas médicas críticas de seguridad" class="banner-safety-block"><div _ngcontent-a-c92380119="" class="alerts-group allergies-group"><div _ngcontent-a-c92380119="" class="safety-badge danger" title="Alergia severa reportada: Amoxicilina"><span _ngcontent-a-c92380119="" class="safety-dot-pulse red"></span><ng-icon _ngcontent-a-c92380119="" role="img" name="lucideShieldAlert" class="safety-icon text-red-600" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg></ng-icon><span _ngcontent-a-c92380119="" class="safety-text"><strong _ngcontent-a-c92380119="">ALERGIA:</strong> Amoxicilina</span></div><!--container--></div><!--container--><div _ngcontent-a-c92380119="" class="alerts-group chronic-group"><div _ngcontent-a-c92380119="" class="safety-badge warning" title="Condición médica de base: Bronquiolitis leve a los 3 meses"><ng-icon _ngcontent-a-c92380119="" role="img" name="lucideAlertTriangle" class="safety-icon text-amber-600" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></ng-icon><span _ngcontent-a-c92380119="" class="safety-text"><strong _ngcontent-a-c92380119="">ANTECEDENTE:</strong> Bronquiolitis leve a los 3 meses</span></div><!--container--></div><!--container--></div><div _ngcontent-a-c92380119="" class="banner-actions-block"><button _ngcontent-a-c92380119="" type="button" class="btn-secondary-edit" title="Editar datos filiatorios y clínicos del paciente"><ng-icon _ngcontent-a-c92380119="" role="img" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></ng-icon><span _ngcontent-a-c92380119="">Editar datos</span></button><!--container--><button _ngcontent-a-c92380119="" type="button" class="btn-primary-soap"><ng-icon _ngcontent-a-c92380119="" role="img" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></ng-icon><span _ngcontent-a-c92380119="">Nueva historia clínica</span></button><!--container--><!--container--></div></header></app-patient-banner><nav _ngcontent-a-c3867494518="" aria-label="Secciones de la ficha clínica" class="flattened-tabs-nav"><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn"><span _ngcontent-a-c3867494518="">1. Datos del paciente</span><!--container--></button><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn"><span _ngcontent-a-c3867494518="">2. Historia Clínica</span><span _ngcontent-a-c3867494518="" class="tab-counter-badge">2</span><!--container--></button><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn"><span _ngcontent-a-c3867494518="">3. Vacunas</span><!--container--></button><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn"><span _ngcontent-a-c3867494518="">4. Evolución y Curvas</span><span _ngcontent-a-c3867494518="" class="tab-counter-badge">6</span><!--container--></button><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn active"><span _ngcontent-a-c3867494518="">5. Recetas y Órdenes</span><!--container--></button><button _ngcontent-a-c3867494518="" type="button" class="flat-tab-btn"><span _ngcontent-a-c3867494518="">6. Estudios realizados</span><!--container--></button><!--container--></nav><div _ngcontent-a-c3867494518="" class="tab-content-area"><section _ngcontent-a-c3867494518="" class="module-outlet"><app-patient-prescriptions _nghost-a-c2259499982=""><section _ngcontent-a-c2259499982="" aria-label="Recetas y Estudios" class="tab-panel animate-fade-in"><div _ngcontent-a-c2259499982="" class="clinical-section-card rx-builder-card"><div _ngcontent-a-c2259499982="" class="sec-card-header rx-card-header"><div _ngcontent-a-c2259499982="" class="rx-header-title-group"><div _ngcontent-a-c2259499982="" class="rx-header-icon-badge"><ng-icon _ngcontent-a-c2259499982="" role="img" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"></path><path d="m8.5 8.5 7 7"></path></svg></ng-icon></div><div _ngcontent-a-c2259499982=""><h3 _ngcontent-a-c2259499982="" class="sec-card-title">Confeccionar Receta u Orden de Estudios</h3><p _ngcontent-a-c2259499982="" class="rx-header-subtitle"> Paciente: <strong _ngcontent-a-c2259499982="">Mateo Rossi</strong> (DNI 36.812.904) · Profesional: <strong _ngcontent-a-c2259499982="">Dra. Sofía Mendoza</strong></p></div></div><div _ngcontent-a-c2259499982="" class="rx-header-actions"><button _ngcontent-a-c2259499982="" type="button" class="cta-primary-btn btn-sm"><ng-icon _ngcontent-a-c2259499982="" role="img" name="lucidePrinter" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"></path><rect x="6" y="14" width="12" height="8" rx="1"></rect></svg></ng-icon><span _ngcontent-a-c2259499982=""> Imprimir Receta Médica </span></button><!--container--></div></div><div _ngcontent-a-c2259499982="" class="sec-card-body rx-builder-body"><div _ngcontent-a-c2259499982="" role="tablist" aria-label="Tipo de indicación médica" class="rx-mode-selector"><button _ngcontent-a-c2259499982="" type="button" role="tab" class="rx-mode-tab active" aria-selected="true"><ng-icon _ngcontent-a-c2259499982="" role="img" name="lucidePill" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"></path><path d="m8.5 8.5 7 7"></path></svg></ng-icon><span _ngcontent-a-c2259499982="">Recetar Medicación</span><!--container--></button><button _ngcontent-a-c2259499982="" type="button" role="tab" class="rx-mode-tab" aria-selected="false"><ng-icon _ngcontent-a-c2259499982="" role="img" name="lucideFileText" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg></ng-icon><span _ngcontent-a-c2259499982="">Solicitar Estudios / Prácticas</span><!--container--></button></div><!--container--><!--container--><div _ngcontent-a-c2259499982="" class="rx-form-section animate-fade-in"><div _ngcontent-a-c2259499982="" class="rx-form-grid-med"><div _ngcontent-a-c2259499982="" class="rx-field rx-field-wide"><label _ngcontent-a-c2259499982="" for="rx-med-name" class="rx-label">Medicamento / Principio Activo y Concentración *</label><input _ngcontent-a-c2259499982="" id="rx-med-name" type="text" placeholder="Ej: Amoxicilina 500 mg, Ibuprofeno 600 mg, Losartán 50 mg..." class="rx-input ng-untouched ng-pristine ng-valid" value=""><span _ngcontent-a-c2259499982="" role="alert" class="field-error">Completá este campo.</span><!--container--></div><div _ngcontent-a-c2259499982="" class="rx-field"><label _ngcontent-a-c2259499982="" for="rx-med-dosage" class="rx-label">Dosis / Presentación</label><input _ngcontent-a-c2259499982="" id="rx-med-dosage" type="text" placeholder="Ej: 1 comprimido, 5 ml, 20 gotas..." class="rx-input ng-untouched ng-pristine ng-valid" value=""><!--container--></div><div _ngcontent-a-c2259499982="" class="rx-field"><label _ngcontent-a-c2259499982="" for="rx-med-freq" class="rx-label">Frecuencia</label><select _ngcontent-a-c2259499982="" id="rx-med-freq" class="rx-input ng-untouched ng-pristine ng-valid"><option _ngcontent-a-c2259499982="" value="Cada 8 horas" selected="">Cada 8 horas</option><option _ngcontent-a-c2259499982="" value="Cada 12 horas">Cada 12 horas</option><option _ngcontent-a-c2259499982="" value="Cada 24 horas (1 vez por día)">Cada 24 horas (1 vez por día)</option><option _ngcontent-a-c2259499982="" value="Cada 6 horas">Cada 6 horas</option><option _ngcontent-a-c2259499982="" value="En ayunas">En ayunas</option><option _ngcontent-a-c2259499982="" value="Según dolor o necesidad">Según dolor o necesidad</option><!--container--></select><!--container--></div><div _ngcontent-a-c2259499982="" class="rx-field"><label _ngcontent-a-c2259499982="" for="rx-med-route" class="rx-label">Vía de administración</label><select _ngcontent-a-c2259499982="" id="rx-med-route" class="rx-input ng-untouched ng-pristine ng-valid"><option _ngcontent-a-c2259499982="" value="Vía Oral" selected="">Vía Oral</option><option _ngcontent-a-c2259499982="" value="Sublingual">Sublingual</option><option _ngcontent-a-c2259499982="" value="Intramuscular">Intramuscular</option><option _ngcontent-a-c2259499982="" value="Endovenosa">Endovenosa</option><option _ngcontent-a-c2259499982="" value="Tópica / Dérmica">Tópica / Dérmica</option><option _ngcontent-a-c2259499982="" value="Inhalatoria">Inhalatoria</option><option _ngcontent-a-c2259499982="" value="Oftálmica / Ótica">Oftálmica / Ótica</option><!--container--></select><!--container--></div><div _ngcontent-a-c2259499982="" class="rx-field"><label _ngcontent-a-c2259499982="" for="rx-med-days" class="rx-label">Duración en días (opcional)</label><input _ngcontent-a-c2259499982="" id="rx-med-days" type="text" inputmode="numeric" placeholder="Ej: 7, 10, 30..." class="rx-input ng-untouched ng-pristine ng-valid" value=""><!--container--></div><div _ngcontent-a-c2259499982="" class="rx-field rx-field-wide"><label _ngcontent-a-c2259499982="" for="rx-med-notes" class="rx-label">Indicaciones de toma (opcional)</label><input _ngcontent-a-c2259499982="" id="rx-med-notes" type="text" placeholder="Ej: Tomar después de las comidas, no suspender antes de finalizar..." class="rx-input ng-untouched ng-pristine ng-valid" value=""><!--container--></div></div><div _ngcontent-a-c2259499982="" class="rx-add-row"><button _ngcontent-a-c2259499982="" type="button" class="rx-btn-add-item"><ng-icon _ngcontent-a-c2259499982="" role="img" name="lucidePlus" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></ng-icon><span _ngcontent-a-c2259499982="">Agregar medicamento a la receta</span></button></div><!--container--></div><!--container--><!--container--><div _ngcontent-a-c2259499982="" class="sec-subdivider"></div><div _ngcontent-a-c2259499982="" class="rx-form-grid-footer"><div _ngcontent-a-c2259499982="" class="rx-field"><label _ngcontent-a-c2259499982="" for="rx-diagnosis" class="rx-label">Diagnóstico Presuntivo o Motivo Clínico (opcional)</label><input _ngcontent-a-c2259499982="" id="rx-diagnosis" type="text" placeholder="Ej: Cefalea en estudio, Control clínico, Cuadro respiratorio agudo..." class="rx-input ng-untouched ng-pristine ng-valid" value=""><!--container--></div><div _ngcontent-a-c2259499982="" class="rx-field"><label _ngcontent-a-c2259499982="" for="rx-general-notes" class="rx-label">Indicaciones generales para el paciente (opcional)</label><input _ngcontent-a-c2259499982="" id="rx-general-notes" type="text" placeholder="Ej: Concurrir con estudios anteriores, reposo por 48 hs..." class="rx-input ng-untouched ng-pristine ng-valid" value=""><!--container--></div></div><div _ngcontent-a-c2259499982="" class="rx-bottom-actions"><button _ngcontent-a-c2259499982="" type="button" class="secondary-outline-btn btn-sm"> Limpiar formulario </button><div _ngcontent-a-c2259499982="" class="rx-bottom-right-btns"><button _ngcontent-a-c2259499982="" type="button" class="secondary-outline-btn btn-sm"><ng-icon _ngcontent-a-c2259499982="" role="img" name="lucideCheckCircle2" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg></ng-icon><span _ngcontent-a-c2259499982="">Guardar en Historial</span></button><button _ngcontent-a-c2259499982="" type="button" class="cta-primary-btn btn-sm"><ng-icon _ngcontent-a-c2259499982="" role="img" name="lucidePrinter" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"></path><rect x="6" y="14" width="12" height="8" rx="1"></rect></svg></ng-icon><span _ngcontent-a-c2259499982=""> Emitir e Imprimir Receta Médica </span></button><!--container--></div></div></div></div><div _ngcontent-a-c2259499982="" class="panel-grid-cards"><div _ngcontent-a-c2259499982="" class="clinical-section-card"><div _ngcontent-a-c2259499982="" class="sec-card-header"><div _ngcontent-a-c2259499982="" class="flex items-center gap-2"><ng-icon _ngcontent-a-c2259499982="" role="img" name="lucideClock" class="text-teal-600" _nghost-a-c572653062="" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:var(--ng-icon__stroke-width, 2)"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg></ng-icon><h3 _ngcontent-a-c2259499982="" class="sec-card-title"> Recetas y Estudios Emitidos (0) </h3></div></div><div _ngcontent-a-c2259499982="" class="sec-card-body"><!--container--><!--container--><!--container--><p _ngcontent-a-c2259499982="" class="text-xs text-slate-500 py-3"> Todavía no se registraron recetas ni órdenes de estudios para este paciente. Completá el formulario superior para emitir e imprimir la primera. </p><!--container--></div></div></div></section><!--container--></app-patient-prescriptions><!--ng-container--></section><!--container--></div><!--container--><!--container--></div></div></body></html>
