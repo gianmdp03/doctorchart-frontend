@@ -165,15 +165,6 @@ describe('PatientListComponent', () => {
     expect(fixture.nativeElement.querySelector('.empty-state')).toBeTruthy();
   });
 
-  it('should toggle columns modal visibility', () => {
-    expect(component.isColumnsModalOpen()).toBe(false);
-
-    component.openColumnsModal();
-    expect(component.isColumnsModalOpen()).toBe(true);
-
-    component.closeColumnsModal();
-    expect(component.isColumnsModalOpen()).toBe(false);
-  });
   it('requests filters before pagination and renders the server age and pending flag', () => {
     component.setFilter('VACCINE_PENDING');
     expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(

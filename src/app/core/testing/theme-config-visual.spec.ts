@@ -5,7 +5,7 @@ import { FormFieldEditorComponent } from '../../features/form-field-editor/form-
 import { WizardFormDefinition } from '../models/wizard-definition.model';
 
 describe('Configuration theme fixture', () => {
-  it('renders selected, unselected and inactive categories, locked fields and the field dialog', async () => {
+  it('renders selected, unselected and inactive categories, locked fields and the field page', async () => {
     await TestBed.configureTestingModule({ imports: [FormFieldEditorComponent] }).compileComponents();
     const fixture = TestBed.createComponent(FormFieldEditorComponent);
     const definition: WizardFormDefinition = { categories: [
@@ -42,7 +42,7 @@ describe('Configuration theme fixture', () => {
     save('configuration');
     fixture.componentInstance.openField('family');
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.field-dialog')).toBeTruthy();
-    save('configuration-dialog');
+    expect(fixture.nativeElement.querySelector('.field-editor-page')).toBeTruthy();
+    save('configuration-field-page');
   });
 });

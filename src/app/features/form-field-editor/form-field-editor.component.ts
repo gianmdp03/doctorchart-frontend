@@ -1,6 +1,5 @@
-import { Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { Component, computed, effect, ElementRef, input, output, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { A11yModule } from '@angular/cdk/a11y';
 import { WizardFormDefinition, WizardFieldDefinition, WizardFormulaDefinition, WizardFormulaInput } from '../../core/models/wizard-definition.model';
 import { parseNumberInput, textError } from '../../core/models/form-validation';
 
@@ -17,9 +16,10 @@ const INPUT_LABELS: Record<string, string> = {
 };
 const clone = <T>(value: T): T => structuredClone(value);
 
-@Component({ selector: 'app-form-field-editor', imports: [FormsModule, A11yModule],
+@Component({ selector: 'app-form-field-editor', imports: [FormsModule],
   templateUrl: './form-field-editor.component.html', styleUrl: './form-field-editor.component.css' })
 export class FormFieldEditorComponent {
+  private readonly fieldPageHeading = viewChild<ElementRef<HTMLElement>>('fieldPageHeading');
   private lastRequestedCategory: string | null | undefined;
   readonly definition = input<WizardFormDefinition>({ categories: [] });
   readonly section = input<'patientForm' | 'encounterForm'>('patientForm');
@@ -86,6 +86,7 @@ export class FormFieldEditorComponent {
     { value: 'DIVIDE', label: 'Dividir' }, { value: 'AVERAGE', label: 'Promediar' },
   ];
   constructor() {
+    effect(() => this.fieldPageHeading()?.nativeElement.focus());
     effect(() => {
       const form = this.definition(); const requested = this.selectedCategoryKey();
       untracked(() => {

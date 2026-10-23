@@ -60,7 +60,7 @@ describe('doctorchartPlanGuard', () => {
     expect(window.location.href).toBe('');
   });
 
-  it('should block access and open login modal when user is not logged in', async () => {
+  it('should redirect to the login page when user is not logged in', async () => {
     authServiceMock.isLoggedIn.set(false);
     authServiceMock.hasDoctorchartPlan.set(false);
 
@@ -71,10 +71,7 @@ describe('doctorchartPlanGuard', () => {
     );
 
     expect(TestBed.inject(Router).serializeUrl(canActivate as import('@angular/router').UrlTree)).toBe('/login?returnUrl=%2Fpacientes%2F42');
-    expect(authServiceMock.openLoginModal).toHaveBeenCalled();
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'open-login-modal' })
-    );
+    expect(authServiceMock.openLoginModal).not.toHaveBeenCalled();
 
     dispatchSpy.mockRestore();
   });

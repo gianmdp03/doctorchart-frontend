@@ -206,8 +206,7 @@ export class HeaderComponent implements OnDestroy {
 
   handleProfileClick(): void {
     this.isProfileMenuOpen.set(false);
-    this.authService.openProfileModal();
-    window.dispatchEvent(new CustomEvent('open-profile-modal'));
+    void this.router.navigate(['/perfil']);
   }
 
   openWizardConfig(): void {

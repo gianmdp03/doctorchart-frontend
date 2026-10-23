@@ -38,80 +38,104 @@
         }
       </div>
 
-      <!-- Filter Chips -->
-      <button
-        type="button"
-        class="m3-chip"
-        [class.filter-active]="selectedFilter() === 'ALL'"
-        (click)="setFilter('ALL')"
-      >
-        Todos
-      </button>
-
-      @if (doctorSpecialtyService.isPediatrics()) {
-        @for (filter of pediatricFilters; track filter.value) {
-          <button
-            type="button"
-            class="m3-chip"
-            [class.filter-active]="selectedFilter() === filter.value"
-            [attr.aria-pressed]="selectedFilter() === filter.value"
-            [title]="filter.description"
-            (click)="setFilter(filter.value)"
-          >{{ filter.label }}</button>
-        }
-        <button type="button" class="m3-chip"
-          [class.filter-active]="selectedFilter() === 'VACCINE_PENDING'"
-          (click)="setFilter('VACCINE_PENDING')">Vacunación Pendiente</button>
-      } @else if (doctorSpecialtyService.supportsGrowthCharts()) {
-        <button
-          type="button"
-          class="m3-chip"
-          [class.filter-active]="selectedFilter() === 'INFANT'"
-          (click)="setFilter('INFANT')"
-        >
-          Lactantes (0-12m)
-        </button>
-
-        <button
-          type="button"
-          class="m3-chip"
-          [class.filter-active]="selectedFilter() === 'TODDLER'"
-          (click)="setFilter('TODDLER')"
-        >
-          Primera Infancia
-        </button>
-
-        <button
-          type="button"
-          class="m3-chip"
-          [class.filter-active]="selectedFilter() === 'VACCINE_PENDING'"
-          (click)="setFilter('VACCINE_PENDING')"
-        >
-          Vacunación Pendiente
-        </button>
-      } @else {
-        <button
-          type="button"
-          class="m3-chip"
-          [class.filter-active]="selectedFilter() === 'ADULT'"
-          (click)="setFilter('ADULT')"
-        >
-          Adultos (≥ 18 años)
-        </button>
-        <button
-          type="button"
-          class="m3-chip"
-          [class.filter-active]="selectedFilter() === 'MINOR'"
-          (click)="setFilter('MINOR')"
-        >
-          Menores (< 18 años)
-        </button>
-      }
-
-      <button type="button" class="m3-button m3-button-tonal" (click)="openNewPatientModal()">
+      <button type="button" class="m3-button m3-button-tonal" (click)="createPatient()">
         + Nuevo paciente
       </button>
     </div>
+
+    <section class="directory-filters" aria-label="Categorías de pacientes">
+      <div class="directory-filters-heading">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 7h16M7 12h10M10 17h4" />
+        </svg>
+        <span>Filtrar pacientes</span>
+      </div>
+      <div class="directory-filter-options" role="group" aria-label="Filtrar por categoría">
+        <button
+          type="button"
+          class="directory-filter directory-filter-all"
+          [class.filter-active]="selectedFilter() === 'ALL'"
+          [attr.aria-pressed]="selectedFilter() === 'ALL'"
+          (click)="setFilter('ALL')"
+        >
+          <span class="filter-name">Todos</span>
+          <span class="filter-range">Todas las edades</span>
+        </button>
+
+        @if (doctorSpecialtyService.isPediatrics()) {
+          @for (filter of pediatricFilters; track filter.value) {
+            <button
+              type="button"
+              class="directory-filter"
+              [class.filter-active]="selectedFilter() === filter.value"
+              [attr.aria-pressed]="selectedFilter() === filter.value"
+              [title]="filter.description"
+              [attr.aria-label]="filter.label"
+              (click)="setFilter(filter.value)"
+            ><span class="filter-name">{{ filter.name }}</span><span class="filter-range"> ({{ filter.range }})</span></button>
+          }
+          <button type="button" class="directory-filter directory-filter-vaccine"
+            [class.filter-active]="selectedFilter() === 'VACCINE_PENDING'"
+            [attr.aria-pressed]="selectedFilter() === 'VACCINE_PENDING'"
+            (click)="setFilter('VACCINE_PENDING')">
+            <span class="filter-name">Vacunación</span>
+            <span class="filter-range"><span class="filter-status-dot" aria-hidden="true"></span>Pendiente</span>
+          </button>
+        } @else if (doctorSpecialtyService.supportsGrowthCharts()) {
+          <button
+            type="button"
+            class="directory-filter"
+            [class.filter-active]="selectedFilter() === 'INFANT'"
+            [attr.aria-pressed]="selectedFilter() === 'INFANT'"
+            (click)="setFilter('INFANT')"
+          >
+            <span class="filter-name">Lactantes</span><span class="filter-range"> (0-12m)</span>
+          </button>
+
+          <button
+            type="button"
+            class="directory-filter"
+            [class.filter-active]="selectedFilter() === 'TODDLER'"
+            [attr.aria-pressed]="selectedFilter() === 'TODDLER'"
+            (click)="setFilter('TODDLER')"
+          >
+            <span class="filter-name">Primera Infancia</span>
+            <span class="filter-range">Etapa de crecimiento</span>
+          </button>
+
+          <button
+            type="button"
+            class="directory-filter directory-filter-vaccine"
+            [class.filter-active]="selectedFilter() === 'VACCINE_PENDING'"
+            [attr.aria-pressed]="selectedFilter() === 'VACCINE_PENDING'"
+            (click)="setFilter('VACCINE_PENDING')"
+          >
+            <span class="filter-name">Vacunación</span>
+            <span class="filter-range"><span class="filter-status-dot" aria-hidden="true"></span>Pendiente</span>
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="directory-filter"
+            [class.filter-active]="selectedFilter() === 'ADULT'"
+            [attr.aria-pressed]="selectedFilter() === 'ADULT'"
+            (click)="setFilter('ADULT')"
+          >
+            <span class="filter-name">Adultos</span><span class="filter-range"> (≥ 18 años)</span>
+          </button>
+          <button
+            type="button"
+            class="directory-filter"
+            [class.filter-active]="selectedFilter() === 'MINOR'"
+            [attr.aria-pressed]="selectedFilter() === 'MINOR'"
+            (click)="setFilter('MINOR')"
+          >
+            <span class="filter-name">Menores</span><span class="filter-range"> (< 18 años)</span>
+          </button>
+        }
+
+      </div>
+    </section>
   </div>
 
   @if (loadError(); as error) { <p role="alert">{{ error }} <button type="button" class="m3-chip" (click)="loadInitial()">Reintentar</button></p> }

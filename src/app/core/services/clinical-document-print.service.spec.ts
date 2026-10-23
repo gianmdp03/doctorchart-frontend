@@ -106,7 +106,8 @@ describe('ClinicalDocumentPrintService', () => {
     const req = httpMock.expectOne(request => request.url.endsWith('/patients/3/prescriptions/20/pdf'));
     req.flush(new Blob([JSON.stringify({ code: 'FORBIDDEN' })], { type: 'application/json' }), { status: 403, statusText: 'Forbidden' });
     expect(close).toHaveBeenCalled();
-    expect(alert).toHaveBeenCalledWith(expect.stringContaining('No tenés permiso'));
+    expect(service.errorMessage()).toContain('No tenés permiso');
+    expect(alert).not.toHaveBeenCalled();
   });
 
   it('discards a PDF delivered after the session changes', () => {
@@ -130,7 +131,8 @@ describe('ClinicalDocumentPrintService', () => {
       new Blob([JSON.stringify({ code: 'PDF_UNSUPPORTED_CHARACTER' })], { type: 'application/json' }),
       { status: 422, statusText: 'Unprocessable Content' });
     expect(close).toHaveBeenCalled();
-    expect(alert).toHaveBeenCalledWith(expect.stringContaining('los datos guardados no se modificaron'));
+    expect(service.errorMessage()).toContain('los datos guardados no se modificaron');
+    expect(alert).not.toHaveBeenCalled();
   });
 
   it('should open new window and assign blob object URL on openPdfInNewTab()', () => {

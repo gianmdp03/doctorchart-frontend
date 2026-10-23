@@ -13,6 +13,13 @@
     </div>
   </header>
 
+  @if (pendingDelete(); as study) {
+    <section class="inline-confirmation" aria-label="Confirmar eliminación del estudio">
+      <p>¿Eliminar el estudio <strong>{{ study.originalFileName }}</strong>?</p>
+      <button type="button" [disabled]="isDeleting()" (click)="pendingDelete.set(null)">Conservar estudio</button>
+      <button type="button" [disabled]="isDeleting()" (click)="confirmDeleteStudy()">{{ isDeleting() ? 'Eliminando...' : 'Eliminar estudio' }}</button>
+    </section>
+  }
   <!-- Mensajes de Estado -->
   @if (errorMessage(); as error) {
     <div class="alert-box alert-error" role="alert">

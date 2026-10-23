@@ -83,4 +83,12 @@ export interface ClinicalEncounterDashboard {
   encountersThisMonth: number;
   encountersToday: number;
   recentEncounters: DashboardRecentEncounter[];
+  upcomingFollowUps: UpcomingFollowUp[];
+}
+
+export interface UpcomingFollowUp {
+  encounterId: number;
+  patientId: number;
+  patientFullName: string;
+  followUpDate: string;
 }

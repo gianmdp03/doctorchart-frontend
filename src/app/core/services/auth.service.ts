@@ -53,9 +53,6 @@ export class AuthService {
   readonly session = signal<Session | null>(null);
   readonly isLoggedIn = computed(() => !!this.currentUser());
 
-  // Modal dialog state signals
-  readonly isLoginModalOpen = signal<boolean>(false);
-  readonly isProfileModalOpen = signal<boolean>(false);
 
   readonly userName = computed(() => {
     const user = this.currentUser();
@@ -190,7 +187,6 @@ export class AuthService {
 
     if (this.isBrowser) {
       this.initSession();
-      this.initWindowEventListeners();
     }
   }
 
@@ -217,14 +213,6 @@ export class AuthService {
     this.supabaseClient = client;
   }
 
-  private initWindowEventListeners(): void {
-    if (!this.isBrowser) return;
-
-    window.addEventListener('open-login-modal', () => this.openLoginModal());
-    window.addEventListener('close-login-modal', () => this.closeLoginModal());
-    window.addEventListener('open-profile-modal', () => this.openProfileModal());
-    window.addEventListener('close-profile-modal', () => this.closeProfileModal());
-  }
 
   private async initSession(): Promise<void> {
     if (!this.supabaseClient) {
@@ -260,22 +248,6 @@ export class AuthService {
       this.isAuthInitialized.set(true);
       this.authReadyResolver?.();
     }
-  }
-
-  openLoginModal(): void {
-    this.isLoginModalOpen.set(true);
-  }
-
-  closeLoginModal(): void {
-    this.isLoginModalOpen.set(false);
-  }
-
-  openProfileModal(): void {
-    this.isProfileModalOpen.set(true);
-  }
-
-  closeProfileModal(): void {
-    this.isProfileModalOpen.set(false);
   }
 
   async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {

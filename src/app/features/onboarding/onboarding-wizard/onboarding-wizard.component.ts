@@ -27,6 +27,8 @@ export class OnboardingWizardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly editors = viewChildren(FormFieldEditorComponent);
+  readonly fieldEditorOpen = computed(() => this.editors().some(editor => !!editor.fieldDraft()));
+  readonly activeFieldSection = computed(() => this.editors().find(editor => !!editor.fieldDraft())?.section());
   readonly pendingEditor = computed(() => this.editors().some(editor => editor.pendingChanges()));
 
   readonly workspace = signal<WorkspaceSetup | null>(null);

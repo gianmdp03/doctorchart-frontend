@@ -264,3 +264,14 @@ h1 { margin: .5rem 0; color: var(--dc-ink, #0f172a); font-size: 2rem; letter-spa
 .section-note { margin-top: 1rem !important; }
 .header-actions, .footer-left, .footer-right { flex-wrap: wrap; }
 @media (max-width: 640px) { .wizard-footer { flex-direction: column; align-items: stretch; } .footer-right { justify-content: flex-start; } }
+
+/* A field is edited in the page content, with the parent draft preserved. */
+.wizard-container.field-editor-open .wizard-header,
+.wizard-container.field-editor-open .wizard-footer,
+.field-editor-open .wizard-content > :not(app-form-field-editor) { display: none; }
+.wizard-container.field-editor-open { max-width: none; width: 100%; }
+
+.field-editor-open .wizard-card { max-width: none; min-height: auto; padding: clamp(1rem, 3vw, 2rem); }
+.field-editor-open .wizard-content { padding: 0; }
+
+.wizard-container.field-editor-open { align-items: flex-start; }

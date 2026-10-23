@@ -6,7 +6,7 @@ import { ActivePatientService } from '../../core/services/active-patient.service
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { signal } from '@angular/core';
 import { of, Subject, throwError } from 'rxjs';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
 describe('ConsultasComponent', () => {
   let component: ConsultasComponent;
@@ -100,15 +100,10 @@ describe('ConsultasComponent', () => {
     expect(component.consultations()).toHaveLength(2);
   });
 
-  it('should dispatch encounter detail modal event', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+  it('opens the consultation detail route', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     component.openEncounterDetail(201);
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'open-encounter-detail-modal',
-        detail: { encounterId: 201 },
-      }),
-    );
+    expect(navigate).toHaveBeenCalledWith(['/consultas', 201]);
   });
   it('loads subsequent pages using the current search without requesting patient histories', () => {
     clinicalEncounterServiceMock.getAll.mockReturnValueOnce(

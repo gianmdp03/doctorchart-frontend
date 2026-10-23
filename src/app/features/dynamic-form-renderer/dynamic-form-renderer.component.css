@@ -13,3 +13,4 @@
 .is-readonly .field.wide{grid-column: 1/-1}
 .is-readonly .formula-result{background: var(--dc-surface, #fff);border: 1px solid var(--dc-outline, #e2e8f0);color: var(--dc-ink, #0f172a);font-weight: 600}
 .field.has-error input,.field.has-error textarea,.field.has-error select { border-color: #b91c1c; }
+.field-hint { color: var(--dc-ink-secondary, #52647a); font-size: .75rem; line-height: 1.6; }

@@ -12,7 +12,12 @@
                 @case ('TEXT') { <input [id]="'field-' + field.key" [ngModel]="currentValues()[field.key] ?? ''" (ngModelChange)="setValue(field, $event)" [placeholder]="field.placeholder ?? ''" /> }
                 @case ('TEXTAREA') { <textarea [id]="'field-' + field.key" rows="3" [ngModel]="currentValues()[field.key] ?? ''" (ngModelChange)="setValue(field, $event)" [placeholder]="field.placeholder ?? ''"></textarea> }
                 @case ('NUMBER') { <div class="number-with-unit"><input type="text" inputmode="decimal" [id]="'field-' + field.key" [ngModel]="numberInput(field)" (ngModelChange)="setNumberValue(field, $event)" [attr.aria-invalid]="!!fieldError(field)" [attr.aria-describedby]="fieldError(field) ? 'error-' + field.key : null" [placeholder]="field.placeholder ?? ''" />@if (field.unit) { <span>{{ field.unit }}</span> }</div> }
-                @case ('DATE') { <app-date-picker [showError]="false" [ngModel]="$any(currentValues()[field.key] ?? '')" (ngModelChange)="setValue(field, $event)" [max]="isBirthDateField(field.key) ? todayIso : null" /> }
+                @case ('DATE') {
+                  <app-date-picker [inputId]="'field-' + field.key" [showError]="false" [ngModel]="$any(currentValues()[field.key] ?? '')" (ngModelChange)="setValue(field, $event)" [max]="isBirthDateField(field.key) ? todayIso : null" />
+                  @if (field.key === 'followUpDate' || field.key === 'encounter.followUpDate') {
+                    <span class="field-hint">Se recordará en Inicio al acercarse la fecha del próximo control.</span>
+                  }
+                }
                 @case ('SELECT') { <select [id]="'field-' + field.key" [ngModel]="currentValues()[field.key] ?? null" (ngModelChange)="setValue(field, $event)"><option [ngValue]="null">Seleccionar</option>@for (option of field.options ?? []; track option.value) { <option [value]="option.value">{{ option.label }}</option> }</select> }
                 @case ('BOOLEAN') { <select [id]="'field-' + field.key" [ngModel]="currentValues()[field.key] ?? null" (ngModelChange)="setValue(field, $event)"><option [ngValue]="null">Sin respuesta</option><option [ngValue]="true">Sí</option><option [ngValue]="false">No</option></select> }
               }

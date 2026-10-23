@@ -133,13 +133,13 @@ export class PatientListComponent implements OnInit {
   readonly activePatientService = inject(ActivePatientService);
   readonly doctorSpecialtyService = inject(DoctorSpecialtyService);
   readonly workspaceStore = inject(WorkspaceStore);
-  readonly pediatricFilters: ReadonlyArray<{ value: PatientDirectoryFilter; label: string; description: string }> = [
-    { value: 'NEONATAL', label: 'Recién nacidos (0–27 días)', description: 'Desde el nacimiento hasta antes de cumplir 28 días.' },
-    { value: 'INFANT', label: 'Lactantes (28 días–<1 año)', description: 'Desde los 28 días hasta antes del primer cumpleaños.' },
-    { value: 'EARLY_CHILDHOOD', label: 'Primera infancia (1–4 años)', description: 'Desde el primer cumpleaños hasta antes de cumplir 5 años.' },
-    { value: 'CHILD', label: 'Niñez (5–9 años)', description: 'Desde el quinto cumpleaños hasta antes de cumplir 10 años.' },
-    { value: 'ADOLESCENT', label: 'Adolescentes (10–19 años)', description: 'Desde el décimo cumpleaños hasta antes de cumplir 20 años. Etapa clínica, independiente de la mayoría de edad legal.' },
-  ];
+  readonly pediatricFilters = ([
+    { value: 'NEONATAL', name: 'Recién nacidos', range: '0–27 días', description: 'Desde el nacimiento hasta antes de cumplir 28 días.' },
+    { value: 'INFANT', name: 'Lactantes', range: '28 días–<1 año', description: 'Desde los 28 días hasta antes del primer cumpleaños.' },
+    { value: 'EARLY_CHILDHOOD', name: 'Primera infancia', range: '1–4 años', description: 'Desde el primer cumpleaños hasta antes de cumplir 5 años.' },
+    { value: 'CHILD', name: 'Niñez', range: '5–9 años', description: 'Desde el quinto cumpleaños hasta antes de cumplir 10 años.' },
+    { value: 'ADOLESCENT', name: 'Adolescentes', range: '10–19 años', description: 'Desde el décimo cumpleaños hasta antes de cumplir 20 años. Etapa clínica, independiente de la mayoría de edad legal.' },
+  ] as const).map(filter => ({ ...filter, label: `${filter.name} (${filter.range})` }));
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
@@ -151,8 +151,6 @@ export class PatientListComponent implements OnInit {
   readonly searchQuery = signal<string>('');
   readonly isLoading = signal<boolean>(false);
   readonly isLoadingMore = signal<boolean>(false);
-  readonly isColumnsModalOpen = signal<boolean>(false);
-  readonly isNewPatientModalOpen = signal<boolean>(false);
 
   readonly currentPage = signal<number>(0);
   readonly pageSize = 20;
@@ -207,14 +205,6 @@ export class PatientListComponent implements OnInit {
       );
       this.observer.observe(el);
     });
-  }
-
-  openColumnsModal(): void {
-    this.isColumnsModalOpen.set(true);
-  }
-
-  closeColumnsModal(): void {
-    this.isColumnsModalOpen.set(false);
   }
 
   ngOnInit(): void {
@@ -365,20 +355,11 @@ export class PatientListComponent implements OnInit {
     this.router.navigate(['/pacientes', patient.id]);
   }
 
-  openNewPatientModal(event?: Event): void {
+  createPatient(event?: Event): void {
     if (event) {
       event.stopPropagation();
     }
-    this.isNewPatientModalOpen.set(false);
     this.router.navigate(['/pacientes/nuevo']);
   }
 
-  closeNewPatientModal(): void {
-    this.isNewPatientModalOpen.set(false);
-  }
-
-  onPatientCreated(): void {
-    this.closeNewPatientModal();
-    this.loadInitial();
-  }
 }

@@ -22,6 +22,7 @@ type CalendarStartView = 'month' | 'year' | 'multi-year';
 export class DatePickerComponent implements ControlValueAccessor, Validator {
   private readonly adapter = inject<DateAdapter<Date>>(DateAdapter);
   readonly value = input<string | null | undefined>('');
+  readonly inputId = input<string | null>(null);
   readonly valueChange = output<string>();
   readonly startView = input<CalendarStartView>('month');
   readonly max = input<string | null | undefined>(null);

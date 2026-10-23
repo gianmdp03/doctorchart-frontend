@@ -2,12 +2,15 @@ import { instantParts } from '../../core/date/user-time-zone';
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
+  OnDestroy,
   ElementRef,
   effect,
   inject,
   signal,
   viewChild,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -21,19 +24,14 @@ import {
   lucideStethoscope,
   lucideX,
 } from '@ng-icons/lucide';
-import { HlmButton } from '@spartan-ng/helm/button';
-import { HlmInput } from '@spartan-ng/helm/input';
-import { HlmBadge } from '@spartan-ng/helm/badge';
 import { AiChatService } from '../../core/services/ai-chat.service';
 
 @Component({
-  selector: 'app-ai-assistant-widget',
+  selector: 'app-ai-assistant-page',
   imports: [
     FormsModule,
+    RouterLink,
     NgIcon,
-    HlmButton,
-    HlmInput,
-    HlmBadge,
   ],
   providers: [
     provideIcons({
@@ -48,11 +46,13 @@ import { AiChatService } from '../../core/services/ai-chat.service';
       lucideStethoscope,
     }),
   ],
-  templateUrl: './ai-assistant-widget.component.html',
-  styleUrl: './ai-assistant-widget.component.css',
+  templateUrl: './ai-assistant-page.component.html',
+  styleUrl: './ai-assistant-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AiAssistantWidgetComponent {
+export class AiAssistantPageComponent implements OnInit, OnDestroy {
+  ngOnInit(): void { this.chatService.openChat(); }
+  ngOnDestroy(): void { this.chatService.closeChat(); }
   readonly messageTime = (instant: string | Date) => instantParts(instant).time;
   protected readonly chatService = inject(AiChatService);
 
@@ -112,19 +112,19 @@ export class AiAssistantWidgetComponent {
 
     formatted = formatted.replace(
       /\*\*(.*?)\*\*/g,
-      '<strong class="text-zinc-100 font-semibold">$1</strong>',
+      '<strong class="font-semibold">$1</strong>',
     );
 
     formatted = formatted.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
 
     formatted = formatted.replace(
       /(^|\n)[-*]\s+(.+)/g,
-      '$1<div class="flex items-start gap-1.5 my-0.5"><span class="text-teal-400">•</span><span>$2</span></div>',
+      '$1<div class="flex items-start gap-1.5 my-0.5"><span class="message-list-marker">•</span><span>$2</span></div>',
     );
 
     formatted = formatted.replace(
       /(^|\n)(\d+)\.\s+(.+)/g,
-      '$1<div class="flex items-start gap-1.5 my-0.5"><span class="text-teal-400 font-mono text-xs">$2.</span><span>$3</span></div>',
+      '$1<div class="flex items-start gap-1.5 my-0.5"><span class="message-list-marker font-mono text-xs">$2.</span><span>$3</span></div>',
     );
 
     formatted = formatted.replace(/\n/g, '<br>');

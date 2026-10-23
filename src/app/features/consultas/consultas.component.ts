@@ -164,9 +164,5 @@ export class ConsultasComponent implements OnInit {
     this.activePatientService.loadPatient(patientId);
     this.router.navigate(['/pacientes', patientId]);
   }
-  openEncounterDetail(id: number): void {
-    window.dispatchEvent(
-      new CustomEvent('open-encounter-detail-modal', { detail: { encounterId: id } }),
-    );
-  }
+  openEncounterDetail(id: number): void { void this.router.navigate(['/consultas', id]); }
 }

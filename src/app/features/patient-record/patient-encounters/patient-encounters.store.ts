@@ -7,6 +7,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/services/auth.service';
@@ -28,8 +29,12 @@ export class PatientEncountersStore {
   private readonly activePatientService = inject(ActivePatientService);
   private readonly clinicalEncounterService = inject(ClinicalEncounterService);
   private readonly printService = inject(ClinicalDocumentPrintService);
+  private readonly router = inject(Router);
   private encounterRead = 0;
   private recordContext = '';
+  readonly pendingDeleteId = signal<number | null>(null);
+  readonly isDeleting = signal(false);
+  readonly deleteError = signal<string | null>(null);
   readonly encounters = signal<ClinicalEncounterList[]>([]);
   readonly isLoadingEncounters = signal<boolean>(false);
   readonly isCreatingEncounter = signal<boolean>(false);
@@ -73,6 +78,7 @@ export class PatientEncountersStore {
           this.recordContext = context;
           this.encounterRead++;
           this.encounters.set([]);
+          this.pendingDeleteId.set(null); this.isDeleting.set(false); this.deleteError.set(null);
           this.isCreatingEncounter.set(false);
           this.clearEncounterDraft();
         }
@@ -121,21 +127,19 @@ export class PatientEncountersStore {
       });
   }
 
-  openEncounterDetail(encounterId: number): void {
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('open-encounter-detail-modal', {
-          detail: { encounterId },
-        }),
-      );
-    }
-  }
+  openEncounterDetail(encounterId: number): void { void this.router.navigate(['/consultas', encounterId]); }
 
   deleteEncounter(encounterId: number, event?: Event): void {
-    if (event) event.stopPropagation();
-    const confirmed = window.confirm('¿Está seguro de que desea eliminar esta consulta clínica?');
-    if (!confirmed) return;
+    event?.stopPropagation();
+    if (this.isDeleting() || !this.encounters().some(item => item.id === encounterId)) return;
+    this.pendingDeleteId.set(encounterId); this.deleteError.set(null);
+  }
 
+  confirmDeleteEncounter(): void {
+    if (this.recordContext !== this.contextKey()) { this.pendingDeleteId.set(null); return; }
+    const encounterId = this.pendingDeleteId();
+    if (!encounterId || this.isDeleting() || !this.encounters().some(item => item.id === encounterId)) return;
+    this.isDeleting.set(true); this.deleteError.set(null);
     const patientId = this.activePatientService.patientId();
     const owner = this.authService.currentUser()?.id;
     const context = this.recordContext;
@@ -149,13 +153,16 @@ export class PatientEncountersStore {
       .subscribe({
         next: () => {
           if (!current()) return;
+          this.isDeleting.set(false); this.pendingDeleteId.set(null);
+          this.encounters.update(items => items.filter(item => item.id !== encounterId));
           if (patientId) {
             window.dispatchEvent(new CustomEvent('encounter-deleted', { detail: { patientId } }));
           }
         },
         error: (err) => {
           if (!current()) return;
-          alert(err?.error?.message || 'Error al eliminar la consulta clínica.');
+          this.isDeleting.set(false);
+          this.deleteError.set(err?.error?.message || 'No se pudo eliminar la consulta clínica.');
         },
       });
   }
@@ -169,11 +176,6 @@ export class PatientEncountersStore {
       ...(type ? { type } : {}),
     };
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('open-prescription-print-modal', {
-          detail: ref,
-        }),
-      );
       this.printService.openPdfInNewTab(ref);
     }
   }

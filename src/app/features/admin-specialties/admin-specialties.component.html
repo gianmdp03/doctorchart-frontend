@@ -1,4 +1,4 @@
-<main class="admin-specialties">
+<main [class.field-editor-open]="fieldEditorOpen()" class="admin-specialties">
   <header class="page-header">
     <div><span class="eyebrow">Administración</span><h1>Especialidades y wizard</h1>
       <p>Creá especialidades y configurá las fichas y consultas que reciben los médicos al elegirlas.</p></div>
@@ -76,11 +76,11 @@
             </fieldset>
             @for (generation of [editorGeneration()]; track generation) {
               <h3>Ficha del paciente</h3>
-              <app-form-field-editor [definition]="current.patientForm" section="patientForm" [readonly]="readonly()"
+              <app-form-field-editor [class.inactive-field-editor]="fieldEditorOpen() && activeFieldSection() !== 'patientForm'" [definition]="current.patientForm" section="patientForm" [readonly]="readonly()"
                 (definitionChange)="onDefinitionChange('patientForm', $event)" />
               <h3>Historia Clínica</h3>
               <p class="hint">Esta sección está presente en todas las especialidades. Organizá sus categorías y campos para cada consulta.</p>
-              <app-form-field-editor [definition]="current.encounterForm" section="encounterForm" [readonly]="readonly()"
+              <app-form-field-editor [class.inactive-field-editor]="fieldEditorOpen() && activeFieldSection() !== 'encounterForm'" [definition]="current.encounterForm" section="encounterForm" [readonly]="readonly()"
                 (definitionChange)="onDefinitionChange('encounterForm', $event)" />
             }
             @if (pendingEditor()) { <p class="notice">Aplicá o cancelá el campo abierto y completá las categorías pendientes antes de guardar el wizard.</p> }

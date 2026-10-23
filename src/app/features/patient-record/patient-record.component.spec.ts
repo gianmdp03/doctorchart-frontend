@@ -239,16 +239,16 @@ describe('PatientRecordComponent', () => {
     configuredActions.set([]);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.btn-tab-edit')).toBeNull();
-    component.openEditPatientModal();
-    component.openNewEncounterModal();
+    component.editPatient();
+    component.createEncounter();
     fixture.debugElement
       .query(By.directive(PatientBannerComponent))
       .componentInstance.editPatient.emit();
     fixture.debugElement
       .query(By.directive(PatientBannerComponent))
       .componentInstance.newEncounter.emit();
-    expect(component.isEditPatientModalOpen()).toBe(false);
-    expect(component.isNewEncounterModalOpen()).toBe(false);
+    expect(component.isPatientEditorOpen()).toBe(false);
+    expect(component.isEncounterFormOpen()).toBe(false);
     component.setTab('historia');
     fixture.detectChanges();
     const timeline = fixture.debugElement.query(
@@ -257,21 +257,21 @@ describe('PatientRecordComponent', () => {
     expect(fixture.nativeElement.querySelector('.btn-new-encounter-cta')).toBeNull();
     timeline.newEncounter.emit();
     timeline.createEncounter();
-    expect(component.isNewEncounterModalOpen()).toBe(false);
+    expect(component.isEncounterFormOpen()).toBe(false);
     history.encounters.set([]);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.btn-new-encounter-cta')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Sin historias clínicas registradas');
   });
   it('closes edit and new consultation dialogs if their actions are removed', () => {
-    component.openEditPatientModal();
-    component.openNewEncounterModal();
-    expect(component.isEditPatientModalOpen()).toBe(true);
-    expect(component.isNewEncounterModalOpen()).toBe(true);
+    component.editPatient();
+    component.createEncounter();
+    expect(component.isPatientEditorOpen()).toBe(true);
+    expect(component.isEncounterFormOpen()).toBe(true);
     configuredActions.set(['PRINT_DOCUMENT']);
     fixture.detectChanges();
-    expect(component.isEditPatientModalOpen()).toBe(false);
-    expect(component.isNewEncounterModalOpen()).toBe(false);
+    expect(component.isPatientEditorOpen()).toBe(false);
+    expect(component.isEncounterFormOpen()).toBe(false);
   });
   it('hides all prescription print buttons and blocks calls without discarding the draft', () => {
     rx.rxMedicationName.set('Borrador conservado');
@@ -484,7 +484,7 @@ describe('PatientRecordComponent', () => {
     expect(form.readonly()).toBe(true);
     summary.nativeElement.querySelector('.btn-tab-edit').click();
     fixture.detectChanges();
-    expect(component.isEditPatientModalOpen()).toBe(true);
+    expect(component.isPatientEditorOpen()).toBe(true);
   });
   it('retains the prescription draft and growth selection when tab components are recreated', async () => {
     component.setTab('recetas');
@@ -790,7 +790,7 @@ describe('PatientRecordComponent', () => {
 
     expect(dispatchSpy).toHaveBeenCalled();
     const customEvent = dispatchSpy.mock.calls[0][0] as CustomEvent;
-    expect(customEvent.type).toBe('open-prescription-print-modal');
+    expect(customEvent.type).toBe('document-print-requested');
     expect(customEvent.detail.type).toBe('PRESCRIPTION');
     expect(customEvent.detail).toEqual({
       source: 'PRESCRIPTION_RECORD',
@@ -823,7 +823,7 @@ describe('PatientRecordComponent', () => {
 
     expect(dispatchSpy).toHaveBeenCalled();
     const customEvent = dispatchSpy.mock.calls[0][0] as CustomEvent;
-    expect(customEvent.type).toBe('open-prescription-print-modal');
+    expect(customEvent.type).toBe('document-print-requested');
     expect(customEvent.detail.type).toBe('STUDY_ORDERS');
     expect(rx.savedPrescriptionRecords()[0].diagnosticOrders).toContain(
       'Tomografía Axial Computada (TAC) — De cerebro sin contraste',
@@ -1036,14 +1036,14 @@ describe('PatientRecordComponent', () => {
     rx.rxDiagnosis.set('Paciente A');
     rx.rxMedicationName.set('Medicamento A');
     rx.addMedicationToDraft();
-    component.isNewEncounterModalOpen.set(true);
-    component.isEditPatientModalOpen.set(true);
+    component.isEncounterFormOpen.set(true);
+    component.isPatientEditorOpen.set(true);
     activePatientService.setActivePatient({ ...mockPatient, id: 99 });
     fixture.detectChanges();
     expect(rx.rxDiagnosis()).toBe('');
     expect(rx.draftPrescriptions()).toEqual([]);
-    expect(component.isNewEncounterModalOpen()).toBe(false);
-    expect(component.isEditPatientModalOpen()).toBe(false);
+    expect(component.isEncounterFormOpen()).toBe(false);
+    expect(component.isPatientEditorOpen()).toBe(false);
   });
   it('does not save the previous draft after changing patient before the context effect runs', () => {
     rx.rxMedicationName.set('Medicamento A');
@@ -1074,13 +1074,14 @@ describe('PatientRecordComponent', () => {
     const timeline = fixture.debugElement.query(By.directive(ClinicalTimelineComponent))
       .componentInstance as ClinicalTimelineComponent;
     timeline.newEncounter.emit();
-    expect(component.isNewEncounterModalOpen()).toBe(true);
+    expect(component.isEncounterFormOpen()).toBe(true);
     const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
     timeline.viewDetail.emit(1);
-    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({ encounterId: 1 });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/consultas', 1]);
     patientServiceSpy.getPatientById.mockClear();
     timeline.deleteEncounter.emit(1);
+    expect(encounterServiceSpy.delete).not.toHaveBeenCalled();
+    history.confirmDeleteEncounter();
     fixture.detectChanges();
     expect(encounterServiceSpy.delete).toHaveBeenCalledWith(1);
     expect(patientServiceSpy.getPatientById).toHaveBeenCalledTimes(1);

@@ -9,8 +9,8 @@
     <!-- 1. COMPACT CLINICAL PATIENT BANNER -->
     <app-patient-banner
       [patient]="patient"
-      (newEncounter)="openNewEncounterModal()"
-      (editPatient)="openEditPatientModal()"
+      (newEncounter)="createEncounter()"
+      (editPatient)="editPatient()"
       (printSummary)="printDocument()"
       (viewCurves)="navigateToGrowthCurves()"
     />
@@ -43,8 +43,8 @@
             [recordModule]="tab.module"
             [patient]="patient"
             [latestEncounter]="history.encounters()[0]"
-            (editPatient)="openEditPatientModal()"
-            (newEncounter)="openNewEncounterModal()"
+            (editPatient)="editPatient()"
+            (newEncounter)="createEncounter()"
             (patientUpdated)="activePatientService.setActivePatient($event)"
           />
         </section>
@@ -66,7 +66,7 @@
           <ng-icon name="lucideUsers" />
           <span>Ir al Directorio de Pacientes</span>
         </button>
-        <button type="button" class="secondary-outline-btn" (click)="openEditPatientModal($event)">
+        <button type="button" class="secondary-outline-btn" (click)="editPatient($event)">
           <ng-icon name="lucidePlus" />
           <span>+ Registrar Nuevo Paciente</span>
         </button>

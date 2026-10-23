@@ -36,6 +36,29 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     expect(fixture.nativeElement.textContent).toContain('29/02/2000');
     expect(fixture.nativeElement.textContent).toContain('Grupo A'); expect(fixture.nativeElement.textContent).toContain('No');
   });
+  it('accepts a future follow-up, rejects invalid typed dates, and clears an optional date as null', () => {
+    fixture.componentRef.setInput('definition', { categories: [{ key: 'plan', title: 'Plan e indicaciones', enabled: true, fields: [
+      { key: 'followUpDate', label: 'Próximo control', type: 'DATE', required: false },
+    ] }] });
+    fixture.componentRef.setInput('values', {}); fixture.detectChanges();
+    let emitted: WizardFormValues = {};
+    component.valuesChange.subscribe(value => emitted = value);
+    const picker = fixture.debugElement.query(By.directive(DatePickerComponent)).componentInstance as DatePickerComponent;
+    expect(fixture.nativeElement.querySelector('label').control).toBe(fixture.nativeElement.querySelector('input'));
+    picker.selectDate(new Date(2028, 1, 29)); fixture.detectChanges();
+    expect(emitted['followUpDate']).toBe('2028-02-29');
+    expect(component.formValid()).toBe(true);
+    expect(picker.max()).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Se recordará en Inicio');
+    picker.onTextInput('29/02/2027'); fixture.detectChanges();
+    expect(component.formValid()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.field-error').textContent).toContain('fecha válida');
+    picker.onTextInput('01/01/0000'); fixture.detectChanges();
+    expect(component.formValid()).toBe(false);
+    picker.selectDate(null); fixture.detectChanges();
+    expect(emitted['followUpDate']).toBeNull();
+    expect(component.formValid()).toBe(true);
+  });
   it('accepts zero and required false while rejecting wrong types, nonfinite numbers and invalid options', () => {
     const number = component.fields().find(field => field.key === 'readingA')!;
     expect(component.validField(number)).toBe(true);

@@ -1,4 +1,4 @@
-import { DestroyRef, effect, inject, Injectable } from '@angular/core';
+import { DestroyRef, effect, inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -10,6 +10,7 @@ import { doctorPrintIdentity } from '../models/doctor-print-identity';
 export class ClinicalDocumentPrintService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+  readonly errorMessage = signal<string | null>(null);
   private readonly previews = new Map<string, Window | null>();
   private owner = this.auth.currentUser()?.id ?? null;
 
@@ -23,7 +24,7 @@ export class ClinicalDocumentPrintService {
     };
     effect(() => {
       const owner = this.auth.currentUser()?.id ?? null;
-      if (owner !== this.owner) { this.owner = owner; release(); }
+      if (owner !== this.owner) { this.owner = owner; this.errorMessage.set(null); release(); }
     });
     inject(DestroyRef).onDestroy(release);
   }
@@ -54,6 +55,7 @@ export class ClinicalDocumentPrintService {
 
   openPdfInNewTab(reference: PrintDocumentReference): void {
     if (typeof window === 'undefined') return;
+    this.errorMessage.set(null);
     const owner = this.auth.currentUser()?.id ?? null;
 
     let targetWindow: Window | null = null;
@@ -94,7 +96,7 @@ export class ClinicalDocumentPrintService {
           }
         } catch {}
         if (owner !== (this.auth.currentUser()?.id ?? null)) return;
-        alert(err?.status === 403
+        this.errorMessage.set(err?.status === 403
           ? 'No tenés permiso para acceder a este documento. Verificá tu sesión y suscripción.'
           : err?.status === 401
             ? 'Tu sesión expiró. Volvé a iniciar sesión para imprimir.'

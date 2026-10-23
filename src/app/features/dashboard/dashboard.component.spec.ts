@@ -11,6 +11,7 @@ import { WorkspaceStore } from '../../core/services/workspace.store';
 import { signal } from '@angular/core';
 import { of, Subject, throwError } from 'rxjs';
 import { provideRouter } from '@angular/router';
+import { UserClockService } from '../../core/services/user-clock.service';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -76,6 +77,7 @@ describe('DashboardComponent', () => {
           asOfDate: '2026-10-05',
           encountersThisMonth: 12,
           encountersToday: 3,
+          upcomingFollowUps: [],
           recentEncounters: [
             {
               patientAgeLabel: '2 años, 4 m',
@@ -128,6 +130,74 @@ describe('DashboardComponent', () => {
 
   it('should create the dashboard component', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('groups all upcoming patients by the server calendar day and links to their records', () => {
+    const activity = {
+      totalPatients: 30, asOfDate: '2026-12-31', encountersThisMonth: 4, encountersToday: 0, recentEncounters: [],
+      upcomingFollowUps: [
+        { encounterId: 100, patientId: 1, patientFullName: 'Lucía Fernández', followUpDate: '2026-12-31' },
+        { encounterId: 101, patientId: 2, patientFullName: 'Mateo Rossi', followUpDate: '2027-01-01' },
+        { encounterId: 102, patientId: 3, patientFullName: 'Valentina López', followUpDate: '2027-01-01' },
+        { encounterId: 103, patientId: 4, patientFullName: 'Tomás Pérez', followUpDate: '2027-01-02' },
+      ],
+    };
+    clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(of(activity));
+    component.loadKpiData(); fixture.detectChanges();
+    expect(component.upcomingGroups().map(group => [group.label, group.date, group.items.length])).toEqual([
+      ['Hoy', '2026-12-31', 1], ['Mañana', '2027-01-01', 2], ['Pasado mañana', '2027-01-02', 1],
+    ]);
+    const days = [...fixture.nativeElement.querySelectorAll('.followup-day')] as HTMLElement[];
+    expect(days[1].textContent).toContain('2 consultas');
+    expect(days[1].textContent).toContain('01/01/2027');
+    expect(days[1].textContent).toContain('Mateo Rossi');
+    const link = days[1].querySelector('a')!;
+    expect(link.getAttribute('href')).toBe('/pacientes/2');
+    expect(link.getAttribute('aria-label')).toBe('Ver ficha de Mateo Rossi');
+    expect(clinicalEncounterServiceMock.getByPatient).not.toHaveBeenCalled();
+  });
+
+  it('shows a quiet empty state separately from loading, errors, and an unavailable API field', () => {
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.followup-empty')).toHaveLength(3);
+    const pending = new Subject<any>();
+    clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(pending);
+    component.loadKpiData(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.followup-card [role="status"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.followup-empty')).toHaveLength(0);
+    pending.error({ status: 503 }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.followup-message').textContent).toContain('No se pudieron cargar');
+    expect(fixture.nativeElement.querySelectorAll('.followup-empty')).toHaveLength(0);
+    clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(of({ totalPatients: 0, asOfDate: '2026-10-05', encountersThisMonth: 0, encountersToday: 0, recentEncounters: [] }));
+    fixture.nativeElement.querySelector('.followup-retry').click(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.followup-empty')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelector('.followup-retry')).not.toBeNull();
+  });
+
+  it('refreshes reminder dates and names after a clinical edit and clears reminders across accounts', () => {
+    const activity = { totalPatients: 1, asOfDate: '2026-10-05', encountersThisMonth: 1, encountersToday: 1, recentEncounters: [],
+      upcomingFollowUps: [{ encounterId: 101, patientId: 1, patientFullName: 'Mateo Rossi', followUpDate: '2026-10-06' }] };
+    clinicalEncounterServiceMock.getDashboard.mockReturnValue(of(activity));
+    window.dispatchEvent(new CustomEvent('encounter-updated')); fixture.detectChanges();
+    expect(component.upcomingGroups()[1].items[0].patientFullName).toBe('Mateo Rossi');
+    clinicalEncounterServiceMock.getDashboard.mockReturnValue(of({ ...activity, upcomingFollowUps: [] }));
+    window.dispatchEvent(new CustomEvent('encounter-deleted')); fixture.detectChanges();
+    expect(component.upcomingFollowUps()).toEqual([]);
+    const pending = new Subject<any>();
+    clinicalEncounterServiceMock.getDashboard.mockReturnValue(pending);
+    component.loadKpiData();
+    authServiceMock.currentUser.set(null);
+    pending.next(activity); fixture.detectChanges();
+    expect(component.upcomingFollowUps()).toBeNull();
+    expect(fixture.nativeElement.querySelector('.followup-card').textContent).not.toContain('Mateo Rossi');
+    expect(pending.observed).toBe(false);
+  });
+
+  it('reloads reminders when the local calendar day changes', () => {
+    const clock = TestBed.inject(UserClockService);
+    const before = clinicalEncounterServiceMock.getDashboard.mock.calls.length;
+    clock.now.set(clock.now() + 86_400_000); fixture.detectChanges();
+    expect(clinicalEncounterServiceMock.getDashboard.mock.calls.length).toBe(before + 1);
   });
 
   it('should compute greeting message with doctor name', () => {

@@ -1,0 +1,20 @@
+<section class="assistant-page" aria-labelledby="assistant-title">
+  <header class="assistant-heading"><div><span class="eyebrow">HERRAMIENTAS CLÍNICAS</span><h1 id="assistant-title">DoctorChart Copilot</h1><p>Tu espacio de consulta y apoyo clínico.</p></div><a routerLink="/dashboard">← Volver a Inicio</a></header>
+  <section class="chat-panel" aria-label="Conversación con el asistente" data-testid="chat-page">
+    <header class="chat-heading"><span><ng-icon name="lucideBot" aria-hidden="true" />Asistente clínico</span><button type="button" (click)="chatService.clearHistory()" aria-label="Reiniciar conversación" data-testid="btn-clear-history">Nueva conversación</button></header>
+    <div #messagesContainer class="messages" aria-live="polite" aria-relevant="additions" data-testid="messages-container">
+      @for (msg of chatService.messages(); track msg.id) {
+        <article class="message" [class.user-message]="msg.sender === 'user'" [class.message-error]="msg.isError" [attr.data-testid]="msg.sender === 'user' ? 'user-message' : 'assistant-message'">
+          <span class="message-author">{{ msg.sender === 'user' ? 'Vos' : 'DoctorChart Copilot' }}</span>
+          @if (msg.sender === 'user') { <p>{{ msg.text }}</p> } @else { <div class="chat-markdown" [innerHTML]="formatMessageText(msg.text)"></div> }
+          <time>{{ messageTime(msg.timestamp) }}</time>
+        </article>
+      }
+      @if (chatService.isTyping()) { <p role="status" class="typing" data-testid="typing-indicator">DoctorChart está evaluando tu consulta...</p> }
+    </div>
+    <div class="prompts" aria-label="Consultas sugeridas" data-testid="suggested-prompts">
+      @for (prompt of chatService.suggestedPrompts; track prompt) { <button type="button" [disabled]="chatService.isTyping()" (click)="onPromptClick(prompt)">{{ prompt }}</button> }
+    </div>
+    <footer class="composer"><form (ngSubmit)="onSendMessage()"><label class="sr-only" for="assistant-message">Tu consulta</label><textarea id="assistant-message" rows="2" [ngModel]="inputMessage()" (ngModelChange)="inputMessage.set($event)" name="chatMessageInput" (keydown)="onKeyDown($event)" [disabled]="chatService.isTyping()" placeholder="Escribí tu consulta clínica..." data-testid="chat-input"></textarea><button type="submit" [disabled]="!inputMessage().trim() || chatService.isTyping()" aria-label="Enviar consulta" data-testid="btn-send"><ng-icon name="lucideSend" aria-hidden="true" />Enviar</button></form></footer>
+  </section>
+</section>

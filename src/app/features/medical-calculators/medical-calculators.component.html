@@ -1,7 +1,7 @@
 @if (isLoadingSetup()) {
   <p role="status" class="p-4">Cargando calculadoras…</p>
 }
-@if (preferencesError() && !isCatalogModalOpen()) {
+@if (preferencesError() && !catalogView()) {
   <div role="alert" class="p-4 text-rose-600">
     {{ preferencesError() }}
     @if (!setupLoaded()) {
@@ -10,6 +10,8 @@
   </div>
 }
 @if (setupLoaded()) {
+@if (!catalogView()) {
+  @if (pendingHistoryClear()) { <section class="inline-confirmation" aria-label="Vaciar historial local"><p>¿Vaciar el historial local de cálculos?</p><button type="button" (click)="pendingHistoryClear.set(false)">Conservar historial</button><button type="button" (click)="confirmClearSessionHistory()">Vaciar historial</button></section> }
 <div class="calculators-container">
   <!-- Top Header -->
   <header class="calculators-header">
@@ -51,7 +53,7 @@
       <button
         type="button"
         class="customize-panel-btn"
-        (click)="isCatalogModalOpen.set(true)"
+        (click)="openCatalog()"
         title="Personalizar mis calculadoras activas"
       >
         <ng-icon name="lucideSettings" class="btn-icon" />
@@ -150,7 +152,7 @@
         <button
           type="button"
           class="add-calc-pill-btn"
-          (click)="isCatalogModalOpen.set(true)"
+          (click)="openCatalog()"
           title="Agregar o quitar calculadoras de mi panel"
         >
           <ng-icon name="lucidePlus" class="mr-1" />
@@ -638,98 +640,99 @@
   }
 </div>
 
+}
+
 <!-- ============================================================ -->
-<!-- MODAL: CATÁLOGO COMPLETO Y GESTIÓN DE "MIS CÁLCULOS" -->
+<!-- PÁGINA: CATÁLOGO COMPLETO Y GESTIÓN DE "MIS CÁLCULOS" -->
 <!-- ============================================================ -->
-@if (isCatalogModalOpen()) {
-  <div class="modal-backdrop" (click)="isCatalogModalOpen.set(false)">
-    <div class="catalog-modal-dialog" (click)="$event.stopPropagation()">
-      <!-- Modal Header -->
-      <div class="modal-header">
+@if (catalogView()) {
+
+    <div class="catalog-page">
+      <!-- Cabecera -->
+      <div class="catalog-header">
         <div>
-          <h3 class="modal-title">Gestión de Mis Calculadoras Clínicas</h3>
-          <p class="modal-subtitle">
+          <h1 class="catalog-title">Gestión de Mis Calculadoras Clínicas</h1>
+          <p class="catalog-subtitle">
             Personaliza los cálculos que aparecen en tu barra rápida de trabajo según tu especialidad y flujo diario.
           </p>
         </div>
         <button
           type="button"
-          class="modal-close-btn"
-          (click)="isCatalogModalOpen.set(false)"
-          aria-label="Cerrar modal"
-        >
-          <ng-icon name="lucideX" />
+          class="catalog-close-btn"
+          (click)="closeCatalog()"
+          aria-label="Volver a calculadoras"
+        >← Volver a calculadoras
         </button>
       </div>
 
-      <!-- Modal Search & Filters -->
-      <div class="modal-toolbar">
-        <div class="modal-search-box">
-          <ng-icon name="lucideSearch" class="modal-search-icon" />
+      <!-- Búsqueda & Filters -->
+      <div class="catalog-toolbar">
+        <div class="catalog-search-box">
+          <ng-icon name="lucideSearch" class="catalog-search-icon" />
           <input
             type="search"
-            class="modal-search-input"
+            class="catalog-search-input"
             placeholder="Buscar por nombre o fórmula..."
-            [ngModel]="modalSearchQuery()"
-            (ngModelChange)="modalSearchQuery.set($event)"
+            [ngModel]="catalogSearchQuery()"
+            (ngModelChange)="catalogSearchQuery.set($event)"
           />
         </div>
 
-        <div class="modal-category-chips">
+        <div class="catalog-category-chips">
           <button
             type="button"
-            class="modal-chip"
-            [class.active]="modalCategoryFilter() === 'all'"
-            (click)="modalCategoryFilter.set('all')"
+            class="catalog-chip"
+            [class.active]="catalogCategoryFilter() === 'all'"
+            (click)="catalogCategoryFilter.set('all')"
           >
             Todas
           </button>
           <button
             type="button"
-            class="modal-chip"
-            [class.active]="modalCategoryFilter() === 'pediatria'"
-            (click)="modalCategoryFilter.set('pediatria')"
+            class="catalog-chip"
+            [class.active]="catalogCategoryFilter() === 'pediatria'"
+            (click)="catalogCategoryFilter.set('pediatria')"
           >
             Pediatría
           </button>
           <button
             type="button"
-            class="modal-chip"
-            [class.active]="modalCategoryFilter() === 'cardiologia'"
-            (click)="modalCategoryFilter.set('cardiologia')"
+            class="catalog-chip"
+            [class.active]="catalogCategoryFilter() === 'cardiologia'"
+            (click)="catalogCategoryFilter.set('cardiologia')"
           >
             Cardiología
           </button>
           <button
             type="button"
-            class="modal-chip"
-            [class.active]="modalCategoryFilter() === 'nefrologia'"
-            (click)="modalCategoryFilter.set('nefrologia')"
+            class="catalog-chip"
+            [class.active]="catalogCategoryFilter() === 'nefrologia'"
+            (click)="catalogCategoryFilter.set('nefrologia')"
           >
             Nefrología
           </button>
           <button
             type="button"
-            class="modal-chip"
-            [class.active]="modalCategoryFilter() === 'antropometria'"
-            (click)="modalCategoryFilter.set('antropometria')"
+            class="catalog-chip"
+            [class.active]="catalogCategoryFilter() === 'antropometria'"
+            (click)="catalogCategoryFilter.set('antropometria')"
           >
             Antropometría
           </button>
           <button
             type="button"
-            class="modal-chip"
-            [class.active]="modalCategoryFilter() === 'metabolismo'"
-            (click)="modalCategoryFilter.set('metabolismo')"
+            class="catalog-chip"
+            [class.active]="catalogCategoryFilter() === 'metabolismo'"
+            (click)="catalogCategoryFilter.set('metabolismo')"
           >
             Metabolismo
           </button>
         </div>
       </div>
 
-      <!-- Modal Catalog Grid -->
-      <div class="modal-catalog-grid">
-        @for (item of modalFilteredCalculators(); track item.id) {
+      <!-- Catálogo completo -->
+      <div class="catalog-catalog-grid">
+        @for (item of catalogFilteredCalculators(); track item.id) {
           <div class="catalog-card" [class.is-active]="myCalculatorsCodes().includes(item.id)">
             <div class="card-header-line">
               <span class="catalog-cat-badge">{{ item.categoryLabel }}</span>
@@ -771,11 +774,11 @@
         }
       </div>
 
-      <!-- Modal Footer -->
+      <!-- Acciones del catálogo -->
       @if (preferencesError()) {
         <p role="alert" class="p-4 text-rose-600">{{ preferencesError() }}</p>
       }
-      <div class="modal-footer">
+      <div class="catalog-footer">
         <button
           type="button"
           class="restore-defaults-btn"
@@ -789,14 +792,13 @@
 
         <button
           type="button"
-          class="modal-done-btn"
-          (click)="isCatalogModalOpen.set(false)"
+          class="catalog-done-btn"
+          (click)="closeCatalog()"
         >
           Listo
         </button>
       </div>
     </div>
-  </div>
 }
 
 }

@@ -134,7 +134,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     http.expectOne(req => req.url.endsWith('/calculators/preferences')).flush({ favoriteCalculationCodes: ['imc', 'pediatric_dosage', 'holliday_segar', 'bsa_mosteller'] });
     fixture.detectChanges();
     expect(component.favoriteCalculatorsList().map(item => item.id)).toEqual(['imc', 'holliday_segar', 'bsa_mosteller', 'pediatric_dosage']);
-    expect(component.modalFilteredCalculators().length).toBe(8);
+    expect(component.catalogFilteredCalculators().length).toBe(8);
     expect(component.currentMetadata()?.name).toBe('Requerimiento Hídrico Basal Pediátrico (Holliday-Segar)');
   });
 
@@ -183,13 +183,13 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     expect(component.myCalculatorsCodes()).toEqual(['imc']);
   });
 
-  it('shows a failed reset inside the open modal and retains the confirmed selection', () => {
-    component.isCatalogModalOpen.set(true);
+  it('shows a failed reset inside the catalog page and retains the confirmed selection', () => {
+    component.catalogView.set(true);
     component.restoreSpecialtyDefaults();
     http.expectOne(req => req.url.endsWith('/calculators/preferences/reset')).flush({}, { status: 500, statusText: 'Error' });
     fixture.detectChanges();
     expect(component.myCalculatorsCodes()).toEqual(['holliday_segar']);
-    expect(fixture.nativeElement.querySelector('.modal-footer').previousElementSibling.textContent).toContain('restablecer');
+    expect(fixture.nativeElement.querySelector('.catalog-footer').previousElementSibling.textContent).toContain('restablecer');
   });
 
   it('shows a retry action instead of silently using a hardcoded catalog after a loading error', () => {
@@ -597,10 +597,10 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     http.expectNone(req => req.url.endsWith('/execute'));
     expect(component.sessionHistory()[0].plainTextEvolution).toBe(RESULT.plainTextEvolution);
     attachPatient(); expect(component.sessionHistory()).toEqual([]);
-    vi.spyOn(window, 'confirm').mockReturnValue(true); component.clearSessionHistory();
+    component.clearSessionHistory(); component.confirmClearSessionHistory();
     expect(TestBed.inject(CalculatorSessionHistoryService).items()).toHaveLength(1);
     patient.set(null); fixture.detectChanges(); expect(component.sessionHistory()).toHaveLength(1);
-    component.clearSessionHistory(); expect(component.sessionHistory()).toEqual([]);
+    component.clearSessionHistory(); expect(component.pendingHistoryClear()).toBe(true); component.confirmClearSessionHistory(); expect(component.sessionHistory()).toEqual([]);
     expect(component.patientBackendHistory()).toEqual([]);
   });
   it('reloads catalog and preferences for a different account and cancels old preference writes', () => {

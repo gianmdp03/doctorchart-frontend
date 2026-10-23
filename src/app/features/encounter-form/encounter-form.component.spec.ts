@@ -78,6 +78,16 @@ describe('EncounterFormComponent inline clinical creation', () => {
     expect(fixture.nativeElement.querySelector('.readonly-datetime-box')).not.toBeNull();
   });
 
+  it('preserves the next consultation in the canonical create payload', async () => {
+    const form = structuredClone(component.definition()!);
+    form.categories[0].fields.push({ key: 'followUpDate', label: 'Próximo control', type: 'DATE', required: false });
+    component.definition.set(form);
+    component.onDynamicDataChange({ readingA: 0, readingB: 10, notes: 'Control', followUpDate: '2028-02-29' });
+    component.onDynamicFormValidityChange(true);
+    await component.submitEncounter();
+    expect(service.create.mock.calls[0][0].values.followUpDate).toBe('2028-02-29');
+  });
+
   it('emits cancel when back link or cancel button is clicked', () => {
     const cancelSpy = vi.fn();
     component.cancel.subscribe(cancelSpy);

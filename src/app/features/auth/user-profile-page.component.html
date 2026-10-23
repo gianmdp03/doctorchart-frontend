@@ -1,0 +1,16 @@
+<section class="profile-page" aria-labelledby="profile-title">
+  <header class="page-heading"><div><span class="eyebrow">TU CUENTA</span><h1 id="profile-title">Perfil profesional</h1><p>Tu identidad y los datos de tu práctica médica.</p></div><a routerLink="/dashboard" class="profile-button">← Volver a Inicio</a></header>
+  @if (errorMessage()) { <p class="profile-error" role="alert">{{ errorMessage() }}</p> }
+  <div class="profile-layout">
+    <section class="profile-identity"><span class="profile-avatar" aria-hidden="true">{{ initials() }}</span><h2>{{ fullName() }}</h2><p>{{ email() }}</p><span class="specialty-pill">{{ doctorSpecialtyService.currentSpecialtyOption().label }}</span></section>
+    <section class="profile-details" aria-label="Datos profesionales"><h2>Información profesional</h2><dl>
+      <div><dt>Nombre completo</dt><dd>{{ fullName() }}</dd></div>
+      <div><dt>Correo electrónico</dt><dd>{{ email() }}</dd></div>
+      <div><dt>DNI / Documento</dt><dd>{{ dni() }}</dd></div>
+      <div><dt>Rol clínico</dt><dd>{{ role() }}</dd></div>
+      <div><dt>Especialidad</dt><dd>{{ doctorSpecialtyService.currentSpecialtyOption().label }}</dd></div>
+      <div><dt>Matrícula profesional</dt><dd>{{ license() }}</dd></div>
+    </dl></section>
+  </div>
+  <footer class="profile-session"><div><h2>Sesión de DoctorChart</h2><p>Podés cerrar tu sesión en este equipo cuando termines de atender.</p></div><button class="profile-button" type="button" [disabled]="isSubmitting()" (click)="handleSignOut()">{{ isSubmitting() ? 'Cerrando sesión...' : 'Cerrar sesión' }}</button></footer>
+</section>

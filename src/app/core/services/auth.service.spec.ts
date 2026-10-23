@@ -309,42 +309,6 @@ describe('AuthService', () => {
     });
   });
 
-  describe('Modal UI State', () => {
-    it('should control isLoginModalOpen via openLoginModal and closeLoginModal', () => {
-      expect(service.isLoginModalOpen()).toBe(false);
-
-      service.openLoginModal();
-      expect(service.isLoginModalOpen()).toBe(true);
-
-      service.closeLoginModal();
-      expect(service.isLoginModalOpen()).toBe(false);
-    });
-
-    it('should control isProfileModalOpen via openProfileModal and closeProfileModal', () => {
-      expect(service.isProfileModalOpen()).toBe(false);
-
-      service.openProfileModal();
-      expect(service.isProfileModalOpen()).toBe(true);
-
-      service.closeProfileModal();
-      expect(service.isProfileModalOpen()).toBe(false);
-    });
-
-    it('should respond to window CustomEvents for modal controls in browser', () => {
-      window.dispatchEvent(new CustomEvent('open-login-modal'));
-      expect(service.isLoginModalOpen()).toBe(true);
-
-      window.dispatchEvent(new CustomEvent('close-login-modal'));
-      expect(service.isLoginModalOpen()).toBe(false);
-
-      window.dispatchEvent(new CustomEvent('open-profile-modal'));
-      expect(service.isProfileModalOpen()).toBe(true);
-
-      window.dispatchEvent(new CustomEvent('close-profile-modal'));
-      expect(service.isProfileModalOpen()).toBe(false);
-    });
-  });
-
   describe('Authentication Actions', () => {
     it('should sign in with password and update session and user', async () => {
       const mockUser = { id: 'user-auth-1', email: 'doc@example.com' } as unknown as User;

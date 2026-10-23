@@ -318,7 +318,7 @@ export class PatientPrescriptionEditorStore {
     };
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       window.dispatchEvent(
-        new CustomEvent('open-prescription-print-modal', {
+        new CustomEvent('document-print-requested', {
           detail: ref,
         }),
       );
@@ -388,7 +388,7 @@ export class PatientPrescriptionEditorStore {
     };
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
       window.dispatchEvent(
-        new CustomEvent('open-prescription-print-modal', {
+        new CustomEvent('document-print-requested', {
           detail: ref,
         }),
       );

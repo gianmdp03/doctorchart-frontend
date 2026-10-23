@@ -1,3 +1,4 @@
+import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
@@ -5,21 +6,22 @@ import { WorkspaceStore } from '../../core/services/workspace.store';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { AiAssistantWidgetComponent } from './ai-assistant-widget.component';
+import { AiAssistantPageComponent } from './ai-assistant-page.component';
 import { AiChatService } from '../../core/services/ai-chat.service';
 import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 
-describe('AiAssistantWidgetComponent', () => {
-  let component: AiAssistantWidgetComponent;
-  let fixture: ComponentFixture<AiAssistantWidgetComponent>;
+describe('AiAssistantPageComponent', () => {
+  let component: AiAssistantPageComponent;
+  let fixture: ComponentFixture<AiAssistantPageComponent>;
   let chatService: AiChatService;
 
   beforeEach(async () => {
     FEATURE_FLAGS.AI_ASSISTANT_ENABLED = true;
     await TestBed.configureTestingModule({
-      imports: [AiAssistantWidgetComponent],
+      imports: [AiAssistantPageComponent],
       providers: [
         AiChatService,
+        provideRouter([]),
         {provide: WorkspaceStore, useValue: {specialtyCode: () => 'pediatrics', activeModules: () => ({AI_ASSISTANT: true}), isModuleActive: () => true}},
         {provide: AuthService, useValue: {currentUser: signal({id: 'doctor-a'})}},
         {provide: ActivePatientService, useValue: {activePatient: signal(null)}},
@@ -28,7 +30,7 @@ describe('AiAssistantWidgetComponent', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AiAssistantWidgetComponent);
+    fixture = TestBed.createComponent(AiAssistantPageComponent);
     component = fixture.componentInstance;
     chatService = TestBed.inject(AiChatService);
     fixture.detectChanges();
@@ -40,30 +42,18 @@ describe('AiAssistantWidgetComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render FAB when chat is closed and dialog when chat is open', () => {
+  it('renders the assistant as page content without a floating trigger or dialog', () => {
     const el = fixture.nativeElement as HTMLElement;
-    expect(chatService.isOpen()).toBe(false);
-    expect(el.querySelector('[data-testid="fab-trigger"]')).toBeTruthy();
-    expect(el.querySelector('[data-testid="chat-dialog"]')).toBeNull();
-
-    chatService.openChat();
-    fixture.detectChanges();
-
+    expect(chatService.isOpen()).toBe(true);
+    expect(el.querySelector('[data-testid="chat-page"]')).not.toBeNull();
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
     expect(el.querySelector('[data-testid="fab-trigger"]')).toBeNull();
-    expect(el.querySelector('[data-testid="chat-dialog"]')).toBeTruthy();
-  });
-
-  it('should display unread ping dot when hasUnread is true', () => {
-    chatService.hasUnread.set(true);
-    fixture.detectChanges();
-
-    const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('[data-testid="unread-ping"]')).toBeTruthy();
+    fixture.destroy(); expect(chatService.isOpen()).toBe(false);
   });
 
   it('should format markdown text correctly', () => {
     const boldText = component.formatMessageText('Evaluar **curva OMS**');
-    expect(boldText).toContain('<strong class="text-zinc-100 font-semibold">curva OMS</strong>');
+    expect(boldText).toContain('<strong class="font-semibold">curva OMS</strong>');
 
     const italicText = component.formatMessageText('Valor *normal*');
     expect(italicText).toContain('<em class="italic">normal</em>');
@@ -117,15 +107,8 @@ describe('AiAssistantWidgetComponent', () => {
     expect(sendSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('should close chat when clicking close button', () => {
-    chatService.openChat();
-    fixture.detectChanges();
-
-    const closeBtn = fixture.nativeElement.querySelector('[data-testid="btn-close-chat"]');
-    closeBtn.click();
-    fixture.detectChanges();
-
-    expect(chatService.isOpen()).toBe(false);
+  it('offers a normal link back to Inicio', () => {
+    expect(fixture.nativeElement.querySelector('a').getAttribute('href')).toBe('/dashboard');
   });
 
   it('should clear history when clicking clear button', () => {

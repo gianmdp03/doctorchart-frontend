@@ -73,9 +73,9 @@ export class PatientRecordComponent implements OnInit {
   private recordContext = '';
   readonly selectedTab = signal<PatientRecordTab>('resumen');
 
-  readonly isNewEncounterModalOpen = signal<boolean>(false);
+  readonly isEncounterFormOpen = signal<boolean>(false);
 
-  readonly isEditPatientModalOpen = signal<boolean>(false);
+  readonly isPatientEditorOpen = signal<boolean>(false);
   readonly tabs = computed<RecordTabItem[]>(() =>
     this.workspace
       .patientRecordTabs()
@@ -108,13 +108,13 @@ export class PatientRecordComponent implements OnInit {
       untracked(() => {
         if (context !== this.recordContext) {
           this.recordContext = context;
-          this.isNewEncounterModalOpen.set(false);
-          this.isEditPatientModalOpen.set(false);
+          this.isEncounterFormOpen.set(false);
+          this.isPatientEditorOpen.set(false);
           this.history.cancelCreatingEncounter();
         }
-        if (!canEdit) this.isEditPatientModalOpen.set(false);
+        if (!canEdit) this.isPatientEditorOpen.set(false);
         if (!canCreate) {
-          this.isNewEncounterModalOpen.set(false);
+          this.isEncounterFormOpen.set(false);
           this.history.cancelCreatingEncounter();
         }
         if (!tabs.some((tab) => tab.id === this.selectedTab())) this.selectedTab.set('resumen');
@@ -139,7 +139,7 @@ export class PatientRecordComponent implements OnInit {
       }
       if (tabParam === 'historia' && queryParams.get('nueva') === 'true') {
         this.history.startCreatingEncounter();
-        this.isNewEncounterModalOpen.set(true);
+        this.isEncounterFormOpen.set(true);
       }
     });
   }
@@ -163,10 +163,10 @@ export class PatientRecordComponent implements OnInit {
     this.router.navigate(['/pacientes']);
   }
 
-  openEditPatientModal(event?: Event): void {
+  editPatient(event?: Event): void {
     if (!this.recordActions.has('EDIT_PATIENT')) return;
     if (event) event.stopPropagation();
-    this.isEditPatientModalOpen.set(true);
+    this.isPatientEditorOpen.set(true);
     const patientId = this.activePatientService.patientId();
     if (patientId) {
       void this.router.navigate(['/pacientes', patientId, 'editar']);
@@ -175,29 +175,29 @@ export class PatientRecordComponent implements OnInit {
     }
   }
 
-  closeEditPatientModal(): void {
-    this.isEditPatientModalOpen.set(false);
+  closePatientEditor(): void {
+    this.isPatientEditorOpen.set(false);
   }
 
   onPatientUpdated(updatedPatient: PatientDetailDTO): void {
-    this.isEditPatientModalOpen.set(false);
+    this.isPatientEditorOpen.set(false);
     if (updatedPatient.id && updatedPatient.id === this.activePatientService.patientId()) {
       this.activePatientService.setActivePatient(updatedPatient);
       this.activePatientService.loadPatient(updatedPatient.id);
     }
   }
 
-  openNewEncounterModal(event?: Event): void {
+  createEncounter(event?: Event): void {
     if (!this.recordActions.has('NEW_ENCOUNTER')) return;
     if (event) event.stopPropagation();
     this.setTab('historia');
     this.history.startCreatingEncounter();
-    this.isNewEncounterModalOpen.set(true);
+    this.isEncounterFormOpen.set(true);
   }
 
-  closeNewEncounterModal(): void {
+  closeEncounterForm(): void {
     this.history.cancelCreatingEncounter();
-    this.isNewEncounterModalOpen.set(false);
+    this.isEncounterFormOpen.set(false);
   }
 
   printDocument(): void {

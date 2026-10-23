@@ -200,11 +200,11 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     component.setNumberProperty('minimum', 'abc'); fixture.detectChanges();
     expect(component.numericInputs()['minimum']).toBe('abc');
     expect(component.draftError('minimum')).toContain('número válido');
-    expect(fixture.nativeElement.querySelector('.dialog-actions .primary').disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('.field-page-actions .primary').disabled).toBe(true);
     component.setNumberProperty('minimum', '0'); component.setNumberProperty('maximum', '-1'); fixture.detectChanges();
     expect(component.draftError('maximum')).toContain('mínimo');
     component.setNumberProperty('maximum', '20'); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.dialog-actions .primary').disabled).toBe(false);
+    expect(fixture.nativeElement.querySelector('.field-page-actions .primary').disabled).toBe(false);
   });
 
   it('requires distinct option values and preserves labels independently', () => {

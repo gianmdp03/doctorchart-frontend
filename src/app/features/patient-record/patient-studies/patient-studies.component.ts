@@ -73,6 +73,7 @@ export class PatientStudiesComponent {
     const isInitial = this.context === '';
     this.changed.next(); this.context = context; this.revision++; this.read++;
     this.studies.set([]);
+    this.pendingDelete.set(null); this.isDeleting.set(false);
     if (!isInitial) {
       this.clearSelectedFile();
     }
@@ -91,6 +92,8 @@ export class PatientStudiesComponent {
 
   readonly patientId = input.required<number>();
 
+  readonly pendingDelete = signal<PatientMedicalStudy | null>(null);
+  readonly isDeleting = signal(false);
   readonly studies = signal<PatientMedicalStudy[]>([]);
   readonly isLoading = signal<boolean>(false);
   readonly isUploading = signal<boolean>(false);
@@ -269,21 +272,27 @@ export class PatientStudiesComponent {
 
   deleteStudy(study: PatientMedicalStudy): void {
     this.syncContext();
-    if (study.patientId !== this.patientId()) return;
-    const revision = this.revision;
-    if (!confirm(`¿Estás seguro de que deseás eliminar el estudio "${study.originalFileName}"?`)) {
-      return;
-    }
+    if (study.patientId !== this.patientId() || this.isDeleting()) return;
+    this.pendingDelete.set(study);
+  }
 
+  confirmDeleteStudy(): void {
+    this.syncContext();
+    const study = this.pendingDelete();
+    if (!study || study.patientId !== this.patientId() || this.isDeleting()) return;
+    const revision = this.revision;
+    this.isDeleting.set(true); this.errorMessage.set(null);
     this.studyService.deleteStudy(this.patientId(), study.id).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         if (!this.current(revision)) return;
         this.studies.update((list) => list.filter((s) => s.id !== study.id));
+        this.pendingDelete.set(null); this.isDeleting.set(false);
         this.successMessage.set('Estudio eliminado correctamente.');
         setTimeout(() => { if (this.current(revision)) this.successMessage.set(null); }, 3000);
       },
       error: () => {
         if (!this.current(revision)) return;
+        this.isDeleting.set(false);
         this.errorMessage.set('No se pudo eliminar el estudio médico.');
       },
     });

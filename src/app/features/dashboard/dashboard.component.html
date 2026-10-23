@@ -76,6 +76,13 @@
     </div>
   </section>
 
+  <app-upcoming-follow-ups
+    [groups]="upcomingGroups()"
+    [available]="upcomingFollowUps() !== null"
+    [isLoading]="isLoadingMetrics()"
+    (retry)="loadKpiData()"
+  />
+
   <section class="content-card recent-activity-card" aria-labelledby="recent-activity-title">
     <div class="recent-card-heading">
       <div class="recent-heading-icon" aria-hidden="true"><ng-icon name="lucideClock" /></div>

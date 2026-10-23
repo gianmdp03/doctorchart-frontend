@@ -1,3 +1,4 @@
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import {
   ChangeDetectionStrategy,
@@ -135,14 +136,17 @@ export class MedicalCalculatorsComponent implements OnInit {
   readonly searchQuery = signal<string>('');
   readonly onlyFavorites = signal<boolean>(false);
 
-  // Doctor "Mis Cálculos" & Catalog Modal
+  // Doctor "Mis Cálculos" & Catalog Page
   readonly myCalculatorsCodes = signal<string[]>([]);
   readonly isLoadingSetup = signal(false);
   readonly setupLoaded = signal(false);
   readonly preferencesError = signal<string | null>(null);
-  readonly isCatalogModalOpen = signal<boolean>(false);
-  readonly modalSearchQuery = signal<string>('');
-  readonly modalCategoryFilter = signal<string>('all');
+  private readonly router = inject(Router, { optional: true });
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  readonly catalogView = signal<boolean>(false);
+  readonly pendingHistoryClear = signal(false);
+  readonly catalogSearchQuery = signal<string>('');
+  readonly catalogCategoryFilter = signal<string>('all');
   readonly isUpdatingPreferences = signal<boolean>(false);
 
   // Notifications & Feedbacks
@@ -216,10 +220,10 @@ export class MedicalCalculatorsComponent implements OnInit {
     return this.calcService.calculators().filter((c) => favCodes.includes(c.id));
   });
 
-  // Modal filtered catalog
-  readonly modalFilteredCalculators = computed(() => {
-    const cat = this.modalCategoryFilter();
-    const query = this.modalSearchQuery().toLowerCase().trim();
+  // Catalog page filters
+  readonly catalogFilteredCalculators = computed(() => {
+    const cat = this.catalogCategoryFilter();
+    const query = this.catalogSearchQuery().toLowerCase().trim();
     return this.calcService.calculators().filter((item) => {
       const matchCat = cat === 'all' || item.category === cat;
       const matchQuery =
@@ -249,7 +253,10 @@ export class MedicalCalculatorsComponent implements OnInit {
   readonly calculationError = signal<string | null>(null);
   readonly saveError = signal<string | null>(null);
 
+  openCatalog(): void { this.catalogView.set(true); if (this.router && this.route) void this.router.navigate([], { relativeTo: this.route, queryParams: { vista: 'catalogo' }, queryParamsHandling: 'merge' }); }
+  closeCatalog(): void { this.catalogView.set(false); if (this.router && this.route) void this.router.navigate([], { relativeTo: this.route, queryParams: { vista: null }, queryParamsHandling: 'merge' }); }
   constructor() {
+    this.route?.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => this.catalogView.set(params.get('vista') === 'catalogo'));
     this.context = this.contextKey();
     toObservable(computed(() => ({request:this.previewRequest(), context:this.contextKey()}))).pipe(
       switchMap(({request,context}) => {
@@ -297,7 +304,7 @@ export class MedicalCalculatorsComponent implements OnInit {
     this.historyFilterCode.set('all'); this.historyDateFrom.set(''); this.historyDateTo.set('');
     this.isAutofilling.set(false); this.isSavingLog.set(false); this.isLoadingHistory.set(false);
     this.autofillBannerMessage.set(null); this.saveFeedback.set(false); this.copyFeedback.set(false);
-    this.saveError.set(null); this.calculationError.set(null); this.isCatalogModalOpen.set(false);
+    this.saveError.set(null); this.calculationError.set(null); this.catalogView.set(false);
   }
 
   ngOnInit(): void {
@@ -343,7 +350,7 @@ export class MedicalCalculatorsComponent implements OnInit {
     const index = current.indexOf(code);
     if (index >= 0) {
       if (current.length === 1) {
-        alert('Debes mantener al menos una calculadora activa en tu panel.');
+        this.preferencesError.set('Debés mantener al menos una calculadora activa en tu panel.');
         return;
       }
       current.splice(index, 1);
@@ -573,9 +580,11 @@ export class MedicalCalculatorsComponent implements OnInit {
 
   clearSessionHistory(): void {
     if (this.activePatient()) return;
-    if (confirm('¿Estás seguro de que deseas vaciar el historial local de cálculos?')) {
-      this.syncContext();
-      this.sessionHistoryService.clear();
-    }
+    this.pendingHistoryClear.set(true);
+  }
+  confirmClearSessionHistory(): void {
+    this.syncContext();
+    if (this.activePatient() || !this.pendingHistoryClear()) return;
+    this.sessionHistoryService.clear(); this.pendingHistoryClear.set(false);
   }
 }

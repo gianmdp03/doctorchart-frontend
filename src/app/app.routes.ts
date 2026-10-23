@@ -129,6 +129,24 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'consultas/:id',
+    runGuardsAndResolvers: 'always',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () => import('./features/encounter-detail/encounter-detail-page.component').then(m => m.EncounterDetailPageComponent),
+  },
+  {
+    path: 'asistente',
+    runGuardsAndResolvers: 'always',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, lazyGuard(() => import('./core/guards/ai-assistant.guard').then(m => m.aiAssistantGuard))],
+    loadComponent: () => import('./features/ai-assistant/ai-assistant-page.component').then(m => m.AiAssistantPageComponent),
+  },
+  {
+    path: 'perfil',
+    runGuardsAndResolvers: 'always',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () => import('./features/auth/user-profile-page.component').then(m => m.UserProfilePageComponent),
+  },
+  {
     path: 'consultas',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],

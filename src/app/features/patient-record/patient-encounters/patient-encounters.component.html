@@ -1,4 +1,12 @@
 <section class="tab-panel animate-fade-in" aria-label="Historia Clínica">
+  @if (history.pendingDeleteId()) {
+    <section class="inline-confirmation" aria-label="Confirmar eliminación de consulta">
+      <p>¿Eliminar esta consulta de la historia clínica?</p>
+      <button type="button" [disabled]="history.isDeleting()" (click)="history.pendingDeleteId.set(null)">Conservar consulta</button>
+      <button type="button" [disabled]="history.isDeleting()" (click)="history.confirmDeleteEncounter()">{{ history.isDeleting() ? 'Eliminando...' : 'Eliminar consulta' }}</button>
+    </section>
+  }
+  @if (history.deleteError(); as message) { <p role="alert">{{ message }}</p> }
   @if (history.isCreatingEncounter()) {
     <app-encounter-form
       [patientId]="patientId()"

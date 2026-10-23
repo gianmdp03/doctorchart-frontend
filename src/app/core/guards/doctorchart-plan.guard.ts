@@ -9,10 +9,6 @@ export const doctorchartPlanGuard: CanActivateFn = async (route, state) => {
   await authService.authReady;
 
   if (!authService.isLoggedIn()) {
-    authService.openLoginModal();
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('open-login-modal'));
-    }
     return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
   }
 

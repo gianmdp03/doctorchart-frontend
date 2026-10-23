@@ -4,8 +4,8 @@
     "/"
   ],
   "clientPatterns": [
-    "^/(login|sin-plan|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",
-    "^/(pacientes|ficha)/[^/]+(/editar)?$"
+    "^/(login|sin-plan|perfil|asistente|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",
+    "^/(pacientes|ficha|consultas)/[^/]+(/editar)?$"
   ],
   "redirects": {},
   "apiGatewayOrigin": "https://api.bycode.com.ar",

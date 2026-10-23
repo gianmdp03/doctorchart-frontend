@@ -1,4 +1,6 @@
 <section class="editor" aria-label="Editor de categorías y campos">
+  @if (!fieldDraft()) {
+
   <div class="editor-layout">
     <aside class="category-manager" aria-label="Categorías del formulario">
       <h3>Categorías</h3>
@@ -69,10 +71,12 @@
   </div>
   @if (error() && !fieldDraft()) { <p class="error" role="alert">{{ error() }}</p> }
 
+
+  }
   @if (fieldDraft(); as field) {
-    <div class="field-dialog-backdrop">
-      <section class="field-dialog" role="dialog" aria-modal="true" aria-labelledby="field-dialog-title" (keydown.escape)="closeField()" tabindex="-1" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
-        <header class="panel-header"><h3 id="field-dialog-title">{{ editTarget()?.fieldKey ? 'Editar campo' : 'Agregar campo' }}</h3><button type="button" (click)="closeField()" aria-label="Cerrar editor del campo">✕</button></header>
+
+      <section class="field-editor-page" aria-labelledby="field-editor-title">
+        <header class="panel-header"><h1 #fieldPageHeading tabindex="-1" id="field-editor-title">{{ editTarget()?.fieldKey ? 'Editar campo' : 'Agregar campo' }}</h1><button type="button" (click)="closeField()" aria-label="Volver a los campos">← Volver a los campos</button></header>
         <fieldset [disabled]="readonly()">
           <div class="control-grid">
             <label class="control">Etiqueta <input maxlength="150" [ngModel]="field.label" (ngModelChange)="updateDraft({ label: $event })" />@if (draftError('label'); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
@@ -114,8 +118,7 @@
           @if (field.visibleWhen) { <label class="control">Mostrar cuando la respuesta sea <select [ngModel]="field.visibleWhen.equals" (ngModelChange)="setVisibilityValue($event)"><option [ngValue]="true">Sí</option><option [ngValue]="false">No</option></select></label> }
         </fieldset>
         @if (draftValidationError(); as error) { <p class="error" role="alert">{{ error }}</p> }
-        <footer class="dialog-actions"><button type="button" (click)="closeField()">Cancelar</button><button type="button" class="primary" (click)="saveField()" [disabled]="readonly() || !!draftValidationError()">Aplicar campo</button></footer>
+        <footer class="field-page-actions"><button type="button" (click)="closeField()">Cancelar</button><button type="button" class="primary" (click)="saveField()" [disabled]="readonly() || !!draftValidationError()">Aplicar campo</button></footer>
       </section>
-    </div>
   }
 </section>

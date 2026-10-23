@@ -24,6 +24,24 @@ describe('PatientStudiesComponent', () => {
     return file;
   }
 
+  it('requests confirmation in the page before deleting a study', () => {
+    studyServiceMock.deleteStudy.mockReturnValue(of(undefined));
+    component.deleteStudy(mockStudies[0]); fixture.detectChanges();
+    expect(studyServiceMock.deleteStudy).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.inline-confirmation').textContent).toContain('radiografia_torax.pdf');
+    component.confirmDeleteStudy(); fixture.detectChanges();
+    expect(studyServiceMock.deleteStudy).toHaveBeenCalledWith(10, 1);
+    expect(component.studies()).toEqual([]); expect(component.pendingDelete()).toBeNull();
+  });
+
+  it('discards a pending deletion on patient changes and allows cancel without a request', () => {
+    component.deleteStudy(mockStudies[0]); component.pendingDelete.set(null); component.confirmDeleteStudy();
+    expect(studyServiceMock.deleteStudy).not.toHaveBeenCalled();
+    component.deleteStudy(mockStudies[0]); fixture.componentRef.setInput('patientId', 11);
+    component.confirmDeleteStudy();
+    expect(studyServiceMock.deleteStudy).not.toHaveBeenCalled(); expect(component.pendingDelete()).toBeNull();
+  });
+
   const mockStudies: PatientMedicalStudy[] = [
     {
       id: 1,

@@ -24,6 +24,8 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   private epoch = 0;
   private destroyed = false;
   private readonly editors = viewChildren(FormFieldEditorComponent);
+  readonly fieldEditorOpen = computed(() => this.editors().some(editor => !!editor.fieldDraft()));
+  readonly activeFieldSection = computed(() => this.editors().find(editor => !!editor.fieldDraft())?.section());
   readonly pendingEditor = computed(() => this.editors().some(editor => editor.pendingChanges()));
   readonly specialties = signal<SpecialtyDetail[]>([]);
   readonly selectedSpecialty = signal<SpecialtyDetail | null>(null);
