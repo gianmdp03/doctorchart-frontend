@@ -19,7 +19,7 @@
     } @else {
       <div class="followup-days">
         @for (group of groups(); track group.date) {
-          <section class="followup-day" [class.followup-day-today]="$first" [attr.aria-label]="group.label + ', ' + displayDate(group.date)">
+          <section class="followup-day" [class.followup-day-today]="$first" [class.is-empty-day]="group.items.length === 0" [attr.aria-label]="group.label + ', ' + displayDate(group.date)">
             <div class="followup-day-heading">
               <div>
                 <h3>{{ group.label }}</h3>

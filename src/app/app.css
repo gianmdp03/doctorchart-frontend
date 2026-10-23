@@ -97,3 +97,7 @@
 
 
 @media (max-width: 768px) { .app-layout-shell { flex-direction: column; } .app-main-viewport { min-height: 0; overflow-x: clip; } }
+
+@media (max-width: 768px) { .app-main-content { padding: 12px 10px; } }
+
+@media (max-width: 768px) { .app-layout-shell { position: relative; } }

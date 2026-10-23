@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, signal, afterNextRender, DestroyRef, ElementRef, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { CdkScrollable } from '@angular/cdk/scrolling';
@@ -46,7 +46,19 @@ export class GrowthChartComponent {
   ];
   private hideTimer?: ReturnType<typeof setTimeout>;
   readonly clipId = computed(() => `oms-plot-${this.definition().id}`);
-  readonly plot = { left: 68, right: 976, top: 24, bottom: 420 };
+  readonly compact = signal(false);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
+  get plot() { return this.compact() ? { left: 46, right: 310, top: 24, bottom: 255 } : { left: 68, right: 976, top: 24, bottom: 420 }; }
+  readonly viewBox = computed(() => this.compact() ? '0 0 350 315' : '0 0 1080 492');
+  private mobileTicks(values: number[], count: number): number[] { if (!this.compact() || values.length <= count) return values; return values.filter((_, i) => i % Math.ceil((values.length - 1) / (count - 1)) === 0 || i === values.length - 1); }
+  private observeSize(): void {
+    afterNextRender(() => {
+      if (typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(entries => this.compact.set(entries[0].contentRect.width < 650));
+      observer.observe(this.host.nativeElement); this.destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
   readonly definition = computed(() => this.chart().definition);
   readonly latestMeasurement = computed(() => this.chart().points.at(-1) ?? null);
   readonly sexLabel = computed(() => (this.definition().sex === 'FEMALE' ? 'Niñas' : 'Niños'));
@@ -101,12 +113,19 @@ export class GrowthChartComponent {
       .domain([this.axes().y.min, this.axes().y.max])
       .range([this.plot.bottom, this.plot.top]),
   );
-  readonly xGrid = computed(() => this.ticks(this.axes().x, true));
-  readonly yGrid = computed(() => this.ticks(this.axes().y, true));
-  readonly xLabels = computed(() => this.ticks(this.axes().x, false));
-  readonly yLabels = computed(() => this.ticks(this.axes().y, false));
+  readonly xGrid = computed(() => this.mobileTicks(this.ticks(this.axes().x, true), 16));
+  readonly yGrid = computed(() => this.mobileTicks(this.ticks(this.axes().y, true), 16));
+  readonly xLabels = computed(() => {
+    const values = this.ticks(this.axes().x, false);
+    if (this.compact() && this.definition().x.variable === 'AGE') {
+      const axis = this.axes().x, step = axis.max - axis.min >= 36 ? 12 : axis.max - axis.min >= 18 ? 6 : 3;
+      return this.mobileTicks(values.filter(value => value % step === 0 || value === axis.min || value === axis.max), 6);
+    }
+    return this.mobileTicks(values, 5);
+  });
+  readonly yLabels = computed(() => this.mobileTicks(this.ticks(this.axes().y, false), 7));
   readonly years = computed(() =>
-    this.definition().x.variable === 'AGE' ? this.xGrid().filter((t) => t % 12 === 0) : [],
+    this.definition().x.variable === 'AGE' ? this.mobileTicks(this.xGrid().filter((t) => t % 12 === 0), 4) : [],
   );
   readonly visiblePoints = computed(() =>
     this.chart().points.filter((p) => this.inFrame(p, this.axes().x, this.axes().y)),
@@ -158,6 +177,7 @@ export class GrowthChartComponent {
       })[this.definition().y.variable] + ` (${this.definition().y.unit})`,
   );
   constructor() {
+    this.observeSize();
     effect((onCleanup) => {
       this.chart();
       this.expandedFrame.set(false);

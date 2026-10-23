@@ -54,3 +54,12 @@
 }
 @media (prefers-reduced-motion: reduce) { .followup-patient { transition: none; } }
 
+
+@media (max-width: 768px) {
+ .followup-card { padding: 12px; } .followup-heading { gap: 8px; margin-bottom: 10px; } .followup-heading-icon { width: 30px; height: 30px; font-size: 16px; border-radius: 9px; }
+ .followup-eyebrow, .followup-heading p, .followup-footnote { display: none; } .followup-heading h2 { font-size: 14px; } .followup-period { margin-left: 0; font-size: 10px; }
+ .followup-days { gap: 6px; } .followup-day-heading { padding: 8px 10px; } .followup-day-heading > div { display: flex; align-items: center; gap: 8px; } .followup-day-heading h3 { margin: 0; font-size: 12px; }
+ .followup-empty { min-height: 0; padding: 4px; font-size: 10px; } .followup-patients { padding: 3px 6px; } .followup-patient { min-height: 44px; padding: 5px; } .followup-avatar { width: 28px; height: 28px; } .followup-patient-action { display: none; }
+}
+
+@media (max-width: 768px) { .is-empty-day .followup-day-heading { border-bottom: 0; } .is-empty-day .followup-patients { padding: 0 10px 6px; } .is-empty-day .followup-empty { padding: 0; justify-content: flex-start; } }

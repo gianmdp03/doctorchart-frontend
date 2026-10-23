@@ -54,4 +54,13 @@ describe('Vaccination calendar shared theme', () => {
     const fixture = await render();
     expect(fixture.nativeElement.querySelector('app-vaccination-calendar').classList.contains('dark-theme')).toBe(true);
   });
+ it('selects age-specific applications, preserving notes, risk indications and new source columns', () => {
+ const fixture=TestBed.createComponent(VaccinationCalendarComponent);
+ const data: CalendarioVacunacionJSON={...calendar,grupos_etarios_columnas:[{grupo:'Edades de prueba',columnas:[{id:'first',nombre:'Edad inicial',orden:1},{id:'later',nombre:'Edad posterior',orden:2}]}],vacunas:[{id:'test-one',nombre:'Vacuna de prueba A',categoria:'calendario_regular',referencia_patologia:{numero:1,descripcion:'Referencia de prueba'},aplicaciones:[{id:'dose-a',ageRule:null,columnas:['first'],dosis:'Dosis de prueba A',tipo:'dosis_primaria',notas:[{letra:'A',condicion:'Condición de prueba A'}]}]},{id:'test-risk',nombre:'Vacuna de prueba B',categoria:'exclusivo_zonas_de_riesgo',referencia_patologia:null,aplicaciones:[{id:'dose-b',ageRule:null,columnas:['later'],dosis:'Dosis de prueba B',tipo:'riesgo',notas:[]}]}]};
+ fixture.componentRef.setInput('data',data);fixture.detectChanges();expect(fixture.componentInstance.mobileVaccines().map(r=>r.vaccine.id)).toEqual(['test-one']);
+ expect(fixture.nativeElement.querySelector('.mobile-vaccine-calendar').textContent).toContain('Condición de prueba A');
+ const select=fixture.nativeElement.querySelector('#mobile-vaccine-age') as HTMLSelectElement;select.value='later';select.dispatchEvent(new Event('change'));fixture.detectChanges();
+ expect(fixture.componentInstance.mobileVaccines().map(r=>r.vaccine.id)).toEqual(['test-risk']);expect(fixture.nativeElement.querySelector('.mobile-risk').textContent).toContain('Zona de riesgo');
+ fixture.componentRef.setInput('data',{...data,grupos_etarios_columnas:[{grupo:'Cambio',columnas:[{id:'new',nombre:'Nueva edad',orden:1}]}]});fixture.detectChanges();expect(fixture.componentInstance.mobileColumn()?.id).toBe('new');expect(fixture.componentInstance.mobileVaccines()).toEqual([]);
+ });
 });

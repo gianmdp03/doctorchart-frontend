@@ -701,3 +701,28 @@
   .patient-row .age-primary-row { flex-wrap: wrap; }
   .patient-row .btn-table-action { min-height: 44px; }
 }
+
+.mobile-patient-list { display: none; }
+@media (max-width: 768px) {
+ .patient-table-card:has(.patient-row) { display: none; }
+ .mobile-patient-list { display: grid; gap: 6px; margin-top: 12px; }
+ .mobile-patient-row { border: 1px solid var(--dc-outline); border-radius: 10px; background: var(--dc-surface); overflow: hidden; }
+ .mobile-patient-main { display: flex; width: 100%; align-items: center; gap: 10px; padding: 10px 12px; background: transparent; border: 0; color: var(--dc-ink); text-align: left; cursor: pointer; }
+ .mobile-avatar { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; font-size: 11px; color: var(--dc-teal-ink); background: var(--dc-teal-surface); }
+ .mobile-patient-copy { flex: 1; min-width: 0; display: grid; gap: 3px; }
+ .mobile-patient-copy strong { font-size: 13px; overflow-wrap: anywhere; }
+ .mobile-patient-copy > span { font-size: 11px; color: var(--dc-ink-secondary); }
+ .mobile-patient-row summary { padding: 0 12px 8px 52px; font-size: 11px; color: var(--dc-ink-muted); cursor: pointer; }
+ .mobile-patient-extra { display: grid; gap: 8px; padding: 10px 12px; font-size: 12px; border-top: 1px solid var(--dc-outline); }
+ .mobile-patient-extra button { justify-self: start; border: 0; background: transparent; color: var(--dc-teal-ink); min-height: 36px; }
+ .directory-filter-panel { padding: 10px; }
+ .directory-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+ .directory-filter { flex: 0 1 auto; padding: 7px 9px; min-height: 34px; gap: 2px; border-radius: 8px; }
+ .filter-name { font-size: 11px; } .filter-range { font-size: 10px; } .directory-filter-vaccine { grid-column: auto; }
+ .patient-directory-controls { gap: 10px; } .directory-subtitle { margin: 4px 0; font-size: 12px; }
+ .directory-actions-group { flex-direction: row; flex-wrap: wrap; gap: 8px; } .directory-search-wrapper { flex: 1 1 190px; }
+}
+
+@media (max-width: 768px) { .directory-filters { display: block; padding: 9px; } .directory-filters-heading { margin-bottom: 7px; font-size: 11px; } .directory-filter-options { display: flex; flex-wrap: wrap; gap: 5px; } .directory-filter { flex: 1 1 85px; } .filter-range { line-height: 1.25; } }
+
+@media (max-width: 768px) { .mobile-patient-main { padding: 8px 10px 5px; } .mobile-patient-row summary { padding: 0 10px 6px 50px; font-size: 10px; } .mobile-patient-list { gap: 5px; } }

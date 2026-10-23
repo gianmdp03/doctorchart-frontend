@@ -139,6 +139,16 @@
   </div>
 
   @if (loadError(); as error) { <p role="alert">{{ error }} <button type="button" class="m3-chip" (click)="loadInitial()">Reintentar</button></p> }
+  <div class="mobile-patient-list" aria-label="Pacientes">
+    @for (patient of patients(); track patient.id) {
+      <article class="mobile-patient-row">
+        <button type="button" class="mobile-patient-main" (click)="selectPatient(patient)">
+          <span class="mobile-avatar">{{ patient.initials }}</span><span class="mobile-patient-copy"><strong>{{ patient.fullName }}</strong><span>{{ patient.ageDisplay }} · {{ patient.dni }}</span></span><span aria-hidden="true">›</span>
+        </button>
+        <details><summary>Más datos</summary><div class="mobile-patient-extra"><span>Contacto: {{ patient.rawPhone || 'Sin registrar' }}</span><span>{{ patient.lastCheckup }}</span>@if (doctorSpecialtyService.supportsGrowthCharts()) { <span>Vacunación: {{ patient.hasPendingVaccine ? 'Pendiente' : 'Al día' }}</span> }<button type="button" (click)="selectPatient(patient)">Abrir ficha →</button></div></details>
+      </article>
+    }
+  </div>
   <!-- Cards Grid -->
   <!-- Patients Table -->
   <div class="patient-table-card">

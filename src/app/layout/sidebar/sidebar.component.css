@@ -218,3 +218,7 @@
   .nav-item.active::before { left: 25%; right: 25%; top: auto; bottom: 0; height: 2px; width: auto; border-radius: 2px; }
   .nav-group-label, .sidebar-footer { display: none; }
 }
+
+@media (max-width: 768px) { .sidebar-brand { height: 44px; } .sidebar-nav { padding: 4px 6px; grid-template-columns: repeat(auto-fit,minmax(65px,1fr)); } .nav-item { min-height: 44px; padding: 4px; gap: 3px; } .nav-label { font-size: 10px; } .nav-icon { font-size: 16px; } }
+
+@media (max-width: 768px) { .brand-title { font-size: 13px; } .brand-specialty-pill { font-size: 9px; } .sidebar-brand { gap: 6px; padding-left: 10px; padding-right: 150px; } .brand-logo-icon, .brand-logo-icon img { width: 26px; height: 26px; min-width: 26px; } }

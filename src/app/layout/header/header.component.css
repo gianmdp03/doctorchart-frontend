@@ -588,3 +588,17 @@
   .top-app-header .header-right { gap: 0.5rem; }
   .top-app-header .accessibility-badge { display: none; }
 }
+
+@media (max-width: 768px) { :host { position: static; } .top-app-header { height: 44px; min-height: 44px; } }
+
+@media (max-width: 768px) {
+ .top-app-header { height: 0; min-height: 0; padding: 0; border: 0; position: static; }
+ .header-center { display: none; } .header-right { position: absolute; top: 6px; right: 8px; gap: 4px; z-index: 45; }
+ .bycode-link { width: 28px; height: 30px; } .bycode-link img { width: 19px; height: 19px; }
+ .accessibility-btn { padding: 5px; height: 30px; gap: 2px; } .accessibility-icon { display: none; } .accessibility-text { font-size: 11px; }
+ .avatar-circle, .profile-avatar-btn { width: 30px; height: 30px; font-size: 11px; }
+ app-theme-toggle { scale: .85; transform-origin: center; margin-inline: -3px; }
+ .profile-dropdown-menu { max-width: calc(100vw - 24px); }
+}
+
+@media (max-width: 768px) { :host { z-index: 50; } }

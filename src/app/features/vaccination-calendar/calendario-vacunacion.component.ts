@@ -51,6 +51,12 @@ export class VaccinationCalendarComponent implements OnInit {
   /** Optional caller-supplied calendar. It overrides the service response. */
   readonly data = input<CalendarioVacunacionJSON | null>(null);
   readonly isDarkMode = computed(() => this.themeService.theme() === 'dark');
+  readonly mobileAge = signal('');
+  readonly mobileColumn = computed(() => this.flatColumns().find(column => column.id === this.mobileAge()) ?? this.flatColumns()[0]);
+  readonly mobileVaccines = computed(() => {
+    const column = this.mobileColumn();
+    return column ? (this.calendar()?.vacunas ?? []).map(vaccine => ({ vaccine, applications: vaccine.aplicaciones.filter(application => application.columnas.includes(column.id)) })).filter(row => row.applications.length > 0) : [];
+  });
   readonly activeTooltip = signal<ReferenceTooltip | null>(null);
 
   /** The effective calendar, either injected by the caller or fetched remotely. */

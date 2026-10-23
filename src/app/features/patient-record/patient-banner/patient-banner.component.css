@@ -304,3 +304,5 @@
   .banner-actions-block { flex-wrap: wrap; justify-content: stretch; }
   .banner-actions-block button { flex: 1 1 140px; min-height: 44px; justify-content: center; white-space: normal; }
 }
+
+@media (max-width: 600px) { .patient-clinical-banner { padding: 10px; gap: 8px; } .banner-left-block { grid-template-columns: 32px minmax(0,1fr); gap: 8px; } .btn-nav-back { min-height: 32px; padding: 5px 8px; } .patient-avatar-circle { width: 32px; height: 32px; font-size: 12px; } .patient-fullname { font-size: 15px; } .patient-demographics-row { font-size: 11px; margin-top: 3px; } .banner-actions-block button { flex-basis: 120px; min-height: 36px; padding: 6px 8px; font-size: 11px; } .safety-badge { font-size: 10px; padding: 5px 7px; } }

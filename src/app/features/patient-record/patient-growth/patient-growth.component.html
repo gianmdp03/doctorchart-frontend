@@ -72,7 +72,7 @@
           }}.
         </p>
       } @else {
-        <div class="growth-toolbar">
+        <label class="mobile-growth-select">Gráfico de crecimiento<select [value]="growth.effectiveMetric()" (change)="growth.selectedGrowthMetric.set($any($event.target).value)">@for (category of growth.categories(); track category.indicator) { <option [value]="category.indicator">{{ category.title }} ({{ category.count }})</option> }<option value="ALL">Todos los gráficos</option></select></label><div class="growth-toolbar">
           <div
             class="growth-selector-pills"
             role="group"

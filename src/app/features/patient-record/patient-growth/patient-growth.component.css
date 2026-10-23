@@ -191,3 +191,7 @@
   background: var(--dc-surface, white);
   max-width: 100%;
 }
+@media (max-width: 640px) { .growth-context { font-size: 11px; margin-bottom: 8px; gap: 8px; } .growth-toolbar { margin-bottom: 8px; } .growth-selector-pills { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 3px; padding: 4px; } .growth-pill-btn { width: 100%; padding: 7px; font-size: 11px; min-height: 36px; gap: 4px; text-align: left; } .growth-pill-btn:last-child { grid-column: 1/-1; justify-content: center; } .pill-badge { font-size: 10px; min-width: 16px; height: 16px; } .growth-note { font-size: 10px; } }
+
+.mobile-growth-select { display: none; }
+@media(max-width:640px) { .growth-toolbar { display: none; } .mobile-growth-select { display: grid; gap: 5px; font-size: 11px; margin-bottom: 10px; } .mobile-growth-select select { width: 100%; min-height: 38px; padding: 8px; border: 1px solid var(--dc-outline); border-radius: 8px; background: var(--dc-surface); color: var(--dc-ink); font: inherit; font-size: 12px; } }

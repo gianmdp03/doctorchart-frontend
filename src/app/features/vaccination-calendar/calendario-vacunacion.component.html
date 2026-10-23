@@ -6,13 +6,27 @@
         <p>{{ calendar.metadata.bajada }}</p>
         <div class="header-meta" aria-label="Información del calendario">
           <span>{{ calendar.metadata.organismo }}</span>
-          <span>Línea gratuita: {{ calendar.metadata.telefono }}</span>
-          <span>{{ calendar.metadata.sitio_web }}</span>
+          @if (calendar.metadata.telefono) { <span>Línea gratuita: {{ calendar.metadata.telefono }}</span> }
+          @if (calendar.metadata.sitio_web) { <span>{{ calendar.metadata.sitio_web }}</span> }
         </div>
       </div>
 
     </header>
 
+    <section class="mobile-vaccine-calendar" aria-label="Vacunas por edad">
+      <label for="mobile-vaccine-age">Consultar por edad</label>
+      <select id="mobile-vaccine-age" [value]="mobileColumn()?.id ?? ''" (change)="mobileAge.set($any($event.target).value)">
+        @for (group of calendar.grupos_etarios_columnas; track group.grupo) { <optgroup [label]="group.grupo">@for (column of group.columnas; track column.id) { <option [value]="column.id">{{ column.nombre }}{{ column.subtitulo ? ' · ' + column.subtitulo : '' }}</option> }</optgroup> }
+      </select>
+      <p class="mobile-vaccine-count">{{ mobileVaccines().length }} vacunas · {{ mobileColumn()?.nombre }}</p>
+      @for (row of mobileVaccines(); track row.vaccine.id) {
+        <article class="mobile-vaccine-row"><div class="mobile-vaccine-heading"><strong>{{ row.vaccine.nombre }}</strong>@if (row.vaccine.categoria === 'exclusivo_zonas_de_riesgo') { <span class="mobile-risk">Zona de riesgo</span> }</div>
+          @for (application of row.applications; track application.id) { <p class="mobile-dose">{{ application.dosis }}</p>
+            @if (application.notas.length || row.vaccine.referencia_patologia) { <details><summary>Indicaciones y referencia</summary>@if (row.vaccine.referencia_patologia; as reference) { <p>{{ reference.descripcion }}</p> }@for (note of application.notas; track note.letra) { <p><strong>({{ note.letra }})</strong> {{ note.condicion }}</p> }</details> }
+          }
+        </article>
+      } @empty { <p>No hay aplicaciones indicadas para esta edad en el calendario.</p> }
+    </section>
     <div class="table-scrollbar-container" aria-label="Desplazamiento horizontal de la tabla">
       <span class="scrollbar-label">Deslizar columnas</span>
       <div
@@ -160,8 +174,8 @@
     <section class="notes-container" aria-labelledby="clinical-notes-title">
       <h2 id="clinical-notes-title">Referencias y especificaciones clínicas</h2>
       <div class="notes-grid">
-        <div>
-          <h3>Patologías prevenidas</h3>
+        <details>
+          <summary>Patologías prevenidas</summary>
           <ul class="notes-list">
             @for (reference of pathologyReferences(); track reference.numero) {
               <li
@@ -171,9 +185,9 @@
               </li>
             }
           </ul>
-        </div>
-        <div>
-          <h3>Notas y condiciones de aplicación</h3>
+        </details>
+        <details>
+          <summary>Notas y condiciones de aplicación</summary>
           <ul class="notes-list">
             @for (note of applicationNotes(); track note.letra) {
               <li
@@ -183,7 +197,7 @@
               </li>
             }
           </ul>
-        </div>
+        </details>
       </div>
     </section>
   } @else if (loading()) {

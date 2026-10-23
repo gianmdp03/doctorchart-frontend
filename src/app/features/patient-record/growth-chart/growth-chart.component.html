@@ -89,7 +89,7 @@
     >
       <svg
         class="growth-svg"
-        viewBox="0 0 1080 492"
+        [attr.viewBox]="viewBox()"
         role="img"
         [attr.aria-labelledby]="clipId() + '-title ' + clipId() + '-desc'"
       >
@@ -173,7 +173,7 @@
           >
             {{ tick }}
           </text>
-          <text class="tick-label" [attr.x]="plot.right + 60" [attr.y]="yScale()(tick) + 4">
+          <text class="tick-label right-axis-label" [attr.x]="plot.right + 60" [attr.y]="yScale()(tick) + 4">
             {{ tick }}
           </text>
         }
@@ -184,7 +184,7 @@
             [attr.y]="plot.bottom + 19"
             text-anchor="middle"
           >
-            {{ definition().x.variable === 'AGE' ? monthLabel(tick) : tick }}
+            {{ definition().x.variable === 'AGE' ? (compact() ? tick + ' m' : monthLabel(tick)) : tick }}
           </text>
         }
         @for (tick of years(); track tick) {
@@ -197,8 +197,8 @@
             {{ tick === 0 ? 'Nacimiento' : tick / 12 + (tick === 12 ? ' año' : ' años') }}
           </text>
         }
-        <text class="axis-title" x="520" y="482" text-anchor="middle">{{ xTitle() }}</text>
-        <text class="axis-title" transform="translate(17 224) rotate(-90)" text-anchor="middle">
+        <text class="axis-title" [attr.x]="(plot.left + plot.right) / 2" [attr.y]="plot.bottom + 60" text-anchor="middle">{{ xTitle() }}</text>
+        <text class="axis-title" [attr.transform]="'translate(14 ' + (plot.top + plot.bottom) / 2 + ') rotate(-90)'" text-anchor="middle">
           {{ yTitle() }}
         </text>
         <g [attr.clip-path]="'url(#' + clipId() + ')'">

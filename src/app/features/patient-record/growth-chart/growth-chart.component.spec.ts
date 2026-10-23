@@ -264,4 +264,12 @@ describe('GrowthChartComponent — all twenty official references', () => {
     expect(markers[0]).not.toBe(markers[1]);
     expect(original.points[1].value).toBe(11.4);
   });
+ it('fits all references in mobile coordinates without changing data or percentiles', () => {
+ for(const chart of patientGrowthFixture().charts) {
+ const fixture=TestBed.createComponent(GrowthChartComponent);fixture.componentRef.setInput('chart',chart);fixture.detectChanges();
+ const component=fixture.componentInstance;const points=structuredClone(chart.points);component.compact.set(true);fixture.detectChanges();
+ expect(fixture.nativeElement.querySelector('svg').getAttribute('viewBox')).toBe('0 0 350 315');expect(component.xLabels().length).toBeLessThanOrEqual(6);
+ expect(component.xScale()(component.axes().x.max)).toBe(310);expect(component.yScale()(component.axes().y.min)).toBe(255);
+ expect(fixture.nativeElement.querySelectorAll('.reference-curve').length).toBe(5);expect(component.chart().points).toEqual(points);fixture.destroy(); }
+ });
 });

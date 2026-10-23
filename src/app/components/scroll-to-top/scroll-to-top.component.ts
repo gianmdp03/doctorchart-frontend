@@ -50,6 +50,7 @@ import { afterNextRender, ChangeDetectionStrategy, Component, DestroyRef, inject
       .scroll-to-top { transition: none; }
       .scroll-to-top:hover { transform: none; }
     }
+    @media (max-width: 768px) { .scroll-to-top { display: none; } }
     @media print { .scroll-to-top { display: none; } }
   `,
 })
