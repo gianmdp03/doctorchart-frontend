@@ -1,7 +1,5 @@
 import { UserClockService } from '../../core/services/user-clock.service';
-import { PatientRecordActionsService } from '../../core/experience/patient-record-actions.service';
-import { Component, computed, DestroyRef, effect, inject, OnDestroy, OnInit, PLATFORM_ID, signal, viewChild, untracked } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { Component, computed, DestroyRef, effect, inject, OnDestroy, OnInit, signal, viewChild, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -21,13 +19,11 @@ import { userDateTime, conflictKind, errorMessage } from '../dynamic-form-render
   styleUrl: './encounter-detail-page.component.css',
 })
 export class EncounterDetailPageComponent implements OnInit, OnDestroy {
-  readonly recordActions = inject(PatientRecordActionsService);
   private readonly service = inject(ClinicalEncounterService);
   private readonly auth = inject(AuthService);
   private readonly activePatient = inject(ActivePatientService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly platformId = inject(PLATFORM_ID);
   private readonly clock = inject(UserClockService);
   private epoch = 0;
   private destroyed = false;
@@ -141,7 +137,6 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   useRemoteRecord(): void { const remote = this.remoteRecord(); if (!remote || this.isLoading() || this.isSubmitting() || this.identity() !== this.owner) return; this.acceptRecord(remote); this.isEditing.set(true); }
   formatDate(instant: string): string { const { day, time } = userDateTime(instant); const [year, month, date] = day.split('-'); return `${date}/${month}/${year} ${time}`; }
   getConsultationTypeLabel(type: string): string { return this.consultationTypes.find(option => option.value === type)?.label ?? type; }
-  printEncounter(): void { if (this.recordActions.has('PRINT_DOCUMENT') && this.alive(this.epoch) && isPlatformBrowser(this.platformId) && typeof window !== 'undefined') window.print(); }
   private identity(): string { return this.auth.currentUser()?.id ?? ''; }
   private alive(epoch: number): boolean { return !this.destroyed && epoch === this.epoch && this.identity() === this.owner; }
 }

@@ -15,3 +15,12 @@ Cuando el usuario pida reactivar las calculadoras médicas ("activar calculadora
    - El botón de acceso rápido de calculadora en el banner del paciente activo (`PatientQuickBannerComponent`).
    - El acceso a la ruta `/calculadoras` en `clinicalNavigationGuard('CALCULATORS')`.
 NO eliminar, reescribir ni desarmar componentes en `src/app/features/medical-calculators/` ya que todo el código, lógica clínica, fórmulas y tests están preservados al 100%.
+
+## Operación del VPS compartido
+
+Antes de preparar comandos o cambios para el VPS, leer
+[docs/vps-operations.md](docs/vps-operations.md). Contiene el mapa de servicios,
+rutas reales, uso de .env.production, construcción por servicio, comprobaciones
+posteriores y reinicialización acotada de bases cuando el propietario la autoriza.
+Leer esta guía no autoriza commits, pushes, despliegues ni wipes. Preservar las
+políticas de esquema y los cambios locales de este repositorio.
