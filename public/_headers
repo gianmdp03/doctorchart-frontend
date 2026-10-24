@@ -18,6 +18,18 @@
   X-Robots-Tag: noindex, follow
   Cache-Control: no-cache
 
+/consultas/*
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/asistente
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/perfil
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
 /calendario-vacunacion
   X-Robots-Tag: noindex, follow
   Cache-Control: no-cache

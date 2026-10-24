@@ -14,6 +14,7 @@ import {
   lucideStethoscope,
 } from '@ng-icons/lucide';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
+import site from '../../core/config/site.config.json';
 
 @Component({
   selector: 'app-landing',
@@ -37,6 +38,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LandingComponent {
+  readonly bycodeUrl = site.applicationUrls.bycode;
   readonly features = [
     {
       icon: 'lucideUsers',

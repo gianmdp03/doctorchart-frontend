@@ -2,6 +2,9 @@
 /sin-plan /index.csr 200
 /dashboard /index.csr 200
 /consultas /index.csr 200
+/consultas/:id /index.csr 200
+/asistente /index.csr 200
+/perfil /index.csr 200
 /calendario-vacunacion /index.csr 200
 /calculadoras /index.csr 200
 /pacientes /index.csr 200
