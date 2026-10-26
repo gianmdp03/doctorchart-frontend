@@ -94,7 +94,7 @@
             [ngModel]="studyName()" (ngModelChange)="onNameChange($event)"
             placeholder="Ej: Tomografía cerebral" class="form-input text-input"
             [disabled]="isUploading()" aria-describedby="studyNameHint" />
-          <span id="studyNameHint" class="file-hint">Se guardará el archivo con este nombre.</span>
+          <span id="studyNameHint" class="file-hint">Nombre para identificar el estudio en la historia clínica.</span>
           @if (studyName() && nameError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
         </div>
 

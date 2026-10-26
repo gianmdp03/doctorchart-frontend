@@ -19,6 +19,7 @@ import { WizardFormValues } from '../../../core/models/wizard-definition.model';
 import { PrescriptionDocumentType } from '../../../core/models/prescription.model';
 import { ClinicalDocumentPrintService } from '../../../core/services/clinical-document-print.service';
 import { PrintDocumentReference } from '../../../core/models/clinical-print-document.model';
+import { PatientRecordDraftsService } from '../patient-record-drafts.service';
 
 @Injectable()
 export class PatientEncountersStore {
@@ -31,17 +32,18 @@ export class PatientEncountersStore {
   private readonly printService = inject(ClinicalDocumentPrintService);
   private readonly router = inject(Router);
   private encounterRead = 0;
-  private recordContext = '';
+  private readonly drafts = inject(PatientRecordDraftsService).syncContext().encounter;
+  private recordContext = this.contextKey();
   readonly pendingDeleteId = signal<number | null>(null);
   readonly isDeleting = signal(false);
   readonly deleteError = signal<string | null>(null);
   readonly encounters = signal<ClinicalEncounterList[]>([]);
   readonly isLoadingEncounters = signal<boolean>(false);
-  readonly isCreatingEncounter = signal<boolean>(false);
+  readonly isCreatingEncounter = this.drafts.open;
 
-  readonly encounterDraftValues = signal<WizardFormValues>({});
-  readonly encounterDraftConsultationType = signal<ConsultationType | null>(null);
-  readonly encounterDraftInstant = signal<string | null>(null);
+  readonly encounterDraftValues = this.drafts.values;
+  readonly encounterDraftConsultationType = this.drafts.type;
+  readonly encounterDraftInstant = this.drafts.instant;
 
   startCreatingEncounter(): void {
     this.isCreatingEncounter.set(true);

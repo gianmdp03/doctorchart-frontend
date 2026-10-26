@@ -13,6 +13,7 @@ describe('PatientMedicalStudyService', () => {
     {
       id: 1,
       patientId: 10,
+      name: 'Radiografía de tórax',
       originalFileName: 'radiografia.pdf',
       contentType: 'application/pdf',
       fileSize: 1024,
@@ -49,7 +50,7 @@ describe('PatientMedicalStudyService', () => {
 
   it('should upload a study file', () => {
     const file = new File(['test content'], 'test.png', { type: 'image/png' });
-    service.uploadStudy(10, file, 'Foto de tomografía').subscribe((res) => {
+    service.uploadStudy(10, file, 'Tomografía cerebral', 'Foto de tomografía').subscribe((res) => {
       expect(res.id).toBe(2);
       expect(res.description).toBe('Foto de tomografía');
     });
@@ -59,10 +60,12 @@ describe('PatientMedicalStudyService', () => {
     expect(req.request.body instanceof FormData).toBe(true);
     expect(req.request.body.get('file')).toBe(file);
     expect(req.request.body.get('description')).toBe('Foto de tomografía');
-    expect(Array.from(req.request.body.keys())).toEqual(['file', 'description']);
+    expect(req.request.body.get('name')).toBe('Tomografía cerebral');
+    expect(Array.from(req.request.body.keys())).toEqual(['file', 'name', 'description']);
     req.flush({
       id: 2,
       patientId: 10,
+      name: 'Tomografía cerebral',
       originalFileName: 'test.png',
       contentType: 'image/png',
       fileSize: 12,
@@ -79,12 +82,15 @@ describe('PatientMedicalStudyService', () => {
     req.flush(null, { status: 204, statusText: 'No Content' });
   });
 
-  it('sends the chosen study name with the original extension and unchanged image bytes', async () => {
+  it('sends the clinical name as a text field, preserving the attachment name and bytes', async () => {
     const file = new File(['image bytes'], 'IMG_1234.PNG', { type: 'image/png' });
-    service.uploadStudy(10, file, '  Con contraste  ', '  Tomografía cerebral  ').subscribe();
+    const name = '  Tomografía "control" / cerebral: anual  ';
+    service.uploadStudy(10, file, name, '  Con contraste  ').subscribe();
     const req = httpTesting.expectOne(`${environment.apiUrl}/patients/10/studies`);
     const uploaded = req.request.body.get('file') as File;
-    expect(uploaded.name).toBe('Tomografía cerebral.PNG');
+    expect(uploaded).toBe(file);
+    expect(uploaded.name).toBe('IMG_1234.PNG');
+    expect(req.request.body.get('name')).toBe(name);
     expect(uploaded.type).toBe(file.type);
     expect(await uploaded.text()).toBe(await file.text());
     expect(req.request.body.get('description')).toBe('Con contraste');

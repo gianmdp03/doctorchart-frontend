@@ -108,7 +108,7 @@ export class PatientStudiesComponent {
   readonly nameError = computed(() => {
     const name = this.studyName();
     return textError(name, 240, true) ||
-      (/[/\\:\p{Cc}\p{Cf}\u2028\u2029]/u.test(name) ? 'El nombre no puede incluir barras, dos puntos ni caracteres de control.' : null);
+      (/[\p{Cc}\p{Cf}\u2028\u2029]/u.test(name) ? 'El nombre no puede incluir caracteres de control.' : null);
   });
   readonly previewStudy = signal<PatientMedicalStudy | null>(null);
   readonly previewUrl = signal<string | null>(null);
@@ -202,7 +202,7 @@ export class PatientStudiesComponent {
   }
 
   studyTitle(study: PatientMedicalStudy): string {
-    return study.originalFileName.replace(/\.(pdf|jpe?g|png|webp|gif|bmp|tiff?)$/i, '');
+    return study.name;
   }
 
   clearSelectedFile(): void {
@@ -235,7 +235,7 @@ export class PatientStudiesComponent {
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
-    this.studyService.uploadStudy(pid, file, this.description(), this.studyName().trim()).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.studyService.uploadStudy(pid, file, this.studyName(), this.description()).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
         if (!this.current(revision)) return;
         if (created.patientId !== pid) { this.isUploading.set(false); this.errorMessage.set('La respuesta no corresponde al paciente seleccionado.'); return; }
@@ -253,6 +253,9 @@ export class PatientStudiesComponent {
           INVALID_STUDY_FILE: 'El archivo debe ser un PDF sin cifrar o una imagen válida (JPG, PNG, WebP, GIF, BMP o TIFF).',
           EMPTY_STUDY_FILE: 'Seleccioná un archivo que no esté vacío.',
           INVALID_STUDY_FILENAME: 'El nombre del archivo no es válido.',
+          STUDY_NAME_REQUIRED: 'Ingresá el nombre del estudio.',
+          STUDY_NAME_TOO_LONG: 'El nombre del estudio admite hasta 240 caracteres.',
+          INVALID_STUDY_NAME: 'El nombre del estudio no es válido. Quitá los caracteres de control.',
           STUDY_DESCRIPTION_TOO_LONG: 'La descripción admite hasta 4000 caracteres.',
           STUDY_IMAGE_TOO_LARGE: 'La imagen supera la resolución máxima permitida.',
           STUDY_VALIDATION_BUSY: 'Hay otras cargas en proceso. Reintentá en unos segundos.',

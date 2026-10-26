@@ -51,6 +51,7 @@ describe('PatientStudiesComponent', () => {
     {
       id: 1,
       patientId: 10,
+      name: 'Radiografía de tórax',
       originalFileName: 'radiografia_torax.pdf',
       contentType: 'application/pdf',
       fileSize: 1048576,
@@ -156,7 +157,7 @@ describe('PatientStudiesComponent', () => {
     component.submitUpload();
     expect(component.selectedFile()).toBe(file);
     expect(draftStore.draftFile()).toBe(file);
-    expect(studyServiceMock.uploadStudy).toHaveBeenCalledExactlyOnceWith(10, file, 'Control', 'Tomografía cerebral');
+    expect(studyServiceMock.uploadStudy).toHaveBeenCalledExactlyOnceWith(10, file, 'Tomografía cerebral', 'Control');
 
     pending.next({ ...mockStudies[0], id: 2, fileSize: file.size, description: 'Control' });
     expect(component.isUploading()).toBe(false);
@@ -206,16 +207,16 @@ describe('PatientStudiesComponent', () => {
 
   it('requires a valid study name and saves its draft independently from the description', () => {
     component.selectedFile.set(fileWithSize(100));
-    for (const name of ['', '   ', 'a'.repeat(241), 'TAC/cerebral', 'TAC: cerebral', 'TAC\u202e']) {
+    for (const name of ['', '   ', 'a'.repeat(241), 'TAC\u202e']) {
       component.onNameChange(name);
       component.submitUpload();
       expect(component.nameError()).toBeTruthy();
     }
     expect(studyServiceMock.uploadStudy).not.toHaveBeenCalled();
-    component.onNameChange('Tomografía cerebral');
+    component.onNameChange('Tomografía "control" / cerebral: anual');
     component.onDescriptionChange('Con contraste\nControl anual');
     expect(component.nameError()).toBeNull();
-    expect(draftStore.draftName()).toBe('Tomografía cerebral');
+    expect(draftStore.draftName()).toBe('Tomografía "control" / cerebral: anual');
     expect(draftStore.draftDescription()).toBe('Con contraste\nControl anual');
     component.clearSelectedFile();
     expect(component.studyName()).toBe('');
@@ -223,7 +224,7 @@ describe('PatientStudiesComponent', () => {
   });
 
   it('shows the image beside its saved name and description and releases it on close', () => {
-    const image = { ...mockStudies[0], originalFileName: 'Tomografía cerebral.webp', contentType: 'image/webp', description: 'Con contraste\nControl anual' };
+    const image = { ...mockStudies[0], name: 'Tomografía "control" / cerebral: anual', originalFileName: 'IMG_1234.webp', contentType: 'image/webp', description: 'Con contraste\nControl anual' };
     vi.spyOn(window.URL, 'createObjectURL').mockReturnValue('blob:image-preview');
     const revoke = vi.spyOn(window.URL, 'revokeObjectURL').mockImplementation(() => {});
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
@@ -232,7 +233,8 @@ describe('PatientStudiesComponent', () => {
     fixture.detectChanges();
     const panel = fixture.nativeElement.querySelector('#studyPreview');
     expect(panel.querySelector('img').getAttribute('src')).toBe('blob:image-preview');
-    expect(panel.querySelector('h5').textContent).toBe('Tomografía cerebral');
+    expect(panel.querySelector('h5').textContent).toBe(image.name);
+    expect(panel.querySelector('.preview-file dd').textContent).toBe('IMG_1234.webp');
     expect(panel.querySelector('.preview-description').textContent).toBe(image.description);
     expect(open).not.toHaveBeenCalled();
     const visualDirectory = process.env['STUDY_VISUAL_DIR'];
@@ -290,6 +292,7 @@ describe('PatientStudiesComponent', () => {
 
     const createdStudy: PatientMedicalStudy = {
       id: 2,
+      name: 'Ecografía renal',
       patientId: 10,
       originalFileName: 'eco.jpg',
       contentType: 'image/jpeg',
@@ -301,7 +304,7 @@ describe('PatientStudiesComponent', () => {
 
     component.submitUpload();
 
-    expect(studyServiceMock.uploadStudy).toHaveBeenCalledWith(10, newFile, 'Ecografía renal', 'Tomografía cerebral');
+    expect(studyServiceMock.uploadStudy).toHaveBeenCalledWith(10, newFile, 'Tomografía cerebral', 'Ecografía renal');
     expect(component.studies().length).toBe(2);
     expect(component.selectedFile()).toBeNull();
   });

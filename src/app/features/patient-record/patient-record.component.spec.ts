@@ -745,7 +745,7 @@ describe('PatientRecordComponent', () => {
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/pacientes']);
   });
 
-  it('starts a new record with independent module state and cancels reads when the old record closes', () => {
+  it('recreates screen state and cancels old reads while preserving unsaved inputs for the same patient', () => {
     const pending = new Subject<PatientGrowthResponse>();
     growthReadSpy.mockReturnValueOnce(pending);
     growth.loadGrowthCurves(mockPatient.id);
@@ -754,6 +754,7 @@ describe('PatientRecordComponent', () => {
     const oldGrowth = growth;
     const oldRx = rx;
     fixture.destroy();
+    expect(pending.observed).toBe(false);
     fixture = TestBed.createComponent(PatientRecordComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -761,7 +762,7 @@ describe('PatientRecordComponent', () => {
     growth = fixture.debugElement.injector.get(PatientGrowthStore);
     expect(rx).not.toBe(oldRx);
     expect(growth).not.toBe(oldGrowth);
-    expect(rx.rxMedicationName()).toBe('');
+    expect(rx.rxMedicationName()).toBe('Borrador anterior');
     expect(growth.selectedGrowthMetric()).toBe('WEIGHT');
     pending.next(patientGrowthFixture(mockPatient.id, false));
     pending.complete();

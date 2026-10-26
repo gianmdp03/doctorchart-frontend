@@ -26,6 +26,7 @@ import {
 import { ClinicalDocumentPrintService } from '../../../core/services/clinical-document-print.service';
 import { PrintDocumentReference } from '../../../core/models/clinical-print-document.model';
 import { parseNumberInput, textError } from '../../../core/models/form-validation';
+import { PatientRecordDraftsService } from '../patient-record-drafts.service';
 export type PrescriptionOrderFormMode = 'MEDICATION' | 'STUDY';
 
 /** Record-scoped editor, independent of the consultation and growth modules. */
@@ -40,33 +41,34 @@ export class PatientPrescriptionEditorStore {
   private readonly printService = inject(ClinicalDocumentPrintService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
-  private recordContext = '';
+  private readonly drafts = inject(PatientRecordDraftsService).syncContext().prescription;
+  private recordContext = this.contextKey();
 
-  readonly rxFormMode = signal<PrescriptionOrderFormMode>('MEDICATION');
+  readonly rxFormMode = this.drafts.mode;
 
-  readonly rxMedicationName = signal<string>('');
+  readonly rxMedicationName = this.drafts.medicationName;
 
-  readonly rxDosage = signal<string>('');
+  readonly rxDosage = this.drafts.dosage;
 
-  readonly rxFrequency = signal<string>('Cada 8 horas');
+  readonly rxFrequency = this.drafts.frequency;
 
-  readonly rxAdministrationRoute = signal<string>('Vía Oral');
+  readonly rxAdministrationRoute = this.drafts.route;
 
-  readonly rxDurationDays = signal<number | string | null>(null);
+  readonly rxDurationDays = this.drafts.duration;
 
-  readonly rxMedInstructions = signal<string>('');
+  readonly rxMedInstructions = this.drafts.instructions;
 
-  readonly rxStudyName = signal<string>('');
+  readonly rxStudyName = this.drafts.studyName;
 
-  readonly rxStudySpecification = signal<string>('');
+  readonly rxStudySpecification = this.drafts.studySpecification;
 
-  readonly rxDiagnosis = signal<string>('');
+  readonly rxDiagnosis = this.drafts.diagnosis;
 
-  readonly rxGeneralInstructions = signal<string>('');
+  readonly rxGeneralInstructions = this.drafts.generalInstructions;
 
-  readonly draftPrescriptions = signal<PrescriptionItem[]>([]);
+  readonly draftPrescriptions = this.drafts.medications;
 
-  readonly draftStudies = signal<string[]>([]);
+  readonly draftStudies = this.drafts.studies;
 
   readonly medicationAttempted = signal(false);
   readonly studyAttempted = signal(false);

@@ -70,7 +70,10 @@ export class PatientRecordComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
-  private recordContext = '';
+  private recordContext = JSON.stringify([
+    this.authService.currentUser()?.id ?? null,
+    this.activePatientService.patientId(),
+  ]);
   readonly selectedTab = signal<PatientRecordTab>('resumen');
 
   readonly isEncounterFormOpen = signal<boolean>(false);
