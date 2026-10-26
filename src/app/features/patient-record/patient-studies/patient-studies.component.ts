@@ -63,6 +63,8 @@ export class PatientStudiesComponent {
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly changed = new Subject<void>();
+  private readonly previewClosed = new Subject<void>();
+  private previewRevision = 0;
   private context = '';
   private revision = 0;
   private read = 0;
@@ -82,6 +84,7 @@ export class PatientStudiesComponent {
     this.releasePreviews();
   }
   private releasePreviews(): void {
+    this.closeStudyPreview();
     for (const url of this.previewUrls) window.URL.revokeObjectURL(url);
     this.previewUrls.clear();
   }
@@ -101,6 +104,17 @@ export class PatientStudiesComponent {
   readonly successMessage = signal<string | null>(null);
 
   readonly selectedFile = signal<File | null>(null);
+  readonly studyName = signal('');
+  readonly nameError = computed(() => {
+    const name = this.studyName();
+    return textError(name, 240, true) ||
+      (/[/\\:\p{Cc}\p{Cf}\u2028\u2029]/u.test(name) ? 'El nombre no puede incluir barras, dos puntos ni caracteres de control.' : null);
+  });
+  readonly previewStudy = signal<PatientMedicalStudy | null>(null);
+  readonly previewUrl = signal<string | null>(null);
+  readonly previewLoading = signal(false);
+  readonly previewError = signal<string | null>(null);
+  readonly previewHeading = viewChild<ElementRef<HTMLElement>>('previewHeading');
   readonly description = signal<string>('');
   readonly descriptionError = computed(() => textError(this.description(), 4000));
   readonly fileError = computed(() => {
@@ -117,6 +131,7 @@ export class PatientStudiesComponent {
   readonly hasStudies = computed(() => this.studies().length > 0);
 
   constructor() {
+    this.studyName.set(this.studiesStore?.draftName() ?? '');
     if (this.studiesStore?.draftFile()) {
       this.selectedFile.set(this.studiesStore.draftFile());
     }
@@ -124,6 +139,14 @@ export class PatientStudiesComponent {
       this.description.set(this.studiesStore.draftDescription());
     }
 
+    effect(() => {
+      const study = this.previewStudy();
+      const heading = this.previewHeading()?.nativeElement;
+      if (study && heading) {
+        heading.focus();
+        heading.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
     effect(() => {
       const pid = this.patientId(); this.auth.currentUser();
       untracked(() => { this.syncContext(); if (pid) this.loadStudies(pid); });
@@ -172,8 +195,19 @@ export class PatientStudiesComponent {
     this.studiesStore?.setDraftDescription(val);
   }
 
+  onNameChange(value: string): void {
+    this.studyName.set(value);
+    this.studiesStore?.setDraftName(value);
+    this.errorMessage.set(null);
+  }
+
+  studyTitle(study: PatientMedicalStudy): string {
+    return study.originalFileName.replace(/\.(pdf|jpe?g|png|webp|gif|bmp|tiff?)$/i, '');
+  }
+
   clearSelectedFile(): void {
     this.selectedFile.set(null);
+    this.studyName.set('');
     this.description.set('');
     this.studiesStore?.clearDraft();
     const inputEl = this.fileInput()?.nativeElement;
@@ -187,8 +221,8 @@ export class PatientStudiesComponent {
     if (this.isUploading()) return;
     const revision = this.revision;
     const file = this.selectedFile();
-    if (!file || this.fileError() || this.descriptionError()) {
-      this.errorMessage.set(this.fileError() || this.descriptionError());
+    if (!file || this.fileError() || this.nameError() || this.descriptionError()) {
+      this.errorMessage.set(this.fileError() || this.nameError() || this.descriptionError());
       return;
     }
     if (file.size > MAX_STUDY_FILE_BYTES) {
@@ -201,7 +235,7 @@ export class PatientStudiesComponent {
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
-    this.studyService.uploadStudy(pid, file, this.description()).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.studyService.uploadStudy(pid, file, this.description(), this.studyName().trim()).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
         if (!this.current(revision)) return;
         if (created.patientId !== pid) { this.isUploading.set(false); this.errorMessage.set('La respuesta no corresponde al paciente seleccionado.'); return; }
@@ -255,19 +289,47 @@ export class PatientStudiesComponent {
   openStudyPreview(study: PatientMedicalStudy): void {
     this.syncContext();
     if (study.patientId !== this.patientId()) return;
+    this.closeStudyPreview();
+    const previewRevision = this.previewRevision;
+    const image = this.isImage(study.contentType);
+    if (image) {
+      this.previewStudy.set(study);
+      this.previewLoading.set(true);
+    }
     const revision = this.revision;
-    this.studyService.getStudyFileBlob(this.patientId(), study.id).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.studyService.getStudyFileBlob(this.patientId(), study.id).pipe(takeUntil(this.changed), takeUntil(this.previewClosed), takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (blob) => {
-        if (!this.current(revision)) return;
+        if (!this.current(revision) || previewRevision !== this.previewRevision) return;
         const url = window.URL.createObjectURL(blob);
         this.previewUrls.add(url);
-        window.open(url, '_blank', 'noopener,noreferrer');
+        if (image) {
+          this.previewUrl.set(url);
+          this.previewLoading.set(false);
+        } else {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
       },
       error: () => {
-        if (!this.current(revision)) return;
-        this.errorMessage.set('No se pudo previsualizar el archivo.');
+        if (!this.current(revision) || previewRevision !== this.previewRevision) return;
+        this.previewLoading.set(false);
+        if (image) this.previewError.set('No se pudo cargar la imagen. Podés reintentar con Ver o descargar el archivo.');
+        else this.errorMessage.set('No se pudo previsualizar el archivo.');
       },
     });
+  }
+
+  closeStudyPreview(): void {
+    this.previewClosed.next();
+    this.previewRevision++;
+    const url = this.previewUrl();
+    if (url) {
+      window.URL.revokeObjectURL(url);
+      this.previewUrls.delete(url);
+    }
+    this.previewStudy.set(null);
+    this.previewUrl.set(null);
+    this.previewLoading.set(false);
+    this.previewError.set(null);
   }
 
   deleteStudy(study: PatientMedicalStudy): void {
@@ -286,6 +348,7 @@ export class PatientStudiesComponent {
       next: () => {
         if (!this.current(revision)) return;
         this.studies.update((list) => list.filter((s) => s.id !== study.id));
+        if (this.previewStudy()?.id === study.id) this.closeStudyPreview();
         this.pendingDelete.set(null); this.isDeleting.set(false);
         this.successMessage.set('Estudio eliminado correctamente.');
         setTimeout(() => { if (this.current(revision)) this.successMessage.set(null); }, 3000);

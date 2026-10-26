@@ -15,9 +15,13 @@ export class PatientMedicalStudyService {
     return this.http.get<PatientMedicalStudy[]>(`${this.baseUrl}/${patientId}/studies`);
   }
 
-  uploadStudy(patientId: number, file: File, description?: string): Observable<PatientMedicalStudy> {
+  uploadStudy(patientId: number, file: File, description?: string, name?: string): Observable<PatientMedicalStudy> {
     const formData = new FormData();
-    formData.append('file', file);
+    // Persist the chosen study name through the existing attachment contract.
+    // Keep the extension so server-side content validation remains unchanged.
+    const extension = file.name.match(/\.[^.]+$/)?.[0] ?? '';
+    if (name?.trim()) formData.append('file', file, `${name.trim()}${extension}`);
+    else formData.append('file', file);
     if (description && description.trim()) {
       formData.append('description', description.trim());
     }

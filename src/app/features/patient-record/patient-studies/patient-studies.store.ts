@@ -10,6 +10,7 @@ export class PatientStudiesStore {
   private recordContext = '';
 
   readonly draftFile = signal<File | null>(null);
+  readonly draftName = signal('');
   readonly draftDescription = signal<string>('');
 
   constructor() {
@@ -35,12 +36,17 @@ export class PatientStudiesStore {
     this.draftFile.set(file);
   }
 
+  setDraftName(name: string): void {
+    this.draftName.set(name);
+  }
+
   setDraftDescription(description: string): void {
     this.draftDescription.set(description);
   }
 
   clearDraft(): void {
     this.draftFile.set(null);
+    this.draftName.set('');
     this.draftDescription.set('');
   }
 }

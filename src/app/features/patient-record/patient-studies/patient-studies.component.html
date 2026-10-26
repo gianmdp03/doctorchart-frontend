@@ -89,22 +89,32 @@
           @if (fileError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
         </div>
 
+        <div class="form-group name-group">
+          <label for="studyName" class="form-label">Nombre del estudio <span class="required-star">*</span></label>
+          <input id="studyName" type="text" name="studyName" required maxlength="240"
+            [ngModel]="studyName()" (ngModelChange)="onNameChange($event)"
+            placeholder="Ej: Tomografía cerebral" class="form-input text-input"
+            [disabled]="isUploading()" aria-describedby="studyNameHint" />
+          <span id="studyNameHint" class="file-hint">Se guardará el archivo con este nombre.</span>
+          @if (studyName() && nameError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
+        </div>
+
         <!-- Descripción o Especificación -->
         <div class="form-group description-group">
           <label for="studyDescription" class="form-label">
-            Especificación / Descripción del estudio
+            Descripción del estudio
           </label>
-          <input
+          <textarea
             id="studyDescription"
-            type="text"
+            rows="3"
             [ngModel]="description()"
             (ngModelChange)="onDescriptionChange($event)"
             name="description"
             maxlength="4000"
-            placeholder="Ej: Tomografía de encéfalo con contraste, Ecografía abdominal, etc."
+            placeholder="Agregá detalles del estudio, observaciones o información relevante."
             class="form-input text-input"
             [disabled]="isUploading()"
-          />
+          ></textarea>
           @if (descriptionError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
         </div>
       </div>
@@ -113,7 +123,7 @@
         <button
           type="submit"
           class="btn-primary"
-          [disabled]="!!fileError() || !!descriptionError() || isUploading()"
+          [disabled]="!!fileError() || !!nameError() || !!descriptionError() || isUploading()"
         >
           @if (isUploading()) {
             <span class="spinner-small"></span>
@@ -131,6 +141,41 @@
       }
     </form>
   </section>
+
+  @if (previewStudy(); as study) {
+    <section id="studyPreview" class="study-preview" aria-labelledby="studyPreviewTitle">
+      <div class="preview-header">
+        <h4 #previewHeading id="studyPreviewTitle" tabindex="-1">{{ studyTitle(study) }}</h4>
+        <button type="button" class="btn-action btn-preview" (click)="closeStudyPreview()">Cerrar vista</button>
+      </div>
+      <div class="preview-layout">
+        <div class="preview-image">
+          @if (previewLoading()) {
+            <p role="status">Cargando imagen…</p>
+          } @else if (previewError(); as error) {
+            <p role="alert">{{ error }}</p>
+          } @else if (previewUrl(); as url) {
+            <img [src]="url" [alt]="studyTitle(study)"
+              (error)="previewError.set('Tu navegador no puede mostrar esta imagen. Podés descargarla para abrirla en tu equipo.')" />
+          }
+        </div>
+        <aside class="preview-details" aria-label="Datos del estudio">
+          <span class="form-label">Nombre del estudio</span>
+          <h5>{{ studyTitle(study) }}</h5>
+          <span class="form-label">Descripción</span>
+          <p class="preview-description">{{ study.description || 'Sin descripción especificada' }}</p>
+          <dl>
+            <dt>Fecha de carga</dt><dd>{{ formatDate(study.uploadedAt) }}</dd>
+            <dt>Archivo</dt><dd>{{ study.originalFileName }}</dd>
+            <dt>Tamaño</dt><dd>{{ formatFileSize(study.fileSize) }}</dd>
+          </dl>
+          <button type="button" class="btn-action btn-download" (click)="downloadStudy(study)">
+            <ng-icon name="lucideDownload" /> Descargar
+          </button>
+        </aside>
+      </div>
+    </section>
+  }
 
   <!-- Listado de Estudios Realizados -->
   <section class="studies-list-section" aria-label="Historial de estudios médicos">
@@ -171,8 +216,8 @@
 
               <div class="study-details">
                 <div class="study-title-row">
-                  <h5 class="study-filename" [title]="study.originalFileName">
-                    {{ study.originalFileName }}
+                  <h5 class="study-filename" [title]="studyTitle(study)">
+                    {{ studyTitle(study) }}
                   </h5>
                   <span class="study-format-badge">
                     {{ isPdf(study.contentType) ? 'PDF' : isImage(study.contentType) ? 'IMAGEN' : 'ARCHIVO' }}
@@ -181,7 +226,7 @@
 
                 @if (study.description) {
                   <p class="study-description">
-                    <strong>Especificación:</strong> {{ study.description }}
+                    <strong>Descripción:</strong> {{ study.description }}
                   </p>
                 } @else {
                   <p class="study-no-desc">Sin descripción especificada</p>
@@ -200,7 +245,9 @@
                 type="button"
                 class="btn-action btn-preview"
                 (click)="openStudyPreview(study)"
-                title="Abrir en pestaña nueva"
+                [title]="isImage(study.contentType) ? 'Ver imagen y datos del estudio' : 'Abrir archivo en pestaña nueva'"
+                [attr.aria-controls]="isImage(study.contentType) ? 'studyPreview' : null"
+                [attr.aria-expanded]="isImage(study.contentType) ? previewStudy()?.id === study.id : null"
               >
                 <ng-icon name="lucideExternalLink" />
                 <span>Ver</span>

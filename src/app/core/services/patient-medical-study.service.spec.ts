@@ -78,4 +78,17 @@ describe('PatientMedicalStudyService', () => {
     expect(req.request.method).toBe('DELETE');
     req.flush(null, { status: 204, statusText: 'No Content' });
   });
+
+  it('sends the chosen study name with the original extension and unchanged image bytes', async () => {
+    const file = new File(['image bytes'], 'IMG_1234.PNG', { type: 'image/png' });
+    service.uploadStudy(10, file, '  Con contraste  ', '  Tomografía cerebral  ').subscribe();
+    const req = httpTesting.expectOne(`${environment.apiUrl}/patients/10/studies`);
+    const uploaded = req.request.body.get('file') as File;
+    expect(uploaded.name).toBe('Tomografía cerebral.PNG');
+    expect(uploaded.type).toBe(file.type);
+    expect(await uploaded.text()).toBe(await file.text());
+    expect(req.request.body.get('description')).toBe('Con contraste');
+    expect(file.name).toBe('IMG_1234.PNG');
+    req.flush(mockStudies[0]);
+  });
 });
