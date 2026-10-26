@@ -1,4 +1,4 @@
-import { formatInstant } from '../../../core/date/user-time-zone';
+import { formatInstant, instantParts } from '../../../core/date/user-time-zone';
 import { Subject, takeUntil } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/services/auth.service';
@@ -369,7 +369,9 @@ export class PatientStudiesComponent {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
-  formatDate(dateStr: string): string { return dateStr ? formatInstant(dateStr) : ''; }
+  formatDate(dateStr: string): string { return dateStr ? formatInstant(dateStr, false) : ''; }
+
+  formatTime(dateStr: string): string { return dateStr ? instantParts(dateStr).time : ''; }
 
   isImage(contentType: string): boolean {
     return !!contentType && contentType.startsWith('image/');

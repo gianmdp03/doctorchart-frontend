@@ -71,7 +71,6 @@
             @if (selectedFile(); as file) {
               <div class="selected-file-info">
                 <span class="selected-file-name" [title]="file.name">{{ file.name }}</span>
-                <span class="selected-file-size">({{ formatFileSize(file.size) }})</span>
                 <button
                   type="button"
                   class="clear-file-btn"
@@ -165,9 +164,9 @@
           <span class="form-label">Descripción</span>
           <p class="preview-description">{{ study.description || 'Sin descripción especificada' }}</p>
           <dl>
-            <dt>Fecha de carga</dt><dd>{{ formatDate(study.uploadedAt) }}</dd>
-            <dt>Archivo</dt><dd>{{ study.originalFileName }}</dd>
-            <dt>Tamaño</dt><dd>{{ formatFileSize(study.fileSize) }}</dd>
+            <div><dt>Fecha de carga</dt><dd>{{ formatDate(study.uploadedAt) }}</dd></div>
+            <div><dt>Hora de carga</dt><dd>{{ formatTime(study.uploadedAt) }} h</dd></div>
+            <div class="preview-file"><dt>Archivo</dt><dd>{{ study.originalFileName }}</dd></div>
           </dl>
           <button type="button" class="btn-action btn-download" (click)="downloadStudy(study)">
             <ng-icon name="lucideDownload" /> Descargar
@@ -234,8 +233,7 @@
 
                 <div class="study-meta">
                   <span class="meta-item">Fecha: {{ formatDate(study.uploadedAt) }}</span>
-                  <span class="meta-dot">•</span>
-                  <span class="meta-item">Tamaño: {{ formatFileSize(study.fileSize) }}</span>
+                  <span class="meta-item">Hora: {{ formatTime(study.uploadedAt) }} h</span>
                 </div>
               </div>
             </div>

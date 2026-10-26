@@ -131,7 +131,8 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .preview-details { min-width: 0; padding: 1.5rem; overflow-wrap: anywhere; color: var(--dc-ink, #0f172a); }
 .preview-details h5 { font-size: 1.1rem; margin: 0.25rem 0 1.5rem; }
 .preview-description { white-space: pre-wrap; margin: 0.35rem 0 1.5rem; }
-.preview-details dl { font-size: 0.85rem; margin: 0 0 1.5rem; }
+.preview-details dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.25rem 1rem; font-size: 0.85rem; margin: 0 0 1.5rem; }
+.preview-file { grid-column: 1 / -1; }
 .preview-details dt { color: var(--dc-ink-muted, #64748b); margin-top: 0.75rem; }
 .preview-details dd { margin: 0.25rem 0 0; }
 @media (max-width: 768px) {
@@ -212,10 +213,6 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.selected-file-size {
-  color: var(--dc-ink-muted, #64748b);
 }
 
 .clear-file-btn {
@@ -451,15 +448,12 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 
 .study-meta {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 0.4rem;
   font-size: 0.72rem;
   color: var(--dc-ink-muted, #64748b);
   margin-top: 0.2rem;
-}
-
-.meta-dot {
-  color: #cbd5e1;
 }
 
 /* Card Actions */
