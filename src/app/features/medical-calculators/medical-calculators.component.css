@@ -381,7 +381,7 @@
 }
 
 .formula-code {
-  font-family: monospace;
+  font-family: var(--font-sans);
   color: #006874;
   font-weight: 600;
 }
@@ -901,7 +901,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   font-size: 0.75rem;
-  font-family: monospace;
+  font-family: var(--font-sans);
   color: #334155;
   white-space: pre-wrap;
   word-break: break-word;

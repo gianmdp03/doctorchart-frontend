@@ -56,8 +56,8 @@
   --md-sys-color-scrim: #000000;
 
   /* Typography Scales */
-  --md-ref-typeface-brand: 'Google Sans', 'Roboto', system-ui, -apple-system, sans-serif;
-  --md-ref-typeface-plain: 'Roboto', system-ui, -apple-system, sans-serif;
+  --md-ref-typeface-brand: 'Google Sans', sans-serif;
+  --md-ref-typeface-plain: 'Google Sans', sans-serif;
 
   /* Shape Radii */
   --md-shape-xs: 4px;

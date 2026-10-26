@@ -1,0 +1,20 @@
+/* Google Sans from the owner-provided Google Fonts download; see OFL.txt. */
+@font-face {
+  font-family: 'Google Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: block;
+  src: url('./google-sans-latin-normal-b8059800eca3.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Google Sans';
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: block;
+  src: url('./google-sans-latin-italic-542322ed7963.woff2') format('woff2');
+}
+
+/* The head script removes this class once both local faces are ready.
+   Without JavaScript the class is never added, so content remains available. */
+html.fonts-loading body { visibility: hidden; }
+html, body, button, input, select, textarea, code, pre, kbd, samp { font-family: 'Google Sans', sans-serif; }

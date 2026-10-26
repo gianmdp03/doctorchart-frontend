@@ -10,7 +10,9 @@
 :root {
   color-scheme: light;
 
-  --font-sans: 'Google Sans', 'Roboto', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Google Sans', sans-serif;
+  --font-mono: 'Google Sans', sans-serif;
+  --font-serif: 'Google Sans', sans-serif;
 
   /* Material 3 Medical Theme Palettes */
   --md-primary: #006874;
