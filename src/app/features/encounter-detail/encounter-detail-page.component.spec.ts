@@ -41,12 +41,9 @@ describe('EncounterDetailPageComponent saved snapshot editing', () => {
     await component.save();
     expect(service.update.mock.calls[1][1].values.followUpDate).toBeNull();
   });
-  it('hides and blocks printing while keeping the stored consultation readable', () => {
-    const print=vi.spyOn(window,'print').mockImplementation(()=>{});
-    printEnabled.set(false); fixture.detectChanges();
-    component.printEncounter();
-    expect(print).not.toHaveBeenCalled();
+  it('keeps the consultation readable and editable without a print action even when printing is enabled', () => {
     expect([...fixture.nativeElement.querySelectorAll('button')].some((el:any)=>el.textContent.trim()==='Imprimir')).toBe(false);
+    expect([...fixture.nativeElement.querySelectorAll('button')].some((el:any)=>el.textContent.trim()==='Editar consulta')).toBe(true);
     expect(component.encounter()).toEqual(record);
   });
   it('displays its snapshot, backend result and Argentine instant without fetching a current template', () => {

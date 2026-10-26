@@ -16,7 +16,7 @@ Editar una consulta conserva el instante original. El backend admite que un clie
 
 El backend conserva timestamptz y devuelve ISO/RFC3339 en UTC. Para contar hoy o este mes construye los límites de calendario en la zona validada y los consulta como instantes. Un día puede durar 23 o 25 horas; se usa el siguiente día de calendario, no la suma fija de 24 horas.
 
-Los documentos utilizan una zona de emisión persistida, indicada en el PDF. En consultas se conserva en el contexto guardado; en recetas/órdenes independientes se guarda en patient_prescription_records.issuance_zone. Una reimpresión utiliza esa zona aunque cambie la del dispositivo. Los snapshots de contexto clínico mantienen su referencia y zona originales al editar. Los clientes anteriores que no envían zona conservan el comportamiento argentino; no se desplazan instantes históricos.
+Los documentos utilizan una zona de emisión persistida para calcular la fecha, sin mostrar una leyenda de zona horaria en el PDF. En consultas se conserva en el contexto guardado; en recetas/órdenes independientes se guarda en patient_prescription_records.issuance_zone. Una reimpresión utiliza esa zona aunque cambie la del dispositivo. Los snapshots de contexto clínico mantienen su referencia y zona originales al editar. Los clientes anteriores que no envían zona conservan el comportamiento argentino; no se desplazan instantes históricos.
 
 ## Cambio de esquema y despliegue futuro
 

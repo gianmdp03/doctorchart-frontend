@@ -363,8 +363,10 @@
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Edad</th>
-                <th>{{ xTitle() }}</th>
+                <th>Edad al medir</th>
+                @if (definition().x.variable !== 'AGE') {
+                  <th>{{ xTitle() }}</th>
+                }
                 <th>{{ yTitle() }}</th>
                 <th>Percentil / Z</th>
                 <th>Observaciones</th>
@@ -374,8 +376,10 @@
               @for (point of chart().points; track $index) {
                 <tr>
                   <td>{{ formatDate(point.date) }}</td>
-                  <td>{{ point.ageFormatted }} · {{ point.ageDays }} días</td>
-                  <td>{{ point.x | number: '1.0-4' }}</td>
+                  <td>{{ point.ageFormatted }}</td>
+                  @if (definition().x.variable !== 'AGE') {
+                    <td>{{ point.x | number: '1.0-4' }}</td>
+                  }
                   <td>{{ point.value | number: '1.0-4' }}</td>
                   <td>
                     {{ percentileLabel(point) }}

@@ -28,7 +28,6 @@
         <button type="button" class="page-button secondary" [disabled]="isSubmitting()" (click)="cancelEditing()">Cancelar edición</button>
         <button type="button" class="page-button primary" [disabled]="readonly()" (click)="save()">{{ isSubmitting() ? 'Guardando...' : 'Guardar cambios' }}</button>
       } @else {
-        @if (recordActions.has('PRINT_DOCUMENT')) { <button type="button" class="page-button secondary" (click)="printEncounter()">Imprimir</button> }
         <button type="button" class="page-button primary" (click)="startEditing()">Editar consulta</button>
       }
     </footer>
