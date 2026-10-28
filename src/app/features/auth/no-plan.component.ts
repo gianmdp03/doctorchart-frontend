@@ -58,7 +58,7 @@ export class NoPlanComponent {
       if (this.auth.hasDoctorchartPlan()) {
         const requested = this.route.snapshot.queryParamMap.get('returnUrl');
         const path = requested?.split(/[?#]/)[0];
-        const target = requested?.startsWith('/') && !requested.startsWith('//') && !['/', '/login', '/sin-plan'].includes(path!) ? requested : '/dashboard';
+        const target = requested?.startsWith('/') && !requested.startsWith('//') && !['/', '/login', '/plan-required'].includes(path!) ? requested : '/dashboard';
         await this.router.navigateByUrl(target, {onSameUrlNavigation: 'reload'});
       } else {
         this.message.set('Todavía no tenés un plan activo de DoctorChart. Si acabás de contratarlo, esperá unos momentos y volvé a verificar.');

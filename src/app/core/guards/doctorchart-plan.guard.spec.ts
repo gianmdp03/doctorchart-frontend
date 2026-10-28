@@ -19,7 +19,7 @@ describe('doctorchartPlanGuard', () => {
   };
 
   const routeMock = {} as ActivatedRouteSnapshot;
-  const stateMock = { url: '/pacientes/42' } as RouterStateSnapshot;
+  const stateMock = { url: '/patients/42' } as RouterStateSnapshot;
   let originalLocation: Location;
 
   beforeEach(() => {
@@ -49,14 +49,14 @@ describe('doctorchartPlanGuard', () => {
 
   it('revalidates entitlement when authentication reloads the existing protected URL', async () => {
     const dashboard = routes.find(route => route.path === 'dashboard')!;
-    TestBed.configureTestingModule({ providers: [provideRouter([{ ...dashboard, component: GuardedRouteProbe, loadComponent: undefined, canActivate: [doctorchartPlanGuard] }, {path:'sin-plan',component:GuardedRouteProbe}])] });
+    TestBed.configureTestingModule({ providers: [provideRouter([{ ...dashboard, component: GuardedRouteProbe, loadComponent: undefined, canActivate: [doctorchartPlanGuard] }, {path:'plan-required',component:GuardedRouteProbe}])] });
     authServiceMock.isLoggedIn.set(true);
     authServiceMock.hasDoctorchartPlan.set(true);
     const router = TestBed.inject(Router);
     expect(await router.navigateByUrl('/dashboard')).toBe(true);
     authServiceMock.hasDoctorchartPlan.set(false);
     expect(await router.navigateByUrl('/dashboard', { onSameUrlNavigation: 'reload' })).toBe(true);
-    expect(router.url).toBe('/sin-plan?returnUrl=%2Fdashboard');
+    expect(router.url).toBe('/plan-required?returnUrl=%2Fdashboard');
     expect(window.location.href).toBe('');
   });
 
@@ -70,7 +70,7 @@ describe('doctorchartPlanGuard', () => {
       doctorchartPlanGuard(routeMock, stateMock)
     );
 
-    expect(TestBed.inject(Router).serializeUrl(canActivate as import('@angular/router').UrlTree)).toBe('/login?returnUrl=%2Fpacientes%2F42');
+    expect(TestBed.inject(Router).serializeUrl(canActivate as import('@angular/router').UrlTree)).toBe('/login?returnUrl=%2Fpatients%2F42');
     expect(authServiceMock.openLoginModal).not.toHaveBeenCalled();
 
     dispatchSpy.mockRestore();
@@ -111,7 +111,7 @@ describe('doctorchartPlanGuard', () => {
       doctorchartPlanGuard(routeMock, stateMock)
     );
 
-    expect(TestBed.inject(Router).serializeUrl(canActivate as import('@angular/router').UrlTree)).toBe('/sin-plan?returnUrl=%2Fpacientes%2F42');
+    expect(TestBed.inject(Router).serializeUrl(canActivate as import('@angular/router').UrlTree)).toBe('/plan-required?returnUrl=%2Fpatients%2F42');
     expect(authServiceMock.openLoginModal).not.toHaveBeenCalled();
     expect(window.location.href).toBe('');
   });

@@ -76,3 +76,55 @@
 
 /404.html
   X-Robots-Tag: noindex, follow
+
+/plan-required
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/encounters
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/encounters/*
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/assistant
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/profile
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/vaccination-calendar
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/calculators
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/patients
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/patients/new
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/patients/*
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/records
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/records/*
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/admin/specialties
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache

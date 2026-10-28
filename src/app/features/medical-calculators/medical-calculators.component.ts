@@ -253,10 +253,10 @@ export class MedicalCalculatorsComponent implements OnInit {
   readonly calculationError = signal<string | null>(null);
   readonly saveError = signal<string | null>(null);
 
-  openCatalog(): void { this.catalogView.set(true); if (this.router && this.route) void this.router.navigate([], { relativeTo: this.route, queryParams: { vista: 'catalogo' }, queryParamsHandling: 'merge' }); }
-  closeCatalog(): void { this.catalogView.set(false); if (this.router && this.route) void this.router.navigate([], { relativeTo: this.route, queryParams: { vista: null }, queryParamsHandling: 'merge' }); }
+  openCatalog(): void { this.catalogView.set(true); if (this.router && this.route) void this.router.navigate([], { relativeTo: this.route, queryParams: { view: 'catalog' }, queryParamsHandling: 'merge' }); }
+  closeCatalog(): void { this.catalogView.set(false); if (this.router && this.route) void this.router.navigate([], { relativeTo: this.route, queryParams: { view: null, vista: null }, queryParamsHandling: 'merge' }); }
   constructor() {
-    this.route?.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => this.catalogView.set(params.get('vista') === 'catalogo'));
+    this.route?.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => this.catalogView.set(params.get('view') === 'catalog' || params.get('vista') === 'catalogo'));
     this.context = this.contextKey();
     toObservable(computed(() => ({request:this.previewRequest(), context:this.contextKey()}))).pipe(
       switchMap(({request,context}) => {

@@ -162,7 +162,7 @@ export class ConsultasComponent implements OnInit {
   }
   openPatientRecord(patientId: number): void {
     this.activePatientService.loadPatient(patientId);
-    this.router.navigate(['/pacientes', patientId]);
+    this.router.navigate(['/patients', patientId]);
   }
-  openEncounterDetail(id: number): void { void this.router.navigate(['/consultas', id]); }
+  openEncounterDetail(id: number): void { void this.router.navigate(['/encounters', id]); }
 }

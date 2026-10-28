@@ -129,7 +129,7 @@ export class PatientEncountersStore {
       });
   }
 
-  openEncounterDetail(encounterId: number): void { void this.router.navigate(['/consultas', encounterId]); }
+  openEncounterDetail(encounterId: number): void { void this.router.navigate(['/encounters', encounterId]); }
 
   deleteEncounter(encounterId: number, event?: Event): void {
     event?.stopPropagation();

@@ -80,11 +80,11 @@ describe('SidebarComponent', () => {
     navigation.set([CLINICAL_NAVIGATION.DASHBOARD, CLINICAL_NAVIGATION.PATIENTS, CLINICAL_NAVIGATION.WIZARD]);
     fixture.detectChanges();
     const links = [...fixture.nativeElement.querySelectorAll('.sidebar-nav a')] as HTMLAnchorElement[];
-    expect(links.map(link => link.getAttribute('href'))).toEqual(['/dashboard', '/pacientes', '/onboarding/setup']);
+    expect(links.map(link => link.getAttribute('href'))).toEqual(['/dashboard', '/patients', '/onboarding/setup']);
     expect(fixture.nativeElement.textContent).not.toContain('Vacunación');
     navigation.set([CLINICAL_NAVIGATION.DASHBOARD, CLINICAL_NAVIGATION.VACCINATION, CLINICAL_NAVIGATION.PATIENTS, CLINICAL_NAVIGATION.WIZARD]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')[1].getAttribute('href')).toBe('/calendario-vacunacion');
+    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')[1].getAttribute('href')).toBe('/vaccination-calendar');
   });
 
   it('clears clinical navigation while no workspace is loaded', () => {
@@ -123,12 +123,12 @@ describe('SidebarComponent', () => {
     fixture.detectChanges();
     const links = fixture.nativeElement.querySelectorAll('.sidebar-nav a');
     expect(links).toHaveLength(1);
-    expect(links[0].getAttribute('href')).toBe('/admin/especialidades');
+    expect(links[0].getAttribute('href')).toBe('/admin/specialties');
     expect(fixture.nativeElement.textContent).toContain('Administración');
     expect(fixture.nativeElement.textContent).not.toContain('Pacientes');
   });
 
   it('does not expose the admin link to a doctor', () => {
-    expect(fixture.nativeElement.querySelector('a[href="/admin/especialidades"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('a[href="/admin/specialties"]')).toBeNull();
   });
 });

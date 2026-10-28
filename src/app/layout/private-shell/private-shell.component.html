@@ -64,7 +64,7 @@
     <div class="app-main-viewport">
       <app-header />
       <main class="app-main-content">
-        @if (featureFlags.AI_ASSISTANT_ENABLED && workspaceStore.isModuleActive('AI_ASSISTANT')) { <nav class="workspace-shortcuts" aria-label="Herramientas"><a routerLink="/asistente">Asistente clínico →</a></nav> }
+        @if (featureFlags.AI_ASSISTANT_ENABLED && workspaceStore.isModuleActive('AI_ASSISTANT')) { <nav class="workspace-shortcuts" aria-label="Herramientas"><a routerLink="/assistant">Asistente clínico →</a></nav> }
         @if (documents.errorMessage(); as message) { <div class="inline-confirmation" role="alert"><p>{{ message }}</p><button type="button" (click)="documents.errorMessage.set(null)">Entendido</button></div> }
         <router-outlet />
       </main>

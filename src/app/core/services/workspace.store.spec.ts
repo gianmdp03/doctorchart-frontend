@@ -64,15 +64,15 @@ describe('WorkspaceStore canonical lifecycle', () => {
 
   it('composes navigation without changing the personal wizard and clears it with the session', async () => {
     await store.loadSetup();
-    expect(store.navigation().map(item => item.path)).toEqual(['/dashboard', '/pacientes', '/onboarding/setup']);
+    expect(store.navigation().map(item => item.path)).toEqual(['/dashboard', '/patients', '/onboarding/setup']);
     expect(store.hasNavigation('CALCULATORS')).toBe(false);
     store.setSetup({ ...setup, experience: { ...setup.experience, specialtyVersion: 5,
       navigation: ['DASHBOARD', 'CALCULATORS', 'PATIENTS', 'WIZARD'] } });
-    expect(store.navigation().map(item => item.path)).toEqual(['/dashboard', '/pacientes', '/onboarding/setup']);
+    expect(store.navigation().map(item => item.path)).toEqual(['/dashboard', '/patients', '/onboarding/setup']);
     expect(store.hasNavigation('CALCULATORS')).toBe(false);
 
     store.calculatorsEnabled.set(true);
-    expect(store.navigation()[1].path).toBe('/calculadoras');
+    expect(store.navigation()[1].path).toBe('/calculators');
     expect(store.hasNavigation('CALCULATORS')).toBe(true);
     store.calculatorsEnabled.set(false);
 

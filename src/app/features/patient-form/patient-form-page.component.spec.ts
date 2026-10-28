@@ -74,7 +74,7 @@ describe('PatientFormPageComponent dedicated page', () => {
     await vi.waitFor(() => expect(component.definition()).not.toBeNull());
 
     component.cancel();
-    expect(router.navigate).toHaveBeenCalledWith(['/pacientes']);
+    expect(router.navigate).toHaveBeenCalledWith(['/patients']);
   });
 
   it('submits create and navigates to the created patient record', async () => {
@@ -88,7 +88,7 @@ describe('PatientFormPageComponent dedicated page', () => {
     await component.submit();
 
     expect(patientService.createPatient).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith(['/pacientes', patient.id]);
+    expect(router.navigate).toHaveBeenCalledWith(['/patients', patient.id]);
   });
   it('allows an incomplete save attempt, shows missing fields and never sends invalid data', async () => {
     fixture = TestBed.createComponent(PatientFormPageComponent); component = fixture.componentInstance;

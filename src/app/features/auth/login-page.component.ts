@@ -16,7 +16,7 @@ import { matchingPasswords, trimmedRequired } from '../../core/models/form-valid
 })
 export class LoginPageComponent {
   readonly googleAuthEnabled = GOOGLE_AUTH_ENABLED;
-  readonly bycodeRegisterUrl = environment.bycodePlansUrl.replace(/\/panel\/?$/, '') + '/register';
+  readonly bycodeRegisterUrl = environment.bycodePlansUrl.replace(/\/(?:panel|dashboard)\/?$/, '') + '/register';
   goToBycodeRegistration(): void {
     if (isPlatformBrowser(this.platformId)) window.location.assign(this.bycodeRegisterUrl);
   }

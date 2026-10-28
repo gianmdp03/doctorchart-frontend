@@ -45,7 +45,7 @@ describe('specialty screen availability', () => {
     expect(loadSetup).not.toHaveBeenCalled();
   });
   it('sends administrators to their own panel', async () => {
-    admin.set(true); expect((await run('VACCINATION'))!.toString()).toBe('/admin/especialidades');
+    admin.set(true); expect((await run('VACCINATION'))!.toString()).toBe('/admin/specialties');
     expect(loadSetup).not.toHaveBeenCalled();
   });
   it('keeps unfinished onboarding and missing workspaces out of clinical screens', async () => {

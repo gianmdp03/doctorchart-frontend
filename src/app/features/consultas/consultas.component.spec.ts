@@ -103,7 +103,7 @@ describe('ConsultasComponent', () => {
   it('opens the consultation detail route', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     component.openEncounterDetail(201);
-    expect(navigate).toHaveBeenCalledWith(['/consultas', 201]);
+    expect(navigate).toHaveBeenCalledWith(['/encounters', 201]);
   });
   it('loads subsequent pages using the current search without requesting patient histories', () => {
     clinicalEncounterServiceMock.getAll.mockReturnValueOnce(

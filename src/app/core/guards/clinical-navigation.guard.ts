@@ -12,7 +12,7 @@ export const clinicalNavigationGuard = (entry: ClinicalNavigationId): CanActivat
   const router = inject(Router);
   await auth.authReady;
   if (!auth.isLoggedIn()) return true;
-  if (auth.isSuperAdmin()) return router.createUrlTree(['/admin/especialidades']);
+  if (auth.isSuperAdmin()) return router.createUrlTree(['/admin/specialties']);
   if (entry === 'CALCULATORS' && !workspace.calculatorsEnabled()) {
     return router.createUrlTree(['/dashboard']);
   }

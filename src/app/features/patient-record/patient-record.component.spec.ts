@@ -742,7 +742,7 @@ describe('PatientRecordComponent', () => {
 
   it('should navigate to patient directory when back button is clicked', () => {
     component.navigateToPatients();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/pacientes']);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/patients']);
   });
 
   it('recreates screen state and cancels old reads while preserving unsaved inputs for the same patient', () => {
@@ -1078,7 +1078,7 @@ describe('PatientRecordComponent', () => {
     expect(component.isEncounterFormOpen()).toBe(true);
     const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
     timeline.viewDetail.emit(1);
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/consultas', 1]);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/encounters', 1]);
     patientServiceSpy.getPatientById.mockClear();
     timeline.deleteEncounter.emit(1);
     expect(encounterServiceSpy.delete).not.toHaveBeenCalled();

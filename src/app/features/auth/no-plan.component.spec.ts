@@ -10,7 +10,7 @@ describe('No plan account screen', () => {
  beforeEach(() => {
   vi.clearAllMocks(); auth.refreshPlan.mockResolvedValue(undefined); auth.hasDoctorchartPlan.mockReturnValue(false);
   TestBed.configureTestingModule({imports:[NoPlanComponent],providers:[provideRouter([]),{provide:AuthService,useValue:auth},
-   {provide:ActivatedRoute,useValue:{snapshot:{queryParamMap:convertToParamMap({returnUrl:'/pacientes/42'})}}}]});
+   {provide:ActivatedRoute,useValue:{snapshot:{queryParamMap:convertToParamMap({returnUrl:'/patients/42'})}}}]});
   navigate=vi.spyOn(TestBed.inject(Router),'navigateByUrl').mockResolvedValue(true);
   component=TestBed.createComponent(NoPlanComponent).componentInstance;
  });
@@ -28,7 +28,7 @@ describe('No plan account screen', () => {
  });
  it('continues the requested clinical route after refreshing an active plan', async () => {
   auth.hasDoctorchartPlan.mockReturnValue(true); await component.checkPlan();
-  expect(navigate).toHaveBeenCalledWith('/pacientes/42',{onSameUrlNavigation:'reload'});
+  expect(navigate).toHaveBeenCalledWith('/patients/42',{onSameUrlNavigation:'reload'});
  });
  it('uses dashboard rather than an external return URL', async () => {
   Object.defineProperty(TestBed.inject(ActivatedRoute).snapshot, 'queryParamMap', {value:convertToParamMap({returnUrl:'//external.test'})});

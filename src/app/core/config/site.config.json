@@ -5,9 +5,22 @@
   ],
   "clientPatterns": [
     "^/(login|sin-plan|perfil|asistente|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",
-    "^/(pacientes|ficha|consultas)/[^/]+(/editar)?$"
+    "^/(pacientes|ficha|consultas)/[^/]+(/editar)?$",
+    "^/(login|plan-required|profile|assistant|dashboard|encounters|vaccination-calendar|calculators|patients|patients/new|records|admin/specialties|onboarding/select-specialty|onboarding/setup)$",
+    "^/(patients|records|encounters)/[^/]+(/edit)?$"
   ],
-  "redirects": {},
+  "redirects": {
+    "/sin-plan": "/plan-required",
+    "/admin/especialidades": "/admin/specialties",
+    "/calendario-vacunacion": "/vaccination-calendar",
+    "/pacientes": "/patients",
+    "/pacientes/nuevo": "/patients/new",
+    "/ficha": "/records",
+    "/asistente": "/assistant",
+    "/perfil": "/profile",
+    "/consultas": "/encounters",
+    "/calculadoras": "/calculators"
+  },
   "apiGatewayOrigin": "https://api.bycode.com.ar",
   "applicationUrls": {
     "bycode": "https://bycode.com.ar",

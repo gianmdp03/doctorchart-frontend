@@ -195,7 +195,7 @@ export class PatientBannerComponent {
   }
 
   goBack(): void {
-    this.router.navigate(['/pacientes']);
+    this.router.navigate(['/patients']);
   }
 
   onNewEncounter(): void {

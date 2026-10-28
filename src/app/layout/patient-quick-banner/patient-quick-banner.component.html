@@ -6,7 +6,7 @@
         <h2>
           {{ patient.fullName }}
           <span class="m3-badge badge-success">Activo</span>
-          <a routerLink="/pacientes" class="change-patient-btn" title="Cambiar paciente activo">⇄ Cambiar Paciente</a>
+          <a routerLink="/patients" class="change-patient-btn" title="Cambiar paciente activo">⇄ Cambiar Paciente</a>
         </h2>
         <div class="patient-meta">
           <span><strong>ID:</strong> #{{ patient.id }}</span>
@@ -54,7 +54,7 @@
         }
       }
       @if (workspace.hasNavigation('CALCULATORS')) {
-      <a routerLink="/calculadoras" class="metric-pill calc-link-pill" title="Abrir Calculadora Clínica para este paciente">
+      <a routerLink="/calculators" class="metric-pill calc-link-pill" title="Abrir Calculadora Clínica para este paciente">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-1" aria-hidden="true">
           <rect x="4" y="2" width="16" height="20" rx="2" />
           <line x1="8" y1="6" x2="16" y2="6" />
@@ -79,7 +79,7 @@
       </div>
     </div>
     <div class="patient-metrics-strip">
-      <a routerLink="/pacientes" class="m3-button m3-button-tonal select-patient-link">
+      <a routerLink="/patients" class="m3-button m3-button-tonal select-patient-link">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
         </svg>

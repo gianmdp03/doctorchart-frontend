@@ -65,8 +65,8 @@ describe('Theme integration', () => {
       }], page: { totalElements: 1, totalPages: 1 } }) } },
       { provide: WorkspaceStore, useValue: { quickNotes: signal('Recordatorio de ejemplo'), navigation: signal([
         { id: 'DASHBOARD', path: '/dashboard', label: 'Inicio', title: 'Inicio', icon: 'lucideLayoutDashboard' },
-        { id: 'PATIENTS', path: '/pacientes', label: 'Pacientes', title: 'Pacientes', icon: 'lucideUsers' },
-        { id: 'VACCINATION', path: '/calendario-vacunacion', label: 'Vacunación', title: 'Vacunación', icon: 'lucideCalendarDays' },
+        { id: 'PATIENTS', path: '/patients', label: 'Pacientes', title: 'Pacientes', icon: 'lucideUsers' },
+        { id: 'VACCINATION', path: '/vaccination-calendar', label: 'Vacunación', title: 'Vacunación', icon: 'lucideCalendarDays' },
         { id: 'WIZARD', path: '/onboarding/setup', label: 'Personalizar Fichas', title: 'Personalizar Fichas', icon: 'lucideSliders' },
       ]) } },
     ] }).compileComponents();

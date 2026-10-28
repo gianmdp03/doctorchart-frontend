@@ -352,14 +352,14 @@ export class PatientListComponent implements OnInit {
       this.activePatientService.setActivePatient(patient.detail);
     }
     this.activePatientService.loadPatient(patient.id);
-    this.router.navigate(['/pacientes', patient.id]);
+    this.router.navigate(['/patients', patient.id]);
   }
 
   createPatient(event?: Event): void {
     if (event) {
       event.stopPropagation();
     }
-    this.router.navigate(['/pacientes/nuevo']);
+    this.router.navigate(['/patients/new']);
   }
 
 }

@@ -35,7 +35,7 @@ export class SessionCoordinatorService {
         this.doctorProfileService.clearProfile();
         this.workspaceStore.clearSetup();
         if (identity && adminIdentity) {
-          void this.router.navigate(['/admin/especialidades']).catch(() => undefined);
+          void this.router.navigate(['/admin/specialties']).catch(() => undefined);
         } else if (identity && planActive) {
           void this.loadIdentity();
           if (this.router.url.startsWith('/admin/')) void this.router.navigate(['/dashboard']).catch(() => undefined);

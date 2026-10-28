@@ -415,12 +415,12 @@ export class DashboardComponent implements OnInit {
 
   openPatient(patientId: number): void {
     this.activePatientService.loadPatient(patientId);
-    this.router.navigate(['/pacientes', patientId]);
+    this.router.navigate(['/patients', patientId]);
   }
 
   openEncounterDetail(encounterId: number, event?: Event): void {
     event?.stopPropagation();
-    void this.router.navigate(['/consultas', encounterId]);
+    void this.router.navigate(['/encounters', encounterId]);
   }
 
   hydrateNotes(): void {

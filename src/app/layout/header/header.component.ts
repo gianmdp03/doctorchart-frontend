@@ -176,7 +176,7 @@ export class HeaderComponent implements OnDestroy {
   selectPatient(patient: PatientListDTO): void {
     this.activePatientService.loadPatient(patient.id);
     this.clearSearch();
-    this.router.navigate(['/pacientes', patient.id]);
+    this.router.navigate(['/patients', patient.id]);
   }
 
   clearSearch(event?: Event): void {
@@ -206,12 +206,12 @@ export class HeaderComponent implements OnDestroy {
 
   handleProfileClick(): void {
     this.isProfileMenuOpen.set(false);
-    void this.router.navigate(['/perfil']);
+    void this.router.navigate(['/profile']);
   }
 
   openWizardConfig(): void {
     this.isProfileMenuOpen.set(false);
-    this.router.navigate([this.authService.isSuperAdmin() ? '/admin/especialidades' : '/onboarding/setup']);
+    this.router.navigate([this.authService.isSuperAdmin() ? '/admin/specialties' : '/onboarding/setup']);
   }
 
   ngOnDestroy(): void {

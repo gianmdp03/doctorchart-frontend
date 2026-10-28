@@ -21,13 +21,28 @@ const preventCompletedOnboardingGuard = lazyGuard(() => import('./core/guards/do
 const superAdminGuard = lazyGuard(() => import('./core/guards/super-admin.guard').then(m => m.superAdminGuard));
 
 export const routes: Routes = [
+  { path: 'sin-plan', redirectTo: 'plan-required', pathMatch: 'full' },
+  { path: 'admin/especialidades', redirectTo: 'admin/specialties', pathMatch: 'full' },
+  { path: 'calendario-vacunacion', redirectTo: 'vaccination-calendar', pathMatch: 'full' },
+  { path: 'pacientes', redirectTo: 'patients', pathMatch: 'full' },
+  { path: 'pacientes/nuevo', redirectTo: 'patients/new', pathMatch: 'full' },
+  { path: 'pacientes/:id/editar', redirectTo: 'patients/:id/edit', pathMatch: 'full' },
+  { path: 'pacientes/:id', redirectTo: 'patients/:id', pathMatch: 'full' },
+  { path: 'ficha', redirectTo: 'records', pathMatch: 'full' },
+  { path: 'ficha/:id/editar', redirectTo: 'records/:id/edit', pathMatch: 'full' },
+  { path: 'ficha/:id', redirectTo: 'records/:id', pathMatch: 'full' },
+  { path: 'consultas/:id', redirectTo: 'encounters/:id', pathMatch: 'full' },
+  { path: 'asistente', redirectTo: 'assistant', pathMatch: 'full' },
+  { path: 'perfil', redirectTo: 'profile', pathMatch: 'full' },
+  { path: 'consultas', redirectTo: 'encounters', pathMatch: 'full' },
+  { path: 'calculadoras', redirectTo: 'calculators', pathMatch: 'full' },
   {
-    path: 'sin-plan',
+    path: 'plan-required',
     canActivate: [lazyGuard(() => import('./core/guards/doctorchart-plan.guard').then(m => m.doctorchartNoPlanGuard))],
     loadComponent: () => import('./features/auth/no-plan.component').then(m => m.NoPlanComponent),
   },
   {
-    path: 'admin/especialidades',
+    path: 'admin/specialties',
     canActivate: [superAdminGuard],
     loadComponent: () => import('./features/admin-specialties/admin-specialties.component').then(m => m.AdminSpecialtiesComponent),
   },
@@ -53,7 +68,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'calendario-vacunacion',
+    path: 'vaccination-calendar',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicalNavigationGuard('VACCINATION')],
     loadComponent: () =>
@@ -62,7 +77,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'pacientes',
+    path: 'patients',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
@@ -72,7 +87,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'pacientes/nuevo',
+    path: 'patients/new',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () =>
@@ -81,7 +96,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'pacientes/:id/editar',
+    path: 'patients/:id/edit',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () =>
@@ -90,7 +105,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'pacientes/:id',
+    path: 'patients/:id',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
@@ -100,7 +115,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'ficha',
+    path: 'records',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
@@ -110,7 +125,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'ficha/:id/editar',
+    path: 'records/:id/edit',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () =>
@@ -119,7 +134,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'ficha/:id',
+    path: 'records/:id',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
@@ -129,25 +144,25 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'consultas/:id',
+    path: 'encounters/:id',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () => import('./features/encounter-detail/encounter-detail-page.component').then(m => m.EncounterDetailPageComponent),
   },
   {
-    path: 'asistente',
+    path: 'assistant',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, lazyGuard(() => import('./core/guards/ai-assistant.guard').then(m => m.aiAssistantGuard))],
     loadComponent: () => import('./features/ai-assistant/ai-assistant-page.component').then(m => m.AiAssistantPageComponent),
   },
   {
-    path: 'perfil',
+    path: 'profile',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     loadComponent: () => import('./features/auth/user-profile-page.component').then(m => m.UserProfilePageComponent),
   },
   {
-    path: 'consultas',
+    path: 'encounters',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
     data: { preload: true },
@@ -157,7 +172,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'calculadoras',
+    path: 'calculators',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicalNavigationGuard('CALCULATORS')],
     loadComponent: () =>

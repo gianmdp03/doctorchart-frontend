@@ -8,7 +8,7 @@ export const doctorWizardGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   await auth.authReady;
-  return auth.isLoggedIn() && auth.isSuperAdmin() ? router.createUrlTree(['/admin/especialidades']) : true;
+  return auth.isLoggedIn() && auth.isSuperAdmin() ? router.createUrlTree(['/admin/specialties']) : true;
 };
 
 export const doctorOnboardingGuard: CanActivateFn = async () => {
@@ -17,7 +17,7 @@ export const doctorOnboardingGuard: CanActivateFn = async () => {
   const router = inject(Router);
   await auth.authReady;
   if (!auth.isLoggedIn()) return true;
-  if (auth.isSuperAdmin()) return router.createUrlTree(['/admin/especialidades']);
+  if (auth.isSuperAdmin()) return router.createUrlTree(['/admin/specialties']);
   try {
     const setup = await workspace.loadSetup();
     if (setup?.onboardingCompleted && setup.definition) return true;
@@ -33,7 +33,7 @@ export const preventCompletedOnboardingGuard: CanActivateFn = async () => {
   const router = inject(Router);
   await auth.authReady;
   if (!auth.isLoggedIn()) return true;
-  if (auth.isSuperAdmin()) return router.createUrlTree(['/admin/especialidades']);
+  if (auth.isSuperAdmin()) return router.createUrlTree(['/admin/specialties']);
   try {
     const setup = await workspace.loadSetup();
     return setup?.onboardingCompleted && setup.definition ? router.createUrlTree(['/dashboard']) : true;

@@ -55,7 +55,7 @@ describe('App recovers the empty entry route after login', () => {
         {path:'dashboard',component:LoginDestination,canActivate:[doctorchartPlanGuard,doctorOnboardingGuard]},
         {path:'onboarding/select-specialty',component:LoginDestination},
         {path:'login',component:LoginDestination},
-        {path:'pacientes',component:LoginDestination},
+        {path:'patients',component:LoginDestination},
       ]),
       {provide:AuthService,useValue:{currentUser,authReady:Promise.resolve(),isLoggedIn:computed(()=>!!currentUser()),isSuperAdmin:()=>false,hasDoctorchartPlan:()=>true,openLoginModal:vi.fn()}},
       {provide:DoctorProfileService,useValue:{clearProfile:vi.fn(),loadProfile}},
@@ -78,20 +78,20 @@ describe('App recovers the empty entry route after login', () => {
 
   it('preserves an already opened page', async () => {
     const fixture=TestBed.createComponent(App); fixture.detectChanges();
-    const router=TestBed.inject(Router); await router.navigateByUrl('/pacientes');
+    const router=TestBed.inject(Router); await router.navigateByUrl('/patients');
     currentUser.set(doctor); fixture.detectChanges(); await fixture.whenStable();
-    expect(router.url).toBe('/pacientes');
+    expect(router.url).toBe('/patients');
   });
 
   it('restores the requested patient route when session initialization cancelled initial navigation', async () => {
     const previous = window.location.href;
-    window.history.replaceState(null, '', '/pacientes');
+    window.history.replaceState(null, '', '/patients');
     try {
       const fixture = TestBed.createComponent(App); fixture.detectChanges();
       const router = TestBed.inject(Router);
-      expect(await router.navigateByUrl('/login?returnUrl=%2Fpacientes')).toBe(true);
+      expect(await router.navigateByUrl('/login?returnUrl=%2Fpatients')).toBe(true);
       currentUser.set(doctor); fixture.detectChanges(); await fixture.whenStable();
-      await vi.waitFor(() => expect(router.url).toBe('/pacientes'));
+      await vi.waitFor(() => expect(router.url).toBe('/patients'));
     } finally { window.history.replaceState(null, '', previous); }
   });
 
@@ -153,7 +153,7 @@ describe('App administrative entry', () => {
     completed.set(true);
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
-    expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/admin/especialidades']);
+    expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/admin/specialties']);
     expect(profile['loadProfile']).not.toHaveBeenCalled();
     expect(workspace['loadSetup']).not.toHaveBeenCalled();
     expect(workspace['loadPreferences']).not.toHaveBeenCalled();
@@ -172,14 +172,14 @@ describe('App administrative entry', () => {
     expect(profile['clearProfile']).toHaveBeenCalledTimes(2);
     expect(workspace['clearSetup']).toHaveBeenCalledTimes(2);
     expect(workspace['loadSetup']).toHaveBeenCalledOnce();
-    expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/admin/especialidades']);
+    expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/admin/specialties']);
   });
 
   it('leaves administration after the trusted role is revoked', async () => {
     currentUser.set(user('SUPER_ADMIN'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
-    vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/admin/especialidades');
+    vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/admin/specialties');
     currentUser.set(user('DOCTOR'));
     fixture.detectChanges();
     expect(TestBed.inject(Router).navigate).toHaveBeenLastCalledWith(['/dashboard']);

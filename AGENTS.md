@@ -1,5 +1,10 @@
 # UI conventions
 
+- Las rutas y anclas de la web se escriben en inglés; la interfaz sigue en español.
+  Las rutas anteriores en español son solo redirecciones de compatibilidad.
+  Actualizar juntos router, enlaces, guards, hosting y headers noindex. Conservar
+  contratos de API y la suspensión de calculadoras y otras funciones.
+
 - All date inputs and date selectors must use the shared `app-date-picker` Angular Material component. Do not add native HTML `<input type="date">` controls.
 - Dates displayed or entered by users use Argentine format `dd/MM/aaaa`. Convert to the ISO format `YYYY-MM-DD` only at the application/data boundary.
 

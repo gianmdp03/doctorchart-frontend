@@ -36,6 +36,6 @@ describe('Public entry', () => {
     expect(await destination(true)).toBe('/dashboard');
   });
   it('takes administrators to administration', async () => {
-    expect(await destination(true, true)).toBe('/admin/especialidades');
+    expect(await destination(true, true)).toBe('/admin/specialties');
   });
 });

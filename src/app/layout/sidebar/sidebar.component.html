@@ -14,7 +14,7 @@
   <nav class="sidebar-nav" aria-label="Navegación principal" (click)="collapseAfterNavigation()">
     @if (authService.isSuperAdmin()) {
       <div class="nav-group-label" [class.sr-only]="isCollapsed()">Administración</div>
-      <a routerLink="/admin/especialidades" routerLinkActive="active" class="nav-item" title="Especialidades y wizards">
+      <a routerLink="/admin/specialties" routerLinkActive="active" class="nav-item" title="Especialidades y wizards">
         <ng-icon name="lucideSliders" class="nav-icon" />
         <span class="nav-label">Especialidades y wizards</span>
       </a>

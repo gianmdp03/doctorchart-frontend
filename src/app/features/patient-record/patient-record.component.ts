@@ -136,11 +136,16 @@ export class PatientRecordComponent implements OnInit {
     });
 
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((queryParams) => {
-      const tabParam = queryParams.get('tab') as PatientRecordTab | null;
+      const urlTab = queryParams.get('tab');
+      const englishTabs: Record<string, PatientRecordTab> = {
+        summary: 'resumen', history: 'historia', vaccinations: 'vacunas',
+        growth: 'curvas', prescriptions: 'recetas', studies: 'estudios',
+      };
+      const tabParam = (urlTab && (englishTabs[urlTab] ?? urlTab)) as PatientRecordTab | null;
       if (tabParam) {
         this.setTab(tabParam);
       }
-      if (tabParam === 'historia' && queryParams.get('nueva') === 'true') {
+      if (tabParam === 'historia' && (queryParams.get('new') ?? queryParams.get('nueva')) === 'true') {
         this.history.startCreatingEncounter();
         this.isEncounterFormOpen.set(true);
       }
@@ -163,7 +168,7 @@ export class PatientRecordComponent implements OnInit {
   }
 
   navigateToPatients(): void {
-    this.router.navigate(['/pacientes']);
+    this.router.navigate(['/patients']);
   }
 
   editPatient(event?: Event): void {
@@ -172,9 +177,9 @@ export class PatientRecordComponent implements OnInit {
     this.isPatientEditorOpen.set(true);
     const patientId = this.activePatientService.patientId();
     if (patientId) {
-      void this.router.navigate(['/pacientes', patientId, 'editar']);
+      void this.router.navigate(['/patients', patientId, 'edit']);
     } else {
-      void this.router.navigate(['/pacientes/nuevo']);
+      void this.router.navigate(['/patients/new']);
     }
   }
 

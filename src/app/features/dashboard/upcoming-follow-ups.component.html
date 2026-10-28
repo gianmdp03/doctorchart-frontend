@@ -32,7 +32,7 @@
             <ul class="followup-patients">
               @for (item of group.items; track item.patientId) {
                 <li>
-                  <a class="followup-patient" [routerLink]="['/pacientes', item.patientId]" [attr.aria-label]="'Ver ficha de ' + item.patientFullName">
+                  <a class="followup-patient" [routerLink]="['/patients', item.patientId]" [attr.aria-label]="'Ver ficha de ' + item.patientFullName">
                     <span class="followup-avatar" aria-hidden="true">{{ item.initials }}</span>
                     <span class="followup-patient-text">
                       <span class="followup-patient-name">{{ item.patientFullName }}</span>

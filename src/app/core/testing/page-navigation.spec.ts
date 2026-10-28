@@ -44,26 +44,26 @@ describe('Routed consultation and professional profile', () => {
   });
   it('opens a direct consultation URL through router-outlet and fetches the persisted record', async () => {
     const harness = await RouterTestingHarness.create();
-    const page = await harness.navigateByUrl('/consultas/77', EncounterDetailPageComponent);
+    const page = await harness.navigateByUrl('/encounters/77', EncounterDetailPageComponent);
     await harness.fixture.whenStable(); harness.detectChanges();
     expect(page.encounter()?.id).toBe(77); expect(getById).toHaveBeenCalledWith(77);
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain('Detalle de la consulta');
     expect(harness.routeNativeElement?.querySelector('[role="dialog"]')).toBeNull();
   });
   it('supports profile navigation and browser Back to the consultation page', async () => {
-    const harness = await RouterTestingHarness.create('/consultas/77');
+    const harness = await RouterTestingHarness.create('/encounters/77');
     TestBed.inject(Router).initialNavigation();
-    await harness.navigateByUrl('/perfil', UserProfilePageComponent);
+    await harness.navigateByUrl('/profile', UserProfilePageComponent);
     expect(harness.routeNativeElement?.textContent).toContain('Sofía Mendoza');
     TestBed.inject(Location).back();
-    await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/consultas/77'));
+    await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/encounters/77'));
     await harness.fixture.whenStable(); harness.detectChanges();
     expect(getById).toHaveBeenCalledTimes(2);
   });
   it('clears the previous record when a different URL is forbidden by the API', async () => {
-    const harness = await RouterTestingHarness.create('/consultas/77');
+    const harness = await RouterTestingHarness.create('/encounters/77');
     getById.mockReturnValueOnce(throwError(() => ({ status: 403, error: { message: 'No tenés permiso para acceder a esta consulta.' } })));
-    const page = await harness.navigateByUrl('/consultas/88', EncounterDetailPageComponent);
+    const page = await harness.navigateByUrl('/encounters/88', EncounterDetailPageComponent);
     await harness.fixture.whenStable(); harness.detectChanges();
     expect(page.encounter()).toBeNull();
     expect(harness.routeNativeElement?.querySelector('[role="alert"]')?.textContent).toContain('No tenés permiso');
@@ -90,7 +90,7 @@ describe('Patient drafts across routed clinical screens', () => {
 
   it('restores study, prescription and new-encounter drafts after opening a consultation and returning', async () => {
     const harness = await RouterTestingHarness.create();
-    const first = await harness.navigateByUrl('/pacientes/22', PatientRecordComponent);
+    const first = await harness.navigateByUrl('/patients/22', PatientRecordComponent);
     const studies = harness.routeDebugElement!.injector.get(PatientStudiesStore);
     const file = new File(['fixture'], 'IMG_1234.pdf', { type: 'application/pdf' });
     studies.setDraftFile(file); studies.setDraftName('Informe "control"'); studies.setDraftDescription('Pendiente');
@@ -101,8 +101,8 @@ describe('Patient drafts across routed clinical screens', () => {
     first.history.startCreatingEncounter();
     first.history.setEncounterDraft({ notes: 'Examen pendiente' }, 'FOLLOW_UP', '2026-10-26T12:00:00Z');
 
-    await harness.navigateByUrl('/consultas/77', EncounterDetailPageComponent);
-    const returned = await harness.navigateByUrl('/pacientes/22?tab=historia', PatientRecordComponent);
+    await harness.navigateByUrl('/encounters/77', EncounterDetailPageComponent);
+    const returned = await harness.navigateByUrl('/patients/22?tab=history', PatientRecordComponent);
     await harness.fixture.whenStable(); harness.detectChanges();
     const restored = harness.routeDebugElement!.injector.get(PatientStudiesStore);
     expect(returned).not.toBe(first); expect(restored).not.toBe(studies);
@@ -120,20 +120,20 @@ describe('Patient drafts across routed clinical screens', () => {
 
   it('clears drafts when the patient changes and when the account changes while the record is closed', async () => {
     const harness = await RouterTestingHarness.create();
-    let record = await harness.navigateByUrl('/pacientes/22', PatientRecordComponent);
+    let record = await harness.navigateByUrl('/patients/22', PatientRecordComponent);
     let studies = harness.routeDebugElement!.injector.get(PatientStudiesStore);
     studies.setDraftName('Paciente anterior'); record.prescriptions.rxMedicationName.set('Anterior');
     record.history.setEncounterDraft({ notes: 'Anterior' });
-    await harness.navigateByUrl('/consultas/77', EncounterDetailPageComponent);
+    await harness.navigateByUrl('/encounters/77', EncounterDetailPageComponent);
     patient.set({ ...dialogPatient(), id: 23 });
-    record = await harness.navigateByUrl('/pacientes/23', PatientRecordComponent);
+    record = await harness.navigateByUrl('/patients/23', PatientRecordComponent);
     studies = harness.routeDebugElement!.injector.get(PatientStudiesStore);
     expect(studies.draftName()).toBe(''); expect(record.prescriptions.rxMedicationName()).toBe('');
     expect(record.history.encounterDraftValues()).toEqual({});
     studies.setDraftName('Cuenta anterior'); record.prescriptions.rxStudyName.set('Anterior');
-    await harness.navigateByUrl('/consultas/77', EncounterDetailPageComponent);
+    await harness.navigateByUrl('/encounters/77', EncounterDetailPageComponent);
     owner.set({ id: 'doctor-b' });
-    record = await harness.navigateByUrl('/pacientes/23', PatientRecordComponent);
+    record = await harness.navigateByUrl('/patients/23', PatientRecordComponent);
     expect(harness.routeDebugElement!.injector.get(PatientStudiesStore).draftName()).toBe('');
     expect(record.prescriptions.rxStudyName()).toBe('');
   });

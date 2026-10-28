@@ -99,7 +99,7 @@ describe('EncounterDetailPageComponent saved snapshot editing', () => {
   it('returns to this patient history from the detail and its breadcrumb', async () => {
     await component.loadEncounter(record.id); fixture.detectChanges();
     const links = [...fixture.nativeElement.querySelectorAll('a')] as HTMLAnchorElement[];
-    expect(links.some(link => link.textContent?.includes('Volver') && link.getAttribute('href') === '/pacientes/' + record.patientId + '?tab=historia')).toBe(true);
-    expect(links.some(link => link.getAttribute('href') === '/consultas')).toBe(false);
+    expect(links.some(link => link.textContent?.includes('Volver') && link.getAttribute('href') === '/patients/' + record.patientId + '?tab=history')).toBe(true);
+    expect(links.some(link => link.getAttribute('href') === '/encounters')).toBe(false);
   });
 });

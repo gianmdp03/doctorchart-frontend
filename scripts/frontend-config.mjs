@@ -59,7 +59,7 @@ export function environmentValues(site, app, production) {
     supabaseUrl: site.supabase.url, supabaseKey: site.supabase.publishableKey };
   const supabase = { url: site.supabase.url, publishableKey: site.supabase.publishableKey };
   if (app === 'doctorchart') return { ...shared, supabase, apiUrl: api + '/api/doctorchart',
-    aiGatewayUrl: api + '/api/ai/doctorchart/chat', bycodePlansUrl: site.applicationUrls.bycode + '/panel' };
+    aiGatewayUrl: api + '/api/ai/doctorchart/chat', bycodePlansUrl: site.applicationUrls.bycode + '/dashboard' };
   if (app === 'bycode') return { ...shared, supabase, apiUrl: api + '/api', aiGatewayUrl: api + '/api/ai/chat',
     applicationUrls: { pointly: site.applicationUrls.pointly, doctorchart: site.applicationUrls.doctorchart } };
   throw new Error('Aplicación no reconocida.');

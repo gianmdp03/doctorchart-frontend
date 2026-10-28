@@ -16,7 +16,7 @@ export const doctorchartPlanGuard: CanActivateFn = async (route, state) => {
     return true;
   }
 
-  return router.createUrlTree(['/sin-plan'], { queryParams: { returnUrl: state.url } });
+  return router.createUrlTree(['/plan-required'], { queryParams: { returnUrl: state.url } });
 };
 
 export const doctorchartNoPlanGuard: CanActivateFn = async () => {

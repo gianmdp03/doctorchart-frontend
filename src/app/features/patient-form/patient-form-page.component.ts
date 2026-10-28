@@ -170,9 +170,9 @@ export class PatientFormPageComponent implements OnInit {
 
   cancel(): void {
     if (this.isEditMode() && this.patientId()) {
-      void this.router.navigate(['/pacientes', this.patientId()]);
+      void this.router.navigate(['/patients', this.patientId()]);
     } else {
-      void this.router.navigate(['/pacientes']);
+      void this.router.navigate(['/patients']);
     }
   }
 
@@ -209,7 +209,7 @@ export class PatientFormPageComponent implements OnInit {
 
       this.activePatientService.setActivePatient(saved);
       this.activePatientService.loadPatient(saved.id);
-      void this.router.navigate(['/pacientes', saved.id]);
+      void this.router.navigate(['/patients', saved.id]);
     } catch (error) {
       if (this.alive(epoch)) {
         this.conflict.set(conflictKind(error));

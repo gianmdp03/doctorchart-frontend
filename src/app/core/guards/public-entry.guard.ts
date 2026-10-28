@@ -8,6 +8,6 @@ export const publicEntryGuard: CanActivateFn = async () => {
   const router = inject(Router);
   await auth.authReady;
   return auth.isLoggedIn()
-    ? router.createUrlTree([auth.isSuperAdmin() ? '/admin/especialidades' : '/dashboard'])
+    ? router.createUrlTree([auth.isSuperAdmin() ? '/admin/specialties' : '/dashboard'])
     : true;
 };

@@ -47,14 +47,14 @@ describe('workspace onboarding guards', () => {
   });
   it('sends a trusted superadmin directly to administration without requiring a doctor workspace', async () => {
     superAdmin.set(true);
-    expect((await run(doctorOnboardingGuard))!.toString()).toBe('/admin/especialidades');
-    expect((await run(preventCompletedOnboardingGuard))!.toString()).toBe('/admin/especialidades');
+    expect((await run(doctorOnboardingGuard))!.toString()).toBe('/admin/specialties');
+    expect((await run(preventCompletedOnboardingGuard))!.toString()).toBe('/admin/specialties');
     expect(loadSetup).not.toHaveBeenCalled();
   });
   it('keeps the personal editor reachable for clinicians while preventing an admin workspace load', async () => {
     expect(await run(doctorWizardGuard)).toBe(true);
     superAdmin.set(true);
-    expect((await run(doctorWizardGuard))!.toString()).toBe('/admin/especialidades');
+    expect((await run(doctorWizardGuard))!.toString()).toBe('/admin/specialties');
     expect(loadSetup).not.toHaveBeenCalled();
   });
 });

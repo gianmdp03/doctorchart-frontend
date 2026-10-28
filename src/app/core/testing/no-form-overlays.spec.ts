@@ -21,7 +21,7 @@ describe('Forms stay in the routed page', () => {
 
   it('registers guarded pages and serves their URLs on refresh', () => {
     const config = JSON.parse(readFileSync('src/app/core/config/site.config.json', 'utf8'));
-    for (const [path, url] of [['consultas/:id', '/consultas/77'], ['perfil', '/perfil'], ['asistente', '/asistente']]) {
+    for (const [path, url] of [['encounters/:id', '/encounters/77'], ['profile', '/profile'], ['assistant', '/assistant']]) {
       const route = routes.find(route => route.path === path)!;
       expect(route.loadComponent).toBeDefined(); expect(route.canActivate?.length).toBeGreaterThan(0);
       expect(config.clientPatterns.some((pattern: string) => new RegExp(pattern).test(url))).toBe(true);

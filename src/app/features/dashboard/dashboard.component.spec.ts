@@ -152,7 +152,7 @@ describe('DashboardComponent', () => {
     expect(days[1].textContent).toContain('01/01/2027');
     expect(days[1].textContent).toContain('Mateo Rossi');
     const link = days[1].querySelector('a')!;
-    expect(link.getAttribute('href')).toBe('/pacientes/2');
+    expect(link.getAttribute('href')).toBe('/patients/2');
     expect(link.getAttribute('aria-label')).toBe('Ver ficha de Mateo Rossi');
     expect(clinicalEncounterServiceMock.getByPatient).not.toHaveBeenCalled();
   });
