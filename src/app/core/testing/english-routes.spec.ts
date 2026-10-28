@@ -15,17 +15,13 @@ describe('English canonical application routes', () => {
       route.redirectTo ? route : { path: route.path, component: Destination, pathMatch: route.pathMatch }
     ))] });
     const harness = await RouterTestingHarness.create();
-    for (const [old, canonical] of [
-      ['/pacientes/nuevo', '/patients/new'],
-      ['/pacientes/42/editar', '/patients/42/edit'],
-      ['/ficha/42', '/records/42'],
-      ['/consultas/77', '/encounters/77'],
-      ['/admin/especialidades', '/admin/specialties'],
-      ['/perfil', '/profile'],
-      ['/sin-plan', '/plan-required'],
-    ]) {
-      await harness.navigateByUrl(old + '?source=bookmark');
-      expect(TestBed.inject(Router).url).toBe(canonical + '?source=bookmark');
+    for (const alias of routes.filter(route => typeof route.redirectTo === 'string')) {
+      const old = '/' + alias.path!.replaceAll(':id', '42');
+      const canonical = '/' + (alias.redirectTo as string).replaceAll(':id', '42');
+      await harness.navigateByUrl(old + '?source=bookmark#details');
+      expect(TestBed.inject(Router).url).toBe(canonical + '?source=bookmark#details');
+      await harness.navigateByUrl(canonical + '?source=direct');
+      expect(TestBed.inject(Router).url).toBe(canonical + '?source=direct');
     }
   });
   it('keeps application pages behind their existing guards', () => {

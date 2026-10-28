@@ -46,7 +46,7 @@ export class NoPlanComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  readonly plansUrl = environment.bycodePlansUrl.split('#')[0] + '#plans-catalog';
+  readonly plansUrl = new URL('/pricing', environment.bycodePlansUrl).href;
   readonly busy = signal(false);
   readonly message = signal('');
 

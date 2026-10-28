@@ -44,7 +44,7 @@ try {
     });
     const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
     try {
-      await page.goto(origin+'/consultas');
+      await page.goto(origin+'/encounters');
       await page.getByText(expected,{exact:true}).waitFor();
       await page.getByRole('button',{name:'Ver Detalle',exact:true}).click();
       await page.locator('app-encounter-detail-dialog [role=dialog]').waitFor();

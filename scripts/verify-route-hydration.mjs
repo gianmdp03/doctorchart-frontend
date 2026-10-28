@@ -91,29 +91,29 @@ try {
 }
 
 async function verifyPediatricDirectory(page) {
-  await page.locator('app-sidebar a[href="/pacientes"]').first().click();
+  await page.locator('app-sidebar a[href="/patients"]').first().click();
   await page.locator('app-patient-list').waitFor();
-  await page.getByText('Primera infancia', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Primera infancia (1–4 años)', exact: true }).waitFor();
   const labels = ['Recién nacidos (0–27 días)', 'Lactantes (28 días–<1 año)', 'Primera infancia (1–4 años)', 'Niñez (5–9 años)', 'Adolescentes (10–19 años)'];
   const filters = ['NEONATAL', 'INFANT', 'EARLY_CHILDHOOD', 'CHILD', 'ADOLESCENT'];
   for (let i = 0; i < labels.length; i++) {
     const response = page.waitForResponse(response => new URL(response.url()).pathname.endsWith('/patients') && new URL(response.url()).searchParams.get('filter') === filters[i]);
     await page.getByRole('button', { name: labels[i], exact: true }).click();
     assert.equal((await response).status(), 200);
-    const row = page.locator('app-patient-list .patient-row');
+    const row = page.locator('app-patient-list .patient-row:visible');
     await row.filter({ hasText: patientFixtures[i].fullName }).waitFor();
     assert.equal(await row.count(), 1, `${filters[i]} must display only its own category`);
-    assert.equal(await page.getByText('Paciente ficticio de dos años', { exact: true }).count(), filters[i] === 'EARLY_CHILDHOOD' ? 1 : 0);
+    assert.equal(await page.getByText('Paciente ficticio de dos años', { exact: true }).filter({ visible: true }).count(), filters[i] === 'EARLY_CHILDHOOD' ? 1 : 0);
     assert.equal(await page.locator('app-patient-list [role="alert"]').count(), 0);
   }
   await page.getByRole('button', { name: labels[2], exact: true }).click();
-  await page.getByText('Paciente ficticio de dos años', { exact: true }).waitFor();
+  await page.getByText('Paciente ficticio de dos años', { exact: true }).filter({ visible: true }).waitFor();
   await page.reload();
-  await page.getByText('Paciente ficticio de dos años', { exact: true }).waitFor();
+  await page.getByText('Paciente ficticio de dos años', { exact: true }).filter({ visible: true }).waitFor();
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 850 });
     // Resizing starts the existing sidebar width animation; measure settled layout.
-    await page.waitForFunction(expected => Math.abs(document.querySelector('.sidebar-container').getBoundingClientRect().width - expected) < 1, width <= 768 ? 68 : 248);
+    await page.waitForFunction(expected => Math.abs(document.querySelector('.sidebar-container').getBoundingClientRect().width - expected) < 1, width <= 768 ? width : 248);
     for (const label of labels) {
       const box = await page.getByRole('button', { name: label, exact: true }).boundingBox();
       assert.ok(box && box.x >= 0 && box.x + box.width <= width + 1, `${label} exceeds viewport ${width}`);

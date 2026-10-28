@@ -46,9 +46,9 @@ try {
   await page.locator('#login-email').waitFor();
   await page.getByRole('link', { name: '← Volver a DoctorChart' }).click();
   await page.getByRole('heading', { level: 1 }).waitFor();
-  await page.goto(`${base}/pacientes/42`);
+  await page.goto(`${base}/patients/42`);
   await page.waitForURL('**/login?returnUrl=*');
-  assert.equal(new URL(page.url()).searchParams.get('returnUrl'), '/pacientes/42');
+  assert.equal(new URL(page.url()).searchParams.get('returnUrl'), '/patients/42');
   await page.locator('#login-email').waitFor();
   assert.deepEqual(errors, []);
   console.log(
