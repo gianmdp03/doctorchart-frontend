@@ -218,6 +218,32 @@ describe('DashboardComponent', () => {
     expect(component.quickNotes()).toBe('Mis notas guardadas');
     expect(component.isNotesDirty()).toBe(false);
   });
+  it('keeps the save action for edits typed while an earlier save is pending', async () => {
+    let finish!:()=>void;
+    workspaceStoreMock.updateQuickNotes.mockImplementation(()=>new Promise<void>(resolve=>finish=resolve));
+    component.onNotesInput('primera versión'); fixture.detectChanges();
+    fixture.nativeElement.querySelector('.save-notes-button').click();
+    component.onNotesInput('segunda versión');
+    finish(); await fixture.whenStable(); fixture.detectChanges();
+    expect(component.isNotesDirty()).toBe(true);
+    expect(component.isNotesSaved()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.save-notes-button')).toBeTruthy();
+    expect(workspaceStoreMock.updateQuickNotes).toHaveBeenCalledWith('primera versión');
+  });
+  it('shows a failed notes save in the document and permits a successful retry', async () => {
+    workspaceStoreMock.updateQuickNotes.mockRejectedValueOnce(new Error('offline'));
+    component.onNotesInput('borrador conservado'); fixture.detectChanges();
+    fixture.nativeElement.querySelector('.save-notes-button').click();
+    await fixture.whenStable(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.notes-widget-body [role="alert"]').textContent).toContain('No pudimos confirmar');
+    expect(component.quickNotes()).toBe('borrador conservado');
+    expect(component.isNotesDirty()).toBe(true);
+    expect(fixture.nativeElement.querySelector('.save-notes-button').disabled).toBe(false);
+    fixture.nativeElement.querySelector('.save-notes-button').click();
+    await fixture.whenStable(); fixture.detectChanges();
+    expect(component.isNotesSaved()).toBe(true);
+    expect(component.notesError()).toBeNull();
+  });
 
   it('should mark notes as dirty when typing and save to backend', async () => {
     component.onNotesInput('Nueva nota importante');

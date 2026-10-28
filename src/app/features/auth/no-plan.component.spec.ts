@@ -8,7 +8,7 @@ describe('No plan account screen', () => {
  let component: NoPlanComponent;
  let navigate: ReturnType<typeof vi.spyOn>;
  beforeEach(() => {
-  vi.clearAllMocks(); auth.refreshPlan.mockResolvedValue(undefined); auth.hasDoctorchartPlan.mockReturnValue(false);
+  vi.clearAllMocks(); auth.signOut.mockResolvedValue({ error: null }); auth.refreshPlan.mockResolvedValue(undefined); auth.hasDoctorchartPlan.mockReturnValue(false);
   TestBed.configureTestingModule({imports:[NoPlanComponent],providers:[provideRouter([]),{provide:AuthService,useValue:auth},
    {provide:ActivatedRoute,useValue:{snapshot:{queryParamMap:convertToParamMap({returnUrl:'/patients/42'})}}}]});
   navigate=vi.spyOn(TestBed.inject(Router),'navigateByUrl').mockResolvedValue(true);
@@ -48,5 +48,16 @@ describe('No plan account screen', () => {
  });
  it('allows signing out and returning to login', async () => {
   await component.signOut(); expect(auth.signOut).toHaveBeenCalledOnce(); expect(navigate).toHaveBeenCalledWith('/login');
+ });
+ it('keeps the page when clicking logout returns an Auth error and allows retry', async () => {
+  const fixture=TestBed.createComponent(NoPlanComponent); fixture.detectChanges();
+  auth.signOut.mockResolvedValue({error:new Error('offline')});
+  fixture.nativeElement.querySelector('button.logout').click(); await fixture.whenStable(); fixture.detectChanges();
+  expect(navigate).not.toHaveBeenCalled();
+  expect(fixture.componentInstance.message()).toContain('No pudimos cerrar');
+  expect(fixture.nativeElement.querySelector('button.logout').disabled).toBe(false);
+  auth.signOut.mockResolvedValue({error:null});
+  fixture.nativeElement.querySelector('button.logout').click(); await fixture.whenStable();
+  expect(navigate).toHaveBeenCalledWith('/login');
  });
 });

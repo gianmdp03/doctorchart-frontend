@@ -71,7 +71,7 @@ export class NoPlanComponent {
   async signOut(): Promise<void> {
     if (this.busy()) return;
     this.busy.set(true);
-    try { await this.auth.signOut(); await this.router.navigateByUrl('/login'); }
+    try { const result = await this.auth.signOut(); if (result.error) throw result.error; await this.router.navigateByUrl('/login'); }
     catch { this.message.set('No pudimos cerrar la sesión. Volvé a intentar.'); }
     finally { this.busy.set(false); }
   }

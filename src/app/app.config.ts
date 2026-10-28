@@ -25,6 +25,7 @@ import {
 } from '@ng-icons/lucide';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { SelectivePreloadingStrategy } from './core/strategies/selective-preloading.strategy';
+import { interactionInterceptor } from './core/interceptors/interaction.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -33,7 +34,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withPreloading(SelectivePreloadingStrategy)),
     provideClientHydration(),
     provideAnimationsAsync(),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor, timeZoneInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([interactionInterceptor, authInterceptor, timeZoneInterceptor])),
     provideIcons({
       lucideLayoutDashboard,
       lucideUsers,

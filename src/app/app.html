@@ -1,3 +1,4 @@
+<app-interaction-status />
 @for (sessionKey of sessionKeys(); track sessionKey) {
   @if (isPublicPage() && !authService.isLoggedIn()) {
     <router-outlet />

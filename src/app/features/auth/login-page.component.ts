@@ -79,6 +79,7 @@ export class LoginPageComponent {
   }
 
   async onLoginSubmit(): Promise<void> {
+    if (this.isSubmitting()) return;
     this.loginAttempted.set(true);
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();

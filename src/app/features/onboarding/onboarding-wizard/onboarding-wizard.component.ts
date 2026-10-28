@@ -186,9 +186,14 @@ export class OnboardingWizardComponent implements OnInit {
   async handleSignOut(): Promise<void> {
     if (this.editorReadonly()) return;
     if (!await this.saveDraft(this.activeStepKey())) return;
-    this.doctorProfileService.clearProfile();
-    await this.authService.signOut();
-    this.workspaceStore.clearSetup();
+    this.isSaving.set(true);
+    try {
+      const result = await this.authService.signOut();
+      if (result.error) throw result.error;
+      this.doctorProfileService.clearProfile();
+      this.workspaceStore.clearSetup();
+    } catch { this.errorMessage.set('No pudimos cerrar la sesión. Tu borrador se conserva. Reintentá.'); }
+    finally { this.isSaving.set(false); }
   }
 
   async reviewServerCopy(): Promise<void> {

@@ -407,6 +407,7 @@
           }
         </div>
         <div class="notes-widget-body">
+          @if (notesError()) { <p role="alert">{{ notesError() }}</p> }
           <textarea
             class="notes-textarea"
             placeholder="Escribí recordatorios rápidos o pendientes..."

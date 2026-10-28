@@ -172,6 +172,7 @@ export class DashboardComponent implements OnInit {
   readonly isNotesDirty = signal<boolean>(false);
   readonly isSavingNotes = signal<boolean>(false);
   readonly isNotesSaved = signal<boolean>(false);
+  readonly notesError = signal<string | null>(null);
 
   readonly todayDateString = computed(() =>
     new Date(this.clock.now()).toLocaleDateString('es-AR', {
@@ -439,10 +440,15 @@ export class DashboardComponent implements OnInit {
 
     this.isSavingNotes.set(true);
     this.isNotesSaved.set(false);
+    this.notesError.set(null);
+    const submitted = this.quickNotes();
     try {
-      await this.workspaceStore.updateQuickNotes(this.quickNotes());
-      this.isNotesDirty.set(false);
-      this.isNotesSaved.set(true);
+      await this.workspaceStore.updateQuickNotes(submitted);
+      const unchanged = this.quickNotes() === submitted;
+      this.isNotesDirty.set(!unchanged);
+      this.isNotesSaved.set(unchanged);
+    } catch {
+      this.notesError.set('No pudimos confirmar el guardado. Tus notas se conservan; revisá el estado antes de volver a guardar.');
     } finally {
       this.isSavingNotes.set(false);
     }

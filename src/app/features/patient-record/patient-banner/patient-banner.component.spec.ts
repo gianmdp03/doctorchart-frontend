@@ -132,7 +132,7 @@ describe('PatientBannerComponent', () => {
     component.patient = mockPatient;
     fixture.detectChanges();
     component.goToCurves();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/curvas']);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/patients', mockPatient.id], { queryParams: { tab: 'growth' } });
   });
   it('should create the patient banner', () => {
     expect(component).toBeTruthy();
@@ -164,11 +164,11 @@ describe('PatientBannerComponent', () => {
     expect(curvesSpy).toHaveBeenCalled();
   });
 
-  it('should navigate to /curvas when viewCurves has no listeners', () => {
+  it('opens the patient growth tab when viewCurves has no listeners', () => {
     const unobservedComponent = TestBed.createComponent(PatientBannerComponent).componentInstance;
     unobservedComponent.patient = mockPatient;
 
     unobservedComponent.goToCurves();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/curvas']);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/patients', mockPatient.id], { queryParams: { tab: 'growth' } });
   });
 });

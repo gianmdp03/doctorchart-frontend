@@ -217,8 +217,8 @@ export class PatientBannerComponent {
     if (!this.recordActions.has('VIEW_GROWTH') || !this.isChild()) return;
     if (this.viewCurves.observed) {
       this.viewCurves.emit();
-    } else {
-      this.router.navigate(['/curvas']);
+    } else if (this.patient) {
+      this.router.navigate(['/patients', this.patient.id], { queryParams: { tab: 'growth' } });
     }
   }
 }

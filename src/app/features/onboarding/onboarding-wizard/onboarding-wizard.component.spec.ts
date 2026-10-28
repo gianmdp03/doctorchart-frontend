@@ -87,7 +87,7 @@ describe('OnboardingWizardComponent', () => {
         { provide: Router, useValue: { navigate } },
         { provide: WorkspaceStore, useValue: store },
         { provide: DoctorProfileService, useValue: { clearProfile: vi.fn() } },
-        { provide: AuthService, useValue: { signOut: vi.fn().mockResolvedValue(undefined) } },
+        { provide: AuthService, useValue: { signOut: vi.fn().mockResolvedValue({ error: null }) } },
       ],
     }).overrideComponent(OnboardingWizardComponent, {
       remove: { imports: [FormFieldEditorComponent] }, add: { imports: [TestFieldEditor] },
@@ -97,6 +97,15 @@ describe('OnboardingWizardComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
+  });
+  it('keeps the saved draft and clinical setup if logout returns an error', async () => {
+    vi.mocked(TestBed.inject(AuthService).signOut).mockResolvedValue({error:new Error('offline')});
+    fixture.nativeElement.querySelector('.signout-button').click(); await fixture.whenStable(); fixture.detectChanges();
+    expect(store.saveOnboardingDraft).toHaveBeenCalled();
+    expect(store.clearSetup).not.toHaveBeenCalled();
+    expect(TestBed.inject(DoctorProfileService).clearProfile).not.toHaveBeenCalled();
+    expect(component.errorMessage()).toContain('No pudimos cerrar');
+    expect(component.isSaving()).toBe(false);
   });
 
   function completed(): void {

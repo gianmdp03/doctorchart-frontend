@@ -32,7 +32,7 @@ describe('SpecialtySelectionComponent', () => {
         { provide: SpecialtyService, useValue: specialties },
         { provide: WorkspaceStore, useValue: workspace },
         { provide: DoctorProfileService, useValue: { clearProfile: vi.fn() } },
-        { provide: AuthService, useValue: { signOut: vi.fn().mockResolvedValue(undefined) } },
+        { provide: AuthService, useValue: { signOut: vi.fn().mockResolvedValue({ error: null }) } },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(SpecialtySelectionComponent);
@@ -41,6 +41,14 @@ describe('SpecialtySelectionComponent', () => {
     await vi.waitFor(() => expect(component.isLoading()).toBe(false));
     await fixture.whenStable();
     fixture.detectChanges();
+  });
+  it('retains the configuration and releases logout when Auth returns an error', async () => {
+    vi.mocked(TestBed.inject(AuthService).signOut).mockResolvedValue({error:new Error('offline')});
+    fixture.nativeElement.querySelector('.btn-signout-onboarding').click(); await fixture.whenStable(); fixture.detectChanges();
+    expect(workspace.clearSetup).not.toHaveBeenCalled();
+    expect(TestBed.inject(DoctorProfileService).clearProfile).not.toHaveBeenCalled();
+    expect(component.errorMessage()).toContain('No pudimos cerrar');
+    expect(component.isSubmitting()).toBe(false);
   });
 
   it('preselects the only backend option by count even with an unfamiliar identity', () => {

@@ -6,11 +6,12 @@ import { AuthService } from './core/services/auth.service';
 import { ThemeService } from './core/services/theme.service';
 import { ScrollToTopComponent } from './components/scroll-to-top/scroll-to-top.component';
 import { PrivateShellComponent } from './layout/private-shell/private-shell.component';
+import { InteractionStatusComponent } from './components/interaction-status.component';
 
 // The prerendered root is anonymous; a restored browser session can select a
 // different layout before hydration claims its views. Recreate this boundary
 // instead of leaving unclaimed public DOM alongside the private workspace.
-@Component({ selector: 'app-root', host: { ngSkipHydration: 'true' }, imports: [RouterOutlet, ScrollToTopComponent, PrivateShellComponent], templateUrl: './app.html', styleUrl: './app.css' })
+@Component({ selector: 'app-root', host: { ngSkipHydration: 'true' }, imports: [RouterOutlet, ScrollToTopComponent, PrivateShellComponent, InteractionStatusComponent], templateUrl: './app.html', styleUrl: './app.css' })
 export class App {
   private readonly theme = inject(ThemeService);
   readonly authService = inject(AuthService);

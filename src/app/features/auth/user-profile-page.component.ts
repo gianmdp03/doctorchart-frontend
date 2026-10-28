@@ -69,14 +69,14 @@ export class UserProfilePageComponent {
     this.errorMessage.set(null);
 
     try {
-      this.activePatientService.clear();
-      this.doctorProfileService.clearProfile();
       const { error } = await this.authService.signOut();
       if (error) {
         this.errorMessage.set(error.message || 'Error al cerrar sesión.');
         this.isSubmitting.set(false);
         return;
       }
+      this.activePatientService.clear();
+      this.doctorProfileService.clearProfile();
 
       if (isPlatformBrowser(this.platformId)) {
         window.dispatchEvent(new CustomEvent('auth-signout'));

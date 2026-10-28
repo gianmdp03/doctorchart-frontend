@@ -88,9 +88,14 @@ export class SpecialtySelectionComponent implements OnInit {
 
   async handleSignOut(): Promise<void> {
     if (this.isSubmitting()) return;
-    this.doctorProfileService.clearProfile();
-    await this.authService.signOut();
-    this.workspaceStore.clearSetup();
+    this.isSubmitting.set(true);
+    try {
+      const result = await this.authService.signOut();
+      if (result.error) throw result.error;
+      this.doctorProfileService.clearProfile();
+      this.workspaceStore.clearSetup();
+    } catch { this.errorMessage.set('No pudimos cerrar la sesión. Tu configuración se conserva. Reintentá.'); }
+    finally { this.isSubmitting.set(false); }
   }
 
   private errorText(error: unknown, fallback: string): string {

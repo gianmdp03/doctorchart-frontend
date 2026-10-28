@@ -29,6 +29,25 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     expect(fixture.nativeElement.querySelectorAll('.field-card')).toHaveLength(4);
     expect(fixture.nativeElement.querySelector('input[type=date]')).toBeNull();
   });
+  it('adds a category and field through their actual buttons, then cancels a local edit', () => {
+    load({ categories: [] });
+    const click = (label: string) => {
+      const button=(Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[]).find(item=>item.textContent?.trim()===label);
+      expect(button, label).toBeTruthy(); button!.click(); fixture.detectChanges();
+    };
+    component.newCategoryTitle.set('Categoría de ensayo');
+    click('Agregar categoría');
+    expect(component.categories()).toHaveLength(1);
+    click('Agregar campo');
+    component.updateDraft({ label: 'Campo de ensayo', type: 'TEXT' }); fixture.detectChanges();
+    click('Aplicar campo');
+    expect(component.categories()[0].fields[0].label).toBe('Campo de ensayo');
+    click('Editar');
+    component.updateDraft({ label: 'Cambio descartado' });
+    click('Cancelar');
+    expect(component.categories()[0].fields[0].label).toBe('Campo de ensayo');
+    expect(component.fieldDraft()).toBeNull();
+  });
   it('adds an optional documented measurement position without changing existing clinical fields', () => {
     load({ categories: [{ key: 'measurements', title: 'Mediciones', enabled: true, fields: [{ key: 'heightCm', label: 'Talla', type: 'NUMBER', required: false }] }] });
     const before = structuredClone(component.allFields()[0]);

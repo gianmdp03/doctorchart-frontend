@@ -53,4 +53,12 @@ describe('UserProfilePageComponent', () => {
     signOut.mockRejectedValue(new Error('Error de red'));
     await fixture.componentInstance.handleSignOut(); expect(fixture.componentInstance.errorMessage()).toBe('Error de red');
   });
+  it('does not clear the active clinical context when logout fails', async () => {
+    const fixture = await prepare(); signOut.mockResolvedValue({error:new Error('offline')});
+    const buttons=Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    buttons.find(button=>button.textContent?.includes('Cerrar sesión'))!.click();
+    await fixture.whenStable();
+    expect(TestBed.inject(ActivePatientService).clear).not.toHaveBeenCalled();
+    expect(TestBed.inject(DoctorProfileService).clearProfile).not.toHaveBeenCalled();
+  });
 });

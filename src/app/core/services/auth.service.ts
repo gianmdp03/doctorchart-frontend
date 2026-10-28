@@ -11,6 +11,8 @@ import {
   User,
 } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
+import { InteractionStatusService } from './interaction-status.service';
+import { createAuthFetch } from './auth-fetch';
 
 export const SUPABASE_CLIENT = new InjectionToken<SupabaseClient | null>('SUPABASE_CLIENT');
 
@@ -40,6 +42,7 @@ export interface DoctorChartModuleInfo {
   providedIn: 'root',
 })
 export class AuthService {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private readonly destroyRef = inject(DestroyRef);
@@ -177,6 +180,7 @@ export class AuthService {
 
     if (!this.supabaseClient && this.isBrowser) {
       this.supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { fetch: createAuthFetch() },
         auth: {
           persistSession: true,
           autoRefreshToken: true,
@@ -222,15 +226,20 @@ export class AuthService {
     }
 
     let revision = 0;
+    let finishInitialEvent!: (value: { data: { session: Session | null }; error: null }) => void;
+    const initialEvent = new Promise<{ data: { session: Session | null }; error: null }>(resolve => { finishInitialEvent = resolve; });
     this.authSubscription = this.supabaseClient.auth.onAuthStateChange((_event, session) => {
       revision++;
       if (this.destroyed) return;
       this.session.set(session);
       this.currentUser.set(session?.user ?? null);
+      this.isAuthInitialized.set(true);
+      this.authReadyResolver?.();
+      finishInitialEvent({ data: { session }, error: null });
     }).data.subscription;
     const initialRevision = revision;
     try {
-      const { data, error } = await this.supabaseClient.auth.getSession();
+      const { data, error } = await this.interaction.wait(Promise.race([this.supabaseClient.auth.getSession(), initialEvent]));
       if (this.destroyed || revision !== initialRevision) return;
       if (error) {
         console.warn('[DoctorChart AuthService] Error getting initial session:', error);
@@ -254,7 +263,7 @@ export class AuthService {
     if (!this.supabaseClient) {
       throw new Error('Supabase client is not available in this environment.');
     }
-    const response = await this.supabaseClient.auth.signInWithPassword(credentials);
+    const response = await this.interaction.wait(this.supabaseClient.auth.signInWithPassword(credentials));
     if (response.data?.session) {
       this.session.set(response.data.session);
       this.currentUser.set(response.data.user);
@@ -298,7 +307,7 @@ export class AuthService {
   async refreshPlan(): Promise<void> {
     const identity = this.currentUser()?.id;
     if (!this.supabaseClient || !identity) throw new Error('No hay una sesión activa.');
-    const { data, error } = await this.supabaseClient.auth.refreshSession();
+    const { data, error } = await this.interaction.wait(this.supabaseClient.auth.refreshSession());
     if (error || !data.session) throw new Error('No pudimos actualizar tu plan. Reintentá en unos momentos.');
     if (this.currentUser()?.id !== identity) throw new Error('La sesión cambió. Volvé a iniciar sesión.');
     this.session.set(data.session);
@@ -309,10 +318,12 @@ export class AuthService {
     if (!this.supabaseClient) {
       return { error: null };
     }
-    const { error } = await this.supabaseClient.auth.signOut();
-    this.session.set(null);
-    this.currentUser.set(null);
-    return { error };
+    try {
+      const { error } = await this.interaction.wait(this.supabaseClient.auth.signOut());
+      if (!error) { this.session.set(null); this.currentUser.set(null); }
+      else this.interaction.error.set('No pudimos confirmar el cierre de sesión. Reintentá.');
+      return { error };
+    } catch (error) { return { error: error instanceof Error ? error : new Error('No pudimos cerrar la sesión.') }; }
   }
 
   getAccessToken(): string | null {

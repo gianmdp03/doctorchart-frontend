@@ -43,6 +43,39 @@ describe('AuthService', () => {
   });
 
   describe('Initial State & Signals', () => {
+    it('releases guards when the SDK announces a session while getSession is stalled', async () => {
+      TestBed.resetTestingModule();
+      mockAuth.getSession.mockReturnValue(new Promise(() => undefined));
+      TestBed.configureTestingModule({ providers: [AuthService,
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: SUPABASE_CLIENT, useValue: mockSupabaseClient },
+      ] });
+      service = TestBed.inject(AuthService);
+      const callback = mockAuth.onAuthStateChange.mock.calls.at(-1)![0];
+      const user = { id: 'fixture', app_metadata: {}, user_metadata: {} } as User;
+      callback('INITIAL_SESSION', { user, access_token: 'fixture' });
+      await service.authReady;
+      expect(service.isAuthInitialized()).toBe(true);
+      expect(service.currentUser()?.id).toBe('fixture');
+    });
+
+    it('finishes session initialization with no access when the SDK never answers', async () => {
+      TestBed.resetTestingModule();
+      vi.useFakeTimers();
+      try {
+        mockAuth.getSession.mockReturnValue(new Promise(() => undefined));
+        TestBed.configureTestingModule({ providers: [AuthService,
+          { provide: PLATFORM_ID, useValue: 'browser' },
+          { provide: SUPABASE_CLIENT, useValue: mockSupabaseClient },
+        ] });
+        service = TestBed.inject(AuthService);
+        await vi.advanceTimersByTimeAsync(15001);
+        await service.authReady;
+        expect(service.isAuthInitialized()).toBe(true);
+        expect(service.isLoggedIn()).toBe(false);
+      } finally { vi.useRealTimers(); }
+    });
+
     it('should initialize with default null values for session and user', () => {
       expect(service.currentUser()).toBeNull();
       expect(service.session()).toBeNull();
