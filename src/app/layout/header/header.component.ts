@@ -33,10 +33,12 @@ import { DoctorProfileService } from '../../core/services/doctor-profile.service
 import { AccessibilityService } from '../../core/services/accessibility.service';
 import { PatientListDTO } from '../../core/models/patient.model';
 import { environment } from '../../../environments/environment';
+import { BycodeAvatarComponent } from '../../shared/components/bycode-avatar/bycode-avatar';
+import { BycodeAccountService } from '../../core/services/bycode-account.service';
 
 @Component({
   selector: 'app-header',
-  imports: [NgIcon, ThemeToggleComponent],
+  imports: [NgIcon, ThemeToggleComponent, BycodeAvatarComponent],
   providers: [
     provideIcons({
       lucideSearch,
@@ -55,6 +57,7 @@ import { environment } from '../../../environments/environment';
   styleUrl: './header.component.css',
 })
 export class HeaderComponent implements OnDestroy {
+  readonly bycodeAccount = inject(BycodeAccountService);
   readonly authService = inject(AuthService);
   readonly activePatientService = inject(ActivePatientService);
   private readonly patientService = inject(PatientService);

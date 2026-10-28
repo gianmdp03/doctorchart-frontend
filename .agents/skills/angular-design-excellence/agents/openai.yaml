@@ -1,0 +1,4 @@
+interface:
+  display_name: "Angular Design Excellence"
+  short_description: "Diseño Angular con criterio visual propio"
+  default_prompt: "Usá $angular-design-excellence para mejorar esta interfaz Angular, conservando funcionalidad y elevando la calidad visual."

@@ -65,3 +65,8 @@ src/environments/environment.local.generated.ts
 # Isolated production-build verification
 /.angular/production-check/
 /.angular/local-environment-backup.ts
+
+/.angular/bycode-avatar-review/
+/.angular/
+/.angular/bycode-avatar-build.log
+/.angular/bycode-avatar-tests.log

@@ -5,6 +5,8 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_verification_only
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -12,8 +14,16 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Prepare isolated test configuration
+        run: |
+          node --input-type=module <<'NODE'
+          import {writeFileSync} from 'node:fs';
+          import site from './src/app/core/config/site.config.json' with {type:'json'};
+          import {environmentSource} from './scripts/frontend-config.mjs';
+          const fixture={...site,publicSiteUrl:'https://bycode.fixture.test',apiGatewayOrigin:'https://api.fixture.test',applicationUrls:{bycode:'https://bycode.fixture.test',pointly:'https://pointly.fixture.test',doctorchart:'https://doctorchart.fixture.test'},supabase:{url:'https://auth.fixture.test',publishableKey:process.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY}};
+          writeFileSync('src/environments/environment.local.generated.ts',environmentSource(fixture,'doctorchart',false));
+          NODE
       - run: npm test -- --watch=false
       - run: npm run build
       - run: npm run test:seo
-      - run: npm run test:static
-      - run: npm run test:config
+      - run: node --test scripts/*.test.mjs

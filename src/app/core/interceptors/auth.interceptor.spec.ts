@@ -58,4 +58,16 @@ describe('authInterceptor gateway boundary', () => {
     expect(intercept('https://example.test/data', 'test-session-token').headers.has('Authorization')).toBe(false);
     expect(intercept(`${environment.apiUrl}-untrusted/workspace`, 'test-session-token').headers.has('Authorization')).toBe(false);
   });
+
+  it('allows only the two exact read operations for the shared Bycode profile', () => {
+    const account = new URL('/api/billing/account', environment.apiUrl).href;
+    for (const path of ['/profile', '/avatar', '/profile?timeZone=America/Buenos_Aires', '/avatar?timeZone=America/Buenos_Aires']) {
+      const request = intercept(account + path, 'test-session-token');
+      expect(request.headers.get('Authorization')).toBe('Bearer test-session-token');
+      expect(request.transferCache).toBe(false);
+    }
+    for (const path of ['/avatar/other', '/profile-untrusted', '/other']) {
+      expect(intercept(account + path, 'test-session-token').headers.has('Authorization')).toBe(false);
+    }
+  });
 });

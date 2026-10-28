@@ -602,3 +602,4 @@
 }
 
 @media (max-width: 768px) { :host { z-index: 50; } }
+@media (max-width:768px){.profile-avatar-btn app-bycode-avatar{--avatar-size:30px}}

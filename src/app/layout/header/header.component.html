@@ -37,16 +37,16 @@
         type="button"
         class="profile-avatar-btn"
         (click)="toggleProfileMenu($event)"
-        [title]="authService.userName() || 'Perfil Médico'"
+        [title]="bycodeAccount.name() || 'Mi cuenta'"
       >
-        <span class="avatar-circle">{{ clinicianInitials() }}</span>
+        <app-bycode-avatar />
         <span class="online-indicator"></span>
       </button>
 
       @if (isProfileMenuOpen()) {
         <div class="profile-dropdown-menu" (click)="$event.stopPropagation()">
           <div class="profile-dropdown-header">
-            <span class="user-fullname">{{ authService.userName() || 'Profesional Médico' }}</span>
+            <span class="user-fullname">{{ bycodeAccount.name() || 'Mi cuenta' }}</span>
             <span class="user-email">{{ authService.userEmail() }}</span>
             @if (planBadgeLabel()) {
               <span class="user-plan-pill">{{ planBadgeLabel() }}</span>
@@ -54,6 +54,8 @@
           </div>
 
           <div class="profile-menu-divider"></div>
+
+          <a [href]="bycodeAccount.editUrl" class="dropdown-action-item" target="_blank" rel="noopener noreferrer"><ng-icon name="lucideUser" class="menu-action-icon"/><span>Editar perfil en Bycode</span></a>
 
           @if (!authService.isSuperAdmin()) {
           <a

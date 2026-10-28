@@ -7,7 +7,14 @@ import { environment } from '../../../environments/environment';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const base = environment.apiUrl.replace(/\/$/, '');
   const isClinicalApi = req.url === base || req.url.startsWith(`${base}/`) || req.url.startsWith(`${base}?`);
-  if (!isClinicalApi && req.url !== environment.aiGatewayUrl) {
+  const accountBase = new URL('/api/billing/account', environment.apiUrl);
+  let isAccountRead = false;
+  try {
+    const target = new URL(req.url);
+    isAccountRead = req.method === 'GET' && target.origin === accountBase.origin && !target.username && !target.password &&
+      (target.pathname === accountBase.pathname + '/profile' || target.pathname === accountBase.pathname + '/avatar');
+  } catch { /* Unrecognized destinations never receive a session token. */ }
+  if (!isClinicalApi && !isAccountRead && req.url !== environment.aiGatewayUrl) {
     return next(req);
   }
   const token = inject(AuthService).getAccessToken();
