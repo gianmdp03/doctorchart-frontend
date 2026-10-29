@@ -1,9 +1,10 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { environment } from '../../../environments/environment';
+import { timeZoneInterceptor } from '../../core/interceptors/time-zone.interceptor';
 import {
   MOCK_CAPABILITIES_BY_SCENARIO,
   MOCK_CLINICS_FIXTURES,
@@ -13,9 +14,13 @@ import {
   canCreateClinic,
   canEditClinic,
   canTransitionClinicStatus,
+  describeCapabilityBanner,
+  formatQuotaSummary,
+  isCapabilityVerified,
   isValidCanonicalBigInt,
   isValidIanaTimezone,
   parseClinicHttpError,
+  validateIanaTimezone,
 } from './clinics.models';
 import { ClinicsService } from './clinics.service';
 
@@ -26,7 +31,11 @@ describe('ClinicsService HTTP contract & never-fallback behavior', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), ClinicsService],
+      providers: [
+        provideHttpClient(withInterceptors([timeZoneInterceptor])),
+        provideHttpClientTesting(),
+        ClinicsService,
+      ],
     });
     service = TestBed.inject(ClinicsService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -36,7 +45,7 @@ describe('ClinicsService HTTP contract & never-fallback behavior', () => {
     httpMock.verify();
   });
 
-  it('calls GET /clinics with page, size, and optional status filter', async () => {
+  it('calls GET /clinics with page, size, and optional status filter and never appends timeZone', async () => {
     const promise = firstValueFrom(
       service.listClinics({ page: 1, size: 10, status: 'INACTIVE' }),
     );
@@ -46,8 +55,10 @@ describe('ClinicsService HTTP contract & never-fallback behavior', () => {
         r.url === baseUrl &&
         r.params.get('page') === '1' &&
         r.params.get('size') === '10' &&
-        r.params.get('status') === 'INACTIVE',
+        r.params.get('status') === 'INACTIVE' &&
+        !r.params.has('timeZone'),
     );
+    expect(req.request.params.keys()).toEqual(['page', 'size', 'status']);
     req.flush({
       items: [MOCK_CLINICS_FIXTURES[1]],
       page: 1,
@@ -141,23 +152,73 @@ describe('ClinicsService HTTP contract & never-fallback behavior', () => {
   });
 });
 
-describe('Contract validation & MockClinicsBackend rules (M2-CLINICS-v0.1)', () => {
-  it('validates canonical IANA timezones and rejects Local, offsets, and abbreviations', () => {
-    expect(isValidIanaTimezone('America/Argentina/Buenos_Aires')).toBe(true);
-    expect(isValidIanaTimezone('America/Argentina/Cordoba')).toBe(true);
-    expect(isValidIanaTimezone('UTC')).toBe(true);
+describe('Contract validation & MockClinicsBackend rules (M2-CLINICS-v1)', () => {
+  it('validates the full M2-CLINICS-v1 IANA timezone matrix and rejects fixed offsets, Etc/*, and wrong casing', () => {
+    const accepted = [
+      'America/Argentina/Buenos_Aires',
+      'America/New_York',
+      'Europe/Madrid',
+      'Asia/Kolkata',
+      'Pacific/Auckland',
+      'America/Coyhaique',
+      'UTC',
+      ' UTC ',
+    ];
+    for (const tz of accepted) {
+      expect(validateIanaTimezone(tz)).toBeNull();
+      expect(isValidIanaTimezone(tz)).toBe(true);
+    }
 
-    expect(isValidIanaTimezone('')).toBe(false);
-    expect(isValidIanaTimezone('Local')).toBe(false);
-    expect(isValidIanaTimezone('local')).toBe(false);
-    expect(isValidIanaTimezone('ART')).toBe(false);
-    expect(isValidIanaTimezone('GMT-3')).toBe(false);
-    expect(isValidIanaTimezone('UTC-3')).toBe(false);
-    expect(isValidIanaTimezone('-03:00')).toBe(false);
-    expect(isValidIanaTimezone('Etc/GMT+3')).toBe(false);
-    expect(isValidIanaTimezone('posix/America/Buenos_Aires')).toBe(false);
-    expect(isValidIanaTimezone('right/UTC')).toBe(false);
-    expect(isValidIanaTimezone('America/Ciudad_Inexistente_XYZ')).toBe(false);
+    const rejectedInvalidTimezone = [
+      'Local',
+      'GMT',
+      'ART',
+      'EST',
+      '+03:00',
+      'UTC-3',
+      'posix/America/New_York',
+      'right/America/New_York',
+      'Mars/Olympus',
+      'Etc/GMT+3',
+      'Etc/GMT-3',
+      'Etc/UTC',
+      'Etc/GMT',
+      'america/argentina/buenos_aires',
+      'AMERICA/ARGENTINA/BUENOS_AIRES',
+      'utc',
+    ];
+    for (const tz of rejectedInvalidTimezone) {
+      expect(validateIanaTimezone(tz)).toBe('INVALID_TIMEZONE');
+      expect(isValidIanaTimezone(tz)).toBe(false);
+    }
+
+    expect(validateIanaTimezone('')).toBe('REQUIRED');
+    expect(validateIanaTimezone('   ')).toBe('REQUIRED');
+  });
+
+  it('rejects expired or incomplete VERIFIED entitlements and disables all write actions', () => {
+    const baseVerified = structuredClone(MOCK_CAPABILITIES_BY_SCENARIO.VERIFIED);
+    baseVerified.entitlements.validUntil = '2026-05-01T00:00:00Z';
+
+    const beforeExpiryMs = Date.parse('2026-04-30T23:59:59Z');
+    const atExpiryMs = Date.parse('2026-05-01T00:00:00Z');
+    const afterExpiryMs = Date.parse('2026-05-01T00:00:01Z');
+
+    expect(isCapabilityVerified(baseVerified, beforeExpiryMs)).toBe(true);
+    expect(canCreateClinic(baseVerified, beforeExpiryMs)).toBe(true);
+    expect(canEditClinic({ status: 'ACTIVE' }, baseVerified, beforeExpiryMs)).toBe(true);
+
+    expect(isCapabilityVerified(baseVerified, atExpiryMs)).toBe(false);
+    expect(isCapabilityVerified(baseVerified, afterExpiryMs)).toBe(false);
+    expect(canCreateClinic(baseVerified, afterExpiryMs)).toBe(false);
+    expect(canEditClinic({ status: 'ACTIVE' }, baseVerified, afterExpiryMs)).toBe(false);
+    expect(canTransitionClinicStatus({ status: 'ACTIVE' }, 'INACTIVE', baseVerified, afterExpiryMs)).toBe(
+      false,
+    );
+    expect(describeCapabilityBanner(baseVerified, afterExpiryMs)?.showRetryButton).toBe(true);
+    expect(formatQuotaSummary(baseVerified, afterExpiryMs)).toContain(
+      'cupo comercial temporalmente no verificable',
+    );
   });
 
   it('validates canonical non-negative BIGINT strings for id and version', () => {

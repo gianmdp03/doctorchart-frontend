@@ -34,6 +34,7 @@ import {
 } from '@ng-icons/lucide';
 import { firstValueFrom, takeUntil } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../core/services/auth.service';
 import { AccountReadScope } from '../../core/services/account-read-scope';
 import {
   CLINIC_FIELD_LIMITS,
@@ -49,11 +50,15 @@ import {
   canCreateClinic,
   canEditClinic,
   canTransitionClinicStatus,
+  createUnavailableCapabilities,
   describeCapabilityBanner,
   fieldErrorMessage,
   formatClinicDate,
   formatClinicStatusLabel,
+  getCapabilityExpiryDelayMs,
+  invalidateCapabilitiesForError,
   isValidCanonicalBigInt,
+  normalizeCapabilities,
   parseClinicHttpError,
   validateClinicTextField,
   validateIanaTimezone,
@@ -103,8 +108,15 @@ export class ClinicFormPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly clinicsService = inject(ClinicsService);
+  private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly readScope = new AccountReadScope(() => this.resetOnAccountChange());
+
+  private contextGeneration = 0;
+  private mutationOperationId = 0;
+  private destroyed = false;
+  private capabilityExpiryTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly capabilityExpiryTick = signal(0);
 
   readonly limits = CLINIC_FIELD_LIMITS;
   readonly commonTimezones = COMMON_IANA_TIMEZONES;
@@ -117,6 +129,7 @@ export class ClinicFormPageComponent implements OnInit {
 
   readonly isLoading = signal(false);
   readonly isSubmitting = signal(false);
+  readonly isRetryingCapabilities = signal(false);
   readonly submissionAttempted = signal(false);
 
   readonly loadError = signal<string | null>(null);
@@ -136,28 +149,40 @@ export class ClinicFormPageComponent implements OnInit {
 
   readonly isArchived = computed(() => this.clinic()?.status === 'ARCHIVED');
 
-  readonly isAllowedByCapabilities = computed(() => {
-    const caps = this.capabilities();
-    if (this.isEditMode()) {
-      return canEditClinic(this.clinic(), caps);
-    }
-    return canCreateClinic(caps);
-  });
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.destroyed = true;
+      this.clearCapabilityExpiryTimer();
+      this.readScope.cancel();
+    });
+  }
 
-  readonly isReadOnly = computed(
-    () =>
+  isAllowedByCapabilities(): boolean {
+    this.capabilityExpiryTick();
+    const caps = this.capabilities();
+    const nowMs = Date.now();
+    if (this.isEditMode()) {
+      return canEditClinic(this.clinic(), caps, nowMs);
+    }
+    return canCreateClinic(caps, nowMs);
+  }
+
+  isReadOnly(): boolean {
+    return (
       this.isLoading() ||
       this.isSubmitting() ||
       this.versionConflict() ||
       this.isArchived() ||
-      !this.isAllowedByCapabilities(),
-  );
+      !this.isAllowedByCapabilities()
+    );
+  }
 
-  readonly capabilityBanner = computed<CapabilityBannerDescriptor | null>(() =>
-    describeCapabilityBanner(this.capabilities()),
-  );
+  capabilityBanner(): CapabilityBannerDescriptor | null {
+    this.capabilityExpiryTick();
+    return describeCapabilityBanner(this.capabilities(), Date.now());
+  }
 
-  readonly pageTitle = computed(() => {
+  pageTitle(): string {
     if (!this.isEditMode()) {
       return 'Nuevo Consultorio';
     }
@@ -168,7 +193,7 @@ export class ClinicFormPageComponent implements OnInit {
     return this.isArchived() || !this.isAllowedByCapabilities()
       ? `Detalle de Consultorio: ${current.name}`
       : `Editar Consultorio: ${current.name}`;
-  });
+  }
 
   ngOnInit(): void {
     const fields: ClinicEditableField[] = [
@@ -221,11 +246,61 @@ export class ClinicFormPageComponent implements OnInit {
     });
   }
 
+  private currentOwnerId(): string | null {
+    return this.auth.currentUser()?.id ?? null;
+  }
+
+  private clearCapabilityExpiryTimer(): void {
+    if (this.capabilityExpiryTimer !== null) {
+      clearTimeout(this.capabilityExpiryTimer);
+      this.capabilityExpiryTimer = null;
+    }
+  }
+
+  private setCapabilities(caps: ClinicCapabilities | null): void {
+    this.clearCapabilityExpiryTimer();
+    if (!caps) {
+      this.capabilities.set(null);
+      return;
+    }
+    const normalized = normalizeCapabilities(caps, Date.now());
+    this.capabilities.set(normalized);
+    const delayMs = getCapabilityExpiryDelayMs(normalized, Date.now());
+    if (delayMs !== null && normalized.entitlements.status === 'VERIFIED') {
+      this.capabilityExpiryTimer = setTimeout(() => {
+        this.capabilityExpiryTimer = null;
+        if (this.destroyed) return;
+        this.capabilityExpiryTick.update((v) => v + 1);
+        this.capabilities.set(createUnavailableCapabilities(this.capabilities()));
+      }, delayMs);
+    }
+  }
+
+  private isContextCurrent(
+    expectedGen: number,
+    expectedOwner: string | null,
+    expectedEditMode: boolean,
+    expectedClinicId: string | null,
+  ): boolean {
+    return (
+      !this.destroyed &&
+      this.readScope.authenticated() &&
+      this.currentOwnerId() === expectedOwner &&
+      this.contextGeneration === expectedGen &&
+      this.isEditMode() === expectedEditMode &&
+      this.clinicId() === expectedClinicId
+    );
+  }
+
   private resetOnAccountChange(): void {
+    this.contextGeneration += 1;
+    this.mutationOperationId += 1;
+    this.clearCapabilityExpiryTimer();
     this.clinic.set(null);
     this.capabilities.set(null);
     this.isLoading.set(false);
     this.isSubmitting.set(false);
+    this.isRetryingCapabilities.set(false);
     this.loadError.set(null);
     this.submitError.set(null);
     this.submitFeedback.set(null);
@@ -234,7 +309,16 @@ export class ClinicFormPageComponent implements OnInit {
   }
 
   async loadCapabilitiesOnly(): Promise<void> {
+    this.contextGeneration += 1;
+    this.mutationOperationId += 1;
+    this.isEditMode.set(false);
+    this.clinicId.set(null);
+    this.isSubmitting.set(false);
+    this.isRetryingCapabilities.set(false);
+
     if (!this.readScope.authenticated()) return;
+    const expectedGen = this.contextGeneration;
+    const expectedOwner = this.currentOwnerId();
     const active = this.readScope.begin();
     this.isLoading.set(true);
     this.loadError.set(null);
@@ -242,30 +326,47 @@ export class ClinicFormPageComponent implements OnInit {
       const caps = await firstValueFrom(
         this.clinicsService.getCapabilities().pipe(takeUntil(this.readScope.canceled)),
       );
-      if (!active()) return;
-      this.capabilities.set(caps);
+      if (!active() || !this.isContextCurrent(expectedGen, expectedOwner, false, null)) return;
+      this.setCapabilities(caps);
     } catch (error) {
-      if (!active()) return;
+      if (!active() || !this.isContextCurrent(expectedGen, expectedOwner, false, null)) return;
+      this.setCapabilities(createUnavailableCapabilities(this.capabilities()));
       const parsed = parseClinicHttpError(
         error,
         'No pudimos verificar los permisos comerciales para crear consultorios.',
       );
       this.loadError.set(parsed.userMessage);
     } finally {
-      if (active()) {
+      if (active() && this.isContextCurrent(expectedGen, expectedOwner, false, null)) {
         this.isLoading.set(false);
       }
     }
   }
 
   async loadForEdit(id: string): Promise<void> {
+    this.contextGeneration += 1;
+    this.mutationOperationId += 1;
+    this.isEditMode.set(true);
+    this.clinicId.set(id);
+    this.isSubmitting.set(false);
+    this.isRetryingCapabilities.set(false);
+    this.submissionAttempted.set(false);
+    this.submitError.set(null);
+    this.submitFeedback.set(null);
+    this.versionConflict.set(false);
+    this.serverFieldErrors.set({});
+
     if (!this.readScope.authenticated()) return;
     if (!isValidCanonicalBigInt(id, false)) {
+      this.readScope.cancel();
       this.clinic.set(null);
+      this.isLoading.set(false);
       this.loadError.set('El identificador del consultorio no tiene un formato válido.');
       return;
     }
 
+    const expectedGen = this.contextGeneration;
+    const expectedOwner = this.currentOwnerId();
     const active = this.readScope.begin();
     this.isLoading.set(true);
     this.loadError.set(null);
@@ -279,14 +380,19 @@ export class ClinicFormPageComponent implements OnInit {
           this.clinicsService.getClinic(id).pipe(takeUntil(this.readScope.canceled)),
         ),
       ]);
-      if (!active()) return;
+      if (!active() || !this.isContextCurrent(expectedGen, expectedOwner, true, id)) return;
 
       if (capsResult.status === 'fulfilled') {
-        this.capabilities.set(capsResult.value);
+        this.setCapabilities(capsResult.value);
+      } else {
+        this.setCapabilities(createUnavailableCapabilities(this.capabilities()));
       }
 
-      if (clinicResult.status === 'fulfilled') {
+      if (clinicResult.status === 'fulfilled' && clinicResult.value.id === id) {
         this.applyServerClinicToForm(clinicResult.value);
+      } else if (clinicResult.status === 'fulfilled') {
+        this.clinic.set(null);
+        this.loadError.set('La respuesta recibida no coincide con el consultorio solicitado.');
       } else {
         this.clinic.set(null);
         const parsed = parseClinicHttpError(
@@ -296,8 +402,45 @@ export class ClinicFormPageComponent implements OnInit {
         this.loadError.set(parsed.userMessage);
       }
     } finally {
-      if (active()) {
+      if (active() && this.isContextCurrent(expectedGen, expectedOwner, true, id)) {
         this.isLoading.set(false);
+      }
+    }
+  }
+
+  async retryCapabilities(): Promise<void> {
+    if (!this.readScope.authenticated() || this.isLoading() || this.isSubmitting() || this.isRetryingCapabilities()) {
+      return;
+    }
+    const expectedGen = this.contextGeneration;
+    const expectedOwner = this.currentOwnerId();
+    const expectedEditMode = this.isEditMode();
+    const expectedClinicId = this.clinicId();
+
+    this.isRetryingCapabilities.set(true);
+    this.submitError.set(null);
+    try {
+      const caps = await firstValueFrom(
+        this.clinicsService.getCapabilities().pipe(takeUntil(this.readScope.canceled)),
+      );
+      if (!this.isContextCurrent(expectedGen, expectedOwner, expectedEditMode, expectedClinicId)) {
+        return;
+      }
+      this.setCapabilities(caps);
+      this.loadError.set(null);
+    } catch (error) {
+      if (!this.isContextCurrent(expectedGen, expectedOwner, expectedEditMode, expectedClinicId)) {
+        return;
+      }
+      this.setCapabilities(createUnavailableCapabilities(this.capabilities()));
+      const parsed = parseClinicHttpError(
+        error,
+        'No pudimos verificar los permisos comerciales en este momento.',
+      );
+      this.submitError.set(parsed.userMessage);
+    } finally {
+      if (this.isContextCurrent(expectedGen, expectedOwner, expectedEditMode, expectedClinicId)) {
+        this.isRetryingCapabilities.set(false);
       }
     }
   }
@@ -341,10 +484,11 @@ export class ClinicFormPageComponent implements OnInit {
   }
 
   canTransition(targetStatus: ClinicStatus): boolean {
+    this.capabilityExpiryTick();
     if (this.isSubmitting() || this.isLoading()) {
       return false;
     }
-    return canTransitionClinicStatus(this.clinic(), targetStatus, this.capabilities());
+    return canTransitionClinicStatus(this.clinic(), targetStatus, this.capabilities(), Date.now());
   }
 
   statusLabel(status: ClinicStatus): string {
@@ -369,11 +513,26 @@ export class ClinicFormPageComponent implements OnInit {
       return;
     }
 
+    const opGen = this.contextGeneration;
+    const opOwner = this.currentOwnerId();
+    const opEditMode = this.isEditMode();
+    const current = this.clinic();
+    if (opEditMode && (!current || current.id !== this.clinicId())) {
+      return;
+    }
+    const opClinicId = opEditMode ? current!.id : null;
+    const opMutationId = ++this.mutationOperationId;
+
+    const isMutationCurrent = (): boolean =>
+      this.isContextCurrent(opGen, opOwner, opEditMode, opClinicId) &&
+      this.mutationOperationId === opMutationId &&
+      (!opEditMode || this.clinic()?.id === opClinicId);
+
     const raw = this.form.getRawValue();
     this.isSubmitting.set(true);
 
     try {
-      if (!this.isEditMode()) {
+      if (!opEditMode) {
         const created = await firstValueFrom(
           this.clinicsService.createClinic({
             name: raw.name.trim(),
@@ -384,18 +543,16 @@ export class ClinicFormPageComponent implements OnInit {
             timezone: raw.timezone.trim(),
           }),
         );
+        if (!isMutationCurrent()) {
+          return;
+        }
         this.clinic.set(created);
         void this.router.navigate(['/clinics']);
         return;
       }
 
-      const current = this.clinic();
-      if (!current) {
-        return;
-      }
-
       const patchPayload: UpdateClinicRequest = {
-        expectedVersion: current.version,
+        expectedVersion: current!.version,
         name: raw.name.trim(),
         country: raw.country.trim(),
         province: raw.province.trim(),
@@ -405,12 +562,18 @@ export class ClinicFormPageComponent implements OnInit {
       };
 
       const updated = await firstValueFrom(
-        this.clinicsService.updateClinic(current.id, patchPayload),
+        this.clinicsService.updateClinic(opClinicId!, patchPayload),
       );
+      if (!isMutationCurrent() || updated.id !== opClinicId) {
+        return;
+      }
       this.applyServerClinicToForm(updated);
       this.submitFeedback.set('Los datos del consultorio se guardaron correctamente.');
-      await this.refreshCapabilitiesSilently();
+      await this.refreshCapabilitiesSilently(opGen, opOwner, opEditMode, opClinicId);
     } catch (error) {
+      if (!isMutationCurrent()) {
+        return;
+      }
       const parsed = parseClinicHttpError(
         error,
         'No pudimos guardar el consultorio. Tus cambios en pantalla se conservaron.',
@@ -423,21 +586,36 @@ export class ClinicFormPageComponent implements OnInit {
         this.versionConflict.set(true);
       }
       if (parsed.shouldRefreshCapabilities) {
-        await this.refreshCapabilitiesSilently();
+        if (!parsed.isVersionConflict) {
+          this.setCapabilities(invalidateCapabilitiesForError(this.capabilities(), parsed));
+        }
+        await this.refreshCapabilitiesSilently(opGen, opOwner, opEditMode, opClinicId);
       }
-      if (parsed.isStateConflict && this.clinicId()) {
-        await this.refreshClinicMetadataPreserveInputs(this.clinicId()!);
+      if (parsed.isStateConflict && opClinicId) {
+        await this.refreshClinicMetadataPreserveInputs(opClinicId, opGen, opOwner);
       }
     } finally {
-      this.isSubmitting.set(false);
+      if (isMutationCurrent()) {
+        this.isSubmitting.set(false);
+      }
     }
   }
 
   async changeStatus(targetStatus: ClinicStatus): Promise<void> {
     const current = this.clinic();
-    if (!current || !this.canTransition(targetStatus)) {
+    if (!current || current.id !== this.clinicId() || !this.canTransition(targetStatus)) {
       return;
     }
+
+    const opGen = this.contextGeneration;
+    const opOwner = this.currentOwnerId();
+    const opClinicId = current.id;
+    const opMutationId = ++this.mutationOperationId;
+
+    const isMutationCurrent = (): boolean =>
+      this.isContextCurrent(opGen, opOwner, true, opClinicId) &&
+      this.mutationOperationId === opMutationId &&
+      this.clinic()?.id === opClinicId;
 
     this.isSubmitting.set(true);
     this.submitError.set(null);
@@ -445,17 +623,23 @@ export class ClinicFormPageComponent implements OnInit {
 
     try {
       const updated = await firstValueFrom(
-        this.clinicsService.updateClinicStatus(current.id, {
+        this.clinicsService.updateClinicStatus(opClinicId, {
           expectedVersion: current.version,
           status: targetStatus,
         }),
       );
+      if (!isMutationCurrent() || updated.id !== opClinicId) {
+        return;
+      }
       this.clinic.set(structuredClone(updated));
       this.submitFeedback.set(
         `El consultorio pasó a estado ${formatClinicStatusLabel(updated.status)}.`,
       );
-      await this.refreshCapabilitiesSilently();
+      await this.refreshCapabilitiesSilently(opGen, opOwner, true, opClinicId);
     } catch (error) {
+      if (!isMutationCurrent()) {
+        return;
+      }
       const parsed = parseClinicHttpError(
         error,
         'No pudimos actualizar el estado del consultorio.',
@@ -465,13 +649,18 @@ export class ClinicFormPageComponent implements OnInit {
         this.versionConflict.set(true);
       }
       if (parsed.shouldRefreshCapabilities) {
-        await this.refreshCapabilitiesSilently();
+        if (!parsed.isVersionConflict) {
+          this.setCapabilities(invalidateCapabilitiesForError(this.capabilities(), parsed));
+        }
+        await this.refreshCapabilitiesSilently(opGen, opOwner, true, opClinicId);
       }
       if (parsed.isStateConflict) {
-        await this.refreshClinicMetadataPreserveInputs(current.id);
+        await this.refreshClinicMetadataPreserveInputs(opClinicId, opGen, opOwner);
       }
     } finally {
-      this.isSubmitting.set(false);
+      if (isMutationCurrent()) {
+        this.isSubmitting.set(false);
+      }
     }
   }
 
@@ -480,13 +669,24 @@ export class ClinicFormPageComponent implements OnInit {
     if (!id || this.isLoading() || this.isSubmitting()) {
       return;
     }
+    const opGen = this.contextGeneration;
+    const opOwner = this.currentOwnerId();
+    const opMutationId = ++this.mutationOperationId;
+
+    const isOperationCurrent = (): boolean =>
+      this.isContextCurrent(opGen, opOwner, true, id) &&
+      this.mutationOperationId === opMutationId;
+
     this.isLoading.set(true);
     try {
       const [caps, latest] = await Promise.all([
         firstValueFrom(this.clinicsService.getCapabilities()),
         firstValueFrom(this.clinicsService.getClinic(id)),
       ]);
-      this.capabilities.set(caps);
+      if (!isOperationCurrent() || latest.id !== id) {
+        return;
+      }
+      this.setCapabilities(caps);
       this.clinic.set(structuredClone(latest));
       this.versionConflict.set(false);
       this.submitError.set(null);
@@ -494,13 +694,19 @@ export class ClinicFormPageComponent implements OnInit {
         `Se cargó la versión ${latest.version} del servidor conservando tus cambios en pantalla. Revisalos y volvé a guardar.`,
       );
     } catch (error) {
+      if (!isOperationCurrent()) {
+        return;
+      }
+      this.setCapabilities(createUnavailableCapabilities(this.capabilities()));
       const parsed = parseClinicHttpError(
         error,
         'No pudimos recargar la última versión del consultorio.',
       );
       this.submitError.set(parsed.userMessage);
     } finally {
-      this.isLoading.set(false);
+      if (isOperationCurrent()) {
+        this.isLoading.set(false);
+      }
     }
   }
 
@@ -514,21 +720,39 @@ export class ClinicFormPageComponent implements OnInit {
     await this.loadForEdit(id);
   }
 
-  private async refreshCapabilitiesSilently(): Promise<void> {
+  private async refreshCapabilitiesSilently(
+    expectedGen: number,
+    expectedOwner: string | null,
+    expectedEditMode: boolean,
+    expectedClinicId: string | null,
+  ): Promise<void> {
     try {
       const caps = await firstValueFrom(this.clinicsService.getCapabilities());
-      this.capabilities.set(caps);
+      if (!this.isContextCurrent(expectedGen, expectedOwner, expectedEditMode, expectedClinicId)) {
+        return;
+      }
+      this.setCapabilities(caps);
     } catch {
-      // Preserve existing state if background capabilities refresh fails
+      if (!this.isContextCurrent(expectedGen, expectedOwner, expectedEditMode, expectedClinicId)) {
+        return;
+      }
+      this.setCapabilities(createUnavailableCapabilities(this.capabilities()));
     }
   }
 
-  private async refreshClinicMetadataPreserveInputs(id: string): Promise<void> {
+  private async refreshClinicMetadataPreserveInputs(
+    id: string,
+    expectedGen: number,
+    expectedOwner: string | null,
+  ): Promise<void> {
     try {
       const latest = await firstValueFrom(this.clinicsService.getClinic(id));
+      if (!this.isContextCurrent(expectedGen, expectedOwner, true, id) || latest.id !== id) {
+        return;
+      }
       this.clinic.set(structuredClone(latest));
     } catch {
-      // Preserve existing state if background metadata refresh fails
+      // Preserve existing clinic snapshot if background metadata refresh fails
     }
   }
 }

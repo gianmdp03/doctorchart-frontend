@@ -174,4 +174,26 @@ describe('ClinicsPageComponent', () => {
     ).toContain('límite de consultorios');
     expect(component.clinics().find((c) => c.id === '101')?.status).toBe('ARCHIVED');
   });
+
+  it('invalidates stale VERIFIED capabilities when status change fails with 503 and subsequent getCapabilities refresh fails', async () => {
+    expect(component.canCreate()).toBe(true);
+    const activeClinic = component.clinics().find((c) => c.id === '103')!;
+    expect(component.canEdit(activeClinic)).toBe(true);
+
+    vi.spyOn(mockBackend, 'updateClinicStatus').mockReturnValueOnce(
+      throwError(() => MOCK_CLINIC_ERRORS.entitlementsUnavailable()),
+    );
+    vi.spyOn(mockBackend, 'getCapabilities').mockReturnValueOnce(
+      throwError(() => MOCK_CLINIC_ERRORS.entitlementsUnavailable()),
+    );
+
+    await component.changeStatus(activeClinic, 'INACTIVE');
+    fixture.detectChanges();
+
+    expect(component.capabilities()?.entitlements.status).toBe('UNAVAILABLE');
+    expect(component.canCreate()).toBe(false);
+    expect(component.canEdit(activeClinic)).toBe(false);
+    expect(component.canTransition(activeClinic, 'INACTIVE')).toBe(false);
+    expect(component.capabilityBanner()?.showRetryButton).toBe(true);
+  });
 });

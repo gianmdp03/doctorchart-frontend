@@ -103,6 +103,9 @@ export type ClinicFieldErrorCode =
   | 'REQUIRED'
   | 'TOO_LONG'
   | 'INVALID'
+  | 'INVALID_VALUE'
+  | 'INVALID_VERSION'
+  | 'INVALID_STATUS'
   | 'INVALID_TIMEZONE'
   | 'NEGATIVE'
   | 'EMPTY_PATCH'
@@ -225,9 +228,26 @@ export function isValidCanonicalBigInt(value: string, allowZero = false): boolea
 }
 
 const IANA_AREA_LOCATION_PATTERN =
-  /^[A-Za-z_]+\/[A-Za-z0-9_+-]+(?:\/[A-Za-z0-9_+-]+)*$/;
+  /^[A-Z][a-z]+\/[A-Z][A-Za-z0-9_+-]*(?:\/[A-Z][A-Za-z0-9_+-]*)*$/;
 const FORBIDDEN_TIMEZONE_PREFIX = /^(?:posix|right|etc)\//i;
 const FORBIDDEN_FIXED_OFFSET = /^(?:[+-]\d|utc[+-]|gmt[+-])/i;
+
+function hasCanonicalSegmentCasing(candidate: string, resolved: string): boolean {
+  const candidateSegments = candidate.split('/');
+  const resolvedSegments = resolved.split('/');
+  for (const segment of candidateSegments) {
+    if (!/^[A-Z]/.test(segment) || !/[a-z]/.test(segment)) {
+      return false;
+    }
+    const matchingResolved = resolvedSegments.find(
+      (resSeg) => resSeg.toLowerCase() === segment.toLowerCase(),
+    );
+    if (matchingResolved && matchingResolved !== segment) {
+      return false;
+    }
+  }
+  return true;
+}
 
 export function validateIanaTimezone(raw: string): ClinicFieldErrorCode | null {
   const trimmed = raw.trim();
@@ -237,17 +257,24 @@ export function validateIanaTimezone(raw: string): ClinicFieldErrorCode | null {
   if ([...trimmed].length > CLINIC_FIELD_LIMITS.timezone) {
     return 'TOO_LONG';
   }
-  if (trimmed.toLowerCase() === 'local') {
+  if (trimmed === 'UTC') {
+    return null;
+  }
+  if (trimmed.toLowerCase() === 'local' || trimmed.toLowerCase() === 'utc') {
     return 'INVALID_TIMEZONE';
   }
   if (FORBIDDEN_TIMEZONE_PREFIX.test(trimmed) || FORBIDDEN_FIXED_OFFSET.test(trimmed)) {
     return 'INVALID_TIMEZONE';
   }
-  if (trimmed !== 'UTC' && !IANA_AREA_LOCATION_PATTERN.test(trimmed)) {
+  if (!IANA_AREA_LOCATION_PATTERN.test(trimmed)) {
     return 'INVALID_TIMEZONE';
   }
   try {
-    new Intl.DateTimeFormat('es-AR', { timeZone: trimmed });
+    const resolved = new Intl.DateTimeFormat('es-AR', { timeZone: trimmed }).resolvedOptions()
+      .timeZone;
+    if (!resolved || !hasCanonicalSegmentCasing(trimmed, resolved)) {
+      return 'INVALID_TIMEZONE';
+    }
     return null;
   } catch {
     return 'INVALID_TIMEZONE';
@@ -272,8 +299,162 @@ export function validateClinicTextField(
   return null;
 }
 
-export function canCreateClinic(capabilities: ClinicCapabilities | null | undefined): boolean {
-  if (!capabilities || capabilities.entitlements.status !== 'VERIFIED') {
+export function isCapabilityVerified(
+  capabilities: ClinicCapabilities | null | undefined,
+  nowMs = Date.now(),
+): boolean {
+  if (!capabilities) {
+    return false;
+  }
+  const ent = capabilities.entitlements;
+  if (!ent || ent.status !== 'VERIFIED') {
+    return false;
+  }
+  if (typeof ent.revision !== 'string' || ent.revision.trim().length === 0) {
+    return false;
+  }
+  if (ent.clinicManagement !== true) {
+    return false;
+  }
+  if (typeof ent.max_clinics !== 'number' || !Number.isInteger(ent.max_clinics) || ent.max_clinics < -1) {
+    return false;
+  }
+  if (typeof ent.validUntil !== 'string' || ent.validUntil.trim().length === 0) {
+    return false;
+  }
+  const expiresAtMs = Date.parse(ent.validUntil);
+  if (!Number.isFinite(expiresAtMs) || expiresAtMs <= nowMs) {
+    return false;
+  }
+  return true;
+}
+
+export function getCapabilityExpiryDelayMs(
+  capabilities: ClinicCapabilities | null | undefined,
+  nowMs = Date.now(),
+): number | null {
+  const rawValidUntil = capabilities?.entitlements?.validUntil;
+  if (typeof rawValidUntil !== 'string' || rawValidUntil.trim().length === 0) {
+    return null;
+  }
+  const expiresAtMs = Date.parse(rawValidUntil);
+  if (!Number.isFinite(expiresAtMs)) {
+    return null;
+  }
+  const delta = expiresAtMs - nowMs;
+  if (delta <= 0) {
+    return 0;
+  }
+  return Math.min(delta + 5, 2_147_483_647);
+}
+
+export function createUnavailableCapabilities(
+  previous?: ClinicCapabilities | null,
+): ClinicCapabilities {
+  const counted =
+    typeof previous?.usage?.counted === 'number' && previous.usage.counted >= 0
+      ? previous.usage.counted
+      : 0;
+  return {
+    entitlements: {
+      status: 'UNAVAILABLE',
+      revision: null,
+      validUntil: null,
+      clinicManagement: null,
+      max_clinics: null,
+    },
+    usage: { counted },
+    actions: {
+      create: false,
+      edit: false,
+      activate: false,
+      deactivate: false,
+      archive: false,
+      restore: false,
+    },
+    reason: 'ENTITLEMENTS_UNAVAILABLE',
+  };
+}
+
+export function createDeniedCapabilities(
+  previous?: ClinicCapabilities | null,
+): ClinicCapabilities {
+  const counted =
+    typeof previous?.usage?.counted === 'number' && previous.usage.counted >= 0
+      ? previous.usage.counted
+      : 0;
+  return {
+    entitlements: {
+      status: 'DENIED',
+      revision: previous?.entitlements?.revision ?? null,
+      validUntil: previous?.entitlements?.validUntil ?? null,
+      clinicManagement: false,
+      max_clinics: 0,
+    },
+    usage: { counted },
+    actions: {
+      create: false,
+      edit: false,
+      activate: false,
+      deactivate: false,
+      archive: false,
+      restore: false,
+    },
+    reason: 'CLINIC_MANAGEMENT_DISABLED',
+  };
+}
+
+export function normalizeCapabilities(
+  capabilities: ClinicCapabilities | null | undefined,
+  nowMs = Date.now(),
+): ClinicCapabilities {
+  if (!capabilities) {
+    return createUnavailableCapabilities(null);
+  }
+  if (capabilities.entitlements.status === 'DENIED') {
+    return {
+      ...capabilities,
+      entitlements: {
+        ...capabilities.entitlements,
+        clinicManagement: false,
+      },
+      actions: {
+        create: false,
+        edit: false,
+        activate: false,
+        deactivate: false,
+        archive: false,
+        restore: false,
+      },
+      reason: 'CLINIC_MANAGEMENT_DISABLED',
+    };
+  }
+  if (!isCapabilityVerified(capabilities, nowMs)) {
+    return createUnavailableCapabilities(capabilities);
+  }
+  return structuredClone(capabilities);
+}
+
+export function invalidateCapabilitiesForError(
+  previous: ClinicCapabilities | null | undefined,
+  parsed: Pick<ParsedClinicError, 'status' | 'code'>,
+): ClinicCapabilities {
+  if (
+    parsed.status === 403 ||
+    parsed.code === 'CLINIC_MANAGEMENT_DISABLED' ||
+    parsed.code === 'DOCTORCHART_PLAN_REQUIRED' ||
+    parsed.code === 'FORBIDDEN'
+  ) {
+    return createDeniedCapabilities(previous);
+  }
+  return createUnavailableCapabilities(previous);
+}
+
+export function canCreateClinic(
+  capabilities: ClinicCapabilities | null | undefined,
+  nowMs = Date.now(),
+): boolean {
+  if (!capabilities || !isCapabilityVerified(capabilities, nowMs)) {
     return false;
   }
   return capabilities.actions.create === true;
@@ -282,11 +463,12 @@ export function canCreateClinic(capabilities: ClinicCapabilities | null | undefi
 export function canEditClinic(
   clinic: Pick<Clinic, 'status'> | null | undefined,
   capabilities: ClinicCapabilities | null | undefined,
+  nowMs = Date.now(),
 ): boolean {
   if (!clinic || clinic.status === 'ARCHIVED') {
     return false;
   }
-  if (!capabilities || capabilities.entitlements.status !== 'VERIFIED') {
+  if (!capabilities || !isCapabilityVerified(capabilities, nowMs)) {
     return false;
   }
   return capabilities.actions.edit === true;
@@ -296,8 +478,9 @@ export function canTransitionClinicStatus(
   clinic: Pick<Clinic, 'status'> | null | undefined,
   targetStatus: ClinicStatus,
   capabilities: ClinicCapabilities | null | undefined,
+  nowMs = Date.now(),
 ): boolean {
-  if (!clinic || !capabilities || capabilities.entitlements.status !== 'VERIFIED') {
+  if (!clinic || !capabilities || !isCapabilityVerified(capabilities, nowMs)) {
     return false;
   }
   if (clinic.status === targetStatus) {
@@ -347,17 +530,20 @@ export function formatClinicDate(isoTimestamp: string | null | undefined): strin
   return displayLocalDate(datePart);
 }
 
-export function formatQuotaSummary(capabilities: ClinicCapabilities | null | undefined): string {
+export function formatQuotaSummary(
+  capabilities: ClinicCapabilities | null | undefined,
+  nowMs = Date.now(),
+): string {
   if (!capabilities) {
     return 'Verificando cupo de consultorios…';
   }
   const counted = capabilities.usage.counted;
   const max = capabilities.entitlements.max_clinics;
-  if (capabilities.entitlements.status === 'UNAVAILABLE') {
-    return `${counted} consultorio${counted === 1 ? '' : 's'} contabilizado${counted === 1 ? '' : 's'} (cupo comercial temporalmente no verificable)`;
-  }
   if (capabilities.entitlements.status === 'DENIED') {
     return `${counted} consultorio${counted === 1 ? '' : 's'} registrado${counted === 1 ? '' : 's'} · Gestión de consultorios no incluida en el plan actual`;
+  }
+  if (capabilities.entitlements.status === 'UNAVAILABLE' || !isCapabilityVerified(capabilities, nowMs)) {
+    return `${counted} consultorio${counted === 1 ? '' : 's'} contabilizado${counted === 1 ? '' : 's'} (cupo comercial temporalmente no verificable)`;
   }
   if (max === -1) {
     return `${counted} consultorio${counted === 1 ? '' : 's'} activo${counted === 1 ? '' : 's'}/inactivo${counted === 1 ? '' : 's'} · Sin tope numérico`;
@@ -378,22 +564,12 @@ export interface CapabilityBannerDescriptor {
 
 export function describeCapabilityBanner(
   capabilities: ClinicCapabilities | null | undefined,
+  nowMs = Date.now(),
 ): CapabilityBannerDescriptor | null {
   if (!capabilities) {
     return null;
   }
   const { entitlements, usage, reason } = capabilities;
-
-  if (entitlements.status === 'UNAVAILABLE' || reason === 'ENTITLEMENTS_UNAVAILABLE') {
-    return {
-      tone: 'warning',
-      title: 'Verificación comercial temporalmente no disponible',
-      description:
-        'No pudimos validar los permisos comerciales de tu suscripción en este momento. Podés consultar tus consultorios en modo lectura y reintentar en unos instantes.',
-      showUpgradeLink: false,
-      showRetryButton: true,
-    };
-  }
 
   if (entitlements.status === 'DENIED' || reason === 'CLINIC_MANAGEMENT_DISABLED') {
     return {
@@ -403,6 +579,21 @@ export function describeCapabilityBanner(
         'Tu suscripción actual no habilita crear ni modificar consultorios. Tus consultorios existentes se mantienen visibles en modo solo lectura.',
       showUpgradeLink: true,
       showRetryButton: false,
+    };
+  }
+
+  if (
+    entitlements.status === 'UNAVAILABLE' ||
+    reason === 'ENTITLEMENTS_UNAVAILABLE' ||
+    !isCapabilityVerified(capabilities, nowMs)
+  ) {
+    return {
+      tone: 'warning',
+      title: 'Verificación comercial temporalmente no disponible',
+      description:
+        'No pudimos validar los permisos comerciales de tu suscripción en este momento. Podés consultar tus consultorios en modo lectura y reintentar en unos instantes.',
+      showUpgradeLink: false,
+      showRetryButton: true,
     };
   }
 
@@ -461,6 +652,9 @@ export function fieldErrorMessage(field: ClinicEditableField, code: string): str
     case 'INVALID_TIMEZONE':
       return 'Ingresá una zona horaria IANA canónica válida (por ejemplo, America/Argentina/Buenos_Aires o UTC).';
     case 'INVALID':
+    case 'INVALID_VALUE':
+    case 'INVALID_VERSION':
+    case 'INVALID_STATUS':
       return `${label} tiene un formato inválido.`;
     default:
       return `${label} no es válido.`;

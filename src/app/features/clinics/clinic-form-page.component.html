@@ -132,6 +132,18 @@
         <p>{{ banner.description }}</p>
       </div>
       <div class="banner-actions">
+        @if (banner.showRetryButton) {
+          <button
+            type="button"
+            class="btn-secondary btn-sm"
+            data-testid="form-retry-capabilities-btn"
+            (click)="retryCapabilities()"
+            [disabled]="isLoading() || isSubmitting() || isRetryingCapabilities()"
+          >
+            <ng-icon name="lucideRefreshCw" size="14" aria-hidden="true"></ng-icon>
+            <span>{{ isRetryingCapabilities() ? 'Reintentando…' : 'Reintentar verificación' }}</span>
+          </button>
+        }
         @if (banner.showUpgradeLink && plansUrl) {
           <a
             class="btn-secondary btn-sm"

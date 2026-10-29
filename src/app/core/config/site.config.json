@@ -4,8 +4,8 @@
     "/"
   ],
   "clientPatterns": [
-    "^/(login|sin-plan|perfil|asistente|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|consultorios|consultorios/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",
-    "^/(pacientes|ficha|consultas|consultorios)/[^/]+(/editar)?$",
+    "^/(login|sin-plan|perfil|asistente|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",
+    "^/(pacientes|ficha|consultas)/[^/]+(/editar)?$",
     "^/(login|plan-required|profile|assistant|dashboard|encounters|vaccination-calendar|calculators|patients|patients/new|clinics|clinics/new|records|admin/specialties|onboarding/select-specialty|onboarding/setup)$",
     "^/(patients|records|encounters|clinics)/[^/]+(/edit)?$"
   ],
@@ -15,8 +15,6 @@
     "/calendario-vacunacion": "/vaccination-calendar",
     "/pacientes": "/patients",
     "/pacientes/nuevo": "/patients/new",
-    "/consultorios": "/clinics",
-    "/consultorios/nuevo": "/clinics/new",
     "/ficha": "/records",
     "/asistente": "/assistant",
     "/perfil": "/profile",

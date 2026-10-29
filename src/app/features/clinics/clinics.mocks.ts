@@ -92,7 +92,7 @@ export const MOCK_CAPABILITIES_BY_SCENARIO: Readonly<
     entitlements: {
       status: 'VERIFIED',
       revision: 'rev-empty-1',
-      validUntil: '2026-05-01T00:00:00Z',
+      validUntil: '2099-01-01T00:00:00Z',
       clinicManagement: true,
       max_clinics: 2,
     },
@@ -111,7 +111,7 @@ export const MOCK_CAPABILITIES_BY_SCENARIO: Readonly<
     entitlements: {
       status: 'VERIFIED',
       revision: 'rev-verified-1',
-      validUntil: '2026-05-01T00:00:00Z',
+      validUntil: '2099-01-01T00:00:00Z',
       clinicManagement: true,
       max_clinics: 3,
     },
@@ -130,7 +130,7 @@ export const MOCK_CAPABILITIES_BY_SCENARIO: Readonly<
     entitlements: {
       status: 'VERIFIED',
       revision: 'rev-zero-1',
-      validUntil: '2026-05-01T00:00:00Z',
+      validUntil: '2099-01-01T00:00:00Z',
       clinicManagement: true,
       max_clinics: 0,
     },
@@ -149,7 +149,7 @@ export const MOCK_CAPABILITIES_BY_SCENARIO: Readonly<
     entitlements: {
       status: 'VERIFIED',
       revision: 'rev-limit-1',
-      validUntil: '2026-05-01T00:00:00Z',
+      validUntil: '2099-01-01T00:00:00Z',
       clinicManagement: true,
       max_clinics: 2,
     },
@@ -168,7 +168,7 @@ export const MOCK_CAPABILITIES_BY_SCENARIO: Readonly<
     entitlements: {
       status: 'VERIFIED',
       revision: 'rev-downgrade-1',
-      validUntil: '2026-05-01T00:00:00Z',
+      validUntil: '2099-01-01T00:00:00Z',
       clinicManagement: true,
       max_clinics: 1,
     },
@@ -187,7 +187,7 @@ export const MOCK_CAPABILITIES_BY_SCENARIO: Readonly<
     entitlements: {
       status: 'VERIFIED',
       revision: 'rev-unlimited-1',
-      validUntil: '2026-05-01T00:00:00Z',
+      validUntil: '2099-01-01T00:00:00Z',
       clinicManagement: true,
       max_clinics: -1,
     },
@@ -206,7 +206,7 @@ export const MOCK_CAPABILITIES_BY_SCENARIO: Readonly<
     entitlements: {
       status: 'DENIED',
       revision: 'rev-denied-1',
-      validUntil: '2026-05-01T00:00:00Z',
+      validUntil: '2099-01-01T00:00:00Z',
       clinicManagement: false,
       max_clinics: 0,
     },
@@ -295,7 +295,7 @@ export const MOCK_CLINIC_ERRORS = {
 };
 
 /**
- * Deterministic in-memory implementation of the M2-CLINICS-v0.1 contract.
+ * Deterministic in-memory implementation of the M2-CLINICS-v1 contract.
  * Used exclusively in unit/integration tests and explicit development harnesses.
  */
 export class MockClinicsBackend implements ClinicsTransport {
@@ -359,7 +359,7 @@ export class MockClinicsBackend implements ClinicsTransport {
       };
     }
 
-    if (ent.status === 'DENIED' || ent.clinicManagement !== true) {
+    if (ent.status === 'DENIED' || ent.clinicManagement === false) {
       return {
         entitlements: ent,
         usage: { counted },
@@ -372,6 +372,38 @@ export class MockClinicsBackend implements ClinicsTransport {
           restore: false,
         },
         reason: 'CLINIC_MANAGEMENT_DISABLED',
+      };
+    }
+
+    const expiresAtMs = typeof ent.validUntil === 'string' ? Date.parse(ent.validUntil) : Number.NaN;
+    if (
+      typeof ent.revision !== 'string' ||
+      ent.revision.trim().length === 0 ||
+      ent.clinicManagement !== true ||
+      typeof ent.max_clinics !== 'number' ||
+      !Number.isInteger(ent.max_clinics) ||
+      ent.max_clinics < -1 ||
+      !Number.isFinite(expiresAtMs) ||
+      expiresAtMs <= Date.now()
+    ) {
+      return {
+        entitlements: {
+          status: 'UNAVAILABLE',
+          revision: null,
+          validUntil: null,
+          clinicManagement: null,
+          max_clinics: null,
+        },
+        usage: { counted },
+        actions: {
+          create: false,
+          edit: false,
+          activate: false,
+          deactivate: false,
+          archive: false,
+          restore: false,
+        },
+        reason: 'ENTITLEMENTS_UNAVAILABLE',
       };
     }
 

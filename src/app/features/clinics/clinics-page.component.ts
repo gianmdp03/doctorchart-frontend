@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
   inject,
@@ -27,6 +28,7 @@ import {
 } from '@ng-icons/lucide';
 import { firstValueFrom, takeUntil } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../core/services/auth.service';
 import { AccountReadScope } from '../../core/services/account-read-scope';
 import {
   CapabilityBannerDescriptor,
@@ -37,10 +39,14 @@ import {
   canCreateClinic,
   canEditClinic,
   canTransitionClinicStatus,
+  createUnavailableCapabilities,
   describeCapabilityBanner,
   formatClinicDate,
   formatClinicStatusLabel,
   formatQuotaSummary,
+  getCapabilityExpiryDelayMs,
+  invalidateCapabilitiesForError,
+  normalizeCapabilities,
   parseClinicHttpError,
 } from './clinics.models';
 import { ClinicsService } from './clinics.service';
@@ -79,7 +85,15 @@ interface StatusFilterOption {
 export class ClinicsPageComponent implements OnInit {
   private readonly clinicsService = inject(ClinicsService);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly readScope = new AccountReadScope(() => this.resetState());
+
+  private accountGeneration = 0;
+  private mutationOperationId = 0;
+  private destroyed = false;
+  private capabilityExpiryTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly capabilityExpiryTick = signal(0);
 
   readonly statusFilters: readonly StatusFilterOption[] = [
     { value: 'ALL', label: 'Todos' },
@@ -103,11 +117,28 @@ export class ClinicsPageComponent implements OnInit {
 
   readonly plansUrl = environment.bycodePlansUrl || '';
 
-  readonly canCreate = computed(() => canCreateClinic(this.capabilities()));
-  readonly quotaSummary = computed(() => formatQuotaSummary(this.capabilities()));
-  readonly capabilityBanner = computed<CapabilityBannerDescriptor | null>(() =>
-    describeCapabilityBanner(this.capabilities()),
-  );
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.destroyed = true;
+      this.clearCapabilityExpiryTimer();
+      this.readScope.cancel();
+    });
+  }
+
+  canCreate(): boolean {
+    this.capabilityExpiryTick();
+    return canCreateClinic(this.capabilities(), Date.now());
+  }
+
+  quotaSummary(): string {
+    this.capabilityExpiryTick();
+    return formatQuotaSummary(this.capabilities(), Date.now());
+  }
+
+  capabilityBanner(): CapabilityBannerDescriptor | null {
+    this.capabilityExpiryTick();
+    return describeCapabilityBanner(this.capabilities(), Date.now());
+  }
 
   readonly totalPages = computed(() => {
     const total = this.totalElements();
@@ -133,7 +164,40 @@ export class ClinicsPageComponent implements OnInit {
     void this.reloadAll();
   }
 
+  private currentOwnerId(): string | null {
+    return this.auth.currentUser()?.id ?? null;
+  }
+
+  private clearCapabilityExpiryTimer(): void {
+    if (this.capabilityExpiryTimer !== null) {
+      clearTimeout(this.capabilityExpiryTimer);
+      this.capabilityExpiryTimer = null;
+    }
+  }
+
+  private setCapabilities(caps: ClinicCapabilities | null): void {
+    this.clearCapabilityExpiryTimer();
+    if (!caps) {
+      this.capabilities.set(null);
+      return;
+    }
+    const normalized = normalizeCapabilities(caps, Date.now());
+    this.capabilities.set(normalized);
+    const delayMs = getCapabilityExpiryDelayMs(normalized, Date.now());
+    if (delayMs !== null && normalized.entitlements.status === 'VERIFIED') {
+      this.capabilityExpiryTimer = setTimeout(() => {
+        this.capabilityExpiryTimer = null;
+        if (this.destroyed) return;
+        this.capabilityExpiryTick.update((v) => v + 1);
+        this.capabilities.set(createUnavailableCapabilities(this.capabilities()));
+      }, delayMs);
+    }
+  }
+
   private resetState(): void {
+    this.accountGeneration += 1;
+    this.mutationOperationId += 1;
+    this.clearCapabilityExpiryTimer();
     this.clinics.set([]);
     this.capabilities.set(null);
     this.totalElements.set(0);
@@ -169,11 +233,12 @@ export class ClinicsPageComponent implements OnInit {
         ),
       ]);
 
-      if (!active()) return;
+      if (!active() || this.destroyed) return;
 
       if (capsResult.status === 'fulfilled') {
-        this.capabilities.set(capsResult.value);
+        this.setCapabilities(capsResult.value);
       } else {
+        this.setCapabilities(createUnavailableCapabilities(this.capabilities()));
         const parsed = parseClinicHttpError(
           capsResult.reason,
           'No pudimos verificar las capacidades de consultorios.',
@@ -196,7 +261,7 @@ export class ClinicsPageComponent implements OnInit {
         this.loadError.set(parsed.userMessage);
       }
     } finally {
-      if (active()) {
+      if (active() && !this.destroyed) {
         this.isLoading.set(false);
       }
     }
@@ -229,14 +294,16 @@ export class ClinicsPageComponent implements OnInit {
   }
 
   canEdit(clinic: Clinic): boolean {
-    return canEditClinic(clinic, this.capabilities());
+    this.capabilityExpiryTick();
+    return canEditClinic(clinic, this.capabilities(), Date.now());
   }
 
   canTransition(clinic: Clinic, targetStatus: ClinicStatus): boolean {
+    this.capabilityExpiryTick();
     if (this.mutatingClinicId() !== null) {
       return false;
     }
-    return canTransitionClinicStatus(clinic, targetStatus, this.capabilities());
+    return canTransitionClinicStatus(clinic, targetStatus, this.capabilities(), Date.now());
   }
 
   statusLabel(status: ClinicStatus): string {
@@ -252,6 +319,16 @@ export class ClinicsPageComponent implements OnInit {
       return;
     }
 
+    const opAccountGen = this.accountGeneration;
+    const opOwner = this.currentOwnerId();
+    const opMutationId = ++this.mutationOperationId;
+    const isMutationCurrent = (): boolean =>
+      !this.destroyed &&
+      this.readScope.authenticated() &&
+      this.accountGeneration === opAccountGen &&
+      this.currentOwnerId() === opOwner &&
+      this.mutationOperationId === opMutationId;
+
     this.mutatingClinicId.set(clinic.id);
     this.actionError.set(null);
     this.actionFeedback.set(null);
@@ -263,21 +340,32 @@ export class ClinicsPageComponent implements OnInit {
           status: targetStatus,
         }),
       );
+      if (!isMutationCurrent() || updated.id !== clinic.id) {
+        return;
+      }
       this.actionFeedback.set(
         `El estado de "${updated.name}" se actualizó a ${formatClinicStatusLabel(updated.status)}.`,
       );
       await this.reloadAll();
     } catch (error) {
+      if (!isMutationCurrent()) {
+        return;
+      }
       const parsed = parseClinicHttpError(
         error,
         'No pudimos cambiar el estado del consultorio.',
       );
       this.actionError.set(parsed.userMessage);
       if (parsed.shouldRefreshCapabilities) {
+        if (!parsed.isVersionConflict) {
+          this.setCapabilities(invalidateCapabilitiesForError(this.capabilities(), parsed));
+        }
         await this.reloadAll();
       }
     } finally {
-      this.mutatingClinicId.set(null);
+      if (isMutationCurrent()) {
+        this.mutatingClinicId.set(null);
+      }
     }
   }
 }
