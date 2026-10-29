@@ -1,0 +1,374 @@
+<div class="clinic-form-page">
+  <nav class="breadcrumb-nav" aria-label="Navegación de retorno">
+    <a routerLink="/clinics" class="back-link">
+      <ng-icon name="lucideArrowLeft" size="16" aria-hidden="true"></ng-icon>
+      <span>Volver a Consultorios</span>
+    </a>
+  </nav>
+
+  <header class="page-header">
+    <div class="header-main">
+      <div class="eyebrow">
+        <ng-icon name="lucideBuilding2" size="16" aria-hidden="true"></ng-icon>
+        <span>Sede Física de Atención</span>
+      </div>
+      <h1>{{ pageTitle() }}</h1>
+      <p class="subtitle">
+        @if (isEditMode()) {
+          Administrá la ubicación, zona horaria y estado operativo de esta sede. Los cambios de consultorio no alteran historias clínicas ni pacientes.
+        } @else {
+          Registrá un nuevo lugar físico de atención para tu espacio médico. Se creará inicialmente en estado Activo.
+        }
+      </p>
+    </div>
+
+    @if (isEditMode() && clinic(); as current) {
+      <div class="clinic-status-panel" data-testid="clinic-status-panel">
+        <div class="status-meta">
+          <span
+            class="status-badge"
+            [class.status-active]="current.status === 'ACTIVE'"
+            [class.status-inactive]="current.status === 'INACTIVE'"
+            [class.status-archived]="current.status === 'ARCHIVED'"
+          >
+            {{ statusLabel(current.status) }}
+          </span>
+          <span class="meta-item">Versión {{ current.version }}</span>
+          <span class="meta-item">Actualizado {{ formatDate(current.updatedAt) }}</span>
+        </div>
+
+        <div class="status-actions">
+          @if (current.status === 'ACTIVE') {
+            <button
+              type="button"
+              class="btn-secondary btn-sm"
+              data-testid="form-deactivate-btn"
+              [disabled]="!canTransition('INACTIVE')"
+              (click)="changeStatus('INACTIVE')"
+            >
+              <ng-icon name="lucidePauseCircle" size="15" aria-hidden="true"></ng-icon>
+              <span>Inactivar</span>
+            </button>
+            <button
+              type="button"
+              class="btn-danger-outline btn-sm"
+              data-testid="form-archive-btn"
+              [disabled]="!canTransition('ARCHIVED')"
+              (click)="changeStatus('ARCHIVED')"
+            >
+              <ng-icon name="lucideArchive" size="15" aria-hidden="true"></ng-icon>
+              <span>Archivar</span>
+            </button>
+          }
+
+          @if (current.status === 'INACTIVE') {
+            <button
+              type="button"
+              class="btn-secondary btn-sm"
+              data-testid="form-activate-btn"
+              [disabled]="!canTransition('ACTIVE')"
+              (click)="changeStatus('ACTIVE')"
+            >
+              <ng-icon name="lucidePlayCircle" size="15" aria-hidden="true"></ng-icon>
+              <span>Activar</span>
+            </button>
+            <button
+              type="button"
+              class="btn-danger-outline btn-sm"
+              data-testid="form-archive-btn"
+              [disabled]="!canTransition('ARCHIVED')"
+              (click)="changeStatus('ARCHIVED')"
+            >
+              <ng-icon name="lucideArchive" size="15" aria-hidden="true"></ng-icon>
+              <span>Archivar</span>
+            </button>
+          }
+
+          @if (current.status === 'ARCHIVED') {
+            <button
+              type="button"
+              class="btn-primary btn-sm"
+              data-testid="form-restore-btn"
+              [disabled]="!canTransition('INACTIVE')"
+              (click)="changeStatus('INACTIVE')"
+            >
+              <ng-icon name="lucideArchiveRestore" size="15" aria-hidden="true"></ng-icon>
+              <span>Restaurar a Inactivo</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </header>
+
+  @if (isArchived()) {
+    <section
+      class="banner-card banner-archived"
+      role="status"
+      data-testid="archived-readonly-banner"
+    >
+      <ng-icon name="lucideArchive" size="20" aria-hidden="true"></ng-icon>
+      <div class="banner-content">
+        <h2>Consultorio archivado (solo lectura)</h2>
+        <p>
+          Los consultorios archivados no consumen cupo activo y no permiten editar sus campos directamente. Para modificar sus datos, primero restauralo a estado Inactivo.
+        </p>
+      </div>
+    </section>
+  }
+
+  @if (capabilityBanner(); as banner) {
+    <section
+      class="banner-card"
+      [class.banner-info]="banner.tone === 'info'"
+      [class.banner-warning]="banner.tone === 'warning'"
+      [class.banner-danger]="banner.tone === 'danger'"
+      role="status"
+      data-testid="form-capability-banner"
+    >
+      <ng-icon name="lucideShieldAlert" size="20" aria-hidden="true"></ng-icon>
+      <div class="banner-content">
+        <h2>{{ banner.title }}</h2>
+        <p>{{ banner.description }}</p>
+      </div>
+      <div class="banner-actions">
+        @if (banner.showUpgradeLink && plansUrl) {
+          <a
+            class="btn-secondary btn-sm"
+            [href]="plansUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span>Ver planes</span>
+            <ng-icon name="lucideExternalLink" size="14" aria-hidden="true"></ng-icon>
+          </a>
+        }
+      </div>
+    </section>
+  }
+
+  @if (versionConflict()) {
+    <section
+      class="banner-card banner-danger"
+      role="alert"
+      data-testid="version-conflict-banner"
+    >
+      <ng-icon name="lucideShieldAlert" size="20" aria-hidden="true"></ng-icon>
+      <div class="banner-content">
+        <h2>Conflicto de versión detectado (409)</h2>
+        <p>
+          Este consultorio fue modificado recientemente desde otra pestaña o sesión. Tus cambios en el formulario se conservaron intactos.
+        </p>
+        <div class="conflict-actions">
+          <button
+            type="button"
+            class="btn-primary btn-sm"
+            data-testid="conflict-keep-local-btn"
+            (click)="resolveConflictKeepLocalEdits()"
+            [disabled]="isLoading() || isSubmitting()"
+          >
+            Conservar mis cambios y actualizar versión
+          </button>
+          <button
+            type="button"
+            class="btn-secondary btn-sm"
+            data-testid="conflict-reload-server-btn"
+            (click)="resolveConflictUseServerValues()"
+            [disabled]="isLoading() || isSubmitting()"
+          >
+            Descartar mis cambios y recargar del servidor
+          </button>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (loadError()) {
+    <div class="alert-box alert-danger" role="alert" data-testid="form-load-error">
+      <ng-icon name="lucideShieldAlert" size="18" aria-hidden="true"></ng-icon>
+      <span>{{ loadError() }}</span>
+    </div>
+  }
+
+  @if (submitError() && !versionConflict()) {
+    <div class="alert-box alert-danger" role="alert" data-testid="form-submit-error">
+      <ng-icon name="lucideShieldAlert" size="18" aria-hidden="true"></ng-icon>
+      <span>{{ submitError() }}</span>
+    </div>
+  }
+
+  @if (submitFeedback()) {
+    <div class="alert-box alert-success" role="status" data-testid="form-submit-feedback">
+      <ng-icon name="lucideCheckCircle2" size="18" aria-hidden="true"></ng-icon>
+      <span>{{ submitFeedback() }}</span>
+    </div>
+  }
+
+  @if (!loadError() || !isEditMode() || clinic()) {
+    <form
+      class="form-card"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      novalidate
+      data-testid="clinic-form"
+    >
+      <div class="form-grid">
+        <div class="form-field field-full">
+          <label for="clinic-name">
+            Nombre del consultorio <span class="required-mark" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="clinic-name"
+            type="text"
+            formControlName="name"
+            [readonly]="isReadOnly()"
+            [attr.maxlength]="limits.name"
+            [class.field-invalid]="isFieldInvalid('name')"
+            [attr.aria-invalid]="isFieldInvalid('name') ? 'true' : null"
+            [attr.aria-describedby]="isFieldInvalid('name') ? 'clinic-name-error' : 'clinic-name-hint'"
+            placeholder="Ej.: Consultorio Belgrano"
+          />
+          <span id="clinic-name-hint" class="field-hint">
+            Nombre identificatorio de la sede (máximo {{ limits.name }} caracteres).
+          </span>
+          @if (getFieldError('name'); as err) {
+            <p id="clinic-name-error" class="field-error" role="alert">{{ err }}</p>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="clinic-country">
+            País <span class="required-mark" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="clinic-country"
+            type="text"
+            formControlName="country"
+            [readonly]="isReadOnly()"
+            [attr.maxlength]="limits.country"
+            [class.field-invalid]="isFieldInvalid('country')"
+            [attr.aria-invalid]="isFieldInvalid('country') ? 'true' : null"
+            [attr.aria-describedby]="isFieldInvalid('country') ? 'clinic-country-error' : null"
+            placeholder="Ej.: Argentina"
+          />
+          @if (getFieldError('country'); as err) {
+            <p id="clinic-country-error" class="field-error" role="alert">{{ err }}</p>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="clinic-province">
+            Provincia / Estado / Jurisdicción <span class="required-mark" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="clinic-province"
+            type="text"
+            formControlName="province"
+            [readonly]="isReadOnly()"
+            [attr.maxlength]="limits.province"
+            [class.field-invalid]="isFieldInvalid('province')"
+            [attr.aria-invalid]="isFieldInvalid('province') ? 'true' : null"
+            [attr.aria-describedby]="isFieldInvalid('province') ? 'clinic-province-error' : null"
+            placeholder="Ej.: Ciudad Autónoma de Buenos Aires"
+          />
+          @if (getFieldError('province'); as err) {
+            <p id="clinic-province-error" class="field-error" role="alert">{{ err }}</p>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="clinic-city">
+            Ciudad / Localidad <span class="required-mark" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="clinic-city"
+            type="text"
+            formControlName="city"
+            [readonly]="isReadOnly()"
+            [attr.maxlength]="limits.city"
+            [class.field-invalid]="isFieldInvalid('city')"
+            [attr.aria-invalid]="isFieldInvalid('city') ? 'true' : null"
+            [attr.aria-describedby]="isFieldInvalid('city') ? 'clinic-city-error' : null"
+            placeholder="Ej.: Buenos Aires"
+          />
+          @if (getFieldError('city'); as err) {
+            <p id="clinic-city-error" class="field-error" role="alert">{{ err }}</p>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="clinic-timezone">
+            Zona horaria IANA <span class="required-mark" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="clinic-timezone"
+            type="text"
+            formControlName="timezone"
+            list="common-iana-timezones"
+            [readonly]="isReadOnly()"
+            [attr.maxlength]="limits.timezone"
+            [class.field-invalid]="isFieldInvalid('timezone')"
+            [attr.aria-invalid]="isFieldInvalid('timezone') ? 'true' : null"
+            [attr.aria-describedby]="isFieldInvalid('timezone') ? 'clinic-timezone-error' : 'clinic-timezone-hint'"
+            placeholder="America/Argentina/Buenos_Aires"
+          />
+          <datalist id="common-iana-timezones">
+            @for (tz of commonTimezones; track tz.value) {
+              <option [value]="tz.value">{{ tz.label }}</option>
+            }
+          </datalist>
+          <span id="clinic-timezone-hint" class="field-hint">
+            Identificador IANA canónico (ej.: <code>America/Argentina/Buenos_Aires</code> o <code>UTC</code>).
+          </span>
+          @if (getFieldError('timezone'); as err) {
+            <p id="clinic-timezone-error" class="field-error" role="alert">{{ err }}</p>
+          }
+        </div>
+
+        <div class="form-field field-full">
+          <label for="clinic-address">
+            Dirección física <span class="required-mark" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="clinic-address"
+            type="text"
+            formControlName="address"
+            [readonly]="isReadOnly()"
+            [attr.maxlength]="limits.address"
+            [class.field-invalid]="isFieldInvalid('address')"
+            [attr.aria-invalid]="isFieldInvalid('address') ? 'true' : null"
+            [attr.aria-describedby]="isFieldInvalid('address') ? 'clinic-address-error' : 'clinic-address-hint'"
+            placeholder="Ej.: Av. Cabildo 2150 Piso 4 Dto B"
+          />
+          <span id="clinic-address-hint" class="field-hint">
+            Calle, altura, piso o consultorio interno (máximo {{ limits.address }} caracteres).
+          </span>
+          @if (getFieldError('address'); as err) {
+            <p id="clinic-address-error" class="field-error" role="alert">{{ err }}</p>
+          }
+        </div>
+      </div>
+
+      <footer class="form-footer">
+        <a routerLink="/clinics" class="btn-secondary">Cancelar</a>
+        <button
+          type="submit"
+          class="btn-primary"
+          data-testid="submit-clinic-btn"
+          [disabled]="isReadOnly()"
+        >
+          <ng-icon name="lucideSave" size="16" aria-hidden="true"></ng-icon>
+          <span>
+            @if (isSubmitting()) {
+              Guardando…
+            } @else if (isEditMode()) {
+              Guardar cambios
+            } @else {
+              Crear consultorio
+            }
+          </span>
+        </button>
+      </footer>
+    </form>
+  }
+</div>

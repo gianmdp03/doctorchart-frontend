@@ -19,6 +19,7 @@ const doctorOnboardingGuard = lazyGuard(() => import('./core/guards/doctor-onboa
 const doctorWizardGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.doctorWizardGuard));
 const preventCompletedOnboardingGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.preventCompletedOnboardingGuard));
 const superAdminGuard = lazyGuard(() => import('./core/guards/super-admin.guard').then(m => m.superAdminGuard));
+const clinicsGuard = lazyGuard(() => import('./core/guards/clinics.guard').then(m => m.clinicsGuard));
 
 export const routes: Routes = [
   { path: 'sin-plan', redirectTo: 'plan-required', pathMatch: 'full' },
@@ -28,6 +29,9 @@ export const routes: Routes = [
   { path: 'pacientes/nuevo', redirectTo: 'patients/new', pathMatch: 'full' },
   { path: 'pacientes/:id/editar', redirectTo: 'patients/:id/edit', pathMatch: 'full' },
   { path: 'pacientes/:id', redirectTo: 'patients/:id', pathMatch: 'full' },
+  { path: 'consultorios', redirectTo: 'clinics', pathMatch: 'full' },
+  { path: 'consultorios/nuevo', redirectTo: 'clinics/new', pathMatch: 'full' },
+  { path: 'consultorios/:id/editar', redirectTo: 'clinics/:id/edit', pathMatch: 'full' },
   { path: 'ficha', redirectTo: 'records', pathMatch: 'full' },
   { path: 'ficha/:id/editar', redirectTo: 'records/:id/edit', pathMatch: 'full' },
   { path: 'ficha/:id', redirectTo: 'records/:id', pathMatch: 'full' },
@@ -178,6 +182,33 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/medical-calculators/medical-calculators.component').then(
         (m) => m.MedicalCalculatorsComponent
+      ),
+  },
+  {
+    path: 'clinics',
+    runGuardsAndResolvers: 'always',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicsGuard],
+    loadComponent: () =>
+      import('./features/clinics/clinics-page.component').then(
+        (m) => m.ClinicsPageComponent
+      ),
+  },
+  {
+    path: 'clinics/new',
+    runGuardsAndResolvers: 'always',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicsGuard],
+    loadComponent: () =>
+      import('./features/clinics/clinic-form-page.component').then(
+        (m) => m.ClinicFormPageComponent
+      ),
+  },
+  {
+    path: 'clinics/:id/edit',
+    runGuardsAndResolvers: 'always',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicsGuard],
+    loadComponent: () =>
+      import('./features/clinics/clinic-form-page.component').then(
+        (m) => m.ClinicFormPageComponent
       ),
   },
   {

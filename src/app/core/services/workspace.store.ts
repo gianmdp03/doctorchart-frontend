@@ -27,6 +27,7 @@ export class WorkspaceStore {
   readonly draftDefinition = computed(() => this.currentSetup()?.draftDefinition ?? null);
   readonly experience = computed(() => this.currentSetup()?.experience ?? null);
   readonly calculatorsEnabled = signal(FEATURE_FLAGS.CALCULATORS_ENABLED);
+  readonly clinicsEnabled = signal(FEATURE_FLAGS.CLINICS_ENABLED);
   readonly navigation = computed(() =>
     (this.experience()?.navigation ?? [])
       .filter(id => id !== 'CALCULATORS' || this.calculatorsEnabled())

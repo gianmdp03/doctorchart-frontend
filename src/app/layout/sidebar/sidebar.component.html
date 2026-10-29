@@ -31,6 +31,20 @@
         <span class="nav-label">{{ item.label }}</span>
       </a>
     }
+
+    @if (clinicsEnabled() && workspace.navigation().length > 0) {
+      <a
+        routerLink="/clinics"
+        routerLinkActive="active"
+        class="nav-item"
+        title="Administración de consultorios"
+        aria-label="Administración de consultorios"
+        data-testid="sidebar-clinics-link"
+      >
+        <ng-icon name="lucideBuilding2" class="nav-icon" />
+        <span class="nav-label">Consultorios</span>
+      </a>
+    }
     }
   </nav>
 

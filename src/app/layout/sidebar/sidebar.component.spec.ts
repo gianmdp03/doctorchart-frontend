@@ -17,9 +17,11 @@ describe('SidebarComponent', () => {
   let specialtyServiceMock: any;
   let profileServiceMock: any;
   const navigation = signal<ClinicalNavigationItem[]>([]);
+  const clinicsEnabled = signal<boolean>(false);
 
   beforeEach(async () => {
     navigation.set(Object.values(CLINICAL_NAVIGATION));
+    clinicsEnabled.set(false);
     authServiceMock = {
       isLoggedIn: signal(true),
       isSuperAdmin: signal(false),
@@ -45,7 +47,7 @@ describe('SidebarComponent', () => {
       imports: [SidebarComponent],
       providers: [
         provideRouter([]),
-        { provide: WorkspaceStore, useValue: { navigation } },
+        { provide: WorkspaceStore, useValue: { navigation, clinicsEnabled } },
         { provide: AuthService, useValue: authServiceMock },
         { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },
         { provide: DoctorProfileService, useValue: profileServiceMock },
@@ -74,6 +76,18 @@ describe('SidebarComponent', () => {
       const svg = ic.querySelector('svg');
       expect(svg).toBeTruthy();
     });
+  });
+
+  it('keeps Consultorios hidden while clinicsEnabled is false and renders it when enabled', () => {
+    expect(fixture.nativeElement.querySelector('[data-testid="sidebar-clinics-link"]')).toBeNull();
+    clinicsEnabled.set(true);
+    fixture.detectChanges();
+    const clinicsLink = fixture.nativeElement.querySelector(
+      '[data-testid="sidebar-clinics-link"]',
+    ) as HTMLAnchorElement | null;
+    expect(clinicsLink).not.toBeNull();
+    expect(clinicsLink?.getAttribute('href')).toBe('/clinics');
+    expect(clinicsLink?.textContent).toContain('Consultorios');
   });
 
   it('renders only server-selected entries in server order', () => {

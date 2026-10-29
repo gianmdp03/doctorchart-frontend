@@ -1,8 +1,9 @@
 import { WorkspaceStore } from '../../core/services/workspace.store';
-import { afterNextRender, Component, HostListener, inject, signal } from '@angular/core';
+import { afterNextRender, Component, computed, HostListener, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideBuilding2,
   lucideCalendarDays,
   lucideLayoutDashboard,
   lucideUsers,
@@ -11,6 +12,7 @@ import {
   lucideSliders,
   lucideCalculator,
 } from '@ng-icons/lucide';
+import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -19,6 +21,7 @@ import { AuthService } from '../../core/services/auth.service';
   imports: [RouterLink, RouterLinkActive, NgIcon],
   providers: [
     provideIcons({
+      lucideBuilding2,
       lucideCalendarDays,
       lucideLayoutDashboard,
       lucideUsers,
@@ -35,6 +38,10 @@ export class SidebarComponent {
   readonly specialtyService = inject(DoctorSpecialtyService);
   readonly authService = inject(AuthService);
   readonly workspace = inject(WorkspaceStore);
+
+  readonly clinicsEnabled = computed(
+    () => this.workspace.clinicsEnabled?.() ?? FEATURE_FLAGS.CLINICS_ENABLED,
+  );
 
   readonly isCollapsed = signal<boolean>(false);
   private narrowViewport = false;
