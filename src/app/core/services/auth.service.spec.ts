@@ -1,7 +1,40 @@
 import { TestBed } from '@angular/core/testing';
-import { AuthService, SUPABASE_CLIENT } from './auth.service';
+import { AuthService, doctorchartSessionOptions, forwardDoctorchartMailCallback, SUPABASE_CLIENT } from './auth.service';
 import { PLATFORM_ID } from '@angular/core';
 import { Session, User } from '@supabase/supabase-js';
+import { InteractionStatusService } from './interaction-status.service';
+import { environment } from '../../../environments/environment';
+
+describe('legacy DoctorChart email callbacks', () => {
+  it('prevents emailed tokens from becoming an application session while retaining normal session persistence', () => {
+    expect(doctorchartSessionOptions(true)).toEqual({persistSession:true,autoRefreshToken:true,detectSessionInUrl:false});
+    expect(doctorchartSessionOptions(false)).toEqual({persistSession:true,autoRefreshToken:true,detectSessionInUrl:true});
+  });
+  it.each([
+    ['signup', '/auth-success'], ['invite', '/auth-success'], ['magiclink', '/auth-success'],
+    ['email_change', '/email-change-success'], ['recovery', '/reset-password'],
+  ])('forwards %s to the isolated Bycode result flow before clearing the local fragment', (type, path) => {
+    const fragment = `#access_token=mail-token&refresh_token=mail-refresh&type=${type}&redirect_to=https://untrusted.example`;
+    const history = {replaceState: vi.fn()};
+    const location = {hash: fragment, pathname: '/login', search: '?from=email', replace: vi.fn((_url: string) => {
+      expect(history.replaceState).toHaveBeenCalledWith(null, '', '/login?from=email');
+    })};
+    expect(forwardDoctorchartMailCallback(location, history)).toBe(true);
+    const destination = new URL(location.replace.mock.calls[0][0]);
+    expect(destination.origin).toBe(new URL(environment.bycodePlansUrl).origin);
+    expect(destination.pathname).toBe(path);
+    expect(destination.hash).toBe(fragment);
+  });
+
+  it('leaves normal navigation and non-email auth fragments unchanged', () => {
+    for (const hash of ['', '#section', '#access_token=oauth-token&type=oauth']) {
+      const location = {hash, pathname: '/login', search: '', replace: vi.fn()};
+      const history = {replaceState: vi.fn()};
+      expect(forwardDoctorchartMailCallback(location, history)).toBe(false);
+      expect(location.replace).not.toHaveBeenCalled(); expect(history.replaceState).not.toHaveBeenCalled();
+    }
+  });
+});
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -43,6 +76,25 @@ describe('AuthService', () => {
   });
 
   describe('Initial State & Signals', () => {
+    it('forwards an email callback before reading the stored account without replacing that account', async () => {
+      TestBed.resetTestingModule();
+      const storedUser={id:'already-signed-in',app_metadata:{},user_metadata:{}} as User;
+      mockAuth.getSession.mockResolvedValue({data:{session:{access_token:'stored-token',user:storedUser}},error:null});
+      const replace=vi.fn(); const replaceState=vi.fn();
+      vi.stubGlobal('window', {location:{hash:'#type=signup&access_token=email-token',pathname:'/login',search:'',replace},
+        history:{replaceState}, addEventListener:vi.fn(), removeEventListener:vi.fn()});
+      try {
+        TestBed.configureTestingModule({providers:[AuthService,{provide:PLATFORM_ID,useValue:'browser'},
+          {provide:SUPABASE_CLIENT,useValue:mockSupabaseClient}]});
+        const callbackService=TestBed.inject(AuthService);
+        await callbackService.authReady;
+        expect(replace).toHaveBeenCalledWith(new URL('/auth-success#type=signup&access_token=email-token',environment.bycodePlansUrl).href);
+        expect(callbackService.currentUser()?.id).toBe('already-signed-in');
+        expect(callbackService.getAccessToken()).toBe('stored-token');
+        expect(mockAuth.signInWithPassword).not.toHaveBeenCalled();
+      } finally { TestBed.resetTestingModule(); vi.unstubAllGlobals(); }
+    });
+
     it('releases guards when the SDK announces a session while getSession is stalled', async () => {
       TestBed.resetTestingModule();
       mockAuth.getSession.mockReturnValue(new Promise(() => undefined));
@@ -420,6 +472,103 @@ describe('AuthService', () => {
     mockAuth.refreshSession.mockResolvedValue({data:{session:null},error:new Error('offline')});
     await expect(service.refreshPlan()).rejects.toThrow('No pudimos actualizar');
     expect(service.currentUser()).toBe(user);
+  });
+
+  describe('live plan synchronization', () => {
+    const planSession = (tier = 'BASIC', token = 'old-token') => ({access_token: token, user: {
+      id: 'doctor', app_metadata: {app_modules: {doctorchart: {active: true, tier, expires_at: '2099-01-01T00:00:00Z'}}},
+    }} as unknown as Session);
+    beforeEach(async () => {
+      await service.authReady;
+      vi.useFakeTimers();
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+      service.session.set(planSession()); service.currentUser.set(service.session()!.user);
+      TestBed.tick();
+    });
+    afterEach(() => { TestBed.resetTestingModule(); vi.useRealTimers(); vi.restoreAllMocks(); });
+
+    it('adopts a newly issued PRO token on focus without sign-out or global loading', async () => {
+      mockAuth.refreshSession.mockResolvedValue({data:{session:planSession('PRO', 'new-token')},error:null});
+      window.dispatchEvent(new Event('focus'));
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+      expect(service.doctorchartPlanTier()).toBe('PRO');
+      expect(service.getAccessToken()).toBe('new-token');
+      expect(service.isLoggedIn()).toBe(true);
+      expect(mockAuth.signOut).not.toHaveBeenCalled();
+      expect(TestBed.inject(InteractionStatusService).busy()).toBe(false);
+    });
+
+    it('deduplicates focus, visibility, polling and explicit refresh; throttles repeated focus', async () => {
+      let finish!: (value:any) => void;
+      mockAuth.refreshSession.mockImplementation(() => new Promise(resolve => finish=resolve));
+      window.dispatchEvent(new Event('focus')); document.dispatchEvent(new Event('visibilitychange'));
+      const explicit=service.refreshPlan();
+      expect(mockAuth.refreshSession).toHaveBeenCalledTimes(1);
+      finish({data:{session:planSession('PRO')},error:null}); await explicit;
+      window.dispatchEvent(new Event('focus'));
+      expect(mockAuth.refreshSession).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(15_000);
+      window.dispatchEvent(new Event('focus'));
+      expect(mockAuth.refreshSession).toHaveBeenCalledTimes(2);
+      finish({data:{session:planSession('PRO')},error:null}); await Promise.resolve();
+    });
+
+    it('polls a visible session and pauses while hidden, then refreshes on return', async () => {
+      mockAuth.refreshSession.mockResolvedValue({data:{session:planSession('PRO')},error:null});
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(mockAuth.refreshSession).toHaveBeenCalledTimes(1);
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(120_000);
+      expect(mockAuth.refreshSession).toHaveBeenCalledTimes(1);
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+      document.dispatchEvent(new Event('visibilitychange')); await Promise.resolve();
+      expect(mockAuth.refreshSession).toHaveBeenCalledTimes(2);
+    });
+
+    it('bounds a stalled background refresh quietly and retains the confirmed session', async () => {
+      mockAuth.refreshSession.mockReturnValue(new Promise(() => undefined));
+      window.dispatchEvent(new Event('focus'));
+      await vi.advanceTimersByTimeAsync(12_001);
+      expect(service.getAccessToken()).toBe('old-token');
+      expect(TestBed.inject(InteractionStatusService).error()).toBe('');
+      expect(TestBed.inject(InteractionStatusService).busy()).toBe(false);
+    });
+
+    it('rejects a late refresh after the account changes', async () => {
+      let finish!: (value:any) => void;
+      mockAuth.refreshSession.mockImplementation(() => new Promise(resolve => finish=resolve));
+      const pending=service.refreshPlan();
+      service.currentUser.set({id:'different-doctor'} as User); service.session.set(null);
+      finish({data:{session:planSession('PRO')},error:null});
+      await expect(pending).rejects.toThrow('La sesión cambió');
+      expect(service.currentUser()?.id).toBe('different-doctor'); expect(service.session()).toBeNull();
+    });
+
+    it('does not resurrect a signed-out account through a late SDK refresh event', async () => {
+      let finish!: (value:any) => void;
+      mockAuth.refreshSession.mockImplementation(() => new Promise(resolve => finish=resolve));
+      const pending=service.refreshPlan();
+      const callback=mockAuth.onAuthStateChange.mock.calls.at(-1)![0];
+      callback('SIGNED_OUT', null);
+      callback('TOKEN_REFRESHED', planSession('PRO'));
+      finish({data:{session:planSession('PRO')},error:null});
+      await expect(pending).rejects.toThrow('La sesión cambió');
+      expect(service.isLoggedIn()).toBe(false); expect(service.getAccessToken()).toBeNull();
+    });
+
+    it('cleans up polling and ignores pending responses after destruction', async () => {
+      let finish!: (value:any) => void;
+      mockAuth.refreshSession.mockImplementation(() => new Promise(resolve => finish=resolve));
+      window.dispatchEvent(new Event('focus'));
+      TestBed.resetTestingModule();
+      finish({data:{session:planSession('PRO')},error:null});
+      await vi.advanceTimersByTimeAsync(120_000);
+      window.dispatchEvent(new Event('focus'));
+      expect(mockAuth.refreshSession).toHaveBeenCalledTimes(1);
+      expect(service.getAccessToken()).toBe('old-token');
+      expect(vi.getTimerCount()).toBe(0);
+    });
   });
 
 });

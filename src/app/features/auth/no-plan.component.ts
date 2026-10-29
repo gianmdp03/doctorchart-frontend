@@ -10,13 +10,15 @@ import { environment } from '../../../environments/environment';
       <section class="plan-card" aria-labelledby="plan-title">
         <img src="/doctorchart-logo.svg" width="56" height="56" alt="DoctorChart" />
         <p class="product">DoctorChart</p>
-        <span class="plan-status">Sin plan activo</span>
-        <h1 id="plan-title">Necesitás un plan para continuar</h1>
+        <span class="plan-status">{{ hasPlan() ? 'Plan activo' : 'Sin plan activo' }}</span>
+        <h1 id="plan-title">{{ hasPlan() ? 'Tu acceso ya está disponible' : 'Necesitás un plan para continuar' }}</h1>
+        @if (!hasPlan()) {
         <p>Iniciaste sesión correctamente. Tu cuenta no tiene un plan activo de DoctorChart o el anterior ya venció.</p>
         <p>Para usar las historias clínicas y las demás herramientas, contratá un plan de DoctorChart en Bycode.</p>
         <a class="primary" [href]="plansUrl">Ver planes en Bycode</a>
+        }
         <button class="secondary" type="button" (click)="checkPlan()" [disabled]="busy()">
-          {{ busy() ? 'Verificando plan…' : 'Ya contraté un plan: verificar acceso' }}
+          {{ busy() ? 'Verificando plan…' : hasPlan() ? 'Continuar a DoctorChart' : 'Ya contraté un plan: verificar acceso' }}
         </button>
         @if (message()) { <p class="feedback" role="status">{{ message() }}</p> }
         <button class="logout" type="button" (click)="signOut()" [disabled]="busy()">Cerrar sesión</button>
@@ -44,6 +46,7 @@ import { environment } from '../../../environments/environment';
 })
 export class NoPlanComponent {
   private readonly auth = inject(AuthService);
+  readonly hasPlan = this.auth.hasDoctorchartPlan;
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   readonly plansUrl = new URL('/pricing', environment.bycodePlansUrl).href;
@@ -54,7 +57,7 @@ export class NoPlanComponent {
     if (this.busy()) return;
     this.busy.set(true); this.message.set('');
     try {
-      await this.auth.refreshPlan();
+      if (!this.auth.hasDoctorchartPlan()) await this.auth.refreshPlan();
       if (this.auth.hasDoctorchartPlan()) {
         const requested = this.route.snapshot.queryParamMap.get('returnUrl');
         const path = requested?.split(/[?#]/)[0];

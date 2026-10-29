@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { NoPlanComponent } from './no-plan.component';
 import { AuthService } from '../../core/services/auth.service';
+import { signal } from '@angular/core';
 
 describe('No plan account screen', () => {
  const auth = {refreshPlan: vi.fn(), hasDoctorchartPlan: vi.fn(), signOut: vi.fn()};
@@ -29,6 +30,18 @@ describe('No plan account screen', () => {
  });
  it('continues the requested clinical route after refreshing an active plan', async () => {
   auth.hasDoctorchartPlan.mockReturnValue(true); await component.checkPlan();
+  expect(navigate).toHaveBeenCalledWith('/patients/42',{onSameUrlNavigation:'reload'});
+ });
+ it('offers access after a background activation without navigating or requesting another token', async () => {
+  const plan = signal(false); auth.hasDoctorchartPlan.mockImplementation(() => plan());
+  const fixture=TestBed.createComponent(NoPlanComponent); fixture.detectChanges();
+  plan.set(true); fixture.detectChanges();
+  expect(fixture.nativeElement.textContent).toContain('Tu acceso ya está disponible');
+  expect(fixture.nativeElement.textContent).toContain('Continuar a DoctorChart');
+  expect(fixture.nativeElement.textContent).not.toContain('Tu cuenta no tiene un plan');
+  expect(navigate).not.toHaveBeenCalled();
+  await fixture.componentInstance.checkPlan();
+  expect(auth.refreshPlan).not.toHaveBeenCalled();
   expect(navigate).toHaveBeenCalledWith('/patients/42',{onSameUrlNavigation:'reload'});
  });
  it('uses dashboard rather than an external return URL', async () => {

@@ -16,6 +16,25 @@ import { createAuthFetch } from './auth-fetch';
 
 export const SUPABASE_CLIENT = new InjectionToken<SupabaseClient | null>('SUPABASE_CLIENT');
 
+export function doctorchartSessionOptions(mailCallback: boolean) {
+  return {persistSession: true, autoRefreshToken: true, detectSessionInUrl: !mailCallback};
+}
+
+/** Legacy email links belong to Bycode's isolated result flow, never to this app's session. */
+export function forwardDoctorchartMailCallback(
+  location: Pick<Location, 'hash' | 'pathname' | 'search' | 'replace'>,
+  history: Pick<History, 'replaceState'>,
+): boolean {
+  const type = new URLSearchParams(location.hash.replace(/^#/, '')).get('type');
+  if (!type || !['signup', 'invite', 'email_change', 'recovery', 'magiclink'].includes(type)) return false;
+  const path = type === 'recovery' ? '/reset-password' : type === 'email_change' ? '/email-change-success' : '/auth-success';
+  const destination = new URL(path, environment.bycodePlansUrl);
+  destination.hash = location.hash;
+  history.replaceState(null, '', location.pathname + location.search);
+  location.replace(destination.href);
+  return true;
+}
+
 export interface SignUpParams {
   email: string;
   password: string;
@@ -50,6 +69,22 @@ export class AuthService {
   private entitlementTimer?: ReturnType<typeof setTimeout>;
   private authSubscription?: { unsubscribe(): void };
   private destroyed = false;
+  private planTimer?: ReturnType<typeof setTimeout>;
+  private planRefresh?: Promise<void>;
+  private planRefreshGeneration?: number;
+  private cancelPlanRefresh?: () => void;
+  private lastPlanRefresh = -Infinity;
+  private sessionGeneration = 0;
+  private readonly onPlanFocus = () => {
+    this.schedulePlanRefresh();
+    if (document.visibilityState === 'visible' && Date.now() - this.lastPlanRefresh >= 15_000) {
+      void this.refreshPlanQuietly();
+    }
+  };
+  private readonly onPlanVisibility = () => {
+    if (document.visibilityState === 'visible') this.onPlanFocus();
+    else clearTimeout(this.planTimer);
+  };
   private supabaseClient: SupabaseClient | null = inject(SUPABASE_CLIENT, { optional: true }) ?? null;
 
   readonly currentUser = signal<User | null>(null);
@@ -161,17 +196,27 @@ export class AuthService {
   });
 
   constructor() {
+    const mailCallback = this.isBrowser && forwardDoctorchartMailCallback(window.location, window.history);
     this.destroyRef.onDestroy(() => {
       this.destroyed = true;
       clearTimeout(this.entitlementTimer);
+      clearTimeout(this.planTimer);
+      this.cancelPlanRefresh?.();
+      if (this.isBrowser) {
+        window.removeEventListener('focus', this.onPlanFocus);
+        document.removeEventListener('visibilitychange', this.onPlanVisibility);
+      }
       this.authSubscription?.unsubscribe();
     });
     if (this.isBrowser) {
+      window.addEventListener('focus', this.onPlanFocus);
+      document.addEventListener('visibilitychange', this.onPlanVisibility);
       effect(() => {
         this.currentUser();
         untracked(() => {
           this.entitlementClock.set(Date.now());
           this.scheduleEntitlementClock();
+          this.schedulePlanRefresh();
         });
       });
     }
@@ -181,17 +226,26 @@ export class AuthService {
     if (!this.supabaseClient && this.isBrowser) {
       this.supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
         global: { fetch: createAuthFetch() },
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-        },
+        auth: doctorchartSessionOptions(mailCallback),
       });
     }
 
     if (this.isBrowser) {
       this.initSession();
     }
+  }
+
+  private schedulePlanRefresh(): void {
+    clearTimeout(this.planTimer);
+    if (this.destroyed || !this.isBrowser || document.visibilityState !== 'visible' || !this.currentUser()) return;
+    this.planTimer = setTimeout(() => void this.refreshPlanQuietly(), 60_000);
+  }
+
+  private async refreshPlanQuietly(): Promise<void> {
+    if (!this.currentUser() || this.destroyed || document.visibilityState !== 'visible') return;
+    try { await this.refreshPlan(false); }
+    catch { /* Keep the last server-confirmed session; the next visible check can retry. */ }
+    finally { this.schedulePlanRefresh(); }
   }
 
   private expiryTime(value: string | null): number {
@@ -231,6 +285,9 @@ export class AuthService {
     this.authSubscription = this.supabaseClient.auth.onAuthStateChange((_event, session) => {
       revision++;
       if (this.destroyed) return;
+      if (_event === 'TOKEN_REFRESHED' && this.planRefresh &&
+          (this.planRefreshGeneration !== this.sessionGeneration || this.currentUser()?.id !== session?.user.id)) return;
+      if (_event === 'SIGNED_OUT' || this.currentUser()?.id !== session?.user.id) this.sessionGeneration++;
       this.session.set(session);
       this.currentUser.set(session?.user ?? null);
       this.isAuthInitialized.set(true);
@@ -263,6 +320,7 @@ export class AuthService {
     if (!this.supabaseClient) {
       throw new Error('Supabase client is not available in this environment.');
     }
+    this.sessionGeneration++;
     const response = await this.interaction.wait(this.supabaseClient.auth.signInWithPassword(credentials));
     if (response.data?.session) {
       this.session.set(response.data.session);
@@ -304,17 +362,40 @@ export class AuthService {
     });
   }
 
-  async refreshPlan(): Promise<void> {
+  async refreshPlan(interactive = true): Promise<void> {
+    if (interactive) return this.interaction.wait(this.refreshPlan(false));
+    if (this.planRefresh) return this.planRefresh;
     const identity = this.currentUser()?.id;
     if (!this.supabaseClient || !identity) throw new Error('No hay una sesión activa.');
-    const { data, error } = await this.interaction.wait(this.supabaseClient.auth.refreshSession());
-    if (error || !data.session) throw new Error('No pudimos actualizar tu plan. Reintentá en unos momentos.');
-    if (this.currentUser()?.id !== identity) throw new Error('La sesión cambió. Volvé a iniciar sesión.');
-    this.session.set(data.session);
-    this.currentUser.set(data.session.user);
+    const generation = this.sessionGeneration;
+    this.planRefreshGeneration = generation;
+    const client = this.supabaseClient;
+    this.lastPlanRefresh = Date.now();
+    this.planRefresh = (async () => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const deadline = new Promise<never>((_, reject) => {
+          this.cancelPlanRefresh = () => reject(new Error('La actualización de sesión terminó.'));
+          timer = setTimeout(() => reject(new Error('No pudimos actualizar tu plan. Reintentá en unos momentos.')), 12_000);
+        });
+        const { data, error } = await Promise.race([client.auth.refreshSession(), deadline]);
+        if (error || !data.session) throw new Error('No pudimos actualizar tu plan. Reintentá en unos momentos.');
+        if (this.destroyed || generation !== this.sessionGeneration || this.currentUser()?.id !== identity || data.session.user.id !== identity) {
+          throw new Error('La sesión cambió. Volvé a iniciar sesión.');
+        }
+        this.session.set(data.session);
+        this.currentUser.set(data.session.user);
+      } finally {
+        clearTimeout(timer);
+        this.cancelPlanRefresh = undefined;
+        this.planRefresh = undefined;
+      }
+    })();
+    return this.planRefresh;
   }
 
   async signOut(): Promise<{ error: Error | null }> {
+    this.sessionGeneration++;
     if (!this.supabaseClient) {
       return { error: null };
     }
