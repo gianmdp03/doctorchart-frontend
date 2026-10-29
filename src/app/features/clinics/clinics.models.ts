@@ -227,18 +227,84 @@ export function isValidCanonicalBigInt(value: string, allowZero = false): boolea
   }
 }
 
-const IANA_AREA_LOCATION_PATTERN =
-  /^[A-Z][a-z]+\/[A-Z][A-Za-z0-9_+-]*(?:\/[A-Z][A-Za-z0-9_+-]*)*$/;
 const FORBIDDEN_TIMEZONE_PREFIX = /^(?:posix|right|etc)\//i;
 const FORBIDDEN_FIXED_OFFSET = /^(?:[+-]\d|utc[+-]|gmt[+-])/i;
+const IANA_TITLE_CASE_AREA = /^[A-Z][a-z]{3,}$/;
+const IANA_TITLE_CASE_SUBTOKEN = /^[A-Z][a-z0-9+]*$/;
+const IANA_LOWERCASE_PARTICLES = new Set(['of', 'es', 'au']);
+const IANA_UPPERCASE_ABBREV_TOKENS = new Set(['us', 'in', 'act', 'lhi', 'nsw']);
+const IANA_EXACT_CAMEL_TOKENS: Readonly<Record<string, string>> = {
+  comodrivadavia: 'ComodRivadavia',
+  dumontdurville: 'DumontDUrville',
+  mcmurdo: 'McMurdo',
+  denoronha: 'DeNoronha',
+  easterisland: 'EasterIsland',
+  bajanorte: 'BajaNorte',
+  bajasur: 'BajaSur',
+};
 
+function hasValidIanaSubToken(subToken: string, isMiddle: boolean): boolean {
+  if (!subToken) {
+    return false;
+  }
+  const lower = subToken.toLowerCase();
+  if (IANA_LOWERCASE_PARTICLES.has(lower)) {
+    return isMiddle && subToken === lower;
+  }
+  if (IANA_UPPERCASE_ABBREV_TOKENS.has(lower)) {
+    return subToken === lower.toUpperCase();
+  }
+  const exactCamel = IANA_EXACT_CAMEL_TOKENS[lower];
+  if (exactCamel !== undefined) {
+    return subToken === exactCamel;
+  }
+  return IANA_TITLE_CASE_SUBTOKEN.test(subToken);
+}
+
+/**
+ * Validates exact IANA segment and sub-token capitalization.
+ *
+ * ECMA-402 limitation: `new Intl.DateTimeFormat(locale, { timeZone })` performs
+ * case-insensitive lookup (`IsAvailableTimeZoneName`) and canonicalizes IANA
+ * `Link` / modern-renamed identifiers to CLDR primary names in
+ * `resolvedOptions().timeZone` (e.g. `America/Argentina/Buenos_Aires` ->
+ * `America/Buenos_Aires`, `Asia/Kolkata` -> `Asia/Calcutta`, `US/Eastern` ->
+ * `America/New_York`). Relying only on `resolvedOptions().timeZone` would allow
+ * invalid internal uppercase in aliases (`America/ARgentina/Buenos_Aires`,
+ * `Asia/KOLKata`) or reject valid IANA links (`US/Eastern`).
+ *
+ * This lexical grammar enforces exact IANA `tzdb` segment and sub-token casing
+ * alongside `Intl` recognition as immediate UX assistance; the Go backend and
+ * PostgreSQL remain the definitive authority.
+ */
 function hasCanonicalSegmentCasing(candidate: string, resolved: string): boolean {
   const candidateSegments = candidate.split('/');
+  if (candidateSegments.length < 2) {
+    return false;
+  }
+
+  const area = candidateSegments[0];
+  if (area !== 'US' && !IANA_TITLE_CASE_AREA.test(area)) {
+    return false;
+  }
+
   const resolvedSegments = resolved.split('/');
-  for (const segment of candidateSegments) {
-    if (!/^[A-Z]/.test(segment) || !/[a-z]/.test(segment)) {
+  for (let segIdx = 0; segIdx < candidateSegments.length; segIdx++) {
+    const segment = candidateSegments[segIdx];
+    if (!segment || /^[_-]|[_-]$/.test(segment)) {
       return false;
     }
+
+    if (segIdx > 0) {
+      const subTokens = segment.split(/[_-]/);
+      for (let tIdx = 0; tIdx < subTokens.length; tIdx++) {
+        const isMiddle = tIdx > 0 && tIdx < subTokens.length - 1;
+        if (!hasValidIanaSubToken(subTokens[tIdx], isMiddle)) {
+          return false;
+        }
+      }
+    }
+
     const matchingResolved = resolvedSegments.find(
       (resSeg) => resSeg.toLowerCase() === segment.toLowerCase(),
     );
@@ -266,7 +332,7 @@ export function validateIanaTimezone(raw: string): ClinicFieldErrorCode | null {
   if (FORBIDDEN_TIMEZONE_PREFIX.test(trimmed) || FORBIDDEN_FIXED_OFFSET.test(trimmed)) {
     return 'INVALID_TIMEZONE';
   }
-  if (!IANA_AREA_LOCATION_PATTERN.test(trimmed)) {
+  if (!trimmed.includes('/')) {
     return 'INVALID_TIMEZONE';
   }
   try {
