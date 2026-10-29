@@ -229,92 +229,58 @@ export function isValidCanonicalBigInt(value: string, allowZero = false): boolea
 
 const FORBIDDEN_TIMEZONE_PREFIX = /^(?:posix|right|etc)\//i;
 const FORBIDDEN_FIXED_OFFSET = /^(?:[+-]\d|utc[+-]|gmt[+-])/i;
-const IANA_TITLE_CASE_AREA = /^[A-Z][a-z]{3,}$/;
-const IANA_TITLE_CASE_SUBTOKEN = /^[A-Z][a-z0-9+]*$/;
-const IANA_LOWERCASE_PARTICLES = new Set(['of', 'es', 'au']);
-const IANA_UPPERCASE_ABBREV_TOKENS = new Set(['us', 'in', 'act', 'lhi', 'nsw']);
-const IANA_EXACT_CAMEL_TOKENS: Readonly<Record<string, string>> = {
-  comodrivadavia: 'ComodRivadavia',
-  dumontdurville: 'DumontDUrville',
-  mcmurdo: 'McMurdo',
-  denoronha: 'DeNoronha',
-  easterisland: 'EasterIsland',
-  bajanorte: 'BajaNorte',
-  bajasur: 'BajaSur',
-};
+const IANA_SYNTAX_PATTERN =
+  /^[A-Z][A-Za-z0-9+-]*(?:_[A-Za-z0-9+-]+)*(?:\/[A-Z][A-Za-z0-9+-]*(?:_[A-Za-z0-9+-]+)*)+$/;
 
-function hasValidIanaSubToken(subToken: string, isMiddle: boolean): boolean {
-  if (!subToken) {
-    return false;
+/**
+ * Uses `Intl.DateTimeFormat` as a UX helper when the browser recognizes the
+ * timezone, without treating `Intl` as the sole authorized list of identifiers
+ * or reproducing `tzdb` capitalization exceptions in JavaScript.
+ *
+ * - If `Intl` resolves the identifier, any `/` segment present in both the
+ *   candidate and the resolved identifier must match its canonical casing.
+ * - If `Intl` canonicalizes an alias to a different name (e.g. `US/Eastern` ->
+ *   `America/New_York`, `Asia/Kolkata` -> `Asia/Calcutta`) or does not recognize
+ *   a syntactically valid identifier (e.g. a newer `tzdata` release in Go),
+ *   this function returns `true` so the candidate can be sent unmodified to Go.
+ */
+function hasIntlCompatibleCasing(candidate: string): boolean {
+  try {
+    const resolved = new Intl.DateTimeFormat('es-AR', { timeZone: candidate }).resolvedOptions()
+      .timeZone;
+    if (!resolved) {
+      return true;
+    }
+    const candidateSegments = candidate.split('/');
+    const resolvedSegments = resolved.split('/');
+    for (const segment of candidateSegments) {
+      const matchingResolved = resolvedSegments.find(
+        (resSeg) => resSeg.toLowerCase() === segment.toLowerCase(),
+      );
+      if (matchingResolved !== undefined && matchingResolved !== segment) {
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return true;
   }
-  const lower = subToken.toLowerCase();
-  if (IANA_LOWERCASE_PARTICLES.has(lower)) {
-    return isMiddle && subToken === lower;
-  }
-  if (IANA_UPPERCASE_ABBREV_TOKENS.has(lower)) {
-    return subToken === lower.toUpperCase();
-  }
-  const exactCamel = IANA_EXACT_CAMEL_TOKENS[lower];
-  if (exactCamel !== undefined) {
-    return subToken === exactCamel;
-  }
-  return IANA_TITLE_CASE_SUBTOKEN.test(subToken);
 }
 
 /**
- * Validates exact IANA segment and sub-token capitalization.
+ * Frontend UX validator for clinic timezone input.
  *
- * ECMA-402 limitation: `new Intl.DateTimeFormat(locale, { timeZone })` performs
- * case-insensitive lookup (`IsAvailableTimeZoneName`) and canonicalizes IANA
- * `Link` / modern-renamed identifiers to CLDR primary names in
- * `resolvedOptions().timeZone` (e.g. `America/Argentina/Buenos_Aires` ->
- * `America/Buenos_Aires`, `Asia/Kolkata` -> `Asia/Calcutta`, `US/Eastern` ->
- * `America/New_York`). Relying only on `resolvedOptions().timeZone` would allow
- * invalid internal uppercase in aliases (`America/ARgentina/Buenos_Aires`,
- * `Asia/KOLKata`) or reject valid IANA links (`US/Eastern`).
+ * Immediately rejects unequivocally invalid inputs (empty values, strings
+ * exceeding `CLINIC_FIELD_LIMITS.timezone`, `'Local'`, fixed offsets,
+ * `Etc/*`, `posix/*`, `right/*`, malformed paths, and capitalization that
+ * contradicts segments resolved by `Intl`).
  *
- * This lexical grammar enforces exact IANA `tzdb` segment and sub-token casing
- * alongside `Intl` recognition as immediate UX assistance; the Go backend and
- * PostgreSQL remain the definitive authority.
+ * Accepting a value here (`null`) only allows sending it unmodified to the
+ * backend; it does NOT declare the timezone valid on the server. The Go backend
+ * (`tzdata`) and PostgreSQL are the definitive authority and reject unknown
+ * zones or invalid alias capitalization with `400 INVALID_REQUEST`
+ * (`INVALID_TIMEZONE`).
  */
-function hasCanonicalSegmentCasing(candidate: string, resolved: string): boolean {
-  const candidateSegments = candidate.split('/');
-  if (candidateSegments.length < 2) {
-    return false;
-  }
-
-  const area = candidateSegments[0];
-  if (area !== 'US' && !IANA_TITLE_CASE_AREA.test(area)) {
-    return false;
-  }
-
-  const resolvedSegments = resolved.split('/');
-  for (let segIdx = 0; segIdx < candidateSegments.length; segIdx++) {
-    const segment = candidateSegments[segIdx];
-    if (!segment || /^[_-]|[_-]$/.test(segment)) {
-      return false;
-    }
-
-    if (segIdx > 0) {
-      const subTokens = segment.split(/[_-]/);
-      for (let tIdx = 0; tIdx < subTokens.length; tIdx++) {
-        const isMiddle = tIdx > 0 && tIdx < subTokens.length - 1;
-        if (!hasValidIanaSubToken(subTokens[tIdx], isMiddle)) {
-          return false;
-        }
-      }
-    }
-
-    const matchingResolved = resolvedSegments.find(
-      (resSeg) => resSeg.toLowerCase() === segment.toLowerCase(),
-    );
-    if (matchingResolved && matchingResolved !== segment) {
-      return false;
-    }
-  }
-  return true;
-}
-
 export function validateIanaTimezone(raw: string): ClinicFieldErrorCode | null {
   const trimmed = raw.trim();
   if (!trimmed) {
@@ -332,19 +298,13 @@ export function validateIanaTimezone(raw: string): ClinicFieldErrorCode | null {
   if (FORBIDDEN_TIMEZONE_PREFIX.test(trimmed) || FORBIDDEN_FIXED_OFFSET.test(trimmed)) {
     return 'INVALID_TIMEZONE';
   }
-  if (!trimmed.includes('/')) {
+  if (!IANA_SYNTAX_PATTERN.test(trimmed) || !/[a-z]/.test(trimmed)) {
     return 'INVALID_TIMEZONE';
   }
-  try {
-    const resolved = new Intl.DateTimeFormat('es-AR', { timeZone: trimmed }).resolvedOptions()
-      .timeZone;
-    if (!resolved || !hasCanonicalSegmentCasing(trimmed, resolved)) {
-      return 'INVALID_TIMEZONE';
-    }
-    return null;
-  } catch {
+  if (!hasIntlCompatibleCasing(trimmed)) {
     return 'INVALID_TIMEZONE';
   }
+  return null;
 }
 
 export function isValidIanaTimezone(raw: string): boolean {

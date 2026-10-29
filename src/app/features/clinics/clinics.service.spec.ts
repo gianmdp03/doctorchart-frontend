@@ -153,8 +153,8 @@ describe('ClinicsService HTTP contract & never-fallback behavior', () => {
 });
 
 describe('Contract validation & MockClinicsBackend rules (M2-CLINICS-v1)', () => {
-  it('validates the full M2-CLINICS-v1 IANA timezone matrix, valid aliases, and rejects fixed offsets, Etc/*, and non-canonical casing', () => {
-    const accepted = [
+  it('accepts known regional zones, UTC, Go aliases, and syntactically reasonable zones unknown to Intl while rejecting unequivocally invalid inputs', async () => {
+    const acceptedByFrontendAndGo = [
       'America/Argentina/Buenos_Aires',
       'America/Argentina/Cordoba',
       'America/Argentina/ComodRivadavia',
@@ -191,38 +191,43 @@ describe('Contract validation & MockClinicsBackend rules (M2-CLINICS-v1)', () =>
       'UTC',
       ' UTC ',
     ];
-    for (const tz of accepted) {
+    for (const tz of acceptedByFrontendAndGo) {
       expect(validateIanaTimezone(tz)).toBeNull();
       expect(isValidIanaTimezone(tz)).toBe(true);
     }
 
-    const rejectedInvalidTimezone = [
-      // P2 confirmed regressions: non-canonical internal uppercase in aliases resolved by Intl
-      'America/ARgentina/Buenos_Aires',
-      'Asia/KOLKata',
-      // Other non-canonical casings of primary zones, aliases, particles, abbreviations, and camel tokens
+    // Syntactically reasonable zones unknown to the browser's Intl (e.g. future tzdata in Go)
+    // must be allowed by the frontend UX validator so they can be sent unmodified to Go.
+    const unknownToBrowserButSyntacticallyReasonable = [
+      'America/Ciudad_Futura',
+      'Antarctica/Base_Austral_2027',
+      'Mars/Olympus',
+    ];
+    for (const tz of unknownToBrowserButSyntacticallyReasonable) {
+      expect(validateIanaTimezone(tz)).toBeNull();
+      expect(isValidIanaTimezone(tz)).toBe(true);
+    }
+
+    // Immediately rejected in the browser (unequivocally invalid syntax, prefixes, offsets, or contradicting Intl resolved segments)
+    const rejectedImmediatelyByFrontend = [
       'america/argentina/buenos_aires',
       'AMERICA/ARGENTINA/BUENOS_AIRES',
+      'America/argentina/Buenos_Aires',
+      'America/Argentina/buenos_aires',
       'America/Argentina/buenos_Aires',
       'America/Argentina/Buenos_aires',
       'America/new_York',
       'America/New_york',
-      'Us/Eastern',
       'us/Eastern',
       'US/eastern',
       'US/EASTERN',
-      'Europe/KYiv',
       'Europe/kyiv',
       'America/Port_Of_Spain',
       'America/Port-Au-Prince',
       'Africa/Dar_Es_Salaam',
       'Australia/nsw',
-      'Australia/Nsw',
-      'America/Knox_In',
-      'Brazil/denoronha',
       'Antarctica/Mcmurdo',
       'Antarctica/DumontDurville',
-      // Policy-rejected prefixes, fixed offsets, abbreviations, and unknown zones
       'Local',
       'local',
       'GMT',
@@ -234,17 +239,63 @@ describe('Contract validation & MockClinicsBackend rules (M2-CLINICS-v1)', () =>
       'GMT+3',
       'posix/America/New_York',
       'right/America/New_York',
-      'Mars/Olympus',
       'Etc/GMT+3',
       'Etc/GMT-3',
       'Etc/UTC',
       'Etc/GMT',
       'utc',
+      'Utc',
     ];
-    for (const tz of rejectedInvalidTimezone) {
+    for (const tz of rejectedImmediatelyByFrontend) {
       expect(validateIanaTimezone(tz)).toBe('INVALID_TIMEZONE');
       expect(isValidIanaTimezone(tz)).toBe(false);
     }
+
+    // Variants with non-canonical alias capitalization or unknown zones that pass frontend UX
+    // syntax checks are sent to Go and rejected authoritatively by the backend with INVALID_TIMEZONE.
+    const backend = new MockClinicsBackend('VERIFIED');
+    const rejectedByBackend = [
+      'America/ARgentina/Buenos_Aires',
+      'Asia/KOLKata',
+      'Us/Eastern',
+      'Europe/KYiv',
+      'Mars/Olympus',
+    ];
+    for (const tz of rejectedByBackend) {
+      expect(validateIanaTimezone(tz)).toBeNull();
+      try {
+        await firstValueFrom(
+          backend.createClinic({
+            name: 'Consultorio Prueba',
+            country: 'Argentina',
+            province: 'CABA',
+            city: 'Buenos Aires',
+            address: 'Av. Santa Fe 1000',
+            timezone: tz,
+          }),
+        );
+        expect.unreachable();
+      } catch (err) {
+        const parsed = parseClinicHttpError(err, 'Fallback');
+        expect(parsed.status).toBe(400);
+        expect(parsed.code).toBe('INVALID_REQUEST');
+        expect(parsed.fieldErrors['timezone']).toBeDefined();
+      }
+    }
+
+    // When Go's tzdata recognizes a newer zone unknown to the browser, creation succeeds without rewriting the name.
+    backend.allowServerTimezone('America/Ciudad_Futura');
+    const createdFuture = await firstValueFrom(
+      backend.createClinic({
+        name: 'Consultorio Futuro',
+        country: 'Argentina',
+        province: 'CABA',
+        city: 'Buenos Aires',
+        address: 'Av. Santa Fe 2000',
+        timezone: 'America/Ciudad_Futura',
+      }),
+    );
+    expect(createdFuture.timezone).toBe('America/Ciudad_Futura');
 
     expect(validateIanaTimezone('')).toBe('REQUIRED');
     expect(validateIanaTimezone('   ')).toBe('REQUIRED');

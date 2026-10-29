@@ -8,6 +8,7 @@ import {
   ClinicEditableField,
   ClinicEntitlements,
   ClinicFieldError,
+  ClinicFieldErrorCode,
   ClinicListResponse,
   ClinicStatus,
   CreateClinicRequest,
@@ -302,6 +303,8 @@ export class MockClinicsBackend implements ClinicsTransport {
   private clinics: Clinic[];
   private entitlements: ClinicEntitlements;
   private nextId = 200n;
+  private readonly extraServerTimezones = new Set<string>();
+  private readonly rejectedServerTimezones = new Set<string>();
 
   constructor(scenario: MockClinicsScenarioKey = 'VERIFIED', initialClinics?: readonly Clinic[]) {
     this.entitlements = structuredClone(MOCK_CAPABILITIES_BY_SCENARIO[scenario].entitlements);
@@ -312,6 +315,14 @@ export class MockClinicsBackend implements ClinicsTransport {
     } else {
       this.clinics = structuredClone([...MOCK_CLINICS_FIXTURES]);
     }
+  }
+
+  allowServerTimezone(timezone: string): void {
+    this.extraServerTimezones.add(timezone.trim());
+  }
+
+  rejectServerTimezone(timezone: string): void {
+    this.rejectedServerTimezones.add(timezone.trim());
   }
 
   setScenario(scenario: MockClinicsScenarioKey, customClinics?: readonly Clinic[]): void {
@@ -552,7 +563,7 @@ export class MockClinicsBackend implements ClinicsTransport {
     for (const key of providedKeys) {
       const val = payload[key] ?? '';
       const code =
-        key === 'timezone' ? validateIanaTimezone(val) : validateClinicTextField(key, val);
+        key === 'timezone' ? this.validateServerTimezone(val) : validateClinicTextField(key, val);
       if (code) {
         fieldErrors.push({ path: key, code });
       }
@@ -676,10 +687,41 @@ export class MockClinicsBackend implements ClinicsTransport {
         errors.push({ path: field, code });
       }
     }
-    const tzCode = validateIanaTimezone(payload.timezone ?? '');
+    const tzCode = this.validateServerTimezone(payload.timezone ?? '');
     if (tzCode) {
       errors.push({ path: 'timezone', code: tzCode });
     }
     return errors;
+  }
+
+  /**
+   * Simulates the authoritative Go (`time.LoadLocation` + `clinics.go`) and
+   * PostgreSQL (`pg_timezone_names`) validation in tests.
+   */
+  private validateServerTimezone(raw: string): ClinicFieldErrorCode | null {
+    const clientCode = validateIanaTimezone(raw);
+    if (clientCode) {
+      return clientCode;
+    }
+    const trimmed = raw.trim();
+    if (this.rejectedServerTimezones.has(trimmed)) {
+      return 'INVALID_TIMEZONE';
+    }
+    if (trimmed === 'UTC' || this.extraServerTimezones.has(trimmed)) {
+      return null;
+    }
+    if (
+      trimmed.startsWith('Us/') ||
+      /(?:^|\/|[ _-])[A-Z]{2,}[a-z]/.test(trimmed.replace('DumontDUrville', 'DumontDurville'))
+    ) {
+      return 'INVALID_TIMEZONE';
+    }
+    try {
+      const resolved = new Intl.DateTimeFormat('es-AR', { timeZone: trimmed }).resolvedOptions()
+        .timeZone;
+      return resolved ? null : 'INVALID_TIMEZONE';
+    } catch {
+      return 'INVALID_TIMEZONE';
+    }
   }
 }

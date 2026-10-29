@@ -130,6 +130,48 @@ describe('ClinicFormPageComponent', () => {
     );
   });
 
+  it('sends syntactically reasonable timezones unmodified to Go and displays INVALID_TIMEZONE while preserving all form inputs on backend rejection', async () => {
+    const createSpy = vi.spyOn(mockBackend, 'createClinic');
+
+    component.form.setValue({
+      name: 'Consultorio Palermo',
+      country: 'Argentina',
+      province: 'CABA',
+      city: 'Buenos Aires',
+      address: 'Av. Santa Fe 3200',
+      timezone: 'Asia/KOLKata',
+    });
+
+    await component.submit();
+    fixture.detectChanges();
+
+    // Exact string written by the doctor was sent without alias conversion or casing rewrite
+    expect(createSpy).toHaveBeenCalledWith({
+      name: 'Consultorio Palermo',
+      country: 'Argentina',
+      province: 'CABA',
+      city: 'Buenos Aires',
+      address: 'Av. Santa Fe 3200',
+      timezone: 'Asia/KOLKata',
+    });
+
+    // Authoritative backend rejection is displayed on the timezone field and all inputs are preserved
+    expect(component.isFieldInvalid('timezone')).toBe(true);
+    const tzInput = fixture.nativeElement.querySelector('#clinic-timezone') as HTMLInputElement;
+    expect(tzInput.getAttribute('aria-invalid')).toBe('true');
+    expect(fixture.nativeElement.querySelector('#clinic-timezone-error')?.textContent).toContain(
+      'IANA',
+    );
+    expect(component.form.getRawValue()).toEqual({
+      name: 'Consultorio Palermo',
+      country: 'Argentina',
+      province: 'CABA',
+      city: 'Buenos Aires',
+      address: 'Av. Santa Fe 3200',
+      timezone: 'Asia/KOLKata',
+    });
+  });
+
   it('loads an archived clinic as read-only and unlocks editing once restored to INACTIVE', async () => {
     paramMap$.next(convertToParamMap({ id: '101' }));
     await fixture.whenStable();
