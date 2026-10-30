@@ -1,4 +1,6 @@
 export const FEATURE_FLAGS = {
+  /** M3 agenda editor and availability preview; activation requires owner approval. */
+  SCHEDULES_ENABLED: false,
   /**
    * Controls access to the AI Clinical Assistant (/ai-assistant).
    * Set to true to re-enable the sidebar link and route access.
