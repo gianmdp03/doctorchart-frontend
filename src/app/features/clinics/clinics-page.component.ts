@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -83,6 +84,7 @@ interface StatusFilterOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClinicsPageComponent implements OnInit {
+ readonly schedulesEnabled=FEATURE_FLAGS.SCHEDULES_ENABLED;
   private readonly clinicsService = inject(ClinicsService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);

@@ -1,0 +1,58 @@
+<div class="schedule-page">
+ <a routerLink="/clinics" class="back-link">← Consultorios</a>
+ <header><p class="eyebrow">Agenda del consultorio</p><h1>Horarios y disponibilidad</h1><p>Organizá tus lugares de atención. Esta vista calcula horarios; todavía no crea reservas.</p></header>
+ @if (busy()) { <p role="status">Cargando agenda…</p> }
+ @if (error()) { <div role="alert" class="notice error" data-testid="schedule-error">{{ error() }}</div> }
+ @if (!clinic() && !busy()) { <button type="button" (click)="load()">Reintentar carga</button> }
+ @if (clinic(); as selected) {
+  <section class="selected-clinic" aria-label="Consultorio seleccionado">
+   <div><h2>{{ selected.name }}</h2><p>{{ selected.address }} · {{ selected.city }}</p><p>Zona horaria: <strong>{{ selected.timezone }}</strong> · {{ selected.status === 'ACTIVE' ? 'Activo' : selected.status === 'INACTIVE' ? 'Inactivo' : 'Archivado' }}</p></div>
+   <label>Cambiar consultorio<select [ngModel]="selected.id" (ngModelChange)="selectClinic($event)" [disabled]="saving()"><option [value]="selected.id">{{ selected.name }}</option>@for (item of choices(); track item.id) {@if(item.id !== selected.id){<option [value]="item.id">{{ item.name }}</option>}}</select></label>
+ @if(choiceTotal()>100){<div class="actions"><button type="button" (click)="nextChoices(-1)" [disabled]="choicePage()===0||choicesBusy()">Anteriores</button><span>Página {{ choicePage()+1 }}</span><button type="button" (click)="nextChoices(1)" [disabled]="(choicePage()+1)*100>=choiceTotal()||choicesBusy()">Siguientes</button></div>}
+  </section>
+  @if (selected.status !== 'ACTIVE') {<p class="notice">La configuración se conserva. Este consultorio no ofrece horarios disponibles mientras esté inactivo o archivado.</p>}
+  @if (!canEdit() && !busy() && !saving()) {<div class="notice" role="status">La agenda está en modo lectura: comprobá el estado del consultorio y tus permisos comerciales. <button type="button" (click)="retryCapabilities()">Reintentar permisos</button></div>}
+  @if (conflict()) {<div class="notice" data-testid="schedule-version-conflict">Otra sesión modificó esta agenda. Tu borrador se conserva. Recargar reemplazará los campos con la versión del servidor. <button type="button" (click)="load()">Recargar versión del servidor</button></div>}
+  @if (feedback()) {<p role="status" class="notice success">{{ feedback() }}</p>}
+  <fieldset [disabled]="!canEdit()" class="editor">
+   <legend>Reglas de la agenda</legend>
+   <div class="settings">
+    <label>Duración del turno (minutos)<input id="schedule-duration" type="number" min="5" max="480" step="1" [(ngModel)]="draft.slotMinutes" placeholder="Ingresá la duración"></label>
+    <label>Anticipación mínima (minutos)<input id="schedule-notice" type="number" min="0" max="525600" step="1" [(ngModel)]="draft.minNoticeMinutes" placeholder="0 permite disponibilidad inmediata"></label>
+    <label>Horizonte máximo (días)<input id="schedule-horizon" type="number" min="1" max="366" step="1" [(ngModel)]="draft.maxAdvanceDays" placeholder="Ingresá el horizonte"></label>
+   </div>
+   <section aria-labelledby="weekly-heading"><h2 id="weekly-heading">Semana habitual</h2><p>Agregá una o varias franjas. Sin franjas, ese día no hay atención.</p>
+    @for (day of draft.weekly; track day.weekday) {
+     <div class="day-row"><h3>{{ weekdays[day.weekday-1] }}</h3><div class="ranges">
+      @if (!day.ranges.length) {<span class="muted">Sin atención</span>}
+      @for (range of day.ranges; track $index; let i=$index) {
+       <div class="range"><label>Desde<input type="time" [(ngModel)]="range.start" [attr.aria-label]="weekdays[day.weekday-1] + ' inicio ' + (i+1)"></label><label>Hasta<input type="text" inputmode="numeric" placeholder="HH:mm" [(ngModel)]="range.end" [attr.aria-label]="weekdays[day.weekday-1] + ' fin ' + (i+1)"></label><button type="button" class="remove" (click)="day.ranges.splice(i,1)" [attr.aria-label]="'Quitar franja '+(i+1)+' de '+weekdays[day.weekday-1]">Quitar</button></div>
+      }
+     </div><button type="button" (click)="addRange(day)" [disabled]="day.ranges.length>=16">Añadir franja</button></div>
+    }
+   </section>
+   <section aria-labelledby="exceptions-heading"><h2 id="exceptions-heading">Excepciones</h2><p>Vacaciones, feriados u horarios especiales. La excepción reemplaza la semana habitual en esas fechas. Sin franjas, el período queda cerrado.</p>
+    @if (!draft.exceptions.length) {<p class="muted">No hay excepciones configuradas.</p>}
+    @for (exception of draft.exceptions; track $index; let e=$index) {
+     <div class="exception"><div class="settings">
+      <label>Motivo<input [(ngModel)]="exception.label" maxlength="160" placeholder="Ej.: vacaciones"></label>
+      <label>Desde<app-date-picker [(ngModel)]="exception.from" [inputId]="'exception-from-'+e" /></label>
+      <label>Hasta (inclusive)<app-date-picker [(ngModel)]="exception.through" [inputId]="'exception-through-'+e" /></label>
+     </div>
+     <div class="ranges">@if (!exception.ranges.length) {<span>Cerrado durante este período</span>}
+      @for (range of exception.ranges; track $index; let r=$index) {<div class="range"><label>Desde<input type="time" [(ngModel)]="range.start"></label><label>Hasta<input type="text" inputmode="numeric" placeholder="HH:mm" [(ngModel)]="range.end"></label><button type="button" (click)="exception.ranges.splice(r,1)">Quitar franja</button></div>}
+     </div>
+     <div class="actions"><button type="button" (click)="addRange(exception)" [disabled]="exception.ranges.length>=16">Añadir horario especial</button><button type="button" class="remove" (click)="draft.exceptions.splice(e,1)">Quitar excepción</button></div></div>
+    }
+    <button type="button" (click)="addException()" [disabled]="draft.exceptions.length>=100">Añadir excepción</button>
+   </section>
+  </fieldset>
+  <div class="save-bar"><span>Los cambios no se guardan automáticamente.</span><button type="button" class="primary" data-testid="save-schedule" [disabled]="!canSave()" (click)="save()">{{ saving() ? 'Guardando…' : 'Guardar agenda' }}</button></div>
+  <section class="preview" aria-labelledby="preview-heading"><h2 id="preview-heading">Disponibilidad calculada</h2><p>Se muestra la última configuración guardada, en la zona horaria del consultorio. Los cambios de horario de verano pueden omitir o repetir una hora; el offset distingue cada instante.</p>
+   <div class="actions preview-controls"><label>Fecha inicial<app-date-picker [(ngModel)]="previewDate" inputId="availability-date" /></label><label>Vista<select [(ngModel)]="previewDays"><option [ngValue]="1">Día</option><option [ngValue]="7">Semana</option></select></label><button type="button" (click)="preview()" [disabled]="previewBusy()">{{ previewBusy() ? 'Calculando…' : 'Ver disponibilidad' }}</button></div>
+   @if (previewError()) {<p role="alert" class="notice error">{{ previewError() }}</p>}
+   @if (availability(); as result) {<div class="availability-days">@for (day of result.days; track day.date){<section class="availability-day"><h3>{{ dateLabel(day.date) }}</h3>@if (!day.slots.length){<p class="muted">Sin horarios disponibles.</p>}<ul>@for(slot of day.slots;track slot.start){<li>{{ timeLabel(slot.start) }} → {{ timeLabel(slot.end) }}</li>}</ul></section>}</div>}
+  </section>
+ }
+</div>
+

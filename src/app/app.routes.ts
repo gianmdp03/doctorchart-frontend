@@ -191,6 +191,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path:'clinics/:id/schedule',
+    runGuardsAndResolvers:'always',
+    canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/schedules.guard').then(m=>m.schedulesGuard))],
+    loadComponent:()=>import('./features/schedules/schedule-page.component').then(m=>m.SchedulePageComponent),
+  },
+  {
     path: 'clinics/new',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicsGuard],

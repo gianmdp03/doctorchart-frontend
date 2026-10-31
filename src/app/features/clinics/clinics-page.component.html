@@ -214,6 +214,7 @@
               </td>
               <td data-label="Acciones" class="cell-actions">
                 <div class="row-actions">
+ @if(schedulesEnabled){<a class="btn-row" [routerLink]="['/clinics',clinic.id,'schedule']">Agenda</a>}
                   <a
                     class="btn-row"
                     [routerLink]="['/clinics', clinic.id, 'edit']"
