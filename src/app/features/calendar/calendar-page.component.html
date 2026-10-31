@@ -1,0 +1,68 @@
+<main class="calendar-page">
+ <header class="page-heading"><div><p class="eyebrow">CONSULTORIO MÉDICO</p><h1>Agenda de turnos</h1><p class="muted">Tu atención, organizada. Cada horario se muestra en la zona de su consultorio.</p></div><a routerLink="/clinics">Gestionar consultorios ↗</a></header>
+ <section class="toolbar" aria-label="Controles del calendario">
+  <div class="date-navigation"><button aria-label="Período anterior" (click)="navigate(-1)">‹</button><button (click)="changeDate(dateToday())">Hoy</button><button aria-label="Período siguiente" (click)="navigate(1)">›</button></div>
+  <label class="date-control">Desde<app-date-picker inputId="calendar-date" [value]="date" (valueChange)="changeDate($event)" /></label>
+  <div class="view-control" aria-label="Vista"><button [attr.aria-pressed]="view==='day'" (click)="changeView('day')">Día</button><button [attr.aria-pressed]="view==='week'" (click)="changeView('week')">Semana</button></div>
+  <label class="clinic-control">Consultorio<select id="calendar-clinic" [ngModel]="clinicId" (ngModelChange)="changeClinic($event)"><option value="">Todos mis consultorios</option>@for(c of clinics();track c.id){<option [value]="c.id">{{c.name}}{{c.status==='ACTIVE'?'':' · '+c.status}}</option>}</select></label>
+  <button (click)="load()" [disabled]="loading()" aria-label="Actualizar calendario">↻ Actualizar</button>
+ </section>
+ @if(error()){<div class="notice error" role="alert">{{error()}} <button (click)="load()">Reintentar</button></div>}
+ @if(feedback()){<p class="notice success" role="status">{{feedback()}}</p>}
+ @if(!allowed()){<div class="notice" role="status">Modo de consulta: los permisos comerciales no están vigentes o no pudieron verificarse. <button (click)="retryCapabilities()">Verificar permisos</button></div>}
+ @else if(!canBook()){<p class="notice">Regularizá el cupo de consultorios para crear o reprogramar. Podés gestionar los estados de los turnos existentes.</p>}
+ <div class="legend"><span><i class="dot"></i>Reserva</span><span><i class="dot available"></i>Horario disponible</span><span>Las reservas canceladas conservan su historial.</span></div>
+ <div class="workspace" [class.has-editor]="editor()">
+ <section class="calendar" [class.daily]="view==='day'" [attr.aria-busy]="loading()" aria-label="Agenda médica">
+ @if(loading()){<div class="empty" role="status">Cargando tu agenda…</div>}
+ @else if(!clinics().length&&!error()){<div class="empty"><h2>Tu agenda empieza con un consultorio</h2><p>Configurá una sede y sus horarios para ofrecer turnos.</p><a routerLink="/clinics">Ir a consultorios</a></div>}
+ @else { @for(day of days();track day.date){
+  <article class="day"><header><span>{{weekday(day.date)}}</span><h2>{{displayDay(day.date)}}</h2><p>{{day.bookings.length}} turnos · {{day.slots.length}} disponibles</p></header>
+   <div class="reservations">@for(b of day.bookings;track b.id){<button class="booking" [class.cancelled]="b.status==='CANCELLED'" [attr.data-status]="b.status" [attr.data-booking-id]="b.id" (click)="openBooking(b)" [disabled]="writing()"><span class="booking-time">{{time(b)}} <small>{{offsetLabel(b.start,clinic(b.clinicId)?.timezone??'UTC')}}</small></span><strong>{{b.attendeeName||b.contactName}}</strong><span class="status">{{labels[b.status]}}</span><span class="location">{{clinic(b.clinicId)?.name}} · {{clinic(b.clinicId)?.timezone}}</span></button>}
+   @if(!day.bookings.length){<p class="muted no-bookings">Sin turnos registrados</p>}</div>
+   <details class="available-slots" [open]="view==='day'"><summary>{{day.slots.length}} horarios disponibles</summary><div class="slots">@for(s of day.slots;track s.clinic.id+s.start){<button class="slot" [attr.data-slot-start]="s.start" [disabled]="!canBook()||writing()" (click)="openSlot(s)"><span>{{localTime(s.start,s.clinic.timezone)}} <small>{{offsetLabel(s.start,s.clinic.timezone)}}</small></span><span>{{s.clinic.name}}</span></button>}@if(!day.slots.length){<p class="muted">Sin disponibilidad para este día.</p>}</div></details>
+  </article>
+ } }
+ </section>
+ @if(editor()){
+ <aside class="editor" aria-label="Administración del turno">
+  <header><div><p class="eyebrow">{{editor()==='create'?'NUEVO TURNO':'ADMINISTRAR TURNO'}}</p><h2>{{editor()==='create'?'Reservar horario':(selected()?.attendeeName||selected()?.contactName)}}</h2></div><button (click)="close()" aria-label="Cerrar detalle">✕</button></header>
+  @if(editorError()){<p class="notice error" role="alert">{{editorError()}}</p>}
+  @if(detailBusy()){<p role="status">Consultando la versión vigente…</p>}
+  @if(editor()==='create'&&slot();as s){
+   <div class="slot-summary"><strong>{{displayDay(civilDay(s.start,s.clinic.timezone))}} · {{localTime(s.start,s.clinic.timezone)}} – {{localTime(s.end,s.clinic.timezone)}}</strong><span>{{s.clinic.name}}</span><small>{{s.clinic.timezone}} · {{offsetLabel(s.start,s.clinic.timezone)}}</small></div>
+   <form (ngSubmit)="create()" #createForm="ngForm">
+    <fieldset [disabled]="writing()"><legend>Solicitante</legend><label>Nombre y apellido<input id="booking-contact" name="contactName" [(ngModel)]="contactName" maxlength="160" required autocomplete="name" /></label><label>Teléfono de contacto <span class="muted">(opcional)</span><input id="booking-phone" name="phone" [(ngModel)]="contactPhone" maxlength="80" type="tel" autocomplete="tel" /></label>
+    <label class="checkbox"><input id="booking-different" name="different" type="checkbox" [(ngModel)]="differentPerson" />El turno es para otra persona</label>
+    @if(differentPerson){<label>Nombre de quien será atendido<input id="booking-attendee" name="attendee" [(ngModel)]="attendeeName" maxlength="160" required /></label>}
+    <details class="patient-link"><summary>Vincular una historia clínica existente (opcional)</summary><p class="muted">No se crea un paciente ni una historia clínica al reservar.</p>
+     @if(linkedPatient();as p){<p>Historia vinculada: <strong>{{p.fullName}}</strong> <button type="button" (click)="linkedPatient.set(null)">Quitar vínculo</button></p>}
+     <label>Buscar por nombre<input id="booking-patient-search" name="patientSearch" [(ngModel)]="patientSearch" /></label><button type="button" [disabled]="patientBusy()||patientSearch.trim().length<2" (click)="searchPatients()">{{patientBusy()?'Buscando…':'Buscar paciente'}}</button>
+     @if(patientError()){<p role="alert">{{patientError()}}</p>}
+     @for(p of patientResults();track p.id){<button type="button" class="patient-result" (click)="link(p)">{{p.fullName}} · {{p.nationalId||'Sin documento registrado'}}</button>}
+    </details></fieldset>
+    <button id="booking-create" class="primary full" [disabled]="!validCreate()||createForm.invalid">{{writing()?'Confirmando…':'Confirmar turno'}}</button>
+    @if(conflict()){<p>Elegí un horario actualizado. Los datos del formulario se conservaron.</p><label>Nuevo horario disponible<select name="replacement" [ngModel]="''" (ngModelChange)="chooseDraftSlot($event)" [disabled]="loading()"><option value="">Seleccioná otra opción</option>@for(replacement of draftSlots();track replacement.clinic.id+replacement.start){<option [value]="replacement.clinic.id+'|'+replacement.start">{{displayDay(civilDay(replacement.start,replacement.clinic.timezone))}} {{localTime(replacement.start,replacement.clinic.timezone)}} · {{replacement.clinic.name}}</option>}</select></label><button type="button" (click)="refreshCreateSlot()" [disabled]="loading()">Revalidar horario original</button>}
+   </form>
+  }
+  @if(selected();as b){
+   <div class="slot-summary"><strong>{{displayDay(civilDay(b.start,clinic(b.clinicId)?.timezone??'UTC'))}} · {{time(b)}} – {{localTime(b.end,clinic(b.clinicId)?.timezone??'UTC')}}</strong><span>{{clinic(b.clinicId)?.name}} · {{clinic(b.clinicId)?.timezone}}</span><span class="status">{{labels[b.status]}}</span></div>
+   <dl><dt>Solicitante</dt><dd>{{b.contactName}}</dd><dt>Teléfono</dt><dd>{{b.contactPhone||'Sin registrar'}}</dd><dt>Historia clínica</dt><dd>{{b.patientId?'Vinculada · #'+b.patientId:'Sin vincular'}}</dd></dl>
+   @if(editor()==='detail'){
+    <div class="state-actions">@for(target of transitions(b.status);track target){<button [class.danger]="target==='CANCELLED'" [disabled]="!allowed()||writing()||conflict()||detailBusy()" (click)="status(target)">{{target==='CANCELLED'?'Cancelar turno':'Marcar: '+labels[target]}}</button>}
+    @if(b.status==='CONFIRMED'){<button id="booking-move" class="primary" [disabled]="!canBook()||writing()||conflict()||detailBusy()" (click)="beginMove()">Reprogramar</button>}</div>
+   }
+   @if(editor()==='move'){
+    <section class="move"><h3>Elegir nuevo horario</h3><label>Consultorio<select id="move-clinic" [(ngModel)]="moveClinic" (ngModelChange)="loadTargets()" [disabled]="writing()">@for(c of clinics();track c.id){@if(c.status==='ACTIVE'){<option [value]="c.id">{{c.name}} · {{c.timezone}}</option>}}</select></label><label>Fecha<app-date-picker inputId="move-date" [value]="moveDate" (valueChange)="moveDate=$event;loadTargets()" /></label>
+    @if(targetBusy()){<p role="status">Buscando horarios…</p>}
+    <label>Horario<select id="move-slot" [(ngModel)]="moveStart" [disabled]="targetBusy()||writing()"><option value="">Seleccioná un horario</option>@for(s of targetSlots();track s.start){<option [value]="s.start">{{localTime(s.start,s.clinic.timezone)}} · {{offsetLabel(s.start,s.clinic.timezone)}}</option>}</select></label>
+    <p class="muted">El turno original se conserva hasta confirmar el cambio.</p><button id="move-confirm" class="primary full" [disabled]="!moveStart||writing()||!canBook()||conflict()||targetBusy()" (click)="move()">{{writing()?'Reprogramando…':'Confirmar reprogramación'}}</button>
+    </section>
+   }
+   <button class="full" [disabled]="writing()||detailBusy()" (click)="openBooking(b)">Recargar detalle vigente</button>
+   <details class="history"><summary>Historial de modificaciones · {{events().length}}</summary><ol>@for(event of events();track event.version){<li><strong>{{eventLabel(event.kind)}}</strong><br />{{eventDate(event.occurredAt)}} · versión {{event.version}}</li>}</ol></details>
+  }
+ </aside>
+ }
+ </div>
+</main>

@@ -23,6 +23,10 @@ describe('Time zone request context', () => {
     const req = TestBed.inject(HttpTestingController).expectOne('https://example.test/image');
     expect(req.request.params.has('timeZone')).toBe(false); req.flush({});
   });
+  it('matches bookings exactly and keeps the clinical context for unrelated paths',()=>{
+    const http=TestBed.inject(HttpClient),mock=TestBed.inject(HttpTestingController);
+    for(const path of ['/bookings','/bookings/123/events','/bookings?x=y','/bookings-other']){http.get(environment.apiUrl+path).subscribe();const req=mock.expectOne(r=>r.url===environment.apiUrl+path);expect(req.request.params.has('timeZone')).toBe(path==='/bookings-other');req.flush({});}
+  });
   it('omits timeZone on /clinics endpoints as required by M2-CLINICS-v1', () => {
     const http = TestBed.inject(HttpClient);
     http.get(environment.apiUrl + '/clinics', { params: { status: 'ACTIVE' } }).subscribe();

@@ -32,3 +32,6 @@
 /records/:id/edit /index.csr 200
 /records/:id /index.csr 200
 /admin/specialties /index.csr 200
+
+/calendar /index.csr 200
+/clinics/:id/schedule /index.csr 200

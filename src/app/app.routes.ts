@@ -182,6 +182,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path:'calendar',
+    runGuardsAndResolvers:'always',
+    canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/calendar.guard').then(m=>m.calendarGuard))],
+    loadComponent:()=>import('./features/calendar/calendar-page.component').then(m=>m.CalendarPageComponent),
+  },
+  {
     path: 'clinics',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicsGuard],

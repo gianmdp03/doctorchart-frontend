@@ -32,6 +32,7 @@
       </a>
     }
 
+    @if (calendarEnabled() && workspace.navigation().length > 0) {<a routerLink="/calendar" routerLinkActive="active" class="nav-item" title="Agenda de turnos" data-testid="sidebar-calendar-link"><ng-icon name="lucideBuilding2" class="nav-icon" /><span class="nav-label">Agenda de turnos</span></a>}
     @if (clinicsEnabled() && workspace.navigation().length > 0) {
       <a
         routerLink="/clinics"
