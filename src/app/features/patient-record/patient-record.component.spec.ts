@@ -235,6 +235,20 @@ describe('PatientRecordComponent', () => {
     fixture.detectChanges();
   });
 
+  it('focuses the original source again after returning from the summary', () => {
+    const route = TestBed.inject(ActivatedRoute) as unknown as { snapshot: { fragment: string } };
+    route.snapshot = { fragment: 'prescription-73' };
+    const source = document.createElement('div');
+    source.id = 'prescription-73'; source.tabIndex = -1; source.scrollIntoView = vi.fn();
+    try {
+      document.body.appendChild(source); component.setTab('recetas'); fixture.detectChanges();
+      expect(source.scrollIntoView).toHaveBeenCalledTimes(1);
+      source.remove(); component.setTab('resumen'); fixture.detectChanges();
+      document.body.appendChild(source); component.setTab('recetas'); fixture.detectChanges();
+      expect(source.scrollIntoView).toHaveBeenCalledTimes(2);
+    } finally { source.remove(); }
+  });
+
   it('hides repeated edit and new consultation buttons and guards their output handlers', () => {
     configuredActions.set([]);
     fixture.detectChanges();
@@ -317,7 +331,7 @@ describe('PatientRecordComponent', () => {
   });
   it('preserves pediatric tab labels, order and badges, including numbering with growth disabled', () => {
     expect(component.tabs().map((tab) => tab.label)).toEqual([
-      '1. Datos del paciente',
+      '1. Resumen clínico',
       '2. Historia Clínica',
       '3. Vacunas',
       '4. Evolución y Curvas',
@@ -333,7 +347,7 @@ describe('PatientRecordComponent', () => {
         (el: any) => el.textContent.trim(),
       ),
     ).toEqual([
-      '1. Datos del paciente',
+      '1. Resumen clínico',
       '2. Historia Clínica',
       '3. Vacunas',
       '5. Recetas y Órdenes',
@@ -347,7 +361,7 @@ describe('PatientRecordComponent', () => {
     expect(component.tabs().map((tab) => tab.label)).toEqual([
       '1. Historia Clínica',
       '2. Estudios realizados',
-      '3. Datos del paciente',
+      '3. Resumen clínico',
     ]);
     component.setTab('estudios');
     fixture.detectChanges();

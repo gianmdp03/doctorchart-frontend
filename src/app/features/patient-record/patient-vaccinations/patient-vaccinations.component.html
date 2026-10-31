@@ -26,7 +26,7 @@
       <h4 id="pending-title">Pendientes</h4>
       @if (overdueDoses().length) {
         @for (dose of overdueDoses(); track dose.id) {
-          <article class="dose-card pending-card">
+          <article class="dose-card pending-card" [id]="'vaccine-' + dose.id" tabindex="-1">
             <div class="dose-copy"><strong>{{ dose.vaccineName }}</strong><span>{{ dose.doseLabel }} · correspondía a los {{ dose.dueAgeLabel }}</span></div>
             <label class="apply-control"><input type="checkbox" [checked]="false" [disabled]="!canSave()" (change)="toggleApplied(dose, $event)" /> Aplicada</label>
           </article>
@@ -38,7 +38,7 @@
       <h4 id="current-title">Corresponden ahora</h4>
       @if (currentDoses().length) {
         @for (dose of currentDoses(); track dose.id) {
-          <article class="dose-card current-card">
+          <article class="dose-card current-card" [id]="'vaccine-' + dose.id" tabindex="-1">
             <div class="dose-copy"><strong>{{ dose.vaccineName }}</strong><span>{{ dose.doseLabel }}</span></div>
             <label class="apply-control"><input type="checkbox" [checked]="false" [disabled]="!canSave()" (change)="toggleApplied(dose, $event)" /> Aplicada</label>
           </article>
@@ -50,7 +50,7 @@
       <h4 id="applied-title">Registradas como aplicadas</h4>
       @if (appliedDoses().length) {
         @for (dose of appliedDoses(); track dose.id) {
-          <article class="dose-card applied-card">
+          <article class="dose-card applied-card" [id]="'vaccine-' + dose.id" tabindex="-1">
             <div class="dose-copy"><strong>{{ dose.vaccineName }}</strong><span>{{ dose.doseLabel }}</span></div>
             <label class="date-control">Fecha <app-date-picker [showError]="false" #datePicker [ngModel]="dose.appliedAt" (ngModelChange)="updateDate(dose, $event, datePicker)" [disabled]="!canSave()" [max]="schedule()?.asOfDate" />@if (dateErrors()[dose.id]; as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
             <label class="apply-control"><input type="checkbox" [checked]="true" [disabled]="!canSave()" (change)="toggleApplied(dose, $event)" /> Aplicada</label>
@@ -72,7 +72,7 @@
       </summary>
       <div class="future-doses-content">
         @for (dose of futureDoses(); track dose.id) {
-          <article class="dose-card future-card">
+          <article class="dose-card future-card" [id]="'vaccine-' + dose.id" tabindex="-1">
             <div class="dose-copy">
               <strong>{{ dose.vaccineName }}</strong>
               <div class="dose-meta">

@@ -1,0 +1,334 @@
+<section class="overview" aria-label="Resumen clínico" [attr.aria-busy]="loading()">
+  <header class="overview-header">
+    <div>
+      <p class="eyebrow">Antes de atender</p>
+      <h2>Resumen clínico</h2>
+      <p>Datos registrados y su origen, para revisar en una mirada.</p>
+    </div>
+    <button type="button" (click)="refresh()" [disabled]="loading() || saving()">Actualizar</button>
+  </header>
+  @if (loading()) {
+    <p role="status">Cargando resumen clínico…</p>
+  }
+  @if (error()) {
+    <p class="feedback" role="alert">{{ error() }}</p>
+    <button type="button" (click)="refresh()">Reintentar</button>
+  }
+  @if (data(); as summary) {
+    <div class="overview-grid">
+      @for (category of categories; track category.kind) {
+        <article class="overview-card" [class.allergy-card]="category.kind === 'ALLERGY'">
+          <h3>
+            {{ category.title }}
+            @if (entries(category.kind).length) {
+              <span class="count">{{ entries(category.kind).length }}</span>
+            }
+          </h3>
+          @for (entry of entries(category.kind).slice(0, 3); track entry.id) {
+            <div class="summary-item">
+              <strong>{{ entry.text }}</strong>
+              @if (entry.details) {
+                <span class="summary-details">{{ entry.details }}</span>
+              }
+              <small
+                >{{ status(entry) }} ·
+                {{
+                  entry.verifiedAt ? formatInstant(entry.verifiedAt, false) : formatDate(entry.date)
+                }}</small
+              ><button type="button" class="source-link" (click)="openSource(entry.id)">
+                Ver registro original
+              </button>
+            </div>
+          } @empty {
+            @if (category.kind === 'ALLERGY' && summary.profile.noKnownAllergiesAt) {
+              <p>Sin alergias conocidas</p>
+              <small
+                >Confirmado el {{ formatInstant(summary.profile.noKnownAllergiesAt, false) }}</small
+              ><button type="button" class="source-link" (click)="openSource()">
+                Ver registro original
+              </button>
+            } @else if (category.kind === 'ALLERGY' && historical('ALLERGY').length) {
+              <p class="muted">Hay antecedentes de alergias. Falta confirmar su vigencia.</p>
+            } @else if (
+              category.kind !== 'PENDING' ||
+              !(summary.lastEncounter?.followUpDate || summary.lastEncounter?.followUp)
+            ) {
+              <p class="muted">{{ category.empty }}</p>
+            }
+          }
+          @if (entries(category.kind).length > 3) {
+            <button type="button" class="source-link" (click)="openSource()">
+              Ver los {{ entries(category.kind).length }} registros
+            </button>
+          }
+          @if (historical(category.kind).length) {
+            <p class="historical-note">
+              {{ historical(category.kind).length }} antecedente(s) sin fecha · vigencia a revisar
+            </p>
+            @for (entry of historical(category.kind).slice(0, 2); track entry.id) {
+              <div class="summary-item">
+                <span>{{ entry.text }}</span
+                ><small>Informado · fecha no registrada</small
+                ><button type="button" class="source-link" (click)="openSource(entry.id)">
+                  Ver antecedente original
+                </button>
+              </div>
+            }
+          }
+          @if (category.kind === 'PENDING' && summary.lastEncounter; as last) {
+            @if (last.followUpDate || last.followUp) {
+              <div class="summary-item">
+                <strong>{{
+                  last.followUpDate ? 'Próximo control' : 'Indicaciones de seguimiento'
+                }}</strong
+                ><span>{{ last.followUp }}</span
+                ><small
+                  >{{ formatDate(last.followUpDate ?? last.date) }} · indicado el
+                  {{ formatDate(last.date) }}</small
+                ><a [routerLink]="['/encounters', last.id]">Ver consulta original</a>
+              </div>
+            }
+          }
+          @if (actions.has('EDIT_PATIENT')) {
+            <button class="add-link" type="button" (click)="openEditor(category.kind)">
+              + {{ category.kind === 'ALLERGY' ? 'Registrar alergia' : 'Agregar registro' }}
+            </button>
+          }
+        </article>
+      }
+      <article class="overview-card">
+        <h3>Última consulta / control</h3>
+        @if (summary.lastEncounter; as last) {
+          <div class="summary-item">
+            <strong>{{ last.complaint || 'Consulta registrada' }}</strong
+            ><small>{{ formatDate(last.date) }}</small>
+            @if (last.diagnosis) {
+              <span>Diagnóstico registrado: {{ last.diagnosis }}</span>
+            }
+            <a [routerLink]="['/encounters', last.id]">Ver consulta original</a>
+          </div>
+        } @else {
+          <p class="muted">Todavía no hay consultas registradas.</p>
+        }
+      </article>
+      <article class="overview-card">
+        <h3>
+          Vacunas
+          @if (pendingVaccines().length) {
+            <span class="count">{{ pendingVaccines().length }} a revisar</span>
+          }
+        </h3>
+        @if (summary.vaccinations; as schedule) {
+          <small>Evaluado al {{ formatDate(schedule.asOfDate) }}</small>
+          @for (dose of pendingVaccines().slice(0, 3); track dose.id) {
+            <div class="summary-item">
+              <strong>{{ dose.vaccineName }} · {{ dose.doseLabel }}</strong
+              ><span>{{
+                dose.status === 'PENDIENTE' ? 'Falta registrar aplicación' : 'Corresponde ahora'
+              }}</span
+              ><small
+                >Edad prevista: {{ dose.dueAgeLabel }} · {{ formatDate(schedule.asOfDate) }}</small
+              ><button
+                type="button"
+                class="source-link"
+                (click)="recordLink('vaccinations', 'vaccine-' + dose.id)"
+              >
+                Ver dosis en calendario
+              </button>
+            </div>
+          } @empty {
+            <p class="muted">Sin dosis pendientes según la edad y las aplicaciones registradas.</p>
+          }
+          @if (latestVaccine(); as dose) {
+            <div class="summary-item">
+              <span>Última aplicada: {{ dose.vaccineName }} · {{ dose.doseLabel }}</span
+              ><small>{{ formatDate(dose.appliedAt) }}</small
+              ><button
+                type="button"
+                class="source-link"
+                (click)="recordLink('vaccinations', 'vaccine-' + dose.id)"
+              >
+                Ver aplicación original
+              </button>
+            </div>
+          }
+          <p class="muted vaccine-note">
+            Una aplicación sin registrar requiere verificar el carnet.
+          </p>
+          <button type="button" class="source-link" (click)="recordLink('vaccinations')">
+            Ver calendario completo
+          </button>
+        } @else {
+          <p class="muted">
+            El calendario de vacunas no está habilitado en esta configuración clínica.
+          </p>
+        }
+      </article>
+    </div>
+    @if (summary.recentMedications.length) {
+      <details class="source-panel">
+        <summary>Recetas recientes · uso actual a confirmar</summary>
+        <p class="muted">
+          La emisión de una receta no confirma que el paciente continúe el tratamiento.
+        </p>
+        @for (medication of summary.recentMedications; track $index) {
+          <div class="summary-item">
+            <strong>{{ medication.name }}</strong
+            ><span>{{ medication.dosage }} · {{ medication.frequency }}</span
+            ><small>Prescripto el {{ formatDate(medication.date) }}</small
+            ><button
+              type="button"
+              class="source-link"
+              (click)="recordLink('prescriptions', 'prescription-' + medication.recordId)"
+            >
+              Ver receta original
+            </button>
+          </div>
+        }
+      </details>
+    }
+    <section
+      class="source-panel"
+      id="clinical-profile"
+      tabindex="-1"
+      aria-label="Registro de alergias y datos clínicos"
+    >
+      <button
+        type="button"
+        class="panel-toggle"
+        [attr.aria-expanded]="recordsOpen()"
+        aria-controls="clinical-source-list"
+        (click)="recordsOpen.set(!recordsOpen())"
+      >
+        Alergias y datos clínicos · registros originales
+      </button>
+      @if (recordsOpen()) {
+        <div id="clinical-source-list">
+          <p class="muted">
+            La fecha clínica indica cuándo se confirmó o se informó el dato. Los registros cerrados
+            se conservan como antecedentes.
+          </p>
+          @if (summary.profile.noKnownAllergiesAt) {
+            <p>
+              Sin alergias conocidas · confirmado el
+              {{ formatInstant(summary.profile.noKnownAllergiesAt) }}
+            </p>
+          }
+          @if (saveError()) {
+            <p class="feedback" role="alert">{{ saveError() }}</p>
+          }
+          @if (actions.has('EDIT_PATIENT')) {
+            <div class="profile-actions">
+              <button type="button" (click)="openEditor('ALLERGY')" [disabled]="!canSave()">
+                Registrar alergia u otro dato
+              </button>
+              @if (!entries('ALLERGY').length && !historical('ALLERGY').length) {
+                <button type="button" [disabled]="!canSave()" (click)="noKnownAllergies()">
+                  Confirmar sin alergias conocidas hoy
+                </button>
+              }
+            </div>
+            @if (editorOpen()) {
+              <form #entryForm="ngForm" class="clinical-form" (ngSubmit)="add()">
+                <label
+                  >Tipo<select name="kind" [(ngModel)]="kind">
+                    @for (category of categories; track category.kind) {
+                      <option [value]="category.kind">{{ category.title }}</option>
+                    }
+                  </select></label
+                >
+                <label
+                  >Dato clínico<input
+                    name="text"
+                    [(ngModel)]="text"
+                    required
+                    maxlength="300"
+                    placeholder="Ej.: penicilina, hipertensión o medicación habitual"
+                /></label>
+                <label
+                  >Detalle<textarea
+                    name="details"
+                    [(ngModel)]="details"
+                    maxlength="2000"
+                    rows="2"
+                    placeholder="Reacción, dosis y frecuencia, o información relevante"
+                  ></textarea>
+                </label>
+                <label
+                  >Origen<select name="certainty" [(ngModel)]="certainty">
+                    <option value="REPORTED">Informado por el paciente / antecedente</option>
+                    <option value="CONFIRMED">Confirmado por el profesional</option>
+                  </select></label
+                >
+                <label
+                  >{{ kind === 'PENDING' ? 'Fecha prevista' : 'Fecha del dato o confirmación'
+                  }}<app-date-picker
+                    name="date"
+                    [(ngModel)]="date"
+                    required
+                    [max]="kind === 'PENDING' ? null : summary.asOfDate"
+                /></label>
+                <div class="profile-actions">
+                  <button
+                    type="submit"
+                    [disabled]="!canSave() || entryForm.invalid || !text.trim()"
+                  >
+                    {{ saving() ? 'Guardando…' : 'Guardar registro' }}</button
+                  ><button type="button" (click)="editorOpen.set(false)" [disabled]="saving()">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            }
+          }
+          @for (entry of summary.profile.entries; track entry.id) {
+            <article class="source-record" [id]="'clinical-entry-' + entry.id" tabindex="-1">
+              <div>
+                <small>{{ label(entry.kind) }} · {{ status(entry) }}</small>
+                <h4>{{ entry.text }}</h4>
+                <p>{{ entry.details }}</p>
+                <small
+                  >Fecha clínica: {{ formatDate(entry.date) }} · registrado el
+                  {{ formatInstant(entry.recordedAt) }}</small
+                >
+                @if (entry.resolvedAt) {
+                  <small>Cerrado el {{ formatInstant(entry.resolvedAt) }}</small>
+                }
+                @if (entry.verifiedAt) {
+                  <small>Última confirmación: {{ formatInstant(entry.verifiedAt) }}</small>
+                }
+              </div>
+              @if (entry.status === 'ACTIVE' && actions.has('EDIT_PATIENT')) {
+                <div class="profile-actions">
+                  @if (entry.kind !== 'PENDING') {
+                    <button
+                      type="button"
+                      [disabled]="!canSave()"
+                      (click)="verifyCurrentEntry(entry)"
+                    >
+                      Confirmar vigente hoy
+                    </button>
+                  }
+                  <button type="button" [disabled]="!canSave()" (click)="resolve(entry)">
+                    {{ entry.kind === 'PENDING' ? 'Marcar realizado' : 'Marcar inactivo' }}
+                  </button>
+                </div>
+              }
+            </article>
+          } @empty {
+            <p class="muted">Todavía no se agregaron registros con fecha.</p>
+          }
+          @for (entry of summary.historical; track entry.id) {
+            <article class="source-record" [id]="'clinical-entry-' + entry.id" tabindex="-1">
+              <div>
+                <small>{{ label(entry.kind) }} · antecedente informado</small>
+                <h4>{{ entry.text }}</h4>
+                <small>Fecha no registrada · vigencia a revisar</small>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+</section>

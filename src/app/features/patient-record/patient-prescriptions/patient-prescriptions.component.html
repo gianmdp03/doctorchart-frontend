@@ -434,7 +434,7 @@
           } @else if (editor.savedPrescriptionRecords().length > 0) {
             <ul class="rx-history-list">
               @for (rec of editor.savedPrescriptionRecords(); track rec.id) {
-                <li class="rx-history-card">
+                <li class="rx-history-card" [id]="'prescription-' + rec.id" tabindex="-1">
                   <div class="rx-history-info">
                     <div class="rx-history-top">
                       <span

@@ -9,9 +9,10 @@ import {
   inject,
   signal,
   untracked,
+  afterEveryRender,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { isPlatformBrowser } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideUser, lucideUsers, lucidePlus } from '@ng-icons/lucide';
@@ -70,6 +71,8 @@ export class PatientRecordComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly document = inject(DOCUMENT);
+  private scrolledSource = '';
   private recordContext = JSON.stringify([
     this.authService.currentUser()?.id ?? null,
     this.activePatientService.patientId(),
@@ -100,6 +103,21 @@ export class PatientRecordComponent implements OnInit {
       this.tabs().find((tab) => tab.id === 'resumen'),
   );
   constructor() {
+    afterEveryRender(() => {
+      if (!isPlatformBrowser(this.platformId)) return;
+      const fragment = this.route.snapshot?.fragment;
+      if (!fragment) { this.scrolledSource = ''; return; }
+      const key = `${this.activePatientService.patientId()}:${this.selectedTab()}:${fragment}`;
+      if (this.scrolledSource === key) return;
+      const source = this.document.getElementById(fragment);
+      if (source) {
+        source.scrollIntoView({ block: 'center' });
+        source.focus({ preventScroll: true });
+        this.scrolledSource = key;
+      } else {
+        this.scrolledSource = '';
+      }
+    });
     effect(() => {
       const context = JSON.stringify([
         this.authService.currentUser()?.id ?? null,

@@ -28,7 +28,7 @@ export const PATIENT_RECORD_MODULES: Record<PatientRecordModuleId, PatientRecord
   SUMMARY: {
     id: 'SUMMARY',
     tab: 'resumen',
-    label: 'Datos del paciente',
+    label: 'Resumen clínico',
     component: PatientSummaryComponent,
     editOutput: 'editPatient',
   },

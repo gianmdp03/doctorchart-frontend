@@ -8,9 +8,10 @@ import {
   WizardFormValues,
 } from '../../../core/models/wizard-definition.model';
 import { DynamicFormRendererComponent } from '../../dynamic-form-renderer/dynamic-form-renderer.component';
+import { ClinicalOverviewComponent } from './clinical-overview.component';
 @Component({
   selector: 'app-patient-summary',
-  imports: [DynamicFormRendererComponent, NgIcon],
+  imports: [DynamicFormRendererComponent, NgIcon, ClinicalOverviewComponent],
   providers: [provideIcons({ lucideUser })],
   templateUrl: './patient-summary.component.html',
   styleUrl: './patient-summary.component.css',
