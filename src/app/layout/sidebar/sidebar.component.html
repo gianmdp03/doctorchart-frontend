@@ -32,7 +32,8 @@
       </a>
     }
 
-    @if (publicAppointmentsEnabled && clinicsEnabled() && workspace.navigation().length > 0) {<a routerLink="/booking-publication" routerLinkActive="active" class="nav-item" title="Publicación de reservas online"><ng-icon name="lucideBuilding2" class="nav-icon" /><span class="nav-label">Reservas online</span></a>}
+    @if(staffEnabled && clinicsEnabled() && workspace.navigation().length>0){<a routerLink="/secretaries" routerLinkActive="active" class="nav-item" title="Secretarias y permisos"><ng-icon name="lucideBuilding2" class="nav-icon"/><span class="nav-label">Secretarias</span></a>}
+ @if (publicAppointmentsEnabled && clinicsEnabled() && workspace.navigation().length > 0) {<a routerLink="/booking-publication" routerLinkActive="active" class="nav-item" title="Publicación de reservas online"><ng-icon name="lucideBuilding2" class="nav-icon" /><span class="nav-label">Reservas online</span></a>}
  @if (calendarEnabled() && workspace.navigation().length > 0) {<a routerLink="/calendar" routerLinkActive="active" class="nav-item" title="Agenda de turnos" data-testid="sidebar-calendar-link"><ng-icon name="lucideBuilding2" class="nav-icon" /><span class="nav-label">Agenda de turnos</span></a>}
     @if (clinicsEnabled() && workspace.navigation().length > 0) {
       <a

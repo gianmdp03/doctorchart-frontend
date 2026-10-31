@@ -142,3 +142,12 @@
   Referrer-Policy: no-referrer
 /booking-publication
   X-Robots-Tag: noindex, nofollow
+
+/staff/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store, private
+  Referrer-Policy: no-referrer
+
+/secretaries
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store, private

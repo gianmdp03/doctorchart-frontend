@@ -39,3 +39,9 @@
 /appointments /index.csr 200
 /appointments/:publicId /index.csr 200
 /booking-publication /index.csr 200
+
+/staff/login /index.csr 200
+/staff/activate /index.csr 200
+/staff/recover /index.csr 200
+/staff/calendar /index.csr 200
+/secretaries /index.csr 200

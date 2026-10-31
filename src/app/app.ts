@@ -23,11 +23,12 @@ export class App {
   private coordinatorLoading = false;
   readonly sessionKeys = computed(() => [JSON.stringify([this.authService.currentUser()?.id ?? null, this.authService.isSuperAdmin()])]);
   private readonly pageUrl = toSignal(this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map(event => event.urlAfterRedirects)), { initialValue: this.entryPath });
-  readonly isPublicAppointmentsPage=computed(()=>/^\/appointments(?:\/[^/]+)?$/.test(this.pageUrl().split(/[?#]/)[0]));
+  readonly isStaffPage=computed(()=>/^\/staff\/(login|activate|recover|calendar)$/.test(this.pageUrl().split(/[?#]/)[0]));
+ readonly isPublicAppointmentsPage=computed(()=>/^\/appointments(?:\/[^/]+)?$/.test(this.pageUrl().split(/[?#]/)[0]));
  readonly isPublicPage = computed(() => this.isPublicAppointmentsPage() || ['/', '/login', '/404'].includes(this.pageUrl().split(/[?#]/)[0]) || this.router.routerState.snapshot.root.firstChild?.routeConfig?.path === '**');
   constructor() {
     effect(() => {
-      if (this.isPublicAppointmentsPage() || !this.authService.currentUser() || this.coordinatorLoading) return;
+      if (this.isStaffPage() || this.isPublicAppointmentsPage() || !this.authService.currentUser() || this.coordinatorLoading) return;
       this.coordinatorLoading = true;
       untracked(() => this.pendingTasks.run(async () => {
         try {

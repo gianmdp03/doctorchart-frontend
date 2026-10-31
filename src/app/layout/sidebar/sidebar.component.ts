@@ -39,7 +39,8 @@ export class SidebarComponent {
   readonly authService = inject(AuthService);
   readonly workspace = inject(WorkspaceStore);
 
-  readonly publicAppointmentsEnabled=FEATURE_FLAGS.PUBLIC_APPOINTMENTS_ENABLED;
+  readonly staffEnabled=FEATURE_FLAGS.STAFF_ENABLED;
+ readonly publicAppointmentsEnabled=FEATURE_FLAGS.PUBLIC_APPOINTMENTS_ENABLED;
  readonly calendarEnabled = computed(()=>FEATURE_FLAGS.CALENDAR_ENABLED&&FEATURE_FLAGS.SCHEDULES_ENABLED&&this.clinicsEnabled());
   readonly clinicsEnabled = computed(
     () => this.workspace.clinicsEnabled?.() ?? FEATURE_FLAGS.CLINICS_ENABLED,

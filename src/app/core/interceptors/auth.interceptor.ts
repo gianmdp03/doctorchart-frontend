@@ -7,6 +7,8 @@ import { environment } from '../../../environments/environment';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const base = environment.apiUrl.replace(/\/$/, '');
   const publicBase=base+"/public/appointments";
+ const staffBase=base+"/staff";
+ if(req.url===staffBase||req.url.startsWith(staffBase+"/")||req.url.startsWith(staffBase+"?")){let headers=req.headers;for(const name of ["Authorization","X-Dev-Bypass","X-User-Id","X-User-Role","X-User-Plan","X-User-Plan-Expires-At","X-Internal-Secret","X-Gateway-Secret","X-Public-Client"]){headers=headers.delete(name)}return next(req.clone({headers,transferCache:false}));}
  if(req.url===publicBase||req.url.startsWith(publicBase+"/")||req.url.startsWith(publicBase+"?")){let headers=req.headers;for(const key of ["Authorization","X-User-Id","X-User-Role","X-User-Plan","X-User-Plan-Expires-At","X-Internal-Secret","X-Gateway-Secret","X-Public-Client"]){headers=headers.delete(key)}return next(req.clone({headers,transferCache:false}));}
  const isClinicalApi = req.url === base || req.url.startsWith(`${base}/`) || req.url.startsWith(`${base}?`);
   const accountBase = new URL('/api/billing/account', environment.apiUrl);

@@ -11,7 +11,9 @@
     "^/calendar$",
     "^/clinics/[^/]+/schedule$",
     "^/appointments(?:/[0-9a-f-]{36})?$",
-    "^/booking-publication$"
+    "^/booking-publication$",
+    "^/staff/(login|activate|recover|calendar)$",
+    "^/secretaries$"
   ],
   "redirects": {
     "/sin-plan": "/plan-required",

@@ -22,6 +22,9 @@ const superAdminGuard = lazyGuard(() => import('./core/guards/super-admin.guard'
 const clinicsGuard = lazyGuard(() => import('./core/guards/clinics.guard').then(m => m.clinicsGuard));
 
 export const routes: Routes = [
+ ...(['login','activate','recover'] as const).map(mode=>({path:'staff/'+mode,data:{mode},canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffFeatureGuard))],loadComponent:()=>import('./features/staff/staff-auth.component').then(m=>m.StaffAuthComponent)})),
+ {path:'staff/calendar',canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffSessionGuard))],loadComponent:()=>import('./features/staff/staff-calendar.component').then(m=>m.StaffCalendarComponent)},
+ {path:'secretaries',canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffFeatureGuard))],loadComponent:()=>import('./features/staff/secretaries.component').then(m=>m.SecretariesComponent)},
   { path: 'sin-plan', redirectTo: 'plan-required', pathMatch: 'full' },
   { path: 'admin/especialidades', redirectTo: 'admin/specialties', pathMatch: 'full' },
   { path: 'calendario-vacunacion', redirectTo: 'vaccination-calendar', pathMatch: 'full' },
