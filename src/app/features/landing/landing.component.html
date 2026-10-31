@@ -6,7 +6,7 @@
     >
     <nav aria-label="Navegación de presentación">
       <a href="#features">Funciones</a><a href="#how-it-works">Cómo funciona</a
-      ><a href="#faq">Preguntas frecuentes</a>
+      ><a [href]="plansUrl">Planes</a><a href="#faq">Preguntas frecuentes</a>
     </nav>
     <div class="header-actions">
       <app-theme-toggle /><a routerLink="/login" class="button button-small"
@@ -21,21 +21,23 @@
       <span class="eyebrow"><span class="status-dot"></span> TU ESPACIO CLÍNICO DIGITAL</span>
       <h1 id="hero-title">Historias clínicas digitales.<br /><span>Tus pacientes, en un mismo lugar.</span></h1>
       <p class="hero-description">
-        Registrá consultas, organizá la información de cada paciente y personalizá tus fichas
-        clínicas. DoctorChart, una solución de
-        <a [href]="bycodeUrl"><strong>ByCode</strong> <span aria-hidden="true">↗</span></a>,
-        acompaña tu trabajo en cada atención.
+        Registrá consultas, adaptá las fichas a tu especialidad y consultá los estudios
+        y la evolución de cada paciente desde un mismo espacio.
       </p>
       <div class="hero-actions">
-        <a routerLink="/login" class="button secondary-login"
-          >Ingresar a DoctorChart <ng-icon name="lucideArrowRight" /></a
-        ><a href="#features" class="text-link"
-          >Conocé las funciones <span aria-hidden="true">↗</span></a
+        <a [href]="plansUrl" class="button"
+          >Conocer planes <ng-icon name="lucideArrowRight" /></a
+        ><a href="#product-tour" class="text-link"
+          >Ver DoctorChart por dentro <span aria-hidden="true">↓</span></a
         >
       </div>
       <div class="hero-note">
         <ng-icon name="lucideStethoscope" /> Pensado para profesionales de la salud
       </div>
+      <p class="ecosystem-note">
+        Parte del ecosistema <a [href]="bycodeUrl">Bycode</a>.
+        Tu cuenta y suscripción se administran desde allí.
+      </p>
     </div>
     <div class="preview-stage">
       <div class="preview-label">
@@ -126,29 +128,75 @@
       clínico.
     </p>
   </section>
+  <section id="product-tour" class="product-tour section-width section-space" aria-labelledby="tour-title">
+    <div class="section-heading">
+      <span class="eyebrow">DOCTORCHART POR DENTRO</span>
+      <h2 id="tour-title">Del registro al seguimiento.</h2>
+      <p>Dos vistas reales del producto con datos de demostración. Los módulos dependen de tu especialidad.</p>
+    </div>
+    <div class="product-views">
+      @for (view of productViews; track view.key) {
+        <figure class="product-view">
+          <div class="product-image">
+            <img
+              [src]="'/images/products/doctorchart-' + view.key + '-' + themeService.theme() + '-720.webp'"
+              [alt]="view.alt" width="720" [height]="view.height" loading="lazy" decoding="async"
+            />
+          </div>
+          <figcaption><h3>{{ view.title }}</h3><p>{{ view.description }}</p></figcaption>
+        </figure>
+      }
+    </div>
+    <p class="module-note">Capturas con información ficticia; no contienen datos de pacientes reales.</p>
+  </section>
   <section id="how-it-works" class="workflow section-width" aria-labelledby="workflow-title">
     <div class="workflow-intro">
       <span class="eyebrow">CÓMO FUNCIONA</span>
-      <h2 id="workflow-title">Un espacio que se adapta<br />a tu práctica.</h2>
+      <h2 id="workflow-title">Tu consulta,<br />paso a paso.</h2>
       <p>
-        Empezá por tu especialidad. Después, construí la historia clínica de cada paciente, consulta
-        a consulta.
+        Configurá las fichas según tu especialidad y acompañá cada atención con la información
+        del paciente a mano.
       </p>
-      <a routerLink="/login" class="text-link secondary-login"
-        >Ir a iniciar sesión <ng-icon name="lucideArrowRight"
+      <a [href]="contactUrl" class="text-link"
+        >Consultar al equipo en Bycode <ng-icon name="lucideArrowRight"
       /></a>
     </div>
-    <div class="steps">
+    <ol class="steps">
       @for (step of steps; track step.number) {
-        <article class="step">
-          <span class="step-number">{{ step.number }}</span>
+        <li class="step">
+          <span class="step-number" aria-hidden="true">{{ step.number }}</span>
           <div>
             <h3>{{ step.title }}</h3>
             <p>{{ step.description }}</p>
           </div>
-        </article>
+        </li>
       }
+    </ol>
+  </section>
+  <section class="ecosystem section-width section-space" aria-labelledby="ecosystem-title">
+    <div class="section-heading">
+      <span class="eyebrow">UN MISMO ECOSISTEMA</span>
+      <h2 id="ecosystem-title">Tu práctica en DoctorChart.<br />Tu cuenta en Bycode.</h2>
+      <p>Desde Bycode gestionás el acceso, la contratación y la ayuda que necesitás para usar DoctorChart.</p>
     </div>
+    <div class="ecosystem-grid">
+      <article>
+        <h3>Una cuenta para ingresar</h3>
+        <p>Creá tu cuenta en Bycode y usá el mismo correo y contraseña para entrar a DoctorChart.</p>
+        <a [href]="registerUrl" class="text-link">Crear cuenta en Bycode <span aria-hidden="true">↗</span></a>
+      </article>
+      <article>
+        <h3>Planes en un solo lugar</h3>
+        <p>Consultá los precios, períodos y límites vigentes. El acceso clínico requiere un plan DoctorChart activo.</p>
+        <a [href]="plansUrl" class="text-link">Ver planes en Bycode <span aria-hidden="true">↗</span></a>
+      </article>
+      <article>
+        <h3>Ayuda con seguimiento</h3>
+        <p>Ingresá a Bycode para crear un ticket y consultar las respuestas del equipo de soporte.</p>
+        <a [href]="supportUrl" class="text-link">Ir al soporte de Bycode <span aria-hidden="true">↗</span></a>
+      </article>
+    </div>
+    <p class="ecosystem-contact">¿Tenés preguntas antes de empezar? <a [href]="contactUrl">Contactá al equipo de Bycode.</a></p>
   </section>
   <section id="faq" class="faq section-width section-space" aria-labelledby="faq-title">
     <div class="section-heading">
@@ -166,14 +214,19 @@
   </section>
   <section class="closing section-width">
     <span class="eyebrow">DOCTORCHART</span>
-    <h2>Tu próxima consulta,<br />con la historia a mano.</h2>
-    <p>Ingresá a tu espacio clínico y continuá el seguimiento de tus pacientes.</p>
-    <a routerLink="/login" class="button secondary-login">Iniciar sesión <ng-icon name="lucideArrowRight" /></a>
+    <h2>Conocé el plan para<br />tu práctica clínica.</h2>
+    <p>Consultá las opciones de DoctorChart en Bycode o conversá con el equipo antes de elegir.</p>
+    <div class="closing-actions">
+      <a [href]="plansUrl" class="button">Conocer planes <ng-icon name="lucideArrowRight" /></a>
+      <a [href]="contactUrl" class="text-link">Contacto en Bycode <span aria-hidden="true">↗</span></a>
+    </div>
   </section>
 </main>
 <footer class="landing-footer section-width">
   <a routerLink="/" class="brand"
     ><span class="brand-mark"><img class="doctorchart-logo" src="/doctorchart-logo.svg" width="35" height="35" alt="" aria-hidden="true" /></span>DoctorChart</a
-  ><span>Un espacio para tu práctica clínica.</span
-  ><a routerLink="/login" class="secondary-login">Iniciar sesión <span aria-hidden="true">↗</span></a>
+  ><span>Parte del ecosistema <a [href]="bycodeUrl">Bycode</a>.</span>
+  <nav class="footer-links" aria-label="Recursos de Bycode">
+    <a [href]="plansUrl">Planes</a><a [href]="supportUrl">Soporte</a><a [href]="contactUrl">Contacto</a>
+  </nav>
 </footer>

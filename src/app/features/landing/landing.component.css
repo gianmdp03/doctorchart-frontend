@@ -183,6 +183,20 @@ h1 span {
   color: var(--teal);
   font-size: 16px;
 }
+.ecosystem-note {
+  max-width: 465px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 18px 0 0;
+}
+.ecosystem-note a,
+.ecosystem-contact a,
+.landing-footer > span a {
+  color: var(--teal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .preview-stage {
   position: relative;
   padding: 26px 23px 36px;
@@ -495,6 +509,59 @@ h3 {
   color: var(--muted);
   margin: 20px 0 0;
 }
+.product-tour {
+  padding-top: 0;
+}
+.product-views,
+.ecosystem-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.product-view {
+  margin: 0;
+  min-width: 0;
+}
+.product-image {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.product-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.product-view figcaption p,
+.ecosystem-grid p,
+.ecosystem-contact {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 0;
+}
+.ecosystem {
+  padding-bottom: 0;
+}
+.ecosystem-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+}
+.ecosystem-grid article {
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+  display: flex;
+  flex-direction: column;
+}
+.ecosystem-grid .text-link {
+  color: var(--teal);
+  min-height: 44px;
+  margin-top: 12px;
+}
+.ecosystem-contact {
+  margin-top: 24px;
+}
 .workflow {
   border-radius: 25px;
   background: var(--soft);
@@ -514,6 +581,9 @@ h3 {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 .step {
   display: flex;
@@ -588,6 +658,17 @@ details[open] .faq-plus {
   line-height: 1.7;
   margin-bottom: 25px;
 }
+.closing-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+.closing-actions .text-link,
+.hero-actions .text-link {
+  min-height: 44px;
+}
 .landing-footer {
   display: flex;
   justify-content: space-between;
@@ -605,9 +686,19 @@ details[open] .faq-plus {
   font-size: 20px;
 }
 .landing-footer > span,
-.landing-footer > a:last-child {
+.footer-links {
   font-size: 11px;
   color: var(--muted);
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.footer-links a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
 }
 @media (min-width: 1450px) {
   .hero {
@@ -615,6 +706,9 @@ details[open] .faq-plus {
   }
 }
 @media (max-width: 1050px) {
+  .landing-header nav {
+    display: none;
+  }
   nav {
     gap: 16px;
   }
@@ -683,8 +777,18 @@ details[open] .faq-plus {
   .section-space {
     padding-block: 60px;
   }
+  .product-tour {
+    padding-top: 0;
+  }
+  .ecosystem {
+    padding-bottom: 0;
+  }
   .landing-footer > span {
     display: none;
+  }
+  .ecosystem-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
 }
 @media (max-width: 520px) {
@@ -760,6 +864,10 @@ details[open] .faq-plus {
     grid-template-columns: 1fr;
     gap: 12px;
   }
+  .product-views {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
   .feature-card {
     padding: 23px;
   }
@@ -768,6 +876,12 @@ details[open] .faq-plus {
   }
   .section-space {
     padding-block: 48px;
+  }
+  .product-tour {
+    padding-top: 0;
+  }
+  .ecosystem {
+    padding-bottom: 0;
   }
   .workflow {
     padding: 27px 24px;
@@ -784,6 +898,8 @@ details[open] .faq-plus {
   .landing-footer {
     gap: 10px;
     padding-block: 25px;
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -795,11 +911,9 @@ details[open] .faq-plus {
   }
 }
 
-/* En celular el acceso a la cuenta se concentra en la cabecera. */
 @media (max-width: 768px) {
-  .secondary-login { display: none; }
-  .landing-footer { display: none; }
   .header-actions .button-small { min-height: 44px; }
+  .header-actions app-theme-toggle { min-height: 44px; align-items: center; }
 }
 @media (max-width: 360px) {
   .header-inner { width: calc(100% - 24px); }

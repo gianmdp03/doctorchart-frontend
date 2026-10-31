@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -15,6 +15,7 @@ import {
 } from '@ng-icons/lucide';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import site from '../../core/config/site.config.json';
+import { ThemeService } from '../../core/services/theme.service';
 
 @Component({
   selector: 'app-landing',
@@ -38,7 +39,28 @@ import site from '../../core/config/site.config.json';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LandingComponent {
+  readonly themeService = inject(ThemeService);
   readonly bycodeUrl = site.applicationUrls.bycode;
+  readonly plansUrl = new URL('/pricing', this.bycodeUrl).href;
+  readonly contactUrl = new URL('/#bc-contact', this.bycodeUrl).href;
+  readonly supportUrl = new URL('/support', this.bycodeUrl).href;
+  readonly registerUrl = new URL('/register', this.bycodeUrl).href;
+  readonly productViews = [
+    {
+      key: 'growth',
+      title: 'La evolución, a la vista',
+      description: 'Consultá las mediciones y las curvas de crecimiento desde la ficha del paciente.',
+      alt: 'Captura de DoctorChart: curva de peso para la edad con mediciones ficticias de un paciente de demostración.',
+      height: 532,
+    },
+    {
+      key: 'vaccines',
+      title: 'El calendario de vacunas',
+      description: 'Revisá el calendario y registrá las vacunas aplicadas en las especialidades que incluyen este módulo.',
+      alt: 'Captura de DoctorChart: calendario de vacunación de Paciente Demo, con registros ficticios.',
+      height: 447,
+    },
+  ];
   readonly features = [
     {
       icon: 'lucideUsers',
@@ -80,19 +102,24 @@ export class LandingComponent {
   readonly steps = [
     {
       number: '01',
-      title: 'Configurá tu espacio',
-      description: 'Seleccioná tu especialidad y adaptá tus fichas y formularios de consulta.',
+      title: 'Encontrá a tu paciente',
+      description: 'Buscá su ficha y consultá sus antecedentes antes de empezar la atención.',
     },
     {
       number: '02',
-      title: 'Registrá tus pacientes',
-      description: 'Creá sus fichas con la información que necesitás para la atención.',
+      title: 'Registrá la consulta',
+      description: 'Documentá el motivo, la evolución y las indicaciones con los campos de tu especialidad.',
     },
     {
       number: '03',
-      title: 'Dale continuidad a la atención',
+      title: 'Consultá sus estudios',
       description:
-        'Agregá consultas y volvé al historial, los documentos y los estudios de cada paciente.',
+        'Reuní los PDFs e imágenes en su ficha y volvé a ellos cuando los necesites.',
+    },
+    {
+      number: '04',
+      title: 'Continuá el seguimiento',
+      description: 'Revisá las consultas anteriores y registrá la fecha del próximo control.',
     },
   ];
   readonly faqs = [
@@ -114,7 +141,17 @@ export class LandingComponent {
     {
       question: '¿Cómo ingreso?',
       answer:
-        'Desde Iniciar sesión podés acceder con tu cuenta de ByCode, por correo y contraseña o con Google. También podés crear una cuenta. Para entrar al espacio clínico necesitás un plan DoctorChart activo; crear la cuenta no activa un plan por sí solo.',
+        'Ingresá con el correo y la contraseña de tu cuenta de Bycode. Si todavía no tenés una, podés crearla en Bycode. Para entrar al espacio clínico necesitás un plan DoctorChart activo; crear la cuenta no activa un plan por sí solo.',
+    },
+    {
+      question: '¿Dónde contrato el plan y gestiono mi cuenta?',
+      answer:
+        'DoctorChart forma parte del ecosistema Bycode. Allí creás tu cuenta, consultás los planes y administrás tu suscripción. Después ingresás a DoctorChart con la misma cuenta para trabajar con tus pacientes.',
+    },
+    {
+      question: '¿Dónde puedo pedir ayuda?',
+      answer:
+        'El soporte se gestiona desde Bycode: con tu cuenta podés crear un ticket y seguir la respuesta. Si todavía estás evaluando DoctorChart, encontrás los canales del equipo en Contacto en Bycode.',
     },
   ];
 }
