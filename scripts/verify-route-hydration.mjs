@@ -1,7 +1,7 @@
 // Run against a build made with PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_rendering_fixture.
 // All remote traffic is intercepted. No real accounts, API calls or credentials are used.
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { once } from 'node:events';
 import { chromium } from 'playwright';
@@ -9,6 +9,8 @@ import { createPreview } from './preview-server.mjs';
 import site from '../src/app/core/config/site.config.json' with { type: 'json' };
 
 const directory = resolve('dist/doctorchart-frontend/browser');
+const screenshots = resolve('test-results/public-session');
+mkdirSync(screenshots, { recursive: true });
 assert.ok(readdirSync(directory).some(name => name.endsWith('.js') && readFileSync(resolve(directory, name), 'utf8').includes('sb_publishable_rendering_fixture')), 'Build with the fixture public key before running this check.');
 assert.match(readFileSync(resolve(directory, 'index.html'), 'utf8'), /<app-landing[\s>]/, 'The public home must remain prerendered for SEO.');
 const server = createPreview({ directory, ...site });
@@ -54,11 +56,23 @@ try {
         await route.fulfill({ json });
       });
       if (account !== 'anonymous') await page.addInitScript(({ account }) => {
+        // Seed once: reloading after sign-out must not recreate the fixture session.
+        if (sessionStorage.getItem('doctorchart-session-fixture')) return;
+        sessionStorage.setItem('doctorchart-session-fixture', 'seeded');
         const user = { id: 'rendering-fixture', aud: 'authenticated', created_at: '2026-01-01T00:00:00Z', app_metadata: { role: account === 'admin' ? 'SUPER_ADMIN' : 'COMPANY', app_modules: { doctorchart: { active: account === 'doctor', tier: 'BASIC', expires_at: '2099-01-01T00:00:00Z' } } }, user_metadata: {}, email: 'fixture@example.invalid' };
         localStorage.setItem('sb-api-auth-token', JSON.stringify({ access_token: 'fixture-token', refresh_token: 'fixture-refresh', expires_at: Math.floor(Date.now()/1000)+3600, expires_in: 3600, token_type: 'bearer', user }));
       }, { account });
       try {
         await page.goto(origin);
+        const entryPath = account === 'anonymous' ? '/login' : account === 'admin' ? '/admin/specialties' : '/dashboard';
+        const entry = page.locator(`app-landing .header-actions a[href="${entryPath}"]`);
+        await entry.waitFor();
+        await page.waitForTimeout(500);
+        assert.equal(new URL(page.url()).pathname, '/', `${account}: restored session must keep the public home`);
+        assert.equal(await page.locator('app-private-shell').count(), 0);
+        await page.reload();
+        await entry.waitFor();
+        assert.equal(new URL(page.url()).pathname, '/', `${account}: home reload must stay public`);
         if (account === 'anonymous') {
           await page.locator('app-landing').waitFor();
           await page.locator('app-landing a[href="/login"]').first().click();
@@ -69,6 +83,22 @@ try {
           await page.locator('app-landing').waitFor();
           assert.equal(await page.locator('app-landing').count(), 1);
         } else {
+          assert.match(await entry.innerText(), /Entrar a la app/);
+          await page.getByRole('button', {name:'Cerrar sesión', exact:true}).waitFor();
+          for (const width of [1280, 390, 320]) {
+            await page.setViewportSize({width, height:850});
+            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${account}: home overflow at ${width}`);
+            for (const selector of ['.app-entry', '.logout-button']) {
+              const box = await page.locator(selector).boundingBox();
+              assert.ok(box && box.x >= 0 && box.x + box.width <= width, `${account}: ${selector} exceeds ${width}`);
+            }
+            if (account === 'doctor' && delay === 0) await page.screenshot({path:resolve(screenshots, `doctor-home-${width}.png`)});
+          }
+          await page.setViewportSize({width:1280,height:720});
+          if (account === 'doctor' && delay === 0) {
+            await page.screenshot({path: resolve(screenshots, 'doctor-home.png')});
+          }
+          await entry.click();
           const selector = account === 'doctor' ? 'app-dashboard' : account === 'admin' ? 'app-admin-specialties' : 'app-no-plan';
           await page.locator(selector).waitFor();
           // Observe beyond lazy loading and hydration cleanup, then test a direct CSR reload.
@@ -78,8 +108,25 @@ try {
           await page.reload();
           await page.locator(selector).waitFor();
           assert.equal(await page.locator('app-landing').count(), 0);
+          await page.goto(origin);
+          await entry.waitFor();
+          assert.equal(new URL(page.url()).pathname, '/');
+          assert.equal(await page.locator('app-private-shell').count(), 0);
+          await entry.click();
+          await page.locator(selector).waitFor();
         }
         if (account === 'doctor') await verifyPediatricDirectory(page);
+        if (account !== 'anonymous') {
+          await page.goto(origin);
+          await entry.waitFor();
+          await page.getByRole('button', {name:'Cerrar sesión', exact:true}).click();
+          await page.locator('app-landing .app-entry[href="/login"]').waitFor();
+          assert.equal(new URL(page.url()).pathname, '/');
+          assert.equal(await page.locator('.logout-button').count(), 0);
+          await page.reload();
+          await page.locator('app-landing .app-entry[href="/login"]').waitFor();
+          assert.equal(await page.locator('.logout-button').count(), 0);
+        }
         assert.deepEqual(errors, [], `${account}: browser errors`);
         console.log(`PASS ${account}, API delay ${delay} ms`);
       } finally { await page.close(); }

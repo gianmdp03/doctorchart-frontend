@@ -1,6 +1,6 @@
 <a class="skip-link" href="#main-content">Ir al contenido</a>
 <header class="landing-header">
-  <div class="header-inner">
+  <div class="header-inner" [class.has-session]="authService.isLoggedIn()">
     <a routerLink="/" class="brand" aria-label="DoctorChart, inicio"
       ><span class="brand-mark"><img class="doctorchart-logo" src="/doctorchart-logo.svg" width="35" height="35" alt="" aria-hidden="true" /></span>DoctorChart</a
     >
@@ -9,11 +9,17 @@
       ><a [href]="plansUrl">Planes</a><a href="#faq">Preguntas frecuentes</a>
     </nav>
     <div class="header-actions">
-      <app-theme-toggle /><a routerLink="/login" class="button button-small"
-        >Iniciar sesión <ng-icon name="lucideArrowRight"
+      <app-theme-toggle /><a [routerLink]="appEntryUrl()" class="button button-small app-entry"
+        >{{ authService.isLoggedIn() ? 'Entrar a la app' : 'Iniciar sesión' }} <ng-icon name="lucideArrowRight"
       /></a>
+      @if (authService.isLoggedIn()) {
+        <button type="button" class="button button-small logout-button" [disabled]="signingOut()" (click)="signOut()">
+          {{ signingOut() ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+        </button>
+      }
     </div>
   </div>
+  @if (signOutError(); as message) { <p class="session-error section-width" role="alert">{{ message }}</p> }
 </header>
 <main id="main-content">
   <section class="hero section-width" aria-labelledby="hero-title">

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -16,6 +16,7 @@ import {
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import site from '../../core/config/site.config.json';
 import { ThemeService } from '../../core/services/theme.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-landing',
@@ -40,6 +41,26 @@ import { ThemeService } from '../../core/services/theme.service';
 })
 export class LandingComponent {
   readonly themeService = inject(ThemeService);
+  readonly authService = inject(AuthService);
+  readonly appEntryUrl = computed(() => !this.authService.isLoggedIn()
+    ? '/login' : this.authService.isSuperAdmin() ? '/admin/specialties' : '/dashboard');
+  readonly signingOut = signal(false);
+  readonly signOutError = signal<string | null>(null);
+
+  async signOut(): Promise<void> {
+    if (this.signingOut()) return;
+    this.signingOut.set(true);
+    this.signOutError.set(null);
+    try {
+      const { error } = await this.authService.signOut();
+      if (error) this.signOutError.set('No pudimos cerrar la sesión. Reintentá.');
+    } catch {
+      this.signOutError.set('No pudimos cerrar la sesión. Reintentá.');
+    } finally {
+      this.signingOut.set(false);
+    }
+  }
+
   readonly bycodeUrl = site.applicationUrls.bycode;
   readonly plansUrl = new URL('/pricing', this.bycodeUrl).href;
   readonly contactUrl = new URL('/#bc-contact', this.bycodeUrl).href;

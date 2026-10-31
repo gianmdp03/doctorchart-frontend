@@ -10,6 +10,14 @@ una sesión ficticia: un `app-private-shell` y un `app-landing` simultáneos.
 portada para SEO y vuelve a crear el árbol de la aplicación al arrancar en el
 navegador. No cambia las rutas, permisos ni las comprobaciones del backend.
 
+La portada permanece pública aunque se restaure una sesión. Solo `/login`
+redirige a una cuenta autenticada. El botón «Entrar a la app» abre el dashboard
+o la administración según el rol; los controles de plan y onboarding siguen
+aplicándose al entrar. El coordinador de sesión no abandona la portada al
+terminar de cargar el perfil.
+La cabecera también ofrece «Cerrar sesión». Al completar el cierre, la portada
+permanece abierta y vuelve a mostrar «Iniciar sesión»; si falla, permite reintentar.
+
 ## Regresión en navegador
 
 Usar un build local con configuración ficticia; no desplegar ese build:
@@ -29,4 +37,5 @@ La prueba sirve los archivos estáticos en un puerto local libre, intercepta tod
 el tráfico remoto y usa cuentas ficticias. Comprueba sesión de médico,
 administrador, cuenta sin plan y visitante, con respuestas rápidas y demoradas,
 incluyendo recarga directa y navegación pública. También verifica que el HTML
-inicial siga incluyendo la portada prerenderizada.
+inicial siga incluyendo la portada prerenderizada, que cada cuenta permanezca
+en ella hasta pulsar el botón de entrada y que pueda volver desde la app.

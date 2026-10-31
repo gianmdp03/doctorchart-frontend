@@ -8,6 +8,7 @@ import {
 } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { publicEntryGuard } from './public-entry.guard';
+import { routes } from '../../app.routes';
 
 describe('Public entry', () => {
   async function destination(loggedIn: boolean, admin = false) {
@@ -29,10 +30,14 @@ describe('Public entry', () => {
     );
     return result instanceof UrlTree ? TestBed.inject(Router).serializeUrl(result) : result;
   }
-  it('allows visitors to see presentation and login', async () => {
+  it('keeps the public home outside the signed-in login redirect', () => {
+    expect(routes.find(route => route.path === '')?.canActivate).toBeUndefined();
+    expect(routes.find(route => route.path === 'login')?.canActivate).toContain(publicEntryGuard);
+  });
+  it('allows visitors to see login', async () => {
     expect(await destination(false)).toBe(true);
   });
-  it('takes returning doctors to their protected dashboard', async () => {
+  it('takes returning doctors from login to their protected dashboard', async () => {
     expect(await destination(true)).toBe('/dashboard');
   });
   it('takes administrators to administration', async () => {

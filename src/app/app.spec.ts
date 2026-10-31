@@ -15,6 +15,7 @@ import { User } from '@supabase/supabase-js';
 import { App } from './app';
 import { doctorchartPlanGuard } from './core/guards/doctorchart-plan.guard';
 import { doctorOnboardingGuard } from './core/guards/doctor-onboarding.guard';
+import { LandingComponent } from './features/landing/landing.component';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -107,6 +108,7 @@ describe('App recovers the empty entry route after login', () => {
 });
 
 describe('App administrative entry', () => {
+  let previousUrl: string;
   const currentUser = signal<User | null>(null);
   const completed = signal(false);
   const auth = {
@@ -121,8 +123,11 @@ describe('App administrative entry', () => {
   let workspace: { [key: string]: ReturnType<typeof signal> | ReturnType<typeof vi.fn> };
   function user(role: string): User { return { id: 'same-user', aud: 'authenticated', created_at: '2026-10-05T00:00:00Z', app_metadata: { role }, user_metadata: {} }; }
   beforeEach(async () => {
+    previousUrl = window.location.href;
+    window.history.replaceState(null, '', '/dashboard');
     currentUser.set(null);
     completed.set(false);
+    auth.signOut.mockReset().mockImplementation(async () => { currentUser.set(null); return {error:null}; });
     auth.hasDoctorchartPlan.mockReturnValue(true);
     profile = {
       clearProfile: vi.fn(), loadProfile: vi.fn().mockResolvedValue(null),
@@ -147,8 +152,64 @@ describe('App administrative entry', () => {
     }).overrideComponent(App, { set: { imports: [RouterOutlet, PrivateShellComponent], schemas: [CUSTOM_ELEMENTS_SCHEMA] } }).overrideComponent(PrivateShellComponent, { set: { imports: [RouterOutlet, NoPlanComponent], schemas: [CUSTOM_ELEMENTS_SCHEMA] } }).compileComponents();
     vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   });
+  afterEach(() => window.history.replaceState(null, '', previousUrl));
+
+  for (const role of ['DOCTOR', 'SUPER_ADMIN', 'COMPANY']) {
+    it(`keeps the public home accessible with a restored ${role} session`, async () => {
+      window.history.replaceState(null, '', '/');
+      currentUser.set(user(role));
+      auth.hasDoctorchartPlan.mockReturnValue(role !== 'COMPANY');
+      const router = TestBed.inject(Router);
+      router.resetConfig([{path:'',component:LandingComponent}]);
+      const fixture = TestBed.createComponent(App);
+      fixture.detectChanges();
+      await router.navigateByUrl('/');
+      await fixture.whenStable(); fixture.detectChanges();
+      expect(router.url).toBe('/');
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelectorAll('app-landing')).toHaveLength(1);
+      expect(fixture.nativeElement.querySelector('app-private-shell')).toBeNull();
+      const entry = fixture.nativeElement.querySelector('.header-actions a') as HTMLAnchorElement;
+      expect(entry.textContent).toContain('Entrar a la app');
+      expect(entry.getAttribute('href')).toBe(role === 'SUPER_ADMIN' ? '/admin/specialties' : '/dashboard');
+    });
+  }
+
+  it('signs out from the public home and restores the visitor entry', async () => {
+    window.history.replaceState(null, '', '/');
+    currentUser.set(user('DOCTOR'));
+    const router = TestBed.inject(Router);
+    router.resetConfig([{path:'',component:LandingComponent}]);
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges(); await router.navigateByUrl('/');
+    await fixture.whenStable(); fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.logout-button') as HTMLButtonElement).click();
+    await fixture.whenStable(); fixture.detectChanges();
+    expect(auth.signOut).toHaveBeenCalledOnce();
+    expect(router.url).toBe('/');
+    expect(fixture.nativeElement.querySelector('.logout-button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.app-entry').getAttribute('href')).toBe('/login');
+    expect(fixture.nativeElement.querySelector('.app-entry').textContent).toContain('Iniciar sesión');
+  });
+
+  it('keeps the signed-in home and offers a retry when sign-out fails', async () => {
+    window.history.replaceState(null, '', '/');
+    currentUser.set(user('DOCTOR'));
+    auth.signOut.mockResolvedValue({error:new Error('Fixture error')});
+    const router = TestBed.inject(Router);
+    router.resetConfig([{path:'',component:LandingComponent}]);
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges(); await router.navigateByUrl('/');
+    await fixture.whenStable(); fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.logout-button') as HTMLButtonElement).click();
+    await fixture.whenStable(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('No pudimos cerrar la sesión');
+    expect(fixture.nativeElement.querySelector('.logout-button').disabled).toBe(false);
+    expect(fixture.nativeElement.querySelector('.app-entry').getAttribute('href')).toBe('/dashboard');
+  });
 
   it('opens administration without loading or creating a doctor workspace or profile', async () => {
+    vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/dashboard');
     currentUser.set(user('SUPER_ADMIN'));
     completed.set(true);
     const fixture = TestBed.createComponent(App);
@@ -163,6 +224,7 @@ describe('App administrative entry', () => {
   });
 
   it('clears clinical state on a role change within the same account', async () => {
+    vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/dashboard');
     currentUser.set(user('DOCTOR'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();

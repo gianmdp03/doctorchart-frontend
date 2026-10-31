@@ -1,6 +1,6 @@
 <app-interaction-status />
 @for (sessionKey of sessionKeys(); track sessionKey) {
-  @if (isPublicPage() && !authService.isLoggedIn()) {
+  @if (isPublicPage()) {
     <router-outlet />
   } @else {
     @defer (on immediate) {

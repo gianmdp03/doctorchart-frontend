@@ -21,6 +21,7 @@ ng-icon {
   flex-shrink: 0;
 }
 a:focus-visible,
+button:focus-visible,
 summary:focus-visible {
   outline: 3px solid var(--teal);
   outline-offset: 5px;
@@ -117,6 +118,24 @@ nav a:hover,
 .button-small {
   font-size: 13px;
   padding: 11px 19px;
+}
+.logout-button {
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--teal);
+  border-color: var(--line);
+  cursor: pointer;
+  min-height: 44px;
+  white-space: nowrap;
+}
+.logout-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.session-error {
+  color: var(--md-sys-color-error, #ba1a1a);
+  font-size: 13px;
+  padding-bottom: 16px;
 }
 .hero {
   display: grid;
@@ -792,6 +811,16 @@ details[open] .faq-plus {
   }
 }
 @media (max-width: 520px) {
+  .header-inner.has-session {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding-block: 12px;
+  }
+  .has-session .header-actions { display: contents; }
+  .has-session app-theme-toggle { grid-column: 2; grid-row: 1; justify-self: end; }
+  .has-session .app-entry { grid-column: 1; grid-row: 2; justify-self: start; }
+  .has-session .logout-button { grid-column: 2; grid-row: 2; justify-self: end; }
   .section-width {
     width: calc(100% - 36px);
   }
