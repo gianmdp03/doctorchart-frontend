@@ -1,4 +1,6 @@
 export const FEATURE_FLAGS = {
+ /** M6 public booking stays opt-in until owner authorizes publication. */
+ PUBLIC_APPOINTMENTS_ENABLED:false,
   /** M5 medical calendar; enable only after separate integration/production approval. */
   CALENDAR_ENABLED: false,
   /** M3 agenda editor and availability preview; activation requires owner approval. */

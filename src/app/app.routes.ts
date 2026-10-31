@@ -182,7 +182,10 @@ export const routes: Routes = [
       ),
   },
   {
-    path:'calendar',
+    path:'appointments',canActivate:[lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/appointments-page.component').then(m=>m.AppointmentsPageComponent),
+ },{path:'appointments/:publicId',canActivate:[lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/appointments-page.component').then(m=>m.AppointmentsPageComponent),
+ },{path:'booking-publication',canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,clinicsGuard,lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/publication-page.component').then(m=>m.PublicationPageComponent),
+ },{path:'calendar',
     runGuardsAndResolvers:'always',
     canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/calendar.guard').then(m=>m.calendarGuard))],
     loadComponent:()=>import('./features/calendar/calendar-page.component').then(m=>m.CalendarPageComponent),

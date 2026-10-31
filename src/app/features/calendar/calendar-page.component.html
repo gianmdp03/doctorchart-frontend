@@ -60,6 +60,7 @@
     </section>
    }
    <button class="full" [disabled]="writing()||detailBusy()" (click)="openBooking(b)">Recargar detalle vigente</button>
+   @if(publicDetails();as details){<details class="history"><summary>Datos administrativos de reserva online</summary><dl><dt>Documento</dt><dd>{{details.documentCountry}} · {{details.documentType}} {{details.document}}</dd><dt>Email</dt><dd>{{details.email}}</dd></dl><p>Formulario versión {{details.formVersion}}</p>@for(question of details.form.questions;track question.key){<p><strong>{{question.label}}</strong><br />{{details.answers[question.key]||'Sin respuesta'}}</p>}</details>}
    <details class="history"><summary>Historial de modificaciones · {{events().length}}</summary><ol>@for(event of events();track event.version){<li><strong>{{eventLabel(event.kind)}}</strong><br />{{eventDate(event.occurredAt)}} · versión {{event.version}}</li>}</ol></details>
   }
  </aside>

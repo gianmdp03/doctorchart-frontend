@@ -133,3 +133,12 @@
   X-Robots-Tag: noindex, nofollow
 /clinics/*/schedule
   X-Robots-Tag: noindex, nofollow
+
+/appointments
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer
+/appointments/*
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer
+/booking-publication
+  X-Robots-Tag: noindex, nofollow
