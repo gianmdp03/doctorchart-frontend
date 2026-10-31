@@ -8,61 +8,45 @@ import { ActivePatientService } from '../../../core/services/active-patient.serv
 import { AuthService } from '../../../core/services/auth.service';
 import { UserClockService } from '../../../core/services/user-clock.service';
 import { PatientRecordActionsService } from '../../../core/experience/patient-record-actions.service';
-import { ClinicalEntry, ClinicalSummary } from '../../../core/models/clinical-summary.model';
+import { ClinicalSummary } from '../../../core/models/clinical-summary.model';
 import { PatientDetailDTO } from '../../../core/models/patient.model';
-import { PatientVaccinationDose } from '../../../core/models/vaccination.model';
 import { clinicalFormFixture } from '../../../core/models/clinical-form.fixture';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-describe('ClinicalOverviewComponent', () => {
-  let fixture: ComponentFixture<ClinicalOverviewComponent>;
-  let component: ClinicalOverviewComponent;
-  const patient = signal<PatientDetailDTO | null>(null);
-  const user = signal<{ id: string } | null>({ id: 'doctor' });
-  const allowed = signal(true);
+describe('ClinicalOverviewComponent automatic history', () => {
+  let fixture: ComponentFixture<ClinicalOverviewComponent>, component: ClinicalOverviewComponent;
+  const patient = signal<PatientDetailDTO | null>(null),
+    user = signal<{ id: string } | null>({ id: 'doctor' });
   const api = { get: vi.fn(), save: vi.fn() };
   const active = {
     activePatient: patient,
     patientId: computed(() => patient()?.id ?? null),
-    setActivePatient: vi.fn((p: PatientDetailDTO) => patient.set(p)),
     loadPatient: vi.fn(),
   };
-  const entry = (overrides: Partial<ClinicalEntry> = {}): ClinicalEntry => ({
-    id: 'allergy-1',
-    kind: 'ALLERGY',
-    text: 'Penicilina',
-    details: 'Urticaria',
-    date: '2020-03-02',
-    certainty: 'REPORTED',
-    status: 'ACTIVE',
-    recordedAt: '2026-10-31T15:00:00Z',
-    authorUserId: 'doctor',
-    ...overrides,
+  const newPatient = (id = 10): PatientDetailDTO => ({
+    ...clinicalFormFixture(),
+    version: 0,
+    id,
+    fullName: 'Paciente sintético',
+    birthDate: '2020-01-01',
   });
-  const summary = (overrides: Partial<ClinicalSummary> = {}): ClinicalSummary => ({
+  const summary = (extra: Partial<ClinicalSummary> = {}): ClinicalSummary => ({
     patientId: 10,
     patientVersion: 0,
     asOfDate: '2026-10-31',
+    history: {},
     profile: { entries: [] },
     historical: [],
     lastEncounter: null,
     vaccinations: null,
     recentMedications: [],
-    ...overrides,
-  });
-  const newPatient = (id = 10, version = 0): PatientDetailDTO => ({
-    ...clinicalFormFixture(),
-    id,
-    version,
-    fullName: 'Paciente sintético',
-    birthDate: '2020-01-01',
+    ...extra,
   });
   const text = () => fixture.nativeElement.textContent as string;
   beforeEach(async () => {
     vi.clearAllMocks();
-    allowed.set(true);
-    user.set({ id: 'doctor' });
     patient.set(newPatient());
+    user.set({ id: 'doctor' });
     api.get.mockReturnValue(of(summary()));
     await TestBed.configureTestingModule({
       imports: [ClinicalOverviewComponent],
@@ -72,112 +56,145 @@ describe('ClinicalOverviewComponent', () => {
         { provide: ActivePatientService, useValue: active },
         { provide: AuthService, useValue: { currentUser: user } },
         { provide: UserClockService, useValue: { day: signal('2026-10-31') } },
-        { provide: PatientRecordActionsService, useValue: { has: () => allowed() } },
+        { provide: PatientRecordActionsService, useValue: { has: () => true } },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(ClinicalOverviewComponent);
     component = fixture.componentInstance;
   });
-
-  it('distinguishes missing allergy data from a dated confirmation of no known allergies', () => {
+  it('is read-only and links to the patient form instead of duplicating clinical inputs', () => {
     fixture.detectChanges();
-    expect(text()).toContain('Sin información de alergias');
-    api.get.mockReturnValue(
-      of(summary({ profile: { entries: [], noKnownAllergiesAt: '2026-10-31T15:00:00Z' } })),
-    );
-    component.reload();
-    fixture.detectChanges();
-    expect(text()).toContain('Sin alergias conocidas');
-    expect(text()).toContain('31/10/2026');
-    expect(text()).not.toContain('Sin información de alergias');
+    expect(fixture.nativeElement.querySelector('form,input,textarea,select')).toBeNull();
+    expect(text()).toContain('Editar antecedentes');
+    expect(text()).not.toContain('Registrar alergia');
+    expect(api.save).not.toHaveBeenCalled();
   });
-  it('shows provenance, keeps resolved history and never invents dates for legacy data', () => {
+  it('distinguishes missing information from an explicit negative report', () => {
+    fixture.detectChanges();
+    expect(text()).toContain('Sin alergias relevadas');
     api.get.mockReturnValue(
       of(
         summary({
-          profile: {
-            entries: [entry(), entry({ id: 'resolved', text: 'Dato cerrado', status: 'RESOLVED' })],
+          history: {
+            ALLERGY: {
+              status: 'NONE',
+              items: [],
+              certainty: 'REPORTED',
+              date: '2026-10-31T15:00:00Z',
+              source: 'PATIENT',
+              sourceId: 10,
+            },
+          },
+        }),
+      ),
+    );
+    component.reload();
+    fixture.detectChanges();
+    expect(text()).toContain('No refiere alergias conocidas');
+    expect(text()).toContain('Informado');
+    expect(text()).not.toContain('Sin alergias relevadas');
+  });
+  it('shows structured patient and encounter values with dates and exact sources', () => {
+    api.get.mockReturnValue(
+      of(
+        summary({
+          history: {
+            ALLERGY: {
+              status: 'PRESENT',
+              items: ['Penicilina · urticaria'],
+              certainty: 'REPORTED',
+              date: '2020-03-02T15:00:00Z',
+              source: 'PATIENT',
+              sourceId: 10,
+            },
+            PROBLEM: {
+              status: 'PRESENT',
+              items: ['Asma en seguimiento'],
+              certainty: 'CONFIRMED',
+              date: '2026-10-31T15:00:00Z',
+              source: 'ENCOUNTER',
+              sourceId: 45,
+            },
+          },
+        }),
+      ),
+    );
+    fixture.detectChanges();
+    expect(text()).toContain('02/03/2020');
+    expect(text()).toContain('Asma en seguimiento');
+    expect(text()).toContain('Corroborado');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    component.openItem(component.items('PROBLEM')[0]);
+    expect(navigate).toHaveBeenCalledWith(['/encounters', 45]);
+    component.openItem(component.items('ALLERGY')[0]);
+    expect(navigate).toHaveBeenCalledWith(['/patients', 10], {
+      queryParams: { tab: 'summary' },
+      fragment: 'clinical-history',
+    });
+  });
+  it('does not revive legacy positives after a newer explicit negative review', () => {
+    api.get.mockReturnValue(
+      of(
+        summary({
+          history: {
+            ALLERGY: {
+              status: 'NONE',
+              items: [],
+              certainty: 'CONFIRMED',
+              date: '2026-10-31T15:00:00Z',
+              source: 'ENCOUNTER',
+              sourceId: 4,
+            },
           },
           historical: [
-            entry({
+            {
               id: 'old',
+              kind: 'ALLERGY',
               text: 'Antecedente antiguo',
-              status: 'HISTORICAL',
+              details: '',
               date: '',
               recordedAt: '',
-            }),
+              authorUserId: '',
+              certainty: 'REPORTED',
+              status: 'HISTORICAL',
+            },
           ],
         }),
       ),
     );
     fixture.detectChanges();
-    expect(text()).toContain('Informado · a confirmar');
-    expect(text()).toContain('02/03/2020');
-    expect(text()).toContain('Antecedente antiguo');
-    expect(text()).toContain('fecha no registrada');
-    expect(component.entries('ALLERGY')).toHaveLength(1);
-    component.recordsOpen.set(true);
-    fixture.detectChanges();
-    expect(text()).toContain('Dato cerrado');
+    expect(component.items('ALLERGY')).toEqual([]);
+    expect(text()).toContain('No refiere alergias conocidas');
+    expect(text()).toContain('Antecedentes previos');
   });
-  it('lists missing and current vaccine doses, excluding future doses and showing last application', () => {
-    const dose = (
-      id: string,
-      status: PatientVaccinationDose['status'],
-    ): PatientVaccinationDose => ({
-      id,
-      status,
-      calendarId: 'calendar',
-      vaccineId: id,
-      vaccineName: id,
-      doseLabel: 'Primera dosis',
-      dueFrom: 0,
-      dueTo: 12,
-      dueAgeLabel: '12 meses',
-      appliedAt: status === 'APLICADA' ? '2026-10-01' : null,
-    });
-    api.get.mockReturnValue(
-      of(
-        summary({
-          vaccinations: {
-            patientId: 10,
-            patientVersion: 0,
-            calendarId: 'calendar',
-            asOfDate: '2026-10-31',
-            ageInMonths: 81,
-            ageLabel: '6 años',
-            doses: [
-              dose('Faltante', 'PENDIENTE'),
-              dose('Ahora', 'ACTUAL'),
-              dose('Futura', 'FUTURA'),
-              dose('Aplicada', 'APLICADA'),
-            ],
-          },
-        }),
-      ),
-    );
+  it('cancels stale reads across patients and users', () => {
+    const late = new Subject<ClinicalSummary>();
+    api.get.mockReturnValueOnce(late);
     fixture.detectChanges();
-    expect(component.pendingVaccines()).toHaveLength(2);
-    expect(text()).toContain('Faltante');
-    expect(text()).toContain('Corresponde ahora');
-    expect(text()).not.toContain('Futura');
-    expect(text()).toContain('Última aplicada: Aplicada');
-    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    component.recordLink('vaccinations', 'vaccine-Faltante');
-    expect(navigate).toHaveBeenCalledWith(['/patients', 10], {
-      queryParams: { tab: 'vaccinations' },
-      fragment: 'vaccine-Faltante',
-    });
+    patient.set(newPatient(11));
+    api.get.mockReturnValue(of(summary({ patientId: 11 })));
+    fixture.detectChanges();
+    late.next(summary());
+    expect(component.data()?.patientId).toBe(11);
+    user.set(null);
+    fixture.detectChanges();
+    expect(component.data()).toBeNull();
   });
-  it('does not treat a historic prescription as confirmed current medication', () => {
+  it('keeps read failures distinct from absent health facts', () => {
+    api.get.mockReturnValue(throwError(() => new Error('offline')));
+    fixture.detectChanges();
+    expect(text()).toContain('No se pudo cargar');
+    expect(text()).not.toContain('Sin alergias relevadas');
+  });
+  it('shows prescriptions as unconfirmed use, never as current medication', () => {
     api.get.mockReturnValue(
       of(
         summary({
           recentMedications: [
             {
-              recordId: 4,
+              recordId: 2,
               date: '2020-01-01',
-              name: 'Tratamiento antiguo',
+              name: 'Tratamiento anterior',
               dosage: '5 mg',
               frequency: 'diario',
             },
@@ -186,113 +203,46 @@ describe('ClinicalOverviewComponent', () => {
       ),
     );
     fixture.detectChanges();
-    expect(text()).toContain('Sin medicación vigente confirmada');
-    expect(text()).toContain('uso actual a confirmar');
-    expect(text()).toContain('Tratamiento antiguo');
+    expect(component.items('MEDICATION')).toEqual([]);
+    expect(text()).toContain('Uso actual a confirmar');
+    expect(text()).toContain('Tratamiento anterior');
   });
-  it('cancels late reads and clears clinical drafts across patients or users', () => {
-    const late = new Subject<ClinicalSummary>();
-    api.get.mockReturnValueOnce(late);
-    fixture.detectChanges();
-    component.text = 'Dato privado';
-    component.editorOpen.set(true);
-    patient.set(newPatient(11));
-    api.get.mockReturnValue(of(summary({ patientId: 11 })));
-    fixture.detectChanges();
-    late.next(summary({ profile: { entries: [entry({ text: 'Paciente anterior' })] } }));
-    fixture.detectChanges();
-    expect(component.data()?.patientId).toBe(11);
-    expect(text()).not.toContain('Paciente anterior');
-    expect(component.text).toBe('');
-    component.text = 'Borrador de otro usuario';
-    user.set(null);
-    fixture.detectChanges();
-    expect(component.data()).toBeNull();
-    expect(component.text).toBe('');
-  });
-  it('preserves a draft on version conflicts and sends the expected version', () => {
-    fixture.detectChanges();
-    component.text = 'Penicilina';
-    component.date = '2026-10-31';
-    component.openEditor('ALLERGY');
-    api.save.mockReturnValue(throwError(() => ({ status: 409 })));
-    component.add();
-    fixture.detectChanges();
-    expect(api.save).toHaveBeenCalledWith(
-      10,
-      0,
-      expect.objectContaining({ operation: 'ADD', text: 'Penicilina', certainty: 'REPORTED' }),
-    );
-    expect(component.text).toBe('Penicilina');
-    expect(text()).toContain('La ficha cambió');
-    api.get.mockReturnValue(of(summary({ patientVersion: 1 })));
-    patient.set(newPatient(10, 1));
-    fixture.detectChanges();
-    expect(component.text).toBe('Penicilina');
-    expect(component.editorOpen()).toBe(true);
-  });
-  it('blocks writes without edit permissions, and avoids displaying failed reads as empty clinical facts', () => {
-    allowed.set(false);
-    fixture.detectChanges();
-    component.noKnownAllergies();
-    expect(api.save).not.toHaveBeenCalled();
-    api.get.mockReturnValue(throwError(() => new Error('offline')));
-    component.reload();
-    fixture.detectChanges();
-    expect(text()).toContain('No se pudo cargar');
-    expect(text()).not.toContain('Sin información de alergias');
-  });
-  it('rejects responses for another patient or a stale version', () => {
-    api.get.mockReturnValue(of(summary({ patientId: 99 })));
-    fixture.detectChanges();
-    expect(component.data()).toBeNull();
-    expect(text()).toContain('La ficha cambió');
-  });
-
-  it('blocks a write immediately when the patient changes, before the next render', () => {
-    fixture.detectChanges();
-    patient.set(newPatient(11));
-    component.noKnownAllergies();
-    expect(api.save).not.toHaveBeenCalled();
-  });
-
-  it('renders the six clinical sections with representative dated records', () => {
+  it('renders representative sections and missing vaccines for visual review', () => {
     api.get.mockReturnValue(
       of(
         summary({
-          profile: {
-            entries: [
-              entry(),
-              entry({
-                id: 'problem',
-                kind: 'PROBLEM',
-                text: 'Asma',
-                details: 'Sin crisis recientes',
-                certainty: 'CONFIRMED',
-                date: '2026-10-31',
-              }),
-              entry({
-                id: 'med',
-                kind: 'MEDICATION',
-                text: 'Medicación habitual registrada',
-                details: 'Dosis y frecuencia confirmadas en consulta',
-                certainty: 'CONFIRMED',
-                date: '2026-10-31',
-              }),
-              entry({
-                id: 'pending',
-                kind: 'PENDING',
-                text: 'Revisar resultado de laboratorio',
-                date: '2026-11-10',
-              }),
-            ],
+          history: {
+            ALLERGY: {
+              status: 'PRESENT',
+              items: ['Penicilina · urticaria'],
+              certainty: 'REPORTED',
+              date: '2025-03-02T15:00:00Z',
+              source: 'PATIENT',
+              sourceId: 10,
+            },
+            PROBLEM: {
+              status: 'PRESENT',
+              items: ['Asma en seguimiento'],
+              certainty: 'CONFIRMED',
+              date: '2026-10-31T15:00:00Z',
+              source: 'ENCOUNTER',
+              sourceId: 45,
+            },
+            MEDICATION: {
+              status: 'NONE',
+              items: [],
+              certainty: 'REPORTED',
+              date: '2026-10-31T15:00:00Z',
+              source: 'ENCOUNTER',
+              sourceId: 45,
+            },
           },
           lastEncounter: {
-            id: 20,
-            date: '2026-10-20',
-            complaint: 'Control de salud',
-            diagnosis: 'Seguimiento clínico',
-            followUp: 'Revisar evolución',
+            id: 45,
+            date: '2026-10-31',
+            complaint: 'Control pediátrico',
+            diagnosis: 'Seguimiento del crecimiento y la salud',
+            followUp: 'Revisar evolución y resultados de laboratorio.',
             followUpDate: '2026-11-20',
           },
           vaccinations: {
@@ -322,13 +272,13 @@ describe('ClinicalOverviewComponent', () => {
     );
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.overview-card')).toHaveLength(6);
-    const styles = [...document.querySelectorAll('style')]
-      .map((style) => style.textContent)
-      .join('\n');
+    expect(component.pendingVaccines()).toHaveLength(1);
+    expect(text()).toContain('sin aplicación registrada');
+    const styles = [...document.querySelectorAll('style')].map((s) => s.textContent).join('\n');
     mkdirSync('.angular/clinical-summary', { recursive: true });
     writeFileSync(
       '.angular/clinical-summary/overview.html',
-      `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:24px;font-family:Arial,sans-serif;background:#f8fafc}*{box-sizing:border-box}${styles}</style></head><body>${fixture.nativeElement.outerHTML}</body></html>`,
+      `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:32px;font-family:Arial,sans-serif;background:#f6f8fa}*{box-sizing:border-box}${styles}</style></head><body>${fixture.nativeElement.outerHTML}</body></html>`,
     );
   });
 });

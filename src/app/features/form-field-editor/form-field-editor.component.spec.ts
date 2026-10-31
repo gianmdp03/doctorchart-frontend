@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormFieldEditorComponent } from './form-field-editor.component';
-import { WizardFormDefinition, WizardFormulaDefinition } from '../../core/models/wizard-definition.model';
+import {
+  WizardFormDefinition,
+  WizardFormulaDefinition,
+  createClinicalHistoryCategory,
+} from '../../core/models/wizard-definition.model';
 import { customSpecialtyFixture } from '../onboarding/testing/custom-specialty.fixture';
 import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
 
@@ -10,21 +14,43 @@ describe('FormFieldEditorComponent canonical wizard', () => {
   let component: FormFieldEditorComponent;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [FormFieldEditorComponent, DynamicFormRendererComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [FormFieldEditorComponent, DynamicFormRendererComponent],
+    }).compileComponents();
     fixture = TestBed.createComponent(FormFieldEditorComponent);
     component = fixture.componentInstance;
   });
 
-  function load(form: WizardFormDefinition, section: 'patientForm' | 'encounterForm' = 'encounterForm'): void {
+  function load(
+    form: WizardFormDefinition,
+    section: 'patientForm' | 'encounterForm' = 'encounterForm',
+  ): void {
     fixture.componentRef.setInput('definition', structuredClone(form));
     fixture.componentRef.setInput('section', section);
     fixture.detectChanges();
   }
 
+  it('keeps the shared clinical history block locked, including adding fields', () => {
+    load({ categories: [createClinicalHistoryCategory()] });
+    const original = structuredClone(component.working());
+    component.renameCategory('sys_clinical_history', 'Changed');
+    component.toggleCategory('sys_clinical_history');
+    component.deleteCategory('sys_clinical_history');
+    component.openField('sys_clinical_history');
+    component.openField('sys_clinical_history', 'sys_allergies');
+    component.deleteField('sys_clinical_history', 'sys_allergies');
+    component.moveField('sys_clinical_history', 'sys_allergies', 1);
+    expect(component.working()).toEqual(original);
+    expect(component.fieldDraft()).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('todas las especialidades');
+  });
+
   it('renders the backend contract fixture with arbitrary category keys and no injected defaults', () => {
     load(customSpecialtyFixture.definition.encounterForm);
-    expect(component.categories().map(c => c.key)).toEqual(['new_encounter_category']);
-    expect(component.allFields()).toEqual(customSpecialtyFixture.definition.encounterForm.categories[0].fields);
+    expect(component.categories().map((c) => c.key)).toEqual(['new_encounter_category']);
+    expect(component.allFields()).toEqual(
+      customSpecialtyFixture.definition.encounterForm.categories[0].fields,
+    );
     expect(fixture.nativeElement.textContent).toContain('Consulta inédita');
     expect(fixture.nativeElement.querySelectorAll('.field-card')).toHaveLength(4);
     expect(fixture.nativeElement.querySelector('input[type=date]')).toBeNull();
@@ -32,14 +58,19 @@ describe('FormFieldEditorComponent canonical wizard', () => {
   it('adds a category and field through their actual buttons, then cancels a local edit', () => {
     load({ categories: [] });
     const click = (label: string) => {
-      const button=(Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[]).find(item=>item.textContent?.trim()===label);
-      expect(button, label).toBeTruthy(); button!.click(); fixture.detectChanges();
+      const button = (
+        Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[]
+      ).find((item) => item.textContent?.trim() === label);
+      expect(button, label).toBeTruthy();
+      button!.click();
+      fixture.detectChanges();
     };
     component.newCategoryTitle.set('Categoría de ensayo');
     click('Agregar categoría');
     expect(component.categories()).toHaveLength(1);
     click('Agregar campo');
-    component.updateDraft({ label: 'Campo de ensayo', type: 'TEXT' }); fixture.detectChanges();
+    component.updateDraft({ label: 'Campo de ensayo', type: 'TEXT' });
+    fixture.detectChanges();
     click('Aplicar campo');
     expect(component.categories()[0].fields[0].label).toBe('Campo de ensayo');
     click('Editar');
@@ -49,50 +80,86 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     expect(component.fieldDraft()).toBeNull();
   });
   it('adds an optional documented measurement position without changing existing clinical fields', () => {
-    load({ categories: [{ key: 'measurements', title: 'Mediciones', enabled: true, fields: [{ key: 'heightCm', label: 'Talla', type: 'NUMBER', required: false }] }] });
+    load({
+      categories: [
+        {
+          key: 'measurements',
+          title: 'Mediciones',
+          enabled: true,
+          fields: [{ key: 'heightCm', label: 'Talla', type: 'NUMBER', required: false }],
+        },
+      ],
+    });
     const before = structuredClone(component.allFields()[0]);
     expect(component.canAddMeasurementMode()).toBe(true);
     component.addMeasurementMode();
     expect(component.allFields()[0]).toEqual(before);
-    expect(component.allFields()[1]).toMatchObject({ key: 'heightMeasurementMode', type: 'SELECT', required: false, options: [{ value: 'RECUMBENT', label: 'Longitud recumbente (acostado)' }, { value: 'STANDING', label: 'Estatura de pie' }] });
+    expect(component.allFields()[1]).toMatchObject({
+      key: 'heightMeasurementMode',
+      type: 'SELECT',
+      required: false,
+      options: [
+        { value: 'RECUMBENT', label: 'Longitud recumbente (acostado)' },
+        { value: 'STANDING', label: 'Estatura de pie' },
+      ],
+    });
     component.addMeasurementMode();
     expect(component.allFields()).toHaveLength(2);
   });
 
   it('renames, reorders, disables and deletes any category without changing its identity', () => {
     load(customSpecialtyFixture.definition.encounterForm);
-    component.newCategoryTitle.set('Categoría nueva'); component.addCategory();
+    component.newCategoryTitle.set('Categoría nueva');
+    component.addCategory();
     const key = component.categories()[1].key;
-    component.renameCategory(key, 'Nombre modificado'); component.moveCategory(key, -1); component.toggleCategory(key);
-    expect(component.categories()[0]).toMatchObject({ key, title: 'Nombre modificado', enabled: false });
+    component.renameCategory(key, 'Nombre modificado');
+    component.moveCategory(key, -1);
+    component.toggleCategory(key);
+    expect(component.categories()[0]).toMatchObject({
+      key,
+      title: 'Nombre modificado',
+      enabled: false,
+    });
     component.deleteCategory('new_encounter_category');
-    expect(component.categories().map(c => c.key)).toEqual([key]);
+    expect(component.categories().map((c) => c.key)).toEqual([key]);
     component.deleteCategory(key);
     expect(component.categories()).toEqual([]);
   });
 
   it('keeps disabled categories and empty forms reachable and editable', () => {
-    load({ categories: [{ key: 'disabled_xyz', title: 'Desactivada', enabled: false, fields: [] }] });
-    component.openField('disabled_xyz'); component.updateDraft({ label: 'Dato opcional' }); component.saveField();
+    load({
+      categories: [{ key: 'disabled_xyz', title: 'Desactivada', enabled: false, fields: [] }],
+    });
+    component.openField('disabled_xyz');
+    component.updateDraft({ label: 'Dato opcional' });
+    component.saveField();
     expect(component.categories()[0].fields[0].label).toBe('Dato opcional');
     component.toggleCategory('disabled_xyz');
     expect(component.categories()[0].enabled).toBe(true);
     component.deleteCategory('disabled_xyz');
-    component.newCategoryTitle.set('Otra categoría'); component.addCategory();
+    component.newCategoryTitle.set('Otra categoría');
+    component.addCategory();
     expect(component.selectedCategory()?.title).toBe('Otra categoría');
   });
 
   it('preserves local selection of a disabled category when the parent echoes edits with an unchanged step', () => {
-    const form: WizardFormDefinition = { categories: [
-      { key: 'active_a', title: 'A', enabled: true, fields: [] },
-      { key: 'disabled_b', title: 'B', enabled: false, fields: [] },
-    ] };
-    fixture.componentRef.setInput('selectedCategoryKey', 'active_a'); load(form);
-    component.selectCategory('disabled_b'); component.renameCategory('disabled_b', 'B modificada');
-    fixture.componentRef.setInput('definition', structuredClone(component.working())); fixture.detectChanges();
+    const form: WizardFormDefinition = {
+      categories: [
+        { key: 'active_a', title: 'A', enabled: true, fields: [] },
+        { key: 'disabled_b', title: 'B', enabled: false, fields: [] },
+      ],
+    };
+    fixture.componentRef.setInput('selectedCategoryKey', 'active_a');
+    load(form);
+    component.selectCategory('disabled_b');
+    component.renameCategory('disabled_b', 'B modificada');
+    fixture.componentRef.setInput('definition', structuredClone(component.working()));
+    fixture.detectChanges();
     expect(component.selectedCategory()?.key).toBe('disabled_b');
-    fixture.componentRef.setInput('selectedCategoryKey', 'disabled_b'); fixture.detectChanges();
-    fixture.componentRef.setInput('selectedCategoryKey', 'active_a'); fixture.detectChanges();
+    fixture.componentRef.setInput('selectedCategoryKey', 'disabled_b');
+    fixture.detectChanges();
+    fixture.componentRef.setInput('selectedCategoryKey', 'active_a');
+    fixture.detectChanges();
     expect(component.selectedCategory()?.key).toBe('active_a');
   });
 
@@ -101,34 +168,70 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     const output = vi.spyOn(component.definitionChange, 'emit');
     load(incoming);
     component.openField('new_encounter_category', 'notes');
-    component.updateDraft({ label: 'Comentarios', placeholder: 'Texto de ayuda', required: true }); component.saveField();
+    component.updateDraft({ label: 'Comentarios', placeholder: 'Texto de ayuda', required: true });
+    component.saveField();
     component.moveField('new_encounter_category', 'notes', -1);
-    const updated = component.allFields().find(f => f.key === 'notes');
-    expect(updated).toMatchObject({ label: 'Comentarios', placeholder: 'Texto de ayuda', required: true, type: 'TEXTAREA' });
+    const updated = component.allFields().find((f) => f.key === 'notes');
+    expect(updated).toMatchObject({
+      label: 'Comentarios',
+      placeholder: 'Texto de ayuda',
+      required: true,
+      type: 'TEXTAREA',
+    });
     expect(incoming).toEqual(customSpecialtyFixture.definition.encounterForm);
-    const emitted = output.mock.calls.at(-1)![0]; emitted.categories[0].title = 'Mutación externa';
+    const emitted = output.mock.calls.at(-1)![0];
+    emitted.categories[0].title = 'Mutación externa';
     expect(component.categories()[0].title).toBe('Consulta inédita');
     expect(Object.keys(output.mock.calls[0][0])).toEqual(['categories']);
   });
 
   it('generates unique field keys across all categories including disabled categories', () => {
-    load({ categories: [
-      { key: 'off', title: 'Inactiva', enabled: false, fields: [{ key: 'Dato', label: 'Dato', type: 'TEXT', required: false }] },
-      { key: 'on', title: 'Activa', enabled: true, fields: [] },
-    ] });
-    component.openField('on'); component.updateDraft({ label: 'Dato' }); component.saveField();
-    expect(component.allFields().map(f => f.key)).toEqual(['Dato', 'Dato_2']);
+    load({
+      categories: [
+        {
+          key: 'off',
+          title: 'Inactiva',
+          enabled: false,
+          fields: [{ key: 'Dato', label: 'Dato', type: 'TEXT', required: false }],
+        },
+        { key: 'on', title: 'Activa', enabled: true, fields: [] },
+      ],
+    });
+    component.openField('on');
+    component.updateDraft({ label: 'Dato' });
+    component.saveField();
+    expect(component.allFields().map((f) => f.key)).toEqual(['Dato', 'Dato_2']);
     component.duplicateField('off', 'Dato');
-    expect(new Set(component.allFields().map(f => f.key)).size).toBe(3);
-    component.newCategoryTitle.set('123 ' + 'á'.repeat(145)); component.addCategory();
+    expect(new Set(component.allFields().map((f) => f.key)).size).toBe(3);
+    component.newCategoryTitle.set('123 ' + 'á'.repeat(145));
+    component.addCategory();
     expect(component.categories().at(-1)!.key).toMatch(/^[A-Za-z][A-Za-z0-9_-]{0,79}$/);
   });
 
   it('creates a new field identity when changing its type and strips incompatible properties', () => {
-    load({ categories: [{ key: 'any', title: 'Categoría', enabled: true, fields: [
-      { key: 'existingNumber', label: 'Medición', type: 'NUMBER', required: false, unit: 'kg', minimum: 0, maximum: 100 },
-    ] }] });
-    component.openField('any', 'existingNumber'); component.setType('TEXT'); component.saveField();
+    load({
+      categories: [
+        {
+          key: 'any',
+          title: 'Categoría',
+          enabled: true,
+          fields: [
+            {
+              key: 'existingNumber',
+              label: 'Medición',
+              type: 'NUMBER',
+              required: false,
+              unit: 'kg',
+              minimum: 0,
+              maximum: 100,
+            },
+          ],
+        },
+      ],
+    });
+    component.openField('any', 'existingNumber');
+    component.setType('TEXT');
+    component.saveField();
     expect(component.allFields()[0].key).not.toBe('existingNumber');
     expect(component.allFields()[0]).toMatchObject({ label: 'Medición', type: 'TEXT' });
     expect(component.allFields()[0]).not.toHaveProperty('unit');
@@ -138,32 +241,64 @@ describe('FormFieldEditorComponent canonical wizard', () => {
   it('blocks removing or replacing a field still used by a formula', () => {
     load(customSpecialtyFixture.definition.encounterForm);
     component.deleteField('new_encounter_category', 'readingA');
-    expect(component.allFields().some(f => f.key === 'readingA')).toBe(true);
+    expect(component.allFields().some((f) => f.key === 'readingA')).toBe(true);
     expect(component.error()).toContain('cálculo');
-    component.openField('new_encounter_category', 'readingA'); component.setType('TEXT'); component.saveField();
+    component.openField('new_encounter_category', 'readingA');
+    component.setType('TEXT');
+    component.saveField();
     expect(component.editTarget()).not.toBeNull();
-    expect(component.allFields().find(f => f.key === 'readingA')?.type).toBe('NUMBER');
-    component.closeField(); component.deleteField('new_encounter_category', 'result'); component.deleteField('new_encounter_category', 'readingA');
-    expect(component.allFields().some(f => f.key === 'readingA')).toBe(false);
+    expect(component.allFields().find((f) => f.key === 'readingA')?.type).toBe('NUMBER');
+    component.closeField();
+    component.deleteField('new_encounter_category', 'result');
+    component.deleteField('new_encounter_category', 'readingA');
+    expect(component.allFields().some((f) => f.key === 'readingA')).toBe(false);
   });
 
   it('prevents modifying or deleting locked system category and fields', () => {
     const sysForm: WizardFormDefinition = {
       categories: [
         {
-          key: 'sys_patient_profile', title: 'Datos Personales', enabled: true, system: true,
+          key: 'sys_patient_profile',
+          title: 'Datos Personales',
+          enabled: true,
+          system: true,
           fields: [
             { key: 'sys_firstName', label: 'Nombre', type: 'TEXT', required: true, system: true },
             { key: 'sys_lastName', label: 'Apellido', type: 'TEXT', required: true, system: true },
-            { key: 'sys_dni', label: 'Documento / DNI', type: 'TEXT', required: true, system: true },
-            { key: 'sys_dob', label: 'Fecha de nacimiento', type: 'DATE', required: true, system: true },
-            { key: 'sys_sex', label: 'Sexo biológico', type: 'SELECT', required: true, system: true, options: [{ value: 'MALE', label: 'M' }] },
+            {
+              key: 'sys_dni',
+              label: 'Documento / DNI',
+              type: 'TEXT',
+              required: true,
+              system: true,
+            },
+            {
+              key: 'sys_dob',
+              label: 'Fecha de nacimiento',
+              type: 'DATE',
+              required: true,
+              system: true,
+            },
+            {
+              key: 'sys_sex',
+              label: 'Sexo biológico',
+              type: 'SELECT',
+              required: true,
+              system: true,
+              options: [{ value: 'MALE', label: 'M' }],
+            },
             { key: 'sys_phone', label: 'Teléfono', type: 'TEXT', required: false, system: true },
             { key: 'sys_email', label: 'Correo', type: 'TEXT', required: false, system: true },
-            { key: 'sys_insurance', label: 'Obra Social', type: 'TEXT', required: false, system: true },
-          ]
-        }
-      ]
+            {
+              key: 'sys_insurance',
+              label: 'Obra Social',
+              type: 'TEXT',
+              required: false,
+              system: true,
+            },
+          ],
+        },
+      ],
     };
     load(sysForm, 'patientForm');
     const original = structuredClone(component.working());
@@ -174,40 +309,57 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     component.deleteCategory('sys_patient_profile');
     expect(component.categories()[0].key).toBe('sys_patient_profile');
     component.deleteField('sys_patient_profile', 'sys_firstName');
-    expect(component.allFields().some(f => f.key === 'sys_firstName')).toBe(true);
+    expect(component.allFields().some((f) => f.key === 'sys_firstName')).toBe(true);
     component.openField('sys_patient_profile', 'sys_firstName');
     expect(component.fieldDraft()).toBeNull();
     component.moveField('sys_patient_profile', 'sys_firstName', 1);
     expect(component.allFields()[0].key).toBe('sys_firstName');
     component.duplicateField('sys_patient_profile', 'sys_firstName');
-    expect(component.allFields().filter(f => f.key.startsWith('sys_firstName'))).toHaveLength(1);
+    expect(component.allFields().filter((f) => f.key.startsWith('sys_firstName'))).toHaveLength(1);
     expect(component.working()).toEqual(original);
   });
 
   it('enforces measurement units and numeric bounds on custom fields', () => {
     load({ categories: [{ key: 'measurements', title: 'Mediciones', enabled: true, fields: [] }] });
-    component.openField('measurements'); component.updateDraft({ label: 'Peso' }); component.setType('NUMBER');
-    component.updateDraft({ unit: 'kg', minimum: 20, maximum: 10 }); component.saveField(); expect(component.error()).toContain('mínimo');
-    component.updateDraft({ maximum: 40 }); component.saveField(); expect(component.allFields()[0]).toMatchObject({ unit: 'kg', minimum: 20, maximum: 40 });
+    component.openField('measurements');
+    component.updateDraft({ label: 'Peso' });
+    component.setType('NUMBER');
+    component.updateDraft({ unit: 'kg', minimum: 20, maximum: 10 });
+    component.saveField();
+    expect(component.error()).toContain('mínimo');
+    component.updateDraft({ maximum: 40 });
+    component.saveField();
+    expect(component.allFields()[0]).toMatchObject({ unit: 'kg', minimum: 20, maximum: 40 });
   });
 
   it('automatically validates a numeric column created in a new family category', () => {
     load({ categories: [] }, 'patientForm');
-    component.newCategoryTitle.set('Datos familiares'); component.addCategory();
+    component.newCategoryTitle.set('Datos familiares');
+    component.addCategory();
     const category = component.categories()[0];
-    component.openField(category.key); component.updateDraft({ label: 'Cantidad de familiares', required: true });
-    component.setType('NUMBER'); component.setNumberProperty('minimum', '0'); component.setNumberProperty('maximum', '20');
-    expect(component.draftValidationError()).toBeNull(); component.saveField();
-    const definition = component.working(), field = definition.categories[0].fields[0];
+    component.openField(category.key);
+    component.updateDraft({ label: 'Cantidad de familiares', required: true });
+    component.setType('NUMBER');
+    component.setNumberProperty('minimum', '0');
+    component.setNumberProperty('maximum', '20');
+    expect(component.draftValidationError()).toBeNull();
+    component.saveField();
+    const definition = component.working(),
+      field = definition.categories[0].fields[0];
     const renderer = TestBed.createComponent(DynamicFormRendererComponent);
-    renderer.componentRef.setInput('showErrors', true); renderer.componentRef.setInput('definition', structuredClone(definition)); renderer.detectChanges();
+    renderer.componentRef.setInput('showErrors', true);
+    renderer.componentRef.setInput('definition', structuredClone(definition));
+    renderer.detectChanges();
     expect(renderer.componentInstance.formValid()).toBe(false);
     expect(renderer.nativeElement.textContent).toContain('Completá este campo.');
-    renderer.componentInstance.setNumberValue(field, 'familia'); renderer.detectChanges();
+    renderer.componentInstance.setNumberValue(field, 'familia');
+    renderer.detectChanges();
     expect(renderer.nativeElement.textContent).toContain('Ingresá un número válido.');
-    renderer.componentInstance.setNumberValue(field, '21'); renderer.detectChanges();
+    renderer.componentInstance.setNumberValue(field, '21');
+    renderer.detectChanges();
     expect(renderer.nativeElement.textContent).toContain('El valor máximo es 20.');
-    renderer.componentInstance.setNumberValue(field, '0'); renderer.detectChanges();
+    renderer.componentInstance.setNumberValue(field, '0');
+    renderer.detectChanges();
     expect(renderer.componentInstance.formValid()).toBe(true);
     expect(renderer.nativeElement.querySelector('.field-error')).toBeNull();
     renderer.destroy();
@@ -215,92 +367,211 @@ describe('FormFieldEditorComponent canonical wizard', () => {
 
   it('reveals draft errors after applying and clears them when corrected', () => {
     load({ categories: [{ key: 'family', title: 'Familia', enabled: true, fields: [] }] });
-    component.openField('family'); component.updateDraft({ label: 'Dato' }); component.setType('NUMBER');
-    component.setNumberProperty('minimum', 'abc'); fixture.detectChanges();
+    component.openField('family');
+    component.updateDraft({ label: 'Dato' });
+    component.setType('NUMBER');
+    component.setNumberProperty('minimum', 'abc');
+    fixture.detectChanges();
     expect(component.numericInputs()['minimum']).toBe('abc');
     expect(component.draftError('minimum')).toContain('número válido');
     expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.field-page-actions .primary').disabled).toBe(false);
-    component.saveField(); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.field-error')?.textContent).toContain('número válido');
-    component.setNumberProperty('minimum', '0'); component.setNumberProperty('maximum', '-1'); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-page-actions .primary').disabled).toBe(
+      false,
+    );
+    component.saveField();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-error')?.textContent).toContain(
+      'número válido',
+    );
+    component.setNumberProperty('minimum', '0');
+    component.setNumberProperty('maximum', '-1');
+    fixture.detectChanges();
     expect(component.draftError('maximum')).toContain('mínimo');
-    component.setNumberProperty('maximum', '20'); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.field-page-actions .primary').disabled).toBe(false);
+    component.setNumberProperty('maximum', '20');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-page-actions .primary').disabled).toBe(
+      false,
+    );
   });
 
   it('requires distinct option values and preserves labels independently', () => {
     load({ categories: [{ key: 'choices', title: 'Opciones', enabled: true, fields: [] }] });
-    component.openField('choices'); component.updateDraft({ label: 'Grupo' }); component.setType('SELECT'); component.saveField();
+    component.openField('choices');
+    component.updateDraft({ label: 'Grupo' });
+    component.setType('SELECT');
+    component.saveField();
     expect(component.error()).toContain('opción');
-    component.addOption(); component.updateOption(0, 'label', 'Grupo A'); component.updateOption(0, 'value', 'a');
-    component.addOption(); component.updateOption(1, 'label', 'Otra etiqueta'); component.updateOption(1, 'value', 'a'); component.saveField();
-    expect(component.error()).toContain('repetirse'); component.updateOption(1, 'value', 'b'); component.saveField();
-    expect(component.allFields()[0].options).toEqual([{ label: 'Grupo A', value: 'a' }, { label: 'Otra etiqueta', value: 'b' }]);
+    component.addOption();
+    component.updateOption(0, 'label', 'Grupo A');
+    component.updateOption(0, 'value', 'a');
+    component.addOption();
+    component.updateOption(1, 'label', 'Otra etiqueta');
+    component.updateOption(1, 'value', 'a');
+    component.saveField();
+    expect(component.error()).toContain('repetirse');
+    component.updateOption(1, 'value', 'b');
+    component.saveField();
+    expect(component.allFields()[0].options).toEqual([
+      { label: 'Grupo A', value: 'a' },
+      { label: 'Otra etiqueta', value: 'b' },
+    ]);
   });
 
   it('rejects visibility cycles and dangling references while retaining false conditions', () => {
-    load({ categories: [{ key: 'conditions', title: 'Condiciones', enabled: true, fields: [
-      { key: 'a', label: 'A', type: 'BOOLEAN', required: false },
-      { key: 'b', label: 'B', type: 'BOOLEAN', required: false, visibleWhen: { fieldKey: 'a', equals: false } },
-    ] }] });
-    component.openField('conditions', 'a'); component.setVisibility('b'); component.saveField(); expect(component.error()).toContain('ciclo');
-    component.closeField(); component.deleteField('conditions', 'a'); expect(component.allFields()).toHaveLength(2);
-    component.openField('conditions', 'b'); component.setVisibility('a'); component.setVisibilityValue(false); component.saveField();
+    load({
+      categories: [
+        {
+          key: 'conditions',
+          title: 'Condiciones',
+          enabled: true,
+          fields: [
+            { key: 'a', label: 'A', type: 'BOOLEAN', required: false },
+            {
+              key: 'b',
+              label: 'B',
+              type: 'BOOLEAN',
+              required: false,
+              visibleWhen: { fieldKey: 'a', equals: false },
+            },
+          ],
+        },
+      ],
+    });
+    component.openField('conditions', 'a');
+    component.setVisibility('b');
+    component.saveField();
+    expect(component.error()).toContain('ciclo');
+    component.closeField();
+    component.deleteField('conditions', 'a');
+    expect(component.allFields()).toHaveLength(2);
+    component.openField('conditions', 'b');
+    component.setVisibility('a');
+    component.setVisibilityValue(false);
+    component.saveField();
     expect(component.allFields()[1].visibleWhen).toEqual({ fieldKey: 'a', equals: false });
   });
 
   const formulas: WizardFormulaDefinition[] = [
-    { kind: 'IMC', inputs: { weightKg: { fieldKey: 'readingA' }, heightCm: { fieldKey: 'readingB' } } },
-    { kind: 'BSA', inputs: { weightKg: { fieldKey: 'readingA' }, heightCm: { fieldKey: 'readingB' } } },
-    { kind: 'TFGE', inputs: { creatinineMgDl: { fieldKey: 'readingA' }, ageYears: { context: 'patient.ageYears' }, gender: { context: 'patient.gender' } } },
-    { kind: 'COCKCROFT', inputs: { creatinineMgDl: { fieldKey: 'readingA' }, weightKg: { fieldKey: 'readingB' }, ageYears: { context: 'patient.ageYears' }, gender: { context: 'patient.gender' } } },
-    { kind: 'CALCIO_CORREGIDO', inputs: { serumCalciumMgDl: { fieldKey: 'readingA' }, serumAlbuminGDl: { fieldKey: 'readingB' } } },
-    { kind: 'CUSTOM', operation: 'DIVIDE', inputs: { a: { fieldKey: 'readingA' }, b: { constant: 0 } } },
+    {
+      kind: 'IMC',
+      inputs: { weightKg: { fieldKey: 'readingA' }, heightCm: { fieldKey: 'readingB' } },
+    },
+    {
+      kind: 'BSA',
+      inputs: { weightKg: { fieldKey: 'readingA' }, heightCm: { fieldKey: 'readingB' } },
+    },
+    {
+      kind: 'TFGE',
+      inputs: {
+        creatinineMgDl: { fieldKey: 'readingA' },
+        ageYears: { context: 'patient.ageYears' },
+        gender: { context: 'patient.gender' },
+      },
+    },
+    {
+      kind: 'COCKCROFT',
+      inputs: {
+        creatinineMgDl: { fieldKey: 'readingA' },
+        weightKg: { fieldKey: 'readingB' },
+        ageYears: { context: 'patient.ageYears' },
+        gender: { context: 'patient.gender' },
+      },
+    },
+    {
+      kind: 'CALCIO_CORREGIDO',
+      inputs: {
+        serumCalciumMgDl: { fieldKey: 'readingA' },
+        serumAlbuminGDl: { fieldKey: 'readingB' },
+      },
+    },
+    {
+      kind: 'CUSTOM',
+      operation: 'DIVIDE',
+      inputs: { a: { fieldKey: 'readingA' }, b: { constant: 0 } },
+    },
   ];
-  it.each(formulas)('saves $kind with exact explicit operands and canonical wire shape', formula => {
-    load(customSpecialtyFixture.definition.encounterForm);
-    component.openField('new_encounter_category', 'result'); component.setFormulaKind(formula.kind);
-    for (const [name, operand] of Object.entries(formula.inputs)) {
-      if (operand.fieldKey) component.setOperand(name, 'field:' + operand.fieldKey);
-      else if (operand.context) component.setOperand(name, 'context:' + operand.context);
-      else component.setOperand(name, 'constant', operand.constant);
-    }
-    if (formula.operation) component.setOperation(formula.operation);
-    component.saveField();
-    const saved = component.allFields().find(f => f.key === 'result')!;
-    expect(saved.formula).toEqual(formula); expect(saved.required).toBe(false);
-    expect(saved).not.toHaveProperty('formulaType'); expect(saved).not.toHaveProperty('formulaVariableA');
-    expect(component.formulaKinds.map(k => k.value)).not.toContain('CHADS_VASC');
-  });
+  it.each(formulas)(
+    'saves $kind with exact explicit operands and canonical wire shape',
+    (formula) => {
+      load(customSpecialtyFixture.definition.encounterForm);
+      component.openField('new_encounter_category', 'result');
+      component.setFormulaKind(formula.kind);
+      for (const [name, operand] of Object.entries(formula.inputs)) {
+        if (operand.fieldKey) component.setOperand(name, 'field:' + operand.fieldKey);
+        else if (operand.context) component.setOperand(name, 'context:' + operand.context);
+        else component.setOperand(name, 'constant', operand.constant);
+      }
+      if (formula.operation) component.setOperation(formula.operation);
+      component.saveField();
+      const saved = component.allFields().find((f) => f.key === 'result')!;
+      expect(saved.formula).toEqual(formula);
+      expect(saved.required).toBe(false);
+      expect(saved).not.toHaveProperty('formulaType');
+      expect(saved).not.toHaveProperty('formulaVariableA');
+      expect(component.formulaKinds.map((k) => k.value)).not.toContain('CHADS_VASC');
+    },
+  );
 
   it('rejects absent or chained formula inputs and never offers formula fields as operands', () => {
-    load(customSpecialtyFixture.definition.encounterForm); component.openField('new_encounter_category', 'result'); component.setFormulaKind('IMC'); component.saveField();
+    load(customSpecialtyFixture.definition.encounterForm);
+    component.openField('new_encounter_category', 'result');
+    component.setFormulaKind('IMC');
+    component.saveField();
     expect(component.error()).toContain('entradas');
-    expect(component.operandChoices('weightKg').some(c => c.value === 'field:result')).toBe(false);
-    component.setOperand('weightKg', 'field:result'); component.setOperand('heightCm', 'field:readingB'); component.saveField();
+    expect(component.operandChoices('weightKg').some((c) => c.value === 'field:result')).toBe(
+      false,
+    );
+    component.setOperand('weightKg', 'field:result');
+    component.setOperand('heightCm', 'field:readingB');
+    component.saveField();
     expect(component.error()).toContain('numéricos');
-    expect(component.operandChoices('gender').some(c => c.value === 'constant')).toBe(false);
-    component.setFormulaKind('CUSTOM'); component.setOperand('a', 'field:readingA'); component.setOperand('b', 'constant', null); component.saveField();
+    expect(component.operandChoices('gender').some((c) => c.value === 'constant')).toBe(false);
+    component.setFormulaKind('CUSTOM');
+    component.setOperand('a', 'field:readingA');
+    component.setOperand('b', 'constant', null);
+    component.saveField();
     expect(component.error()).toContain('constante');
   });
 
   it('blocks every mutation while readonly', () => {
-    load(customSpecialtyFixture.definition.encounterForm); fixture.componentRef.setInput('readonly', true); fixture.detectChanges();
-    const original = structuredClone(component.working()); const output = vi.spyOn(component.definitionChange, 'emit');
-    component.newCategoryTitle.set('No permitido'); component.addCategory(); component.renameCategory('new_encounter_category', 'Otro');
-    component.toggleCategory('new_encounter_category'); component.deleteCategory('new_encounter_category');
-    component.moveField('new_encounter_category', 'readingA', 1); component.deleteField('new_encounter_category', 'notes'); component.duplicateField('new_encounter_category', 'notes');
-    component.openField('new_encounter_category', 'notes'); expect(component.fieldDraft()).toBeNull();
-    expect(component.working()).toEqual(original); expect(output).not.toHaveBeenCalled();
+    load(customSpecialtyFixture.definition.encounterForm);
+    fixture.componentRef.setInput('readonly', true);
+    fixture.detectChanges();
+    const original = structuredClone(component.working());
+    const output = vi.spyOn(component.definitionChange, 'emit');
+    component.newCategoryTitle.set('No permitido');
+    component.addCategory();
+    component.renameCategory('new_encounter_category', 'Otro');
+    component.toggleCategory('new_encounter_category');
+    component.deleteCategory('new_encounter_category');
+    component.moveField('new_encounter_category', 'readingA', 1);
+    component.deleteField('new_encounter_category', 'notes');
+    component.duplicateField('new_encounter_category', 'notes');
+    component.openField('new_encounter_category', 'notes');
+    expect(component.fieldDraft()).toBeNull();
+    expect(component.working()).toEqual(original);
+    expect(output).not.toHaveBeenCalled();
   });
   it('opens category and field creation without errors and validates only on apply', () => {
-    load({ categories: [{ key: 'family', title: 'Familia', enabled: true, fields: [] }] }); fixture.detectChanges();
+    load({ categories: [{ key: 'family', title: 'Familia', enabled: true, fields: [] }] });
+    fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
-    component.addCategory(); fixture.detectChanges(); expect(component.categoryAttempted()).toBe(true);
-    component.newCategoryTitle.set('Nueva'); component.addCategory(); fixture.detectChanges(); expect(component.categoryAttempted()).toBe(false);
-    component.openField('family'); fixture.detectChanges(); expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
-    component.saveField(); fixture.detectChanges(); expect(fixture.nativeElement.querySelector('.field-error')).not.toBeNull();
-    component.closeField(); component.openField('family'); fixture.detectChanges(); expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
+    component.addCategory();
+    fixture.detectChanges();
+    expect(component.categoryAttempted()).toBe(true);
+    component.newCategoryTitle.set('Nueva');
+    component.addCategory();
+    fixture.detectChanges();
+    expect(component.categoryAttempted()).toBe(false);
+    component.openField('family');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
+    component.saveField();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-error')).not.toBeNull();
+    component.closeField();
+    component.openField('family');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
   });
 });

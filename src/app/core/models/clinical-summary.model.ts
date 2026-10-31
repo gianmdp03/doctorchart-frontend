@@ -15,6 +15,8 @@ export interface ClinicalEntry {
   authorUserId: string;
 }
 export interface ClinicalSummary {
+  recordedDiagnoses?: { id: number; date: string; diagnosis: string }[];
+  history?: Partial<Record<ClinicalEntryKind, ClinicalHistoryGroup>>;
   patientId: number;
   patientVersion: number;
   asOfDate: string;
@@ -36,6 +38,14 @@ export interface ClinicalSummary {
     dosage: string;
     frequency: string;
   }[];
+}
+export interface ClinicalHistoryGroup {
+  status: 'PRESENT' | 'NONE';
+  items: string[];
+  certainty: 'REPORTED' | 'CONFIRMED';
+  date: string;
+  source: 'PATIENT' | 'ENCOUNTER';
+  sourceId: number;
 }
 export type ClinicalProfileChange =
   | {

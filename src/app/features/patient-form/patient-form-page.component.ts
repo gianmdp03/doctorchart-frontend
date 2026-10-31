@@ -6,7 +6,9 @@ import {
   inject,
   viewChild,
   signal,
+  afterEveryRender,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -20,8 +22,12 @@ import {
   WizardFormDefinition,
   WizardFormValues,
   WizardFormulaResults,
+  withClinicalHistory,
 } from '../../core/models/wizard-definition.model';
-import { DynamicFormRendererComponent, inputValues } from '../dynamic-form-renderer/dynamic-form-renderer.component';
+import {
+  DynamicFormRendererComponent,
+  inputValues,
+} from '../dynamic-form-renderer/dynamic-form-renderer.component';
 import {
   conflictKind,
   errorMessage,
@@ -35,6 +41,19 @@ import {
   styleUrl: './patient-form-page.component.css',
 })
 export class PatientFormPageComponent implements OnInit {
+  private readonly document = inject(DOCUMENT);
+  private focusedHistory = false;
+  constructor() {
+    afterEveryRender(() => {
+      if (this.focusedHistory || this.route.snapshot?.fragment !== 'clinical-history') return;
+      const target = this.document.getElementById('clinical-history');
+      if (target) {
+        target.scrollIntoView?.({ block: 'center' });
+        target.focus({ preventScroll: true });
+        this.focusedHistory = true;
+      }
+    });
+  }
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly patientService = inject(PatientService);
@@ -120,12 +139,14 @@ export class PatientFormPageComponent implements OnInit {
       const patient = await firstValueFrom(this.patientService.getPatientById(id));
       if (!this.alive(epoch)) return;
       this.record.set(structuredClone(patient));
-      this.definition.set(structuredClone(patient.formDefinitionSnapshot));
+      this.definition.set(withClinicalHistory(structuredClone(patient.formDefinitionSnapshot)));
       this.values.set(structuredClone(patient.formValues));
       this.formulaResults.set(structuredClone(patient.formulaResults));
     } catch (error) {
       if (this.alive(epoch)) {
-        this.errorMessage.set(errorMessage(error, 'No pudimos cargar los datos del paciente para editar.'));
+        this.errorMessage.set(
+          errorMessage(error, 'No pudimos cargar los datos del paciente para editar.'),
+        );
       }
     } finally {
       if (this.alive(epoch)) {
@@ -142,10 +163,12 @@ export class PatientFormPageComponent implements OnInit {
       const workspace = await this.workspaceStore.loadSetup();
       if (!this.alive(epoch)) return;
       if (!workspace?.onboardingCompleted || !workspace.definition) {
-        throw new Error('Completá la configuración de tu especialidad antes de registrar pacientes.');
+        throw new Error(
+          'Completá la configuración de tu especialidad antes de registrar pacientes.',
+        );
       }
       this.workspace.set(structuredClone(workspace));
-      this.definition.set(structuredClone(workspace.definition.patientForm));
+      this.definition.set(withClinicalHistory(structuredClone(workspace.definition.patientForm)));
     } catch (error) {
       if (this.alive(epoch)) {
         this.errorMessage.set(errorMessage(error, 'No pudimos cargar el formulario de paciente.'));
@@ -179,7 +202,10 @@ export class PatientFormPageComponent implements OnInit {
   async submit(): Promise<void> {
     if (this.readonly()) return;
     this.submissionAttempted.set(true);
-    if (!this.isFormValid()) { this.formRenderer()?.focusFirstInvalidField(); return; }
+    if (!this.isFormValid()) {
+      this.formRenderer()?.focusFirstInvalidField();
+      return;
+    }
     const definition = this.definition();
     const record = this.record();
     const workspace = this.workspace();
@@ -225,7 +251,12 @@ export class PatientFormPageComponent implements OnInit {
   }
 
   async reviewRemote(): Promise<void> {
-    if (!this.conflict() || this.isSubmitting() || this.isLoading() || this.identity() !== this.owner) {
+    if (
+      !this.conflict() ||
+      this.isSubmitting() ||
+      this.isLoading() ||
+      this.identity() !== this.owner
+    ) {
       return;
     }
     const epoch = ++this.epoch;
@@ -259,12 +290,18 @@ export class PatientFormPageComponent implements OnInit {
   useRemoteWorkspace(): void {
     const remote = this.remoteWorkspace();
     const previous = this.definition();
-    if (!remote?.definition || !previous || this.isLoading() || this.isSubmitting() || this.identity() !== this.owner) {
+    if (
+      !remote?.definition ||
+      !previous ||
+      this.isLoading() ||
+      this.isSubmitting() ||
+      this.identity() !== this.owner
+    ) {
       return;
     }
     this.values.set(retainCompatibleValues(previous, remote.definition.patientForm, this.values()));
     this.workspace.set(structuredClone(remote));
-    this.definition.set(structuredClone(remote.definition.patientForm));
+    this.definition.set(withClinicalHistory(structuredClone(remote.definition.patientForm)));
     this.formulaResults.set({});
     this.conflict.set(null);
     this.errorMessage.set(null);
@@ -277,7 +314,7 @@ export class PatientFormPageComponent implements OnInit {
       return;
     }
     this.record.set(structuredClone(remote));
-    this.definition.set(structuredClone(remote.formDefinitionSnapshot));
+    this.definition.set(withClinicalHistory(structuredClone(remote.formDefinitionSnapshot)));
     this.values.set(structuredClone(remote.formValues));
     this.formulaResults.set(structuredClone(remote.formulaResults));
     this.conflict.set(null);

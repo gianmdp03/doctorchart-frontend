@@ -6,7 +6,11 @@ import { EncounterFormComponent } from './encounter-form.component';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { AuthService } from '../../core/services/auth.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
-import { ClinicalEncounterDetail, ConsultationType } from '../../core/models/clinical-encounter.model';
+import { ClinicalSummaryService } from '../../core/services/clinical-summary.service';
+import {
+  ClinicalEncounterDetail,
+  ConsultationType,
+} from '../../core/models/clinical-encounter.model';
 import { WizardFormValues } from '../../core/models/wizard-definition.model';
 import { dialogEncounter, dialogWorkspace } from '../dynamic-form-renderer/clinical-dialog.fixture';
 
@@ -20,7 +24,10 @@ describe('EncounterFormComponent inline clinical creation', () => {
 
   beforeEach(async () => {
     const options = new Intl.DateTimeFormat().resolvedOptions();
-    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ ...options, timeZone: 'America/Argentina/Buenos_Aires' });
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({
+      ...options,
+      timeZone: 'America/Argentina/Buenos_Aires',
+    });
     user.set({ id: 'doctor-a' });
     workspace = dialogWorkspace();
     service = { create: vi.fn().mockReturnValue(of(dialogEncounter())) };
@@ -29,6 +36,10 @@ describe('EncounterFormComponent inline clinical creation', () => {
     await TestBed.configureTestingModule({
       imports: [EncounterFormComponent],
       providers: [
+        {
+          provide: ClinicalSummaryService,
+          useValue: { get: vi.fn().mockReturnValue(of({ patientId: 22, history: {} })) },
+        },
         { provide: ClinicalEncounterService, useValue: service },
         { provide: WorkspaceStore, useValue: store },
         { provide: AuthService, useValue: { currentUser: user } },
@@ -77,12 +88,37 @@ describe('EncounterFormComponent inline clinical creation', () => {
     expect(fixture.nativeElement.querySelector('input[type="time"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('.readonly-datetime-box')).not.toBeNull();
   });
+  it('reviews existing history without retyping or discarding the consultation draft', async () => {
+    fill();
+    component.reviewHistory({ sys_allergyStatus: 'PRESENT', sys_allergies: 'Penicilina' });
+    component.onDynamicFormValidityChange(true);
+    await component.submitEncounter();
+    expect(service.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        values: expect.objectContaining({
+          notes: 'Sin aliases',
+          sys_allergies: 'Penicilina',
+          sys_allergyStatus: 'PRESENT',
+        }),
+      }),
+    );
+  });
 
   it('preserves the next consultation in the canonical create payload', async () => {
     const form = structuredClone(component.definition()!);
-    form.categories[0].fields.push({ key: 'followUpDate', label: 'Próximo control', type: 'DATE', required: false });
+    form.categories[0].fields.push({
+      key: 'followUpDate',
+      label: 'Próximo control',
+      type: 'DATE',
+      required: false,
+    });
     component.definition.set(form);
-    component.onDynamicDataChange({ readingA: 0, readingB: 10, notes: 'Control', followUpDate: '2028-02-29' });
+    component.onDynamicDataChange({
+      readingA: 0,
+      readingB: 10,
+      notes: 'Control',
+      followUpDate: '2028-02-29',
+    });
     component.onDynamicFormValidityChange(true);
     await component.submitEncounter();
     expect(service.create.mock.calls[0][0].values.followUpDate).toBe('2028-02-29');
@@ -102,7 +138,6 @@ describe('EncounterFormComponent inline clinical creation', () => {
     expect(component.encounterDay()).toBeTruthy();
     expect(component.encounterTime()).toBeTruthy();
 
-
     await component.submitEncounter();
     expect(service.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -119,8 +154,12 @@ describe('EncounterFormComponent inline clinical creation', () => {
     // 22:15 UTC -> 19:15 in America/Argentina/Buenos_Aires (UTC-3)
     expect(component.formattedCurrentDateTime()).toContain('07/10/2026');
     expect(component.formattedCurrentDateTime()).toContain('19:15 hs');
-    expect(fixture.nativeElement.querySelector('.datetime-value').textContent).toContain('07/10/2026');
-    expect(fixture.nativeElement.querySelector('.datetime-value').textContent).toContain('19:15 hs');
+    expect(fixture.nativeElement.querySelector('.datetime-value').textContent).toContain(
+      '07/10/2026',
+    );
+    expect(fixture.nativeElement.querySelector('.datetime-value').textContent).toContain(
+      '19:15 hs',
+    );
     expect(fixture.nativeElement.querySelector('app-date-picker')).toBeNull();
     expect(fixture.nativeElement.querySelector('input[type="time"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('.datetime-tag')).toBeNull();
@@ -132,7 +171,9 @@ describe('EncounterFormComponent inline clinical creation', () => {
 
     expect(component.isFirstVisitLocked()).toBe(true);
     expect(component.consultationType()).toBe('FIRST_VISIT');
-    expect(component.availableConsultationTypes()).toEqual([{ value: 'FIRST_VISIT', label: 'Primera consulta' }]);
+    expect(component.availableConsultationTypes()).toEqual([
+      { value: 'FIRST_VISIT', label: 'Primera consulta' },
+    ]);
 
     const select = fixture.nativeElement.querySelector('select');
     expect(select).toBeNull();
@@ -163,19 +204,21 @@ describe('EncounterFormComponent inline clinical creation', () => {
     expect(component.consultationType()).toBe('FOLLOW_UP');
 
     const types = component.availableConsultationTypes();
-    expect(types.map(t => t.value)).toEqual([
+    expect(types.map((t) => t.value)).toEqual([
       'FOLLOW_UP',
       'ROUTINE_CHECKUP',
       'EMERGENCY',
       'INTERCONSULTATION',
     ]);
-    expect(types.some(t => t.value === 'FIRST_VISIT')).toBe(false);
+    expect(types.some((t) => t.value === 'FIRST_VISIT')).toBe(false);
 
     // No select dropdown
     expect(fixture.nativeElement.querySelector('select')).toBeNull();
 
     // Check DOM buttons
-    const buttons = fixture.nativeElement.querySelectorAll('.consultation-chips-row button') as NodeListOf<HTMLButtonElement>;
+    const buttons = fixture.nativeElement.querySelectorAll(
+      '.consultation-chips-row button',
+    ) as NodeListOf<HTMLButtonElement>;
     expect(buttons.length).toBe(4);
 
     // Initial selected is FOLLOW_UP
@@ -184,7 +227,7 @@ describe('EncounterFormComponent inline clinical creation', () => {
     expect(activeButtonsBefore[0].textContent).toContain('Control / seguimiento');
 
     // Select Urgencia (EMERGENCY)
-    const emergencyBtn = Array.from(buttons).find(b => b.textContent?.includes('Urgencia'));
+    const emergencyBtn = Array.from(buttons).find((b) => b.textContent?.includes('Urgencia'));
     expect(emergencyBtn).toBeDefined();
     emergencyBtn?.click();
     fixture.detectChanges();

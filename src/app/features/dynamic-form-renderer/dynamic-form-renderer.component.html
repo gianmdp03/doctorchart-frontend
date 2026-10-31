@@ -1,31 +1,135 @@
 <div class="dynamic-form" [class.is-readonly]="readonly()">
   @for (category of enabledCategories(); track category.key) {
-    <section class="form-category" [attr.data-category-key]="category.key"><h3>{{ category.title }}</h3><div class="fields-grid">
-      @for (field of category.fields; track field.key) {
-        @if (isFieldVisible(field.key)) {
-          <div class="field" [class.wide]="field.type === 'TEXTAREA'" [class.has-error]="!readonly() && !!visibleFieldError(field)" [attr.data-field-key]="field.key">
-            <label [attr.for]="'field-' + field.key">{{ field.label }} @if (field.required && field.type !== 'FORMULA' && !readonly()) { <span aria-label="Obligatorio">*</span> }</label>
-            @if (field.type === 'FORMULA') { <output class="formula-result">{{ formulaText(field) }}</output> }
-            @else if (readonly()) { <p class="saved-value" [class.is-empty]="currentValues()[field.key] == null || currentValues()[field.key] === ''">{{ displayValue(field) }}{{ field.unit && currentValues()[field.key] != null ? ' ' + field.unit : '' }}</p> }
-            @else {
-              @switch (field.type) {
-                @case ('TEXT') { <input [id]="'field-' + field.key" [ngModel]="currentValues()[field.key] ?? ''" (ngModelChange)="setValue(field, $event)" [placeholder]="field.placeholder ?? ''" /> }
-                @case ('TEXTAREA') { <textarea [id]="'field-' + field.key" rows="3" [ngModel]="currentValues()[field.key] ?? ''" (ngModelChange)="setValue(field, $event)" [placeholder]="field.placeholder ?? ''"></textarea> }
-                @case ('NUMBER') { <div class="number-with-unit"><input type="text" inputmode="decimal" [id]="'field-' + field.key" [ngModel]="numberInput(field)" (ngModelChange)="setNumberValue(field, $event)" [attr.aria-invalid]="!!visibleFieldError(field)" [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null" [placeholder]="field.placeholder ?? ''" />@if (field.unit) { <span>{{ field.unit }}</span> }</div> }
-                @case ('DATE') {
-                  <app-date-picker [class.input-error]="!!visibleFieldError(field)" [inputId]="'field-' + field.key" [showError]="false" [ngModel]="$any(currentValues()[field.key] ?? '')" (ngModelChange)="setValue(field, $event)" [max]="isBirthDateField(field.key) ? todayIso : null" />
-                  @if (field.key === 'followUpDate' || field.key === 'encounter.followUpDate') {
-                    <span class="field-hint">Se recordará en Inicio al acercarse la fecha del próximo control.</span>
+    @if (category.key === 'sys_clinical_history') {
+      <app-clinical-history-fields
+        id="clinical-history"
+        tabindex="-1"
+        [values]="currentValues()"
+        [readonly]="readonly()"
+        [showErrors]="showErrors()"
+        [encounter]="encounter()"
+        (valuesChange)="setHistoryValues($event)"
+      />
+    } @else {
+      <section class="form-category" [attr.data-category-key]="category.key">
+        <h3>{{ category.title }}</h3>
+        <div class="fields-grid">
+          @for (field of category.fields; track field.key) {
+            @if (isFieldVisible(field.key)) {
+              <div
+                class="field"
+                [class.wide]="field.type === 'TEXTAREA'"
+                [class.has-error]="!readonly() && !!visibleFieldError(field)"
+                [attr.data-field-key]="field.key"
+              >
+                <label [attr.for]="'field-' + field.key"
+                  >{{ field.label }}
+                  @if (field.required && field.type !== 'FORMULA' && !readonly()) {
+                    <span aria-label="Obligatorio">*</span>
+                  }
+                </label>
+                @if (field.type === 'FORMULA') {
+                  <output class="formula-result">{{ formulaText(field) }}</output>
+                } @else if (readonly()) {
+                  <p
+                    class="saved-value"
+                    [class.is-empty]="
+                      currentValues()[field.key] == null || currentValues()[field.key] === ''
+                    "
+                  >
+                    {{ displayValue(field)
+                    }}{{ field.unit && currentValues()[field.key] != null ? ' ' + field.unit : '' }}
+                  </p>
+                } @else {
+                  @switch (field.type) {
+                    @case ('TEXT') {
+                      <input
+                        [id]="'field-' + field.key"
+                        [ngModel]="currentValues()[field.key] ?? ''"
+                        (ngModelChange)="setValue(field, $event)"
+                        [placeholder]="field.placeholder ?? ''"
+                      />
+                    }
+                    @case ('TEXTAREA') {
+                      <textarea
+                        [id]="'field-' + field.key"
+                        rows="3"
+                        [ngModel]="currentValues()[field.key] ?? ''"
+                        (ngModelChange)="setValue(field, $event)"
+                        [placeholder]="field.placeholder ?? ''"
+                      ></textarea>
+                    }
+                    @case ('NUMBER') {
+                      <div class="number-with-unit">
+                        <input
+                          type="text"
+                          inputmode="decimal"
+                          [id]="'field-' + field.key"
+                          [ngModel]="numberInput(field)"
+                          (ngModelChange)="setNumberValue(field, $event)"
+                          [attr.aria-invalid]="!!visibleFieldError(field)"
+                          [attr.aria-describedby]="
+                            visibleFieldError(field) ? 'error-' + field.key : null
+                          "
+                          [placeholder]="field.placeholder ?? ''"
+                        />
+                        @if (field.unit) {
+                          <span>{{ field.unit }}</span>
+                        }
+                      </div>
+                    }
+                    @case ('DATE') {
+                      <app-date-picker
+                        [class.input-error]="!!visibleFieldError(field)"
+                        [inputId]="'field-' + field.key"
+                        [showError]="false"
+                        [ngModel]="$any(currentValues()[field.key] ?? '')"
+                        (ngModelChange)="setValue(field, $event)"
+                        [max]="isBirthDateField(field.key) ? todayIso : null"
+                      />
+                      @if (field.key === 'followUpDate' || field.key === 'encounter.followUpDate') {
+                        <span class="field-hint"
+                          >Se recordará en Inicio al acercarse la fecha del próximo control.</span
+                        >
+                      }
+                    }
+                    @case ('SELECT') {
+                      <select
+                        [id]="'field-' + field.key"
+                        [ngModel]="currentValues()[field.key] ?? null"
+                        (ngModelChange)="setValue(field, $event)"
+                      >
+                        <option [ngValue]="null">Seleccionar</option>
+                        @for (option of field.options ?? []; track option.value) {
+                          <option [value]="option.value">{{ option.label }}</option>
+                        }
+                      </select>
+                    }
+                    @case ('BOOLEAN') {
+                      <select
+                        [id]="'field-' + field.key"
+                        [ngModel]="currentValues()[field.key] ?? null"
+                        (ngModelChange)="setValue(field, $event)"
+                      >
+                        <option [ngValue]="null">Sin respuesta</option>
+                        <option [ngValue]="true">Sí</option>
+                        <option [ngValue]="false">No</option>
+                      </select>
+                    }
+                  }
+                  @if (visibleFieldError(field); as error) {
+                    <span class="field-error" [id]="'error-' + field.key" role="alert">{{
+                      error
+                    }}</span>
                   }
                 }
-                @case ('SELECT') { <select [id]="'field-' + field.key" [ngModel]="currentValues()[field.key] ?? null" (ngModelChange)="setValue(field, $event)"><option [ngValue]="null">Seleccionar</option>@for (option of field.options ?? []; track option.value) { <option [value]="option.value">{{ option.label }}</option> }</select> }
-                @case ('BOOLEAN') { <select [id]="'field-' + field.key" [ngModel]="currentValues()[field.key] ?? null" (ngModelChange)="setValue(field, $event)"><option [ngValue]="null">Sin respuesta</option><option [ngValue]="true">Sí</option><option [ngValue]="false">No</option></select> }
-              }
-              @if (visibleFieldError(field); as error) { <span class="field-error" [id]="'error-' + field.key" role="alert">{{ error }}</span> }
+              </div>
             }
-          </div>
-        }
-      }
-    </div></section>
-  } @empty { <p class="empty-form">No hay categorías activas en este formulario.</p> }
+          }
+        </div>
+      </section>
+    }
+  } @empty {
+    <p class="empty-form">No hay categorías activas en este formulario.</p>
+  }
 </div>

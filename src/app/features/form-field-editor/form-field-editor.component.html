@@ -1,124 +1,423 @@
 <section class="editor" aria-label="Editor de categorías y campos">
   @if (!fieldDraft()) {
-
-  <div class="editor-layout">
-    <aside class="category-manager" aria-label="Categorías del formulario">
-      <h3>Categorías</h3>
-      <p class="hint">Podés cambiar su nombre, orden y contenido.</p>
-      @for (category of categories(); track category.key; let i = $index) {
-        <div class="category-row" [class.selected]="selectedKey() === category.key" [class.inactive]="!category.enabled">
-          <button type="button" class="category-name" (click)="selectCategory(category.key)" [attr.aria-pressed]="selectedKey() === category.key">
-            {{ category.title }} <span>{{ category.fields.length }} campos</span>
-          </button>
-          <div class="category-actions">
-            <button type="button" (click)="moveCategory(category.key, -1)" [disabled]="readonly() || i === 0" [attr.aria-label]="'Subir categoría ' + category.title">↑</button>
-            <button type="button" (click)="moveCategory(category.key, 1)" [disabled]="readonly() || i === categories().length - 1" [attr.aria-label]="'Bajar categoría ' + category.title">↓</button>
-            <button type="button" (click)="toggleCategory(category.key)" [disabled]="readonly() || category.system" [attr.aria-pressed]="category.enabled">{{ category.enabled ? 'Activa' : 'Inactiva' }}</button>
+    <div class="editor-layout">
+      <aside class="category-manager" aria-label="Categorías del formulario">
+        <h3>Categorías</h3>
+        <p class="hint">Podés cambiar su nombre, orden y contenido.</p>
+        @for (category of categories(); track category.key; let i = $index) {
+          <div
+            class="category-row"
+            [class.selected]="selectedKey() === category.key"
+            [class.inactive]="!category.enabled"
+          >
+            <button
+              type="button"
+              class="category-name"
+              (click)="selectCategory(category.key)"
+              [attr.aria-pressed]="selectedKey() === category.key"
+            >
+              {{ category.title }} <span>{{ category.fields.length }} campos</span>
+            </button>
+            <div class="category-actions">
+              <button
+                type="button"
+                (click)="moveCategory(category.key, -1)"
+                [disabled]="readonly() || i === 0"
+                [attr.aria-label]="'Subir categoría ' + category.title"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                (click)="moveCategory(category.key, 1)"
+                [disabled]="readonly() || i === categories().length - 1"
+                [attr.aria-label]="'Bajar categoría ' + category.title"
+              >
+                ↓
+              </button>
+              <button
+                type="button"
+                (click)="toggleCategory(category.key)"
+                [disabled]="readonly() || category.system"
+                [attr.aria-pressed]="category.enabled"
+              >
+                {{ category.enabled ? 'Activa' : 'Inactiva' }}
+              </button>
+            </div>
           </div>
-        </div>
-      } @empty { <p class="hint">Todavía no hay categorías.</p> }
-      <label class="control">Nueva categoría
-        <input maxlength="150" [ngModel]="newCategoryTitle()" (ngModelChange)="newCategoryTitle.set($event)" [disabled]="readonly()" (keydown.enter)="addCategory()" placeholder="Nombre de la categoría" />
-        @if (categoryAttempted() && newCategoryError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
-      </label>
-      <button type="button" class="primary" (click)="addCategory()" [disabled]="readonly()">Agregar categoría</button>
-    </aside>
-
-    <main class="fields-panel">
-      @if (selectedCategory(); as category) {
-        <header class="panel-header">
-          <label class="control category-title">Nombre de la categoría
-            <input maxlength="150" [value]="category.title" (input)="renameCategory(category.key, $any($event.target).value)" [disabled]="readonly() || category.system" />
-            @if (categoryErrors()[category.key]; as error) { <span class="field-error" role="alert">{{ error }}</span> }
-          </label>
-          @if (!category.system) {
-            <button type="button" class="danger" (click)="deleteCategory(category.key)" [disabled]="readonly()">Eliminar categoría</button>
-          }
-        </header>
-        @if (!category.enabled) { <p class="notice">Esta categoría está desactivada. Podés editarla y volver a activarla.</p> }
-        @if (category.system) {
-          <p class="hint">Categoría fija del sistema con los datos obligatorios del paciente. Podés agregar campos adicionales, pero los campos del sistema no se pueden modificar ni eliminar.</p>
+        } @empty {
+          <p class="hint">Todavía no hay categorías.</p>
         }
-        <div class="fields-list">
-          @if (section() === 'encounterForm' && canAddMeasurementMode()) {
-            <button type="button" (click)="addMeasurementMode()" [disabled]="readonly()">Agregar posición de longitud / estatura</button>
+        <label class="control"
+          >Nueva categoría
+          <input
+            maxlength="150"
+            [ngModel]="newCategoryTitle()"
+            (ngModelChange)="newCategoryTitle.set($event)"
+            [disabled]="readonly()"
+            (keydown.enter)="addCategory()"
+            placeholder="Nombre de la categoría"
+          />
+          @if (categoryAttempted() && newCategoryError(); as error) {
+            <span class="field-error" role="alert">{{ error }}</span>
           }
-          @for (field of category.fields; track field.key; let fi = $index) {
-            <article class="field-card" [attr.data-field-key]="field.key">
-              <div class="field-summary">
-                <strong>{{ field.label }}</strong>
-                <span class="hint">{{ typeLabel(field.type) }} · {{ field.required ? 'Obligatorio' : 'Opcional' }}{{ field.unit ? ' · ' + field.unit : '' }}</span>
-                @if (field.system) { <span class="binding">Dato del sistema</span> }
-                @if (field.visibleWhen) { <span class="hint">Se muestra según otra respuesta</span> }
-              </div>
-              <div class="field-actions">
-                @if (!field.system) {
-                  <button type="button" (click)="moveField(category.key, field.key, -1)" [disabled]="readonly() || fi === 0" [attr.aria-label]="'Subir campo ' + field.label">↑</button>
-                  <button type="button" (click)="moveField(category.key, field.key, 1)" [disabled]="readonly() || fi === category.fields.length - 1" [attr.aria-label]="'Bajar campo ' + field.label">↓</button>
-                  <button type="button" (click)="openField(category.key, field.key)" [disabled]="readonly()">Editar</button>
-                  <button type="button" (click)="duplicateField(category.key, field.key)" [disabled]="readonly()">Duplicar</button>
-                  <button type="button" class="danger" (click)="deleteField(category.key, field.key)" [disabled]="readonly()" [attr.aria-label]="'Eliminar campo ' + field.label">Eliminar</button>
-                } @else {
-                  <span class="hint">Bloqueado por el sistema</span>
-                }
-              </div>
-            </article>
-          } @empty { <p class="empty-fields">Agregá los campos que necesitás en esta categoría.</p> }
-        </div>
-        <button type="button" class="primary" (click)="openField(category.key)" [disabled]="readonly()">Agregar campo</button>
-      } @else { <p class="empty-fields">Agregá una categoría para empezar a configurar los campos.</p> }
-    </main>
-  </div>
-  @if (error() && !fieldDraft()) { <p class="error" role="alert">{{ error() }}</p> }
+        </label>
+        <button type="button" class="primary" (click)="addCategory()" [disabled]="readonly()">
+          Agregar categoría
+        </button>
+      </aside>
 
-
+      <main class="fields-panel">
+        @if (selectedCategory(); as category) {
+          <header class="panel-header">
+            <label class="control category-title"
+              >Nombre de la categoría
+              <input
+                maxlength="150"
+                [value]="category.title"
+                (input)="renameCategory(category.key, $any($event.target).value)"
+                [disabled]="readonly() || category.system"
+              />
+              @if (categoryErrors()[category.key]; as error) {
+                <span class="field-error" role="alert">{{ error }}</span>
+              }
+            </label>
+            @if (!category.system) {
+              <button
+                type="button"
+                class="danger"
+                (click)="deleteCategory(category.key)"
+                [disabled]="readonly()"
+              >
+                Eliminar categoría
+              </button>
+            }
+          </header>
+          @if (!category.enabled) {
+            <p class="notice">
+              Esta categoría está desactivada. Podés editarla y volver a activarla.
+            </p>
+          }
+          @if (category.system) {
+            @if (category.key === 'sys_clinical_history') {
+              <p class="health-system-note">
+                Este bloque está incluido en todas las especialidades. Alergias, problemas de salud
+                y medicación habitual se preguntan al registrar al paciente y pueden revisarse
+                durante la consulta. Sus respuestas alimentan automáticamente el resumen clínico.
+                Los campos están protegidos por el sistema.
+              </p>
+            } @else {
+              <p class="hint">
+                Categoría fija del sistema con los datos obligatorios del paciente. Podés agregar
+                campos adicionales, pero los campos del sistema no se pueden modificar ni eliminar.
+              </p>
+            }
+          }
+          <div class="fields-list">
+            @if (section() === 'encounterForm' && canAddMeasurementMode()) {
+              <button type="button" (click)="addMeasurementMode()" [disabled]="readonly()">
+                Agregar posición de longitud / estatura
+              </button>
+            }
+            @for (field of category.fields; track field.key; let fi = $index) {
+              <article class="field-card" [attr.data-field-key]="field.key">
+                <div class="field-summary">
+                  <strong>{{ field.label }}</strong>
+                  <span class="hint"
+                    >{{ typeLabel(field.type) }} · {{ field.required ? 'Obligatorio' : 'Opcional'
+                    }}{{ field.unit ? ' · ' + field.unit : '' }}</span
+                  >
+                  @if (field.system) {
+                    <span class="binding">Dato del sistema</span>
+                  }
+                  @if (field.visibleWhen) {
+                    <span class="hint">Se muestra según otra respuesta</span>
+                  }
+                </div>
+                <div class="field-actions">
+                  @if (!field.system) {
+                    <button
+                      type="button"
+                      (click)="moveField(category.key, field.key, -1)"
+                      [disabled]="readonly() || fi === 0"
+                      [attr.aria-label]="'Subir campo ' + field.label"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      (click)="moveField(category.key, field.key, 1)"
+                      [disabled]="readonly() || fi === category.fields.length - 1"
+                      [attr.aria-label]="'Bajar campo ' + field.label"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      (click)="openField(category.key, field.key)"
+                      [disabled]="readonly()"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      (click)="duplicateField(category.key, field.key)"
+                      [disabled]="readonly()"
+                    >
+                      Duplicar
+                    </button>
+                    <button
+                      type="button"
+                      class="danger"
+                      (click)="deleteField(category.key, field.key)"
+                      [disabled]="readonly()"
+                      [attr.aria-label]="'Eliminar campo ' + field.label"
+                    >
+                      Eliminar
+                    </button>
+                  } @else {
+                    <span class="hint">Bloqueado por el sistema</span>
+                  }
+                </div>
+              </article>
+            } @empty {
+              <p class="empty-fields">Agregá los campos que necesitás en esta categoría.</p>
+            }
+          </div>
+          @if (category.key !== 'sys_clinical_history') {
+            <button
+              type="button"
+              class="primary"
+              (click)="openField(category.key)"
+              [disabled]="readonly()"
+            >
+              Agregar campo
+            </button>
+          }
+        } @else {
+          <p class="empty-fields">Agregá una categoría para empezar a configurar los campos.</p>
+        }
+      </main>
+    </div>
+    @if (error() && !fieldDraft()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
   }
   @if (fieldDraft(); as field) {
-
-      <section class="field-editor-page" aria-labelledby="field-editor-title">
-        <header class="panel-header"><h1 #fieldPageHeading tabindex="-1" id="field-editor-title">{{ editTarget()?.fieldKey ? 'Editar campo' : 'Agregar campo' }}</h1><button type="button" (click)="closeField()" aria-label="Volver a los campos">← Volver a los campos</button></header>
-        <fieldset [disabled]="readonly()">
+    <section class="field-editor-page" aria-labelledby="field-editor-title">
+      <header class="panel-header">
+        <h1 #fieldPageHeading tabindex="-1" id="field-editor-title">
+          {{ editTarget()?.fieldKey ? 'Editar campo' : 'Agregar campo' }}
+        </h1>
+        <button type="button" (click)="closeField()" aria-label="Volver a los campos">
+          ← Volver a los campos
+        </button>
+      </header>
+      <fieldset [disabled]="readonly()">
+        <div class="control-grid">
+          <label class="control"
+            >Etiqueta
+            <input
+              maxlength="150"
+              [ngModel]="field.label"
+              (ngModelChange)="updateDraft({ label: $event })"
+            />
+            @if (fieldAttempted() && draftError('label'); as error) {
+              <span class="field-error" role="alert">{{ error }}</span>
+            }
+          </label>
+          <label class="control"
+            >Tipo
+            <select [ngModel]="field.type" (ngModelChange)="setType($event)">
+              @for (type of fieldTypes; track type.value) {
+                <option [value]="type.value">{{ type.label }}</option>
+              }
+            </select></label
+          >
+          <label class="control wide"
+            >Texto de ayuda
+            <input
+              maxlength="300"
+              [ngModel]="field.placeholder ?? ''"
+              (ngModelChange)="updateDraft({ placeholder: $event })"
+            />
+            @if (fieldAttempted() && draftError('placeholder'); as error) {
+              <span class="field-error" role="alert">{{ error }}</span>
+            }
+          </label>
+        </div>
+        @if (editTarget()?.fieldKey) {
+          <p class="hint">
+            Cambiar el tipo reemplaza el campo por uno nuevo. Primero desvinculá las condiciones y
+            cálculos que lo usan.
+          </p>
+        }
+        @if (field.type !== 'FORMULA') {
+          <label class="checkbox-control"
+            ><input
+              type="checkbox"
+              [ngModel]="field.required"
+              (ngModelChange)="updateDraft({ required: $event })"
+            />Respuesta obligatoria</label
+          >
+        }
+        @if (field.type === 'NUMBER' || field.type === 'FORMULA') {
+          <label class="control"
+            >Unidad
+            <input
+              maxlength="30"
+              [ngModel]="field.unit ?? ''"
+              (ngModelChange)="updateDraft({ unit: $event })"
+            />
+            @if (fieldAttempted() && draftError('unit'); as error) {
+              <span class="field-error" role="alert">{{ error }}</span>
+            }
+          </label>
+        }
+        @if (field.type === 'NUMBER') {
           <div class="control-grid">
-            <label class="control">Etiqueta <input maxlength="150" [ngModel]="field.label" (ngModelChange)="updateDraft({ label: $event })" />@if (fieldAttempted() && draftError('label'); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
-            <label class="control">Tipo <select [ngModel]="field.type" (ngModelChange)="setType($event)">@for (type of fieldTypes; track type.value) { <option [value]="type.value">{{ type.label }}</option> }</select></label>
-            <label class="control wide">Texto de ayuda <input maxlength="300" [ngModel]="field.placeholder ?? ''" (ngModelChange)="updateDraft({ placeholder: $event })" />@if (fieldAttempted() && draftError('placeholder'); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
+            @for (property of ['minimum', 'maximum']; track property) {
+              <label class="control"
+                >{{ property === 'minimum' ? 'Mínimo' : 'Máximo'
+                }}<input
+                  type="text"
+                  inputmode="decimal"
+                  [ngModel]="numericInputs()[property] ?? $any(field)[property] ?? ''"
+                  (ngModelChange)="setNumberProperty($any(property), $event)"
+                />
+                @if (fieldAttempted() && draftError($any(property)); as error) {
+                  <span class="field-error" role="alert">{{ error }}</span>
+                }
+              </label>
+            }
           </div>
-          @if (editTarget()?.fieldKey) { <p class="hint">Cambiar el tipo reemplaza el campo por uno nuevo. Primero desvinculá las condiciones y cálculos que lo usan.</p> }
-          @if (field.type !== 'FORMULA') {
-            <label class="checkbox-control"><input type="checkbox" [ngModel]="field.required" (ngModelChange)="updateDraft({ required: $event })" />Respuesta obligatoria</label>
+        }
+        @if (field.type === 'DATE') {
+          <p class="hint">
+            Las fechas se ingresan con el selector del sistema y se muestran como dd/MM/aaaa.
+          </p>
+        }
+        @if (field.type === 'SELECT') {
+          <h4>Opciones</h4>
+          @for (option of field.options ?? []; track $index; let oi = $index) {
+            <div class="option-row">
+              @for (property of ['label', 'value']; track property) {
+                <label class="control"
+                  >{{ property === 'label' ? 'Etiqueta' : 'Valor'
+                  }}<input
+                    [maxlength]="property === 'label' ? 150 : 80"
+                    [ngModel]="$any(option)[property]"
+                    (ngModelChange)="updateOption(oi, $any(property), $event)"
+                  />
+                  @if (fieldAttempted() && optionError(oi, $any(property)); as error) {
+                    <span class="field-error" role="alert">{{ error }}</span>
+                  }
+                </label>
+              }
+              <button
+                type="button"
+                class="danger"
+                (click)="deleteOption(oi)"
+                [attr.aria-label]="'Eliminar opción ' + option.label"
+              >
+                Eliminar
+              </button>
+            </div>
           }
-          @if (field.type === 'NUMBER' || field.type === 'FORMULA') {
-            <label class="control">Unidad <input maxlength="30" [ngModel]="field.unit ?? ''" (ngModelChange)="updateDraft({ unit: $event })" />@if (fieldAttempted() && draftError('unit'); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
+          <button type="button" (click)="addOption()">Agregar opción</button>
+        }
+        @if (field.type === 'FORMULA') {
+          <h4>Cálculo automático</h4>
+          <label class="control"
+            >Fórmula
+            <select
+              [ngModel]="field.formula?.kind ?? 'CUSTOM'"
+              (ngModelChange)="setFormulaKind($event)"
+            >
+              @for (kind of formulaKinds; track kind.value) {
+                <option [value]="kind.value">{{ kind.label }}</option>
+              }
+            </select></label
+          >
+          @if (field.formula?.kind === 'CUSTOM') {
+            <label class="control"
+              >Operación
+              <select
+                [ngModel]="field.formula?.operation ?? 'ADD'"
+                (ngModelChange)="setOperation($event)"
+              >
+                @for (operation of operations; track operation.value) {
+                  <option [value]="operation.value">{{ operation.label }}</option>
+                }
+              </select></label
+            >
           }
-          @if (field.type === 'NUMBER') {
-            <div class="control-grid">@for (property of ['minimum', 'maximum']; track property) { <label class="control">{{ property === 'minimum' ? 'Mínimo' : 'Máximo' }}<input type="text" inputmode="decimal" [ngModel]="numericInputs()[property] ?? $any(field)[property] ?? ''" (ngModelChange)="setNumberProperty($any(property), $event)" />@if (fieldAttempted() && draftError($any(property)); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label> }</div>
+          @for (name of formulaInputs(); track name) {
+            <div class="control-grid">
+              <label class="control"
+                >{{ inputLabel(name)
+                }}<select [ngModel]="operandValue(name)" (ngModelChange)="setOperand(name, $event)">
+                  <option value="">Elegir origen</option>
+                  @for (choice of operandChoices(name); track choice.value) {
+                    <option [value]="choice.value">{{ choice.label }}</option>
+                  }
+                </select></label
+              >
+              @if (operandValue(name) === 'constant') {
+                <label class="control"
+                  >Número fijo
+                  <input
+                    type="text"
+                    inputmode="decimal"
+                    [ngModel]="numericInputs()['operand:' + name] ?? operandConstant(name)"
+                    (ngModelChange)="setOperandConstant(name, $event)"
+                /></label>
+              }
+              @if (fieldAttempted() && operandError(name); as error) {
+                <span class="field-error" role="alert">{{ error }}</span>
+              }
+            </div>
           }
-          @if (field.type === 'DATE') { <p class="hint">Las fechas se ingresan con el selector del sistema y se muestran como dd/MM/aaaa.</p> }
-          @if (field.type === 'SELECT') {
-            <h4>Opciones</h4>
-            @for (option of field.options ?? []; track $index; let oi = $index) {
-              <div class="option-row">@for (property of ['label', 'value']; track property) { <label class="control">{{ property === 'label' ? 'Etiqueta' : 'Valor' }}<input [maxlength]="property === 'label' ? 150 : 80" [ngModel]="$any(option)[property]" (ngModelChange)="updateOption(oi, $any(property), $event)" />@if (fieldAttempted() && optionError(oi, $any(property)); as error) { <span class="field-error" role="alert">{{ error }}</span> }</label> }<button type="button" class="danger" (click)="deleteOption(oi)" [attr.aria-label]="'Eliminar opción ' + option.label">Eliminar</button></div>
+          <p class="hint">
+            El resultado lo calcula el sistema. Las entradas deben indicar los campos o datos del
+            paciente que corresponden.
+          </p>
+        }
+        <h4>Cuándo mostrar el campo</h4>
+        <label class="control"
+          >Respuesta que controla la visibilidad
+          <select
+            [ngModel]="field.visibleWhen?.fieldKey ?? ''"
+            (ngModelChange)="setVisibility($event)"
+          >
+            <option value="">Mostrar siempre</option>
+            @for (controller of visibilityControllers(); track controller.key) {
+              <option [value]="controller.key">{{ controller.label }}</option>
             }
-            <button type="button" (click)="addOption()">Agregar opción</button>
-          }
-          @if (field.type === 'FORMULA') {
-            <h4>Cálculo automático</h4>
-            <label class="control">Fórmula <select [ngModel]="field.formula?.kind ?? 'CUSTOM'" (ngModelChange)="setFormulaKind($event)">@for (kind of formulaKinds; track kind.value) { <option [value]="kind.value">{{ kind.label }}</option> }</select></label>
-            @if (field.formula?.kind === 'CUSTOM') { <label class="control">Operación <select [ngModel]="field.formula?.operation ?? 'ADD'" (ngModelChange)="setOperation($event)">@for (operation of operations; track operation.value) { <option [value]="operation.value">{{ operation.label }}</option> }</select></label> }
-            @for (name of formulaInputs(); track name) {
-              <div class="control-grid"><label class="control">{{ inputLabel(name) }}<select [ngModel]="operandValue(name)" (ngModelChange)="setOperand(name, $event)"><option value="">Elegir origen</option>@for (choice of operandChoices(name); track choice.value) { <option [value]="choice.value">{{ choice.label }}</option> }</select></label>
-                @if (operandValue(name) === 'constant') { <label class="control">Número fijo <input type="text" inputmode="decimal" [ngModel]="numericInputs()['operand:' + name] ?? operandConstant(name)" (ngModelChange)="setOperandConstant(name, $event)" /></label> }
-                @if (fieldAttempted() && operandError(name); as error) { <span class="field-error" role="alert">{{ error }}</span> }
-              </div>
-            }
-            <p class="hint">El resultado lo calcula el sistema. Las entradas deben indicar los campos o datos del paciente que corresponden.</p>
-          }
-          <h4>Cuándo mostrar el campo</h4>
-          <label class="control">Respuesta que controla la visibilidad <select [ngModel]="field.visibleWhen?.fieldKey ?? ''" (ngModelChange)="setVisibility($event)"><option value="">Mostrar siempre</option>@for (controller of visibilityControllers(); track controller.key) { <option [value]="controller.key">{{ controller.label }}</option> }</select></label>
-          @if (field.visibleWhen) { <label class="control">Mostrar cuando la respuesta sea <select [ngModel]="field.visibleWhen.equals" (ngModelChange)="setVisibilityValue($event)"><option [ngValue]="true">Sí</option><option [ngValue]="false">No</option></select></label> }
-        </fieldset>
-        @if (fieldAttempted() && draftValidationError(); as error) { <p class="error" role="alert">{{ error }}</p> }
-        <footer class="field-page-actions"><button type="button" (click)="closeField()">Cancelar</button><button type="button" class="primary" (click)="saveField()" [disabled]="readonly()">Aplicar campo</button></footer>
-      </section>
+          </select></label
+        >
+        @if (field.visibleWhen) {
+          <label class="control"
+            >Mostrar cuando la respuesta sea
+            <select
+              [ngModel]="field.visibleWhen.equals"
+              (ngModelChange)="setVisibilityValue($event)"
+            >
+              <option [ngValue]="true">Sí</option>
+              <option [ngValue]="false">No</option>
+            </select></label
+          >
+        }
+      </fieldset>
+      @if (fieldAttempted() && draftValidationError(); as error) {
+        <p class="error" role="alert">{{ error }}</p>
+      }
+      <footer class="field-page-actions">
+        <button type="button" (click)="closeField()">Cancelar</button
+        ><button type="button" class="primary" (click)="saveField()" [disabled]="readonly()">
+          Aplicar campo
+        </button>
+      </footer>
+    </section>
   }
 </section>

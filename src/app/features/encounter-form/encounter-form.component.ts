@@ -18,10 +18,21 @@ import { ClinicalEncounterService } from '../../core/services/clinical-encounter
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { AuthService } from '../../core/services/auth.service';
 import { PatientEncountersStore } from '../patient-record/patient-encounters/patient-encounters.store';
-import { ClinicalEncounterDetail, ConsultationType } from '../../core/models/clinical-encounter.model';
+import {
+  ClinicalEncounterDetail,
+  ConsultationType,
+} from '../../core/models/clinical-encounter.model';
 import { WorkspaceSetup } from '../../core/models/workspace.model';
-import { WizardFormDefinition, WizardFormValues } from '../../core/models/wizard-definition.model';
-import { DynamicFormRendererComponent, inputValues } from '../dynamic-form-renderer/dynamic-form-renderer.component';
+import {
+  WizardFormDefinition,
+  WizardFormValues,
+  withClinicalHistory,
+} from '../../core/models/wizard-definition.model';
+import {
+  DynamicFormRendererComponent,
+  inputValues,
+} from '../dynamic-form-renderer/dynamic-form-renderer.component';
+import { ClinicalHistoryReferenceComponent } from './clinical-history-reference.component';
 import {
   userDateTime,
   conflictKind,
@@ -31,7 +42,7 @@ import {
 
 @Component({
   selector: 'app-encounter-form',
-  imports: [FormsModule, DynamicFormRendererComponent],
+  imports: [FormsModule, DynamicFormRendererComponent, ClinicalHistoryReferenceComponent],
   templateUrl: './encounter-form.component.html',
   styleUrl: './encounter-form.component.css',
 })
@@ -55,7 +66,9 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
 
   readonly consultationType = signal<ConsultationType>('FIRST_VISIT');
   private readonly clock = inject(UserClockService);
-  get timeZone(): string { return this.clock.timeZone(); }
+  get timeZone(): string {
+    return this.clock.timeZone();
+  }
   readonly recordedInstant = signal<string>(new Date().toISOString());
   readonly encounterDay = computed(() => {
     try {
@@ -134,8 +147,6 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
     this.historyStore?.setEncounterDraft(this.dynamicFormData(), type, this.recordedInstant());
   }
 
-
-
   constructor() {
     effect(() => {
       const isLocked = this.isFirstVisitLocked();
@@ -200,10 +211,12 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
         throw new Error('El formulario clínico no está disponible.');
       }
       this.workspace.set(structuredClone(workspace));
-      this.definition.set(structuredClone(workspace.definition.encounterForm));
+      this.definition.set(withClinicalHistory(structuredClone(workspace.definition.encounterForm)));
     } catch (error) {
       if (this.alive(epoch)) {
-        this.errorMessage.set(errorMessage(error, 'No pudimos cargar el formulario de historia clínica.'));
+        this.errorMessage.set(
+          errorMessage(error, 'No pudimos cargar el formulario de historia clínica.'),
+        );
       }
     } finally {
       if (this.alive(epoch)) {
@@ -218,29 +231,26 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
       this.historyStore?.setEncounterDraft(values, this.consultationType(), this.recordedInstant());
     }
   }
+  reviewHistory(values: WizardFormValues): void {
+    this.onDynamicDataChange({ ...this.dynamicFormData(), ...values });
+  }
 
   onDynamicFormValidityChange(valid: boolean): void {
     this.isDynamicFormValid.set(valid);
   }
 
-
-
   async submitEncounter(): Promise<void> {
     if (this.readonly()) return;
     this.submissionAttempted.set(true);
-    if (!this.isDynamicFormValid()) { this.formRenderer()?.focusFirstInvalidField(); return; }
+    if (!this.isDynamicFormValid()) {
+      this.formRenderer()?.focusFirstInvalidField();
+      return;
+    }
     const workspace = this.workspace();
     const definition = this.definition();
     const patientId = this.patientId();
 
-
-    if (
-      !workspace ||
-      !definition ||
-      !patientId ||
-      !this.isDynamicFormValid() ||
-      this.readonly()
-    ) {
+    if (!workspace || !definition || !patientId || !this.isDynamicFormValid() || this.readonly()) {
       return;
     }
 
@@ -281,7 +291,10 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
       if (this.alive(epoch)) {
         this.hasConflict.set(!!conflictKind(error));
         this.errorMessage.set(
-          errorMessage(error, 'No pudimos guardar la historia clínica. Tus respuestas se conservan.'),
+          errorMessage(
+            error,
+            'No pudimos guardar la historia clínica. Tus respuestas se conservan.',
+          ),
         );
       }
     } finally {
@@ -362,7 +375,8 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
       this.dynamicFormData.set(structuredClone(draftValues));
     } else {
       this.dynamicFormData.set({});
-      this.isDynamicFormValid.set(false); this.submissionAttempted.set(false);
+      this.isDynamicFormValid.set(false);
+      this.submissionAttempted.set(false);
     }
 
     if (draftType) {

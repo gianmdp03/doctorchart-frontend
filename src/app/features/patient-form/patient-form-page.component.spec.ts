@@ -90,12 +90,47 @@ describe('PatientFormPageComponent dedicated page', () => {
     expect(patientService.createPatient).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith(['/patients', patient.id]);
   });
+  it('collects the shared clinical history in the initial patient creation request', async () => {
+    fixture = TestBed.createComponent(PatientFormPageComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(component.definition()?.categories.some((c) => c.key === 'sys_clinical_history')).toBe(
+      true,
+    );
+    component.onValuesChange({
+      firstName: 'Ana',
+      lastName: 'Paciente',
+      sys_allergyStatus: 'PRESENT',
+      sys_allergies: 'Penicilina',
+      sys_conditionStatus: 'PRESENT',
+      sys_conditions: 'Asma',
+      sys_medicationStatus: 'NONE',
+      sys_historySource: 'REPORTED',
+    });
+    component.onFormValidityChange(true);
+    await component.submit();
+    expect(patientService.createPatient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        values: expect.objectContaining({
+          sys_allergies: 'Penicilina',
+          sys_conditions: 'Asma',
+          sys_medicationStatus: 'NONE',
+        }),
+      }),
+    );
+  });
   it('allows an incomplete save attempt, shows missing fields and never sends invalid data', async () => {
-    fixture = TestBed.createComponent(PatientFormPageComponent); component = fixture.componentInstance;
-    fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+    fixture = TestBed.createComponent(PatientFormPageComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
     expect(fixture.nativeElement.querySelector('.btn-submit').disabled).toBe(false);
-    await component.submit(); fixture.detectChanges();
+    await component.submit();
+    fixture.detectChanges();
     expect(component.submissionAttempted()).toBe(true);
     expect(fixture.nativeElement.querySelector('.field-error')).not.toBeNull();
     expect(patientService.createPatient).not.toHaveBeenCalled();

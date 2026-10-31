@@ -1,8 +1,12 @@
+import historyCategory from './clinical-history-category.json';
 /** Canonical v1 JSON contract in backend docs/specialty-wizard. No specialty-specific defaults. */
-export type WizardFieldType = 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DATE' | 'SELECT' | 'BOOLEAN' | 'FORMULA';
-export type WizardFormulaKind = 'IMC' | 'BSA' | 'TFGE' | 'COCKCROFT' | 'CALCIO_CORREGIDO' | 'CUSTOM';
+export type WizardFieldType =
+  'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DATE' | 'SELECT' | 'BOOLEAN' | 'FORMULA';
+export type WizardFormulaKind =
+  'IMC' | 'BSA' | 'TFGE' | 'COCKCROFT' | 'CALCIO_CORREGIDO' | 'CUSTOM';
 export type WizardFormulaOperation = 'ADD' | 'SUBTRACT' | 'MULTIPLY' | 'DIVIDE' | 'AVERAGE';
-export type WizardFormulaContext = 'patient.ageYears' | 'patient.gender' | 'patient.latestWeightKg' | 'patient.latestHeightCm';
+export type WizardFormulaContext =
+  'patient.ageYears' | 'patient.gender' | 'patient.latestWeightKg' | 'patient.latestHeightCm';
 export type WizardFormulaInput =
   | { fieldKey: string; context?: never; constant?: never }
   | { context: WizardFormulaContext; fieldKey?: never; constant?: never }
@@ -12,7 +16,10 @@ export interface WizardFormulaDefinition {
   inputs: Record<string, WizardFormulaInput>;
   operation?: WizardFormulaOperation;
 }
-export interface WizardFieldOption { value: string; label: string; }
+export interface WizardFieldOption {
+  value: string;
+  label: string;
+}
 export interface WizardFieldDefinition {
   key: string;
   label: string;
@@ -34,7 +41,9 @@ export interface WizardCategoryDefinition {
   system?: boolean;
   fields: WizardFieldDefinition[];
 }
-export interface WizardFormDefinition { categories: WizardCategoryDefinition[]; }
+export interface WizardFormDefinition {
+  categories: WizardCategoryDefinition[];
+}
 export interface WizardModulesConfig {
   MEDICATION_CATALOG: boolean;
   AI_ASSISTANT: boolean;
@@ -138,10 +147,10 @@ export const createSystemPatientProfileCategory = (): WizardCategoryDefinition =
 export const createDefaultWizardDefinition = (): WizardDefinition => ({
   schemaVersion: 1,
   patientForm: {
-    categories: [createSystemPatientProfileCategory()],
+    categories: [createSystemPatientProfileCategory(), createClinicalHistoryCategory()],
   },
   encounterForm: {
-    categories: [],
+    categories: [createClinicalHistoryCategory()],
   },
   modulesConfig: {
     MEDICATION_CATALOG: false,
@@ -150,3 +159,42 @@ export const createDefaultWizardDefinition = (): WizardDefinition => ({
   },
 });
 
+export const createClinicalHistoryCategory = (): WizardCategoryDefinition =>
+  structuredClone(historyCategory) as WizardCategoryDefinition;
+export const withClinicalHistory = (form: WizardFormDefinition): WizardFormDefinition => ({
+  ...form,
+  categories: form.categories.some((c) => c.key === 'sys_clinical_history')
+    ? form.categories
+    : [...form.categories, createClinicalHistoryCategory()],
+});
+export const CLINICAL_HISTORY_GROUPS = [
+  {
+    status: 'sys_allergyStatus',
+    details: 'sys_allergies',
+    kind: 'ALLERGY',
+    title: 'Alergias',
+    icon: 'lucideShieldAlert',
+    hint: 'Sustancias y reacciones conocidas.',
+  },
+  {
+    status: 'sys_conditionStatus',
+    details: 'sys_conditions',
+    kind: 'PROBLEM',
+    title: 'Problemas de salud',
+    icon: 'lucideHeartPulse',
+    hint: 'Enfermedades o condiciones en seguimiento.',
+  },
+  {
+    status: 'sys_medicationStatus',
+    details: 'sys_medications',
+    kind: 'MEDICATION',
+    title: 'Medicación habitual',
+    icon: 'lucidePill',
+    hint: 'Tratamientos que utiliza actualmente.',
+  },
+] as const;
+export const clinicalHistoryValid = (values: WizardFormValues): boolean =>
+  CLINICAL_HISTORY_GROUPS.every((g) => {
+    const details = String(values[g.details] ?? '').trim();
+    return details.length <= 4000 && (values[g.status] === 'PRESENT' ? !!details : !details);
+  });

@@ -1,0 +1,106 @@
+<section class="health-block" aria-label="Antecedentes clínicos">
+  <header class="health-header">
+    <div>
+      <span class="eyebrow">Información para una atención segura</span>
+      <h3>Antecedentes clínicos</h3>
+      <p>
+        {{
+          encounter()
+            ? 'Revisá sólo lo que cambió. Dejarlo sin respuesta conserva la información anterior en el resumen.'
+            : 'Alergias, problemas de salud y tratamientos del paciente, en un mismo lugar.'
+        }}
+      </p>
+    </div>
+    <span class="system-label"><ng-icon name="lucideLockKeyhole" /> Del sistema</span>
+  </header>
+  <div class="health-grid">
+    @for (group of groups; track group.status) {
+      <section class="health-card" [attr.data-field-key]="group.details">
+        <div class="group-heading">
+          <span class="group-icon"><ng-icon [name]="group.icon" /></span>
+          <div>
+            <h4>{{ group.title }}</h4>
+            <p>{{ group.hint }}</p>
+          </div>
+        </div>
+        @if (readonly()) {
+          <span class="health-state">{{
+            values()[group.status] === 'PRESENT'
+              ? 'Con antecedentes registrados'
+              : values()[group.status] === 'NONE'
+                ? 'No refiere'
+                : 'Sin información registrada'
+          }}</span>
+          @if (values()[group.status] === 'PRESENT') {
+            <p class="health-details">{{ values()[group.details] }}</p>
+          }
+        } @else {
+          <div class="state-options" role="group" [attr.aria-label]="group.title">
+            @for (state of states; track state.value) {
+              <button
+                type="button"
+                [class.selected]="(values()[group.status] ?? 'UNKNOWN') === state.value"
+                [attr.aria-pressed]="(values()[group.status] ?? 'UNKNOWN') === state.value"
+                (click)="choose(group.status, group.details, state.value)"
+              >
+                {{ state.label }}
+              </button>
+            }
+          </div>
+          @if (values()[group.status] === 'PRESENT') {
+            <label [for]="'field-' + group.details"
+              >{{
+                group.kind === 'ALLERGY'
+                  ? 'Alergias y reacciones'
+                  : group.kind === 'PROBLEM'
+                    ? 'Problemas actuales'
+                    : 'Medicamentos, dosis y frecuencia'
+              }}<span aria-label="Obligatorio"> *</span></label
+            >
+            <textarea
+              [id]="'field-' + group.details"
+              rows="4"
+              maxlength="4000"
+              [placeholder]="placeholder(group.details)"
+              [ngModel]="values()[group.details] ?? ''"
+              (ngModelChange)="update(group.details, $event)"
+              [attr.aria-invalid]="showErrors() && !values()[group.details]"
+              [attr.aria-describedby]="'hint-' + group.details"
+            ></textarea>
+            <small [id]="'hint-' + group.details"
+              >Un registro por línea. Se mostrará automáticamente en el resumen.</small
+            >
+            @if (showErrors() && !$any(values()[group.details])?.trim()) {
+              <p class="error" role="alert">Detallá la información que seleccionaste.</p>
+            }
+          }
+        }
+      </section>
+    }
+  </div>
+  @if (reviewed()) {
+    <div class="information-source">
+      <div>
+        <strong>Origen de la información</strong>
+        <p>Permite distinguir lo informado por la familia de lo corroborado en consulta.</p>
+      </div>
+      @if (readonly()) {
+        <span>{{
+          values()['sys_historySource'] === 'CONFIRMED'
+            ? 'Corroborado por el profesional'
+            : 'Informado por el paciente o su familia'
+        }}</span>
+      } @else {
+        <label class="sr-only" for="history-source">Origen de la información</label
+        ><select
+          id="history-source"
+          [ngModel]="values()['sys_historySource'] ?? 'REPORTED'"
+          (ngModelChange)="update('sys_historySource', $event)"
+        >
+          <option value="REPORTED">Informado por el paciente o su familia</option>
+          <option value="CONFIRMED">Corroborado por el profesional</option>
+        </select>
+      }
+    </div>
+  }
+</section>

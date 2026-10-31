@@ -1,34 +1,131 @@
 <section class="encounter-page" aria-labelledby="encounter-title">
-  <nav class="breadcrumbs" aria-label="Ubicación">@if (encounter(); as record) { <a [routerLink]="['/patients', record.patientId]" [queryParams]="{ tab: 'history' }">{{ record.patientFullName || 'Ficha del paciente' }}</a> } @else { <span>Historia clínica</span> }<span aria-hidden="true">/</span><span>Detalle de consulta</span></nav>
+  <nav class="breadcrumbs" aria-label="Ubicación">
+    @if (encounter(); as record) {
+      <a [routerLink]="['/patients', record.patientId]" [queryParams]="{ tab: 'history' }">{{
+        record.patientFullName || 'Ficha del paciente'
+      }}</a>
+    } @else {
+      <span>Historia clínica</span>
+    }
+    <span aria-hidden="true">/</span><span>Detalle de consulta</span>
+  </nav>
   <header class="page-heading">
-    <div><span class="eyebrow">HISTORIA CLÍNICA</span><h1 id="encounter-title">{{ isEditing() ? 'Editar consulta' : 'Detalle de la consulta' }}</h1><p>La atención, su evolución y el próximo control, en un solo lugar.</p></div>
-    @if (encounter(); as record) { <a class="page-button secondary" [routerLink]="['/patients', record.patientId]" [queryParams]="{ tab: 'history' }">← Volver a la historia del paciente</a> }
+    <div>
+      <span class="eyebrow">HISTORIA CLÍNICA</span>
+      <h1 id="encounter-title">{{ isEditing() ? 'Editar consulta' : 'Detalle de la consulta' }}</h1>
+      <p>La atención, su evolución y el próximo control, en un solo lugar.</p>
+    </div>
+    @if (encounter(); as record) {
+      <a
+        class="page-button secondary"
+        [routerLink]="['/patients', record.patientId]"
+        [queryParams]="{ tab: 'history' }"
+        >← Volver a la historia del paciente</a
+      >
+    }
   </header>
-  @if (errorMessage(); as message) { <div class="feedback" role="alert"><span>{{ message }}</span>@if (!encounter() && requestedId()) { <button class="page-button secondary" type="button" (click)="loadEncounter(requestedId()!)">Reintentar</button> }</div> }
-  @if (isLoading()) { <p class="loading" role="status">Cargando consulta...</p> }
+  @if (errorMessage(); as message) {
+    <div class="feedback" role="alert">
+      <span>{{ message }}</span>
+      @if (!encounter() && requestedId()) {
+        <button class="page-button secondary" type="button" (click)="loadEncounter(requestedId()!)">
+          Reintentar
+        </button>
+      }
+    </div>
+  }
+  @if (isLoading()) {
+    <p class="loading" role="status">Cargando consulta...</p>
+  }
   @if (encounter(); as record) {
     <div class="encounter-overview">
       <div class="patient-mark" aria-hidden="true">HC</div>
-      <div class="patient-heading"><h2>{{ record.patientFullName || 'Paciente #' + record.patientId }}</h2><p>{{ record.specialty.name }} · {{ getConsultationTypeLabel(record.consultationType) }}</p></div>
-      <div class="recorded-at"><span>Fecha de atención</span><strong>{{ formatDate(record.encounterDate) }}</strong></div>
-      <a class="page-button secondary" [routerLink]="['/patients', record.patientId]">Ver ficha del paciente →</a>
+      <div class="patient-heading">
+        <h2>{{ record.patientFullName || 'Paciente #' + record.patientId }}</h2>
+        <p>{{ record.specialty.name }} · {{ getConsultationTypeLabel(record.consultationType) }}</p>
+      </div>
+      <div class="recorded-at">
+        <span>Fecha de atención</span><strong>{{ formatDate(record.encounterDate) }}</strong>
+      </div>
+      <a class="page-button secondary" [routerLink]="['/patients', record.patientId]"
+        >Ver ficha del paciente →</a
+      >
     </div>
     @if (hasConflict()) {
-      <section class="feedback" aria-label="Revisar cambios"><p>La consulta fue modificada. Tus respuestas locales siguen visibles.</p><button class="page-button secondary" type="button" [disabled]="isLoading()" (click)="reviewRemote()">Consultar copia del servidor</button>
-        @if (remoteRecord(); as remote) { <p>Copia guardada: {{ formatDate(remote.encounterDate) }}</p><button class="page-button secondary" type="button" [disabled]="isLoading()" (click)="useRemoteRecord()">Usar copia del servidor y descartar mi edición local</button> }
+      <section class="feedback" aria-label="Revisar cambios">
+        <p>La consulta fue modificada. Tus respuestas locales siguen visibles.</p>
+        <button
+          class="page-button secondary"
+          type="button"
+          [disabled]="isLoading()"
+          (click)="reviewRemote()"
+        >
+          Consultar copia del servidor
+        </button>
+        @if (remoteRecord(); as remote) {
+          <p>Copia guardada: {{ formatDate(remote.encounterDate) }}</p>
+          <button
+            class="page-button secondary"
+            type="button"
+            [disabled]="isLoading()"
+            (click)="useRemoteRecord()"
+          >
+            Usar copia del servidor y descartar mi edición local
+          </button>
+        }
       </section>
     }
     @if (isEditing()) {
-      <fieldset class="consultation-metadata" [disabled]="readonly()"><legend>Datos de la consulta</legend><p>Fecha registrada por el servidor: {{ formatDate(record.encounterDate) }} ({{ timeZone }}).</p><label>Tipo de atención<select [ngModel]="consultationType()" (ngModelChange)="consultationType.set($event)">@for (type of consultationTypes; track type.value) { <option [value]="type.value">{{ type.label }}</option> }</select></label></fieldset>
+      <fieldset class="consultation-metadata" [disabled]="readonly()">
+        <legend>Datos de la consulta</legend>
+        <p>
+          Fecha registrada por el servidor: {{ formatDate(record.encounterDate) }} ({{ timeZone }}).
+        </p>
+        <label
+          >Tipo de atención<select
+            [ngModel]="consultationType()"
+            (ngModelChange)="consultationType.set($event)"
+          >
+            @for (type of consultationTypes; track type.value) {
+              <option [value]="type.value">{{ type.label }}</option>
+            }
+          </select></label
+        >
+      </fieldset>
     }
-    <div class="encounter-content" [class.is-editing]="isEditing()"><app-dynamic-form-renderer [showErrors]="submissionAttempted()" [definition]="record.formDefinitionSnapshot" [values]="values()" [formulaResults]="formulaResults()" [readonly]="readonly()" (valuesChange)="onValuesChange($event)" (validityChange)="formValid.set($event)" /></div>
+    <div class="encounter-content" [class.is-editing]="isEditing()">
+      <app-dynamic-form-renderer
+        [showErrors]="submissionAttempted()"
+        [definition]="effectiveForm()"
+        [values]="values()"
+        [formulaResults]="formulaResults()"
+        [readonly]="readonly()"
+        (valuesChange)="onValuesChange($event)"
+        (validityChange)="formValid.set($event)"
+      />
+    </div>
     <footer class="page-actions">
-      <span>{{ isEditing() ? 'Los cambios se aplican a esta consulta.' : 'Información registrada en la historia clínica.' }}</span>
+      <span>{{
+        isEditing()
+          ? 'Los cambios se aplican a esta consulta.'
+          : 'Información registrada en la historia clínica.'
+      }}</span>
       @if (isEditing()) {
-        <button type="button" class="page-button secondary" [disabled]="isSubmitting()" (click)="cancelEditing()">Cancelar edición</button>
-        <button type="button" class="page-button primary" [disabled]="readonly()" (click)="save()">{{ isSubmitting() ? 'Guardando...' : 'Guardar cambios' }}</button>
+        <button
+          type="button"
+          class="page-button secondary"
+          [disabled]="isSubmitting()"
+          (click)="cancelEditing()"
+        >
+          Cancelar edición
+        </button>
+        <button type="button" class="page-button primary" [disabled]="readonly()" (click)="save()">
+          {{ isSubmitting() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
       } @else {
-        <button type="button" class="page-button primary" (click)="startEditing()">Editar consulta</button>
+        <button type="button" class="page-button primary" (click)="startEditing()">
+          Editar consulta
+        </button>
       }
     </footer>
   }
