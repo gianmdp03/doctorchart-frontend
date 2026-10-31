@@ -1,4 +1,5 @@
 export const FEATURE_FLAGS = {
+ NOTIFICATIONS_ENABLED:false,
  STAFF_ENABLED:false,
  /** M6 public booking stays opt-in until owner authorizes publication. */
  PUBLIC_APPOINTMENTS_ENABLED:false,

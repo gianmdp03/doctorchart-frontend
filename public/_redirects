@@ -37,6 +37,7 @@
 /clinics/:id/schedule /index.csr 200
 
 /appointments /index.csr 200
+/appointments/confirmation /index.csr 200
 /appointments/:publicId /index.csr 200
 /booking-publication /index.csr 200
 

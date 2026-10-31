@@ -13,7 +13,8 @@
     "^/appointments(?:/[0-9a-f-]{36})?$",
     "^/booking-publication$",
     "^/staff/(login|activate|recover|calendar)$",
-    "^/secretaries$"
+    "^/secretaries$",
+    "^/appointments/confirmation$"
   ],
   "redirects": {
     "/sin-plan": "/plan-required",

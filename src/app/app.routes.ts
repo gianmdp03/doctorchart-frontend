@@ -186,6 +186,7 @@ export const routes: Routes = [
   },
   {
     path:'appointments',canActivate:[lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/appointments-page.component').then(m=>m.AppointmentsPageComponent),
+ },{path:'appointments/confirmation',canActivate:[lazyGuard(()=>import('./core/guards/notifications.guard').then(m=>m.notificationsGuard))],loadComponent:()=>import('./features/appointments/confirmation-page.component').then(m=>m.ConfirmationPageComponent),
  },{path:'appointments/:publicId',canActivate:[lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/appointments-page.component').then(m=>m.AppointmentsPageComponent),
  },{path:'booking-publication',canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,clinicsGuard,lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/publication-page.component').then(m=>m.PublicationPageComponent),
  },{path:'calendar',

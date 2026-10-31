@@ -4,6 +4,7 @@ import {FormsModule} from '@angular/forms';
 import {RouterLink} from '@angular/router';
 import {firstValueFrom} from 'rxjs';
 import {environment} from '../../../environments/environment';
+import {FEATURE_FLAGS} from '../../core/config/feature-flags';
 import {ClinicsService} from '../clinics/clinics.service';
 import {Clinic} from '../clinics/clinics.models';
 import {StaffAccess,StaffPermission,staffError} from './staff.service';
@@ -13,7 +14,7 @@ interface StaffAccessList {items:StaffAccess[];capabilities:{manage:boolean;reas
 <main class="staff-page"><a routerLink="/calendar">Volver a la agenda</a><p class="eyebrow">Administración delegada</p><h1>Secretarias y permisos</h1><p>Compartí solo la agenda de los consultorios que elijas. Las historias clínicas permanecen privadas.</p>
 @if(error()){<p role="alert" class="error">{{error()}}</p>}<button (click)="load()" [disabled]="busy()">Actualizar derechos y asignaciones</button>
 @if(!canManage()){<p>La administración requiere derechos comerciales vigentes. Podés revocar accesos existentes.</p>}
-@if(invitation()){<section class="notice" role="status"><h2>Invitación creada</h2><p>Entregá este código a la secretaria por un canal privado. Vence en 24 horas y se muestra una sola vez. La activación se realiza en /staff/activate.</p><code class="recovery">{{invitation()}}</code><button (click)="invitation.set('')">Ya lo compartí de forma privada</button></section>}
+@if(invitation()){<section class="notice" role="status"><h2>Invitación creada</h2>@if(emailEnabled){<p>El correo de invitación quedó en cola. Si demora, podés compartir el código por un canal privado.</p>}<p>Entregá este código a la secretaria por un canal privado. Vence en 24 horas y se muestra una sola vez. La activación se realiza en /staff/activate.</p><code class="recovery">{{invitation()}}</code><button (click)="invitation.set('')">Ya lo compartí de forma privada</button></section>}
 <div class="grid"><section><h2>Personas asignadas</h2>@for(a of items();track a.id){<section class="notice"><h3>{{a.name}}</h3><p>{{a.email}} · {{!a.active?'Acceso revocado':a.activated?'Cuenta activada':'Invitación pendiente'}}</p><p>{{clinicNames(a)}}<br />Permisos: {{permissionNames(a)}}</p><div class="actions"><button (click)="edit(a)" [disabled]="busy()||!canManage()">Editar permisos</button>@if(!a.activated){<button (click)="renew(a)" [disabled]="busy()||!canManage()">Renovar invitación</button>}<button (click)="revoke(a)" [disabled]="busy()||!a.active">Revocar acceso</button></div></section>}@empty{<p>Todavía no hay secretarias asignadas.</p>}</section>
 <section><h2>{{selected()?'Editar asignación':'Invitar secretaria'}}</h2><form (ngSubmit)="save()" #form="ngForm"><fieldset [disabled]="busy()||!canManage()"><legend class="sr-only">Datos y permisos</legend>
 @if(!selected()){<label>Nombre<input name="name" [(ngModel)]="name" required maxlength="160" /></label><label>Correo electrónico<input type="email" name="email" [(ngModel)]="email" required maxlength="254" /></label>}
@@ -22,6 +23,7 @@ interface StaffAccessList {items:StaffAccess[];capabilities:{manage:boolean;reas
 <button type="submit" [disabled]="busy()||form.invalid||!clinicIds.length||!canManage()">{{busy()?'Guardando…':selected()?'Guardar permisos':'Crear invitación'}}</button><button type="button" (click)="clear()">Cancelar edición</button>
 </fieldset></form></section></div></main>`})
 export class SecretariesComponent {
+ readonly emailEnabled=FEATURE_FLAGS.NOTIFICATIONS_ENABLED;
  private readonly http=inject(HttpClient);private readonly clinicsApi=inject(ClinicsService);private readonly destroy=inject(DestroyRef);private readonly base=environment.apiUrl.replace(/\/$/,'')+'/secretaries';private epoch=0;
  readonly items=signal<StaffAccess[]>([]);readonly clinics=signal<Clinic[]>([]);readonly selected=signal<StaffAccess|null>(null);readonly busy=signal(false);readonly error=signal('');readonly invitation=signal('');readonly capabilities=signal<StaffAccessList['capabilities']|null>(null);readonly now=signal(Date.now());
  name='';email='';clinicIds:string[]=[];permissions:StaffPermission[]=['view'];readonly availablePermissions:{value:StaffPermission;label:string}[]=[{value:'create',label:'Crear turnos'},{value:'cancel',label:'Cancelar'},{value:'reschedule',label:'Reprogramar'},{value:'status',label:'Marcar llegada, ausencia y atención'}];

@@ -27,6 +27,8 @@ export class StaffService {
  private options(write=false,key?:string){let headers=new HttpHeaders();if(write&&this.session())headers=headers.set('X-CSRF-Token',this.session()!.csrfToken);if(key)headers=headers.set('Idempotency-Key',key);return {withCredentials:true,transferCache:false,headers};}
  async loadSession(){const s=await firstValueFrom(this.http.get<StaffSession>(this.base+'/session',this.options()));this.session.set(s);return s;}
  async authenticate(action:'login'|'activate',body:Record<string,string>){const s=await firstValueFrom(this.http.post<StaffSession>(this.base+'/'+action,body,this.options()));this.session.set(s);return s;}
+ requestRecoveryEmail(email:string){return firstValueFrom(this.http.post<{message:string}>(this.base+'/recovery-email',{email},this.options()));}
+ recoverEmail(body:Record<string,string>){return firstValueFrom(this.http.post<{recoveryCode:string}>(this.base+'/recover-email',body,this.options()));}
  recover(body:Record<string,string>){return firstValueFrom(this.http.post<{recoveryCode:string}>(this.base+'/recover',body,this.options()));}
  async logout(){await firstValueFrom(this.http.post(this.base+'/logout',{},this.options(true)));this.session.set(null);}
  changePassword(currentPassword:string,password:string){return firstValueFrom(this.http.post(this.base+'/password',{currentPassword,password},this.options(true)));}
