@@ -63,5 +63,12 @@ describe('Schedule editor interaction and concurrency',()=>{
   const fixture=await create(),c=fixture.componentInstance;await c.save();
   expect(api.save).toHaveBeenCalledWith('103',expect.objectContaining({expectedVersion:'7',minNoticeMinutes:0,slotMinutes:30}));
  });
+ it('does not save a stale exception date after the visible date input becomes invalid',async()=>{
+  const fixture=await create(),c=fixture.componentInstance;c.addException();fixture.detectChanges();
+  const input=fixture.nativeElement.querySelector('#exception-from-0') as HTMLInputElement;
+  input.value='31/02/2026';input.dispatchEvent(new Event('input'));fixture.detectChanges();
+  expect(c.canSave()).toBe(false);await c.save();expect(api.save).not.toHaveBeenCalled();
+ });
+
 });
 

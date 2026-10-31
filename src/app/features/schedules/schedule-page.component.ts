@@ -1,4 +1,4 @@
-import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, effect, inject, signal, viewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -24,6 +24,7 @@ export class SchedulePageComponent {
  private readonly route=inject(ActivatedRoute);
  private readonly router=inject(Router);
  private readonly destroy=inject(DestroyRef);
+ private readonly datePickers=viewChildren(DatePickerComponent);
  private generation=0;
  private id='';
  private owner:string|null=null;
@@ -87,7 +88,7 @@ export class SchedulePageComponent {
   return !this.busy()&&!this.saving()&&this.clinic()?.status!=='ARCHIVED'&&!!this.clinic()&&isCapabilityVerified(caps)&&!!caps?.actions.edit;
  }
  canSave(){
-  return this.canEdit()&&!this.conflict()&&Number.isInteger(this.draft.slotMinutes)&&Number.isInteger(this.draft.minNoticeMinutes)&&Number.isInteger(this.draft.maxAdvanceDays)&&this.draft.slotMinutes!>=5&&this.draft.slotMinutes!<=480&&this.draft.minNoticeMinutes!>=0&&this.draft.minNoticeMinutes!<=525600&&this.draft.maxAdvanceDays!>=1&&this.draft.maxAdvanceDays!<=366;
+  return !this.datePickers().some(p=>p.inputId()?.startsWith("exception-")&&p.error())&&this.canEdit()&&!this.conflict()&&Number.isInteger(this.draft.slotMinutes)&&Number.isInteger(this.draft.minNoticeMinutes)&&Number.isInteger(this.draft.maxAdvanceDays)&&this.draft.slotMinutes!>=5&&this.draft.slotMinutes!<=480&&this.draft.minNoticeMinutes!>=0&&this.draft.minNoticeMinutes!<=525600&&this.draft.maxAdvanceDays!>=1&&this.draft.maxAdvanceDays!<=366;
  }
  addRange(day:ScheduleDay|ScheduleException){day.ranges.push({start:'09:00',end:'12:00'});}
  addException(){this.draft.exceptions.push({from:this.previewDate,through:this.previewDate,label:'',ranges:[]});}
