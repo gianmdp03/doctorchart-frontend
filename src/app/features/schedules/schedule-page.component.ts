@@ -117,7 +117,7 @@ export class SchedulePageComponent {
   }catch(e){
    if(!this.current(generation,owner,id))return;
    const parsed=parseClinicHttpError(e,'No pudimos guardar. Los campos ingresados se conservaron.');
-   this.error.set(parsed.userMessage);
+   this.error.set(parsed.isVersionConflict ? "La agenda cambió en otra sesión. Tu borrador se conservó; recargá la versión vigente antes de guardar." : parsed.userMessage);
    if(parsed.isVersionConflict)this.conflict.set(true);
    if(parsed.shouldRefreshCapabilities){this.setCapabilities(null);await this.retryCapabilities();}
   }finally{if(this.current(generation,owner,id))this.saving.set(false);}
