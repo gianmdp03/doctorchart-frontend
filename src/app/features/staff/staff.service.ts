@@ -7,7 +7,7 @@ import type {Booking, BookingStatus} from '../calendar/bookings.models';
 export type StaffPermission='view'|'create'|'cancel'|'reschedule'|'status';
 export type AdministrativeBooking=Omit<Booking,'patientId'>;
 export interface StaffSession {email:string;name:string;csrfToken:string;expiresAt:string;recoveryCode?:string;}
-export interface Assignment {ownerId:string;accessId:string;clinicId:string;clinicName:string;timezone:string;permissions:StaffPermission[];validUntil:string;}
+export interface Assignment {doctorName?:string;ownerId:string;accessId:string;clinicId:string;clinicName:string;timezone:string;permissions:StaffPermission[];validUntil:string;}
 export interface StaffAccess {id:string;email:string;name:string;version:string;active:boolean;activated:boolean;permissions:StaffPermission[];clinicIds:string[];}
 export interface SlotDay {date:string;slots:{start:string;end:string}[];}
 export function staffError(error:unknown):string {
