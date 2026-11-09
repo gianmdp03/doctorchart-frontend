@@ -1,0 +1,64 @@
+.publication-page {
+  max-width: 920px;
+  margin-inline: auto;
+  padding: clamp(16px, 3vw, 32px) clamp(16px, 3vw, 28px) 64px;
+  color: var(--md-sys-color-on-surface);
+}
+.publication-page .back-link { margin-bottom: 18px; }
+.publication-page header { margin-bottom: 24px; }
+.publication-page h1 { font-size: clamp(1.8rem, 4vw, 2.45rem); margin-bottom: 12px; }
+.publication-page a { color: var(--md-sys-color-primary); }
+.publication-page .muted { color: var(--md-sys-color-on-surface-variant); font-size: .9rem; }
+.setup-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+}
+.setup-steps li {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--md-surface-container-low);
+}
+.setup-steps span, .setup-steps a { font-size: .875rem; line-height: 1.45; }
+.publication-panel, .share {
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 14px;
+  background: var(--md-surface-container-lowest);
+  margin-bottom: 16px;
+}
+.publication-panel > p, .share > p { margin: 8px 0 0; }
+.publication-panel label { margin: 14px 0; }
+.publication-panel label:not(.checkbox) { display: grid; }
+.publication-panel input, .publication-panel textarea {
+  background: var(--md-surface-container-lowest);
+  border-color: var(--md-sys-color-outline);
+}
+.publication-panel input[type=checkbox] { accent-color: var(--md-sys-color-primary); }
+.publication-panel textarea {
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 9px;
+  padding: 12px;
+  color: inherit;
+  resize: vertical;
+}
+.publication-clinic, .question {
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  padding: 8px 0;
+  margin-bottom: 12px;
+}
+.publication-status { background: var(--md-surface-container-low); }
+.save-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.share { background: var(--md-surface-container-low); }
+.share a { display: inline-block; margin-top: 10px; font-weight: 650; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#publication-add-question { margin-top: 12px; }

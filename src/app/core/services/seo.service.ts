@@ -1,16 +1,21 @@
 import { DOCUMENT } from '@angular/common';
 import { PUBLIC_SITE_URL } from '../config/seo.config';
+import { FEATURE_FLAGS } from '../config/feature-flags';
 import { DestroyRef, Injectable, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { NavigationEnd, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 
+const PROFESSIONAL_PAGE = [
+  'DoctorChart | Historias clínicas digitales y pacientes',
+  'Organizá las fichas de tus pacientes, registrá consultas y personalizá tus formularios clínicos con DoctorChart.',
+] as const;
 const PUBLIC_PAGES: Record<string, readonly [string, string]> = {
-  "/": [
-    "DoctorChart | Historias clínicas digitales y pacientes",
-    "Organizá las fichas de tus pacientes, registrá consultas y personalizá tus formularios clínicos con DoctorChart."
-  ]
+  '/': FEATURE_FLAGS.PUBLIC_APPOINTMENTS_ENABLED
+    ? ['DoctorChart | Buscá un turno médico', 'Encontrá consultorios por especialidad y localidad y reservá un turno online sin crear una cuenta.']
+    : PROFESSIONAL_PAGE,
+  '/professionals': PROFESSIONAL_PAGE,
 };
 
 @Injectable({ providedIn: 'root' })
@@ -34,6 +39,7 @@ export class SeoService {
   private update(url: string): void {
     const pathname = url.split(/[?#]/)[0].replace(/\/$/, '') || '/';
     const page = PUBLIC_PAGES[pathname];
+ if(/^\/appointments(?:\/(?:[0-9a-f-]{36}|confirmation))?$/.test(pathname)){this.title.setTitle('Reservas online | DoctorChart');this.meta.updateTag({name:'robots',content:'noindex, nofollow'});this.meta.updateTag({name:'description',content:'Encontrá profesionales y reservá un turno online sin crear una cuenta.'});let canonical=this.document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');if(!canonical){canonical=this.document.createElement('link');canonical.rel='canonical';this.document.head.appendChild(canonical)}canonical.href=new URL(pathname,PUBLIC_SITE_URL).href;this.document.getElementById('public-page-schema')?.remove();for(const property of ['og:url','og:title','og:description'])this.meta.removeTag('property="'+property+'"');return;}
     this.meta.updateTag({ name: 'robots', content: page ? 'index, follow' : 'noindex, follow' });
     if (!page) {
       for (const property of ['og:title', 'og:description', 'og:type', 'og:site_name', 'og:locale', 'og:url', 'og:image', 'og:image:width', 'og:image:height', 'og:image:alt']) {

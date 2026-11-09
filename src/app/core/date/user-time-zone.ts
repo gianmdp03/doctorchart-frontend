@@ -2,6 +2,10 @@
 export function userTimeZone(): string {
   try { return new Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; }
 }
+
+export function isArgentineTimezone(zone: string): boolean {
+  return zone.startsWith('America/Argentina/') || zone === 'America/Buenos_Aires';
+}
 export function instantParts(instant: string | Date, timeZone = userTimeZone()): { day: string; time: string } {
   const date = instant instanceof Date ? instant : new Date(instant);
   if (!Number.isFinite(date.getTime())) return { day: '', time: '' };

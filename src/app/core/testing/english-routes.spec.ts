@@ -26,7 +26,7 @@ describe('English canonical application routes', () => {
   });
   it('keeps application pages behind their existing guards', () => {
     for (const route of routes.filter(route => route.loadComponent && route.path !== '**')) {
-      if (route.path === '' || route.path === 'login') continue;
+      if (['', 'professionals', 'login'].includes(route.path!)) continue;
       expect(route.canActivate?.length).toBeGreaterThan(0);
       expect(route.path).not.toMatch(/pacientes|consultas|perfil|asistente|sin-plan|especialidades|calculadoras|ficha|vacunacion|editar|nuevo/);
     }

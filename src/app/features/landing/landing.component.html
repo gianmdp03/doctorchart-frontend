@@ -7,6 +7,7 @@
     <nav aria-label="Navegación de presentación">
       <a href="#features">Funciones</a><a href="#how-it-works">Cómo funciona</a
       ><a [href]="plansUrl">Planes</a><a href="#faq">Preguntas frecuentes</a>
+      @if (publicAppointmentsEnabled) { <a routerLink="/appointments">Buscar turnos</a> }
     </nav>
     <div class="header-actions">
       <app-theme-toggle /><a [routerLink]="appEntryUrl()" class="button button-small app-entry"

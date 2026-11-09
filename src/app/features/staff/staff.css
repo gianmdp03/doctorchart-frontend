@@ -1,0 +1,88 @@
+:host {
+  display: block;
+  color: var(--md-sys-color-on-surface);
+}
+
+.staff-page {
+  box-sizing: border-box;
+  max-width: 1160px;
+  margin-inline: auto;
+  padding: clamp(16px, 3vw, 36px) clamp(16px, 3vw, 32px) 64px;
+}
+
+.auth-page { max-width: 580px; }
+.page-heading { margin: 22px 0 24px; }
+.page-heading p:last-child { max-width: 65ch; }
+h1 { font-size: clamp(1.75rem, 3.5vw, 2.35rem); line-height: 1.15; margin: 8px 0 12px; font-weight: 650; }
+h2 { font-size: 1.2rem; margin: 0 0 8px; font-weight: 650; }
+h3 { font-size: 1rem; margin: 0 0 6px; font-weight: 650; }
+p { line-height: 1.55; margin: 0 0 12px; }
+.eyebrow { color: var(--md-sys-color-primary); text-transform: uppercase; letter-spacing: .1em; font-size: .75rem; font-weight: 700; margin: 0; }
+.muted { color: var(--md-sys-color-on-surface-variant); }
+a { color: var(--md-sys-color-primary); text-underline-offset: 3px; }
+.back-link { display: inline-block; margin-bottom: 6px; font-size: .9rem; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+@container (min-width: 720px) {
+  .secretaries .grid, .grid.has-editor { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.staff-page { container-type: inline-size; }
+
+.panel, .notice, .toolbar {
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-surface-container-lowest);
+  border-radius: 16px;
+  padding: clamp(16px, 2.5vw, 24px);
+  min-width: 0;
+}
+.notice, .toolbar { margin: 18px 0; }
+.empty-state, .assignment, .form-group {
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 16px 0 0;
+  overflow-wrap: anywhere;
+}
+.empty-state { background: var(--md-surface-container-low); border-style: dashed; }
+.empty-state p:last-child { margin-bottom: 0; }
+.form-group > .check:last-child { margin-bottom: 0; }
+.form-actions { margin-top: 20px; }
+
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+label { display: grid; gap: 6px; font-size: .9rem; font-weight: 600; margin: 14px 0; }
+input, select, button {
+  font: inherit;
+  min-height: 44px;
+  border-radius: 9px;
+  padding: 9px 12px;
+  border: 1px solid var(--md-sys-color-outline);
+  color: inherit;
+  background: var(--md-surface-container-lowest);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+input, select { width: 100%; }
+input[type=checkbox] { width: 18px; min-height: 18px; flex: none; accent-color: var(--md-sys-color-primary); }
+button { cursor: pointer; font-size: .875rem; font-weight: 600; }
+button:hover:not(:disabled) { background: var(--md-surface-container-high); }
+button[type=submit], .primary { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); border-color: transparent; }
+button[type=submit]:hover:not(:disabled), .primary:hover:not(:disabled) { filter: brightness(.92); background: var(--md-sys-color-primary); }
+button:disabled, fieldset:disabled button { opacity: .55; cursor: not-allowed; }
+:where(button, a, input, select, summary):focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 3px; }
+.check { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+nav, .toolbar, .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+nav { margin-top: 24px; }
+.toolbar { align-items: end; }
+.toolbar label { flex: 1 1 160px; min-width: 0; margin: 0; }
+.toolbar select { min-width: 0; }
+.recovery { display: block; overflow-wrap: anywhere; padding: 16px 0; }
+.error { color: var(--md-sys-color-error); }
+.success { color: var(--md-sys-color-success); }
+.day { border-top: 1px solid var(--md-sys-color-outline-variant); padding: 16px 0; }
+.slot-list { display: flex; gap: 8px; flex-wrap: wrap; }
+.slot-list button { border-style: dashed; }
+.booking { display: block; width: 100%; text-align: left; margin: 8px 0; border-inline-start: 4px solid var(--md-sys-color-primary); overflow-wrap: anywhere; }
+.booking small { display: block; margin-top: 4px; color: var(--md-sys-color-on-surface-variant); }
+.booking.cancelled { border-inline-start-color: var(--md-sys-color-outline); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+details { padding: 12px 0; border-bottom: 1px solid var(--md-sys-color-outline-variant); }

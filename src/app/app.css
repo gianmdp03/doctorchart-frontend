@@ -17,6 +17,10 @@
   overflow-x: hidden;
 }
 
+.app-main-viewport:has(app-schedule-page) {
+  overflow-x: clip;
+}
+
 .app-main-content {
   flex: 1;
   display: flex;

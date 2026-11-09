@@ -17,6 +17,7 @@ import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme
 import site from '../../core/config/site.config.json';
 import { ThemeService } from '../../core/services/theme.service';
 import { AuthService } from '../../core/services/auth.service';
+import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 
 @Component({
   selector: 'app-landing',
@@ -62,6 +63,7 @@ export class LandingComponent {
   }
 
   readonly bycodeUrl = site.applicationUrls.bycode;
+  readonly publicAppointmentsEnabled = FEATURE_FLAGS.PUBLIC_APPOINTMENTS_ENABLED;
   readonly plansUrl = new URL('/pricing', this.bycodeUrl).href;
   readonly contactUrl = new URL('/#bc-contact', this.bycodeUrl).href;
   readonly supportUrl = new URL('/support', this.bycodeUrl).href;

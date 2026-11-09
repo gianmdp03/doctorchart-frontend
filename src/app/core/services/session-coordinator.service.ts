@@ -36,7 +36,7 @@ export class SessionCoordinatorService {
         this.workspaceStore.clearSetup();
         if (identity && adminIdentity) {
           const path = this.router.url.split(/[?#]/)[0];
-          if (path !== '/' && path !== '/404' && this.router.routerState.snapshot.root.firstChild?.routeConfig?.path !== '**') {
+          if (!['/', '/professionals', '/404'].includes(path) && this.router.routerState.snapshot.root.firstChild?.routeConfig?.path !== '**') {
             void this.router.navigate(['/admin/specialties']).catch(() => undefined);
           }
         } else if (identity && planActive) {
@@ -64,7 +64,7 @@ export class SessionCoordinatorService {
       || results.some(result => result.status === 'rejected')) return;
     // Resume a cancelled initial navigation without replacing its requested medical route.
     const path = this.router.url.split(/[?#]/)[0];
-    const restoringPrivateEntry = path === '/' && !['/', '/login'].includes(this.entryPath)
+    const restoringPrivateEntry = path === '/' && !['/', '/professionals', '/login'].includes(this.entryPath)
       && !this.router.lastSuccessfulNavigation();
     if ((path === '/login' || restoringPrivateEntry) && !this.router.currentNavigation()) {
       const requested = this.router.parseUrl(this.router.url).queryParams['returnUrl'];

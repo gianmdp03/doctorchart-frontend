@@ -1,0 +1,320 @@
+<div class="clinics-page">
+  <header class="page-header">
+    <div class="page-header-copy">
+      <div class="eyebrow">
+        <ng-icon name="lucideBuilding2" size="16" aria-hidden="true"></ng-icon>
+        <span>Operación y Sedes de Atención</span>
+      </div>
+      <h1 id="clinics-table-heading">Administración de Consultorios</h1>
+      <p class="subtitle">
+        Gestioná tus sedes físicas de atención médica. Las historias clínicas y los pacientes permanecen asociados a tu espacio médico, con independencia del consultorio.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="reloadAll()"
+        [disabled]="isLoading()"
+        aria-label="Actualizar consultorios y cupo"
+      >
+        <ng-icon name="lucideRefreshCw" size="16" aria-hidden="true"></ng-icon>
+        <span>Actualizar</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn-primary"
+        data-testid="create-clinic-btn"
+        (click)="navigateToCreate()"
+        [disabled]="!canCreate() || isLoading()"
+      >
+        <ng-icon name="lucidePlus" size="18" aria-hidden="true"></ng-icon>
+        <span>Nuevo Consultorio</span>
+      </button>
+    </div>
+  </header>
+
+  <section class="quota-summary-bar" aria-label="Resumen de cupo de consultorios">
+    <div class="quota-summary-main">
+      <span class="quota-badge" [class.quota-badge-verified]="capabilities()?.entitlements?.status === 'VERIFIED'">
+        {{ quotaSummary() }}
+      </span>
+      <span class="quota-hint">
+        Los consultorios archivados se conservan como referencia y no consumen cupo activo.
+      </span>
+    </div>
+  </section>
+
+  @if (capabilityBanner(); as banner) {
+    <section
+      class="capability-banner"
+      [class.banner-info]="banner.tone === 'info'"
+      [class.banner-warning]="banner.tone === 'warning'"
+      [class.banner-danger]="banner.tone === 'danger'"
+      role="status"
+      data-testid="capability-banner"
+    >
+      <div class="banner-icon">
+        <ng-icon name="lucideShieldAlert" size="20" aria-hidden="true"></ng-icon>
+      </div>
+      <div class="banner-body">
+        <h2 class="banner-title">{{ banner.title }}</h2>
+        <p class="banner-description">{{ banner.description }}</p>
+      </div>
+      <div class="banner-actions">
+        @if (banner.showRetryButton) {
+          <button
+            type="button"
+            class="btn-banner"
+            (click)="reloadAll()"
+            [disabled]="isLoading()"
+          >
+            Reintentar verificación
+          </button>
+        }
+        @if (banner.showUpgradeLink && plansUrl) {
+          <a
+            class="btn-banner"
+            [href]="plansUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span>Ver planes</span>
+            <ng-icon name="lucideExternalLink" size="14" aria-hidden="true"></ng-icon>
+          </a>
+        }
+      </div>
+    </section>
+  }
+
+  @if (loadError()) {
+    <div class="alert-box alert-danger" role="alert" data-testid="load-error-alert">
+      <ng-icon name="lucideShieldAlert" size="18" aria-hidden="true"></ng-icon>
+      <span>{{ loadError() }}</span>
+    </div>
+  }
+
+  @if (actionError()) {
+    <div class="alert-box alert-danger" role="alert" data-testid="action-error-alert">
+      <ng-icon name="lucideShieldAlert" size="18" aria-hidden="true"></ng-icon>
+      <span>{{ actionError() }}</span>
+    </div>
+  }
+
+  @if (actionFeedback()) {
+    <div class="alert-box alert-success" role="status" data-testid="action-feedback-alert">
+      <ng-icon name="lucideCheckCircle2" size="18" aria-hidden="true"></ng-icon>
+      <span>{{ actionFeedback() }}</span>
+    </div>
+  }
+
+  <div class="toolbar-card">
+    <div class="filter-tabs" role="group" aria-label="Filtrar consultorios por estado">
+      @for (opt of statusFilters; track opt.value) {
+        <button
+          type="button"
+          class="filter-tab"
+          [class.active]="statusFilter() === opt.value"
+          [attr.aria-pressed]="statusFilter() === opt.value"
+          (click)="selectStatusFilter(opt.value)"
+        >
+          {{ opt.label }}
+        </button>
+      }
+    </div>
+
+    <div class="results-meta" aria-live="polite">
+      @if (totalElements() > 0) {
+        <span>Mostrando {{ rangeStart() }}–{{ rangeEnd() }} de {{ totalElements() }}</span>
+      } @else if (!isLoading()) {
+        <span>Sin resultados</span>
+      }
+    </div>
+  </div>
+
+  <div
+    class="table-wrapper"
+    role="region"
+    aria-labelledby="clinics-table-heading"
+    tabindex="0"
+  >
+    @if (isLoading() && clinics().length === 0) {
+      <div class="empty-state" role="status" aria-live="polite">
+        <p class="empty-title">Cargando consultorios…</p>
+        <p class="empty-subtitle">Consultando el estado actualizado de tus sedes de atención.</p>
+      </div>
+    } @else if (clinics().length === 0) {
+      <div class="empty-state" data-testid="empty-clinics-state">
+        <div class="empty-icon">
+          <ng-icon name="lucideBuilding2" size="28" aria-hidden="true"></ng-icon>
+        </div>
+        <p class="empty-title">
+          @if (statusFilter() === 'ALL') {
+            Todavía no registraste consultorios
+          } @else {
+            No hay consultorios con el filtro seleccionado
+          }
+        </p>
+        <p class="empty-subtitle">
+          @if (statusFilter() === 'ALL') {
+            Podés operar tus historias clínicas y pacientes con normalidad, o dar de alta tus consultorios físicos cuando los necesites.
+          } @else {
+            Probá cambiando el filtro de estado a «Todos» para revisar tus demás sedes.
+          }
+        </p>
+        @if (statusFilter() === 'ALL' && canCreate()) {
+          <button type="button" class="btn-primary" (click)="navigateToCreate()">
+            <ng-icon name="lucidePlus" size="16" aria-hidden="true"></ng-icon>
+            <span>Crear primer consultorio</span>
+          </button>
+        }
+      </div>
+    } @else {
+      <table class="clinics-table" data-testid="clinics-table">
+        <thead>
+          <tr>
+            <th scope="col">Consultorio</th>
+            <th scope="col">Ubicación</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Actualizado</th>
+            <th scope="col" class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (clinic of clinics(); track clinic.id) {
+            <tr [attr.data-testid]="'clinic-row-' + clinic.id">
+              <td data-label="Consultorio" class="cell-name">
+                <div class="clinic-name">{{ clinic.name }}</div>
+                <div class="clinic-meta">Versión {{ clinic.version }}</div>
+                @if (schedulesEnabled) {
+                  <a class="clinic-schedule-link" [routerLink]="['/clinics', clinic.id, 'schedule']">
+                    <ng-icon name="lucideClock" size="15" aria-hidden="true" />
+                    <span>Ver horarios y agenda</span>
+                  </a>
+                }
+              </td>
+              <td data-label="Ubicación" class="cell-location">
+                <div class="location-address">{{ clinic.address }}</div>
+                <div class="location-region">
+                  {{ clinic.city }}, {{ clinic.province }} · {{ clinic.country }}
+                </div>
+              </td>
+              <td data-label="Estado" class="cell-status">
+                <span
+                  class="status-badge"
+                  [class.status-active]="clinic.status === 'ACTIVE'"
+                  [class.status-inactive]="clinic.status === 'INACTIVE'"
+                  [class.status-archived]="clinic.status === 'ARCHIVED'"
+                >
+                  {{ statusLabel(clinic.status) }}
+                </span>
+              </td>
+              <td data-label="Actualizado" class="cell-date">
+                {{ formatDate(clinic.updatedAt) }}
+              </td>
+              <td data-label="Acciones" class="cell-actions">
+                <div class="row-actions">
+                  <a
+                    class="btn-row"
+                    [routerLink]="['/clinics', clinic.id, 'edit']"
+                    [attr.data-testid]="'edit-link-' + clinic.id"
+                  >
+                    <ng-icon name="lucidePencil" size="14" aria-hidden="true"></ng-icon>
+                    <span>{{ canEdit(clinic) ? 'Editar' : 'Ver detalle' }}</span>
+                  </a>
+
+                  @if (clinic.status === 'ACTIVE') {
+                    <button
+                      type="button"
+                      class="btn-row"
+                      [attr.data-testid]="'deactivate-btn-' + clinic.id"
+                      [disabled]="!canTransition(clinic, 'INACTIVE')"
+                      (click)="changeStatus(clinic, 'INACTIVE')"
+                    >
+                      <ng-icon name="lucidePauseCircle" size="14" aria-hidden="true"></ng-icon>
+                      <span>Inactivar</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-row btn-row-danger"
+                      [attr.data-testid]="'archive-btn-' + clinic.id"
+                      [disabled]="!canTransition(clinic, 'ARCHIVED')"
+                      (click)="changeStatus(clinic, 'ARCHIVED')"
+                    >
+                      <ng-icon name="lucideArchive" size="14" aria-hidden="true"></ng-icon>
+                      <span>Archivar</span>
+                    </button>
+                  }
+
+                  @if (clinic.status === 'INACTIVE') {
+                    <button
+                      type="button"
+                      class="btn-row btn-row-primary"
+                      [attr.data-testid]="'activate-btn-' + clinic.id"
+                      [disabled]="!canTransition(clinic, 'ACTIVE')"
+                      (click)="changeStatus(clinic, 'ACTIVE')"
+                    >
+                      <ng-icon name="lucidePlayCircle" size="14" aria-hidden="true"></ng-icon>
+                      <span>Activar</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-row btn-row-danger"
+                      [attr.data-testid]="'archive-btn-' + clinic.id"
+                      [disabled]="!canTransition(clinic, 'ARCHIVED')"
+                      (click)="changeStatus(clinic, 'ARCHIVED')"
+                    >
+                      <ng-icon name="lucideArchive" size="14" aria-hidden="true"></ng-icon>
+                      <span>Archivar</span>
+                    </button>
+                  }
+
+                  @if (clinic.status === 'ARCHIVED') {
+                    <button
+                      type="button"
+                      class="btn-row btn-row-primary"
+                      [attr.data-testid]="'restore-btn-' + clinic.id"
+                      [disabled]="!canTransition(clinic, 'INACTIVE')"
+                      (click)="changeStatus(clinic, 'INACTIVE')"
+                    >
+                      <ng-icon name="lucideArchiveRestore" size="14" aria-hidden="true"></ng-icon>
+                      <span>Restaurar</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  @if (totalPages() > 1) {
+    <nav class="pagination-bar" aria-label="Paginación de consultorios">
+      <button
+        type="button"
+        class="btn-secondary"
+        [disabled]="currentPage() <= 0 || isLoading()"
+        (click)="goToPage(currentPage() - 1)"
+      >
+        <ng-icon name="lucideChevronLeft" size="16" aria-hidden="true"></ng-icon>
+        <span>Anterior</span>
+      </button>
+      <span class="pagination-status">
+        Página {{ currentPage() + 1 }} de {{ totalPages() }}
+      </span>
+      <button
+        type="button"
+        class="btn-secondary"
+        [disabled]="currentPage() + 1 >= totalPages() || isLoading()"
+        (click)="goToPage(currentPage() + 1)"
+      >
+        <span>Siguiente</span>
+        <ng-icon name="lucideChevronRight" size="16" aria-hidden="true"></ng-icon>
+      </button>
+    </nav>
+  }
+</div>

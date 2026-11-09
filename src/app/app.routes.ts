@@ -2,6 +2,7 @@ import { CanActivateFn, Routes } from '@angular/router';
 import { EnvironmentInjector, inject, runInInjectionContext } from '@angular/core';
 import { firstValueFrom, isObservable } from 'rxjs';
 import { publicEntryGuard } from './core/guards/public-entry.guard';
+import { FEATURE_FLAGS } from './core/config/feature-flags';
 
 
 function lazyGuard(load: () => Promise<CanActivateFn>): CanActivateFn {
@@ -19,8 +20,12 @@ const doctorOnboardingGuard = lazyGuard(() => import('./core/guards/doctor-onboa
 const doctorWizardGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.doctorWizardGuard));
 const preventCompletedOnboardingGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.preventCompletedOnboardingGuard));
 const superAdminGuard = lazyGuard(() => import('./core/guards/super-admin.guard').then(m => m.superAdminGuard));
+const clinicsGuard = lazyGuard(() => import('./core/guards/clinics.guard').then(m => m.clinicsGuard));
 
 export const routes: Routes = [
+ ...(['login','activate','recover'] as const).map(mode=>({path:'staff/'+mode,data:{mode},canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffFeatureGuard))],loadComponent:()=>import('./features/staff/staff-auth.component').then(m=>m.StaffAuthComponent)})),
+ {path:'staff/calendar',canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffSessionGuard))],loadComponent:()=>import('./features/staff/staff-calendar.component').then(m=>m.StaffCalendarComponent)},
+ {path:'secretaries',canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffFeatureGuard))],loadComponent:()=>import('./features/staff/secretaries.component').then(m=>m.SecretariesComponent)},
   { path: 'sin-plan', redirectTo: 'plan-required', pathMatch: 'full' },
   { path: 'admin/especialidades', redirectTo: 'admin/specialties', pathMatch: 'full' },
   { path: 'calendario-vacunacion', redirectTo: 'vaccination-calendar', pathMatch: 'full' },
@@ -49,6 +54,12 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
+    loadComponent: FEATURE_FLAGS.PUBLIC_APPOINTMENTS_ENABLED
+      ? () => import('./features/appointments/appointments-page.component').then(m => m.AppointmentsPageComponent)
+      : () => import('./features/landing/landing.component').then(m => m.LandingComponent),
+  },
+  {
+    path: 'professionals',
     loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent),
   },
   {
@@ -177,6 +188,49 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/medical-calculators/medical-calculators.component').then(
         (m) => m.MedicalCalculatorsComponent
+      ),
+  },
+  {
+    path:'appointments',canActivate:[lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/appointments-page.component').then(m=>m.AppointmentsPageComponent),
+ },{path:'appointments/confirmation',canActivate:[lazyGuard(()=>import('./core/guards/notifications.guard').then(m=>m.notificationsGuard))],loadComponent:()=>import('./features/appointments/confirmation-page.component').then(m=>m.ConfirmationPageComponent),
+ },{path:'appointments/:publicId',canActivate:[lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/appointments-page.component').then(m=>m.AppointmentsPageComponent),
+ },{path:'booking-publication',canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,clinicsGuard,lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/publication-page.component').then(m=>m.PublicationPageComponent),
+ },{path:'calendar',
+    runGuardsAndResolvers:'always',
+    canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/calendar.guard').then(m=>m.calendarGuard))],
+    loadComponent:()=>import('./features/calendar/calendar-page.component').then(m=>m.CalendarPageComponent),
+  },
+  {
+    path: 'clinics',
+    runGuardsAndResolvers: 'always',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicsGuard],
+    loadComponent: () =>
+      import('./features/clinics/clinics-page.component').then(
+        (m) => m.ClinicsPageComponent
+      ),
+  },
+  {
+    path:'clinics/:id/schedule',
+    runGuardsAndResolvers:'always',
+    canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/schedules.guard').then(m=>m.schedulesGuard))],
+    loadComponent:()=>import('./features/schedules/schedule-page.component').then(m=>m.SchedulePageComponent),
+  },
+  {
+    path: 'clinics/new',
+    runGuardsAndResolvers: 'always',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicsGuard],
+    loadComponent: () =>
+      import('./features/clinics/clinic-form-page.component').then(
+        (m) => m.ClinicFormPageComponent
+      ),
+  },
+  {
+    path: 'clinics/:id/edit',
+    runGuardsAndResolvers: 'always',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard, clinicsGuard],
+    loadComponent: () =>
+      import('./features/clinics/clinic-form-page.component').then(
+        (m) => m.ClinicFormPageComponent
       ),
   },
   {

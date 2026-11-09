@@ -9,10 +9,11 @@ import { createPreview } from './preview-server.mjs';
 import site from '../src/app/core/config/site.config.json' with { type: 'json' };
 
 const directory = resolve('dist/doctorchart-frontend/browser');
-const screenshots = resolve('test-results/public-session');
+const screenshots = resolve(process.env.DOCTORCHART_BROWSER_EVIDENCE || 'test-results/public-session');
 mkdirSync(screenshots, { recursive: true });
 assert.ok(readdirSync(directory).some(name => name.endsWith('.js') && readFileSync(resolve(directory, name), 'utf8').includes('sb_publishable_rendering_fixture')), 'Build with the fixture public key before running this check.');
-assert.match(readFileSync(resolve(directory, 'index.html'), 'utf8'), /<app-landing[\s>]/, 'The public home must remain prerendered for SEO.');
+assert.match(readFileSync(resolve(directory, 'index.html'), 'utf8'), /<app-appointments-page[\s>]/, 'The appointment search must be prerendered at the root.');
+assert.match(readFileSync(resolve(directory, 'professionals/index.html'), 'utf8'), /<app-landing[\s>]/, 'The professional presentation must remain prerendered.');
 const server = createPreview({ directory, ...site });
 server.listen(0, '127.0.0.1');
 await once(server, 'listening');
@@ -44,7 +45,8 @@ try {
         if (url.origin !== 'https://api.bycode.com.ar') return route.abort();
         if (delay) await new Promise(resolve => setTimeout(resolve, delay));
         let json = [];
-        if (url.pathname.endsWith('/workspace')) json = setup;
+        if (url.pathname.endsWith('/public/appointments/doctors')) json = { items: [], page: 0, size: 12, hasMore: false, specialties: [] };
+        else if (url.pathname.endsWith('/workspace')) json = setup;
         else if (url.pathname.endsWith('/workspace/preferences')) json = { version: 1, patientColumnsConfig: {}, quickNotes: null };
         else if (url.pathname.endsWith('/doctor/profile')) json = { id: 1, specialty, isSpecialtyLocked: true };
         else if (url.pathname.endsWith('/patients')) {
@@ -64,15 +66,18 @@ try {
       }, { account });
       try {
         await page.goto(origin);
+        await page.locator('app-appointments-page').waitFor();
+        await page.getByRole('link', { name: 'Soy médico' }).click();
+        await page.waitForURL('**/professionals');
         const entryPath = account === 'anonymous' ? '/login' : account === 'admin' ? '/admin/specialties' : '/dashboard';
         const entry = page.locator(`app-landing .header-actions a[href="${entryPath}"]`);
         await entry.waitFor();
         await page.waitForTimeout(500);
-        assert.equal(new URL(page.url()).pathname, '/', `${account}: restored session must keep the public home`);
+        assert.equal(new URL(page.url()).pathname, '/professionals', `${account}: restored session must keep the public home`);
         assert.equal(await page.locator('app-private-shell').count(), 0);
         await page.reload();
         await entry.waitFor();
-        assert.equal(new URL(page.url()).pathname, '/', `${account}: home reload must stay public`);
+        assert.equal(new URL(page.url()).pathname, '/professionals', `${account}: home reload must stay public`);
         if (account === 'anonymous') {
           await page.locator('app-landing').waitFor();
           await page.locator('app-landing a[href="/login"]').first().click();
@@ -108,20 +113,20 @@ try {
           await page.reload();
           await page.locator(selector).waitFor();
           assert.equal(await page.locator('app-landing').count(), 0);
-          await page.goto(origin);
+          await page.goto(origin + '/professionals');
           await entry.waitFor();
-          assert.equal(new URL(page.url()).pathname, '/');
+          assert.equal(new URL(page.url()).pathname, '/professionals');
           assert.equal(await page.locator('app-private-shell').count(), 0);
           await entry.click();
           await page.locator(selector).waitFor();
         }
         if (account === 'doctor') await verifyPediatricDirectory(page);
         if (account !== 'anonymous') {
-          await page.goto(origin);
+          await page.goto(origin + '/professionals');
           await entry.waitFor();
           await page.getByRole('button', {name:'Cerrar sesión', exact:true}).click();
           await page.locator('app-landing .app-entry[href="/login"]').waitFor();
-          assert.equal(new URL(page.url()).pathname, '/');
+          assert.equal(new URL(page.url()).pathname, '/professionals');
           assert.equal(await page.locator('.logout-button').count(), 0);
           await page.reload();
           await page.locator('app-landing .app-entry[href="/login"]').waitFor();

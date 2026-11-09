@@ -10,7 +10,7 @@ try {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(base);
+  await page.goto(new URL('/professionals', base).href);
   await page.getByRole('heading', { level: 1 }).waitFor();
   assert.equal(await page.locator('.feature-card').count(), 6);
   assert.equal(await page.locator('.product-view img').count(), 2);
@@ -48,7 +48,7 @@ try {
   await page.locator('#login-email').waitFor();
   await page.reload();
   await page.locator('#login-email').waitFor();
-  await page.getByRole('link', { name: '← Volver a DoctorChart' }).click();
+  await page.getByRole('link', { name: '← DoctorChart para profesionales' }).click();
   await page.getByRole('heading', { level: 1 }).waitFor();
   await page.goto(`${base}/patients/42`);
   await page.waitForURL('**/login?returnUrl=*');

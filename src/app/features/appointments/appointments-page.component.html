@@ -1,0 +1,102 @@
+<div class="public-appointments">
+ <header class="public-header">
+  <a routerLink="/" class="brand"><img src="/doctorchart-logo.svg" alt="" width="30" height="34" />DoctorChart <span>Turnos online</span></a>
+  <nav class="public-header-actions" aria-label="Acceso y apariencia">
+   <app-theme-toggle />
+   <a class="professional-entry" routerLink="/professionals">Soy médico <span aria-hidden="true">↗</span></a>
+  </nav>
+ </header>
+ <main>
+ @if(confirmation();as c){
+  <section class="confirmation" aria-labelledby="confirmation-title"><div class="confirmed-symbol" aria-hidden="true">✓</div><p class="eyebrow">TURNO CONFIRMADO</p><h1 id="confirmation-title">Tu próxima consulta, organizada.</h1><p>La reserva de <strong>{{c.attendeeName}}</strong> se confirmó con {{c.doctorName}}.</p><div class="confirmation-card"><strong>{{displayDay(civilDate(c.start,c.timezone))}}</strong><span>{{localTime(c.start,c.timezone)}} – {{localTime(c.end,c.timezone)}}</span><h2>{{c.clinicName}}</h2><p>{{c.address}}</p><p class="muted">Hora local del consultorio</p><small>Referencia administrativa</small><code>{{c.reference}}</code></div>@if(c.accessCode){<section class="confirmation-card"><h2>Guardá tu código privado</h2><code style="overflow-wrap:anywhere">{{c.accessCode}}</code><p>Podés usarlo para <a routerLink="/appointments/confirmation">consultar tu turno</a>. También enviaremos un correo administrativo. Si el correo demora, tu reserva ya está confirmada y este código funciona.</p><p class="muted">No compartas el código. No lo guardamos en el navegador.</p></section>}@else{<p class="muted">Guardá esta confirmación. Al refrescar se cierra esta vista; tu reserva permanece confirmada.</p>}<a [routerLink]="['/appointments',confirmationDoctorId()]" (click)="confirmation.set(null);loadProfile()">Volver al profesional</a></section>
+ }@else if(!id()){
+  <section class="directory-intro" aria-labelledby="directory-title">
+   <p class="eyebrow">TURNOS MÉDICOS ONLINE · {{ country.name }}</p>
+   <h1 id="directory-title">Encontrá un turno</h1>
+   <p class="directory-description">Encontrá un consultorio por especialidad y ubicación. Elegí un horario y reservá sin crear una cuenta.</p>
+   <form class="search-form" (ngSubmit)="search(0)" role="search" aria-label="Buscar turnos">
+    <div class="search-fields">
+     <label><span id="search-specialty-label">Especialidad</span><select name="specialty" aria-labelledby="search-specialty-label" [(ngModel)]="filters.specialty">
+      <option value="">Todas las especialidades</option>
+      @for (specialty of specialties(); track specialty.code) {<option [value]="specialty.code">{{ specialty.name }}</option>}
+     </select></label>
+     @if (countries.length > 1) {
+      <label>País<select name="country" [ngModel]="country" (ngModelChange)="changeCountry($event)">
+       @for (option of countries; track option.code) {<option [ngValue]="option">{{ option.name }}</option>}
+      </select></label>
+     }
+     <label><span id="search-province-label">Provincia</span><select name="province" aria-labelledby="search-province-label" [ngModel]="filters['province']" (ngModelChange)="changeProvince($event)">
+      <option value="">Todas las provincias</option>
+      @for (province of country.provinces; track province.id) {<option [value]="province.name">{{ province.name }}</option>}
+     </select></label>
+     <label><span id="search-city-label">Localidad</span><select name="city" aria-labelledby="search-city-label" [(ngModel)]="filters['city']" [disabled]="!filters['province']">
+      <option value="">{{ filters['province'] ? 'Todas las localidades' : 'Elegí primero una provincia' }}</option>
+      @for (locality of localities(); track locality) {<option [value]="locality">{{ locality }}</option>}
+     </select></label>
+     <button class="primary" [disabled]="busy()">Buscar turnos</button>
+    </div>
+   </form>
+   @if(confirmationEnabled){<p class="existing-booking">¿Ya tenés una reserva? <a routerLink="/appointments/confirmation">Consultá tu turno</a></p>}
+  </section>
+  <section class="search-results" aria-labelledby="results-title" [attr.aria-busy]="busy()">
+   <div class="section-heading"><h2 id="results-title">Consultorios con reservas online</h2>@if(page>0||hasMore){<span class="muted">Página {{page+1}}</span>}</div>
+   @if(busy()){
+    <p role="status" class="empty">Buscando consultorios…</p>
+   }@else if(error()){
+    <p role="alert" class="notice error">{{error()}}</p>
+   }@else if(!doctors().length){
+    <div class="empty"><h3>No encontramos consultorios con esos filtros</h3><p>Probá otra ubicación o especialidad.</p></div>
+   }@else{
+    <div class="clinic-grid">
+     @for(doctor of doctors();track doctor.id){
+      @for(clinic of doctor.clinics;track clinic.id){
+       <article class="clinic-card">
+        <h3>{{doctor.name}}</h3>
+        <strong class="result-clinic">{{clinic.name}}</strong>
+        <p class="result-address">{{clinic.address}}<br />{{clinic.city}}, {{clinic.province}}</p>
+        <p class="eyebrow result-specialty">{{doctor.specialty}}</p>
+        <a class="profile-link" [routerLink]="['/appointments',doctor.id]" [queryParams]="{clinic:clinic.id}">Ver horarios <span aria-hidden="true">↗</span></a>
+       </article>
+      }
+     }
+    </div>
+   }
+   @if(!busy()&&!error()&&(page>0||hasMore)){<div class="pagination"><button (click)="search(page-1)" [disabled]="page===0">← Anterior</button><button (click)="search(page+1)" [disabled]="!hasMore">Siguiente →</button></div>}
+  </section>
+ }@else{
+  <a routerLink="/appointments" class="back-link">← Volver al buscador</a>
+  @if(error()){<div class="empty"><h1>Reservas no disponibles</h1><p role="alert">{{error()}}</p><button (click)="loadProfile()">Reintentar</button></div>}
+  @if(busy()&&!profile()){<p role="status" class="empty">Consultando el perfil…</p>}
+  @if(profile();as d){
+   <section class="professional"><div class="professional-monogram" aria-hidden="true">{{d.name.slice(0,1)}}</div><div><p class="eyebrow">{{d.specialty}}</p><h1>{{d.name}}</h1><p>{{d.description}}</p></div></section>
+   <div class="booking-layout"><section class="availability" aria-label="Seleccionar consultorio y horario"><div class="section-heading"><h2>1. Elegí dónde y cuándo</h2><span class="muted">Hora local del consultorio</span></div>
+    <div class="clinic-options">@for(c of d.clinics;track c.id){<button [class.selected]="clinicId()===c.id" [attr.aria-pressed]="clinicId()===c.id" [disabled]="sending()" (click)="changeClinic(c.id)"><strong>{{c.name}}</strong><span>{{c.address}} · {{c.city}}, {{c.province}}, {{c.country}}</span></button>}</div>
+    <div class="date-navigation"><button aria-label="Semana anterior" (click)="navigate(-1)" [disabled]="sending()">←</button><label>Desde<app-date-picker inputId="public-date" [value]="date" (valueChange)="changeDate($event)" /></label><button aria-label="Semana siguiente" (click)="navigate(1)" [disabled]="sending()">→</button></div>
+    @if(slotError()){<p role="alert" class="notice error">{{slotError()}} <button (click)="loadSlots()" [disabled]="sending()">Reintentar</button></p>}
+    @if(slotsBusy()){<p role="status" class="empty">Consultando horarios disponibles…</p>}
+    @if(clinic();as c){<div class="availability-days">@for(day of days();track day.date){<section class="availability-day"><h3>{{displayDay(day.date)}}</h3><div class="slots">@for(slot of day.slots;track slot.start){<button [attr.data-public-slot]="slot.start" [class.selected]="selectedStart()===slot.start" [attr.aria-pressed]="selectedStart()===slot.start" [disabled]="sending()" (click)="selectSlot(slot.start)"><strong>{{localTime(slot.start,c.timezone)}}</strong>@if(slotOffsetLabel(slot.start,c.timezone); as offset){<small>{{offset}}</small>}</button>}@if(!day.slots.length){<p class="muted">Sin horarios disponibles</p>}</div></section>}</div>}
+   </section>
+   @if(formOpen()){
+    <section class="reservation-form" aria-labelledby="public-form-title"><p class="eyebrow">SIN CUENTA, SIN TRÁMITES EXTRA</p><h2 id="public-form-title">2. Completá la reserva</h2>
+     @if(clinic();as c){@if(selectedStart()){<p class="selected-summary">{{displayDay(civilDate(selectedStart(),c.timezone))}} · {{localTime(selectedStart(),c.timezone)}} · {{c.name}}</p>}}
+     <form (ngSubmit)="submit()" #bookingForm="ngForm"><fieldset [disabled]="sending()"><legend>Datos de quien solicita el turno</legend>
+      <label>Nombre y apellido<input id="public-contact" name="contactName" [(ngModel)]="contactName" required maxlength="160" autocomplete="name" /></label>
+      <div class="form-pair"><label>País del documento<input id="public-document-country" name="documentCountry" [(ngModel)]="documentCountry" required pattern="[A-Z]{2}" maxlength="2" placeholder="AR" /><small>Código de dos letras. Ej.: AR.</small></label><label>Tipo de documento<select id="public-document-type" name="documentType" [(ngModel)]="documentType"><option value="DNI">DNI argentino</option><option value="PASSPORT">Pasaporte</option></select></label></div>
+      <label>{{documentType==='DNI'?'DNI (solo números)':'Número de pasaporte'}}<input id="public-document" name="document" [(ngModel)]="document" required [pattern]="documentType==='DNI'?'[0-9]{5,8}':'[a-zA-Z0-9]{3,24}'" [maxlength]="documentType==='DNI'?8:24" autocomplete="off" /><small>{{documentType==='DNI'?'5 a 8 dígitos, país AR. Para otra jurisdicción usá pasaporte.':'3 a 24 letras y números. No realizamos una verificación oficial del documento.'}}</small></label>
+      <label>Teléfono<input id="public-phone" name="phone" [(ngModel)]="contactPhone" type="tel" required maxlength="30" pattern="\+?[0-9 ()-]{7,30}" autocomplete="tel" /></label><label>Email<input id="public-email" name="email" [(ngModel)]="email" type="email" required email maxlength="254" autocomplete="email" /></label>
+      <label class="checkbox"><input id="public-different" name="different" [(ngModel)]="different" type="checkbox" />El turno es para otra persona</label>
+      @if(different){<label>Nombre y apellido de quien será atendido<input id="public-attendee" name="attendeeName" [(ngModel)]="attendeeName" required maxlength="160" /></label>}
+      @if(d.form.questions.length){<h3>Información administrativa</h3><p class="muted">No incluyas síntomas, diagnósticos u otra información de salud.</p>@for(q of d.form.questions;track q.key){<label>{{q.label}}{{q.required?' *':' (opcional)'}}<input [id]="'public-answer-'+q.key" [name]="q.key" [(ngModel)]="answers[q.key]" [required]="q.required" maxlength="240" /></label>}}
+      <label class="checkbox"><input id="public-consent" name="consent" [(ngModel)]="consent" required type="checkbox" />Acepto enviar estos datos administrativos al profesional para gestionar el turno.</label>
+     </fieldset>
+     @if(formError()){<p role="alert" class="notice error">{{formError()}}</p>}
+     @if(conflict()){<p>Elegí otro horario disponible arriba. Tus datos se conservaron.</p>}
+     <button id="public-confirm" class="primary full" [disabled]="bookingForm.invalid||!canSubmit()">{{sending()?status():'Confirmar turno'}}</button><p class="privacy-note">Verás la confirmación en esta pantalla. Tus datos se usan para gestionar la reserva.</p>
+     </form>
+    </section>
+   }@else{<aside class="steps"><span>RESERVÁ EN TRES PASOS</span><ol><li>Elegí el lugar y el horario.</li><li>Completá los datos administrativos.</li><li>Recibí la confirmación en pantalla.</li></ol><p>Los horarios se confirman en tiempo real. No necesitás una cuenta.</p></aside>}
+   </div>
+  }
+ }
+ </main><footer>DoctorChart · Reservas online <span>Tu información clínica permanece en el espacio privado de tu médico.</span></footer>
+</div>

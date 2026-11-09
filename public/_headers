@@ -128,3 +128,26 @@
 /admin/specialties
   X-Robots-Tag: noindex, follow
   Cache-Control: no-cache
+
+/calendar
+  X-Robots-Tag: noindex, nofollow
+/clinics/*/schedule
+  X-Robots-Tag: noindex, nofollow
+
+/appointments
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer
+/appointments/*
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer
+/booking-publication
+  X-Robots-Tag: noindex, nofollow
+
+/staff/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store, private
+  Referrer-Policy: no-referrer
+
+/secretaries
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store, private

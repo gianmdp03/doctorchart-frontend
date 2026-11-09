@@ -4,7 +4,7 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 export type FontSizeLevel = 'normal' | 'large' | 'xlarge';
 export type ColorTheme = 'light' | 'dark';
 
-/** Browser storage is limited to display preferences and a revalidated selection ID. */
+/** Browser storage for UI preferences, a revalidated selection ID and administrative schedule drafts. */
 @Injectable({ providedIn: 'root' })
 export class BrowserUiStorageService {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -42,18 +42,31 @@ export class BrowserUiStorageService {
     this.write('sessionStorage', this.patientKey(owner), value);
   }
 
+  readScheduleDraft(owner: string, clinic: string): string | null {
+    return this.read('sessionStorage', this.scheduleKey(owner, clinic));
+  }
+
+  writeScheduleDraft(owner: string, clinic: string, draft: string | null): boolean {
+    return this.write('sessionStorage', this.scheduleKey(owner, clinic), draft);
+  }
+
   private patientKey(owner: string): string { return `doctorchart_active_patient:${encodeURIComponent(owner)}`; }
+
+  private scheduleKey(owner: string, clinic: string): string {
+    return `doctorchart_schedule_draft:${encodeURIComponent(owner)}:${encodeURIComponent(clinic)}`;
+  }
 
   private read(kind: 'localStorage' | 'sessionStorage', key: string): string | null {
     if (!this.isBrowser) return null;
     try { return window[kind].getItem(key); } catch { return null; }
   }
 
-  private write(kind: 'localStorage' | 'sessionStorage', key: string, value: string | null): void {
-    if (!this.isBrowser) return;
+  private write(kind: 'localStorage' | 'sessionStorage', key: string, value: string | null): boolean {
+    if (!this.isBrowser) return false;
     try {
       if (value === null) window[kind].removeItem(key);
       else window[kind].setItem(key, value);
-    } catch { /* An unavailable browser store must not block a clinical flow. */ }
+      return true;
+    } catch { return false; }
   }
 }

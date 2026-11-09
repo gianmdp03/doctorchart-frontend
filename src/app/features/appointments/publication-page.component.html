@@ -1,0 +1,72 @@
+<main class="publication-page">
+  <a class="back-link" routerLink="/calendar">← Agenda de turnos</a>
+  <header>
+    <p class="eyebrow">Reservas online</p>
+    <h1>Tu perfil público</h1>
+    <p class="muted">Publicá los horarios que querés ofrecer para que tus pacientes puedan reservar desde un enlace.</p>
+  </header>
+
+  <ol class="setup-steps" aria-label="Pasos para habilitar reservas">
+    <li><strong>1. Creá el consultorio</strong><a routerLink="/clinics">Ir a Consultorios →</a></li>
+    <li><strong>2. Cargá horarios</strong><span>Entrá en Agenda desde el consultorio y guardá las franjas de atención.</span></li>
+    <li><strong>3. Publicá y compartí</strong><span>Elegí la sede, guardá la publicación y compartí el enlace.</span></li>
+  </ol>
+
+  @if(error()){<p class="notice error" role="alert">{{error()}}</p>}
+  @if(feedback()){<p class="notice" role="status">{{feedback()}}</p>}
+  @if(busy()){
+    <p role="status">Cargando publicación…</p>
+  }@else{
+    @if(publicLinkId(); as publicId){
+      <section class="share" aria-labelledby="publication-share">
+        <h2 id="publication-share">Enlace para pacientes</h2>
+        <p class="muted">Copiá la dirección del enlace para compartirla. Las reservas aparecen en tu agenda.</p>
+        <a id="publication-link" [routerLink]="['/appointments',publicId]">Abrir página de reservas ↗</a>
+      </section>
+    }
+    <form (ngSubmit)="save()" #publicationForm="ngForm">
+      <fieldset [disabled]="saving()">
+        <legend class="sr-only">Datos de publicación</legend>
+        <section class="publication-panel" aria-labelledby="publication-profile">
+          <h2 id="publication-profile">Presentación profesional</h2>
+          <label>Nombre profesional público<input id="publication-name" name="name" [(ngModel)]="draft.name" required maxlength="160" /></label>
+          <label><span>Presentación breve <span class="muted">(opcional)</span></span><textarea id="publication-description" name="description" [(ngModel)]="draft.description" maxlength="1200" rows="3"></textarea></label>
+          <p class="muted">Se muestra la especialidad de tu perfil. Los datos de pacientes y las historias clínicas son privados.</p>
+        </section>
+        <section class="publication-panel" aria-labelledby="publication-clinics">
+          <h2 id="publication-clinics">Consultorios visibles</h2>
+          @for(c of draft.clinics;track c.clinicId){
+            <div class="publication-clinic">
+              <label class="checkbox"><input type="checkbox" [name]="'enabled-'+c.clinicId" [(ngModel)]="c.enabled" />{{clinicName(c.clinicId)}}</label>
+              <label>Dirección que verá el paciente<input [name]="'address-'+c.clinicId" [(ngModel)]="c.address" [required]="c.enabled" maxlength="255" /></label>
+            </div>
+          }@empty{
+            <p class="notice">Primero agregá un consultorio y configurá sus horarios. <a routerLink="/clinics">Ir a Consultorios →</a></p>
+          }
+          @if(draft.clinics.length){<p class="muted">Se ofrecen horarios de sedes activas con disponibilidad. Confirmá la dirección de cada sede seleccionada.</p>}
+        </section>
+        <section class="publication-panel" aria-labelledby="publication-questions">
+          <h2 id="publication-questions">Preguntas administrativas <span class="muted">(opcional)</span></h2>
+          <p class="muted">Podés pedir datos como la obra social. Evitá solicitar síntomas, diagnósticos o información de salud.</p>
+          @for(q of draft.questions;track q.key;let i=$index){
+            <div class="question">
+              <label>Pregunta {{i+1}}<input [id]="'publication-question-'+i" [name]="q.key" [(ngModel)]="q.label" required maxlength="120" /></label>
+              <label class="checkbox"><input type="checkbox" [name]="q.key+'-required'" [(ngModel)]="q.required" />Respuesta obligatoria</label>
+              <button type="button" (click)="draft.questions.splice(i,1)">Quitar pregunta</button>
+            </div>
+          }
+          <button type="button" id="publication-add-question" (click)="addQuestion()" [disabled]="draft.questions.length>=8">+ Agregar pregunta</button>
+        </section>
+        <section class="publication-panel publication-status" aria-labelledby="publication-enable">
+          <h2 id="publication-enable">Publicación</h2>
+          <label class="checkbox"><input id="publication-enabled" type="checkbox" name="published" [(ngModel)]="draft.published" />Publicar este perfil y habilitar reservas online</label>
+          <p class="muted">Tu plan debe tener habilitadas las reservas online. Si despublicás, se conservan los turnos ya reservados.</p>
+        </section>
+      </fieldset>
+      <div class="save-actions">
+        <button id="publication-save" class="primary" [disabled]="publicationForm.invalid||saving()||conflict()">{{saving()?'Guardando…':'Guardar publicación'}}</button>
+        <button type="button" (click)="load()" [disabled]="saving()">Recargar versión guardada</button>
+      </div>
+    </form>
+  }
+</main>

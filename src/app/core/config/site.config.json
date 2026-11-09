@@ -1,13 +1,21 @@
 {
   "publicSiteUrl": "https://doctorchart.bycode.com.ar",
   "publicPaths": [
-    "/"
+    "/",
+    "/professionals"
   ],
   "clientPatterns": [
     "^/(login|sin-plan|perfil|asistente|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",
     "^/(pacientes|ficha|consultas)/[^/]+(/editar)?$",
-    "^/(login|plan-required|profile|assistant|dashboard|encounters|vaccination-calendar|calculators|patients|patients/new|records|admin/specialties|onboarding/select-specialty|onboarding/setup)$",
-    "^/(patients|records|encounters)/[^/]+(/edit)?$"
+    "^/(login|plan-required|profile|assistant|dashboard|encounters|vaccination-calendar|calculators|patients|patients/new|clinics|clinics/new|records|admin/specialties|onboarding/select-specialty|onboarding/setup)$",
+    "^/(patients|records|encounters|clinics)/[^/]+(/edit)?$",
+    "^/calendar$",
+    "^/clinics/[^/]+/schedule$",
+    "^/appointments(?:/[0-9a-f-]{36})?$",
+    "^/booking-publication$",
+    "^/staff/(login|activate|recover|calendar)$",
+    "^/secretaries$",
+    "^/appointments/confirmation$"
   ],
   "redirects": {
     "/sin-plan": "/plan-required",
