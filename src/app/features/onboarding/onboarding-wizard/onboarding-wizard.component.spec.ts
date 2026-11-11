@@ -39,6 +39,7 @@ describe('OnboardingWizardComponent', () => {
   let navigate: ReturnType<typeof vi.fn>;
   const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
   const base: WorkspaceSetup = {
+    specialtyContextId: 101,
     id: 12, version: 10,
     specialty: { id: 81, code: customSpecialtyFixture.code, name: customSpecialtyFixture.name, description: customSpecialtyFixture.description },
     experience: { specialtyId: 81, specialtyVersion: 0, patientRecordActions: ['EDIT_PATIENT', 'NEW_ENCOUNTER', 'VIEW_GROWTH', 'PRINT_DOCUMENT'], patientRecordTabs: ['SUMMARY', 'ENCOUNTERS'], navigation: ['DASHBOARD', 'PATIENTS', 'WIZARD'] },

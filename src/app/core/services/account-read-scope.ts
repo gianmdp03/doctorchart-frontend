@@ -1,9 +1,12 @@
+import { ClinicalContextService } from './clinical-context.service';
 import { DestroyRef, effect, inject, untracked } from '@angular/core';
 import { Subject } from 'rxjs';
 import { AuthService } from './auth.service';
 
 /** Cancels superseded reads and rejects replies from another account, even before effects run. */
 export class AccountReadScope {
+  private readonly clinicalScope = inject(ClinicalContextService);
+  private scopeId = this.clinicalScope.id();
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private owner = this.auth.currentUser()?.id ?? null;
@@ -13,8 +16,10 @@ export class AccountReadScope {
   constructor(onAccountChange: () => void) {
     effect(() => {
       const owner = this.auth.currentUser()?.id ?? null;
+      const scopeId=this.clinicalScope.id();
       untracked(() => {
-        if (owner === this.owner) return;
+        if (owner === this.owner && scopeId === this.scopeId) return;
+        this.scopeId=scopeId;
         this.owner = owner;
         this.cancel();
         onAccountChange();
@@ -36,10 +41,11 @@ export class AccountReadScope {
   begin(): () => boolean {
     this.cancel();
     const generation = this.generation,
-      owner = this.auth.currentUser()?.id;
+      owner = this.auth.currentUser()?.id,
+      scopeId=this.clinicalScope.id();
     return () =>
       !this.destroyRef.destroyed &&
       generation === this.generation &&
-      owner === this.auth.currentUser()?.id;
+      owner === this.auth.currentUser()?.id && scopeId === this.clinicalScope.id();
   }
 }

@@ -13,4 +13,5 @@ export class BookingsService {
  create(body:BookingCreate,key:string){return this.http.post<Booking>(this.base,body,{headers:{'Idempotency-Key':key}});}
  status(id:string,expectedVersion:string,status:BookingStatus,key:string){return this.http.patch<Booking>(`${this.base}/${encodeURIComponent(id)}/status`,{expectedVersion,status},{headers:{'Idempotency-Key':key}});}
  reschedule(id:string,body:{expectedVersion:string;clinicId:string;start:string},key:string){return this.http.post<Booking>(`${this.base}/${encodeURIComponent(id)}/reschedule`,body,{headers:{'Idempotency-Key':key}});}
+ linkPatient(id:string,expectedVersion:string,patientId:string,key:string){return this.http.put<Booking>(`${this.base}/${encodeURIComponent(id)}/patient`,{expectedVersion,patientId},{headers:{'Idempotency-Key':key}});}
 }

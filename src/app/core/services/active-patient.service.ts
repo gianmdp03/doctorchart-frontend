@@ -1,3 +1,4 @@
+import { ClinicalContextService } from './clinical-context.service';
 import { UserClockService } from './user-clock.service';
 import { Subscription } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -10,6 +11,8 @@ import { BrowserUiStorageService } from './browser-ui-storage.service';
   providedIn: 'root',
 })
 export class ActivePatientService {
+  private readonly context = inject(ClinicalContextService);
+  private contextId: number | null | undefined = undefined;
   private readonly clock = inject(UserClockService);
   private readonly patientService = inject(PatientService);
   private readonly storage = inject(BrowserUiStorageService);
@@ -196,41 +199,44 @@ export class ActivePatientService {
   });
 
   constructor() {
-    effect(() => { this.auth.currentUser(); untracked(() => this.syncSession()); });
+    effect(() => { this.auth.currentUser(); this.context.id(); untracked(() => this.syncSession()); });
     this.destroyRef.onDestroy(() => this.request?.unsubscribe());
   }
   private syncSession(restore = true): void {
     const owner = this.auth.currentUser()?.id ?? null;
-    if (owner === this.owner) return;
+    const contextId = this.context.id();
+    if (owner === this.owner && contextId === this.contextId) return;
     this.request?.unsubscribe(); this.request = null; this.generation++;
-    if (!owner && this.owner) this.storage.writeActivePatientId(this.owner, null);
-    this.owner = owner; this.activePatient.set(null); this.isLoading.set(false); this.error.set(null);
-    if (restore && owner) {
-      const id = this.storage.readActivePatientId(owner);
+    if (!owner && this.owner) this.storage.writeActivePatientId(this.owner, null, this.contextId ?? undefined);
+    this.owner = owner; this.contextId = contextId; this.activePatient.set(null); this.isLoading.set(false); this.error.set(null);
+    if (restore && owner && contextId !== null) {
+      const id = this.storage.readActivePatientId(owner, contextId);
       if (id !== null) this.loadPatient(id);
     }
   }
   private persist(patientId: number | null): void {
-    if (this.owner) this.storage.writeActivePatientId(this.owner, patientId);
+    if (this.owner && this.contextId !== null) this.storage.writeActivePatientId(this.owner, patientId, this.contextId);
   }
   setActivePatient(patient: PatientDetailDTO | null): void {
     this.syncSession(false); this.request?.unsubscribe(); this.generation++;
-    if (!this.owner) return;
+    if (!this.owner || this.contextId == null) return;
+    if (patient && patient.specialtyContextId !== this.contextId) return;
     this.activePatient.set(patient ? structuredClone(patient) : null); this.isLoading.set(false); this.error.set(null);
     this.persist(patient?.id ?? null);
   }
   loadPatient(id: number): void {
     this.syncSession(false);
-    if (!this.owner || !Number.isSafeInteger(id) || id <= 0) return;
+    if (!this.owner || this.contextId == null || !Number.isSafeInteger(id) || id <= 0) return;
     this.request?.unsubscribe();
     const generation = ++this.generation;
     const owner = this.owner;
+    const contextId = this.contextId;
     if (this.patientId() !== id) { this.activePatient.set(null); this.persist(null); }
     this.isLoading.set(true); this.error.set(null);
     this.request = this.patientService.getPatientById(id).subscribe({
       next: patient => {
-        if (generation !== this.generation || owner !== this.auth.currentUser()?.id) return;
-        if (patient.id !== id) {
+        if (generation !== this.generation || owner !== this.auth.currentUser()?.id || contextId !== this.context.id()) return;
+        if (patient.id !== id || patient.specialtyContextId !== contextId) {
           this.activePatient.set(null); this.isLoading.set(false); this.persist(null);
           this.error.set('La respuesta no corresponde al paciente solicitado.'); return;
         }
@@ -238,9 +244,11 @@ export class ActivePatientService {
       },
       error: err => {
         if (generation !== this.generation || owner !== this.auth.currentUser()?.id) return;
-        this.activePatient.set(null); this.isLoading.set(false);
+        this.isLoading.set(false);
         this.error.set(err?.error?.message || 'Error al cargar paciente');
-        if (err?.status === 403 || err?.status === 404) this.persist(null);
+        if (err?.status === 401 || err?.status === 403 || err?.status === 404) {
+          this.activePatient.set(null); this.persist(null);
+        }
       },
     });
   }

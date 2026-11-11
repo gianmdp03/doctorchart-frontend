@@ -1,3 +1,4 @@
+import { ClinicalContextService } from './clinical-context.service';
 import { DestroyRef, effect, inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -8,11 +9,13 @@ import { doctorPrintIdentity } from '../models/doctor-print-identity';
 
 @Injectable({ providedIn: 'root' })
 export class ClinicalDocumentPrintService {
+ private readonly clinicalScope = inject(ClinicalContextService);
+ private contextKey(): string | null { const owner=this.auth.currentUser()?.id; return owner ? JSON.stringify([owner,this.clinicalScope.id()]) : null; }
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   readonly errorMessage = signal<string | null>(null);
   private readonly previews = new Map<string, Window | null>();
-  private owner = this.auth.currentUser()?.id ?? null;
+  private owner = this.contextKey();
 
   constructor() {
     const release = () => {
@@ -23,7 +26,7 @@ export class ClinicalDocumentPrintService {
       this.previews.clear();
     };
     effect(() => {
-      const owner = this.auth.currentUser()?.id ?? null;
+      const owner = this.contextKey();
       if (owner !== this.owner) { this.owner = owner; this.errorMessage.set(null); release(); }
     });
     inject(DestroyRef).onDestroy(release);
@@ -37,7 +40,7 @@ export class ClinicalDocumentPrintService {
   }
 
   getPdfBlob(reference: PrintDocumentReference): Observable<Blob> {
-    const user = this.auth.currentUser();
+    const user = this.auth.currentUser(); this.clinicalScope.id();
     const identity = doctorPrintIdentity(user?.user_metadata);
     const collection = reference.source === 'PRESCRIPTION_RECORD' ? 'prescriptions' : 'encounters';
 
@@ -56,7 +59,7 @@ export class ClinicalDocumentPrintService {
   openPdfInNewTab(reference: PrintDocumentReference): void {
     if (typeof window === 'undefined') return;
     this.errorMessage.set(null);
-    const owner = this.auth.currentUser()?.id ?? null;
+    const owner = this.contextKey();
 
     let targetWindow: Window | null = null;
     try {
@@ -73,7 +76,7 @@ export class ClinicalDocumentPrintService {
 
     this.getPdfBlob(reference).subscribe({
       next: (blob) => {
-        if (owner !== (this.auth.currentUser()?.id ?? null)) {
+        if (owner !== (this.contextKey())) {
           try { targetWindow?.close(); } catch {}
           return;
         }
@@ -95,7 +98,7 @@ export class ClinicalDocumentPrintService {
             targetWindow.close();
           }
         } catch {}
-        if (owner !== (this.auth.currentUser()?.id ?? null)) return;
+        if (owner !== (this.contextKey())) return;
         this.errorMessage.set(err?.status === 403
           ? 'No tenés permiso para acceder a este documento. Verificá tu sesión y suscripción.'
           : err?.status === 401

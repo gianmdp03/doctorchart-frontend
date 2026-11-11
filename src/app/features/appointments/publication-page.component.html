@@ -31,9 +31,9 @@
           <h2 id="publication-profile">Presentación profesional</h2>
           <label>Nombre profesional público<input id="publication-name" name="name" [(ngModel)]="draft.name" required maxlength="160" /></label>
           <label><span>Presentación breve <span class="muted">(opcional)</span></span><textarea id="publication-description" name="description" [(ngModel)]="draft.description" maxlength="1200" rows="3"></textarea></label>
-          <p class="muted">Se muestra la especialidad de tu perfil. Los datos de pacientes y las historias clínicas son privados.</p>
+          <p class="muted">Elegí las especialidades que querés ofrecer. Los datos de pacientes y las historias clínicas son privados.</p>
         </section>
-        <section class="publication-panel" aria-labelledby="publication-clinics">
+        <section class="publication-panel" aria-labelledby="publication-specialties"><h2 id="publication-specialties">Especialidades públicas</h2>@for(context of workspace.contexts();track context.id){@if(context.ready){<label class="checkbox"><input type="checkbox" [name]="'context-'+context.id" [ngModel]="draft.specialtyContextIds?.includes(''+context.id)??false" (ngModelChange)="toggleContext(''+context.id,$event)"/>{{context.specialty.name}}</label>@if(publicLinkId() && draft.specialtyContextIds?.includes(''+context.id)){<a [routerLink]="['/appointments',publicLinkId()]" [queryParams]="{specialtyContextId:context.id}">Enlace de {{context.specialty.name}}</a>}}@else{<p>{{context.specialty.name}} · Configuración pendiente</p>}}<p class="muted">Sólo se ofrecerán horarios con bloques y consultorios activos publicados.</p></section><section class="publication-panel" aria-labelledby="publication-clinics">
           <h2 id="publication-clinics">Consultorios visibles</h2>
           @for(c of draft.clinics;track c.clinicId){
             <div class="publication-clinic">

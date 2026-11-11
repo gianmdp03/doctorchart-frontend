@@ -17,4 +17,5 @@ describe('M5 bookings real HTTP transport',()=>{
   expect(reqs[1].request.url).toContain(id);expect(reqs[4].request.body.expectedVersion).toBe(version);
  });
  it('propagates errors without mocks',()=>{let status=0;TestBed.inject(BookingsService).list('x','y').subscribe({error:e=>status=e.status});TestBed.inject(HttpTestingController).expectOne(r=>r.url.endsWith('/bookings')).flush({code:'ENTITLEMENTS_UNAVAILABLE'},{status:503,statusText:'Unavailable'});expect(status).toBe(503);});
+ it('links a patient through the dedicated versioned idempotent operation',()=>{const api=TestBed.inject(BookingsService),http=TestBed.inject(HttpTestingController);api.linkPatient('9007199254740993','7','9007199254740995','patient-link-retry-key').subscribe();const req=http.expectOne(environment.apiUrl+'/bookings/9007199254740993/patient');expect(req.request.method).toBe('PUT');expect(req.request.body).toEqual({expectedVersion:'7',patientId:'9007199254740995'});expect(req.request.headers.get('Idempotency-Key')).toBe('patient-link-retry-key');expect(req.request.headers.get('Authorization')).toBe('Bearer fixture-session');req.flush({});});
 });

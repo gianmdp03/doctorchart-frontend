@@ -6,9 +6,10 @@ import {AuthService} from '../services/auth.service';
 import {WorkspaceStore} from '../services/workspace.store';
 describe('Calendar opt-in guard',()=>{
  const flags={...FEATURE_FLAGS};let logged=true,completed=true;
- beforeEach(()=>{logged=true;completed=true;TestBed.configureTestingModule({providers:[provideRouter([]),{provide:AuthService,useValue:{isLoggedIn:()=>logged,isSuperAdmin:()=>false}},{provide:WorkspaceStore,useValue:{clinicsEnabled:()=>true,loadSetup:async()=>({onboardingCompleted:completed,specialty:{}})}}]});});
+ beforeEach(()=>{logged=true;completed=true;TestBed.configureTestingModule({providers:[provideRouter([]),{provide:AuthService,useValue:{isLoggedIn:()=>logged,isSuperAdmin:()=>false}},{provide:WorkspaceStore,useValue:{clinicsEnabled:()=>true,loadContexts:async()=>[{id:101,ready:completed}],loadSetup:async()=>({onboardingCompleted:completed,specialty:{}})}}]});});
  afterEach(()=>Object.assign(FEATURE_FLAGS,flags));
  const run=()=>TestBed.runInInjectionContext(()=>calendarGuard({} as any,{} as any));
- it('defaults to disabled',async()=>{expect(TestBed.inject(Router).serializeUrl(await run() as any)).toBe('/dashboard');});
+ it('uses the enabled calendar configured for M1–M5',async()=>{expect(FEATURE_FLAGS.CALENDAR_ENABLED).toBe(true);expect(FEATURE_FLAGS.SCHEDULES_ENABLED).toBe(true);expect(await run()).toBe(true);});
+ it('keeps either disabled dependency behind its flag',async()=>{FEATURE_FLAGS.CALENDAR_ENABLED=false;expect(String(await run())).toBe('/dashboard');FEATURE_FLAGS.CALENDAR_ENABLED=true;FEATURE_FLAGS.SCHEDULES_ENABLED=false;expect(String(await run())).toBe('/dashboard');});
  it('requires the authenticated onboarded doctor even with flags on',async()=>{FEATURE_FLAGS.CALENDAR_ENABLED=true;FEATURE_FLAGS.SCHEDULES_ENABLED=true;logged=false;expect(TestBed.inject(Router).serializeUrl(await run() as any)).toBe('/login');logged=true;completed=false;expect(TestBed.inject(Router).serializeUrl(await run() as any)).toBe('/onboarding/setup');completed=true;expect(await run()).toBe(true);});
 });

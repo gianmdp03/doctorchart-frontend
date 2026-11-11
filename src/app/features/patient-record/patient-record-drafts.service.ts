@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../core/services/clinical-context.service';
 import { effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
@@ -7,6 +8,7 @@ import { WizardFormValues } from '../../core/models/wizard-definition.model';
 /** Unsaved inputs only. Persisted clinical records always come from the API. */
 @Injectable({ providedIn: 'root' })
 export class PatientRecordDraftsService {
+  private readonly scope = inject(ClinicalContextService);
   private readonly auth = inject(AuthService);
   private readonly activePatient = inject(ActivePatientService);
   private context = '';
@@ -41,6 +43,7 @@ export class PatientRecordDraftsService {
   constructor() {
     effect(() => {
       this.auth.currentUser();
+      this.scope.id();
       this.activePatient.patientId();
       untracked(() => this.syncContext());
     });
@@ -48,7 +51,7 @@ export class PatientRecordDraftsService {
 
   /** Also synchronize before a routed component reads a draft, without waiting for effects. */
   syncContext(): this {
-    const context = JSON.stringify([this.auth.currentUser()?.id ?? null, this.activePatient.patientId()]);
+    const context = JSON.stringify([this.auth.currentUser()?.id ?? null, this.scope.id(), this.activePatient.patientId()]);
     if (context === this.context) return this;
     this.context = context;
     this.study.file.set(null); this.study.name.set(''); this.study.description.set('');

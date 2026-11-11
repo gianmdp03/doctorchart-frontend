@@ -35,10 +35,13 @@ import { PatientListDTO } from '../../core/models/patient.model';
 import { environment } from '../../../environments/environment';
 import { BycodeAvatarComponent } from '../../shared/components/bycode-avatar/bycode-avatar';
 import { BycodeAccountService } from '../../core/services/bycode-account.service';
+import { WorkspaceStore } from '../../core/services/workspace.store';
+import { ClinicalNavigationService } from '../../core/services/clinical-navigation.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-header',
-  imports: [NgIcon, ThemeToggleComponent, BycodeAvatarComponent],
+  imports: [FormsModule, NgIcon, ThemeToggleComponent, BycodeAvatarComponent],
   providers: [
     provideIcons({
       lucideSearch,
@@ -57,6 +60,19 @@ import { BycodeAccountService } from '../../core/services/bycode-account.service
   styleUrl: './header.component.css',
 })
 export class HeaderComponent implements OnDestroy {
+  readonly workspace=inject(WorkspaceStore);
+  readonly clinicalNavigation=inject(ClinicalNavigationService);
+  async changeSpecialty(value:string|number):Promise<void>{
+    const id=Number(value),previous=this.workspace.specialtyContextId();
+    const select=this.elementRef.nativeElement.querySelector('.clinical-selector select') as HTMLSelectElement|null;
+    const context=this.workspace.contexts().find(c=>c.id===id);if(select)select.value=String(previous??'');if(!context||id===previous)return;
+    const tree=this.router.parseUrl(this.router.url);
+    const clinical=/^\/(dashboard|patients|records|encounters|assistant|calculators|vaccination-calendar|onboarding)(\/|$)/.test(this.router.url.split(/[?#]/)[0]);
+    const target=!context.ready?this.router.createUrlTree(['/onboarding/setup']):clinical?this.router.createUrlTree(['/dashboard']):tree;
+    target.queryParams={...target.queryParams,specialtyContextId:id};
+    if(!clinical&&!await this.clinicalNavigation.canLeaveEditing())return;
+    try{await this.router.navigateByUrl(target);}finally{if(select)select.value=String(this.workspace.specialtyContextId()??'');}
+  }
   readonly bycodeAccount = inject(BycodeAccountService);
   readonly authService = inject(AuthService);
   readonly activePatientService = inject(ActivePatientService);

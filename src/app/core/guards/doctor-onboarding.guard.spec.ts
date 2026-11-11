@@ -15,11 +15,11 @@ describe('workspace onboarding guards', () => {
     loadSetup = vi.fn().mockResolvedValue(null);
     TestBed.configureTestingModule({ providers: [
       { provide: AuthService, useValue: { authReady: Promise.resolve(), isLoggedIn: loggedIn, isSuperAdmin: superAdmin } },
-      { provide: WorkspaceStore, useValue: { loadSetup } },
+      { provide: WorkspaceStore, useValue: { loadSetup,loadContexts:async()=>[],contexts:()=>[] } },
     ] });
     TestBed.inject(Router);
   });
-  const run = (guard: typeof doctorOnboardingGuard) => TestBed.runInInjectionContext(() => guard({} as never, {} as never));
+  const run = (guard: typeof doctorOnboardingGuard) => TestBed.runInInjectionContext(() => guard({data:{clinicalContext:true}} as never, {} as never));
 
   it('leaves unauthenticated redirects to the authentication guard', async () => {
     loggedIn.set(false);
@@ -32,8 +32,8 @@ describe('workspace onboarding guards', () => {
     expect(result!.toString()).toBe('/onboarding/select-specialty');
   });
   it('redirects an incomplete workspace to its configured wizard', async () => {
-    loadSetup.mockResolvedValue({ onboardingCompleted: false, definition: null });
-    expect((await run(doctorOnboardingGuard))!.toString()).toBe('/onboarding/setup');
+    loadSetup.mockResolvedValue({ specialtyContextId:101,onboardingCompleted: false, definition: null });
+    expect((await run(doctorOnboardingGuard))!.toString()).toBe('/onboarding/setup?specialtyContextId=101');
   });
   it('permits clinical modules only with a completed effective definition', async () => {
     loadSetup.mockResolvedValue({ onboardingCompleted: true, definition: {} });

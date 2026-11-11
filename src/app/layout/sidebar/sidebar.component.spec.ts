@@ -47,7 +47,7 @@ describe('SidebarComponent', () => {
       imports: [SidebarComponent],
       providers: [
         provideRouter([]),
-        { provide: WorkspaceStore, useValue: { navigation, clinicsEnabled } },
+        { provide: WorkspaceStore, useValue: { navigation, clinicsEnabled,hasReadyContext:()=>navigation().length>0 } },
         { provide: AuthService, useValue: authServiceMock },
         { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },
         { provide: DoctorProfileService, useValue: profileServiceMock },
@@ -71,7 +71,7 @@ describe('SidebarComponent', () => {
 
   it('should render all nav icons including calculator and sliders', () => {
     const icons = fixture.nativeElement.querySelectorAll('.sidebar-nav ng-icon');
-    expect(icons.length).toBe(5);
+    expect(icons.length).toBe(6);
     icons.forEach((ic: HTMLElement) => {
       const svg = ic.querySelector('svg');
       expect(svg).toBeTruthy();
@@ -94,16 +94,16 @@ describe('SidebarComponent', () => {
     navigation.set([CLINICAL_NAVIGATION.DASHBOARD, CLINICAL_NAVIGATION.PATIENTS, CLINICAL_NAVIGATION.WIZARD]);
     fixture.detectChanges();
     const links = [...fixture.nativeElement.querySelectorAll('.sidebar-nav a')] as HTMLAnchorElement[];
-    expect(links.map(link => link.getAttribute('href'))).toEqual(['/dashboard', '/patients', '/onboarding/setup']);
+    expect(links.map(link => link.getAttribute('href'))).toEqual(['/specialties','/dashboard', '/patients', '/onboarding/setup']);
     expect(fixture.nativeElement.textContent).not.toContain('Vacunación');
     navigation.set([CLINICAL_NAVIGATION.DASHBOARD, CLINICAL_NAVIGATION.VACCINATION, CLINICAL_NAVIGATION.PATIENTS, CLINICAL_NAVIGATION.WIZARD]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')[1].getAttribute('href')).toBe('/vaccination-calendar');
+    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')[2].getAttribute('href')).toBe('/vaccination-calendar');
   });
 
   it('clears clinical navigation while no workspace is loaded', () => {
     navigation.set([]); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')).toHaveLength(1);
   });
 
   it('should toggle collapse state', () => {

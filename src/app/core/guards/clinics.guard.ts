@@ -23,14 +23,16 @@ export const clinicsGuard: CanActivateFn = async () => {
   }
 
   try {
+    // Administration spans every specialty, including when the selection is pending.
+    if ((await workspaceStore.loadContexts()).some(context => context.ready)) return true;
     const setup = await workspaceStore.loadSetup();
     if (!setup?.onboardingCompleted) {
       return router.createUrlTree([
-        setup?.specialty ? '/onboarding/setup' : '/onboarding/specialty',
+        setup?.specialty ? '/onboarding/setup' : '/onboarding/select-specialty',
       ]);
     }
     return true;
   } catch {
-    return router.createUrlTree(['/onboarding/specialty']);
+    return false;
   }
 };

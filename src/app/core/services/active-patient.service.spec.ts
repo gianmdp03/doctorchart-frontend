@@ -1,3 +1,4 @@
+import { ClinicalContextService } from './clinical-context.service';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
@@ -20,6 +21,7 @@ describe('Active patient session ownership', () => {
         const request = new Subject<PatientDetailDTO>(); pending.set(id,request); return request;
       }}},
     ]});
+    TestBed.inject(ClinicalContextService).bind(101);
     service = TestBed.inject(ActivePatientService);
   });
   it('keeps the selected patient when an earlier request arrives late and stores only its ID', () => {
@@ -27,9 +29,9 @@ describe('Active patient session ownership', () => {
     expect(pending.get(1)!.observed).toBe(false);
     pending.get(2)!.next(patient(2)); pending.get(1)!.next(patient(1));
     expect(service.patientId()).toBe(2);
-    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBe('2');
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a:101')).toBe('2');
     expect(sessionStorage.getItem('doctorchart_active_patient_data')).toBeNull();
-    expect(localStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
+    expect(localStorage.getItem('doctorchart_active_patient:doctor-a:101')).toBeNull();
   });
   it('uses the current primary guardian instead of the retired guardian record', () => {
     service.setActivePatient({...patient(1), guardianInfo: {primaryGuardian:'Madre',fatherFullName:'Padre de prueba'}});
@@ -38,25 +40,34 @@ describe('Active patient session ownership', () => {
   it('does not restore cleared data after a late response', () => {
     service.loadPatient(1); service.clear(); pending.get(1)!.next(patient(1));
     expect(service.activePatient()).toBeNull(); expect(service.isLoading()).toBe(false);
-    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a:101')).toBeNull();
   });
   it('removes the previous patient while selecting another, including failed loads', () => {
     service.setActivePatient(patient(1)); service.loadPatient(2);
     expect(service.activePatient()).toBeNull();
     pending.get(2)!.error({status:403});
     expect(service.activePatient()).toBeNull(); expect(service.isLoading()).toBe(false);
-    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a:101')).toBeNull();
   });
   it('keeps a same-patient refresh in context but clears it when access is denied', () => {
     service.setActivePatient(patient(1)); service.loadPatient(1);
     expect(service.patientId()).toBe(1);
     pending.get(1)!.error({status:404}); expect(service.activePatient()).toBeNull();
   });
+  it('retains the same patient and reports a failed refresh after a consultation', () => {
+    service.setActivePatient(patient(1)); service.loadPatient(1);
+    pending.get(1)!.error({status:500});
+    expect(service.patientId()).toBe(1);
+    expect(service.error()).toBeTruthy();
+    expect(service.isLoading()).toBe(false);
+    service.loadPatient(1); pending.get(1)!.next(patient(1));
+    expect(service.error()).toBeNull();
+  });
   it('does not restore the previous patient after a different selection fails temporarily', () => {
     service.setActivePatient(patient(1)); service.loadPatient(2);
     pending.get(2)!.error({status:500});
     expect(service.activePatient()).toBeNull();
-    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a:101')).toBeNull();
   });
   it('keeps clinical selection usable when browser storage is blocked', () => {
     const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('blocked', 'SecurityError'); });
@@ -66,8 +77,8 @@ describe('Active patient session ownership', () => {
     } finally { write.mockRestore(); }
   });
   it('restores only the authenticated account ID after backend revalidation', () => {
-    sessionStorage.setItem('doctorchart_active_patient:doctor-a','1');
-    sessionStorage.setItem('doctorchart_active_patient:doctor-b','2');
+    sessionStorage.setItem('doctorchart_active_patient:doctor-a:101','1');
+    sessionStorage.setItem('doctorchart_active_patient:doctor-b:101','2');
     sessionStorage.setItem('doctorchart_active_patient_data',JSON.stringify(patient(99)));
     sessionStorage.setItem('doctorchart_active_patient_id','99');
     TestBed.tick(); expect(service.activePatient()).toBeNull();
@@ -75,7 +86,7 @@ describe('Active patient session ownership', () => {
     expect(service.patientId()).toBe(1);
     user.set({id:'doctor-b'}); TestBed.tick(); expect(service.activePatient()).toBeNull();
     pending.get(2)!.next(patient(2)); expect(service.patientId()).toBe(2);
-    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBe('1');
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a:101')).toBe('1');
   });
   it('ignores responses after account changes even before effects run', () => {
     service.loadPatient(1); user.set({id:'doctor-b'}); pending.get(1)!.next(patient(1));
@@ -85,7 +96,7 @@ describe('Active patient session ownership', () => {
     service.setActivePatient(patient(1)); user.set(null); TestBed.tick();
     service.setActivePatient(patient(2)); service.loadPatient(2);
     expect(service.activePatient()).toBeNull(); expect(pending.has(2)).toBe(false);
-    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a')).toBeNull();
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a:101')).toBeNull();
   });
   it('renders canonical measurements with existing pediatric precision and no unit guessing', () => {
     service.setActivePatient({...patient(1),latestMeasurements:{weightKg:3.35,heightCm:50,headCircumferenceCm:35}});
@@ -99,5 +110,25 @@ describe('Active patient session ownership', () => {
   it('rejects a response for a different patient', () => {
     service.loadPatient(1); pending.get(1)!.next(patient(2));
     expect(service.activePatient()).toBeNull(); expect(service.error()).toContain('no corresponde');
+  });
+
+  it('isolates selection IDs by context and rejects a late response before effects run', () => {
+    const context=TestBed.inject(ClinicalContextService);
+    service.loadPatient(1);
+    context.bind(202);
+    pending.get(1)!.next(patient(1));
+    expect(service.activePatient()).toBeNull();
+    TestBed.tick();
+    service.setActivePatient({...patient(2),specialtyContextId:202});
+    expect(service.patientId()).toBe(2);
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a:202')).toBe('2');
+    context.bind(101);TestBed.tick();
+    expect(service.activePatient()).toBeNull();
+    expect(sessionStorage.getItem('doctorchart_active_patient:doctor-a:202')).toBe('2');
+  });
+
+  it('rejects an otherwise valid patient from a different context', () => {
+    service.loadPatient(1);pending.get(1)!.next({...patient(1),specialtyContextId:202});
+    expect(service.activePatient()).toBeNull();expect(service.error()).toBeTruthy();
   });
 });

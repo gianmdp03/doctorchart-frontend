@@ -70,3 +70,4 @@ src/environments/environment.local.generated.ts
 /.angular/
 /.angular/bycode-avatar-build.log
 /.angular/bycode-avatar-tests.log
+/src/environments/environment.m6.generated.ts

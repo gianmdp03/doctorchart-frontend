@@ -1,3 +1,4 @@
+import { ClinicalContextService } from './clinical-context.service';
 import { ActivePatientService } from './active-patient.service';
 import { AuthService } from './auth.service';
 import { effect, inject, Injectable, signal, untracked } from '@angular/core';
@@ -17,12 +18,13 @@ import { PagedResponse } from '../models/api-response.model';
   providedIn: 'root',
 })
 export class ClinicalEncounterService {
+  private readonly clinicalScope = inject(ClinicalContextService);
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/encounters`;
 
   private readonly auth = inject(AuthService);
   private readonly activePatient = inject(ActivePatientService);
-  private contextKey(): string { return JSON.stringify([this.auth.currentUser()?.id ?? null, this.activePatient.patientId()]); }
+  private contextKey(): string { return JSON.stringify([this.auth.currentUser()?.id ?? null, this.clinicalScope.id(), this.activePatient.patientId()]); }
   private context = this.contextKey();
   private syncContext(): void {
     const context = this.contextKey();
@@ -31,7 +33,7 @@ export class ClinicalEncounterService {
   private detailRead = 0;
   private listRead = 0;
   constructor() {
-    effect(() => { this.auth.currentUser(); this.activePatient.patientId(); untracked(() => this.syncContext()); });
+    effect(() => { this.auth.currentUser(); this.clinicalScope.id(); this.activePatient.patientId(); untracked(() => this.syncContext()); });
   }
   private generation = 0;
   clear(): void {

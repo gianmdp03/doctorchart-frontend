@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import {
   DestroyRef,
   effect,
@@ -23,6 +24,7 @@ import { PatientRecordDraftsService } from '../patient-record-drafts.service';
 
 @Injectable()
 export class PatientEncountersStore {
+  private readonly clinicalScope = inject(ClinicalContextService);
   private readonly recordActions = inject(PatientRecordActionsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
@@ -74,6 +76,7 @@ export class PatientEncountersStore {
     effect(() => {
       const patient = this.activePatientService.activePatient();
       this.authService.currentUser();
+      this.clinicalScope.id();
       untracked(() => {
         const context = this.contextKey();
         if (context !== this.recordContext) {
@@ -95,6 +98,7 @@ export class PatientEncountersStore {
   private contextKey(): string {
     return JSON.stringify([
       this.authService.currentUser()?.id ?? null,
+      this.clinicalScope.id(),
       this.activePatientService.patientId(),
     ]);
   }
@@ -110,7 +114,7 @@ export class PatientEncountersStore {
           if (
             revision !== this.encounterRead ||
             patientId !== this.activePatientService.patientId() ||
-            owner !== this.authService.currentUser()?.id
+            owner !== this.authService.currentUser()?.id || this.recordContext !== this.contextKey()
           )
             return;
           this.encounters.set(data || []);
@@ -120,7 +124,7 @@ export class PatientEncountersStore {
           if (
             revision !== this.encounterRead ||
             patientId !== this.activePatientService.patientId() ||
-            owner !== this.authService.currentUser()?.id
+            owner !== this.authService.currentUser()?.id || this.recordContext !== this.contextKey()
           )
             return;
           this.encounters.set([]);

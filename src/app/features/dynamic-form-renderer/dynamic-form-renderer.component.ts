@@ -19,7 +19,6 @@ import {
   WizardValue,
   WizardFormulaResults,
   CLINICAL_HISTORY_GROUPS,
-  clinicalHistoryValid,
 } from '../../core/models/wizard-definition.model';
 import { ClinicalHistoryFieldsComponent } from './clinical-history-fields.component';
 import { isWizardFieldVisible } from '../../core/models/wizard-record-display';
@@ -85,7 +84,6 @@ export class DynamicFormRendererComponent {
   readonly todayIso = todayDate();
   readonly formValid = computed(
     () =>
-      clinicalHistoryValid(this.currentValues()) &&
       this.fields().every((field) => !this.isFieldVisible(field.key) || this.validField(field)),
   );
   setHistoryValues(values: WizardFormValues): void {
@@ -128,6 +126,9 @@ export class DynamicFormRendererComponent {
     this.currentValues.update((values) => ({
       ...values,
       [field.key]: (value === '' ? null : value) as WizardValue,
+      ...(CLINICAL_HISTORY_GROUPS.some(group => group.status === field.key) && value !== 'PRESENT'
+        ? Object.fromEntries(CLINICAL_HISTORY_GROUPS.filter(group => group.status === field.key && this.fields().some(item => item.key === group.details)).map(group => [group.details, null]))
+        : {}),
     }));
     this.valuesChange.emit(structuredClone(inputValues(this.definition(), this.currentValues())));
   }
@@ -148,12 +149,13 @@ export class DynamicFormRendererComponent {
   }
   fieldError(field: WizardFieldDefinition): string | null {
     const group = CLINICAL_HISTORY_GROUPS.find((g) => g.details === field.key);
-    if (
-      group &&
-      this.currentValues()[group.status] === 'PRESENT' &&
-      !String(this.currentValues()[field.key] ?? '').trim()
-    )
-      return 'Detallá la información seleccionada.';
+    if (group && this.fields().some(item => item.key === group.status && this.isFieldVisible(item.key))) {
+      const details = String(this.currentValues()[field.key] ?? '').trim();
+      const status = this.currentValues()[group.status];
+      if (details.length > 4000) return 'Ingresá hasta 4000 caracteres.';
+      if (status === 'PRESENT' && !details) return 'Detallá la información seleccionada.';
+      if (status !== 'PRESENT' && details) return `Indicá que hay información en «${group.title}» o quitá el detalle.`;
+    }
     return wizardFieldError(field, this.currentValues()[field.key], this.todayIso);
   }
   validField(field: WizardFieldDefinition): boolean {

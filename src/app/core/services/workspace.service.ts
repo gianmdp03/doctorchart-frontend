@@ -4,38 +4,41 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   QuickNotesUpdateRequest, SaveOnboardingDraftRequest, SelectSpecialtyRequest,
-  VersionRequest, WorkspacePreferences, WorkspaceSetup, WorkspaceUpdateRequest,
+  ContextVersionRequest, WorkspacePreferences, WorkspaceSetup, WorkspaceUpdateRequest,
+  SpecialtyContextSummary,
 } from '../models/workspace.model';
 
 @Injectable({ providedIn: 'root' })
 export class WorkspaceService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
-  getCurrentSetup(): Observable<WorkspaceSetup | null> {
-    return this.http.get<WorkspaceSetup | null>(`${this.baseUrl}/workspace`);
+  getContexts(){return this.http.get<SpecialtyContextSummary[]>(`${this.baseUrl}/workspace/contexts`);}
+  addContext(specialtyId:number){return this.http.post<WorkspaceSetup>(`${this.baseUrl}/workspace/contexts`,{specialtyId});}
+  getCurrentSetup(contextId?:number): Observable<WorkspaceSetup | null> {
+    return this.http.get<WorkspaceSetup | null>(`${this.baseUrl}/workspace`,{params:contextId?{specialtyContextId:String(contextId)}:{}});
   }
   selectSpecialty(payload: SelectSpecialtyRequest): Observable<WorkspaceSetup> {
     return this.http.put<WorkspaceSetup>(`${this.baseUrl}/workspace/specialty`, payload);
   }
-  finishOnboarding(payload: VersionRequest): Observable<WorkspaceSetup> {
+  finishOnboarding(payload: ContextVersionRequest): Observable<WorkspaceSetup> {
     return this.http.post<WorkspaceSetup>(`${this.baseUrl}/workspace/finish-onboarding`, payload);
   }
   saveOnboardingDraft(payload: SaveOnboardingDraftRequest): Observable<WorkspaceSetup> {
     return this.http.put<WorkspaceSetup>(`${this.baseUrl}/workspace/wizard/draft`, payload);
   }
-  discardDraft(payload: VersionRequest): Observable<WorkspaceSetup> {
+  discardDraft(payload: ContextVersionRequest): Observable<WorkspaceSetup> {
     return this.http.post<WorkspaceSetup>(`${this.baseUrl}/workspace/wizard/discard-draft`, payload);
   }
-  resetToDefaults(payload: VersionRequest): Observable<WorkspaceSetup> {
+  resetToDefaults(payload: ContextVersionRequest): Observable<WorkspaceSetup> {
     return this.http.post<WorkspaceSetup>(`${this.baseUrl}/workspace/reset-to-defaults`, payload);
   }
-  getPreferences(): Observable<WorkspacePreferences> {
-    return this.http.get<WorkspacePreferences>(`${this.baseUrl}/workspace/preferences`);
+  getPreferences(contextId?:number): Observable<WorkspacePreferences> {
+    return this.http.get<WorkspacePreferences>(`${this.baseUrl}/workspace/preferences`,{params:contextId?{specialtyContextId:String(contextId)}:{}});
   }
-  updateQuickNotes(payload: QuickNotesUpdateRequest): Observable<WorkspacePreferences> {
-    return this.http.put<WorkspacePreferences>(`${this.baseUrl}/workspace/quick-notes`, payload);
+  updateQuickNotes(payload: QuickNotesUpdateRequest,contextId?:number): Observable<WorkspacePreferences> {
+    return this.http.put<WorkspacePreferences>(`${this.baseUrl}/workspace/quick-notes`, payload,{params:contextId?{specialtyContextId:String(contextId)}:{}});
   }
-  updateWorkspace(payload: WorkspaceUpdateRequest): Observable<WorkspacePreferences> {
-    return this.http.put<WorkspacePreferences>(`${this.baseUrl}/workspace/preferences`, payload);
+  updateWorkspace(payload: WorkspaceUpdateRequest,contextId?:number): Observable<WorkspacePreferences> {
+    return this.http.put<WorkspacePreferences>(`${this.baseUrl}/workspace/preferences`, payload,{params:contextId?{specialtyContextId:String(contextId)}:{}});
   }
 }

@@ -1,3 +1,4 @@
+import { ClinicalContextService } from './clinical-context.service';
 import { Subscription } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ActivePatientService } from './active-patient.service';
@@ -30,6 +31,7 @@ export const INITIAL_ASSISTANT_MESSAGE: ChatMessage = {
   providedIn: 'root',
 })
 export class AiChatService {
+  private readonly clinicalScope = inject(ClinicalContextService);
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly patient = inject(ActivePatientService);
@@ -39,7 +41,7 @@ export class AiChatService {
   readonly contextRevision = signal(0);
   constructor() {
     this.syncContext();
-    effect(() => { this.auth.currentUser(); this.patient.activePatient(); this.workspace.specialtyCode(); this.workspace.activeModules(); untracked(() => this.syncContext()); });
+    effect(() => { this.auth.currentUser(); this.clinicalScope.id(); this.patient.activePatient(); this.workspace.specialtyCode(); this.workspace.activeModules(); untracked(() => this.syncContext()); });
     inject(DestroyRef).onDestroy(() => this.request?.unsubscribe());
   }
   syncContext(): void {
@@ -48,7 +50,7 @@ export class AiChatService {
     this.context = context; this.clearHistory(); this.isOpen.set(false);
   }
   private contextKey(): string {
-    return JSON.stringify([this.auth.currentUser()?.id ?? null, this.patient.activePatient()?.id ?? null, this.workspace.specialtyCode(), this.workspace.isModuleActive('AI_ASSISTANT')]);
+    return JSON.stringify([this.auth.currentUser()?.id ?? null, this.clinicalScope.id(), this.patient.activePatient()?.id ?? null, this.workspace.specialtyCode(), this.workspace.isModuleActive('AI_ASSISTANT')]);
   }
 
 

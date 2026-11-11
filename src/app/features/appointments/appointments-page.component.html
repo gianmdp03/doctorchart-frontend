@@ -8,7 +8,7 @@
  </header>
  <main>
  @if(confirmation();as c){
-  <section class="confirmation" aria-labelledby="confirmation-title"><div class="confirmed-symbol" aria-hidden="true">✓</div><p class="eyebrow">TURNO CONFIRMADO</p><h1 id="confirmation-title">Tu próxima consulta, organizada.</h1><p>La reserva de <strong>{{c.attendeeName}}</strong> se confirmó con {{c.doctorName}}.</p><div class="confirmation-card"><strong>{{displayDay(civilDate(c.start,c.timezone))}}</strong><span>{{localTime(c.start,c.timezone)}} – {{localTime(c.end,c.timezone)}}</span><h2>{{c.clinicName}}</h2><p>{{c.address}}</p><p class="muted">Hora local del consultorio</p><small>Referencia administrativa</small><code>{{c.reference}}</code></div>@if(c.accessCode){<section class="confirmation-card"><h2>Guardá tu código privado</h2><code style="overflow-wrap:anywhere">{{c.accessCode}}</code><p>Podés usarlo para <a routerLink="/appointments/confirmation">consultar tu turno</a>. También enviaremos un correo administrativo. Si el correo demora, tu reserva ya está confirmada y este código funciona.</p><p class="muted">No compartas el código. No lo guardamos en el navegador.</p></section>}@else{<p class="muted">Guardá esta confirmación. Al refrescar se cierra esta vista; tu reserva permanece confirmada.</p>}<a [routerLink]="['/appointments',confirmationDoctorId()]" (click)="confirmation.set(null);loadProfile()">Volver al profesional</a></section>
+  <section class="confirmation" aria-labelledby="confirmation-title"><div class="confirmed-symbol" aria-hidden="true">✓</div><p class="eyebrow">TURNO CONFIRMADO</p><h1 id="confirmation-title">Tu próxima consulta, organizada.</h1><p>La reserva de <strong>{{c.attendeeName}}</strong> se confirmó con {{c.doctorName}}.</p><div class="confirmation-card"><strong>{{displayDay(civilDate(c.start,c.timezone))}}</strong><span>{{localTime(c.start,c.timezone)}} – {{localTime(c.end,c.timezone)}}</span>@if(c.specialtyName){<p>{{c.specialtyName}}</p>}<h2>{{c.clinicName}}</h2><p>{{c.address}}</p><p class="muted">Hora local del consultorio</p><small>Referencia administrativa</small><code>{{c.reference}}</code></div>@if(c.accessCode){<section class="confirmation-card"><h2>Guardá tu código privado</h2><code style="overflow-wrap:anywhere">{{c.accessCode}}</code><p>Podés usarlo para <a routerLink="/appointments/confirmation">consultar tu turno</a>. También enviaremos un correo administrativo. Si el correo demora, tu reserva ya está confirmada y este código funciona.</p><p class="muted">No compartas el código. No lo guardamos en el navegador.</p></section>}@else{<p class="muted">Guardá esta confirmación. Al refrescar se cierra esta vista; tu reserva permanece confirmada.</p>}<a [routerLink]="['/appointments',confirmationDoctorId()]" (click)="confirmation.set(null);loadProfile()">Volver al profesional</a></section>
  }@else if(!id()){
   <section class="directory-intro" aria-labelledby="directory-title">
    <p class="eyebrow">TURNOS MÉDICOS ONLINE · {{ country.name }}</p>
@@ -54,8 +54,8 @@
         <h3>{{doctor.name}}</h3>
         <strong class="result-clinic">{{clinic.name}}</strong>
         <p class="result-address">{{clinic.address}}<br />{{clinic.city}}, {{clinic.province}}</p>
-        <p class="eyebrow result-specialty">{{doctor.specialty}}</p>
-        <a class="profile-link" [routerLink]="['/appointments',doctor.id]" [queryParams]="{clinic:clinic.id}">Ver horarios <span aria-hidden="true">↗</span></a>
+        <p class="eyebrow result-specialty">{{specialtyNames(doctor)}}</p>
+        <a class="profile-link" [routerLink]="['/appointments',doctor.id]" [queryParams]="{clinic:clinic.id,specialtyContextId:directContext(doctor)}">Ver horarios <span aria-hidden="true">↗</span></a>
        </article>
       }
      }
@@ -68,9 +68,9 @@
   @if(error()){<div class="empty"><h1>Reservas no disponibles</h1><p role="alert">{{error()}}</p><button (click)="loadProfile()">Reintentar</button></div>}
   @if(busy()&&!profile()){<p role="status" class="empty">Consultando el perfil…</p>}
   @if(profile();as d){
-   <section class="professional"><div class="professional-monogram" aria-hidden="true">{{d.name.slice(0,1)}}</div><div><p class="eyebrow">{{d.specialty}}</p><h1>{{d.name}}</h1><p>{{d.description}}</p></div></section>
+   <section class="professional"><div class="professional-monogram" aria-hidden="true">{{d.name.slice(0,1)}}</div><div><p class="eyebrow">{{specialtyNames(d)}}</p><h1>{{d.name}}</h1><p>{{d.description}}</p></div></section>
    <div class="booking-layout"><section class="availability" aria-label="Seleccionar consultorio y horario"><div class="section-heading"><h2>1. Elegí dónde y cuándo</h2><span class="muted">Hora local del consultorio</span></div>
-    <div class="clinic-options">@for(c of d.clinics;track c.id){<button [class.selected]="clinicId()===c.id" [attr.aria-pressed]="clinicId()===c.id" [disabled]="sending()" (click)="changeClinic(c.id)"><strong>{{c.name}}</strong><span>{{c.address}} · {{c.city}}, {{c.province}}, {{c.country}}</span></button>}</div>
+    @if(d.specialties && d.specialties.length>1){<label>Especialidad<select aria-label="Especialidad de la reserva" [ngModel]="specialtyContextId()" (ngModelChange)="changeSpecialty($event)" [disabled]="sending()"><option value="" disabled>Elegí una especialidad</option>@for(context of d.specialties;track context.id){<option [value]="context.id">{{context.name}}</option>}</select></label>}<div class="clinic-options">@for(c of contextClinics();track c.id){<button [class.selected]="clinicId()===c.id" [attr.aria-pressed]="clinicId()===c.id" [disabled]="sending()" (click)="changeClinic(c.id)"><strong>{{c.name}}</strong><span>{{c.address}} · {{c.city}}, {{c.province}}, {{c.country}}</span></button>}</div>
     <div class="date-navigation"><button aria-label="Semana anterior" (click)="navigate(-1)" [disabled]="sending()">←</button><label>Desde<app-date-picker inputId="public-date" [value]="date" (valueChange)="changeDate($event)" /></label><button aria-label="Semana siguiente" (click)="navigate(1)" [disabled]="sending()">→</button></div>
     @if(slotError()){<p role="alert" class="notice error">{{slotError()}} <button (click)="loadSlots()" [disabled]="sending()">Reintentar</button></p>}
     @if(slotsBusy()){<p role="status" class="empty">Consultando horarios disponibles…</p>}

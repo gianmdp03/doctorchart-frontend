@@ -13,21 +13,21 @@ describe('System clinical history in patient and encounter forms', () => {
   beforeEach(() => TestBed.configureTestingModule({ imports: [DynamicFormRendererComponent] }));
   const setup = () => {
     const fixture = TestBed.createComponent(DynamicFormRendererComponent);
-    fixture.componentRef.setInput('definition', withClinicalHistory({ categories: [] }));
+    // Older clinical snapshots retain their specialized read-only renderer.
+    fixture.componentRef.setInput('definition', { categories: [{ ...createClinicalHistoryCategory(), system: true }] });
     fixture.detectChanges();
     return fixture;
   };
-  it('is included in both default forms for every specialty and is supplemented only once', () => {
+  it('does not reinsert removed history or duplicate it in encounters, and unlocks legacy definitions', () => {
     const d = createDefaultWizardDefinition();
-    for (const form of [d.patientForm, d.encounterForm]) {
-      expect(form.categories.find((c) => c.key === 'sys_clinical_history')).toEqual(
-        createClinicalHistoryCategory(),
-      );
-      expect(
-        withClinicalHistory(form).categories.filter((c) => c.key === 'sys_clinical_history'),
-      ).toHaveLength(1);
-    }
-    expect(createClinicalHistoryCategory().fields.every((f) => f.system)).toBe(true);
+    expect(d.patientForm.categories.find(c => c.key === 'sys_clinical_history')).toEqual(createClinicalHistoryCategory());
+    expect(d.encounterForm.categories).toHaveLength(0);
+    expect(withClinicalHistory({ categories: [] }).categories).toHaveLength(0);
+    const legacy = { categories: [{ ...createClinicalHistoryCategory(), system: true }] };
+    const editable = withClinicalHistory(legacy);
+    expect(legacy.categories[0].system).toBe(true);
+    expect(editable.categories[0].system).toBeFalsy();
+    expect(editable.categories[0].fields.every(f => !f.system)).toBe(true);
   });
   it('does not treat unanswered allergy, condition or medication questions as negative facts', () => {
     const fixture = setup();

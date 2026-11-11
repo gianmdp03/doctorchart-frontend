@@ -4,7 +4,7 @@
   <div class="date-navigation"><button aria-label="Período anterior" (click)="navigate(-1)">‹</button><button (click)="changeDate(dateToday())">Hoy</button><button aria-label="Período siguiente" (click)="navigate(1)">›</button></div>
   <label class="date-control">Desde<app-date-picker inputId="calendar-date" [value]="date" (valueChange)="changeDate($event)" /></label>
   <div class="view-control" aria-label="Vista"><button [attr.aria-pressed]="view==='day'" (click)="changeView('day')">Día</button><button [attr.aria-pressed]="view==='week'" (click)="changeView('week')">Semana</button></div>
-  <label class="clinic-control">Consultorio<select id="calendar-clinic" [ngModel]="clinicId" (ngModelChange)="changeClinic($event)"><option value="">Todos mis consultorios</option>@for(c of clinics();track c.id){<option [value]="c.id">{{c.name}}{{c.status==='ACTIVE'?'':' · '+c.status}}</option>}</select></label>
+  <label>Especialidad<select aria-label="Filtrar agenda por especialidad" [(ngModel)]="contextFilter" (ngModelChange)="changeFilters()"><option value="">Todas las especialidades</option>@for(context of workspace.contexts();track context.id){<option [value]="''+context.id">{{context.specialty.name}}</option>}</select></label><label>Estado<select aria-label="Filtrar agenda por estado" [(ngModel)]="statusFilter" (ngModelChange)="changeFilters()"><option value="">Todos los estados</option>@for(status of statuses;track status){<option [value]="status">{{labels[status]}}</option>}</select></label><label class="clinic-control">Consultorio<select id="calendar-clinic" [ngModel]="clinicId" (ngModelChange)="changeClinic($event)"><option value="">Todos mis consultorios</option>@for(c of clinics();track c.id){<option [value]="c.id">{{c.name}}{{c.status==='ACTIVE'?'':' · '+c.status}}</option>}</select></label>
   <button (click)="load()" [disabled]="loading()" aria-label="Actualizar calendario">↻ Actualizar</button>
  </section>
  @if(error()){<div class="notice error" role="alert">{{error()}} <button (click)="load()">Reintentar</button></div>}
@@ -18,9 +18,9 @@
  @else if(!clinics().length&&!error()){<div class="empty"><h2>Tu agenda empieza con un consultorio</h2><p>Configurá una sede y sus horarios para ofrecer turnos.</p><a routerLink="/clinics">Ir a consultorios</a></div>}
  @else { @for(day of days();track day.date){
   <article class="day"><header><span>{{weekday(day.date)}}</span><h2>{{displayDay(day.date)}}</h2><p>{{day.bookings.length}} turnos · {{day.slots.length}} disponibles</p></header>
-   <div class="reservations">@for(b of day.bookings;track b.id){<button class="booking" [class.cancelled]="b.status==='CANCELLED'" [attr.data-status]="b.status" [attr.data-booking-id]="b.id" (click)="openBooking(b)" [disabled]="writing()"><span class="booking-time">{{time(b)}} @if(slotOffsetLabel(b.start,clinic(b.clinicId)?.timezone??'UTC'); as offset){<small>{{offset}}</small>}</span><strong>{{b.attendeeName||b.contactName}}</strong><span class="status">{{labels[b.status]}}</span><span class="location">{{clinic(b.clinicId)?.name}}</span></button>}
+   <div class="reservations">@for(b of day.bookings;track b.id){<button class="booking" [class.cancelled]="b.status==='CANCELLED'" [attr.data-status]="b.status" [attr.data-booking-id]="b.id" (click)="openBooking(b)" [disabled]="writing()"><span class="booking-time">{{time(b)}} @if(slotOffsetLabel(b.start,bookingZone(b)); as offset){<small>{{offset}}</small>}</span><strong>{{b.attendeeName||b.contactName}}</strong><span class="status">{{labels[b.status]}}</span><span class="specialty">{{specialtyName(b)}}</span><span class="location">{{bookingClinic(b)}}</span></button>}
    @if(!day.bookings.length){<p class="muted no-bookings">Sin turnos registrados</p>}</div>
-   <details class="available-slots" [open]="view==='day'"><summary>{{day.slots.length}} horarios disponibles</summary><div class="slots">@for(s of day.slots;track s.clinic.id+s.start){<button class="slot" [attr.data-slot-start]="s.start" [disabled]="!canBook()||writing()" (click)="openSlot(s)"><span>{{localTime(s.start,s.clinic.timezone)}} @if(slotOffsetLabel(s.start,s.clinic.timezone); as offset){<small>{{offset}}</small>}</span><span>{{s.clinic.name}}</span></button>}@if(!day.slots.length){<p class="muted">Sin disponibilidad para este día.</p>}</div></details>
+   <details class="available-slots" [open]="view==='day'"><summary>{{day.slots.length}} horarios disponibles</summary><div class="slots">@for(s of day.slots;track s.clinic.id+s.start){<button class="slot" [attr.data-slot-start]="s.start" [disabled]="!canBook()||writing()" (click)="openSlot(s)"><span>{{localTime(s.start,s.clinic.timezone)}} @if(slotOffsetLabel(s.start,s.clinic.timezone); as offset){<small>{{offset}}</small>}</span><span>{{s.clinic.name}}</span><span>{{slotSpecialty(s)}}</span></button>}@if(!day.slots.length){<p class="muted">Sin disponibilidad para este día.</p>}</div></details>
   </article>
  } }
  </section>
@@ -30,7 +30,7 @@
   @if(editorError()){<p class="notice error" role="alert">{{editorError()}}</p>}
   @if(detailBusy()){<p role="status">Consultando la versión vigente…</p>}
   @if(editor()==='create'&&slot();as s){
-   <div class="slot-summary"><strong>{{displayDay(civilDay(s.start,s.clinic.timezone))}} · {{localTime(s.start,s.clinic.timezone)}} – {{localTime(s.end,s.clinic.timezone)}}</strong><span>{{s.clinic.name}}</span><small>Hora local del consultorio</small></div>
+   <div class="slot-summary"><strong>{{displayDay(civilDay(s.start,s.clinic.timezone))}} · {{localTime(s.start,s.clinic.timezone)}} – {{localTime(s.end,s.clinic.timezone)}}</strong><span>{{s.clinic.name}}</span><strong>{{slotSpecialty(s)}}</strong><small>Hora local del consultorio</small></div>@if(needsBookingContext()){<button type="button" [disabled]="writing()" (click)="useBookingContext()">Trabajar en la especialidad de este turno</button>}
    <form (ngSubmit)="create()" #createForm="ngForm">
     <fieldset [disabled]="writing()"><legend>Solicitante</legend><label>Nombre y apellido<input id="booking-contact" name="contactName" [(ngModel)]="contactName" maxlength="160" required autocomplete="name" /></label><label>Teléfono de contacto <span class="muted">(opcional)</span><input id="booking-phone" name="phone" [(ngModel)]="contactPhone" maxlength="80" type="tel" autocomplete="tel" /></label>
     <label class="checkbox"><input id="booking-different" name="different" type="checkbox" [(ngModel)]="differentPerson" />El turno es para otra persona</label>
@@ -46,9 +46,20 @@
    </form>
   }
   @if(selected();as b){
-   <div class="slot-summary"><strong>{{displayDay(civilDay(b.start,clinic(b.clinicId)?.timezone??'UTC'))}} · {{time(b)}} – {{localTime(b.end,clinic(b.clinicId)?.timezone??'UTC')}}</strong><span>{{clinic(b.clinicId)?.name}}</span><span class="status">{{labels[b.status]}}</span></div>
-   <dl><dt>Solicitante</dt><dd>{{b.contactName}}</dd><dt>Teléfono</dt><dd>{{b.contactPhone||'Sin registrar'}}</dd><dt>Historia clínica</dt><dd>{{b.patientId?'Vinculada · #'+b.patientId:'Sin vincular'}}</dd></dl>
+   <div class="slot-summary"><strong>{{displayDay(civilDay(b.start,bookingZone(b)))}} · {{time(b)}} – {{localTime(b.end,bookingZone(b))}}</strong><span>{{bookingClinic(b)}}</span><strong>{{specialtyName(b)}}</strong><span class="status">{{labels[b.status]}}</span></div>
+   @if(b.patientId && b.specialtyContextId){<p><a [routerLink]="['/records',b.patientId]" [queryParams]="{specialtyContextId:b.specialtyContextId}">Abrir ficha de {{specialtyName(b)}}</a></p>}@if(needsBookingContext()){<button type="button" [disabled]="writing()" (click)="useBookingContext()">Trabajar en la especialidad de este turno</button>}<dl><dt>Solicitante</dt><dd>{{b.contactName}}</dd><dt>Teléfono</dt><dd>{{b.contactPhone||'Sin registrar'}}</dd><dt>Historia clínica</dt><dd>{{b.patientId?'Vinculada · #'+b.patientId:'Sin vincular'}}</dd></dl>
    @if(editor()==='detail'){
+    @if(!b.patientId){
+     <details class="patient-link"><summary>Vincular ficha clínica</summary><p class="muted">Elegí una ficha de {{specialtyName(b)}}. Esta acción no crea una consulta ni cambia el nombre administrativo del turno.</p>
+      @if(canLinkPatient()){
+       <label>Buscar ficha por nombre<input id="existing-patient-search" [(ngModel)]="patientSearch" /></label><button type="button" [disabled]="patientBusy()||patientSearch.trim().length<2" (click)="searchPatients()">Buscar ficha</button>
+       @for(p of patientResults();track p.id){<button type="button" class="patient-result" (click)="link(p)">{{p.fullName}} · {{p.nationalId||'Sin documento registrado'}}</button>}
+       @if(linkedPatient();as p){<p>Ficha elegida: <strong>{{p.fullName}}</strong></p><button id="booking-link-patient" type="button" class="primary" (click)="linkExistingPatient()">Confirmar vínculo con esta ficha</button>}
+       <p><a routerLink="/patients/new" [queryParams]="{specialtyContextId:b.specialtyContextId}">Crear una ficha clínica</a> y luego volver para vincularla.</p>
+      }@else{<p class="muted">Elegí la especialidad de este turno para buscar su ficha y verificá tus permisos.</p>}
+      @if(patientError()){<p role="alert">{{patientError()}}</p>}
+     </details>
+    }
     <div class="state-actions">@for(target of transitions(b.status);track target){<button [class.danger]="target==='CANCELLED'" [disabled]="!allowed()||writing()||conflict()||detailBusy()" (click)="status(target)">{{target==='CANCELLED'?'Cancelar turno':'Marcar: '+labels[target]}}</button>}
     @if(b.status==='CONFIRMED'){<button id="booking-move" class="primary" [disabled]="!canBook()||writing()||conflict()||detailBusy()" (click)="beginMove()">Reprogramar</button>}</div>
    }

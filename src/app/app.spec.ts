@@ -60,7 +60,7 @@ describe('App recovers the empty entry route after login', () => {
       ]),
       {provide:AuthService,useValue:{currentUser,authReady:Promise.resolve(),isLoggedIn:computed(()=>!!currentUser()),isSuperAdmin:()=>false,hasDoctorchartPlan:()=>true,openLoginModal:vi.fn()}},
       {provide:DoctorProfileService,useValue:{clearProfile:vi.fn(),loadProfile}},
-      {provide:WorkspaceStore,useValue:{clearSetup:vi.fn(),loadSetup:vi.fn().mockResolvedValue(null),isOnboardingCompleted:()=>false}},
+      {provide:WorkspaceStore,useValue:{loadContexts:async()=>[],contexts:()=>[],clearSetup:vi.fn(),loadSetup:vi.fn().mockResolvedValue(null),isOnboardingCompleted:()=>false}},
       {provide:ActivePatientService,useValue:{clear:vi.fn()}},
       {provide:ClinicalEncounterService,useValue:{clear:vi.fn()}},
     ]}).overrideComponent(App,{set:{imports:[RouterOutlet],template:'<router-outlet />'}}).compileComponents();
@@ -86,13 +86,13 @@ describe('App recovers the empty entry route after login', () => {
 
   it('restores the requested patient route when session initialization cancelled initial navigation', async () => {
     const previous = window.location.href;
-    window.history.replaceState(null, '', '/patients');
+    window.history.replaceState(null, '', '/patients?specialtyContextId=202');
     try {
       const fixture = TestBed.createComponent(App); fixture.detectChanges();
       const router = TestBed.inject(Router);
-      expect(await router.navigateByUrl('/login?returnUrl=%2Fpatients')).toBe(true);
+      expect(await router.navigateByUrl('/login?returnUrl=%2Fpatients%3FspecialtyContextId%3D202')).toBe(true);
       currentUser.set(doctor); fixture.detectChanges(); await fixture.whenStable();
-      await vi.waitFor(() => expect(router.url).toBe('/patients'));
+      await vi.waitFor(() => expect(router.url).toBe('/patients?specialtyContextId=202'));
     } finally { window.history.replaceState(null, '', previous); }
   });
 

@@ -15,6 +15,7 @@ describe('ClinicalEncounterService canonical records', () => {
   const record: ClinicalEncounterDetail = {
     ...clinicalFormFixture(), id: 10, patientId: 1, patientFullName: 'Ada',
     encounterDate: '2026-09-17T20:00:00-03:00', consultationType: 'FIRST_VISIT',
+    specialtyContextId: 101,
     specialtyId: 7, specialty: {id:7,code:'custom_xyz',name:'Especialidad XYZ',description:null},
   };
   const base = `${environment.apiUrl}/encounters`;

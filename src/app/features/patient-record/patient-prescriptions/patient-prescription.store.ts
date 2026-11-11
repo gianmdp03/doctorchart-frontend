@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -8,25 +9,27 @@ import { PatientPrescriptionService } from '../../../core/services/patient-presc
 /** Component-scoped history: HTTP responses cannot cross patient changes or outlive the screen. */
 @Injectable()
 export class PatientPrescriptionStore {
+ private readonly clinicalScope = inject(ClinicalContextService);
+ private contextKey(): string | null { const owner=this.auth.currentUser()?.id; return owner ? JSON.stringify([owner,this.clinicalScope.id()]) : null; }
   private readonly api = inject(PatientPrescriptionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly changed = new Subject<void>();
   private readonly auth = inject(AuthService);
-  private owner = this.auth.currentUser()?.id ?? null;
+  private owner = this.contextKey();
   private patientId: number | null = null;
   constructor() {
-    effect(() => { this.auth.currentUser(); untracked(() => {
+    effect(() => { this.auth.currentUser(); this.clinicalScope.id(); untracked(() => {
       this.syncOwner();
     }); });
   }
   private syncOwner(): void {
-    const owner = this.auth.currentUser()?.id ?? null;
+    const owner = this.contextKey();
     if (owner === this.owner) return;
     this.owner = owner; this.changed.next(); this.patientId = null;
     this.records.set([]); this.loading.set(false); this.writing.set(false);
     this.loadError.set(null); this.error.set(null); this.success.set(null);
   }
-  private currentOwner(): boolean { return this.owner === (this.auth.currentUser()?.id ?? null); }
+  private currentOwner(): boolean { return this.owner === (this.contextKey()); }
 
   readonly records = signal<SavedPrescriptionRecord[]>([]);
   readonly loading = signal(false);

@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../core/services/clinical-context.service';
 import {
   Component,
   DestroyRef,
@@ -60,6 +61,8 @@ export interface RecordTabItem {
   styleUrl: './patient-record.component.css',
 })
 export class PatientRecordComponent implements OnInit {
+  private readonly clinicalScope = inject(ClinicalContextService);
+  private requestedPatientId: number | null = null;
   readonly recordActions = inject(PatientRecordActionsService);
   readonly history = inject(PatientEncountersStore);
   readonly growth = inject(PatientGrowthStore);
@@ -75,6 +78,7 @@ export class PatientRecordComponent implements OnInit {
   private scrolledSource = '';
   private recordContext = JSON.stringify([
     this.authService.currentUser()?.id ?? null,
+      this.clinicalScope.id(),
     this.activePatientService.patientId(),
   ]);
   readonly selectedTab = signal<PatientRecordTab>('resumen');
@@ -121,6 +125,7 @@ export class PatientRecordComponent implements OnInit {
     effect(() => {
       const context = JSON.stringify([
         this.authService.currentUser()?.id ?? null,
+      this.clinicalScope.id(),
         this.activePatientService.patientId(),
       ]);
       const tabs = this.tabs();
@@ -148,6 +153,7 @@ export class PatientRecordComponent implements OnInit {
       if (idParam) {
         const id = Number(idParam);
         if (!isNaN(id) && id > 0) {
+          this.requestedPatientId = id;
           this.activePatientService.loadPatient(id);
         }
       }
@@ -169,6 +175,10 @@ export class PatientRecordComponent implements OnInit {
       }
     });
   }
+  retryPatientLoad(): void {
+    if (this.requestedPatientId !== null) this.activePatientService.loadPatient(this.requestedPatientId);
+  }
+
   @HostListener('window:encounter-created', ['$event'])
   @HostListener('window:encounter-updated', ['$event'])
   @HostListener('window:encounter-deleted', ['$event'])

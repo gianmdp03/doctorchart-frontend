@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import { Subject, takeUntil } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/services/auth.service';
@@ -32,6 +33,7 @@ import { validIsoDate } from '../../../core/models/form-validation';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientVaccinationsComponent {
+  private readonly clinicalScope = inject(ClinicalContextService);
   private readonly api = inject(PatientVaccinationService);
   private readonly patients = inject(PatientService);
   private readonly auth = inject(AuthService);
@@ -62,7 +64,7 @@ export class PatientVaccinationsComponent {
   constructor() {
     effect(() => {
       this.patient();
-      this.auth.currentUser();
+      this.auth.currentUser(); this.clinicalScope.id();
       untracked(() => this.syncContext());
     });
     this.destroyRef.onDestroy(() => {
@@ -73,7 +75,7 @@ export class PatientVaccinationsComponent {
   }
   private contextKey() {
     return JSON.stringify([
-      this.auth.currentUser()?.id ?? null,
+      this.auth.currentUser()?.id ?? null, this.clinicalScope.id(),
       this.patient().id,
       this.patient().version,
     ]);
@@ -86,7 +88,8 @@ export class PatientVaccinationsComponent {
       this.context !== '' &&
       this.schedule()?.patientId === this.patient().id &&
       this.schedule()?.patientVersion === this.patient().version &&
-      JSON.parse(this.context)[0] === this.auth.currentUser()?.id;
+      JSON.parse(this.context)[0] === this.auth.currentUser()?.id &&
+      JSON.parse(this.context)[1] === this.clinicalScope.id();
     this.changed.next();
     this.epoch++;
     this.dateErrors.set({});

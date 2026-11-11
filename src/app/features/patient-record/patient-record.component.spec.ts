@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../core/services/clinical-context.service';
 import {
   PatientRecordModuleId,
   PATIENT_RECORD_MODULE_IDS,
@@ -111,6 +112,7 @@ describe('PatientRecordComponent', () => {
       patientId: 10492,
       encounterDate: '2026-09-15',
       ...clinicalFormFixture(),
+      specialtyContextId: 101,
       specialtyId: 1,
       specialty: { id: 1, code: 'pediatrics', name: 'Pediatría', description: null },
       consultationType: 'ROUTINE_CHECKUP',
@@ -123,6 +125,7 @@ describe('PatientRecordComponent', () => {
       patientId: 10492,
       encounterDate: '2026-09-16',
       ...clinicalFormFixture(),
+      specialtyContextId: 101,
       specialtyId: 7,
       specialty: { id: 7, code: 'custom_xyz', name: 'Especialidad XYZ', description: null },
       consultationType: 'FIRST_VISIT',
@@ -224,6 +227,7 @@ describe('PatientRecordComponent', () => {
     growthReadSpy = vi
       .spyOn(TestBed.inject(PatientGrowthService), 'getPatientGrowthCurves')
       .mockImplementation((id: number) => of(patientGrowthFixture(id)));
+    TestBed.inject(ClinicalContextService).bind(101);
     activePatientService = TestBed.inject(ActivePatientService);
     activePatientService.setActivePatient(mockPatient);
 
@@ -233,6 +237,17 @@ describe('PatientRecordComponent', () => {
     growth = fixture.debugElement.injector.get(PatientGrowthStore);
     history = fixture.debugElement.injector.get(PatientEncountersStore);
     fixture.detectChanges();
+  });
+
+  it('shows a retryable load error instead of an empty patient selection', () => {
+    activePatientService.activePatient.set(null);
+    activePatientService.error.set('No se pudo cargar');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No pudimos cargar la ficha');
+    expect(fixture.nativeElement.textContent).not.toContain('No hay un paciente seleccionado');
+    const load = vi.spyOn(activePatientService, 'loadPatient');
+    fixture.nativeElement.querySelector('[role="alert"] button').click();
+    expect(load).toHaveBeenCalledWith(10492);
   });
 
   it('focuses the original source again after returning from the summary', () => {

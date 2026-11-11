@@ -39,7 +39,11 @@ Las apps envían las imágenes a sus backends. Los backends las comprimen y guar
 
 ## Comprobación
 
-npm run test:config comprueba la separación entre entornos, los endpoints y el rechazo de claves privadas. Las pruebas de autenticación usan mocks y no envían correos. Las compilaciones de desarrollo y producción se probaron por separado; producción con dominios y claves ficticias, sin publicar nada.
+npm run test:config comprueba la separación entre entornos, los endpoints y el rechazo de claves privadas. Sus fixtures y los mocks de autenticación no acreditan una compilación productiva ni un proyecto Supabase real. En M6 el build de desarrollo y el laboratorio integrado pasan; `npm run build` sigue BLOCKED con `supabase.publishableKey: falta la clave pública.` No hay una configuración Supabase legítima y autorizada disponible para aprobarlo. El identificador del adaptador Auth local no reemplaza ese requisito.
+
+`npm run test:static` requiere la salida completa de `npm run build`: bundles con hash, compresión gzip y política de caché inmutable generada por hosting. Ejecutarlo sobre el build de desarrollo no acredita ni refuta el artefacto productivo. Una vez disponible la URL y clave pública de un proyecto autorizado, ejecutar build y luego este smoke sobre el mismo artefacto.
+
+El laboratorio M6 y su evidencia se documentan en [specialty-contexts-m6.md](specialty-contexts-m6.md). Usa Angular, Go, Gateway, PostgreSQL y conversor reales; sólo Auth/Billing tienen adaptadores de ensayo. No configura Supabase para producción ni modifica `config/local.public.json`.
 
 Falta la prueba con una cuenta real desde el navegador (registro, correo de confirmación, login, recuperación, permisos y subida/consulta de imágenes). No se enviaron correos, se registraron usuarios ni se hicieron pagos durante la preparación. La entrega SMTP y Google son integraciones independientes de la compilación.
 

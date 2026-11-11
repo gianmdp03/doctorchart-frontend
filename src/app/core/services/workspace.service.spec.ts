@@ -30,16 +30,16 @@ describe('WorkspaceService HTTP contract', () => {
     request.flush({});
   });
 
-  it('finish reset and discard use explicit optimistic versions', () => {
+  it('finish reset and discard identify the context and its optimistic version', () => {
     for (const [path, operation] of [
-      ['/finish-onboarding', () => service.finishOnboarding({ expectedVersion: 4 })],
-      ['/reset-to-defaults', () => service.resetToDefaults({ expectedVersion: 4 })],
-      ['/wizard/discard-draft', () => service.discardDraft({ expectedVersion: 4 })],
+      ['/finish-onboarding', () => service.finishOnboarding({ expectedVersion: 4, specialtyContextId: 101 })],
+      ['/reset-to-defaults', () => service.resetToDefaults({ expectedVersion: 4, specialtyContextId: 101 })],
+      ['/wizard/discard-draft', () => service.discardDraft({ expectedVersion: 4, specialtyContextId: 101 })],
     ] as const) {
       operation().subscribe();
       const request = http.expectOne(base + path);
       expect(request.request.method).toBe('POST');
-      expect(request.request.body).toEqual({ expectedVersion: 4 });
+      expect(request.request.body).toEqual({ expectedVersion: 4, specialtyContextId: 101 });
       request.flush({});
     }
   });

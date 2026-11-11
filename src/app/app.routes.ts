@@ -3,6 +3,7 @@ import { EnvironmentInjector, inject, runInInjectionContext } from '@angular/cor
 import { firstValueFrom, isObservable } from 'rxjs';
 import { publicEntryGuard } from './core/guards/public-entry.guard';
 import { FEATURE_FLAGS } from './core/config/feature-flags';
+import { clinicalContextGuard, clinicalLeaveGuard } from './core/guards/clinical-context.guard';
 
 
 function lazyGuard(load: () => Promise<CanActivateFn>): CanActivateFn {
@@ -14,6 +15,14 @@ function lazyGuard(load: () => Promise<CanActivateFn>): CanActivateFn {
     });
   };
 }
+// Angular evaluates guards in one canActivate array concurrently. Clinical
+// capabilities must observe the context authorized by the preceding guard.
+function orderedGuards(guards:CanActivateFn[]):CanActivateFn{
+ return (route,state)=>{const injector=inject(EnvironmentInjector);return(async()=>{
+  for(const guard of guards){const result=runInInjectionContext(injector,()=>guard(route,state));const value=isObservable(result)?await firstValueFrom(result):await result;if(value!==true)return value;}
+  return true;
+ })();};
+}
 const clinicalNavigationGuard = (module: Parameters<typeof import('./core/guards/clinical-navigation.guard').clinicalNavigationGuard>[0]) => lazyGuard(() => import('./core/guards/clinical-navigation.guard').then(m => m.clinicalNavigationGuard(module)));
 const doctorchartPlanGuard = lazyGuard(() => import('./core/guards/doctorchart-plan.guard').then(m => m.doctorchartPlanGuard));
 const doctorOnboardingGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.doctorOnboardingGuard));
@@ -22,7 +31,8 @@ const preventCompletedOnboardingGuard = lazyGuard(() => import('./core/guards/do
 const superAdminGuard = lazyGuard(() => import('./core/guards/super-admin.guard').then(m => m.superAdminGuard));
 const clinicsGuard = lazyGuard(() => import('./core/guards/clinics.guard').then(m => m.clinicsGuard));
 
-export const routes: Routes = [
+const baseRoutes: Routes = [
+ {path:'specialties',canActivate:[doctorchartPlanGuard],loadComponent:()=>import('./features/specialties/my-specialties.component').then(m=>m.MySpecialtiesComponent)},
  ...(['login','activate','recover'] as const).map(mode=>({path:'staff/'+mode,data:{mode},canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffFeatureGuard))],loadComponent:()=>import('./features/staff/staff-auth.component').then(m=>m.StaffAuthComponent)})),
  {path:'staff/calendar',canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffSessionGuard))],loadComponent:()=>import('./features/staff/staff-calendar.component').then(m=>m.StaffCalendarComponent)},
  {path:'secretaries',canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffFeatureGuard))],loadComponent:()=>import('./features/staff/secretaries.component').then(m=>m.SecretariesComponent)},
@@ -210,6 +220,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path:'schedules',
+    runGuardsAndResolvers:'always',
+    canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/schedules.guard').then(m=>m.schedulesGuard))],
+    loadComponent:()=>import('./features/schedules/schedule-page.component').then(m=>m.SchedulePageComponent),
+  },
+  {
     path:'clinics/:id/schedule',
     runGuardsAndResolvers:'always',
     canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/schedules.guard').then(m=>m.schedulesGuard))],
@@ -256,3 +272,15 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/not-found/not-found.component').then(m => m.NotFoundComponent),
   },
 ];
+
+const clinicalPaths=new Set(['dashboard','patients','patients/new','patients/:id/edit','patients/:id','records','records/:id/edit','records/:id','encounters','encounters/:id','assistant','calculators','vaccination-calendar','onboarding/setup']);
+export const routes:Routes=baseRoutes.map(route=>{
+  const clinical=clinicalPaths.has(route.path??'');
+  if(clinical){route.data={...route.data,clinicalContext:true,allowPending:route.path==='onboarding/setup'};route.canDeactivate=[clinicalLeaveGuard];}
+  if(clinical||route.canActivate?.includes(doctorOnboardingGuard)){
+    const guards=[doctorchartPlanGuard,clinicalContextGuard,...(route.canActivate??[]).filter(g=>g!==doctorchartPlanGuard&&(!clinical||g!==doctorOnboardingGuard))] as CanActivateFn[];
+    route.canActivate=[orderedGuards(guards)];
+    route.runGuardsAndResolvers='always';
+  }
+  return route;
+});

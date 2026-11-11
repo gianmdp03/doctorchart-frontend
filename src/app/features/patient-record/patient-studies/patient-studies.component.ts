@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import { formatInstant, instantParts } from '../../../core/date/user-time-zone';
 import { Subject, takeUntil } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -59,6 +60,7 @@ const MAX_STUDY_FILE_BYTES = 10_000_000;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientStudiesComponent {
+  private readonly clinicalScope = inject(ClinicalContextService);
   private readonly studyService = inject(PatientMedicalStudyService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
@@ -69,7 +71,7 @@ export class PatientStudiesComponent {
   private revision = 0;
   private read = 0;
   private readonly previewUrls = new Set<string>();
-  private contextKey(): string { return JSON.stringify([this.auth.currentUser()?.id ?? null,this.patientId()]); }
+  private contextKey(): string { return JSON.stringify([this.auth.currentUser()?.id ?? null, this.clinicalScope.id(),this.patientId()]); }
   private syncContext(): void {
     const context = this.contextKey(); if (context === this.context) return;
     const isInitial = this.context === '';
@@ -148,7 +150,7 @@ export class PatientStudiesComponent {
       }
     });
     effect(() => {
-      const pid = this.patientId(); this.auth.currentUser();
+      const pid = this.patientId(); this.auth.currentUser(); this.clinicalScope.id();
       untracked(() => { this.syncContext(); if (pid) this.loadStudies(pid); });
     });
     this.destroyRef.onDestroy(() => { this.changed.next(); this.releasePreviews(); });

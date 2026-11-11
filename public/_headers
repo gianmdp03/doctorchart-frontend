@@ -151,3 +151,7 @@
 /secretaries
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store, private
+
+/specialties
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-store

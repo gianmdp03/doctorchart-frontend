@@ -8,8 +8,9 @@ import { LoginPageComponent } from '../../features/auth/login-page.component';
 import { AuthService } from '../../core/services/auth.service';
 import { SessionCoordinatorService } from '../../core/services/session-coordinator.service';
 import { FEATURE_FLAGS } from '../../core/config/feature-flags';
+import { ClinicalSwitchDialogComponent } from '../../shared/clinical-switch-dialog.component';
 
-@Component({ selector: 'app-private-shell', imports: [NoPlanComponent, RouterOutlet, RouterLink, HeaderComponent, SidebarComponent, LoginPageComponent], templateUrl: './private-shell.component.html', styleUrls: ['../../app.css', './material.scss', '../../../styles-m3-private.css'], encapsulation: ViewEncapsulation.None })
+@Component({ selector: 'app-private-shell', imports: [ClinicalSwitchDialogComponent, NoPlanComponent, RouterOutlet, RouterLink, HeaderComponent, SidebarComponent, LoginPageComponent], templateUrl: './private-shell.component.html', styleUrls: ['../../app.css', './material.scss', '../../../styles-m3-private.css'], encapsulation: ViewEncapsulation.None })
 export class PrivateShellComponent {
   readonly documents = inject(ClinicalDocumentPrintService);
   readonly authService = inject(AuthService);

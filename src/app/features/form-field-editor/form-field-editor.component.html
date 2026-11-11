@@ -99,19 +99,7 @@
             </p>
           }
           @if (category.system) {
-            @if (category.key === 'sys_clinical_history') {
-              <p class="health-system-note">
-                Este bloque está incluido en todas las especialidades. Alergias, problemas de salud
-                y medicación habitual se preguntan al registrar al paciente y pueden revisarse
-                durante la consulta. Sus respuestas alimentan automáticamente el resumen clínico.
-                Los campos están protegidos por el sistema.
-              </p>
-            } @else {
-              <p class="hint">
-                Categoría fija del sistema con los datos obligatorios del paciente. Podés agregar
-                campos adicionales, pero los campos del sistema no se pueden modificar ni eliminar.
-              </p>
-            }
+            <p class="hint">Categoría fija del sistema con los datos del paciente. Podés agregar campos adicionales; los campos originales están protegidos.</p>
           }
           <div class="fields-list">
             @if (section() === 'encounterForm' && canAddMeasurementMode()) {
@@ -184,7 +172,7 @@
               <p class="empty-fields">Agregá los campos que necesitás en esta categoría.</p>
             }
           </div>
-          @if (category.key !== 'sys_clinical_history') {
+          @if (!category.system) {
             <button
               type="button"
               class="primary"

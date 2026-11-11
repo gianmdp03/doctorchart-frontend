@@ -30,19 +30,24 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     fixture.detectChanges();
   }
 
-  it('keeps the shared clinical history block locked, including adding fields', () => {
+  it('allows each specialty to rename, disable, remove and restore clinical history', () => {
+    const category = createClinicalHistoryCategory();
+    load({ categories: [category] });
+    expect(component.allFields().every(field => !field.system)).toBe(true);
+    component.renameCategory(category.key, 'Antecedentes propios');
+    expect(component.categories()[0].title).toBe('Antecedentes propios');
+    component.toggleCategory(category.key);
+    expect(component.categories()[0].enabled).toBe(false);
+    component.toggleCategory(category.key);
+    component.deleteField(category.key, 'sys_allergies');
+    expect(component.allFields().some(field => field.key === 'sys_allergies')).toBe(false);
+    component.openField(category.key);
+    expect(component.fieldDraft()).not.toBeNull();
+    component.closeField();
+    component.deleteCategory(category.key);
+    expect(component.categories()).toHaveLength(0);
     load({ categories: [createClinicalHistoryCategory()] });
-    const original = structuredClone(component.working());
-    component.renameCategory('sys_clinical_history', 'Changed');
-    component.toggleCategory('sys_clinical_history');
-    component.deleteCategory('sys_clinical_history');
-    component.openField('sys_clinical_history');
-    component.openField('sys_clinical_history', 'sys_allergies');
-    component.deleteField('sys_clinical_history', 'sys_allergies');
-    component.moveField('sys_clinical_history', 'sys_allergies', 1);
-    expect(component.working()).toEqual(original);
-    expect(component.fieldDraft()).toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('todas las especialidades');
+    expect(component.allFields().some(field => field.key === 'sys_allergies')).toBe(true);
   });
 
   it('renders the backend contract fixture with arbitrary category keys and no injected defaults', () => {

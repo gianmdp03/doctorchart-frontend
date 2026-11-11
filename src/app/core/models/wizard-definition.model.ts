@@ -150,7 +150,7 @@ export const createDefaultWizardDefinition = (): WizardDefinition => ({
     categories: [createSystemPatientProfileCategory(), createClinicalHistoryCategory()],
   },
   encounterForm: {
-    categories: [createClinicalHistoryCategory()],
+    categories: [],
   },
   modulesConfig: {
     MEDICATION_CATALOG: false,
@@ -161,11 +161,17 @@ export const createDefaultWizardDefinition = (): WizardDefinition => ({
 
 export const createClinicalHistoryCategory = (): WizardCategoryDefinition =>
   structuredClone(historyCategory) as WizardCategoryDefinition;
+// Normalize legacy locks without adding removed categories or mutating snapshots.
 export const withClinicalHistory = (form: WizardFormDefinition): WizardFormDefinition => ({
   ...form,
-  categories: form.categories.some((c) => c.key === 'sys_clinical_history')
-    ? form.categories
-    : [...form.categories, createClinicalHistoryCategory()],
+  categories: form.categories.map(category => {
+    if (category.key !== 'sys_clinical_history') return category;
+    const { system: _system, ...editable } = category;
+    return {
+      ...editable,
+      fields: category.fields.map(({ system: _system, ...field }) => field),
+    };
+  }),
 });
 export const CLINICAL_HISTORY_GROUPS = [
   {
@@ -193,8 +199,10 @@ export const CLINICAL_HISTORY_GROUPS = [
     hint: 'Tratamientos que utiliza actualmente.',
   },
 ] as const;
-export const clinicalHistoryValid = (values: WizardFormValues): boolean =>
+export const clinicalHistoryValid = (values: WizardFormValues, form?: WizardFormDefinition): boolean =>
   CLINICAL_HISTORY_GROUPS.every((g) => {
+    const active = form?.categories.filter(category => category.enabled).flatMap(category => category.fields);
+    if (active && (!active.some(field => field.key === g.status) || !active.some(field => field.key === g.details))) return true;
     const details = String(values[g.details] ?? '').trim();
     return details.length <= 4000 && (values[g.status] === 'PRESENT' ? !!details : !details);
   });

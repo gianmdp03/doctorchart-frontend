@@ -4,6 +4,7 @@ import { WizardDefinition, WizardStepKey } from './wizard-definition.model';
 
 export interface WorkspaceSetup {
   id: number;
+  specialtyContextId: number;
   version: number;
   specialty: SpecialtySummary;
   experience: SpecialtyExperience;
@@ -14,9 +15,11 @@ export interface WorkspaceSetup {
   definition: WizardDefinition | null;
   draftDefinition: WizardDefinition | null;
 }
-export interface SelectSpecialtyRequest { specialtyId: number; expectedVersion: number | null; }
+export interface SpecialtyContextSummary {id:number;workspaceId:number;version:number;specialty:SpecialtySummary;onboardingCompleted:boolean;ready:boolean;hasDraft:boolean;}
+export interface SelectSpecialtyRequest { specialtyId: number; expectedVersion: number | null; specialtyContextId?: number; }
 export interface VersionRequest { expectedVersion: number; }
-export interface SaveOnboardingDraftRequest extends VersionRequest {
+export interface ContextVersionRequest extends VersionRequest { specialtyContextId?: number; }
+export interface SaveOnboardingDraftRequest extends ContextVersionRequest {
   definition: WizardDefinition;
   currentStepKey: Exclude<WizardStepKey, 'completed'>;
 }

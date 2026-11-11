@@ -11,6 +11,8 @@ describe('Forms stay in the routed page', () => {
         if (entry.isDirectory()) inspect(file);
         else if (/\.(html|ts)$/.test(file) && !file.endsWith('.spec.ts')) {
           const source = readFileSync(file, 'utf8');
+          // M5 requires an accessible unsaved-changes decision; it contains no editor form.
+          if(file.endsWith('clinical-switch-dialog.component.ts')){expect(source).not.toMatch(/<form|<input|<textarea/);continue;}
           if (/aria-modal\s*=|role\s*=\s*["'](?:alertdialog|dialog)["']|class\s*=\s*["'][^"']*(?:modal-backdrop|dialog-backdrop)|\b(?:window\.)?(?:confirm|alert|prompt)\s*\(|open-[\w-]*modal/.test(source)) violations.push(file);
         }
       }

@@ -157,3 +157,12 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .day-row > button { grid-column: 2; grid-row: 1; }
   .save-bar { top: 8px; padding-inline-end: 14px; }
 }
+
+.day-options {border:0;padding:8px 0;display:flex;gap:10px 18px;flex-wrap:wrap;margin:12px 0;}
+.day-options label {display:flex;align-items:center;gap:6px;}
+.day-options input {width:18px;min-height:18px;accent-color:var(--md-sys-color-primary);}
+.block-card {padding:14px;border:1px solid var(--md-sys-color-outline-variant);border-radius:10px;background:var(--md-surface-container-low);}
+.block-card p {overflow-wrap:anywhere;}
+.day-row {grid-template-columns:105px minmax(0,1fr);align-items:start;}
+.actions {margin-top:14px;}
+@media(max-width:680px){.day-row{grid-template-columns:minmax(0,1fr);}.day-row>.ranges{grid-column:1;grid-row:auto;}.range>button{width:100%;}}

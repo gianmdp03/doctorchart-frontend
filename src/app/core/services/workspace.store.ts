@@ -1,3 +1,4 @@
+import { ClinicalContextService } from './clinical-context.service';
 import { ClinicalNavigationId, PatientRecordModuleId, PATIENT_RECORD_MODULE_IDS, PatientRecordActionId, PATIENT_RECORD_ACTION_IDS } from '../models/specialty-experience.model';
 import { CLINICAL_NAVIGATION } from '../experience/clinical-navigation';
 import { FEATURE_FLAGS } from '../config/feature-flags';
@@ -6,15 +7,41 @@ import { isPlatformBrowser } from '@angular/common';
 import { firstValueFrom, Observable, timeout } from 'rxjs';
 import { WorkspaceService } from './workspace.service';
 import { DoctorSpecialtyService } from './doctor-specialty.service';
-import { SaveOnboardingDraftRequest, WorkspacePreferences, WorkspaceSetup, WorkspaceUpdateRequest } from '../models/workspace.model';
+import { SaveOnboardingDraftRequest, SpecialtyContextSummary, WorkspacePreferences, WorkspaceSetup, WorkspaceUpdateRequest } from '../models/workspace.model';
 
 @Injectable({ providedIn: 'root' })
 export class WorkspaceStore {
+  readonly contexts=signal<SpecialtyContextSummary[]>([]);
+  readonly hasReadyContext=computed(()=>this.contexts().some(c=>c.ready)||this.isOnboardingCompleted());
+  private contextsPromise:Promise<SpecialtyContextSummary[]>|null=null;
+  private contextsLoaded=false;
+  private requestedContext:number|null=null;
+  private accountEpoch=0;
+
+  async loadContexts(force=false):Promise<SpecialtyContextSummary[]>{
+    if(!force&&this.contextsLoaded)return this.clone(this.contexts());
+    if(this.contextsPromise)return this.contextsPromise;
+    const epoch=this.accountEpoch;
+    const request=(async()=>{try{const result=await firstValueFrom(this.service.getContexts().pipe(timeout(6000)));if(epoch!==this.accountEpoch)throw Error('La sesión cambió.');const known=this.contexts();const merged=result.map(item=>{const local=known.find(c=>c.id===item.id);return local&&local.version>item.version?local:item;});merged.push(...known.filter(c=>!result.some(item=>item.id===c.id)));this.contexts.set(this.clone(merged));this.contextsLoaded=true;return this.clone(merged);}finally{if(epoch===this.accountEpoch)this.contextsPromise=null;}})();this.contextsPromise=request;return request;
+  }
+  async activateContext(id:number):Promise<WorkspaceSetup|null>{
+    if(!Number.isSafeInteger(id)||id<1)throw Error('Elegí una especialidad válida.');
+    if(this.isMutating())throw Error('Esperá a que termine el guardado.');
+    const contexts=await this.loadContexts();if(!contexts.some(c=>c.id===id))throw Error('Esta especialidad no pertenece a tu cuenta.');
+    if(this.currentSetup()?.specialtyContextId===id&&this.requestedContext===id&&this.loaded())return this.clone(this.currentSetup());
+    const epoch=++this.epoch;this.invalidateReads();this.requestedContext=id;
+    const setup=await firstValueFrom(this.service.getCurrentSetup(id).pipe(timeout(6000)));
+    if(epoch!==this.epoch||setup?.specialtyContextId!==id)throw Error('La especialidad cambió durante la carga.');
+    this.requestedContext=id;this.preferences.set(null);this.applySetup(setup);return this.clone(setup);
+  }
+  addContext(specialtyId:number):Promise<WorkspaceSetup>{return this.mutate(()=>this.service.addContext(specialtyId),result=>this.recordContext(result));}
   private readonly service = inject(WorkspaceService);
+  private readonly clinicalContext = inject(ClinicalContextService);
   private readonly specialtyService = inject(DoctorSpecialtyService);
   private readonly platformId = inject(PLATFORM_ID);
   readonly currentSetup = signal<WorkspaceSetup | null>(null);
   readonly preferences = signal<WorkspacePreferences | null>(null);
+  readonly specialtyContextId = computed(() => this.currentSetup()?.specialtyContextId ?? null);
   readonly loaded = signal(false);
   readonly error = signal<string | null>(null);
   readonly preferencesError = signal<string | null>(null);
@@ -22,7 +49,7 @@ export class WorkspaceStore {
   private readonly setupLoading = signal(false);
   private readonly preferencesLoading = signal(false);
   readonly isLoading = computed(() => this.setupLoading() || this.preferencesLoading() || this.isMutating());
-  readonly isOnboardingCompleted = computed(() => this.currentSetup()?.onboardingCompleted ?? false);
+  readonly isOnboardingCompleted = computed(() => !!this.currentSetup()?.onboardingCompleted && !!this.currentSetup()?.definition);
   readonly definition = computed(() => this.currentSetup()?.definition ?? null);
   readonly draftDefinition = computed(() => this.currentSetup()?.draftDefinition ?? null);
   readonly experience = computed(() => this.currentSetup()?.experience ?? null);
@@ -64,14 +91,27 @@ export class WorkspaceStore {
     if (this.setupPromise) return this.setupPromise;
     if (!force && this.loaded()) return this.clone(this.currentSetup());
     if (this.isMutating()) throw new Error('Esperá a que termine el guardado antes de recargar.');
+    const startingEpoch=this.epoch;
+    if(this.requestedContext===null){
+      const contexts=await this.loadContexts();
+      if(startingEpoch!==this.epoch)throw Error('La sesión cambió durante la carga.');
+      const url=new URL(globalThis.location?.href??'http://localhost');const explicit=url.searchParams.get('specialtyContextId');
+      let preferred:number|null=null;try{preferred=Number(sessionStorage.getItem('doctorchart_context:'+contexts[0]?.workspaceId))||null;}catch{}
+      const target=explicit?Number(explicit):contexts.some(c=>c.id===preferred)?preferred:contexts.length===1?contexts[0].id:null;
+      if(target!==null){if(!contexts.some(c=>c.id===target))throw Error('Esta especialidad no está disponible.');this.requestedContext=target;}
+      else {this.applySetup(null);return null;}
+    }
+    if(this.setupPromise)return this.setupPromise;
     const epoch = this.epoch;
     const revision = this.readRevision;
     this.setupLoading.set(true);
     this.error.set(null);
     const request = (async () => {
       try {
-        const setup = await firstValueFrom(this.service.getCurrentSetup().pipe(timeout(6000)));
+        const id=this.requestedContext!;
+        const setup = await firstValueFrom(this.service.getCurrentSetup(id).pipe(timeout(6000)));
         this.assertCurrent(epoch, revision);
+        if(setup?.specialtyContextId!==id)throw Error('La configuración no corresponde a la especialidad solicitada.');
         this.applySetup(setup);
         return this.clone(setup);
       } catch (error) {
@@ -101,13 +141,8 @@ export class WorkspaceStore {
     this.preferencesError.set(null);
     const request = (async () => {
       try {
-        const result = await firstValueFrom(this.service.getPreferences().pipe(timeout(6000)));
+        const result = await firstValueFrom(this.service.getPreferences(this.specialtyContextId()??undefined).pipe(timeout(6000)));
         this.assertCurrent(epoch, revision);
-        if (this.currentSetup() && this.currentSetup()!.version !== result.version) {
-          const setup = await firstValueFrom(this.service.getCurrentSetup().pipe(timeout(6000)));
-          this.assertCurrent(epoch, revision);
-          this.applySetup(setup);
-        }
         this.applyPreferences(result);
         return this.clone(result);
       } catch (error) {
@@ -125,33 +160,36 @@ export class WorkspaceStore {
   }
 
   selectSpecialty(specialtyId: number, expectedVersion: number | null): Promise<WorkspaceSetup> {
-    return this.mutate(() => this.service.selectSpecialty({ specialtyId, expectedVersion }), result => this.applySetup(result));
+    return this.mutate(() => this.service.selectSpecialty({ specialtyId, expectedVersion, ...this.contextIdentity() }), result => this.applySetup(result));
   }
   saveOnboardingDraft(payload: SaveOnboardingDraftRequest): Promise<WorkspaceSetup> {
     const request = this.clone(payload);
-    return this.mutate(() => this.service.saveOnboardingDraft(request), result => this.applySetup(result));
+    return this.mutate(() => this.service.saveOnboardingDraft({ ...request, ...this.contextIdentity() }), result => this.applySetup(result));
   }
   finishOnboarding(expectedVersion: number): Promise<WorkspaceSetup> {
-    return this.mutate(() => this.service.finishOnboarding({ expectedVersion }), result => this.applySetup(result));
+    return this.mutate(() => this.service.finishOnboarding({ expectedVersion, ...this.contextIdentity() }), result => this.applySetup(result));
   }
   resetToDefaults(expectedVersion: number): Promise<WorkspaceSetup> {
-    return this.mutate(() => this.service.resetToDefaults({ expectedVersion }), result => this.applySetup(result));
+    return this.mutate(() => this.service.resetToDefaults({ expectedVersion, ...this.contextIdentity() }), result => this.applySetup(result));
   }
   discardDraft(expectedVersion: number): Promise<WorkspaceSetup> {
-    return this.mutate(() => this.service.discardDraft({ expectedVersion }), result => this.applySetup(result));
+    return this.mutate(() => this.service.discardDraft({ expectedVersion, ...this.contextIdentity() }), result => this.applySetup(result));
   }
   updateWorkspace(payload: WorkspaceUpdateRequest): Promise<WorkspacePreferences> {
     const request = this.clone(payload);
-    return this.mutate(() => this.service.updateWorkspace(request), result => this.applyPreferences(result), true);
+    const context=this.specialtyContextId()??undefined;return this.mutate(() => this.service.updateWorkspace(request,context), result => this.applyPreferences(result));
   }
   updateQuickNotes(content: string | null): Promise<WorkspacePreferences> {
-    return this.mutate(() => this.service.updateQuickNotes({ content }), result => this.applyPreferences(result), true);
+    const context=this.specialtyContextId()??undefined;return this.mutate(() => this.service.updateQuickNotes({ content },context), result => this.applyPreferences(result));
   }
 
   clearSetup(): void {
+    ++this.accountEpoch;
     ++this.epoch;
     this.invalidateReads();
+    this.contexts.set([]);this.contextsLoaded=false;this.contextsPromise=null;this.requestedContext=null;
     this.currentSetup.set(null);
+    this.clinicalContext.bind(null);
     this.preferences.set(null);
     this.loaded.set(false);
     this.error.set(null);
@@ -164,7 +202,7 @@ export class WorkspaceStore {
     this.applySetup(setup);
   }
 
-  private async mutate<T>(operation: () => Observable<T>, apply: (result: T) => void, refreshSetup = false): Promise<T> {
+  private async mutate<T>(operation: () => Observable<T>, apply: (result: T) => void): Promise<T> {
     if (this.isMutating()) throw new Error('Hay un guardado en curso. Esperá a que termine.');
     const epoch = this.epoch;
     this.invalidateReads();
@@ -173,17 +211,11 @@ export class WorkspaceStore {
     try {
       const result = await firstValueFrom(operation().pipe(timeout(10000)));
       if (epoch !== this.epoch) throw new Error('La sesión cambió. La respuesta anterior fue descartada.');
-      if (refreshSetup) {
-        const setup = await firstValueFrom(this.service.getCurrentSetup().pipe(timeout(6000)));
-        if (epoch !== this.epoch) throw new Error('La sesión cambió. La respuesta anterior fue descartada.');
-        this.applySetup(setup);
-      }
       apply(this.clone(result));
       return this.clone(result);
     } catch (error) {
       if (epoch === this.epoch) {
         this.error.set(this.message(error, 'No se pudo guardar la configuración.'));
-        if (refreshSetup) this.loaded.set(false);
       }
       throw error;
     } finally {
@@ -209,15 +241,21 @@ export class WorkspaceStore {
         throw new Error('La experiencia recibida no corresponde a una configuración válida de esta especialidad.');
       }
     }
+    this.clinicalContext.bind(current?.specialtyContextId ?? null);
     this.currentSetup.set(current);
+    if(current){this.requestedContext=current.specialtyContextId;this.recordContext(current);try{sessionStorage.setItem('doctorchart_context:'+current.id,String(current.specialtyContextId));}catch{}}
     this.loaded.set(true);
     this.specialtyService.setSpecialty(current?.specialty ?? null);
     this.specialtyService.setDefinition(current?.definition ?? null);
     if (!current) this.preferences.set(null);
   }
+  private contextIdentity(): { specialtyContextId?: number } {
+    const id = this.specialtyContextId();
+    return id === null ? {} : { specialtyContextId: id };
+  }
+  private recordContext(setup:WorkspaceSetup){const item:SpecialtyContextSummary={id:setup.specialtyContextId,workspaceId:setup.id,version:setup.version,specialty:setup.specialty,onboardingCompleted:setup.onboardingCompleted,ready:setup.onboardingCompleted&&!!setup.definition,hasDraft:!!setup.draftDefinition};this.contexts.update(all=>[...all.filter(c=>c.id!==item.id),item]);}
   private applyPreferences(result: WorkspacePreferences): void {
     this.preferences.set(this.clone(result));
-    if (this.currentSetup() && this.currentSetup()!.version !== result.version) this.loaded.set(false);
   }
   private invalidateReads(): void {
     ++this.readRevision;

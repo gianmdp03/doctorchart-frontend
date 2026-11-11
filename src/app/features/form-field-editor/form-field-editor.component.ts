@@ -202,7 +202,6 @@ export class FormFieldEditorComponent {
   );
   addMeasurementMode(): void {
     const categoryKey = this.selectedKey();
-    if (categoryKey === 'sys_clinical_history') return;
     if (
       !categoryKey ||
       this.section() !== 'encounterForm' ||
@@ -313,7 +312,6 @@ export class FormFieldEditorComponent {
     });
   }
   openField(categoryKey: string, fieldKey: string | null = null): void {
-    if (categoryKey === 'sys_clinical_history') return;
     if (this.readonly()) return;
     const existing = this.categories()
       .find((c) => c.key === categoryKey)

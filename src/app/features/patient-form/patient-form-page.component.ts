@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../core/services/clinical-context.service';
 import {
   Component,
   DestroyRef,
@@ -41,6 +42,7 @@ import {
   styleUrl: './patient-form-page.component.css',
 })
 export class PatientFormPageComponent implements OnInit {
+  private readonly clinicalScope = inject(ClinicalContextService);
   private readonly document = inject(DOCUMENT);
   private focusedHistory = false;
   constructor() {
@@ -203,6 +205,7 @@ export class PatientFormPageComponent implements OnInit {
     if (this.readonly()) return;
     this.submissionAttempted.set(true);
     if (!this.isFormValid()) {
+      this.errorMessage.set('Revisá los campos marcados antes de guardar. Tus respuestas se conservan.');
       this.formRenderer()?.focusFirstInvalidField();
       return;
     }
@@ -323,7 +326,7 @@ export class PatientFormPageComponent implements OnInit {
   }
 
   private identity(): string {
-    return this.auth.currentUser()?.id ?? '';
+    return JSON.stringify([this.auth.currentUser()?.id ?? '',this.clinicalScope.id()]);
   }
 
   private alive(epoch: number): boolean {

@@ -8,6 +8,7 @@ import { PatientService } from '../../core/services/patient.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { AuthService } from '../../core/services/auth.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
+import { createClinicalHistoryCategory } from '../../core/models/wizard-definition.model';
 import { dialogPatient, dialogWorkspace } from '../dynamic-form-renderer/clinical-dialog.fixture';
 
 describe('PatientFormPageComponent dedicated page', () => {
@@ -90,7 +91,8 @@ describe('PatientFormPageComponent dedicated page', () => {
     expect(patientService.createPatient).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith(['/patients', patient.id]);
   });
-  it('collects the shared clinical history in the initial patient creation request', async () => {
+  it('collects clinical history when it is enabled in the specialty definition', async () => {
+    workspace.definition!.patientForm.categories.push(createClinicalHistoryCategory());
     fixture = TestBed.createComponent(PatientFormPageComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

@@ -63,7 +63,7 @@ describe('Theme integration', () => {
           { key: 'weight', label: 'Peso', type: 'NUMBER', required: false, unit: 'kg' },
         ] }] },
       }], page: { totalElements: 1, totalPages: 1 } }) } },
-      { provide: WorkspaceStore, useValue: { quickNotes: signal('Recordatorio de ejemplo'), navigation: signal([
+      { provide: WorkspaceStore, useValue: { contexts:()=>[],hasReadyContext:()=>true, quickNotes: signal('Recordatorio de ejemplo'), navigation: signal([
         { id: 'DASHBOARD', path: '/dashboard', label: 'Inicio', title: 'Inicio', icon: 'lucideLayoutDashboard' },
         { id: 'PATIENTS', path: '/patients', label: 'Pacientes', title: 'Pacientes', icon: 'lucideUsers' },
         { id: 'VACCINATION', path: '/vaccination-calendar', label: 'Vacunación', title: 'Vacunación', icon: 'lucideCalendarDays' },

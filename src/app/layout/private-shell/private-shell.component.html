@@ -44,7 +44,7 @@
       <p class="splash-text">Verificando perfil médico...</p>
     </div>
   </div>
-} @else if (workspaceStore.isLoading() && (!workspaceStore.loaded() || (workspaceStore.isOnboardingCompleted() && !workspaceStore.preferences()))) {
+} @else if (workspaceStore.isLoading() && !workspaceStore.loaded()) {
   <div class="app-splash-screen" role="status" aria-live="polite">
     <div class="splash-content">
       <div class="splash-logo">
@@ -55,7 +55,7 @@
       <p class="splash-text">Cargando configuración clínica...</p>
     </div>
   </div>
-} @else if (!workspaceStore.isOnboardingCompleted()) {
+} @else if (!workspaceStore.isOnboardingCompleted() && !workspaceStore.hasReadyContext()) {
   @if (documents.errorMessage(); as message) { <div class="inline-confirmation" role="alert"><p>{{ message }}</p><button type="button" (click)="documents.errorMessage.set(null)">Entendido</button></div> }
         <router-outlet />
 } @else {
@@ -72,3 +72,4 @@
   </div>
 
 }
+<app-clinical-switch-dialog />

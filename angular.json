@@ -33,6 +33,13 @@
             "outputMode": "static"
           },
           "configurations": {
+            "m6-lab": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "outputPath": ".angular/m6-lab",
+              "fileReplacements": [{"replace":"src/environments/environment.ts","with":"src/environments/environment.m6.generated.ts"}]
+            },
             "production": {
               "budgets": [
                 {

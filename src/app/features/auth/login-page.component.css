@@ -56,17 +56,17 @@ p { margin:0; }
 .login-form-heading h1 { font-size:1.65rem; line-height:1.2; font-weight:750; letter-spacing:-.025em; margin:0 0 7px; }
 .login-form-heading p { color:var(--md-sys-color-on-surface-variant, #3f484a); font-size:.9rem; line-height:1.5; }
 .auth-form { display:grid; gap:16px; }
-.m3-textfield { min-width:0; display:grid; gap:7px; }
-.m3-textfield label { font-size:.875rem; font-weight:550; }
-.m3-textfield input {
+.login-textfield { min-width:0; display:grid; gap:7px; }
+.login-textfield label { font-size:.875rem; font-weight:550; }
+.login-textfield input {
   width:100%; min-height:48px; padding:11px 14px;
   border:1px solid var(--md-sys-color-outline-variant, #bfc8ca);
   border-radius:10px; background:var(--dc-surface, #fff);
   color:var(--md-sys-color-on-surface, #191c1d); font:inherit; font-size:1rem;
 }
-.m3-textfield input::placeholder { color:var(--md-sys-color-on-surface-variant, #3f484a); opacity:.75; }
-.m3-textfield input:focus { outline:2px solid var(--md-sys-color-primary, #006874); outline-offset:2px; }
-.m3-textfield.has-error input { border-color:var(--dc-error-ink, #ba1a1a); }
+.login-textfield input::placeholder { color:var(--md-sys-color-on-surface-variant, #3f484a); opacity:.75; }
+.login-textfield input:focus { outline:2px solid var(--md-sys-color-primary, #006874); outline-offset:2px; }
+.login-textfield.has-error input { border-color:var(--dc-error-ink, #ba1a1a); }
 .error-helper-text { font-size:.8rem; line-height:1.4; color:var(--dc-error-ink, #ba1a1a); }
 .password-field { position:relative; }
 .password-field input { padding-right:52px; }

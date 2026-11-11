@@ -5,8 +5,28 @@ import { DatePickerComponent } from '../../shared/date-picker/date-picker.compon
 import { WizardFormDefinition, WizardFormValues, WizardFormulaResult } from '../../core/models/wizard-definition.model';
 import { customSpecialtyFixture } from '../onboarding/testing/custom-specialty.fixture';
 import { DynamicFormRendererComponent } from './dynamic-form-renderer.component';
+import { createClinicalHistoryCategory } from '../../core/models/wizard-definition.model';
 
 describe('DynamicFormRendererComponent canonical fields', () => {
+  it('shows and focuses the clinical detail that blocks saving, then accepts the corrected status', () => {
+    fixture.componentRef.setInput('definition', { categories: [createClinicalHistoryCategory()] });
+    fixture.componentRef.setInput('values', { sys_allergies: 'Penicilina' });
+    fixture.componentRef.setInput('showErrors', true);
+    fixture.detectChanges();
+    expect(component.formValid()).toBe(false);
+    expect(fixture.nativeElement.querySelector('#error-sys_allergies').textContent).toContain('Indicá');
+    document.body.appendChild(fixture.nativeElement);
+    component.focusFirstInvalidField();
+    expect(document.activeElement?.id).toBe('field-sys_allergies');
+    component.setValue(component.fields().find(field => field.key === 'sys_allergyStatus')!, 'PRESENT');
+    fixture.detectChanges();
+    expect(component.formValid()).toBe(true);
+    expect(fixture.nativeElement.querySelector('#error-sys_allergies')).toBeNull();
+    component.setValue(component.fields().find(field => field.key === 'sys_allergies')!, 'a'.repeat(4001));
+    fixture.detectChanges();
+    expect(component.formValid()).toBe(false);
+    expect(fixture.nativeElement.querySelector('#error-sys_allergies').textContent).toContain('4000');
+  });
   let fixture: ComponentFixture<DynamicFormRendererComponent>; let component: DynamicFormRendererComponent; let definition: WizardFormDefinition;
   const values: WizardFormValues = { identity: 'Paciente', born: '2001-03-04', consent: false, group: 'a', readingA: 0, readingB: 10, notes: 'Nota libre' };
   beforeEach(async () => {

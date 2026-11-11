@@ -1,3 +1,4 @@
+import { createClinicalHistoryCategory } from '../../core/models/wizard-definition.model';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -88,7 +89,8 @@ describe('EncounterFormComponent inline clinical creation', () => {
     expect(fixture.nativeElement.querySelector('input[type="time"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('.readonly-datetime-box')).not.toBeNull();
   });
-  it('reviews existing history without retyping or discarding the consultation draft', async () => {
+  it('reviews existing history when configured without discarding the consultation draft', async () => {
+    component.definition.update(form => form ? { ...form, categories: [...form.categories, createClinicalHistoryCategory()] } : form);
     fill();
     component.reviewHistory({ sys_allergyStatus: 'PRESENT', sys_allergies: 'Penicilina' });
     component.onDynamicFormValidityChange(true);

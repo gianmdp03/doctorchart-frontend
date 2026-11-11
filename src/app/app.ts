@@ -20,7 +20,7 @@ export class App {
   private readonly injector = inject(EnvironmentInjector);
   private readonly pendingTasks = inject(PendingTasks);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly entryPath = typeof window === 'undefined' ? '/' : window.location.pathname;
+  private readonly entryPath = typeof window === 'undefined' ? '/' : window.location.pathname+window.location.search+window.location.hash;
   private coordinatorLoading = false;
   readonly sessionKeys = computed(() => [JSON.stringify([this.authService.currentUser()?.id ?? null, this.authService.isSuperAdmin()])]);
   private readonly pageUrl = toSignal(this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map(event => event.urlAfterRedirects)), { initialValue: this.entryPath });

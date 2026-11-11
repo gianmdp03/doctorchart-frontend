@@ -53,6 +53,7 @@ export interface ClinicalEncounterDetail extends ClinicalEncounterList {
 }
 export interface ClinicalEncounterList extends ClinicalFormRecord {
   id: number;
+  specialtyContextId: number;
   patientId: number;
   patientFullName?: string | null;
   encounterDate: string;

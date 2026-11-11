@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../core/services/clinical-context.service';
 import { UserClockService } from '../../core/services/user-clock.service';
 import {
   Component,
@@ -47,6 +48,7 @@ import {
   styleUrl: './encounter-form.component.css',
 })
 export class EncounterFormComponent implements OnInit, OnDestroy {
+  private readonly clinicalScope = inject(ClinicalContextService);
   private readonly encounterService = inject(ClinicalEncounterService);
   private readonly workspaceStore = inject(WorkspaceStore);
   private readonly auth = inject(AuthService);
@@ -402,7 +404,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
   }
 
   private identity(): string {
-    return this.auth.currentUser()?.id ?? '';
+    return JSON.stringify([this.auth.currentUser()?.id ?? '',this.clinicalScope.id()]);
   }
 
   private alive(epoch: number): boolean {

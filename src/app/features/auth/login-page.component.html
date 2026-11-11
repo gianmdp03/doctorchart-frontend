@@ -36,14 +36,14 @@
               <button type="button" class="m3-oauth-btn" (click)="handleGoogleOAuth()" [disabled]="isSubmitting()">Continuar con Google</button>
               <p class="auth-divider">o con tu correo</p>
             }
-            <div class="m3-textfield" [class.has-error]="isLoginInvalid('email')">
+            <div class="login-textfield" [class.has-error]="isLoginInvalid('email')">
               <label for="login-email">Correo electrónico</label>
               <input type="email" id="login-email" formControlName="email" placeholder="nombre@ejemplo.com" autocomplete="email" required [attr.aria-invalid]="isLoginInvalid('email')" [attr.aria-describedby]="isLoginInvalid('email') ? 'login-email-error' : null" />
               @if (isLoginInvalid('email')) {
                 <span class="error-helper-text" id="login-email-error">Ingresá un correo electrónico válido.</span>
               }
             </div>
-            <div class="m3-textfield" [class.has-error]="isLoginInvalid('password')">
+            <div class="login-textfield" [class.has-error]="isLoginInvalid('password')">
               <label for="login-password">Contraseña</label>
               <div class="password-field">
                 <input [type]="showPassword() ? 'text' : 'password'" id="login-password" formControlName="password" placeholder="Tu contraseña" autocomplete="current-password" required [attr.aria-invalid]="isLoginInvalid('password')" [attr.aria-describedby]="isLoginInvalid('password') ? 'login-password-error' : null" />

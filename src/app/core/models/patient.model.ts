@@ -20,6 +20,7 @@ export interface PatientUpdateRequestDTO { expectedVersion: number; values: Wiza
 
 export interface PatientDetailDTO extends ClinicalFormRecord {
   id: number;
+  specialtyContextId: number;
   fullName: string;
   birthDate: string;
   nationalId?: string | null;
@@ -44,6 +45,7 @@ export interface PatientListDTO {
   ageGroup: 'ADULT' | 'NEONATAL' | 'INFANT' | 'CHILD' | 'ADOLESCENT' | 'UNKNOWN' | 'EARLY_CHILDHOOD';
   hasPendingVaccine: boolean;
   id: number;
+  specialtyContextId: number;
   fullName: string;
   birthDate: string;
   nationalId?: string | null;

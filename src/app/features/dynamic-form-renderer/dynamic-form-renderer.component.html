@@ -1,6 +1,6 @@
 <div class="dynamic-form" [class.is-readonly]="readonly()">
   @for (category of enabledCategories(); track category.key) {
-    @if (category.key === 'sys_clinical_history') {
+    @if (category.key === 'sys_clinical_history' && category.system) {
       <app-clinical-history-fields
         id="clinical-history"
         tabindex="-1"

@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import { effect, inject, Injectable, untracked } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { ActivePatientService } from '../../../core/services/active-patient.service';
@@ -6,6 +7,7 @@ import { PatientRecordDraftsService } from '../patient-record-drafts.service';
 /** Screen-scoped access to the active patient's unsaved attachment inputs. */
 @Injectable()
 export class PatientStudiesStore {
+  private readonly clinicalScope = inject(ClinicalContextService);
   private readonly auth = inject(AuthService);
   private readonly activePatient = inject(ActivePatientService);
   private recordContext = '';
@@ -19,9 +21,11 @@ export class PatientStudiesStore {
     effect(() => {
       this.activePatient.activePatient();
       this.auth.currentUser();
+      this.clinicalScope.id();
       untracked(() => {
         const context = JSON.stringify([
           this.auth.currentUser()?.id ?? null,
+      this.clinicalScope.id(),
           this.activePatient.patientId(),
         ]);
         if (this.recordContext === '') {

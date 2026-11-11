@@ -4,6 +4,11 @@
 
   <!-- Center -->
   <div class="header-center">
+    @if(!authService.isSuperAdmin() && workspace.contexts().length){<label class="clinical-selector">Especialidad actual
+      <select aria-label="Especialidad actual" [ngModel]="workspace.specialtyContextId()??''" [disabled]="workspace.isMutating()" (ngModelChange)="changeSpecialty($event)">
+        <option value="" disabled>Elegí una especialidad</option>
+        @for(context of workspace.contexts();track context.id){<option [value]="context.id">{{context.specialty.name}}{{context.ready?'':' — Pendiente'}}</option>}
+      </select></label>}
     @if (authService.isSuperAdmin()) {
       <span>Administración de especialidades</span>
     }

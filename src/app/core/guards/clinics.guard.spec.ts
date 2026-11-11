@@ -36,6 +36,7 @@ describe('clinicsGuard', () => {
           provide: WorkspaceStore,
           useValue: {
             clinicsEnabled,
+            loadContexts: async () => [],
             loadSetup: () => (loadSetup as () => Promise<unknown>)(),
           },
         },
@@ -84,5 +85,16 @@ describe('clinicsGuard', () => {
     });
     const result = (await executeGuard()) as UrlTree;
     expect(TestBed.inject(Router).serializeUrl(result)).toBe('/onboarding/setup');
+  });
+  it('keeps global administration available while the selected second specialty is pending', async () => {
+    clinicsEnabled.set(true);
+    TestBed.inject(WorkspaceStore).loadContexts=async()=>[{id:101,ready:true},{id:202,ready:false}] as any;
+    loadSetup.mockResolvedValue({specialtyContextId:202,onboardingCompleted:false,specialty:{id:20}});
+    expect(await executeGuard()).toBe(true);
+    expect(loadSetup).not.toHaveBeenCalled();
+  });
+  it('uses the registered selection route when no context exists', async()=>{
+    clinicsEnabled.set(true);loadSetup.mockResolvedValue(null);
+    expect(String(await executeGuard())).toBe('/onboarding/select-specialty');
   });
 });

@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import { userTimeZone } from '../../../core/date/user-time-zone';
 import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -15,6 +16,7 @@ import {
 /** Record-scoped state survives tabs; confirmations and responses never cross patients/accounts. */
 @Injectable()
 export class PatientGrowthStore {
+  private readonly clinicalScope = inject(ClinicalContextService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly authService = inject(AuthService);
   readonly activePatientService = inject(ActivePatientService);
@@ -97,6 +99,7 @@ export class PatientGrowthStore {
     effect(() => {
       const patient = this.activePatientService.activePatient();
       this.authService.currentUser();
+      this.clinicalScope.id();
       this.growthEnabled();
       this.today();
       untracked(() => {
@@ -131,6 +134,7 @@ export class PatientGrowthStore {
     const patient = this.activePatientService.activePatient();
     return JSON.stringify([
       this.authService.currentUser()?.id ?? null,
+      this.clinicalScope.id(),
       patient?.id,
       patient?.birthDate,
       patient?.gender,

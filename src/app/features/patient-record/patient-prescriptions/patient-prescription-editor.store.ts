@@ -1,3 +1,4 @@
+import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import { formatInstant } from '../../../core/date/user-time-zone';
 import {
   computed,
@@ -32,6 +33,7 @@ export type PrescriptionOrderFormMode = 'MEDICATION' | 'STUDY';
 /** Record-scoped editor, independent of the consultation and growth modules. */
 @Injectable()
 export class PatientPrescriptionEditorStore {
+  private readonly clinicalScope = inject(ClinicalContextService);
   private readonly workspace = inject(WorkspaceStore);
   readonly prescriptionsEnabled = computed(() => this.workspace.hasRecordTab('PRESCRIPTIONS'));
   readonly recordActions = inject(PatientRecordActionsService);
@@ -139,6 +141,7 @@ export class PatientPrescriptionEditorStore {
     effect(() => {
       const patient = this.activePatientService.activePatient();
       this.authService.currentUser();
+      this.clinicalScope.id();
       const enabled = this.prescriptionsEnabled();
       untracked(() => {
         const context = this.contextKey();
@@ -154,6 +157,7 @@ export class PatientPrescriptionEditorStore {
   private contextKey(): string {
     return JSON.stringify([
       this.authService.currentUser()?.id ?? null,
+      this.clinicalScope.id(),
       this.activePatientService.patientId(),
     ]);
   }
