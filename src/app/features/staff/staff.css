@@ -75,6 +75,9 @@ nav { margin-top: 24px; }
 .toolbar { align-items: end; }
 .toolbar label { flex: 1 1 160px; min-width: 0; margin: 0; }
 .toolbar select { min-width: 0; }
+.assignment-control { flex: 1 1 160px; min-width: 0; }
+.assignment-summary { margin: 6px 0 0; font-size: .85rem; overflow-wrap: anywhere; }
+.assignment-summary span { display: block; }
 .recovery { display: block; overflow-wrap: anywhere; padding: 16px 0; }
 .error { color: var(--md-sys-color-error); }
 .success { color: var(--md-sys-color-success); }

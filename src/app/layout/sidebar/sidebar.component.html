@@ -6,22 +6,35 @@
     </div>
     <div class="brand-text-wrap">
       <span class="brand-title">DoctorChart</span>
-      <span class="brand-specialty-pill">{{ authService.isSuperAdmin() ? 'Administración' : specialtyService.currentSpecialtyOption().shortLabel }}</span>
+      @if (authService.isSuperAdmin()) { <span class="brand-specialty-pill">Administración</span> }
     </div>
   </div>
+
+  @if (!authService.isSuperAdmin() && (!isCollapsed() || narrowViewport) && workspace.contexts().length) {
+    <div class="specialty-switch">
+      <span id="sidebar-specialty-label">Especialidad actual</span>
+      <mat-select aria-labelledby="sidebar-specialty-label" placeholder="Elegí una especialidad"
+        panelClass="sidebar-specialty-panel" [value]="workspace.specialtyContextId()"
+        [disabled]="workspace.isMutating()" (selectionChange)="changeSpecialty($event)">
+        @for (context of workspace.contexts(); track context.id) {
+          <mat-option [value]="context.id">{{ context.specialty.name }}{{ context.ready ? '' : ' — Pendiente' }}</mat-option>
+        }
+      </mat-select>
+    </div>
+  }
 
   <!-- Main Navigation Links -->
   <nav class="sidebar-nav" aria-label="Navegación principal" (click)="collapseAfterNavigation()">
     @if (authService.isSuperAdmin()) {
-      <div class="nav-group-label" [class.sr-only]="isCollapsed()">Administración</div>
+      <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">Administración</div>
       <a routerLink="/admin/specialties" routerLinkActive="active" class="nav-item" title="Especialidades y wizards">
         <ng-icon name="lucideSliders" class="nav-icon" />
         <span class="nav-label">Especialidades y wizards</span>
       </a>
     } @else {
-    <a routerLink="/specialties" routerLinkActive="active" class="nav-item" title="Mis especialidades"><ng-icon name="lucideSliders" class="nav-icon"/><span class="nav-label">Mis especialidades</span></a>
-    <div class="nav-group-label" [class.sr-only]="isCollapsed()">
-      @if (!isCollapsed()) {
+    <a routerLink="/specialties" routerLinkActive="active" class="nav-item" title="Mis especialidades"><ng-icon name="lucideStethoscope" class="nav-icon"/><span class="nav-label">Mis especialidades</span></a>
+    <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">
+      @if (!isCollapsed() || narrowViewport) {
         <span>Clínica</span>
       }
     </div>
@@ -33,9 +46,12 @@
       </a>
     }
 
-    @if(staffEnabled && clinicsEnabled() && workspace.hasReadyContext()){<a routerLink="/secretaries" routerLinkActive="active" class="nav-item" title="Secretarias y permisos"><ng-icon name="lucideBuilding2" class="nav-icon"/><span class="nav-label">Secretarias</span></a>}
- @if (publicAppointmentsEnabled && clinicsEnabled() && workspace.hasReadyContext()) {<a routerLink="/booking-publication" routerLinkActive="active" class="nav-item" title="Publicación de reservas online"><ng-icon name="lucideBuilding2" class="nav-icon" /><span class="nav-label">Reservas online</span></a>}
- @if (calendarEnabled() && workspace.hasReadyContext()) {<a routerLink="/calendar" routerLinkActive="active" class="nav-item" title="Agenda de turnos" data-testid="sidebar-calendar-link"><ng-icon name="lucideBuilding2" class="nav-icon" /><span class="nav-label">Agenda de turnos</span></a>}
+    @if (clinicsEnabled() && workspace.hasReadyContext()) {
+      <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">Turnos</div>
+    }
+    @if(staffEnabled && clinicsEnabled() && workspace.hasReadyContext()){<a routerLink="/secretaries" routerLinkActive="active" class="nav-item" title="Secretarias y permisos"><ng-icon name="lucideContact" class="nav-icon"/><span class="nav-label">Secretarias</span></a>}
+ @if (publicAppointmentsEnabled && clinicsEnabled() && workspace.hasReadyContext()) {<a routerLink="/booking-publication" routerLinkActive="active" class="nav-item" title="Publicación de reservas online"><ng-icon name="lucideGlobe" class="nav-icon" /><span class="nav-label">Reservas online</span></a>}
+ @if (calendarEnabled() && workspace.hasReadyContext()) {<a routerLink="/calendar" routerLinkActive="active" class="nav-item" title="Agenda de turnos" data-testid="sidebar-calendar-link"><ng-icon name="lucideCalendarClock" class="nav-icon" /><span class="nav-label">Agenda de turnos</span></a>}
     @if (clinicsEnabled() && workspace.hasReadyContext()) {
       <a
         routerLink="/clinics"

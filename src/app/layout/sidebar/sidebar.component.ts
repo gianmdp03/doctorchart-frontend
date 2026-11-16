@@ -1,6 +1,8 @@
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { afterNextRender, Component, computed, HostListener, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { MatSelectChange, MatSelectModule } from '@angular/material/select';
+import { ClinicalNavigationService } from '../../core/services/clinical-navigation.service';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideBuilding2,
@@ -11,6 +13,10 @@ import {
   lucideChevronRight,
   lucideSliders,
   lucideCalculator,
+  lucideStethoscope,
+  lucideContact,
+  lucideGlobe,
+  lucideCalendarClock,
 } from '@ng-icons/lucide';
 import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
@@ -18,7 +24,7 @@ import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-sidebar',
-  imports: [RouterLink, RouterLinkActive, NgIcon],
+  imports: [RouterLink, RouterLinkActive, NgIcon, MatSelectModule],
   providers: [
     provideIcons({
       lucideBuilding2,
@@ -29,6 +35,10 @@ import { AuthService } from '../../core/services/auth.service';
       lucideChevronRight,
       lucideSliders,
       lucideCalculator,
+      lucideStethoscope,
+      lucideContact,
+      lucideGlobe,
+      lucideCalendarClock,
     }),
   ],
   templateUrl: './sidebar.component.html',
@@ -38,6 +48,21 @@ export class SidebarComponent {
   readonly specialtyService = inject(DoctorSpecialtyService);
   readonly authService = inject(AuthService);
   readonly workspace = inject(WorkspaceStore);
+  private readonly router = inject(Router);
+  private readonly clinicalNavigation = inject(ClinicalNavigationService);
+
+  async changeSpecialty({ source, value: id }: MatSelectChange): Promise<void> {
+    const previous = this.workspace.specialtyContextId();
+    const context = this.workspace.contexts().find(c => c.id === id);
+    source.value = previous;
+    if (!context || id === previous) return;
+    const tree = this.router.parseUrl(this.router.url);
+    const clinical = /^\/(dashboard|patients|records|encounters|assistant|calculators|vaccination-calendar|onboarding)(\/|$)/.test(this.router.url.split(/[?#]/)[0]);
+    const target = !context.ready ? this.router.createUrlTree(['/onboarding/setup']) : clinical ? this.router.createUrlTree(['/dashboard']) : tree;
+    target.queryParams = { ...target.queryParams, specialtyContextId: id };
+    if (!clinical && !await this.clinicalNavigation.canLeaveEditing()) return;
+    await this.router.navigateByUrl(target);
+  }
 
   readonly staffEnabled=FEATURE_FLAGS.STAFF_ENABLED;
  readonly publicAppointmentsEnabled=FEATURE_FLAGS.PUBLIC_APPOINTMENTS_ENABLED;
@@ -47,7 +72,7 @@ export class SidebarComponent {
   );
 
   readonly isCollapsed = signal<boolean>(false);
-  private narrowViewport = false;
+  narrowViewport = false;
   private desktopCollapsed = false;
 
   constructor() {

@@ -7,7 +7,7 @@
       </div>
       <h1 id="clinics-table-heading">Administración de Consultorios</h1>
       <p class="subtitle">
-        Gestioná tus sedes físicas de atención médica. Las historias clínicas y los pacientes permanecen asociados a tu espacio médico, con independencia del consultorio.
+        Gestioná tus consultorios y la agenda de teleconsultas.
       </p>
     </div>
 
@@ -24,6 +24,9 @@
         <span>Actualizar</span>
       </button>
 
+      @if (canCreateVirtual()) {
+        <a class="btn-secondary" routerLink="/clinics/new" [queryParams]="{modality: 'teleconsultation'}">Crear agenda virtual</a>
+      }
       <button
         type="button"
         class="btn-primary"
@@ -43,7 +46,7 @@
         {{ quotaSummary() }}
       </span>
       <span class="quota-hint">
-        Los consultorios archivados se conservan como referencia y no consumen cupo activo.
+        La agenda virtual y los consultorios retirados quedan fuera del cupo físico.
       </span>
     </div>
   </section>
@@ -197,10 +200,14 @@
                 }
               </td>
               <td data-label="Ubicación" class="cell-location">
+                @if (clinic.modality === 'TELECONSULTATION') {
+                  <div class="location-address">Teleconsulta</div>
+                } @else {
                 <div class="location-address">{{ clinic.address }}</div>
                 <div class="location-region">
                   {{ clinic.city }}, {{ clinic.province }} · {{ clinic.country }}
                 </div>
+                }
               </td>
               <td data-label="Estado" class="cell-status">
                 <span
@@ -235,17 +242,7 @@
                       (click)="changeStatus(clinic, 'INACTIVE')"
                     >
                       <ng-icon name="lucidePauseCircle" size="14" aria-hidden="true"></ng-icon>
-                      <span>Inactivar</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="btn-row btn-row-danger"
-                      [attr.data-testid]="'archive-btn-' + clinic.id"
-                      [disabled]="!canTransition(clinic, 'ARCHIVED')"
-                      (click)="changeStatus(clinic, 'ARCHIVED')"
-                    >
-                      <ng-icon name="lucideArchive" size="14" aria-hidden="true"></ng-icon>
-                      <span>Archivar</span>
+                      <span>Desactivar</span>
                     </button>
                   }
 
@@ -260,6 +257,7 @@
                       <ng-icon name="lucidePlayCircle" size="14" aria-hidden="true"></ng-icon>
                       <span>Activar</span>
                     </button>
+                    @if (clinic.modality !== 'TELECONSULTATION') {
                     <button
                       type="button"
                       class="btn-row btn-row-danger"
@@ -268,8 +266,9 @@
                       (click)="changeStatus(clinic, 'ARCHIVED')"
                     >
                       <ng-icon name="lucideArchive" size="14" aria-hidden="true"></ng-icon>
-                      <span>Archivar</span>
+                      <span>Retirar del cupo</span>
                     </button>
+                    }
                   }
 
                   @if (clinic.status === 'ARCHIVED') {
@@ -281,7 +280,7 @@
                       (click)="changeStatus(clinic, 'INACTIVE')"
                     >
                       <ng-icon name="lucideArchiveRestore" size="14" aria-hidden="true"></ng-icon>
-                      <span>Restaurar</span>
+                      <span>Incorporar al cupo</span>
                     </button>
                   }
                 </div>

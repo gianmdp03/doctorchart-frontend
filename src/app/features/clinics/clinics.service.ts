@@ -61,14 +61,16 @@ export class ClinicsService implements ClinicsTransport {
   }
 
   createClinic(payload: CreateClinicRequest): Observable<Clinic> {
-    const body: CreateClinicRequest = {
-      name: payload.name.trim(),
-      country: payload.country.trim(),
-      province: payload.province.trim(),
-      city: payload.city.trim(),
-      address: payload.address.trim(),
-      timezone: payload.timezone.trim(),
-    };
+    const shared = { name: payload.name.trim(), timezone: payload.timezone.trim() };
+    const body: CreateClinicRequest = payload.modality === 'TELECONSULTATION'
+      ? { ...shared, modality: payload.modality }
+      : {
+        ...shared,
+        country: payload.country.trim(),
+        province: payload.province.trim(),
+        city: payload.city.trim(),
+        address: payload.address.trim(),
+      };
     if (this.customTransport) {
       return this.customTransport.createClinic(body).pipe(map((res) => structuredClone(res)));
     }

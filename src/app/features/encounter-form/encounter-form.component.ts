@@ -28,6 +28,7 @@ import {
   WizardFormDefinition,
   WizardFormValues,
   withClinicalHistory,
+  withHeightMeasurementMode,
 } from '../../core/models/wizard-definition.model';
 import {
   DynamicFormRendererComponent,
@@ -213,7 +214,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
         throw new Error('El formulario clínico no está disponible.');
       }
       this.workspace.set(structuredClone(workspace));
-      this.definition.set(withClinicalHistory(structuredClone(workspace.definition.encounterForm)));
+      this.definition.set(withClinicalHistory(withHeightMeasurementMode(workspace.definition.encounterForm)));
     } catch (error) {
       if (this.alive(epoch)) {
         this.errorMessage.set(
@@ -351,11 +352,10 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.dynamicFormData.set(
-      retainCompatibleValues(previous, remote.definition.encounterForm, this.dynamicFormData()),
-    );
+    const next = withClinicalHistory(withHeightMeasurementMode(remote.definition.encounterForm));
+    this.dynamicFormData.set(retainCompatibleValues(previous, next, this.dynamicFormData()));
     this.workspace.set(structuredClone(remote));
-    this.definition.set(structuredClone(remote.definition.encounterForm));
+    this.definition.set(next);
     this.hasConflict.set(false);
     this.remoteWorkspace.set(null);
     this.errorMessage.set(null);

@@ -117,6 +117,23 @@ describe('OnboardingWizardComponent', () => {
     };
   }
 
+  it('returns without saving local changes or deleting a previously saved draft', async () => {
+    completed();
+    remote.draftDefinition = clone(customSpecialtyFixture.definition);
+    await component.loadInitial(true);
+    fixture.detectChanges();
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    const back = buttons.find(button => button.textContent?.includes('Volver sin guardar cambios'));
+    expect(back).toBeTruthy();
+    back!.click();
+    await fixture.whenStable();
+    expect(navigate).toHaveBeenCalledWith(['/dashboard'], { queryParams: { specialtyContextId: 101 } });
+    expect(store.saveOnboardingDraft).not.toHaveBeenCalled();
+    expect(store.finishOnboarding).not.toHaveBeenCalled();
+    expect(store.discardDraft).not.toHaveBeenCalled();
+    expect(remote.draftDefinition).not.toBeNull();
+  });
+
   it('renders an unfamiliar backend category and a common History section without local defaults', () => {
     expect(component.steps().map(step => step.key)).toEqual(['specialty', 'patient:new_patient_category', 'encounter']);
     expect(component.definition()).toEqual(customSpecialtyFixture.definition);

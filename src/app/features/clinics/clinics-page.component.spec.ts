@@ -109,8 +109,9 @@ describe('ClinicsPageComponent', () => {
       '[data-testid="activate-btn-102"]',
     ) as HTMLButtonElement;
     expect(activateBtnDowngrade.disabled).toBe(true);
+    expect(el.querySelector('[data-testid="archive-btn-103"]')).toBeNull();
     const archiveBtnDowngrade = el.querySelector(
-      '[data-testid="archive-btn-103"]',
+      '[data-testid="archive-btn-102"]',
     ) as HTMLButtonElement;
     expect(archiveBtnDowngrade.disabled).toBe(false);
 
@@ -156,7 +157,7 @@ describe('ClinicsPageComponent', () => {
     expect(component.capabilities()?.usage.counted).toBe(1);
     expect(
       fixture.nativeElement.querySelector('[data-testid="action-feedback-alert"]')?.textContent,
-    ).toContain('Archivado');
+    ).toContain('Desactivado');
   });
 
   it('surfaces error and refreshes capabilities when status change fails with 409', async () => {

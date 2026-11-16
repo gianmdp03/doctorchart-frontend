@@ -3,19 +3,29 @@ import {FormsModule} from '@angular/forms';
 import {Router,RouterLink} from '@angular/router';
 import {DatePickerComponent} from '../../shared/date-picker/date-picker.component';
 import {addDays,civilDate,displayDay,localTime,STATUS_LABELS,transitions,BookingStatus} from '../calendar/bookings.models';
+import {modalityLabel} from '../clinics/clinics.models';
 import {AdministrativeBooking,Assignment,SlotDay,StaffPermission,StaffService,staffError} from './staff.service';
 
 @Component({selector:'app-staff-calendar',imports:[FormsModule,RouterLink,DatePickerComponent],styleUrl:'./staff.css',template:`
 <main class="staff-page"><header class="actions"><a routerLink="/">Doctor Chart</a><span>Agenda de secretaría</span><button (click)="logout()" [disabled]="writing()">Cerrar sesión</button></header>
 <div class="page-heading"><p class="eyebrow">Administración delegada</p><h1>Agenda de consultorios</h1><p>Gestioná turnos únicamente dentro de tus asignaciones. Este acceso no incluye historias clínicas.</p></div>
+@if(activationRecovery()){<details><summary>Guardar un código de recuperación (opcional)</summary><p>Podés guardarlo ahora para recuperar tu cuenta si no tenés acceso al correo. Es personal: no lo compartas.</p><code class="recovery">{{activationRecovery()}}</code><button (click)="activationRecovery.set('')">Cerrar</button></details>}
 @if(error()){<p class="error" role="alert">{{error()}}</p>}@if(feedback()){<p class="success" role="status">{{feedback()}}</p>}
-<div class="toolbar"><label>Consultorio asignado<select aria-label="Consultorio asignado" [ngModel]="assignmentKey" (ngModelChange)="changeAssignment($event)" [disabled]="writing()"><option value="">Seleccioná un consultorio</option>@for(a of assignments();track key(a)){<option [value]="key(a)">{{a.doctorName||'Profesional asignado'}} · {{a.clinicName}}</option>}</select></label>
+<div class="toolbar"><div class="assignment-control">
+ <label>Consultorio asignado<select aria-label="Consultorio asignado" [attr.aria-describedby]="selectedAssignment() ? 'staff-assignment-summary' : null" [ngModel]="assignmentKey" (ngModelChange)="changeAssignment($event)" [disabled]="writing()">
+  <option value="">Seleccioná un consultorio</option>
+  @for(a of assignments();track key(a)){<option [value]="key(a)">{{a.doctorName||'Profesional asignado'}} · {{a.clinicName}} · {{modalityLabel(a.modality)}}</option>}
+ </select></label>
+ @if(selectedAssignment();as assignment){
+  <p id="staff-assignment-summary" class="assignment-summary"><span>{{assignment.doctorName||'Profesional asignado'}}</span><span>{{assignment.clinicName}} · {{modalityLabel(assignment.modality)}}</span></p>
+ }
+</div>
 <label>Fecha<app-date-picker inputId="staff-date" [value]="date" (valueChange)="changeDate($event)" /></label><label>Vista<select [(ngModel)]="view" (ngModelChange)="load()"><option value="1">Día</option><option value="7">Semana</option></select></label>
 <button (click)="refresh()" [disabled]="loading()||writing()">Actualizar permisos y agenda</button></div>
-@if(loading()){<p role="status">Consultando agenda…</p>}@else if(!assignments().length){<p>No tenés consultorios habilitados. Consultá con el médico que te invitó.</p>}
+@if(loading()){<p role="status">Consultando agenda…</p>}@else if(!assignments().length){<p>No tenés agendas habilitadas. Consultá con el médico que te invitó.</p>}
 @if(selectedAssignment();as a){<p class="muted">Hora local del consultorio. @if(!can('view')){Actualizá la agenda para renovar los permisos.}</p>
 <div class="grid" [class.has-editor]="editor()"><section class="panel" aria-label="Agenda administrativa">@for(day of days();track day.date){<section class="day"><h2>{{displayDay(day.date)}}</h2>
-@for(b of dayBookings(day.date);track b.id){<button class="booking" [class.cancelled]="b.status==='CANCELLED'" (click)="selectBooking(b)" [disabled]="writing()||!can('view')"><strong>{{bookingTime(b)}} · {{b.attendeeName||b.contactName}}</strong><span>{{b.specialty?.name||'Especialidad sin registro histórico'}} · {{b.clinicSnapshot?.name||a.clinicName}}</span><small>{{labels[b.status]}} · {{b.contactName}}</small></button>}
+@for(b of dayBookings(day.date);track b.id){<button class="booking" [class.cancelled]="b.status==='CANCELLED'" (click)="selectBooking(b)" [disabled]="writing()||!can('view')"><strong>{{bookingTime(b)}} · {{b.attendeeName||b.contactName}}</strong><span>{{b.specialty?.name||'Especialidad sin registro histórico'}} · {{b.clinicSnapshot?.name||a.clinicName}} @if((b.clinicSnapshot?.modality||a.modality)==='TELECONSULTATION'){· Teleconsulta}</span><small>{{labels[b.status]}} · {{b.contactName}}</small></button>}
 <div class="slot-list">@for(slot of day.slots;track slot.start){<button (click)="chooseSlot(slot.start)" [disabled]="writing()||!can(editor()==='move'?'reschedule':'create')">{{time(slot.start)}} · Disponible</button>}</div>
 @if(!day.slots.length&&!dayBookings(day.date).length){<p class="muted">Sin turnos ni horarios disponibles.</p>}</section>}</section>
 @if(editor()){<aside class="panel editor">@if(editor()==='create'){<h2>Nuevo turno</h2><p>{{time(start)}} · {{a.clinicName}}</p><form (ngSubmit)="create()" #form="ngForm"><fieldset [disabled]="writing()"><legend class="sr-only">Datos administrativos</legend>
@@ -30,6 +40,7 @@ import {AdministrativeBooking,Assignment,SlotDay,StaffPermission,StaffService,st
 </main>`})
 export class StaffCalendarComponent {
  private readonly api=inject(StaffService);private readonly router=inject(Router);private readonly destroy=inject(DestroyRef);
+ readonly activationRecovery=this.api.activationRecovery??signal('');
  readonly assignments=signal<Assignment[]>([]);readonly days=signal<SlotDay[]>([]);readonly bookings=signal<AdministrativeBooking[]>([]);readonly selectedAssignment=signal<Assignment|null>(null);
  readonly selected=signal<AdministrativeBooking|null>(null);readonly editor=signal<'create'|'detail'|'move'|null>(null);readonly loading=signal(false);readonly writing=signal(false);readonly error=signal('');readonly editorError=signal('');readonly feedback=signal('');readonly now=signal(Date.now());
  readonly labels=STATUS_LABELS;readonly transitions=transitions;readonly displayDay=displayDay;readonly civilDate=civilDate;
@@ -37,6 +48,7 @@ export class StaffCalendarComponent {
  private epoch=0;private receipt:{signature:string;key:string}|null=null;private refreshEpoch=0;
  constructor(){void this.refresh();let ticks=0;const timer=setInterval(()=>{this.now.set(Date.now());if(++ticks%30===0&&!this.writing())void this.refresh();},1000);this.destroy.onDestroy(()=>{clearInterval(timer);this.epoch++;this.refreshEpoch++;});}
  key(a:Assignment){return a.ownerId+'|'+a.clinicId;}
+ readonly modalityLabel=modalityLabel;
  can(p:StaffPermission){const a=this.selectedAssignment();return !!a&&a.permissions.includes(p)&&Date.parse(a.validUntil)>this.now();}
  bookingTime(b:AdministrativeBooking){return localTime(b.start,b.clinicSnapshot?.timezone||this.selectedAssignment()?.timezone||'UTC');}
  time(instant:string){return localTime(instant,this.selectedAssignment()?.timezone??'UTC');}

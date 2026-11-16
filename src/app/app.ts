@@ -22,7 +22,10 @@ export class App {
   private readonly destroyRef = inject(DestroyRef);
   private readonly entryPath = typeof window === 'undefined' ? '/' : window.location.pathname+window.location.search+window.location.hash;
   private coordinatorLoading = false;
-  readonly sessionKeys = computed(() => [JSON.stringify([this.authService.currentUser()?.id ?? null, this.authService.isSuperAdmin()])]);
+  // Recreate the routed view only when the account or administrative role changes.
+  readonly sessionViews = computed(() => [{
+    key: JSON.stringify([this.authService.currentUser()?.id ?? null, this.authService.isSuperAdmin()]),
+  }]);
   private readonly pageUrl = toSignal(this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map(event => event.urlAfterRedirects)), { initialValue: this.entryPath });
   readonly isStaffPage=computed(()=>/^\/staff\/(login|activate|recover|calendar)$/.test(this.pageUrl().split(/[?#]/)[0]));
  readonly isPublicAppointmentsPage=computed(()=>{

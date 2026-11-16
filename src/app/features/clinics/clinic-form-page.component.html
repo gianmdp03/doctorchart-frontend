@@ -10,11 +10,13 @@
     <div class="header-main">
       <div class="eyebrow">
         <ng-icon name="lucideBuilding2" size="16" aria-hidden="true"></ng-icon>
-        <span>Sede Física de Atención</span>
+        <span>{{ isVirtual() ? 'Atención virtual' : 'Sede física de atención' }}</span>
       </div>
       <h1>{{ pageTitle() }}</h1>
       <p class="subtitle">
-        @if (isEditMode()) {
+        @if (isVirtual()) {
+          Configurá el nombre y la zona horaria de tu atención virtual.
+        } @else if (isEditMode()) {
           Administrá la ubicación, zona horaria y estado operativo de esta sede. Los cambios de consultorio no alteran historias clínicas ni pacientes.
         } @else {
           Registrá un nuevo lugar físico de atención para tu espacio médico. Se creará inicialmente en estado Activo.
@@ -37,6 +39,9 @@
           <span class="meta-item">Actualizado {{ formatDate(current.updatedAt) }}</span>
         </div>
 
+        @if (current.status === 'ACTIVE' && current.futureBookings; as count) {
+          <p role="status">Si desactivás esta agenda, {{ count === 1 ? 'el turno futuro seguirá visible' : 'los ' + count + ' turnos futuros seguirán visibles' }} en el calendario.</p>
+        }
         <div class="status-actions">
           @if (current.status === 'ACTIVE') {
             <button
@@ -47,17 +52,7 @@
               (click)="changeStatus('INACTIVE')"
             >
               <ng-icon name="lucidePauseCircle" size="15" aria-hidden="true"></ng-icon>
-              <span>Inactivar</span>
-            </button>
-            <button
-              type="button"
-              class="btn-danger-outline btn-sm"
-              data-testid="form-archive-btn"
-              [disabled]="!canTransition('ARCHIVED')"
-              (click)="changeStatus('ARCHIVED')"
-            >
-              <ng-icon name="lucideArchive" size="15" aria-hidden="true"></ng-icon>
-              <span>Archivar</span>
+              <span>Desactivar</span>
             </button>
           }
 
@@ -72,6 +67,7 @@
               <ng-icon name="lucidePlayCircle" size="15" aria-hidden="true"></ng-icon>
               <span>Activar</span>
             </button>
+            @if (!isVirtual()) {
             <button
               type="button"
               class="btn-danger-outline btn-sm"
@@ -80,8 +76,9 @@
               (click)="changeStatus('ARCHIVED')"
             >
               <ng-icon name="lucideArchive" size="15" aria-hidden="true"></ng-icon>
-              <span>Archivar</span>
+              <span>Retirar del cupo</span>
             </button>
+            }
           }
 
           @if (current.status === 'ARCHIVED') {
@@ -93,7 +90,7 @@
               (click)="changeStatus('INACTIVE')"
             >
               <ng-icon name="lucideArchiveRestore" size="15" aria-hidden="true"></ng-icon>
-              <span>Restaurar a Inactivo</span>
+              <span>Volver a incorporar al cupo</span>
             </button>
           }
         </div>
@@ -109,9 +106,9 @@
     >
       <ng-icon name="lucideArchive" size="20" aria-hidden="true"></ng-icon>
       <div class="banner-content">
-        <h2>Consultorio archivado (solo lectura)</h2>
+        <h2>Consultorio retirado del cupo</h2>
         <p>
-          Los consultorios archivados no consumen cupo activo y no permiten editar sus campos directamente. Para modificar sus datos, primero restauralo a estado Inactivo.
+          El historial se conserva. Para volver a editarlo, incorporalo al cupo de consultorios.
         </p>
       </div>
     </section>
@@ -227,7 +224,7 @@
       <div class="form-grid">
         <div class="form-field field-full">
           <label for="clinic-name">
-            Nombre del consultorio <span class="required-mark" aria-hidden="true">*</span>
+            {{ isVirtual() ? 'Nombre de la agenda' : 'Nombre del consultorio' }} <span class="required-mark" aria-hidden="true">*</span>
           </label>
           <input
             id="clinic-name"
@@ -238,16 +235,17 @@
             [class.field-invalid]="isFieldInvalid('name')"
             [attr.aria-invalid]="isFieldInvalid('name') ? 'true' : null"
             [attr.aria-describedby]="isFieldInvalid('name') ? 'clinic-name-error' : 'clinic-name-hint'"
-            placeholder="Ej.: Consultorio Belgrano"
+            [placeholder]="isVirtual() ? 'Teleconsulta' : 'Ej.: Consultorio Belgrano'"
           />
           <span id="clinic-name-hint" class="field-hint">
-            Nombre identificatorio de la sede (máximo {{ limits.name }} caracteres).
+            Máximo {{ limits.name }} caracteres.
           </span>
           @if (getFieldError('name'); as err) {
             <p id="clinic-name-error" class="field-error" role="alert">{{ err }}</p>
           }
         </div>
 
+        @if (!isVirtual()) {
         <div class="form-field">
           <label for="clinic-country">
             País <span class="required-mark" aria-hidden="true">*</span>
@@ -347,7 +345,8 @@
           }
         </div>
 
-        @if (!locationCountry()) {
+        }
+        @if (isVirtual() || !locationCountry()) {
           <div class="form-field">
             <label for="clinic-timezone">Horario local</label>
             <select id="clinic-timezone" formControlName="timezone"
@@ -368,6 +367,7 @@
           <p id="clinic-timezone-error" class="field-error field-full" role="alert">{{ err }}</p>
         }
 
+        @if (!isVirtual()) {
         <div class="form-field field-full">
           <label for="clinic-address">
             Dirección física <span class="required-mark" aria-hidden="true">*</span>
@@ -390,6 +390,7 @@
             <p id="clinic-address-error" class="field-error" role="alert">{{ err }}</p>
           }
         </div>
+        }
       </div>
 
       <footer class="form-footer">
@@ -407,7 +408,7 @@
             } @else if (isEditMode()) {
               Guardar cambios
             } @else {
-              Crear consultorio
+              {{ isVirtual() ? "Crear agenda virtual" : "Crear consultorio" }}
             }
           </span>
         </button>

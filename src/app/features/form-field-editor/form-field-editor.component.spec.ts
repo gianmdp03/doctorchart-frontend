@@ -84,32 +84,54 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     expect(component.categories()[0].fields[0].label).toBe('Campo de ensayo');
     expect(component.fieldDraft()).toBeNull();
   });
-  it('adds an optional documented measurement position without changing existing clinical fields', () => {
+  it('keeps the optional measurement position linked to the height field', () => {
     load({
       categories: [
+        {
+          key: 'reason',
+          title: 'Motivo de consulta',
+          enabled: true,
+          fields: [
+            { key: 'notes', label: 'Motivo', type: 'TEXT', required: false },
+            { key: 'heightMeasurementMode', label: 'Posición anterior', type: 'TEXT', required: false },
+          ],
+        },
         {
           key: 'measurements',
           title: 'Mediciones',
           enabled: true,
-          fields: [{ key: 'heightCm', label: 'Talla', type: 'NUMBER', required: false }],
+          fields: [
+            { key: 'heightCm', label: 'Talla', type: 'NUMBER', required: false },
+            { key: 'weightKg', label: 'Peso', type: 'NUMBER', required: false },
+          ],
         },
       ],
     });
-    const before = structuredClone(component.allFields()[0]);
-    expect(component.canAddMeasurementMode()).toBe(true);
-    component.addMeasurementMode();
-    expect(component.allFields()[0]).toEqual(before);
-    expect(component.allFields()[1]).toMatchObject({
+    const modeCard = () =>
+      (fixture.nativeElement as HTMLElement).querySelector('[data-field-key="heightMeasurementMode"]');
+    expect(modeCard()).toBeNull();
+    expect(component.categories()[0].fields.map((field) => field.key)).toEqual(['notes']);
+
+    component.selectCategory('measurements');
+    fixture.detectChanges();
+    const fields = component.selectedCategory()!.fields;
+    expect(fields.map((field) => field.key)).toEqual(['heightCm', 'heightMeasurementMode', 'weightKg']);
+    expect(modeCard()?.textContent).toContain('Vinculado a la talla');
+    expect(modeCard()?.querySelector('button')).toBeNull();
+    expect(fields[1]).toMatchObject({
       key: 'heightMeasurementMode',
+      label: 'Cómo se midió la talla',
       type: 'SELECT',
       required: false,
       options: [
-        { value: 'RECUMBENT', label: 'Longitud recumbente (acostado)' },
-        { value: 'STANDING', label: 'Estatura de pie' },
+        { value: 'RECUMBENT', label: 'Acostado (longitud)' },
+        { value: 'STANDING', label: 'De pie (estatura)' },
       ],
     });
-    component.addMeasurementMode();
-    expect(component.allFields()).toHaveLength(2);
+    component.deleteField('measurements', 'heightCm');
+    fixture.detectChanges();
+    expect(modeCard()).toBeNull();
+    expect(component.selectedCategory()!.fields.map((field) => field.key)).toEqual(['weightKg']);
   });
 
   it('renames, reorders, disables and deletes any category without changing its identity', () => {

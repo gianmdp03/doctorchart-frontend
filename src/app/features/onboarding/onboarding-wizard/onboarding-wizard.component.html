@@ -10,6 +10,7 @@
           @if (definition()) {
             <button type="button" class="btn-reset-defaults" [disabled]="editorReadonly()" (click)="showResetConfirmation.set(true)">Restablecer valores iniciales</button>
             @if (isEditMode()) {
+              <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="returnWithoutSaving()">Volver sin guardar cambios</button>
               <button type="button" class="secondary-button" [disabled]="editorReadonly()" (click)="exitWizard()">Salir conservando borrador</button>
             } @else {
               <button type="button" class="signout-button" [disabled]="editorReadonly()" (click)="handleSignOut()">Guardar y cerrar sesión</button>

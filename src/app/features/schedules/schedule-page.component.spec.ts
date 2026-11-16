@@ -16,11 +16,11 @@ describe('Schedule editor interaction and concurrency',()=>{
  let params:BehaviorSubject<ParamMap>;
  const user=signal<{id:string}|null>({id:'owner'});
  const schedule:ClinicSchedule={clinicId:'103',version:'7',configured:true,slotMinutes:30,minNoticeMinutes:0,maxAdvanceDays:30,weekly:[{weekday:1,ranges:[{id:'51',specialtyContextId:'101',slotMinutes:30,start:'09:00',end:'12:00'}]}],exceptions:[]};
- let api:{get:ReturnType<typeof vi.fn>;save:ReturnType<typeof vi.fn>;availability:ReturnType<typeof vi.fn>};
+ let api:{get:ReturnType<typeof vi.fn>;save:ReturnType<typeof vi.fn>;availability:ReturnType<typeof vi.fn>;occupied:ReturnType<typeof vi.fn>;validateDraft:ReturnType<typeof vi.fn>};
  let clinics:{getClinic:ReturnType<typeof vi.fn>;getCapabilities:ReturnType<typeof vi.fn>;listClinics:ReturnType<typeof vi.fn>};
  beforeEach(async()=>{
   user.set({id:'owner'});params=new BehaviorSubject(convertToParamMap({id:'103'}));
-  api={get:vi.fn(()=>of(structuredClone(schedule))),save:vi.fn(()=>of({...schedule,version:'8'})),availability:vi.fn(()=>of({clinicId:'103',timezone:'UTC',scheduleVersion:'7',generatedAt:'2026-10-30T12:00:00Z',days:[]}))};
+  api={validateDraft:vi.fn(()=>of(undefined)),occupied:vi.fn(()=>of({timezone:'UTC',items:[{clinicId:'20',name:'Agenda virtual de prueba',modality:'TELECONSULTATION',timezone:'UTC',start:'2026-11-02T10:00:00Z',end:'2026-11-02T11:00:00Z'}]})),get:vi.fn(()=>of(structuredClone(schedule))),save:vi.fn(()=>of({...schedule,version:'8'})),availability:vi.fn(()=>of({clinicId:'103',timezone:'UTC',scheduleVersion:'7',generatedAt:'2026-10-30T12:00:00Z',days:[]}))};
   clinics={getClinic:vi.fn(()=>of(structuredClone(MOCK_CLINICS_FIXTURES[0]))),getCapabilities:vi.fn(()=>of(structuredClone(MOCK_CAPABILITIES_BY_SCENARIO.VERIFIED))),listClinics:vi.fn(()=>of({items:MOCK_CLINICS_FIXTURES,page:0,size:100,totalElements:MOCK_CLINICS_FIXTURES.length}))};
   await TestBed.configureTestingModule({imports:[SchedulePageComponent],providers:[provideRouter([]),{provide:WorkspaceStore,useValue:{loadContexts:async()=>[{id:101,ready:true,specialty:{name:'Medicina General'}}]}},{provide:ActivatedRoute,useValue:{paramMap:params.asObservable()}},{provide:AuthService,useValue:{currentUser:user}},{provide:ClinicsService,useValue:clinics},{provide:SchedulesService,useValue:api}]}).compileComponents();
  });
@@ -32,9 +32,10 @@ describe('Schedule editor interaction and concurrency',()=>{
  async function create(){const fixture=TestBed.createComponent(SchedulePageComponent);await fixture.whenStable();fixture.detectChanges();return fixture;}
  it('renders the selected clinic, multiple ranges and shared date pickers',async()=>{
   const fixture=await create(),c=fixture.componentInstance;
-  c.selectedDays=[2,3];c.addBlocks();c.addException();fixture.detectChanges();
+  c.selectedDays=[2,3];await c.addBlocks();c.addException();fixture.detectChanges();
   expect(c.draft.weekly[1].ranges).toHaveLength(1);expect(c.draft.weekly[2].ranges).toHaveLength(1);
-  expect(fixture.nativeElement.querySelectorAll('app-date-picker').length).toBe(3);
+  expect(fixture.nativeElement.querySelectorAll('app-date-picker').length).toBe(4);
+  expect(fixture.nativeElement.textContent).toContain('Agenda virtual de prueba');
   expect(fixture.nativeElement.querySelector('input[type=date]')).toBeNull();
   expect(fixture.nativeElement.textContent).toContain(MOCK_CLINICS_FIXTURES[0].name);
  });
@@ -114,7 +115,7 @@ describe('Schedule editor interaction and concurrency',()=>{
 
  it('creates several days atomically with context and duration, then preserves identities when editing',async()=>{
   const fixture=await create(),c=fixture.componentInstance;
-  c.selectedDays=[2,4,5];c.blockStart='14:00';c.blockEnd='16:00';c.blockMinutes=25;c.addBlocks();
+  c.selectedDays=[2,4,5];c.blockStart='14:00';c.blockEnd='16:00';c.blockMinutes=25;await c.addBlocks();
   for(const day of [2,4,5])expect(c.draft.weekly[day-1].ranges).toEqual([{start:'14:00',end:'16:00',slotMinutes:25,specialtyContextId:'101'}]);
   c.draft.weekly[0].ranges[0].slotMinutes=20;await c.save();
   const sent=api.save.mock.calls[0][1];expect(sent.slotMinutes).toBeUndefined();
@@ -123,11 +124,25 @@ describe('Schedule editor interaction and concurrency',()=>{
  });
  it('rejects overlapping, invalid and incomplete composer entries without partial insertion',async()=>{
   const fixture=await create(),c=fixture.componentInstance;
-  c.selectedDays=[1,2];c.blockStart='10:00';c.blockEnd='11:00';c.addBlocks();
+  c.selectedDays=[1,2];c.blockStart='10:00';c.blockEnd='11:00';await c.addBlocks();
   expect(c.draft.weekly[1].ranges).toEqual([]);expect(c.blockError()).toContain('superponen');
-  c.selectedDays=[2];c.blockEnd='09:00';c.addBlocks();expect(c.draft.weekly[1].ranges).toEqual([]);
-  c.blockEnd='12:00';c.blockMinutes=0;c.addBlocks();expect(c.blockError()).toContain('duración');
+  c.selectedDays=[2];c.blockEnd='09:00';await c.addBlocks();expect(c.draft.weekly[1].ranges).toEqual([]);
+  c.blockEnd='12:00';c.blockMinutes=0;await c.addBlocks();expect(c.blockError()).toContain('duración');
   c.draft.weekly[0].ranges[0].slotMinutes=0;expect(c.canSave()).toBe(false);
+ });
+ it('keeps all proposed days out of the draft when another consultorio occupies the same hours',async()=>{
+  const fixture=await create(),c=fixture.componentInstance;
+  c.removeRange(c.draft.weekly[0],0);
+  c.selectedDays=[1,3,5];c.blockStart='09:00';c.blockEnd='13:00';
+  const before=structuredClone(c.draft.weekly);
+  api.validateDraft.mockReturnValueOnce(throwError(()=>({status:409,error:{code:'SCHEDULE_CONFLICT',message:'El horario se superpone con Consultorio A.'}})));
+  await c.addBlocks();fixture.detectChanges();
+  const proposed=api.validateDraft.mock.calls[0][1];
+  for(const day of [1,3,5])expect(proposed.weekly[day-1].ranges[0]).toMatchObject({start:'09:00',end:'13:00'});
+  expect(c.draft.weekly).toEqual(before);
+  expect(c.selectedDays).toEqual([1,3,5]);
+  expect(fixture.nativeElement.textContent).toContain('El horario se superpone con Consultorio A.');
+  expect(api.save).not.toHaveBeenCalled();
  });
  it('autoselects a single clinic and specialty without redundant choices',async()=>{
   params.next(convertToParamMap({}));
@@ -151,7 +166,7 @@ describe('Schedule editor interaction and concurrency',()=>{
  it('composes and saves blocks from both ready specialties without accepting a pending context',async()=>{
    const workspace=TestBed.inject(WorkspaceStore);workspace.loadContexts=async()=>[{id:101,ready:true,specialty:{name:'Medicina General'}},{id:202,ready:true,specialty:{name:'Dermatología'}},{id:303,ready:false,specialty:{name:'Pediatría'}}] as any;
    const fixture=await create(),c=fixture.componentInstance;expect(c.readySpecialties().map(s=>s.id)).toEqual(['101','202']);expect(c.specialty()).toBeNull();
-   c.chooseSpecialty('202');c.selectedDays=[2];c.blockStart='10:00';c.blockEnd='12:00';c.blockMinutes=20;c.addBlocks();expect(c.draft.weekly[0].ranges[0].specialtyContextId).toBe('101');expect(c.draft.weekly[1].ranges[0].specialtyContextId).toBe('202');expect(c.canSave()).toBe(true);await c.save();expect(api.save).toHaveBeenCalledWith('103',expect.objectContaining({weekly:expect.arrayContaining([expect.objectContaining({weekday:2,ranges:[expect.objectContaining({specialtyContextId:'202',slotMinutes:20})]})])}));
+   c.chooseSpecialty('202');c.selectedDays=[2];c.blockStart='10:00';c.blockEnd='12:00';c.blockMinutes=20;await c.addBlocks();expect(c.draft.weekly[0].ranges[0].specialtyContextId).toBe('101');expect(c.draft.weekly[1].ranges[0].specialtyContextId).toBe('202');expect(c.canSave()).toBe(true);await c.save();expect(api.save).toHaveBeenCalledWith('103',expect.objectContaining({weekly:expect.arrayContaining([expect.objectContaining({weekday:2,ranges:[expect.objectContaining({specialtyContextId:'202',slotMinutes:20})]})])}));
    c.chooseSpecialty('303');expect(c.specialty()).toBeNull();
  });
 });

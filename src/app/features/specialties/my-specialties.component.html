@@ -1,0 +1,90 @@
+<section class="specialties-page" aria-labelledby="specialties-title">
+  <header class="page-heading">
+    <h1 id="specialties-title">Mis especialidades</h1>
+    @if (available().length) {
+      <button type="button" class="action primary" [disabled]="loading() || store.isMutating()"
+        [attr.aria-expanded]="adding()" [attr.aria-controls]="adding() ? 'specialty-picker' : null"
+        (click)="adding.set(!adding())">
+        <ng-icon name="lucidePlus" aria-hidden="true" />
+        Agregar especialidad
+      </button>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="message" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" class="action secondary" (click)="load()">Reintentar</button>
+    </div>
+  }
+  @if (loading()) {
+    <p class="message" role="status">Cargando especialidades…</p>
+  }
+
+  @if (adding() && available().length) {
+    <section id="specialty-picker" class="picker" aria-labelledby="specialty-picker-title">
+      <div class="picker-heading">
+        <h2 id="specialty-picker-title">Elegí una especialidad</h2>
+        <button type="button" class="action text-action" (click)="adding.set(false)">Cancelar</button>
+      </div>
+      <div class="picker-options">
+        @for (specialty of available(); track specialty.id) {
+          <button type="button" class="picker-option" [disabled]="store.isMutating()" (click)="add(specialty.id)">
+            <ng-icon [name]="iconFor(specialty.code)" aria-hidden="true" />
+            <span>{{ specialty.name }}</span>
+            <ng-icon name="lucideArrowRight" aria-hidden="true" />
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  <div class="specialty-list">
+    @for (context of store.contexts(); track context.id) {
+      @let isCurrent = context.id === store.specialtyContextId();
+      <article class="specialty-card" [class.is-current]="isCurrent">
+        <div class="specialty-info">
+          <span class="specialty-icon">
+            <ng-icon [name]="iconFor(context.specialty.code)" aria-hidden="true" />
+          </span>
+          <div class="specialty-details">
+            <h2>{{ context.specialty.name }}</h2>
+            <div class="specialty-state">
+              <span class="status" [class.pending]="!context.ready" [class.current]="isCurrent && context.ready">
+                {{ context.ready ? (isCurrent ? 'En uso' : 'Configurada') : 'Configuración pendiente' }}
+              </span>
+              @if (context.ready && context.hasDraft) {
+                <span>Personalización en borrador</span>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="specialty-actions">
+          @if (context.ready) {
+            <a class="action text-action" [routerLink]="['/onboarding/setup']"
+              [attr.aria-label]="'Personalizar ficha de ' + context.specialty.name"
+              [queryParams]="{ specialtyContextId: context.id }">Personalizar ficha</a>
+            <a class="action secondary" [routerLink]="['/dashboard']" [queryParams]="{ specialtyContextId: context.id }"
+              [attr.aria-label]="'Entrar a ' + context.specialty.name">
+              Entrar
+              <ng-icon name="lucideArrowRight" aria-hidden="true" />
+            </a>
+          } @else {
+            <a class="action secondary" [routerLink]="['/onboarding/setup']"
+              [queryParams]="{ specialtyContextId: context.id }">
+              Continuar configuración
+              <ng-icon name="lucideArrowRight" aria-hidden="true" />
+            </a>
+          }
+        </div>
+      </article>
+    } @empty {
+      @if (!loading() && !error() && !(adding() && available().length)) {
+        <div class="empty-state">
+          <p>Todavía no configuraste una especialidad.</p>
+          <a class="action secondary" routerLink="/onboarding/select-specialty">Empezar configuración</a>
+        </div>
+      }
+    }
+  </div>
+</section>

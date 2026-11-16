@@ -13,6 +13,13 @@ describe('Forms stay in the routed page', () => {
           const source = readFileSync(file, 'utf8');
           // M5 requires an accessible unsaved-changes decision; it contains no editor form.
           if(file.endsWith('clinical-switch-dialog.component.ts')){expect(source).not.toMatch(/<form|<input|<textarea/);continue;}
+          // The shared clock picker only chooses a value for the routed input.
+          if (file.endsWith('time-picker.component.ts')) {
+            const picker = source.split('<ng-template cdkConnectedOverlay')[1]?.split('</ng-template>')[0];
+            expect(picker).toContain('class="time-panel"');
+            expect(picker).not.toMatch(/<form|<input|<textarea|type="submit"/);
+            continue;
+          }
           if (/aria-modal\s*=|role\s*=\s*["'](?:alertdialog|dialog)["']|class\s*=\s*["'][^"']*(?:modal-backdrop|dialog-backdrop)|\b(?:window\.)?(?:confirm|alert|prompt)\s*\(|open-[\w-]*modal/.test(source)) violations.push(file);
         }
       }

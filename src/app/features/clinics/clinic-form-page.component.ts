@@ -50,6 +50,8 @@ import {
   UpdateClinicRequest,
   canCreateClinic,
   canEditClinic,
+  isCapabilityVerified,
+  preservedBookingsNotice,
   canTransitionClinicStatus,
   createUnavailableCapabilities,
   describeCapabilityBanner,
@@ -149,6 +151,10 @@ export class ClinicFormPageComponent implements OnInit {
     timezone: [DEFAULT_CLINIC_TIMEZONE, [clinicTimezoneValidator()]],
   });
 
+  private readonly virtualDraft = signal(false);
+  readonly isVirtual = computed(() => this.isEditMode()
+    ? this.clinic()?.modality === 'TELECONSULTATION'
+    : this.virtualDraft());
   readonly isArchived = computed(() => this.clinic()?.status === 'ARCHIVED');
 
   hasListedTimezone(): boolean {
@@ -185,7 +191,7 @@ export class ClinicFormPageComponent implements OnInit {
     if (this.isEditMode()) {
       return canEditClinic(this.clinic(), caps, nowMs);
     }
-    return canCreateClinic(caps, nowMs);
+    return this.isVirtual() ? isCapabilityVerified(caps, nowMs) : canCreateClinic(caps, nowMs);
   }
 
   isReadOnly(): boolean {
@@ -204,6 +210,7 @@ export class ClinicFormPageComponent implements OnInit {
   }
 
   pageTitle(): string {
+    if (this.isVirtual()) return this.isEditMode() ? 'Configurar teleconsulta' : 'Nueva agenda de teleconsultas';
     if (!this.isEditMode()) {
       return 'Nuevo Consultorio';
     }
@@ -254,14 +261,16 @@ export class ClinicFormPageComponent implements OnInit {
         this.isEditMode.set(false);
         this.clinicId.set(null);
         this.clinic.set(null);
+        this.virtualDraft.set(this.route.snapshot?.queryParamMap?.get('modality') === 'teleconsultation');
         this.form.reset({
-          name: '',
+          name: this.isVirtual() ? 'Teleconsulta' : '',
           country: DEFAULT_CLINIC_COUNTRY,
           province: '',
           city: '',
           address: '',
           timezone: DEFAULT_CLINIC_TIMEZONE,
         });
+        this.setLocationControls(this.isVirtual());
         void this.loadCapabilitiesOnly();
       }
     });
@@ -466,8 +475,17 @@ export class ClinicFormPageComponent implements OnInit {
     }
   }
 
+  private setLocationControls(virtual: boolean): void {
+    for (const key of ['country', 'province', 'city', 'address'] as const) {
+      const control = this.form.controls[key];
+      if (virtual) control.disable({ emitEvent: false });
+      else control.enable({ emitEvent: false });
+    }
+  }
+
   private applyServerClinicToForm(serverClinic: Clinic): void {
     this.clinic.set(structuredClone(serverClinic));
+    this.setLocationControls(serverClinic.modality === 'TELECONSULTATION');
     this.form.reset(
       {
         name: serverClinic.name,
@@ -550,36 +568,34 @@ export class ClinicFormPageComponent implements OnInit {
       (!opEditMode || this.clinic()?.id === opClinicId);
 
     const raw = this.form.getRawValue();
+    const virtual = this.isVirtual();
+    const shared = { name: raw.name.trim(), timezone: raw.timezone.trim() };
+    const location = {
+      country: raw.country.trim(), province: raw.province.trim(),
+      city: raw.city.trim(), address: raw.address.trim(),
+    };
     this.isSubmitting.set(true);
 
     try {
       if (!opEditMode) {
         const created = await firstValueFrom(
-          this.clinicsService.createClinic({
-            name: raw.name.trim(),
-            country: raw.country.trim(),
-            province: raw.province.trim(),
-            city: raw.city.trim(),
-            address: raw.address.trim(),
-            timezone: raw.timezone.trim(),
-          }),
+          this.clinicsService.createClinic(virtual
+            ? { ...shared, modality: 'TELECONSULTATION' }
+            : { ...shared, ...location }),
+
         );
         if (!isMutationCurrent()) {
           return;
         }
         this.clinic.set(created);
-        void this.router.navigate(['/clinics']);
+        void this.router.navigate(virtual ? ['/clinics', created.id, 'schedule'] : ['/clinics']);
         return;
       }
 
       const patchPayload: UpdateClinicRequest = {
         expectedVersion: current!.version,
-        name: raw.name.trim(),
-        country: raw.country.trim(),
-        province: raw.province.trim(),
-        city: raw.city.trim(),
-        address: raw.address.trim(),
-        timezone: raw.timezone.trim(),
+        ...shared,
+        ...(virtual ? {} : location),
       };
 
       const updated = await firstValueFrom(
@@ -654,7 +670,7 @@ export class ClinicFormPageComponent implements OnInit {
       }
       this.clinic.set(structuredClone(updated));
       this.submitFeedback.set(
-        `El consultorio pasó a estado ${formatClinicStatusLabel(updated.status)}.`,
+        `El estado se actualizó a ${formatClinicStatusLabel(updated.status)}.${preservedBookingsNotice(updated)}`,
       );
       await this.refreshCapabilitiesSilently(opGen, opOwner, true, opClinicId);
     } catch (error) {

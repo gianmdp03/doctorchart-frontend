@@ -1,10 +1,25 @@
 import { displayLocalDate } from '../../core/date/display-date';
 
+export type AppointmentModality = 'IN_PERSON' | 'TELECONSULTATION';
+
+export function modalityLabel(modality?: AppointmentModality): string {
+  return modality === 'TELECONSULTATION' ? 'Teleconsulta' : 'Presencial';
+}
+
+export function preservedBookingsNotice(clinic: Clinic): string {
+  const count = clinic.futureBookings ?? 0;
+  return clinic.status !== 'ACTIVE' && count > 0
+    ? ' ' + (count === 1 ? 'El turno futuro sigue visible en la agenda.' : 'Los ' + count + ' turnos futuros siguen visibles en la agenda.')
+    : '';
+}
+
 export type ClinicStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 
 export type ClinicStatusFilter = 'ALL' | ClinicStatus;
 
 export interface Clinic {
+  modality?: AppointmentModality;
+  futureBookings?: number;
   id: string;
   name: string;
   country: string;
@@ -61,14 +76,10 @@ export interface ClinicCapabilities {
   reason: ClinicCapabilityReason;
 }
 
-export interface CreateClinicRequest {
-  name: string;
-  country: string;
-  province: string;
-  city: string;
-  address: string;
-  timezone: string;
-}
+export type CreateClinicRequest = { name: string; timezone: string } & (
+  | { modality?: 'IN_PERSON'; country: string; province: string; city: string; address: string }
+  | { modality: 'TELECONSULTATION'; country?: never; province?: never; city?: never; address?: never }
+);
 
 export interface UpdateClinicRequest {
   expectedVersion: string;
@@ -487,7 +498,7 @@ export function canCreateClinic(
 }
 
 export function canEditClinic(
-  clinic: Pick<Clinic, 'status'> | null | undefined,
+  clinic: Pick<Clinic, 'status' | 'modality'> | null | undefined,
   capabilities: ClinicCapabilities | null | undefined,
   nowMs = Date.now(),
 ): boolean {
@@ -497,11 +508,11 @@ export function canEditClinic(
   if (!capabilities || !isCapabilityVerified(capabilities, nowMs)) {
     return false;
   }
-  return capabilities.actions.edit === true;
+  return clinic.modality === 'TELECONSULTATION' || capabilities.actions.edit === true;
 }
 
 export function canTransitionClinicStatus(
-  clinic: Pick<Clinic, 'status'> | null | undefined,
+  clinic: Pick<Clinic, 'status' | 'modality'> | null | undefined,
   targetStatus: ClinicStatus,
   capabilities: ClinicCapabilities | null | undefined,
   nowMs = Date.now(),
@@ -511,6 +522,9 @@ export function canTransitionClinicStatus(
   }
   if (clinic.status === targetStatus) {
     return false;
+  }
+  if (clinic.modality === 'TELECONSULTATION') {
+    return clinic.status !== 'ARCHIVED' && (targetStatus === 'ACTIVE' || targetStatus === 'INACTIVE');
   }
   switch (clinic.status) {
     case 'ACTIVE':
@@ -542,9 +556,8 @@ export function formatClinicStatusLabel(status: ClinicStatus): string {
     case 'ACTIVE':
       return 'Activo';
     case 'INACTIVE':
-      return 'Inactivo';
     case 'ARCHIVED':
-      return 'Archivado';
+      return 'Desactivado';
   }
 }
 
@@ -649,7 +662,7 @@ export function describeCapabilityBanner(
       tone: 'info',
       title: `Alcanzaste el límite de ${max} consultorio${max === 1 ? '' : 's'} de tu plan`,
       description:
-        'Los consultorios activos e inactivos consumen cupo; los archivados no. Podés editar o inactivar tus consultorios actuales, archivar uno para liberar lugar, o ampliar tu plan.',
+        'Los consultorios activos e inactivos consumen cupo; los archivados no. Podés editar o desactivar tus consultorios actuales, archivar uno para liberar lugar, o ampliar tu plan.',
       showUpgradeLink: true,
       showRetryButton: false,
     };

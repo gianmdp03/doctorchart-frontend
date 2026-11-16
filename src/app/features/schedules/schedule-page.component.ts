@@ -7,19 +7,21 @@ import { firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { environment } from '../../../environments/environment';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
+import { TimePickerComponent } from '../../shared/time-picker/time-picker.component';
 import { AuthService } from '../../core/services/auth.service';
 import { BrowserUiStorageService } from '../../core/services/browser-ui-storage.service';
 import { isArgentineTimezone } from '../../core/date/user-time-zone';
 import { ClinicsService } from '../clinics/clinics.service';
-import { Clinic, ClinicCapabilities, isCapabilityVerified, parseClinicHttpError } from '../clinics/clinics.models';
-import { Availability, ClinicSchedule, ScheduleDay, ScheduleException, ScheduleRange, ScheduleUpdate } from './schedules.models';
+import { Clinic, ClinicCapabilities, isCapabilityVerified, modalityLabel, parseClinicHttpError } from '../clinics/clinics.models';
+import { Availability, ClinicSchedule, OccupiedSchedule, ScheduleConflict, ScheduleDay, ScheduleException, ScheduleRange, ScheduleUpdate } from './schedules.models';
+import { civilDate, localTime, offsetLabel } from '../calendar/bookings.models';
 import { SchedulesService } from './schedules.service';
 
 interface Draft {minNoticeMinutes:number|null;maxAdvanceDays:number|null;weekly:ScheduleDay[];exceptions:ScheduleException[];}
 interface StoredDraft {version:string;draft:Draft;}
 function emptyDraft():Draft{return {minNoticeMinutes:null,maxAdvanceDays:null,weekly:Array.from({length:7},(_,i)=>({weekday:i+1,ranges:[]})),exceptions:[]};}
 @Component({
- selector:'app-schedule-page',imports:[CommonModule,FormsModule,RouterLink,DatePickerComponent],
+ selector:'app-schedule-page',imports:[CommonModule,FormsModule,RouterLink,DatePickerComponent,TimePickerComponent],
  templateUrl:'./schedule-page.component.html',styleUrl:'./schedule-page.component.css',
 })
 export class SchedulePageComponent {
@@ -48,11 +50,23 @@ export class SchedulePageComponent {
  readonly capabilities=signal<ClinicCapabilities|null>(null);
  readonly busy=signal(false);
  readonly saving=signal(false);
+ readonly validatingBlocks=signal(false);
  readonly error=signal('');
  readonly feedback=signal('');
  readonly conflict=signal(false);
  readonly draftStatus=signal<'clean'|'stored'|'unavailable'>('clean');
  readonly availability=signal<Availability|null>(null);
+ readonly scheduleConflict=signal<ScheduleConflict|null>(null);
+ readonly occupied=signal<OccupiedSchedule|null>(null);
+ readonly occupiedError=signal('');
+ readonly occupiedBusy=signal(false);
+ readonly modalityLabel=modalityLabel;
+ private occupiedGeneration=0;
+ occupiedDate=this.previewDateValue();
+ private previewDateValue(){return civilDate(new Date().toISOString(),Intl.DateTimeFormat().resolvedOptions().timeZone);}
+ occupiedDay(instant:string,zone:string){return this.dateLabel(civilDate(instant,zone));}
+ occupiedTime(instant:string,zone:string){return localTime(instant,zone)+' '+offsetLabel(instant,zone);}
+
  readonly previewDaysWithSlots = computed(() => {
   const result = this.availability();
   if (!result) return null;
@@ -115,7 +129,7 @@ export class SchedulePageComponent {
  async load(){
   const generation=++this.generation,owner=this.auth.currentUser()?.id??null,id=this.id;
   this.specialty.set(null);this.selectedDays=[];this.blockError.set('');
-  this.saving.set(false);this.previewBusy.set(false);this.choicesBusy.set(false);this.choicePage.set(0);this.choiceTotal.set(0);this.choices.set([]);this.clinic.set(null);this.availability.set(null);this.setCapabilities(null);this.draft=emptyDraft();this.version='0';this.conflict.set(false);this.feedback.set('');this.error.set('');
+  this.saving.set(false);this.validatingBlocks.set(false);this.previewBusy.set(false);this.choicesBusy.set(false);this.choicePage.set(0);this.choiceTotal.set(0);this.choices.set([]);this.clinic.set(null);this.availability.set(null);this.scheduleConflict.set(null);this.occupied.set(null);this.occupiedError.set('');this.occupiedBusy.set(false);this.setCapabilities(null);this.draft=emptyDraft();this.version='0';this.conflict.set(false);this.feedback.set('');this.error.set('');
   this.draftStatus.set('clean');
   if(!owner){this.busy.set(false);return;}
   if(!id){
@@ -135,6 +149,7 @@ export class SchedulePageComponent {
    this.readySpecialties.set(ready);this.specialty.set(ready.length===1?ready[0]:null);
    this.clinic.set(clinic);this.choices.set(choices.items);this.choiceTotal.set(choices.totalElements);this.apply(schedule);this.setCapabilities(caps);
    this.restoreDraft(owner,id);
+   if(choices.totalElements>1)void this.loadOccupied();
   }catch(e){if(this.current(generation,owner,id))this.error.set(parseClinicHttpError(e,'No pudimos cargar la agenda.').userMessage);}
   finally{if(this.current(generation,owner,id))this.busy.set(false);}
  }
@@ -180,7 +195,7 @@ export class SchedulePageComponent {
  canEdit(){
   this.permissionClock();
   const caps=this.capabilities();
-  return !this.busy()&&!this.saving()&&this.clinic()?.status!=='ARCHIVED'&&!!this.clinic()&&isCapabilityVerified(caps)&&!!caps?.actions.edit;
+  return !this.busy()&&!this.saving()&&!this.validatingBlocks()&&this.clinic()?.status!=='ARCHIVED'&&!!this.clinic()&&isCapabilityVerified(caps)&&(this.clinic()?.modality==='TELECONSULTATION'||!!caps?.actions.edit);
  }
  canSave(){
   return !this.datePickers().some(p=>p.inputId()?.startsWith('exception-')&&p.error())&&
@@ -214,11 +229,9 @@ export class SchedulePageComponent {
  async save(){
   if(!this.canSave())return;
   const generation=this.generation,owner=this.auth.currentUser()?.id??null,id=this.id;
-  const draft=structuredClone(this.draft);
-  const request:ScheduleUpdate={...draft,expectedVersion:this.version,minNoticeMinutes:draft.minNoticeMinutes!,maxAdvanceDays:draft.maxAdvanceDays!,
-   exceptions:draft.exceptions.map(exception=>({...exception,through:exception.through||exception.from}))};
+  const request=this.scheduleUpdate(structuredClone(this.draft));
   this.keepDraft();
-  this.saving.set(true);this.error.set('');this.feedback.set('');
+  this.saving.set(true);this.error.set('');this.scheduleConflict.set(null);this.feedback.set('');
   try{
    const result=await firstValueFrom(this.api.save(id,request));
    if(!this.current(generation,owner,id))return;
@@ -228,6 +241,8 @@ export class SchedulePageComponent {
   }catch(e){
    if(!this.current(generation,owner,id))return;
    const parsed=parseClinicHttpError(e,'No pudimos guardar. Los campos ingresados se conservaron.');
+   const details=(e as {error?:{details?:ScheduleConflict}}).error?.details;
+   if(details?.requested && details?.existing) this.scheduleConflict.set(details);
    this.error.set(parsed.isVersionConflict ? 'La agenda cambió en otra sesión. Revisá el aviso antes de guardar.' : parsed.userMessage);
    if(parsed.isVersionConflict)this.conflict.set(true);
    if(parsed.shouldRefreshCapabilities){this.setCapabilities(null);await this.retryCapabilities();}
@@ -256,15 +271,51 @@ export class SchedulePageComponent {
    if(!this.readySpecialties().some(c=>c.id===r.specialtyContextId))return 'La especialidad del bloque no está disponible.';
   }return '';
  }
- addBlocks(){
+ private scheduleUpdate(draft:Draft):ScheduleUpdate {
+  return {...draft,expectedVersion:this.version,minNoticeMinutes:draft.minNoticeMinutes!,maxAdvanceDays:draft.maxAdvanceDays!,
+   exceptions:draft.exceptions.map(exception=>({...exception,through:exception.through||exception.from}))};
+ }
+ async addBlocks(){
   const scope=this.specialty();if(!scope||!this.canEdit())return;
   if(!this.selectedDays.length){this.blockError.set('Elegí al menos un día.');return;}
   const block:ScheduleRange={start:this.blockStart,end:this.blockEnd,slotMinutes:this.blockMinutes,specialtyContextId:scope.id};
-  for(const day of this.draft.weekly.filter(d=>this.selectedDays.includes(d.weekday))){const error=day.ranges.length>=16?'Este día ya tiene 16 bloques.':this.rangesError([...day.ranges,block]);if(error){this.blockError.set(this.weekdays[day.weekday-1]+': '+error);return;}}
-  for(const day of this.draft.weekly.filter(d=>this.selectedDays.includes(d.weekday))){day.ranges.push({...block});day.ranges.sort((a,b)=>a.start.localeCompare(b.start));}
-  this.blockError.set('');this.selectedDays=[];this.keepDraft();
+  const draft=structuredClone(this.draft);
+  for(const day of draft.weekly.filter(d=>this.selectedDays.includes(d.weekday))){
+   const error=day.ranges.length>=16?'Este día ya tiene 16 bloques.':this.rangesError([...day.ranges,block]);
+   if(error){this.blockError.set(this.weekdays[day.weekday-1]+': '+error);return;}
+   day.ranges.push({...block});day.ranges.sort((a,b)=>a.start.localeCompare(b.start));
+  }
+  const generation=this.generation,owner=this.owner,id=this.id;
+  this.blockError.set('');this.validatingBlocks.set(true);
+  try{
+   await firstValueFrom(this.api.validateDraft(id,this.scheduleUpdate(draft)));
+   if(!this.current(generation,owner,id))return;
+   this.draft.weekly=draft.weekly;this.selectedDays=[];this.keepDraft();
+  }catch(e){
+   if(!this.current(generation,owner,id))return;
+   const parsed=parseClinicHttpError(e,'No pudimos comprobar si el horario está ocupado. Volvé a intentar.');
+   this.blockError.set(parsed.userMessage);
+   if(parsed.isVersionConflict)this.conflict.set(true);
+  }finally{if(this.current(generation,owner,id))this.validatingBlocks.set(false);}
  }
  specialtyName(id:string|undefined){return this.readySpecialties().find(c=>c.id===id)?.name??'Especialidad no disponible';}
  chooseSpecialty(id:string){this.specialty.set(this.readySpecialties().find(c=>c.id===id)??null);}
+ async loadOccupied(date=this.occupiedDate){
+  const generation=this.generation,owner=this.owner,id=this.id,request=++this.occupiedGeneration;
+  this.occupiedDate=date;
+  this.occupied.set(null);
+  this.occupiedError.set('');
+  if(!id||!/^\d{4}-\d{2}-\d{2}$/.test(date)){this.occupiedBusy.set(false);return;}
+  this.occupiedBusy.set(true);
+  const current=()=>request===this.occupiedGeneration&&this.current(generation,owner,id);
+  try{
+   const result=await firstValueFrom(this.api.occupied(id,date));
+   if(current())this.occupied.set(result);
+  }catch(err){
+   if(current())this.occupiedError.set(parseClinicHttpError(err,'No pudimos consultar las franjas ocupadas.').userMessage);
+  }finally{
+   if(current())this.occupiedBusy.set(false);
+  }
+ }
  dateLabel(iso:string){return iso.split('-').reverse().join('/');}
 }

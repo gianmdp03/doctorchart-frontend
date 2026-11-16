@@ -1,5 +1,5 @@
 <app-interaction-status />
-@for (sessionKey of sessionKeys(); track sessionKey) {
+@for (session of sessionViews(); track session.key) {
   @if (isPublicPage() || isStaffPage()) {
     <router-outlet />
   } @else {

@@ -39,6 +39,8 @@ import {
   ClinicStatusFilter,
   canCreateClinic,
   canEditClinic,
+  isCapabilityVerified,
+  preservedBookingsNotice,
   canTransitionClinicStatus,
   createUnavailableCapabilities,
   describeCapabilityBanner,
@@ -100,8 +102,8 @@ export class ClinicsPageComponent implements OnInit {
   readonly statusFilters: readonly StatusFilterOption[] = [
     { value: 'ALL', label: 'Todos' },
     { value: 'ACTIVE', label: 'Activos' },
-    { value: 'INACTIVE', label: 'Inactivos' },
-    { value: 'ARCHIVED', label: 'Archivados' },
+    { value: 'INACTIVE', label: 'Desactivados' },
+    { value: 'ARCHIVED', label: 'Fuera del cupo' },
   ];
 
   readonly clinics = signal<Clinic[]>([]);
@@ -288,6 +290,12 @@ export class ClinicsPageComponent implements OnInit {
     void this.reloadAll();
   }
 
+  canCreateVirtual(): boolean {
+    this.capabilityExpiryTick();
+    return this.schedulesEnabled && isCapabilityVerified(this.capabilities())
+      && !this.clinics().some(clinic => clinic.modality === 'TELECONSULTATION');
+  }
+
   navigateToCreate(): void {
     if (!this.canCreate()) {
       return;
@@ -346,7 +354,7 @@ export class ClinicsPageComponent implements OnInit {
         return;
       }
       this.actionFeedback.set(
-        `El estado de "${updated.name}" se actualizó a ${formatClinicStatusLabel(updated.status)}.`,
+        `El estado de "${updated.name}" se actualizó a ${formatClinicStatusLabel(updated.status)}.${preservedBookingsNotice(updated)}`,
       );
       await this.reloadAll();
     } catch (error) {

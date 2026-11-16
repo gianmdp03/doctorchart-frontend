@@ -47,7 +47,7 @@ describe('SidebarComponent', () => {
       imports: [SidebarComponent],
       providers: [
         provideRouter([]),
-        { provide: WorkspaceStore, useValue: { navigation, clinicsEnabled,hasReadyContext:()=>navigation().length>0 } },
+        { provide: WorkspaceStore, useValue: { navigation, clinicsEnabled, contexts: () => [], hasReadyContext:()=>navigation().length>0 } },
         { provide: AuthService, useValue: authServiceMock },
         { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },
         { provide: DoctorProfileService, useValue: profileServiceMock },

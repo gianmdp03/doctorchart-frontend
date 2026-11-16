@@ -5,13 +5,16 @@ import {environment} from '../../../environments/environment';
 import type {Booking, BookingStatus} from '../calendar/bookings.models';
 
 export type StaffPermission='view'|'create'|'cancel'|'reschedule'|'status';
-export type AdministrativeBooking=Omit<Booking,'patientId'|'provenance'|'clinicSnapshot'>&{clinicSnapshot?:{name:string;timezone:string}};
+import type {AppointmentModality} from '../clinics/clinics.models';
+
+export type AdministrativeBooking=Omit<Booking,'patientId'|'provenance'|'clinicSnapshot'>&{clinicSnapshot?:{name:string;timezone:string;modality?:AppointmentModality}};
 export interface StaffSession {email:string;name:string;csrfToken:string;expiresAt:string;recoveryCode?:string;}
-export interface Assignment {doctorName?:string;ownerId:string;accessId:string;clinicId:string;clinicName:string;timezone:string;permissions:StaffPermission[];validUntil:string;}
-export interface StaffAccess {id:string;email:string;name:string;version:string;active:boolean;activated:boolean;permissions:StaffPermission[];clinicIds:string[];}
+export interface Assignment {modality?:AppointmentModality;doctorName?:string;ownerId:string;accessId:string;clinicId:string;clinicName:string;timezone:string;permissions:StaffPermission[];validUntil:string;}
+export interface StaffAccess {phone?:string;id:string;email:string;name:string;version:string;active:boolean;activated:boolean;permissions:StaffPermission[];clinicIds:string[];}
 export interface SlotDay {date:string;slots:{start:string;end:string}[];}
 export function staffError(error:unknown):string {
  const e=error as HttpErrorResponse; const code=e?.error?.code;
+ if(e?.status===400&&code==='INVALID_REQUEST'&&typeof e.error.message==='string')return e.error.message;
  if(e?.status===401)return 'Tu sesión venció o los datos de acceso no son válidos.';
  if(e?.status===403)return 'No tenés permisos vigentes para esta operación. Actualizá tus asignaciones.';
  if(e?.status===409)return code==='VERSION_CONFLICT'?'El turno cambió. Volvé a seleccionarlo antes de modificarlo.':'El horario o la solicitud cambió. Revisá la agenda; conservamos los datos ingresados.';
@@ -23,14 +26,16 @@ export function staffError(error:unknown):string {
 export class StaffService {
  private readonly http=inject(HttpClient);
  readonly session=signal<StaffSession|null>(null);
+ readonly activationRecovery=signal('');
  private readonly base=environment.apiUrl.replace(/\/$/,'')+'/staff';
  private options(write=false,key?:string){let headers=new HttpHeaders();if(write&&this.session())headers=headers.set('X-CSRF-Token',this.session()!.csrfToken);if(key)headers=headers.set('Idempotency-Key',key);return {withCredentials:true,transferCache:false,headers};}
+ inspectInvitation(invitationCode:string){return firstValueFrom(this.http.post<{email:string;name:string;expiresAt:string;existingAccount:boolean}>(this.base+'/invitation',{invitationCode},this.options()));}
  async loadSession(){const s=await firstValueFrom(this.http.get<StaffSession>(this.base+'/session',this.options()));this.session.set(s);return s;}
- async authenticate(action:'login'|'activate',body:Record<string,string>){const s=await firstValueFrom(this.http.post<StaffSession>(this.base+'/'+action,body,this.options()));this.session.set(s);return s;}
+ async authenticate(action:'login'|'activate',body:Record<string,string>){const s=await firstValueFrom(this.http.post<StaffSession>(this.base+'/'+action,body,this.options()));this.activationRecovery.set(s.recoveryCode??'');this.session.set(s);return s;}
  requestRecoveryEmail(email:string){return firstValueFrom(this.http.post<{message:string}>(this.base+'/recovery-email',{email},this.options()));}
  recoverEmail(body:Record<string,string>){return firstValueFrom(this.http.post<{recoveryCode:string}>(this.base+'/recover-email',body,this.options()));}
  recover(body:Record<string,string>){return firstValueFrom(this.http.post<{recoveryCode:string}>(this.base+'/recover',body,this.options()));}
- async logout(){await firstValueFrom(this.http.post(this.base+'/logout',{},this.options(true)));this.session.set(null);}
+ async logout(){await firstValueFrom(this.http.post(this.base+'/logout',{},this.options(true)));this.session.set(null);this.activationRecovery.set('');}
  changePassword(currentPassword:string,password:string){return firstValueFrom(this.http.post(this.base+'/password',{currentPassword,password},this.options(true)));}
  assignments(){return firstValueFrom(this.http.get<{items:Assignment[]}>(this.base+'/assignments',this.options()));}
  availability(a:Assignment,from:string,days:number){return firstValueFrom(this.http.get<{days:SlotDay[]}>(`${this.base}/owners/${encodeURIComponent(a.ownerId)}/clinics/${a.clinicId}/availability`,{...this.options(),params:{from,days}}));}

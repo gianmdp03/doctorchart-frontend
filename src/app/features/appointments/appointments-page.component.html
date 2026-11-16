@@ -8,18 +8,22 @@
  </header>
  <main>
  @if(confirmation();as c){
-  <section class="confirmation" aria-labelledby="confirmation-title"><div class="confirmed-symbol" aria-hidden="true">✓</div><p class="eyebrow">TURNO CONFIRMADO</p><h1 id="confirmation-title">Tu próxima consulta, organizada.</h1><p>La reserva de <strong>{{c.attendeeName}}</strong> se confirmó con {{c.doctorName}}.</p><div class="confirmation-card"><strong>{{displayDay(civilDate(c.start,c.timezone))}}</strong><span>{{localTime(c.start,c.timezone)}} – {{localTime(c.end,c.timezone)}}</span>@if(c.specialtyName){<p>{{c.specialtyName}}</p>}<h2>{{c.clinicName}}</h2><p>{{c.address}}</p><p class="muted">Hora local del consultorio</p><small>Referencia administrativa</small><code>{{c.reference}}</code></div>@if(c.accessCode){<section class="confirmation-card"><h2>Guardá tu código privado</h2><code style="overflow-wrap:anywhere">{{c.accessCode}}</code><p>Podés usarlo para <a routerLink="/appointments/confirmation">consultar tu turno</a>. También enviaremos un correo administrativo. Si el correo demora, tu reserva ya está confirmada y este código funciona.</p><p class="muted">No compartas el código. No lo guardamos en el navegador.</p></section>}@else{<p class="muted">Guardá esta confirmación. Al refrescar se cierra esta vista; tu reserva permanece confirmada.</p>}<a [routerLink]="['/appointments',confirmationDoctorId()]" (click)="confirmation.set(null);loadProfile()">Volver al profesional</a></section>
+  <section class="confirmation" aria-labelledby="confirmation-title"><div class="confirmed-symbol" aria-hidden="true">✓</div><p class="eyebrow">TURNO CONFIRMADO</p><h1 id="confirmation-title">Tu próxima consulta, organizada.</h1><p>La reserva de <strong>{{c.attendeeName}}</strong> se confirmó con {{c.doctorName}}.</p><div class="confirmation-card"><strong>{{displayDay(civilDate(c.start,c.timezone))}}</strong><span>{{localTime(c.start,c.timezone)}} – {{localTime(c.end,c.timezone)}}</span>@if(c.specialtyName){<p>{{c.specialtyName}}</p>}<h2>{{c.clinicName}}</h2><p>{{modalityLabel(c.modality)}} @if(c.address){· {{c.address}}}</p><p class="muted">Hora de la agenda · {{c.timezone}}</p>@if(c.modality==='TELECONSULTATION'&&patientTime(c.start,c.timezone);as local){<p>Tu hora local · {{local}}</p>}<small>Referencia administrativa</small><code>{{c.reference}}</code></div>@if(c.accessCode){<section class="confirmation-card"><h2>Guardá tu código privado</h2><code style="overflow-wrap:anywhere">{{c.accessCode}}</code><p>Podés usarlo para <a routerLink="/appointments/confirmation">consultar tu turno</a>. También enviaremos un correo administrativo. Si el correo demora, tu reserva ya está confirmada y este código funciona.</p><p class="muted">No compartas el código. No lo guardamos en el navegador.</p></section>}@else{<p class="muted">Guardá esta confirmación. Al refrescar se cierra esta vista; tu reserva permanece confirmada.</p>}<a [routerLink]="['/appointments',confirmationDoctorId()]" (click)="confirmation.set(null);loadProfile()">Volver al profesional</a></section>
  }@else if(!id()){
   <section class="directory-intro" aria-labelledby="directory-title">
    <p class="eyebrow">TURNOS MÉDICOS ONLINE · {{ country.name }}</p>
    <h1 id="directory-title">Encontrá un turno</h1>
-   <p class="directory-description">Encontrá un consultorio por especialidad y ubicación. Elegí un horario y reservá sin crear una cuenta.</p>
+   <p class="directory-description">Buscá turnos presenciales y virtuales por especialidad. Elegí un horario y reservá sin crear una cuenta.</p>
    <form class="search-form" (ngSubmit)="search(0)" role="search" aria-label="Buscar turnos">
     <div class="search-fields">
+     <label>Modalidad<select name="modality" aria-label="Modalidad" [ngModel]="filters.modality" (ngModelChange)="changeModality($event)">
+      <option value="">Todos</option><option value="IN_PERSON">Presencial</option><option value="TELECONSULTATION">Teleconsulta</option>
+     </select></label>
      <label><span id="search-specialty-label">Especialidad</span><select name="specialty" aria-labelledby="search-specialty-label" [(ngModel)]="filters.specialty">
       <option value="">Todas las especialidades</option>
       @for (specialty of specialties(); track specialty.code) {<option [value]="specialty.code">{{ specialty.name }}</option>}
      </select></label>
+     @if (filters.modality !== 'TELECONSULTATION') {
      @if (countries.length > 1) {
       <label>País<select name="country" [ngModel]="country" (ngModelChange)="changeCountry($event)">
        @for (option of countries; track option.code) {<option [ngValue]="option">{{ option.name }}</option>}
@@ -33,19 +37,20 @@
       <option value="">{{ filters['province'] ? 'Todas las localidades' : 'Elegí primero una provincia' }}</option>
       @for (locality of localities(); track locality) {<option [value]="locality">{{ locality }}</option>}
      </select></label>
+     }
      <button class="primary" [disabled]="busy()">Buscar turnos</button>
     </div>
    </form>
    @if(confirmationEnabled){<p class="existing-booking">¿Ya tenés una reserva? <a routerLink="/appointments/confirmation">Consultá tu turno</a></p>}
   </section>
   <section class="search-results" aria-labelledby="results-title" [attr.aria-busy]="busy()">
-   <div class="section-heading"><h2 id="results-title">Consultorios con reservas online</h2>@if(page>0||hasMore){<span class="muted">Página {{page+1}}</span>}</div>
+   <div class="section-heading"><h2 id="results-title">Profesionales con reservas online</h2>@if(page>0||hasMore){<span class="muted">Página {{page+1}}</span>}</div>
    @if(busy()){
-    <p role="status" class="empty">Buscando consultorios…</p>
+    <p role="status" class="empty">Buscando profesionales…</p>
    }@else if(error()){
     <p role="alert" class="notice error">{{error()}}</p>
    }@else if(!doctors().length){
-    <div class="empty"><h3>No encontramos consultorios con esos filtros</h3><p>Probá otra ubicación o especialidad.</p></div>
+    <div class="empty"><h3>No encontramos turnos con esos filtros</h3><p>Probá otra ubicación o especialidad.</p></div>
    }@else{
     <div class="clinic-grid">
      @for(doctor of doctors();track doctor.id){
@@ -53,7 +58,7 @@
        <article class="clinic-card">
         <h3>{{doctor.name}}</h3>
         <strong class="result-clinic">{{clinic.name}}</strong>
-        <p class="result-address">{{clinic.address}}<br />{{clinic.city}}, {{clinic.province}}</p>
+        <p class="result-address">{{modalityLabel(clinic.modality)}} @if(clinic.modality!=='TELECONSULTATION'){<br />{{clinic.address}}<br />{{clinic.city}}, {{clinic.province}}}</p>
         <p class="eyebrow result-specialty">{{specialtyNames(doctor)}}</p>
         <a class="profile-link" [routerLink]="['/appointments',doctor.id]" [queryParams]="{clinic:clinic.id,specialtyContextId:directContext(doctor)}">Ver horarios <span aria-hidden="true">↗</span></a>
        </article>
@@ -69,16 +74,16 @@
   @if(busy()&&!profile()){<p role="status" class="empty">Consultando el perfil…</p>}
   @if(profile();as d){
    <section class="professional"><div class="professional-monogram" aria-hidden="true">{{d.name.slice(0,1)}}</div><div><p class="eyebrow">{{specialtyNames(d)}}</p><h1>{{d.name}}</h1><p>{{d.description}}</p></div></section>
-   <div class="booking-layout"><section class="availability" aria-label="Seleccionar consultorio y horario"><div class="section-heading"><h2>1. Elegí dónde y cuándo</h2><span class="muted">Hora local del consultorio</span></div>
-    @if(d.specialties && d.specialties.length>1){<label>Especialidad<select aria-label="Especialidad de la reserva" [ngModel]="specialtyContextId()" (ngModelChange)="changeSpecialty($event)" [disabled]="sending()"><option value="" disabled>Elegí una especialidad</option>@for(context of d.specialties;track context.id){<option [value]="context.id">{{context.name}}</option>}</select></label>}<div class="clinic-options">@for(c of contextClinics();track c.id){<button [class.selected]="clinicId()===c.id" [attr.aria-pressed]="clinicId()===c.id" [disabled]="sending()" (click)="changeClinic(c.id)"><strong>{{c.name}}</strong><span>{{c.address}} · {{c.city}}, {{c.province}}, {{c.country}}</span></button>}</div>
+   <div class="booking-layout"><section class="availability" aria-label="Seleccionar consultorio y horario"><div class="section-heading"><h2>1. Elegí dónde y cuándo</h2><span class="muted">Hora de la agenda @if(clinic();as c){· {{c.timezone}}}</span></div>
+    @if(d.specialties && d.specialties.length>1){<label>Especialidad<select aria-label="Especialidad de la reserva" [ngModel]="specialtyContextId()" (ngModelChange)="changeSpecialty($event)" [disabled]="sending()"><option value="" disabled>Elegí una especialidad</option>@for(context of d.specialties;track context.id){<option [value]="context.id">{{context.name}}</option>}</select></label>}<div class="clinic-options">@for(c of contextClinics();track c.id){<button [class.selected]="clinicId()===c.id" [attr.aria-pressed]="clinicId()===c.id" [disabled]="sending()" (click)="changeClinic(c.id)"><strong>{{c.name}}</strong><span>{{modalityLabel(c.modality)}} @if(c.modality!=='TELECONSULTATION'){· {{c.address}} · {{c.city}}, {{c.province}}, {{c.country}}}</span></button>}</div>
     <div class="date-navigation"><button aria-label="Semana anterior" (click)="navigate(-1)" [disabled]="sending()">←</button><label>Desde<app-date-picker inputId="public-date" [value]="date" (valueChange)="changeDate($event)" /></label><button aria-label="Semana siguiente" (click)="navigate(1)" [disabled]="sending()">→</button></div>
     @if(slotError()){<p role="alert" class="notice error">{{slotError()}} <button (click)="loadSlots()" [disabled]="sending()">Reintentar</button></p>}
     @if(slotsBusy()){<p role="status" class="empty">Consultando horarios disponibles…</p>}
-    @if(clinic();as c){<div class="availability-days">@for(day of days();track day.date){<section class="availability-day"><h3>{{displayDay(day.date)}}</h3><div class="slots">@for(slot of day.slots;track slot.start){<button [attr.data-public-slot]="slot.start" [class.selected]="selectedStart()===slot.start" [attr.aria-pressed]="selectedStart()===slot.start" [disabled]="sending()" (click)="selectSlot(slot.start)"><strong>{{localTime(slot.start,c.timezone)}}</strong>@if(slotOffsetLabel(slot.start,c.timezone); as offset){<small>{{offset}}</small>}</button>}@if(!day.slots.length){<p class="muted">Sin horarios disponibles</p>}</div></section>}</div>}
+    @if(clinic();as c){<div class="availability-days">@for(day of days();track day.date){<section class="availability-day"><h3>{{displayDay(day.date)}}</h3><div class="slots">@for(slot of day.slots;track slot.start){<button [attr.data-public-slot]="slot.start" [class.selected]="selectedStart()===slot.start" [attr.aria-pressed]="selectedStart()===slot.start" [disabled]="sending()" (click)="selectSlot(slot.start)"><strong>{{localTime(slot.start,c.timezone)}}</strong>@if(slotOffsetLabel(slot.start,c.timezone); as offset){<small>{{offset}}</small>}@if(c.modality==='TELECONSULTATION'&&patientTime(slot.start,c.timezone);as local){<small>Tu hora · {{local}}</small>}</button>}@if(!day.slots.length){<p class="muted">Sin horarios disponibles</p>}</div></section>}</div>}
    </section>
    @if(formOpen()){
     <section class="reservation-form" aria-labelledby="public-form-title"><p class="eyebrow">SIN CUENTA, SIN TRÁMITES EXTRA</p><h2 id="public-form-title">2. Completá la reserva</h2>
-     @if(clinic();as c){@if(selectedStart()){<p class="selected-summary">{{displayDay(civilDate(selectedStart(),c.timezone))}} · {{localTime(selectedStart(),c.timezone)}} · {{c.name}}</p>}}
+     @if(clinic();as c){@if(selectedStart()){<p class="selected-summary">{{displayDay(civilDate(selectedStart(),c.timezone))}} · {{localTime(selectedStart(),c.timezone)}} · {{c.name}} · {{modalityLabel(c.modality)}}</p>@if(c.modality==='TELECONSULTATION'&&patientTime(selectedStart(),c.timezone);as local){<p>Tu hora local · {{local}}</p>}}}
      <form (ngSubmit)="submit()" #bookingForm="ngForm"><fieldset [disabled]="sending()"><legend>Datos de quien solicita el turno</legend>
       <label>Nombre y apellido<input id="public-contact" name="contactName" [(ngModel)]="contactName" required maxlength="160" autocomplete="name" /></label>
       <div class="form-pair"><label>País del documento<input id="public-document-country" name="documentCountry" [(ngModel)]="documentCountry" required pattern="[A-Z]{2}" maxlength="2" placeholder="AR" /><small>Código de dos letras. Ej.: AR.</small></label><label>Tipo de documento<select id="public-document-type" name="documentType" [(ngModel)]="documentType"><option value="DNI">DNI argentino</option><option value="PASSPORT">Pasaporte</option></select></label></div>

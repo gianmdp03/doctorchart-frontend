@@ -7,9 +7,9 @@
   </header>
 
   <ol class="setup-steps" aria-label="Pasos para habilitar reservas">
-    <li><strong>1. Creá el consultorio</strong><a routerLink="/clinics">Ir a Consultorios →</a></li>
-    <li><strong>2. Cargá horarios</strong><span>Entrá en Agenda desde el consultorio y guardá las franjas de atención.</span></li>
-    <li><strong>3. Publicá y compartí</strong><span>Elegí la sede, guardá la publicación y compartí el enlace.</span></li>
+    <li><strong>1. Creá una agenda</strong><a routerLink="/clinics">Ir a Consultorios →</a></li>
+    <li><strong>2. Cargá horarios</strong><span>Guardá las franjas de atención para cada modalidad.</span></li>
+    <li><strong>3. Publicá y compartí</strong><span>Elegí las agendas, guardá la publicación y compartí el enlace.</span></li>
   </ol>
 
   @if(error()){<p class="notice error" role="alert">{{error()}}</p>}
@@ -33,17 +33,19 @@
           <label><span>Presentación breve <span class="muted">(opcional)</span></span><textarea id="publication-description" name="description" [(ngModel)]="draft.description" maxlength="1200" rows="3"></textarea></label>
           <p class="muted">Elegí las especialidades que querés ofrecer. Los datos de pacientes y las historias clínicas son privados.</p>
         </section>
-        <section class="publication-panel" aria-labelledby="publication-specialties"><h2 id="publication-specialties">Especialidades públicas</h2>@for(context of workspace.contexts();track context.id){@if(context.ready){<label class="checkbox"><input type="checkbox" [name]="'context-'+context.id" [ngModel]="draft.specialtyContextIds?.includes(''+context.id)??false" (ngModelChange)="toggleContext(''+context.id,$event)"/>{{context.specialty.name}}</label>@if(publicLinkId() && draft.specialtyContextIds?.includes(''+context.id)){<a [routerLink]="['/appointments',publicLinkId()]" [queryParams]="{specialtyContextId:context.id}">Enlace de {{context.specialty.name}}</a>}}@else{<p>{{context.specialty.name}} · Configuración pendiente</p>}}<p class="muted">Sólo se ofrecerán horarios con bloques y consultorios activos publicados.</p></section><section class="publication-panel" aria-labelledby="publication-clinics">
-          <h2 id="publication-clinics">Consultorios visibles</h2>
+        <section class="publication-panel" aria-labelledby="publication-specialties"><h2 id="publication-specialties">Especialidades públicas</h2>@for(context of workspace.contexts();track context.id){@if(context.ready){<label class="checkbox"><input type="checkbox" [name]="'context-'+context.id" [ngModel]="draft.specialtyContextIds?.includes(''+context.id)??false" (ngModelChange)="toggleContext(''+context.id,$event)"/>{{context.specialty.name}}</label>@if(publicLinkId() && draft.specialtyContextIds?.includes(''+context.id)){<a [routerLink]="['/appointments',publicLinkId()]" [queryParams]="{specialtyContextId:context.id}">Enlace de {{context.specialty.name}}</a>}}@else{<p>{{context.specialty.name}} · Configuración pendiente</p>}}<p class="muted">Se ofrecen horarios de especialidades con bloques en agendas activas publicadas.</p></section><section class="publication-panel" aria-labelledby="publication-clinics">
+          <h2 id="publication-clinics">Agendas visibles</h2>
           @for(c of draft.clinics;track c.clinicId){
             <div class="publication-clinic">
               <label class="checkbox"><input type="checkbox" [name]="'enabled-'+c.clinicId" [(ngModel)]="c.enabled" />{{clinicName(c.clinicId)}}</label>
-              <label>Dirección que verá el paciente<input [name]="'address-'+c.clinicId" [(ngModel)]="c.address" [required]="c.enabled" maxlength="255" /></label>
+              @if(!isVirtual(c.clinicId)){
+                <label>Dirección que verá el paciente<input [name]="'address-'+c.clinicId" [(ngModel)]="c.address" [required]="c.enabled" maxlength="255" /></label>
+              }
             </div>
           }@empty{
-            <p class="notice">Primero agregá un consultorio y configurá sus horarios. <a routerLink="/clinics">Ir a Consultorios →</a></p>
+            <p class="notice">Primero agregá un consultorio o una agenda virtual y configurá sus horarios. <a routerLink="/clinics">Ir a Consultorios →</a></p>
           }
-          @if(draft.clinics.length){<p class="muted">Se ofrecen horarios de sedes activas con disponibilidad. Confirmá la dirección de cada sede seleccionada.</p>}
+          @if(draft.clinics.length){<p class="muted">Indicá una dirección pública para cada consultorio presencial que elijas.</p>}
         </section>
         <section class="publication-panel" aria-labelledby="publication-questions">
           <h2 id="publication-questions">Preguntas administrativas <span class="muted">(opcional)</span></h2>

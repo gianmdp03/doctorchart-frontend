@@ -1,6 +1,8 @@
 import {Component,DestroyRef,PLATFORM_ID,inject,signal,viewChildren} from '@angular/core';
 import {CommonModule,isPlatformBrowser} from '@angular/common';import {FormsModule} from '@angular/forms';import {ActivatedRoute,RouterLink,convertToParamMap} from '@angular/router';import {takeUntilDestroyed} from '@angular/core/rxjs-interop';import {firstValueFrom,combineLatest,of} from 'rxjs';
 import {ThemeToggleComponent} from '../../shared/components/theme-toggle/theme-toggle.component';
+import {userTimeZone} from '../../core/date/user-time-zone';
+import {modalityLabel, type AppointmentModality} from '../clinics/clinics.models';
 import {FEATURE_FLAGS} from '../../core/config/feature-flags';
 import {ARGENTINA,BOOKING_COUNTRIES,BookingCountry,bookingCountry,localitiesFor} from '../../core/location/booking-locations';
 import {DatePickerComponent} from '../../shared/date-picker/date-picker.component';
@@ -15,10 +17,12 @@ export class AppointmentsPageComponent{
  readonly profile=signal<PublicDoctor|null>(null);readonly doctors=signal<PublicDoctor[]>([]);readonly busy=signal(false);readonly slotsBusy=signal(false);readonly sending=signal(false);readonly error=signal('');readonly slotError=signal('');readonly formError=signal('');readonly confirmation=signal<PublicConfirmation|null>(null);readonly confirmationDoctorId=signal('');readonly days=signal<{date:string;slots:{start:string;end:string}[]}[]>([]);
  readonly status=signal('');readonly conflict=signal(false);readonly id=signal('');readonly clinicId=signal('');readonly selectedStart=signal('');readonly formOpen=signal(false);readonly displayDay=displayDay;readonly localTime=localTime;readonly slotOffsetLabel=slotOffsetLabel;readonly civilDate=civilDate;
  readonly countries=BOOKING_COUNTRIES;
+ readonly modalityLabel=modalityLabel;
+ readonly patientZone=this.browser?userTimeZone():'UTC';
  country=ARGENTINA;
  readonly specialties=signal<PublicSpecialty[]>([]);
  private specialtiesCountry='';
- filters={province:'',city:'',specialty:''};
+ filters={province:'',city:'',specialty:'',modality:'' as AppointmentModality|''};
  page=0;hasMore=false;date=civilDate(new Date().toISOString(),this.country.timezone);
  contactName='';contactPhone='';attendeeName='';different=false;documentCountry='AR';documentType:'DNI'|'PASSPORT'='DNI';document='';email='';answers:Record<string,string>={};consent=false;
  constructor(){combineLatest([this.route.paramMap,this.route.queryParamMap??of(this.route.snapshot?.queryParamMap??convertToParamMap({}))]).pipe(takeUntilDestroyed()).subscribe(([params,query])=>{
@@ -39,11 +43,25 @@ export class AppointmentsPageComponent{
   void this.search();
  }
  changeProvince(province:string){this.filters['province']=province;this.filters['city']='';}
+ changeModality(modality:AppointmentModality|''){
+  this.filters.modality=modality;
+  this.filters.specialty='';
+  this.specialties.set([]);
+  this.specialtiesCountry='';
+  if(modality==='TELECONSULTATION')this.changeProvince('');
+  void this.search();
+ }
+ supportsOffer(clinic:PublicClinic){return clinic.modality==='TELECONSULTATION'||!!bookingCountry(clinic.country);}
+ patientTime(instant:string,zone:string){
+  if(zone===this.patientZone)return '';
+  return displayDay(civilDate(instant,this.patientZone))+' · '+localTime(instant,this.patientZone)+' ('+this.patientZone+')';
+ }
  localities(){return localitiesFor(this.country,this.filters['province']);}
  async search(page=0){
   const generation=++this.searchGeneration,country=this.country;
   const filters={...this.filters,country:country.name};
-  const includeSpecialties=this.specialtiesCountry!==country.code;
+  const specialtiesKey=country.code+'|'+filters.modality;
+  const includeSpecialties=this.specialtiesCountry!==specialtiesKey;
   this.busy.set(true);
   this.error.set('');
   try {
@@ -51,13 +69,14 @@ export class AppointmentsPageComponent{
    if(generation!==this.searchGeneration)return;
    if(includeSpecialties && result.specialties){
     this.specialties.set(result.specialties);
-    this.specialtiesCountry=country.code;
+    this.specialtiesCountry=specialtiesKey;
    }
    const province=filters.province.toLowerCase(),city=filters.city.toLowerCase();
    const doctors=result.items.map(doctor=>({
     ...doctor,
-    clinics:doctor.clinics.filter(clinic=>bookingCountry(clinic.country)===country &&
-     clinic.province.toLowerCase().includes(province) && clinic.city.toLowerCase().includes(city)),
+    clinics:doctor.clinics.filter(clinic=>(!filters.modality || (clinic.modality??'IN_PERSON')===filters.modality) &&
+     (clinic.modality==='TELECONSULTATION'||(bookingCountry(clinic.country)===country &&
+     clinic.province.toLowerCase().includes(province) && clinic.city.toLowerCase().includes(city)))),
    }));
    this.doctors.set(doctors.filter(doctor=>doctor.clinics.length));
    this.page=page;
@@ -78,10 +97,10 @@ export class AppointmentsPageComponent{
   try {
    const result=await firstValueFrom(this.api.profile(id));
    if(generation!==this.generation||id!==this.id())return;
-   const clinics=result.clinics.filter(clinic=>bookingCountry(clinic.country));
+   const clinics=result.clinics.filter(clinic=>this.supportsOffer(clinic));
    if(!clinics.length){
     this.profile.set(null);
-    this.error.set('Este profesional no tiene consultorios disponibles para reservar online en los países habilitados.');
+    this.error.set('Este profesional no ofrece turnos online en este momento.');
     return;
    }
    this.profile.set({...result,clinics});
@@ -96,6 +115,8 @@ export class AppointmentsPageComponent{
     this.conflict.set(false);
     this.formError.set('Revisá las preguntas vigentes y elegí un horario actualizado.');
    }
+   const clinic=this.clinic();
+   if(!preserve&&clinic?.modality==='TELECONSULTATION')this.date=civilDate(new Date().toISOString(),clinic.timezone);
    await this.loadSlots();
   } catch(err) {
    if(generation===this.generation){
@@ -108,10 +129,10 @@ export class AppointmentsPageComponent{
  }
  specialtyNames(doctor:PublicDoctor){return doctor.specialties?.map(c=>c.name).join(' · ')||doctor.specialty;}
  directContext(doctor:PublicDoctor){return doctor.specialties?.find(c=>c.code===this.filters.specialty)?.id;}
- contextClinics(){const profile=this.profile();return profile?.specialties?.length?profile.specialties.find(c=>c.id===this.specialtyContextId())?.clinics.filter(c=>bookingCountry(c.country))??[]:profile?.clinics??[];}
+ contextClinics(){const profile=this.profile();return profile?.specialties?.length?profile.specialties.find(c=>c.id===this.specialtyContextId())?.clinics.filter(c=>this.supportsOffer(c))??[]:profile?.clinics??[];}
  changeSpecialty(id:string){if(this.sending()||!this.profile()?.specialties?.some(c=>c.id===id))return;this.specialtyContextId.set(id);this.selectedStart.set('');this.formOpen.set(false);this.consent=false;this.attempt=null;this.clinicId.set(this.contextClinics()[0]?.id??'');void this.loadSlots();}
  clinic():PublicClinic|undefined{return this.contextClinics().find(c=>c.id===this.clinicId());}
- changeClinic(id:string){if(this.sending())return;this.clinicId.set(id);this.selectedStart.set('');void this.loadSlots();}
+ changeClinic(id:string){if(this.sending())return;this.clinicId.set(id);this.selectedStart.set('');this.formOpen.set(false);this.consent=false;void this.loadSlots();}
  changeDate(date:string){if(this.sending()||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date+'T12:00:00Z'))||new Date(date+'T12:00:00Z').toISOString().slice(0,10)!==date)return;this.date=date;this.selectedStart.set('');void this.loadSlots();}
  navigate(delta:number){this.changeDate(addDays(this.date,delta*7));}
  async loadSlots(){const g=++this.slotsGeneration,id=this.id(),clinic=this.clinicId(),date=this.date;this.slotsBusy.set(true);this.days.set([]);this.slotError.set('');if(!clinic){this.slotsBusy.set(false);return;}try{const result=await firstValueFrom(this.api.availability(id,clinic,date,this.specialtyContextId()||undefined));if(g===this.slotsGeneration&&id===this.id()&&clinic===this.clinicId()&&date===this.date)this.days.set(result.days);}catch(err){if(g===this.slotsGeneration)this.slotError.set(this.message(err,'No pudimos consultar los horarios.'));}finally{if(g===this.slotsGeneration)this.slotsBusy.set(false);}}

@@ -11,6 +11,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  heightMeasurementModeKey,
+  withHeightMeasurementMode,
   WizardFormDefinition,
   WizardFieldDefinition,
   WizardFormulaDefinition,
@@ -82,6 +84,7 @@ export class FormFieldEditorComponent {
     () => this.categories().find((c) => c.key === this.selectedKey()) ?? null,
   );
   readonly allFields = computed(() => this.categories().flatMap((c) => c.fields));
+  readonly measurementModeKey = heightMeasurementModeKey;
   readonly formulaInputs = computed(
     () => FORMULA_INPUTS[this.fieldDraft()?.formula?.kind ?? 'CUSTOM'],
   );
@@ -168,9 +171,10 @@ export class FormFieldEditorComponent {
     effect(() => this.fieldPageHeading()?.nativeElement.focus());
     effect(() => {
       const form = this.definition();
+      const section = this.section();
       const requested = this.selectedCategoryKey();
       untracked(() => {
-        this.working.set(clone(form));
+        this.working.set(clone(section === 'encounterForm' ? withHeightMeasurementMode(form) : form));
         const preferred =
           requested !== this.lastRequestedCategory
             ? (requested ?? this.selectedKey())
@@ -194,35 +198,6 @@ export class FormFieldEditorComponent {
   }
   inputLabel(name: string): string {
     return INPUT_LABELS[name] ?? name;
-  }
-  readonly canAddMeasurementMode = computed(
-    () =>
-      this.allFields().some((field) => ['heightCm', 'height'].includes(field.key)) &&
-      !this.allFields().some((field) => field.key === 'heightMeasurementMode'),
-  );
-  addMeasurementMode(): void {
-    const categoryKey = this.selectedKey();
-    if (
-      !categoryKey ||
-      this.section() !== 'encounterForm' ||
-      !this.canAddMeasurementMode() ||
-      this.readonly()
-    )
-      return;
-    this.commit((form) =>
-      form.categories
-        .find((category) => category.key === categoryKey)!
-        .fields.push({
-          key: 'heightMeasurementMode',
-          label: 'Posición de longitud / estatura',
-          type: 'SELECT',
-          required: false,
-          options: [
-            { value: 'RECUMBENT', label: 'Longitud recumbente (acostado)' },
-            { value: 'STANDING', label: 'Estatura de pie' },
-          ],
-        }),
-    );
   }
   addCategory(): void {
     if (this.readonly()) return;
@@ -504,8 +479,9 @@ export class FormFieldEditorComponent {
   private commit(change: (form: WizardFormDefinition) => void): boolean {
     if (this.readonly()) return false;
     const previous = this.working();
-    const next = clone(previous);
-    change(next);
+    const edited = clone(previous);
+    change(edited);
+    const next = this.section() === 'encounterForm' ? withHeightMeasurementMode(edited) : edited;
     const error = this.validate(next);
     if (error) {
       this.error.set(error);

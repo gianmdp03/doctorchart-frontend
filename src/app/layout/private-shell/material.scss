@@ -4,3 +4,14 @@
 html {
   @include mat.theme((typography: 'Google Sans'));
 }
+
+.mat-mdc-select-panel.sidebar-specialty-panel {
+  --mat-select-panel-background-color: var(--dc-surface, #fff);
+  --mat-option-label-text-color: var(--dc-ink, #0f172a);
+  --mat-option-selected-state-label-text-color: var(--dc-teal-ink, #006874);
+  --mat-option-selected-state-layer-color: var(--dc-surface-high, #f1f5f9);
+  --mat-option-hover-state-layer-color: var(--dc-surface-low, #f8fafc);
+  --mat-option-focus-state-layer-color: var(--dc-surface-high, #f1f5f9);
+  border: 1px solid var(--dc-outline, #dce6ec);
+  border-radius: 10px;
+}

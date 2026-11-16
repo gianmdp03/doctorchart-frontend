@@ -350,7 +350,7 @@ export class MockClinicsBackend implements ClinicsTransport {
 
   private computeCapabilities(): ClinicCapabilities {
     const counted = this.clinics.filter(
-      (c) => c.status === 'ACTIVE' || c.status === 'INACTIVE',
+      (c) => c.status !== 'ARCHIVED' && c.modality !== 'TELECONSULTATION',
     ).length;
     const ent = structuredClone(this.entitlements);
 
@@ -496,12 +496,17 @@ export class MockClinicsBackend implements ClinicsTransport {
       return throwError(() => MOCK_CLINIC_ERRORS.managementDisabled());
     }
 
-    const fieldErrors = this.validateAllFields(payload);
+    const virtual = payload.modality === 'TELECONSULTATION';
+    const fieldErrors = this.validateAllFields(payload).filter(error =>
+      !virtual || error.path === 'name' || error.path === 'timezone');
+    if (virtual && this.clinics.some(clinic => clinic.modality === payload.modality)) {
+      return throwError(() => MOCK_CLINIC_ERRORS.invalidRequest([{ path: 'modality', code: 'INVALID' }]));
+    }
     if (fieldErrors.length > 0) {
       return throwError(() => MOCK_CLINIC_ERRORS.invalidRequest(fieldErrors));
     }
 
-    if (!caps.actions.create) {
+    if (payload.modality !== 'TELECONSULTATION' && !caps.actions.create) {
       return throwError(() => MOCK_CLINIC_ERRORS.limitReached());
     }
 
@@ -510,10 +515,11 @@ export class MockClinicsBackend implements ClinicsTransport {
     const created: Clinic = {
       id: this.nextId.toString(),
       name: payload.name.trim(),
-      country: payload.country.trim(),
-      province: payload.province.trim(),
-      city: payload.city.trim(),
-      address: payload.address.trim(),
+      ...(virtual ? { modality: payload.modality } : {}),
+      country: payload.country?.trim() ?? '',
+      province: payload.province?.trim() ?? '',
+      city: payload.city?.trim() ?? '',
+      address: payload.address?.trim() ?? '',
       timezone: payload.timezone.trim(),
       status: 'ACTIVE',
       version: '0',

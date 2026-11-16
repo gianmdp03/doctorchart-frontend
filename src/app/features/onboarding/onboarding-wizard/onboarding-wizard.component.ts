@@ -149,6 +149,12 @@ export class OnboardingWizardComponent implements OnInit {
     if (await this.saveDraft(this.activeStepKey())) await this.router.navigate(['/dashboard']);
   }
 
+  async returnWithoutSaving(): Promise<void> {
+    const workspace = this.workspace();
+    if (!workspace?.onboardingCompleted || this.isSaving()) return;
+    await this.router.navigate(['/dashboard'], { queryParams: { specialtyContextId: workspace.specialtyContextId } });
+  }
+
   async cancelWizard(): Promise<void> {
     const workspace = this.workspace();
     if (!workspace || !this.isEditMode() || this.editorReadonly()) return;

@@ -42,7 +42,7 @@
 .search-fields {
   display: grid;
   align-items: end;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   gap: 12px;
 }
 .search-form label {

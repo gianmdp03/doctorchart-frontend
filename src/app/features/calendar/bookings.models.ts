@@ -1,3 +1,4 @@
+import type { AppointmentModality } from '../clinics/clinics.models';
 import { isArgentineTimezone } from '../../core/date/user-time-zone';
 
 export type BookingStatus = 'CONFIRMED'|'CHECKED_IN'|'COMPLETED'|'NO_SHOW'|'CANCELLED';
@@ -6,7 +7,7 @@ export interface Booking {
  contactName:string;contactPhone:string;attendeeName?:string;createdAt:string;updatedAt:string;
  // Optional only for replay receipts issued before schema 14.
  specialtyContextId?:string;specialty?:{id:string;code:string;name:string};
- clinicSnapshot?:{name:string;address:string;publicAddress:string;timezone:string};
+ clinicSnapshot?:{modality?:AppointmentModality;name:string;address:string;publicAddress:string;timezone:string};
  provenance?:{kind:'SCHEDULE_BLOCK'|'LEGACY_CONTEXT_ONLY';blockId?:string;scheduleVersion?:string;weekday?:number;exceptionId?:string;from?:string;through?:string;startMinute?:number;endMinute?:number;slotMinutes?:number;timezone?:string};
 }
 export interface BookingEvent {version:string;kind:string;actorId:string;occurredAt:string;before:Booking|null;after:Booking;}
