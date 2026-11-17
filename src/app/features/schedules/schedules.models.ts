@@ -1,3 +1,4 @@
+import type { AgendaDay } from '../calendar/agenda-timeline';
 import type { AppointmentModality } from '../clinics/clinics.models';
 
 export interface ScheduleRange { id?:string; specialtyContextId?:string; slotMinutes?:number; start: string; end: string; }
@@ -14,7 +15,7 @@ export interface ScheduleUpdate {
 }
 export interface Availability {
  clinicId: string; timezone: string; scheduleVersion: string; generatedAt: string;
- days: {date:string;slots:{start:string;end:string;specialtyContextId?:string}[]}[];
+ days: AgendaDay<{start:string;end:string;specialtyContextId?:string}>[];
 }
 
 export interface AgendaWindow {

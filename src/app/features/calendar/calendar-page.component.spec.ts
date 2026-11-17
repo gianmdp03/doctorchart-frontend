@@ -28,45 +28,61 @@ describe('M5 calendar',()=>{
  });
  afterEach(()=>{fixture.destroy();vi.useRealTimers();});
  it('loads multiple clinics and renders bookings separately from available slots',()=>{expect(c.days().length).toBe(7);expect(c.days()[0].bookings[0].id).toBe('1');expect(c.days()[0].slots.length).toBe(2);expect(fixture.nativeElement.textContent).toContain('Persona atendida');});
- it('opens the manual form below the available times and keeps input when choosing another time',async()=>{
+ it('opens the shared side panel from a free slot and keeps entered data when choosing another time',async()=>{
   const page=fixture.nativeElement as HTMLElement;
-  const reservations=page.querySelector('.day')!;
-  const manual=page.querySelector('.manual-booking')!;
-  expect(reservations.querySelector('.slot')).toBeNull();
-  expect(manual.querySelector('form')).toBeNull();
-  const times=manual.querySelectorAll<HTMLButtonElement>('.slot');
+  expect(page.querySelector('.calendar-board .event')).not.toBeNull();
+  expect(page.querySelector('form')).toBeNull();
+  const times=page.querySelectorAll<HTMLButtonElement>('.available-slot');
   times[0].click();fixture.detectChanges();await fixture.whenStable();
-  const form=manual.querySelector<HTMLFormElement>('form')!;
-  expect(form.previousElementSibling?.classList.contains('manual-hours')).toBe(true);
+  const form=page.querySelector<HTMLFormElement>('.calendar-workspace .editor form')!;
+  expect(form).not.toBeNull();
   expect(document.activeElement?.id).toBe('booking-contact');
   expect(times[0].getAttribute('aria-pressed')).toBe('true');
   expect(form.textContent).not.toMatch(/vincular|ficha clínica|historia clínica/i);
   c.contactName='Nombre ingresado';
   times[1].click();fixture.detectChanges();
   expect(times[1].getAttribute('aria-pressed')).toBe('true');
-  expect(manual.querySelector('.manual-summary')?.textContent).toContain('Sede 2');
+  expect(page.querySelector('.editor-date')?.textContent).toContain('Sede 2');
   expect(c.contactName).toBe('Nombre ingresado');
   await c.create();
   expect(api.create.mock.calls[0][0]).not.toHaveProperty('patientId');
  });
- it('always navigates full Monday-to-Sunday weeks, including across a year boundary',()=>{
+ it('navigates Monday-to-Sunday weeks across a year boundary',()=>{
   vi.spyOn(c,'load').mockResolvedValue();
+  const page=fixture.nativeElement as HTMLElement;
+  const next=page.querySelector<HTMLButtonElement>('[aria-label="Semana siguiente"]')!;
+  const previous=page.querySelector<HTMLButtonElement>('[aria-label="Semana anterior"]')!;
   c.changeDate('2026-01-01');expect(c.date).toBe('2025-12-29');
   expect(c.selectedDay()).toBe('2026-01-01');
-  c.navigate(1);expect(c.date).toBe('2026-01-05');
-  c.navigate(-1);expect(c.date).toBe('2025-12-29');
-  c.writing.set(true);c.navigate(1);expect(c.date).toBe('2025-12-29');
+  fixture.detectChanges();next.click();expect(c.date).toBe('2026-01-05');
+  fixture.detectChanges();previous.click();expect(c.date).toBe('2025-12-29');
+  c.writing.set(true);next.click();expect(c.date).toBe('2025-12-29');
  });
- it('keeps the week visible while selecting only one day without changing bookings',()=>{
-  const buttons=fixture.nativeElement.querySelectorAll('.week-day') as NodeListOf<HTMLButtonElement>;
-  expect(buttons.length).toBe(7);
-  expect(fixture.nativeElement.querySelectorAll('article.day').length).toBe(1);
-  buttons[1].click();fixture.detectChanges();
-  expect(c.visibleDays()[0].date).toBe(c.days()[1].date);
-  expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
-  expect(c.days()[0].bookings[0].id).toBe('1');
-  c.writing.set(true);c.selectDay(c.days()[2].date);
-  expect(c.visibleDays()[0].date).toBe(c.days()[1].date);
+ it('opens a day from the same week grid and can return to its week',async()=>{
+  const page=fixture.nativeElement as HTMLElement;
+  const days=page.querySelectorAll<HTMLButtonElement>('.day-header button');
+  expect(days.length).toBe(7);
+  days[1].click();fixture.detectChanges();await fixture.whenStable();fixture.detectChanges();
+  expect(c.date).toBe('2030-01-08');
+  expect(c.selectedDay()).toBe(c.date);
+  await vi.waitFor(() => expect(c.days()).toHaveLength(1));fixture.detectChanges();
+  expect(page.querySelector('.timeline-grid.single-day')).not.toBeNull();
+  const week=Array.from(page.querySelectorAll<HTMLButtonElement>('button')).find(button=>button.textContent.trim()==='Semana')!;
+  week.click();fixture.detectChanges();await fixture.whenStable();fixture.detectChanges();
+  expect(c.date).toBe('2030-01-07');
+  await vi.waitFor(() => expect(c.days()).toHaveLength(7));fixture.detectChanges();
+  expect(page.querySelectorAll('.day-header')).toHaveLength(7);
+ });
+ it('keeps opening bands and a closed day from the doctors availability',async()=>{
+  c.changeClinic('1');
+  schedules.availability.mockReturnValue(of({days:[
+    {date:'2030-01-07',slots:[],hours:[{start:'09:00',end:'12:00'}]},
+    {date:'2030-01-08',slots:[],closed:true},
+  ]}));
+  await c.load();fixture.detectChanges();
+  expect(schedules.availability).toHaveBeenCalledWith('1','2030-01-07',7,true);
+  expect(fixture.nativeElement.querySelector('.office-hours')).not.toBeNull();
+  expect(fixture.nativeElement.querySelector('.day-track.closed')?.textContent).toContain('Consultorio cerrado');
  });
  it('filters teleconsultations using the booking snapshot and the active agenda modality',async()=>{
   const virtual={...clinic('2'),modality:'TELECONSULTATION'};

@@ -12,7 +12,9 @@ export class SchedulesService {
  occupied(id:string,from:string){
   return this.http.get<OccupiedSchedule>(this.base+'/'+encodeURIComponent(id)+'/schedule/occupied',{params:{from}});
  }
- availability(id:string,from:string,days:1|7){
-  return this.http.get<Availability>(this.base+'/'+encodeURIComponent(id)+'/availability',{params:new HttpParams().set('from',from).set('days',days)});
+ availability(id:string,from:string,days:1|7,includeHours=false){
+  let params=new HttpParams().set('from',from).set('days',days);
+  if(includeHours)params=params.set('includeHours',true);
+  return this.http.get<Availability>(this.base+'/'+encodeURIComponent(id)+'/availability',{params});
  }
 }

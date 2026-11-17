@@ -1,5 +1,14 @@
-import { addDays, civilDate, localTime } from '../calendar/bookings.models';
-import type { AdministrativeBooking, SlotDay } from './staff.service';
+import { addDays, civilDate, localTime } from './bookings.models';
+import type { Booking } from './bookings.models';
+
+export type AgendaBooking = Pick<Booking, 'id' | 'start' | 'end' | 'status' | 'contactName' | 'attendeeName' | 'specialty'>;
+export interface AgendaSlot { start: string; end: string; }
+export interface AgendaDay<S extends AgendaSlot> {
+  date: string;
+  slots: S[];
+  hours?: { start: string; end: string }[];
+  closed?: boolean;
+}
 
 const DAY_MINUTES = 1440;
 export const PIXELS_PER_MINUTE = 1.8;
@@ -10,10 +19,10 @@ interface Span {
   to: number;
 }
 
-interface TimelineEntry extends Span {
+interface TimelineEntry<B extends AgendaBooking, S extends AgendaSlot> extends Span {
   time: string;
-  booking?: AdministrativeBooking;
-  slot?: SlotDay['slots'][number];
+  booking?: B;
+  slot?: S;
   lane: number;
   laneCount: number;
   height: number;
@@ -34,11 +43,11 @@ export function monday(date: string): string {
   return addDays(date, -((weekday + 6) % 7));
 }
 
-function entryFor(
+function entryFor<B extends AgendaBooking, S extends AgendaSlot>(
   event: { start: string; end: string },
   zone: string,
-  data: Pick<TimelineEntry, 'booking' | 'slot'>,
-): TimelineEntry {
+  data: Pick<TimelineEntry<B, S>, 'booking' | 'slot'>,
+): TimelineEntry<B, S> {
   const time = localTime(event.start, zone);
   const from = minute(time);
   const duration = (Date.parse(event.end) - Date.parse(event.start)) / 60_000;
@@ -46,9 +55,9 @@ function entryFor(
   return { ...data, time, from, to, lane: 0, laneCount: 1, height: to - from };
 }
 
-function placeEntries(entries: TimelineEntry[], end: number): void {
+function placeEntries<B extends AgendaBooking, S extends AgendaSlot>(entries: TimelineEntry<B, S>[], end: number): void {
   let activeUntil: number[] = [];
-  let group: TimelineEntry[] = [];
+  let group: TimelineEntry<B, S>[] = [];
   let groupEnd = 0;
   for (const entry of entries) {
     if (entry.from >= groupEnd && group.length) {
@@ -66,7 +75,7 @@ function placeEntries(entries: TimelineEntry[], end: number): void {
   finishGroup(group, activeUntil.length);
 }
 
-function finishGroup(group: TimelineEntry[], lanes: number): void {
+function finishGroup<B extends AgendaBooking, S extends AgendaSlot>(group: TimelineEntry<B, S>[], lanes: number): void {
   const bookings = group.filter((entry) => entry.booking);
   const slots = group.filter((entry) => entry.slot);
   // A reopened slot can share the column with its cancelled booking. Keep the name
@@ -84,11 +93,11 @@ function finishGroup(group: TimelineEntry[], lanes: number): void {
   }
 }
 
-export function makeTimeline(
+export function makeTimeline<B extends AgendaBooking, S extends AgendaSlot>(
   startDate: string,
   length: number,
-  availability: SlotDay[],
-  bookings: AdministrativeBooking[],
+  availability: AgendaDay<S>[],
+  bookings: B[],
   zone: string,
   fullDay: boolean,
 ) {
@@ -100,14 +109,13 @@ export function makeTimeline(
       from: minute(start),
       to: minute(end),
     }));
-    const entries = (available?.slots ?? []).map((slot) => entryFor(slot, zone, { slot }));
+    const entries = (available?.slots ?? []).map((slot) => entryFor<B, S>(slot, zone, { slot }));
     return { date, hours, entries, closed: available?.closed ?? false };
   });
   const byDate = new Map(days.map((day) => [day.date, day]));
   for (const booking of bookings) {
-    const bookingZone = booking.clinicSnapshot?.timezone || zone;
-    const day = byDate.get(civilDate(booking.start, bookingZone));
-    day?.entries.push(entryFor(booking, bookingZone, { booking }));
+    const day = byDate.get(civilDate(booking.start, zone));
+    day?.entries.push(entryFor(booking, zone, { booking }));
   }
   const spans = days.flatMap((day) => [...day.hours, ...day.entries]);
   const from = fullDay

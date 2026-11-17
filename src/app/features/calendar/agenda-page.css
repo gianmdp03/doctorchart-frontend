@@ -1,0 +1,67 @@
+:host {
+  --agenda-base: var(--md-surface-container-lowest);
+  --agenda-page: var(--md-surface-container-low);
+  --agenda-muted: var(--md-sys-color-on-surface-variant);
+  --agenda-ink: var(--md-sys-color-on-surface);
+  --agenda-accent: var(--md-sys-color-primary);
+  --agenda-rule: color-mix(in srgb, var(--md-sys-color-outline-variant) 62%, var(--agenda-base));
+  --agenda-today: color-mix(in srgb, var(--agenda-accent) 7%, var(--agenda-base));
+  --agenda-now: light-dark(#ae3a3b, #ff9b97);
+  --agenda-free: light-dark(#ebf1f2, #243439);
+  --agenda-free-edge: light-dark(#cedbdd, #3e5257);
+  background: var(--agenda-page);
+}
+
+ng-icon { flex: none; font-size: 1rem; }
+button, select, summary { transition: background-color 160ms, border-color 160ms, box-shadow 160ms; }
+button:where(:not([type='submit'], .primary)), select { border-color: var(--agenda-rule); }
+button:focus-visible, select:focus-visible, .calendar-board:focus-visible { outline: 2px solid var(--agenda-accent); outline-offset: 2px; }
+.icon-button { display: inline-grid; place-items: center; inline-size: 42px; min-height: 42px; padding: 0; }
+
+.agenda-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 390px) auto;
+  align-items: center;
+  gap: 10px;
+  padding-block: 17px;
+}
+.agenda-heading h1 { margin: 0; font-size: 1.85rem; line-height: 1.12; letter-spacing: -.035em; }
+.assignment-picker { position: relative; min-width: 0; }
+.assignment-picker > ng-icon { position: absolute; top: 50%; left: 13px; transform: translateY(-50%); color: var(--agenda-accent); pointer-events: none; }
+.assignment-picker select { display: block; padding-inline-start: 38px; font-size: .875rem; font-weight: 650; text-overflow: ellipsis; }
+
+[data-status='CONFIRMED'] { --status: light-dark(#244f9a, #adcaff); }
+[data-status='CHECKED_IN'] { --status: light-dark(#68459b, #d5bafb); }
+[data-status='COMPLETED'] { --status: light-dark(#25634d, #94d9bb); }
+[data-status='CANCELLED'] { --status: light-dark(#963d46, #f9a9af); }
+[data-status='NO_SHOW'] { --status: light-dark(#6c505b, #d6b4c3); }
+.status-label { display: inline-flex; align-items: center; gap: 4px; color: var(--status); }
+.status-label ng-icon { font-size: .875rem; }
+.editor-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+.editor-top h2 { margin: 0; font-size: 1rem; }
+.editor-top .icon-button { min-height: 36px; width: 36px; }
+.editor-content h3 { margin: 0 0 6px; font-size: 1.25rem; overflow-wrap: anywhere; }
+.status-label { padding: 3px 7px; border-radius: 5px; background: color-mix(in srgb, var(--status) 9%, var(--agenda-base)); font-weight: 600; font-size: .8rem; }
+.editor-date { color: var(--agenda-muted); overflow-wrap: anywhere; }
+.contact-list { display: grid; gap: 10px; margin: 0 0 16px; padding-block: 12px; border-block: 1px solid var(--agenda-rule); overflow-wrap: anywhere; }
+.contact-list dt { font-size: .75rem; color: var(--agenda-muted); }
+.contact-list dd { margin: 2px 0 0; }
+.editor-actions, .move-confirm { display: grid; gap: 7px; }
+.editor-content .danger { color: var(--agenda-now); }
+.editor-content form button { width: 100%; }
+
+.calendar-empty, .agenda-loading {
+  padding: 24px; min-height: 230px; display: grid; justify-items: center; align-content: center; gap: 9px; text-align: center;
+  color: var(--agenda-muted); background: var(--agenda-base); border-radius: 15px;
+}
+.calendar-empty h2, .calendar-empty p { margin: 0; }
+.calendar-empty h2 { color: var(--agenda-ink); }
+.calendar-empty ng-icon { font-size: 1.6rem; color: var(--agenda-accent); }
+.agenda-loading .skeleton {
+  width: min(100%, 860px); height: 174px; border-radius: 9px;
+  background: repeating-linear-gradient(var(--agenda-page) 0 41px, var(--agenda-rule) 41px 42px);
+}
+@media (max-width: 640px) {
+  .agenda-heading { grid-template-columns: minmax(0, 1fr) auto; padding-block: 12px; }
+  .agenda-heading h1 { grid-column: 1 / -1; font-size: 1.45rem; }
+}

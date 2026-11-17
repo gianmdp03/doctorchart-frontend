@@ -244,16 +244,16 @@ async function confirmed(page, receipt, modality, start) {
 async function calendar(page, value = monday) {
   await page.goto(origin + '/calendar');
   await date(page, '#calendar-date', value);
-  await page.locator('.calendar[aria-busy="false"]').waitFor();
+  await page.locator('.calendar-board[aria-busy="false"]').waitFor();
 }
 
 function booking(page, name) {
-  return page.locator('button.booking').filter({ hasText: name });
+  return page.locator('button.event').filter({ hasText: name });
 }
 
 async function layout(page, label) {
   const metrics = await page.evaluate(() => ({ width: innerWidth, content: document.documentElement.scrollWidth,
-    clipped: [...document.querySelectorAll('main h1,main h2,main button.booking,main button.primary')]
+    clipped: [...document.querySelectorAll('main h1,main h2,main button.event,main button.primary')]
       .filter(node => node.clientWidth > 0 && node.scrollWidth > node.clientWidth + 2)
       .map(node => node.textContent.trim().slice(0, 160)) }));
   await page.screenshot({ path: output(`${label}.png`), fullPage: true });
@@ -606,13 +606,13 @@ async function main() {
         await doctor.getByTestId('form-submit-feedback').waitFor();
         await calendar(doctor);
         await booking(doctor, name).waitFor();
-        assert.equal(await doctor.locator('.slot-group').filter({ hasText: clinic.name }).count(), 0);
+        assert.equal(await doctor.locator('.available-slot').and(doctor.getByRole('button', { name: clinic.name, exact: false })).count(), 0);
         await doctor.goto(origin + '/clinics');
         await doctor.getByTestId('edit-link-' + clinic.id).click();
         const active = await action(doctor, 'PATCH', `/clinics/${clinic.id}/status`, () => doctor.getByTestId('form-activate-btn').click(), 200);
         assert.equal(active.status, 'ACTIVE');
         await calendar(doctor);
-        await doctor.locator('.slot-group').filter({ hasText: clinic.name }).first().waitFor();
+        await doctor.locator('.available-slot').and(doctor.getByRole('button', { name: clinic.name, exact: false })).first().waitFor();
         await booking(doctor, name).waitFor();
         data.push({ clinic: clinic.name, futureBookings: inactive.futureBookings });
       }
@@ -712,7 +712,7 @@ async function main() {
       const row = booking(restricted, virtualWinner.name);
       await row.click();
       for (const name of ['Reprogramar', 'Cancelado']) assert.ok(await restricted.getByRole('button', { name, exact: true }).isDisabled());
-      assert.ok(await restricted.locator('.slot-list button').first().isDisabled());
+      assert.ok(await restricted.locator('.available-slot').first().isDisabled());
       assert.equal(await restricted.getByRole('link', { name: /ficha|historia clínica/i }).count(), 0);
       const range = `?from=${monday}T00:00:00Z&to=${day(1)}T00:00:00Z`;
       const assignedPath = `${apiPrefix}/staff/owners/${owner}/clinics/${clinic}/bookings${range}`;

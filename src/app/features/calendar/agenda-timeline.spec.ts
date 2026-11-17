@@ -1,5 +1,5 @@
-import { makeTimeline, monday } from './staff-timeline';
-import type { AdministrativeBooking, SlotDay } from './staff.service';
+import { makeTimeline, monday } from './agenda-timeline';
+import type { AdministrativeBooking, SlotDay } from '../staff/staff.service';
 
 const date = '2026-11-18';
 const zone = 'America/Argentina/Buenos_Aires';
@@ -19,7 +19,7 @@ const booking: AdministrativeBooking = {
   updatedAt: '',
 };
 
-describe('staff agenda timeline', () => {
+describe('shared agenda timeline', () => {
   it('keeps configured split shifts visible and includes events outside opening hours', () => {
     const availability: SlotDay[] = [
       {

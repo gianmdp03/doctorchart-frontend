@@ -80,472 +80,184 @@
 
   @if (selectedAssignment(); as assignment) {
     @if (can('view')) {
-      <section class="agenda" aria-label="Agenda administrativa">
-        <div class="calendar-toolbar">
-          <nav class="date-nav" aria-label="Navegar fechas">
-            <button type="button" (click)="goToday()" [disabled]="writing()">Hoy</button>
-            <div class="stepper">
+      <app-agenda
+        dateInputId="staff-date"
+        [date]="date()"
+        [view]="view()"
+        [zone]="zone()"
+        [now]="now()"
+        [availability]="days()"
+        [bookings]="bookings()"
+        [calendarKey]="key(assignment)"
+        [loading]="loading()"
+        [pendingRange]="loading() && loadedRange() !== calendarKey()"
+        [writing]="writing()"
+        [editor]="editor()"
+        [selected]="selected()"
+        [allowSlot]="allowSlot"
+        [slotSelected]="isMoveSlot"
+        (dateChange)="changeDate($event)"
+        (viewChange)="changeView($event)"
+        (dayRequested)="changeView('1', $event)"
+        (bookingSelected)="selectBooking($event.booking, $event.trigger)"
+        (slotChosen)="chooseSlot($event.slot.start, $event.trigger)"
+      >
+        @if (editor()) {
+          <div class="editor-content">
+            <div class="editor-top">
+              <h2 #editorHeading tabindex="-1">
+                {{
+                  editor() === 'create'
+                    ? 'Nuevo turno'
+                    : editor() === 'move'
+                      ? 'Reprogramar turno'
+                      : 'Detalle del turno'
+                }}
+              </h2>
               <button
+                type="button"
                 class="icon-button"
-                type="button"
-                (click)="shiftDate(-1)"
+                aria-label="Cerrar detalle"
+                (click)="dismissEditor()"
                 [disabled]="writing()"
-                [attr.aria-label]="view() === '7' ? 'Semana anterior' : 'Día anterior'"
               >
-                <ng-icon name="lucideChevronLeft" />
-              </button>
-              <button
-                class="icon-button"
-                type="button"
-                (click)="shiftDate(1)"
-                [disabled]="writing()"
-                [attr.aria-label]="view() === '7' ? 'Semana siguiente' : 'Día siguiente'"
-              >
-                <ng-icon name="lucideChevronRight" />
+                <ng-icon name="lucideX" />
               </button>
             </div>
-          </nav>
-          <h2 class="date-range">
-            {{ displayDay(rangeStart()) }}
-            @if (view() === '7') {
-              <span>– {{ displayDay(rangeEnd()) }}</span>
-            }
-          </h2>
-          <div class="toolbar-options">
-            <div class="date-jump">
-              <label class="sr-only" for="staff-date">Ir a fecha</label>
-              <app-date-picker
-                inputId="staff-date"
-                [ngModel]="date()"
-                (ngModelChange)="changeDate($event)"
-                [disabled]="writing()"
-              />
-            </div>
-            <div class="view-switch" role="group" aria-label="Vista de la agenda">
-              <button
-                type="button"
-                [attr.aria-pressed]="view() === '1'"
-                [disabled]="writing()"
-                (click)="changeView('1')"
-              >
-                Día
-              </button>
-              <button
-                type="button"
-                [attr.aria-pressed]="view() === '7'"
-                [disabled]="writing()"
-                (click)="changeView('7')"
-              >
-                Semana
-              </button>
-            </div>
-          </div>
-        </div>
-
-        @if (loading() && loadedRange() !== calendarKey()) {
-          <div class="agenda-loading" role="status">
-            <span>Actualizando agenda…</span>
-            <div class="skeleton" aria-hidden="true"></div>
-          </div>
-        } @else {
-          @let calendar = timeline();
-          @let stats = summary();
-          <div class="agenda-summary">
-            <div class="daily-stats" [attr.aria-label]="'Resumen del ' + displayDay(stats.date)">
-              <strong>{{ stats.date === today() ? 'Hoy' : displayDay(stats.date) }}</strong>
-              <span
-                ><b>{{ stats.total }}</b> {{ stats.total === 1 ? 'turno' : 'turnos' }}</span
-              >
-              <span class="stat" data-status="CONFIRMED"
-                ><ng-icon name="lucideCheck" /><b>{{ stats.confirmed }}</b>
-                {{ stats.confirmed === 1 ? 'confirmado' : 'confirmados' }}</span
-              >
-              <span class="stat" data-status="CHECKED_IN"
-                ><ng-icon name="lucideLogIn" /><b>{{ stats.checkedIn }}</b> en consultorio</span
-              >
-              @if (stats.cancelled) {
-                <span class="stat" data-status="CANCELLED"
-                  ><ng-icon name="lucideX" /><b>{{ stats.cancelled }}</b>
-                  {{ stats.cancelled === 1 ? 'cancelado' : 'cancelados' }}</span
-                >
-              }
-            </div>
-            @if (stats.next; as next) {
-              <button
-                class="next-booking"
-                type="button"
-                (click)="selectBooking(next, $event.currentTarget)"
-                [disabled]="writing()"
-              >
-                <ng-icon name="lucideClock3" />
-                <span
-                  ><b>Próximo {{ bookingTime(next) }}</b> ·
-                  {{ next.attendeeName || next.contactName }}</span
-                >
-              </button>
-            }
-          </div>
-          @if (editor() === 'move') {
-            <p class="move-banner" role="status">
-              <ng-icon name="lucideCalendarDays" /> Elegí un horario libre. Podés cambiar la fecha.
-            </p>
-          }
-          <div
-            class="calendar-workspace"
-            [class.has-editor]="editor()"
-            [class.is-moving]="editor() === 'move'"
-          >
-            <section
-              #board
-              class="calendar-board"
-              aria-label="Grilla de turnos"
-              [attr.aria-busy]="loading()"
-              tabindex="0"
-            >
-              <div
-                class="timeline-grid"
-                [class.single-day]="view() === '1'"
-                [style.--track-height.px]="pixels(calendar.to - calendar.from)"
-              >
-                <div class="timeline-corner">
-                  <ng-icon name="lucideClock3" /><span>Hora local</span>
-                </div>
-                @for (day of calendar.days; track day.date) {
-                  <header
-                    class="day-header"
-                    [class.today]="day.date === today()"
-                    [attr.data-date]="day.date"
-                  >
-                    @if (view() === '7') {
-                      <button
-                        type="button"
-                        (click)="changeView('1', day.date)"
-                        [disabled]="writing()"
-                        [attr.aria-current]="day.date === today() ? 'date' : null"
-                        [attr.aria-label]="'Ver ' + weekday(day.date) + ' ' + displayDay(day.date)"
-                      >
-                        <span>{{ weekday(day.date) }}</span
-                        ><strong>{{ day.date.slice(8) }}</strong>
-                      </button>
-                    } @else {
-                      <div [attr.aria-current]="day.date === today() ? 'date' : null">
-                        <span>{{ weekday(day.date) }}</span
-                        ><strong>{{ day.date.slice(8) }}</strong>
-                      </div>
-                    }
-                  </header>
-                }
-                <div class="hour-axis" aria-hidden="true">
-                  @for (tick of calendar.ticks; track tick) {
-                    <span [style.top.px]="pixels(tick - calendar.from)">{{ hourLabel(tick) }}</span>
-                  }
-                </div>
-                @for (day of calendar.days; track day.date) {
-                  <div
-                    class="day-track"
-                    [class.today]="day.date === today()"
-                    [class.closed]="day.closed"
-                    role="group"
-                    [attr.aria-label]="weekday(day.date) + ' ' + displayDay(day.date)"
-                  >
-                    @for (tick of calendar.ticks; track tick) {
-                      <div
-                        class="hour-rule"
-                        [style.top.px]="pixels(tick - calendar.from)"
-                        aria-hidden="true"
-                      ></div>
-                    }
-                    @for (hour of day.hours; track hour.from) {
-                      <div
-                        class="office-hours"
-                        [style.top.px]="pixels(hour.from - calendar.from)"
-                        [style.height.px]="pixels(hour.to - hour.from)"
-                        aria-hidden="true"
-                      ></div>
-                    }
-                    @if (day.closed || !day.entries.length) {
-                      <span class="day-note">{{
-                        day.closed
-                          ? 'Consultorio cerrado'
-                          : day.hours.length
-                            ? 'Sin horarios reservables'
-                            : 'Sin atención programada'
-                      }}</span>
-                    }
-                    @for (
-                      entry of day.entries;
-                      track entry.booking ? 'booking-' + entry.booking.id : entry.slot?.start
-                    ) {
-                      @if (entry.booking; as booking) {
-                        @let name = booking.attendeeName || booking.contactName;
-                        <button
-                          type="button"
-                          class="event"
-                          [class.short-event]="pixels(entry.height) < 34"
-                          [class.shared-cancellation]="entry.sharedCancellation"
-                          [attr.data-status]="booking.status"
-                          [style.top.px]="pixels(entry.from - calendar.from)"
-                          [style.height.px]="pixels(entry.height)"
-                          [style.--lane]="entry.lane"
-                          [style.--lanes]="entry.laneCount"
-                          [attr.aria-pressed]="selected()?.id === booking.id"
-                          [attr.aria-label]="
-                            entry.time +
-                            ', ' +
-                            name +
-                            ', ' +
-                            labels[booking.status] +
-                            (booking.specialty ? ', ' + booking.specialty.name : '')
-                          "
-                          [title]="
-                            entry.time +
-                            ' · ' +
-                            name +
-                            ' · ' +
-                            labels[booking.status] +
-                            (booking.specialty ? ' · ' + booking.specialty.name : '')
-                          "
-                          (click)="selectBooking(booking, $event.currentTarget)"
-                          [disabled]="writing() || loading()"
-                        >
-                          <span class="event-title"
-                            ><time>{{ entry.time }}</time
-                            ><span>{{ name }}</span></span
-                          >
-                          <span class="event-meta"
-                            ><ng-icon [name]="statusIcons[booking.status]" /><span
-                              >{{ labels[booking.status] }}
-                              @if (booking.specialty && pixels(entry.height) >= 52) {
-                                · {{ booking.specialty.name }}
-                              }
-                            </span></span
-                          >
-                        </button>
-                      } @else if (entry.slot; as slot) {
-                        @let slotLabel =
-                          editor() === 'move'
-                            ? can('reschedule')
-                              ? 'Reprogramar'
-                              : 'Disponible'
-                            : can('create')
-                              ? 'Agregar turno'
-                              : 'Disponible';
-                        <button
-                          type="button"
-                          class="available-slot"
-                          [class.shared-cancellation]="entry.sharedCancellation"
-                          [style.top.px]="pixels(entry.from - calendar.from)"
-                          [style.height.px]="pixels(entry.height)"
-                          [style.--lane]="entry.lane"
-                          [style.--lanes]="entry.laneCount"
-                          [attr.aria-label]="
-                            slotLabel + ' ' + entry.time + ', ' + displayDay(day.date)
-                          "
-                          [attr.aria-pressed]="editor() === 'move' ? start === slot.start : null"
-                          [title]="slotLabel + ' ' + entry.time"
-                          (click)="chooseSlot(slot.start, $event.currentTarget)"
-                          [disabled]="
-                            writing() ||
-                            loading() ||
-                            !can(editor() === 'move' ? 'reschedule' : 'create')
-                          "
-                        >
-                          @if (slotLabel !== 'Disponible') {
-                            <ng-icon name="lucidePlus" aria-hidden="true" />
-                          }
-                          <span>{{ slotLabel }}</span
-                          ><time>{{ entry.time }}</time>
-                        </button>
-                      }
-                    }
-                    @if (
-                      day.date === today() &&
-                      minute(clock()) >= calendar.from &&
-                      minute(clock()) < calendar.to
-                    ) {
-                      <div
-                        class="now-line"
-                        [style.top.px]="pixels(minute(clock()) - calendar.from)"
-                      >
-                        <time [attr.aria-label]="'Hora actual del consultorio, ' + clock()">{{
-                          clock()
-                        }}</time>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            </section>
-
-            @if (editor()) {
-              <aside class="editor" aria-label="Gestión del turno">
-                <div class="editor-top">
-                  <h2 #editorHeading tabindex="-1">
-                    {{
-                      editor() === 'create'
-                        ? 'Nuevo turno'
-                        : editor() === 'move'
-                          ? 'Reprogramar turno'
-                          : 'Detalle del turno'
-                    }}
-                  </h2>
-                  <button
-                    type="button"
-                    class="icon-button"
-                    aria-label="Cerrar detalle"
-                    (click)="dismissEditor()"
-                    [disabled]="writing()"
-                  >
-                    <ng-icon name="lucideX" />
-                  </button>
-                </div>
-                @if (editor() === 'create') {
-                  <p class="editor-date">
-                    {{ displayDay(civilDate(start, assignment.timezone)) }} · {{ time(start)
-                    }}<br />{{ assignment.clinicName }}
+            @if (editor() === 'create') {
+              <p class="editor-date">
+                {{ displayDay(civilDate(start, assignment.timezone)) }} · {{ time(start)
+                }}<br />{{ assignment.clinicName }}
+              </p>
+              <form (ngSubmit)="create()" #form="ngForm">
+                <fieldset [disabled]="writing()">
+                  <legend class="sr-only">Datos administrativos</legend>
+                  <label
+                    >Nombre de quien será atendido<input
+                      name="attendee"
+                      [(ngModel)]="attendeeName"
+                      required
+                      maxlength="160"
+                  /></label>
+                  <label
+                    >Nombre del solicitante<input
+                      name="contact"
+                      [(ngModel)]="contactName"
+                      required
+                      maxlength="160"
+                      autocomplete="name"
+                  /></label>
+                  <label
+                    >Teléfono<input
+                      name="phone"
+                      [(ngModel)]="contactPhone"
+                      type="tel"
+                      maxlength="80"
+                      autocomplete="tel"
+                  /></label>
+                  <p class="muted">
+                    Este turno solo registra los datos administrativos de la reserva.
                   </p>
-                  <form (ngSubmit)="create()" #form="ngForm">
-                    <fieldset [disabled]="writing()">
-                      <legend class="sr-only">Datos administrativos</legend>
-                      <label
-                        >Nombre de quien será atendido<input
-                          name="attendee"
-                          [(ngModel)]="attendeeName"
-                          required
-                          maxlength="160"
-                      /></label>
-                      <label
-                        >Nombre del solicitante<input
-                          name="contact"
-                          [(ngModel)]="contactName"
-                          required
-                          maxlength="160"
-                          autocomplete="name"
-                      /></label>
-                      <label
-                        >Teléfono<input
-                          name="phone"
-                          [(ngModel)]="contactPhone"
-                          type="tel"
-                          maxlength="80"
-                          autocomplete="tel"
-                      /></label>
-                      <p class="muted">
-                        Este turno solo registra los datos administrativos de la reserva.
-                      </p>
-                      @if (editorError()) {
-                        <p class="error" role="alert">{{ editorError() }}</p>
-                      }
-                      <button
-                        type="submit"
-                        [disabled]="writing() || form.invalid || !can('create')"
-                      >
-                        {{ writing() ? 'Guardando…' : 'Confirmar turno' }}
-                      </button>
-                    </fieldset>
-                  </form>
-                }
-                @if (selected(); as booking) {
-                  <h3>{{ booking.attendeeName || booking.contactName }}</h3>
-                  <p class="status-label" [attr.data-status]="booking.status">
-                    <ng-icon [name]="statusIcons[booking.status]" />{{ labels[booking.status] }}
-                  </p>
-                  <p class="editor-date">
-                    {{
-                      displayDay(
-                        civilDate(
-                          booking.start,
-                          booking.clinicSnapshot?.timezone || assignment.timezone
-                        )
-                      )
-                    }}
-                    · {{ bookingTime(booking) }}<br />
-                    {{ booking.clinicSnapshot?.name || assignment.clinicName }}
-                    @if (booking.specialty) {
-                      · {{ booking.specialty.name }}
-                    }
-                  </p>
-                  <dl class="contact-list">
-                    <div>
-                      <dt>Solicitante</dt>
-                      <dd>{{ booking.contactName }}</dd>
-                    </div>
-                    <div>
-                      <dt>Teléfono</dt>
-                      <dd>{{ booking.contactPhone || 'Sin teléfono' }}</dd>
-                    </div>
-                  </dl>
                   @if (editorError()) {
                     <p class="error" role="alert">{{ editorError() }}</p>
                   }
-                  @if (editor() === 'move') {
-                    <div class="move-confirm">
-                      @if (start) {
-                        <p>
-                          Nuevo horario
-                          <strong
-                            >{{ displayDay(civilDate(start, assignment.timezone)) }} ·
-                            {{ time(start) }}</strong
-                          >
-                        </p>
-                        <button
-                          class="primary"
-                          type="button"
-                          (click)="move()"
-                          [disabled]="writing() || !can('reschedule')"
-                        >
-                          {{ writing() ? 'Guardando…' : 'Confirmar reprogramación' }}
-                        </button>
-                      } @else {
-                        <p class="muted">Seleccioná un horario libre en la agenda.</p>
-                      }
-                      <button type="button" (click)="editor.set('detail')" [disabled]="writing()">
-                        Volver al detalle
-                      </button>
-                    </div>
-                  } @else {
-                    <div class="editor-actions">
-                      @for (state of transitions(booking.status); track state) {
-                        <button
-                          type="button"
-                          [class.primary]="state === 'CHECKED_IN' || state === 'COMPLETED'"
-                          [class.danger]="state === 'CANCELLED'"
-                          [disabled]="
-                            writing() || !can(state === 'CANCELLED' ? 'cancel' : 'status')
-                          "
-                          (click)="status(state)"
-                        >
-                          {{ actionLabels[state] }}
-                        </button>
-                      }
-                      @if (booking.status === 'CONFIRMED') {
-                        <button
-                          type="button"
-                          [disabled]="writing() || !can('reschedule')"
-                          (click)="beginMove()"
-                        >
-                          Reprogramar
-                        </button>
-                      }
-                    </div>
-                  }
+                  <button
+                    type="submit"
+                    [disabled]="writing() || form.invalid || !can('create')"
+                  >
+                    {{ writing() ? 'Guardando…' : 'Confirmar turno' }}
+                  </button>
+                </fieldset>
+              </form>
+            }
+            @if (selected(); as booking) {
+              <h3>{{ booking.attendeeName || booking.contactName }}</h3>
+              <p class="status-label" [attr.data-status]="booking.status">
+                <ng-icon [name]="statusIcons[booking.status]" />{{ labels[booking.status] }}
+              </p>
+              <p class="editor-date">
+                {{
+                  displayDay(
+                    civilDate(
+                      booking.start,
+                      booking.clinicSnapshot?.timezone || assignment.timezone
+                    )
+                  )
+                }}
+                · {{ bookingTime(booking) }}<br />
+                {{ booking.clinicSnapshot?.name || assignment.clinicName }}
+                @if (booking.specialty) {
+                  · {{ booking.specialty.name }}
                 }
-              </aside>
+              </p>
+              <dl class="contact-list">
+                <div>
+                  <dt>Solicitante</dt>
+                  <dd>{{ booking.contactName }}</dd>
+                </div>
+                <div>
+                  <dt>Teléfono</dt>
+                  <dd>{{ booking.contactPhone || 'Sin teléfono' }}</dd>
+                </div>
+              </dl>
+              @if (editorError()) {
+                <p class="error" role="alert">{{ editorError() }}</p>
+              }
+              @if (editor() === 'move') {
+                <div class="move-confirm">
+                  @if (start) {
+                    <p>
+                      Nuevo horario
+                      <strong
+                        >{{ displayDay(civilDate(start, assignment.timezone)) }} ·
+                        {{ time(start) }}</strong
+                      >
+                    </p>
+                    <button
+                      class="primary"
+                      type="button"
+                      (click)="move()"
+                      [disabled]="writing() || !can('reschedule')"
+                    >
+                      {{ writing() ? 'Guardando…' : 'Confirmar reprogramación' }}
+                    </button>
+                  } @else {
+                    <p class="muted">Seleccioná un horario libre en la agenda.</p>
+                  }
+                  <button type="button" (click)="editor.set('detail')" [disabled]="writing()">
+                    Volver al detalle
+                  </button>
+                </div>
+              } @else {
+                <div class="editor-actions">
+                  @for (state of transitions(booking.status); track state) {
+                    <button
+                      type="button"
+                      [class.primary]="state === 'CHECKED_IN' || state === 'COMPLETED'"
+                      [class.danger]="state === 'CANCELLED'"
+                      [disabled]="
+                        writing() || !can(state === 'CANCELLED' ? 'cancel' : 'status')
+                      "
+                      (click)="status(state)"
+                    >
+                      {{ actionLabels[state] }}
+                    </button>
+                  }
+                  @if (booking.status === 'CONFIRMED') {
+                    <button
+                      type="button"
+                      [disabled]="writing() || !can('reschedule')"
+                      (click)="beginMove()"
+                    >
+                      Reprogramar
+                    </button>
+                  }
+                </div>
+              }
             }
           </div>
-          <footer class="agenda-footer">
-            <div class="calendar-key">
-              <span><i class="key-free"></i> Horario libre</span>
-              <span><i class="key-unavailable"></i> Fuera de horario o bloqueado</span>
-            </div>
-            <button type="button" [attr.aria-pressed]="fullDay()" (click)="fullDay.set(!fullDay())">
-              <ng-icon [name]="fullDay() ? 'lucideMinimize2' : 'lucideMaximize2'" />{{
-                fullDay() ? 'Ver jornada' : 'Ver 24 horas'
-              }}
-            </button>
-          </footer>
         }
-      </section>
+      </app-agenda>
     } @else {
       <div class="calendar-empty">
         <ng-icon name="lucideCalendarX" />

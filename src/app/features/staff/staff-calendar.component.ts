@@ -6,7 +6,6 @@ import {
   ElementRef,
   Injector,
   afterNextRender,
-  afterRenderEffect,
   computed,
   inject,
   signal,
@@ -16,8 +15,6 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideBuilding2,
   lucideCalendarDays,
-  lucideChevronLeft,
-  lucideChevronRight,
   lucideRefreshCw,
   lucideUserRound,
   lucideCheck,
@@ -25,15 +22,10 @@ import {
   lucideCircleCheck,
   lucideCircleMinus,
   lucideX,
-  lucidePlus,
-  lucideClock3,
-  lucideMaximize2,
-  lucideMinimize2,
   lucideCalendarX,
 } from '@ng-icons/lucide';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 import {
   addDays,
   civilDate,
@@ -53,17 +45,16 @@ import {
   StaffService,
   staffError,
 } from './staff.service';
-import { hourLabel, makeTimeline, minute, monday, PIXELS_PER_MINUTE } from './staff-timeline';
+import { monday } from '../calendar/agenda-timeline';
+import { AgendaComponent } from '../calendar/agenda.component';
 
 @Component({
   selector: 'app-staff-calendar',
-  imports: [FormsModule, RouterLink, DatePickerComponent, NgIcon],
+  imports: [FormsModule, RouterLink, AgendaComponent, NgIcon],
   providers: [
     provideIcons({
       lucideBuilding2,
       lucideCalendarDays,
-      lucideChevronLeft,
-      lucideChevronRight,
       lucideRefreshCw,
       lucideUserRound,
       lucideCheck,
@@ -71,14 +62,10 @@ import { hourLabel, makeTimeline, minute, monday, PIXELS_PER_MINUTE } from './st
       lucideCircleCheck,
       lucideCircleMinus,
       lucideX,
-      lucidePlus,
-      lucideClock3,
-      lucideMaximize2,
-      lucideMinimize2,
       lucideCalendarX,
     }),
   ],
-  styleUrls: ['./staff.css', './staff-calendar.component.css'],
+  styleUrls: ['./staff.css', '../calendar/agenda-page.css', './staff-calendar.component.css'],
   templateUrl: './staff-calendar.component.html',
 })
 export class StaffCalendarComponent {
@@ -88,10 +75,9 @@ export class StaffCalendarComponent {
   private readonly destroy = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly injector = inject(Injector);
-  private readonly board = viewChild<ElementRef<HTMLElement>>('board');
+  private readonly agenda = viewChild(AgendaComponent);
   private readonly editorHeading = viewChild<ElementRef<HTMLElement>>('editorHeading');
   private editorTrigger: HTMLElement | null = null;
-  private lastScroll = '';
   readonly activationRecovery = this.api.activationRecovery ?? signal('');
   readonly assignments = signal<Assignment[]>([]);
   readonly days = signal<SlotDay[]>([]);
@@ -105,7 +91,6 @@ export class StaffCalendarComponent {
   readonly editorError = signal('');
   readonly now = signal(Date.now());
   readonly passwordOpen = signal(false);
-  readonly fullDay = signal(false);
   readonly date = signal(civilDate(new Date().toISOString(), 'America/Argentina/Buenos_Aires'));
   readonly view = signal<'1' | '7'>(
     this.document.defaultView?.matchMedia?.('(max-width: 640px)').matches ? '1' : '7',
@@ -121,17 +106,6 @@ export class StaffCalendarComponent {
     () => this.selectedAssignment()?.timezone ?? 'America/Argentina/Buenos_Aires',
   );
   readonly today = computed(() => civilDate(new Date(this.now()).toISOString(), this.zone()));
-  readonly clock = computed(() => localTime(new Date(this.now()).toISOString(), this.zone()));
-  readonly timeline = computed(() =>
-    makeTimeline(
-      this.rangeStart(),
-      Number(this.view()),
-      this.days(),
-      this.bookings(),
-      this.zone(),
-      this.fullDay(),
-    ),
-  );
   readonly statusIcons: Record<BookingStatus, string> = {
     CONFIRMED: 'lucideCheck',
     CHECKED_IN: 'lucideLogIn',
@@ -145,25 +119,6 @@ export class StaffCalendarComponent {
     NO_SHOW: 'Marcar como ausente',
     CANCELLED: 'Cancelar turno',
   };
-  readonly summary = computed(() => {
-    const date = this.date();
-    const bookings =
-      this.timeline()
-        .days.find((day) => day.date === date)
-        ?.entries.flatMap(({ booking }) => (booking ? [booking] : [])) ?? [];
-    return {
-      date,
-      total: bookings.length,
-      confirmed: bookings.filter((booking) => booking.status === 'CONFIRMED').length,
-      checkedIn: bookings.filter((booking) => booking.status === 'CHECKED_IN').length,
-      cancelled: bookings.filter((booking) => booking.status === 'CANCELLED').length,
-      next: bookings
-        .filter(
-          (booking) => booking.status === 'CONFIRMED' && Date.parse(booking.start) >= this.now(),
-        )
-        .sort((first, second) => Date.parse(first.start) - Date.parse(second.start))[0],
-    };
-  });
   readonly labels = STATUS_LABELS;
   readonly transitions = transitions;
   readonly displayDay = displayDay;
@@ -191,39 +146,14 @@ export class StaffCalendarComponent {
       this.epoch++;
       this.refreshEpoch++;
     });
-    afterRenderEffect(() => {
-      const board = this.board()?.nativeElement;
-      if (!board || this.loading()) return;
-      const timeline = this.timeline();
-      const scrollKey = [this.assignmentKey, this.date(), this.view(), this.fullDay()].join('|');
-      if (scrollKey === this.lastScroll) return;
-      this.lastScroll = scrollKey;
-      const current = minute(this.clock());
-      const today = timeline.days.some((day) => day.date === this.today());
-      const offset = this.pixels(current - timeline.from);
-      board.scrollTop =
-        today && current < timeline.to && offset > board.clientHeight - 110
-          ? Math.max(0, offset - board.clientHeight * 0.35)
-          : 0;
-      const focusedDay = board.querySelector<HTMLElement>('[data-date="' + this.date() + '"]');
-      if (focusedDay)
-        board.scrollLeft = focusedDay.offsetLeft - (board.clientWidth - focusedDay.clientWidth) / 2;
-    });
   }
   key(a: Assignment) {
     return a.ownerId + '|' + a.clinicId;
   }
   readonly modalityLabel = modalityLabel;
-  readonly hourLabel = hourLabel;
-  readonly pixels = (minutes: number) => minutes * PIXELS_PER_MINUTE;
-  readonly minute = minute;
-  private readonly weekdays = new Intl.DateTimeFormat('es-AR', {
-    weekday: 'long',
-    timeZone: 'UTC',
-  });
-  weekday(date: string) {
-    return this.weekdays.format(new Date(date + 'T12:00:00Z'));
-  }
+  readonly allowSlot = () => this.can(this.editor() === 'move' ? 'reschedule' : 'create');
+  readonly isMoveSlot = (slot: SlotDay['slots'][number]) =>
+    this.editor() === 'move' ? this.start === slot.start : null;
   can(p: StaffPermission) {
     const a = this.selectedAssignment();
     return !!a && a.permissions.includes(p) && Date.parse(a.validUntil) > this.now();
@@ -277,12 +207,6 @@ export class StaffCalendarComponent {
     this.selectedAssignment.set(this.assignments().find((a) => this.key(a) === key) ?? null);
     this.clearCalendar();
     void this.load();
-  }
-  shiftDate(direction: number) {
-    this.changeDate(addDays(this.date(), direction * Number(this.view())));
-  }
-  goToday() {
-    this.changeDate(this.today());
   }
   changeView(view: '1' | '7', date = this.date()) {
     if (this.writing() || view === this.view()) return;
@@ -389,7 +313,8 @@ export class StaffCalendarComponent {
   }
   dismissEditor() {
     this.closeEditor();
-    (this.editorTrigger?.isConnected ? this.editorTrigger : this.board()?.nativeElement)?.focus();
+    if (this.editorTrigger?.isConnected) this.editorTrigger.focus();
+      else this.agenda()?.focusBoard();
     this.editorTrigger = null;
   }
   private async write(
