@@ -1,65 +1,43 @@
 :host { display: block; min-width: 0; }
-
 .followup-card {
-  padding: 24px;
-  border: 1px solid var(--dc-outline, #dce7e9);
-  border-radius: 18px;
-  background: var(--dc-surface, #fff);
+  padding: 14px 16px; border-radius: 14px; background: var(--desk-subtle);
 }
-.followup-heading { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
-.followup-heading-icon {
-  display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px;
-  border-radius: 13px; background: var(--dc-teal-surface, #edf8f6); color: var(--dc-teal-ink, #006874); font-size: 21px;
+.followup-heading { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: 4px 9px; }
+h2 { color: inherit; font-size: 1.25rem; line-height: 1.2; font-weight: 750; letter-spacing: -.027em; }
+.followup-heading p, .followup-period { color: var(--desk-muted); font-size: .83rem; }
+.followup-heading p { margin-top: 2px; }
+.followup-period { display: inline-flex; align-items: center; gap: 5px; font-size: .75rem; }
+.followup-period ng-icon { color: var(--desk-accent); }
+.followup-message { display: flex; align-items: center; gap: 5px 10px; justify-content: space-between; flex-wrap: wrap; margin-top: 9px; font-size: .88rem; color: var(--desk-muted); }
+.followup-retry { border: 0; background: transparent; font: inherit; padding: 6px; min-height: 34px; cursor: pointer; color: var(--desk-accent); font-weight: 700; }
+.followup-retry:hover { text-decoration: underline; }
+.followup-days { margin-top: 9px; }
+.followup-day { display: grid; grid-template-columns: minmax(105px, .26fr) minmax(0, 1fr); gap: 8px; align-items: start; padding-block: 8px; border-top: 1px solid var(--desk-line); }
+.followup-day:last-child { padding-bottom: 0; }
+.followup-date { position: relative; padding-inline-start: 12px; }
+.followup-date::before { content: ''; position: absolute; left: 0; top: 6px; width: 6px; height: 6px; background: var(--desk-input); border-radius: 50%; }
+.is-today .followup-date::before { background: var(--desk-accent); }
+.followup-date h3 { color: var(--desk-ink); font-size: .87rem; font-weight: 740; }
+.followup-date time, .followup-date small { display: block; font-size: .72rem; color: var(--desk-muted); }
+.followup-day ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 147px), 1fr)); gap: 3px 6px; }
+.followup-patient {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) 13px; gap: 6px;
+  align-items: center; padding: 5px 6px; min-height: 42px; border-radius: 7px; color: var(--desk-ink); text-decoration: none;
+  transition: background-color 160ms var(--desk-ease);
 }
-.followup-heading-text { flex: 1; min-width: 0; }
-.followup-eyebrow { color: var(--dc-teal-ink, #006874); font-size: 0.625rem; font-weight: 700; letter-spacing: 0.1em; }
-.followup-heading h2 { margin: 3px 0 5px; color: var(--dc-ink, #0f172a); font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; }
-.followup-heading p { margin: 0; color: var(--dc-ink-secondary, #52647a); font-size: 0.75rem; line-height: 1.6; }
-.followup-period { display: inline-flex; align-items: center; gap: 6px; color: var(--dc-ink-secondary, #52647a); font-size: 0.6875rem; }
-.followup-period ng-icon { font-size: 14px; }
-.followup-days { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.followup-day { min-width: 0; overflow: hidden; border: 1px solid var(--dc-outline, #dde7eb); border-radius: 12px; background: var(--dc-surface-low, #f8fafc); }
-.followup-day-today { border-color: color-mix(in srgb, var(--md-sys-color-primary) 35%, var(--dc-outline, #dde7eb)); }
-.followup-day-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 16px; border-bottom: 1px solid var(--dc-outline, #dde7eb); }
-.followup-day-heading h3 { margin: 0 0 4px; color: var(--dc-ink, #0f172a); font-size: 0.8125rem; font-weight: 650; }
-.followup-day-heading time { color: var(--dc-ink-secondary, #52647a); font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
-.followup-count { padding: 4px 8px; border-radius: 6px; color: var(--dc-ink-secondary, #52647a); background: var(--dc-surface-high, #edf2f5); font-size: 0.625rem; font-weight: 600; white-space: nowrap; }
-.followup-count.has-followups { background: var(--dc-teal-surface, #e8f5f2); color: var(--dc-teal-ink, #006874); }
-.followup-patients { list-style: none; margin: 0; padding: 6px; max-height: 290px; overflow-y: auto; scrollbar-width: thin; }
-.followup-patient { display: flex; align-items: center; gap: 10px; min-height: 68px; padding: 12px 10px; border-radius: 8px; text-decoration: none; transition: background-color 150ms ease; }
-.followup-patient:hover { background: var(--dc-teal-surface, #edf8f6); }
-.followup-patient:focus-visible, .followup-retry:focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: -2px; }
-.followup-avatar { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border: 1px solid var(--dc-outline, #dce7e9); border-radius: 10px; background: var(--dc-surface, #fff); color: var(--dc-teal-ink, #006874); font-size: 0.6875rem; font-weight: 650; }
-.followup-patient-text { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 5px; }
-.followup-patient-name { color: var(--dc-ink, #0f172a); font-size: 0.75rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
-.followup-patient-action { color: var(--dc-ink-secondary, #52647a); font-size: 0.625rem; }
-.followup-patient > ng-icon { flex-shrink: 0; color: var(--dc-teal-ink, #006874); font-size: 15px; }
-.followup-empty { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 68px; padding: 12px; color: var(--dc-ink-secondary, #52647a); font-size: 0.6875rem; text-align: center; }
-.followup-empty ng-icon { flex-shrink: 0; font-size: 15px; }
-.followup-footnote { margin: 16px 0 0; color: var(--dc-ink-secondary, #52647a); font-size: 0.6875rem; line-height: 1.6; }
-.followup-message { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0; padding: 24px 0; color: var(--dc-ink-secondary, #52647a); font-size: 0.8125rem; }
-.followup-retry { padding: 7px 12px; border: 1px solid var(--dc-outline, #dce7e9); border-radius: 8px; background: var(--dc-surface-low, #f8fafc); color: var(--dc-teal-ink, #006874); font: inherit; font-weight: 600; cursor: pointer; }
-@media (max-width: 900px) {
-  .followup-heading { flex-wrap: wrap; }
-  .followup-period { flex-basis: 100%; margin-left: 58px; }
-  .followup-days { grid-template-columns: minmax(0, 1fr); }
-  .followup-patients { max-height: 240px; }
+.followup-patient:hover { background: var(--desk-hover); }
+.followup-patient:focus-visible, .followup-retry:focus-visible { outline: 2px solid var(--desk-accent); outline-offset: 2px; }
+.followup-patient strong { font-size: .84rem; line-height: 1.23; overflow-wrap: anywhere; font-weight: 690; }
+.followup-patient ng-icon { color: var(--desk-accent); font-size: .79rem; }
+.followup-avatar { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: var(--desk-panel); color: var(--desk-accent); font-size: .66rem; font-weight: 750; }
+.followup-skeleton { display: grid; gap: 7px; width: 100%; }
+.followup-skeleton i { height: 23px; width: 54%; border-radius: 6px; background: var(--desk-hover); }
+.followup-skeleton i + i { width: 37%; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+@media (max-width: 500px) {
+  .followup-card { padding-inline: 12px; }
+  h2 { font-size: 1.12rem; }
+  .followup-day { grid-template-columns: minmax(85px, .3fr) minmax(0, 1fr); gap: 5px; }
+  .followup-date { padding-inline-start: 9px; }
 }
-@media (max-width: 600px) {
-  .followup-card { padding: 18px; border-radius: 14px; }
-  .followup-heading { align-items: flex-start; gap: 12px; margin-bottom: 18px; }
-  .followup-heading h2 { font-size: 1rem; }
-  .followup-period { margin-left: 56px; }
-  .followup-day-heading { padding: 14px; }
-}
-@media (prefers-reduced-motion: reduce) { .followup-patient { transition: none; } }
-
-
-@media (max-width: 768px) {
- .followup-card { padding: 12px; } .followup-heading { gap: 8px; margin-bottom: 10px; } .followup-heading-icon { width: 30px; height: 30px; font-size: 16px; border-radius: 9px; }
- .followup-eyebrow, .followup-heading p, .followup-footnote { display: none; } .followup-heading h2 { font-size: 14px; } .followup-period { margin-left: 0; font-size: 10px; }
- .followup-days { gap: 6px; } .followup-day-heading { padding: 8px 10px; } .followup-day-heading > div { display: flex; align-items: center; gap: 8px; } .followup-day-heading h3 { margin: 0; font-size: 12px; }
- .followup-empty { min-height: 0; padding: 4px; font-size: 10px; } .followup-patients { padding: 3px 6px; } .followup-patient { min-height: 44px; padding: 5px; } .followup-avatar { width: 28px; height: 28px; } .followup-patient-action { display: none; }
-}
-
-@media (max-width: 768px) { .is-empty-day .followup-day-heading { border-bottom: 0; } .is-empty-day .followup-patients { padding: 0 10px 6px; } .is-empty-day .followup-empty { padding: 0; justify-content: flex-start; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

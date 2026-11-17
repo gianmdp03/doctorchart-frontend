@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../../core/services/interaction-status.service';
 import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import {
   DestroyRef,
@@ -24,6 +25,7 @@ import { PatientRecordDraftsService } from '../patient-record-drafts.service';
 
 @Injectable()
 export class PatientEncountersStore {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly clinicalScope = inject(ClinicalContextService);
   private readonly recordActions = inject(PatientRecordActionsService);
   private readonly destroyRef = inject(DestroyRef);
@@ -161,6 +163,7 @@ export class PatientEncountersStore {
           if (!current()) return;
           this.isDeleting.set(false); this.pendingDeleteId.set(null);
           this.encounters.update(items => items.filter(item => item.id !== encounterId));
+          this.interaction.notifySuccess('La consulta se eliminó correctamente.');
           if (patientId) {
             window.dispatchEvent(new CustomEvent('encounter-deleted', { detail: { patientId } }));
           }

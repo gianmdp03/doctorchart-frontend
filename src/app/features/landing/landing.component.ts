@@ -142,7 +142,7 @@ export class LandingComponent {
     {
       number: '04',
       title: 'Continuá el seguimiento',
-      description: 'Revisá las consultas anteriores y registrá la fecha del próximo control.',
+      description: 'Revisá las consultas anteriores y gestioná las próximas citas desde la agenda.',
     },
   ];
   readonly faqs = [

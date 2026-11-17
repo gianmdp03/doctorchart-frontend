@@ -84,7 +84,7 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     expect(component.categories()[0].fields[0].label).toBe('Campo de ensayo');
     expect(component.fieldDraft()).toBeNull();
   });
-  it('keeps the optional measurement position linked to the height field', () => {
+  it('hides legacy position while keeping the clinical measurements editable', () => {
     load({
       categories: [
         {
@@ -115,19 +115,8 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     component.selectCategory('measurements');
     fixture.detectChanges();
     const fields = component.selectedCategory()!.fields;
-    expect(fields.map((field) => field.key)).toEqual(['heightCm', 'heightMeasurementMode', 'weightKg']);
-    expect(modeCard()?.textContent).toContain('Vinculado a la talla');
-    expect(modeCard()?.querySelector('button')).toBeNull();
-    expect(fields[1]).toMatchObject({
-      key: 'heightMeasurementMode',
-      label: 'Cómo se midió la talla',
-      type: 'SELECT',
-      required: false,
-      options: [
-        { value: 'RECUMBENT', label: 'Acostado (longitud)' },
-        { value: 'STANDING', label: 'De pie (estatura)' },
-      ],
-    });
+    expect(fields.map((field) => field.key)).toEqual(['heightCm', 'weightKg']);
+    expect(modeCard()).toBeNull();
     component.deleteField('measurements', 'heightCm');
     fixture.detectChanges();
     expect(modeCard()).toBeNull();

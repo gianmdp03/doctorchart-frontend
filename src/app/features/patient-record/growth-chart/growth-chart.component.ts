@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, signal, afterNextRender, DestroyRef, ElementRef, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 import {
@@ -15,7 +16,10 @@ import {
   PatientGrowthPoint,
 } from '../../../core/models/growth-chart.model';
 
-const COLORS = ['#dc2626', '#ea580c', '#16a34a', '#ea580c', '#dc2626'];
+const GREEN = '#16a34a';
+const ORANGE = '#ea580c';
+const RED = '#dc2626';
+const COLORS = [RED, ORANGE, GREEN, ORANGE, RED];
 // Both markers occupy the same 9 × 9 SVG-unit frame as the previous dots.
 const HEART =
   'M0 4.5 C-1 3.5 -4.5 1 -4.5 -1.5 C-4.5 -3.157 -3.157 -4.5 -1.5 -4.5 C-0.75 -4.5 0 -3.75 0 -2.5 C0 -3.75 0.75 -4.5 1.5 -4.5 C3.157 -4.5 4.5 -3.157 4.5 -1.5 C4.5 1 1 3.5 0 4.5 Z';
@@ -25,7 +29,7 @@ const STAR =
 /** D3 computes geometry; Angular owns the SVG DOM, accessibility and state. */
 @Component({
   selector: 'app-growth-chart',
-  imports: [DecimalPipe, CdkConnectedOverlay, CdkOverlayOrigin, CdkScrollable],
+  imports: [DecimalPipe, RouterLink, CdkConnectedOverlay, CdkOverlayOrigin, CdkScrollable],
   templateUrl: './growth-chart.component.html',
   styleUrl: './growth-chart.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,6 +64,10 @@ export class GrowthChartComponent {
     });
   }
   readonly definition = computed(() => this.chart().definition);
+  readonly usesStandardDeviations = computed(() => !!this.definition().standardDeviations);
+  readonly usesYearsOnly = computed(() =>
+    this.usesStandardDeviations() && this.definition().ageMaxMonths > 36,
+  );
   readonly latestMeasurement = computed(() => this.chart().points.at(-1) ?? null);
   readonly sexLabel = computed(() => (this.definition().sex === 'FEMALE' ? 'Niñas' : 'Niños'));
   readonly markerPath = computed(() => (this.definition().sex === 'FEMALE' ? HEART : STAR));
@@ -116,6 +124,7 @@ export class GrowthChartComponent {
   readonly xGrid = computed(() => this.mobileTicks(this.ticks(this.axes().x, true), 16));
   readonly yGrid = computed(() => this.mobileTicks(this.ticks(this.axes().y, true), 16));
   readonly xLabels = computed(() => {
+    if (this.usesYearsOnly()) return [];
     const values = this.ticks(this.axes().x, false);
     if (this.compact() && this.definition().x.variable === 'AGE') {
       const axis = this.axes().x, step = axis.max - axis.min >= 36 ? 12 : axis.max - axis.min >= 18 ? 6 : 3;
@@ -124,9 +133,14 @@ export class GrowthChartComponent {
     return this.mobileTicks(values, 5);
   });
   readonly yLabels = computed(() => this.mobileTicks(this.ticks(this.axes().y, false), 7));
-  readonly years = computed(() =>
-    this.definition().x.variable === 'AGE' ? this.mobileTicks(this.xGrid().filter((t) => t % 12 === 0), 4) : [],
-  );
+  readonly years = computed(() => {
+    const x = this.axes().x;
+    if (x.variable !== 'AGE') return [];
+    if (this.usesStandardDeviations()) {
+      return this.mobileTicks(this.ticks({ ...x, step: 12 }, false), 4);
+    }
+    return this.mobileTicks(this.xGrid().filter((t) => t % 12 === 0), 4);
+  });
   readonly visiblePoints = computed(() =>
     this.chart().points.filter((p) => this.inFrame(p, this.axes().x, this.axes().y)),
   );
@@ -138,20 +152,57 @@ export class GrowthChartComponent {
       this.axes().x.min < 24 &&
       this.axes().x.max > 24,
   );
+  readonly deviationColors = [GREEN, ORANGE, RED, RED];
   readonly curvePaths = computed(() => {
     const points = this.splitBMITransition(this.chart().curves);
-    return this.definition().percentiles.map((percentile, i) => ({
-      percentile,
-      color: COLORS[i],
-      path:
-        line<GrowthCurvePoint | null>()
-          .defined((p) => p !== null)
-          .x((p) => this.xScale()(p!.x))
-          .y((p) => this.yScale()(p!.values[i]))(points) ?? '',
-      end: this.chart()
-        .curves.filter((p) => p.x <= this.axes().x.max && p.x >= this.axes().x.min)
-        .at(-1)?.values[i],
-    }));
+    const { standardDeviations, percentiles } = this.definition();
+    const inFrame = this.chart().curves.filter(
+      (p) => p.x <= this.axes().x.max && p.x >= this.axes().x.min,
+    );
+    return (standardDeviations ?? percentiles).map((value, i) => {
+      const magnitude = Math.abs(value);
+      const style = standardDeviations ? ['de-median', '', 'de-middle', 'de-outer'][magnitude] : '';
+      return {
+        value,
+        percentile: standardDeviations ? null : value,
+        deviation: standardDeviations ? value : null,
+        label: standardDeviations ? this.deviationLabel(value) : String(value),
+        color: standardDeviations ? this.deviationColors[magnitude] : COLORS[i],
+        style,
+        path:
+          line<GrowthCurvePoint | null>()
+            .defined((p) => p !== null && p.values[i] != null)
+            .x((p) => this.xScale()(p!.x))
+            .y((p) => this.yScale()(p!.values[i]!))(points) ?? '',
+        end: inFrame.filter((p) => p.values[i] != null).at(-1)?.values[i],
+      };
+    });
+  });
+  readonly curveLabels = computed(() => {
+    const { min, max } = this.axes().y;
+    const labels = this.curvePaths().flatMap((curve) => {
+      if (curve.end == null || curve.end < min || curve.end > max) return [];
+      const anchorY = this.yScale()(curve.end);
+      return [{ ...curve, anchorY, labelY: anchorY }];
+    });
+    if (!this.usesStandardDeviations()) return labels;
+
+    // Keep adjacent DE labels legible at small widths, with leaders back to the trace heights.
+    labels.reverse();
+    const gap = this.compact() ? 11 : 13;
+    let previous = this.plot.top - gap;
+    for (const label of labels) {
+      label.labelY = Math.max(label.anchorY, previous + gap);
+      previous = label.labelY;
+    }
+    if (!labels.length) return labels;
+    const correction = labels.reduce((shift, label) => shift + label.labelY - label.anchorY, 0)
+      / labels.length;
+    const shift = Math.min(
+      labels[0].labelY - this.plot.top,
+      Math.max(correction, previous - this.plot.bottom),
+    );
+    return labels.map((label) => ({ ...label, labelY: label.labelY - shift }));
   });
   readonly patientPath = computed(
     () =>
@@ -162,7 +213,9 @@ export class GrowthChartComponent {
   );
   readonly xTitle = computed(() =>
     this.definition().x.variable === 'AGE'
-      ? 'Edad (meses y años cumplidos)'
+      ? this.usesYearsOnly()
+        ? 'Edad (años)'
+        : 'Edad (meses y años cumplidos)'
       : `${this.definition().x.variable === 'LENGTH' ? 'Longitud' : 'Estatura'} (cm)`,
   );
   readonly yTitle = computed(
@@ -170,7 +223,7 @@ export class GrowthChartComponent {
       ({
         WEIGHT: 'Peso',
         LENGTH: 'Longitud',
-        HEIGHT: 'Estatura',
+        HEIGHT: this.usesStandardDeviations() ? 'Talla' : 'Estatura',
         HEAD_CIRCUMFERENCE: 'Perímetro cefálico',
         BMI: 'IMC',
         AGE: 'Edad',
@@ -251,6 +304,10 @@ export class GrowthChartComponent {
       p.value <= y.max
     );
   }
+  deviationLabel(value: number): string {
+    const sign = value < 0 ? '−' : value > 0 ? '+' : '';
+    return sign + Math.abs(value) + ' DE';
+  }
   monthLabel(value: number): string {
     return value % 12 === 0 ? '' : String(value % 12);
   }
@@ -264,6 +321,8 @@ export class GrowthChartComponent {
     return `P${e.percentile!.toFixed(2)}`;
   }
   tooltip(point: PatientGrowthPoint): string {
-    return `${this.formatDate(point.date)} · ${point.ageFormatted} (${point.ageDays} días) · ${point.value.toFixed(3)} ${this.definition().y.unit} · ${this.percentileLabel(point)}${point.evaluation ? ` · Z ${point.evaluation.zScore.toFixed(3)}` : ''}${point.adjustmentCm ? ` · Conversión ${point.adjustmentCm > 0 ? '+' : ''}${point.adjustmentCm} cm` : ''}${point.note ? ` · ${point.note}` : ''}`;
+    const measurement = `${this.formatDate(point.date)} · ${point.ageFormatted} (${point.ageDays} días) · ${point.value.toFixed(3)} ${this.definition().y.unit}`;
+    if (this.usesStandardDeviations()) return measurement;
+    return `${measurement} · ${this.percentileLabel(point)}${point.evaluation ? ` · Z ${point.evaluation.zScore.toFixed(3)}` : ''}${point.adjustmentCm ? ` · Conversión ${point.adjustmentCm > 0 ? '+' : ''}${point.adjustmentCm} cm` : ''}${point.note ? ` · ${point.note}` : ''}`;
   }
 }

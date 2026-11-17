@@ -262,10 +262,6 @@ small {
   font-weight: 550;
   padding: 3px 7px;
 }
-.date-tag.is-overdue {
-  background: var(--dc-warning-surface, #fff7ed);
-  color: var(--dc-warning-ink, #9a531e);
-}
 .vaccine-item {
   display: flex;
   align-items: center;

@@ -109,7 +109,6 @@ h1 { margin: .5rem 0; color: var(--dc-ink, #0f172a); font-size: 2rem; letter-spa
 .primary-button { border: 0; border-radius: .625rem; background: #2563eb; color: #fff; cursor: pointer; font-weight: 700; padding: .75rem 1.35rem; }
 .primary-button:disabled, .secondary-button:disabled { cursor: not-allowed; opacity: .55; }
 .error-banner { margin-top: 1.25rem; border-left: 4px solid #dc2626; border-radius: .5rem; background: var(--dc-error-surface, #fef2f2); color: var(--dc-error-ink, #991b1b); padding: .75rem 1rem; font-size: .875rem; }
-.success-banner { margin-top: 1.25rem; border-left: 4px solid #16a34a; border-radius: .5rem; background: var(--dc-success-surface, #f0fdf4); color: var(--dc-success-ink, #166534); padding: .75rem 1rem; font-size: .875rem; }
 @media (max-width: 640px) { .wizard-container { padding: 1rem; } .wizard-card { min-height: calc(100vh - 2rem); padding: 1.5rem; } .header-row { align-items: flex-start; flex-direction: column; } .wizard-content { padding: 2.75rem 0; } h1 { font-size: 1.65rem; } }
 .step-navigation {
   display: flex;

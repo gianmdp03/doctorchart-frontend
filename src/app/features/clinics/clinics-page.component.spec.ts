@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -155,9 +156,7 @@ describe('ClinicsPageComponent', () => {
     expect(updated.version).toBe('2');
     // Archiving frees 1 counted slot (from 2 down to 1)
     expect(component.capabilities()?.usage.counted).toBe(1);
-    expect(
-      fixture.nativeElement.querySelector('[data-testid="action-feedback-alert"]')?.textContent,
-    ).toContain('Desactivado');
+    expect(TestBed.inject(InteractionStatusService).success()).toContain('Desactivado');
   });
 
   it('surfaces error and refreshes capabilities when status change fails with 409', async () => {

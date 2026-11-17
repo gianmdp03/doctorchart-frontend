@@ -372,7 +372,6 @@
                   <button
                     type="button"
                     class="action-btn save-btn"
-                    [class.saved]="saveFeedback()"
                     [disabled]="isSavingLog()"
                     (click)="saveResultToRecord()"
                     [title]="activePatient() ? 'Guardar este resultado en el historial clínico inmutable del paciente' : 'Conservar este cálculo durante la sesión; se pierde al recargar o cerrar sesión'"
@@ -380,9 +379,6 @@
                     @if (isSavingLog()) {
                       <ng-icon name="lucideRefreshCw" class="btn-icon animate-spin" />
                       <span>Guardando...</span>
-                    } @else if (saveFeedback()) {
-                      <ng-icon name="lucideCheck" class="btn-icon text-emerald-600" />
-                      <span>¡Guardado con éxito!</span>
                     } @else {
                       <ng-icon name="lucideSave" class="btn-icon" />
                       <span>{{ activePatient() ? 'Guardar en Historial Clínico' : 'Guardar en la sesión' }}</span>

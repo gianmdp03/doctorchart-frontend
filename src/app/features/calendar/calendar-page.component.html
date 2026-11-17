@@ -1,108 +1,211 @@
-<main class="calendar-page">
- <header class="page-heading"><div><p class="eyebrow">CONSULTORIO MÉDICO</p><h1>Agenda de turnos</h1><p class="muted">Turnos presenciales y virtuales en tu zona horaria · {{calendarZone}}.</p></div><a routerLink="/clinics" class="manage-clinics"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 9h3a1 1 0 0 1 1 1v11M2 21h20M8 7h4M8 11h4M8 15h4M9 21v-3h2v3"/></svg><span>Gestionar consultorios</span><svg class="link-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a></header>
- <section class="toolbar" aria-label="Controles del calendario">
-  <div class="week-navigation" aria-label="Navegar entre semanas">
-   <div class="week-period"><span>Semana del</span><strong aria-live="polite">{{weekLabel()}}</strong></div>
-   <div class="date-navigation"><button type="button" [disabled]="writing()" (click)="navigate(-1)">‹ Semana anterior</button><button type="button" [disabled]="writing()" (click)="changeDate(dateToday())">Esta semana</button><button type="button" [disabled]="writing()" (click)="navigate(1)">Semana siguiente ›</button></div>
-  </div>
-  <label class="date-control">Ir a la semana de…<app-date-picker inputId="calendar-date" [value]="date" (valueChange)="changeDate($event)" /></label>
-  <button type="button" [attr.aria-expanded]="filtersOpen()" aria-controls="calendar-filters" (click)="filtersOpen.set(!filtersOpen())">Filtros@if(activeFilterCount()){ · {{activeFilterCount()}}}</button>
-  @if(filtersOpen()){<div id="calendar-filters" class="calendar-filters"><label>Modalidad<select aria-label="Filtrar agenda por modalidad" [(ngModel)]="modalityFilter" (ngModelChange)="changeFilters()"><option value="">Todas</option><option value="IN_PERSON">Presencial</option><option value="TELECONSULTATION">Teleconsulta</option></select></label><label>Especialidad<select aria-label="Filtrar agenda por especialidad" [(ngModel)]="contextFilter" (ngModelChange)="changeFilters()"><option value="">Todas las especialidades</option>@for(context of workspace.contexts();track context.id){<option [value]="''+context.id">{{context.specialty.name}}</option>}</select></label><label>Estado<select aria-label="Filtrar agenda por estado" [(ngModel)]="statusFilter" (ngModelChange)="changeFilters()"><option value="">Todos los estados</option>@for(status of statuses;track status){<option [value]="status">{{labels[status]}}</option>}</select></label><label class="clinic-control">Consultorio<select id="calendar-clinic" [ngModel]="clinicId" (ngModelChange)="changeClinic($event)"><option value="">Todas mis agendas</option>@for(c of clinics();track c.id){<option [value]="c.id">{{c.name}} · {{modalityLabel(c.modality)}}{{c.status==='ACTIVE'?'':' · Desactivado'}}</option>}</select></label>
-  </div>}
-  <button class="refresh-calendar" (click)="load()" [disabled]="loading()" aria-label="Actualizar calendario">↻ Actualizar</button>
- </section>
- @if(error()){<div class="notice error" role="alert">{{error()}} <button (click)="load()">Reintentar</button></div>}
- @if(feedback()){<p class="notice success" role="status">{{feedback()}}</p>}
- @if(!allowed()){<div class="notice" role="status">Modo de consulta: los permisos comerciales no están vigentes o no pudieron verificarse. <button (click)="retryCapabilities()">Verificar permisos</button></div>}
- @else if(!canBook()){<p class="notice">Regularizá el cupo de consultorios para crear o reprogramar turnos presenciales. Podés gestionar los estados de los turnos existentes.</p>}
- @if(!loading() && clinics().length){
- <nav class="week-strip" aria-label="Elegir día de la semana">
-  @for(day of days();track day.date){
-   <button type="button" class="week-day" [class.is-selected]="visibleDays()[0]?.date===day.date" [class.is-today]="day.date===dateToday()" [attr.aria-pressed]="visibleDays()[0]?.date===day.date" [disabled]="writing()" (click)="selectDay(day.date)">
-    <span class="weekday-name">{{weekday(day.date)}}</span><strong>{{dayNumber(day.date)}}</strong>
-    <span class="day-count">{{day.bookings.length ? day.bookings.length + ' turnos' : 'Sin reservas'}}</span>
-    <span class="day-availability">{{day.slots.length ? day.slots.length + ' libres' : 'Sin horarios libres'}}</span>
-    @if(day.date===dateToday()){<span class="today-mark">Hoy</span>}
-   </button>
-  }
- </nav>
- }
- <div class="workspace" [attr.aria-busy]="loading()">
- @if(loading()){<div class="empty" role="status">Cargando tu agenda…</div>}
- @else if(!clinics().length&&!error()){<div class="empty"><h2>Configurá tu primera agenda</h2><p>Creá un consultorio o una agenda virtual y cargá sus horarios.</p><a routerLink="/clinics">Ir a consultorios</a></div>}
- @else { @for(day of visibleDays();track day.date){
-  <article class="day"><header class="section-heading"><div><span class="section-date">{{displayDay(day.date)}}</span><h2>Reservas del día</h2></div><span class="section-count">{{day.bookings.length}} {{day.bookings.length === 1 ? 'reserva' : 'reservas'}}</span></header>
-   <div class="reservations">@for(b of day.bookings;track b.id){<button class="booking" [class.cancelled]="b.status==='CANCELLED'" [attr.data-status]="b.status" [attr.data-booking-id]="b.id" (click)="openBooking(b)" [disabled]="writing()"><span class="booking-time">{{localTime(b.start,calendarZone)}} @if(slotOffsetLabel(b.start,calendarZone); as offset){<small>{{offset}}</small>}</span><strong>{{b.attendeeName||b.contactName}}</strong><span class="status">{{labels[b.status]}}</span><span class="specialty">{{specialtyName(b)}}</span><span class="location">{{bookingClinic(b)}} · {{modalityLabel(bookingModality(b))}}</span></button>}
-   @if(!day.bookings.length){<p class="muted no-bookings">No hay reservas para este día.</p>}</div>
-  </article>
- } }
-  @if(selected();as b){
-   <section class="editor" aria-labelledby="booking-detail-heading">
-   <header class="section-heading"><div><span class="section-date">Detalle de la reserva</span><h2 #detailHeading id="booking-detail-heading" tabindex="-1">{{b.attendeeName||b.contactName}}</h2></div><button type="button" (click)="close()" [disabled]="writing()">Cerrar detalle</button></header>
-   @if(editorError()){<p class="notice error" role="alert">{{editorError()}}</p>}
-   @if(detailBusy()){<p role="status">Consultando la versión vigente…</p>}
-   <div class="slot-summary"><strong>{{displayDay(civilDay(b.start,bookingZone(b)))}} · {{time(b)}} – {{localTime(b.end,bookingZone(b))}}</strong><span>{{bookingClinic(b)}} · {{modalityLabel(bookingModality(b))}}</span><strong>{{specialtyName(b)}}</strong><span class="status">{{labels[b.status]}}</span></div>
-   <dl><dt>Solicitante</dt><dd>{{b.contactName}}</dd><dt>Teléfono</dt><dd>{{b.contactPhone||'Sin registrar'}}</dd></dl>
-   @if(editor()==='detail'){
-    <div class="state-actions">@for(target of transitions(b.status);track target){<button [class.danger]="target==='CANCELLED'" [disabled]="!allowed()||writing()||conflict()||detailBusy()" (click)="status(target)">{{target==='CANCELLED'?'Cancelar turno':'Marcar: '+labels[target]}}</button>}
-    @if(b.status==='CONFIRMED'){<button id="booking-move" class="primary" [disabled]="!canReschedule()||writing()||conflict()||detailBusy()" (click)="beginMove()">Reprogramar</button>}</div>
-   }
-   @if(editor()==='move'){
-    <section class="move"><h3>Elegir nuevo horario</h3><label>Consultorio<select id="move-clinic" [(ngModel)]="moveClinic" (ngModelChange)="loadTargets()" [disabled]="writing()">@for(c of clinics();track c.id){@if(c.status==='ACTIVE'&&canBook(c)){<option [value]="c.id">{{c.name}} · {{modalityLabel(c.modality)}}</option>}}</select></label><label>Fecha<app-date-picker inputId="move-date" [value]="moveDate" (valueChange)="moveDate=$event;loadTargets()" /></label>
-    @if(targetBusy()){<p role="status">Buscando horarios…</p>}
-    <label>Horario<select id="move-slot" [(ngModel)]="moveStart" [disabled]="targetBusy()||writing()"><option value="">Seleccioná un horario</option>@for(s of targetSlots();track s.start){<option [value]="s.start">{{localTime(s.start,s.clinic.timezone)}}@if(slotOffsetLabel(s.start,s.clinic.timezone); as offset){ · {{offset}}}</option>}</select></label>
-    <p class="muted">El turno original se conserva hasta confirmar el cambio.</p><button id="move-confirm" class="primary full" [disabled]="!moveStart||writing()||!canBook(clinic(moveClinic))||conflict()||targetBusy()" (click)="move()">{{writing()?'Reprogramando…':'Confirmar reprogramación'}}</button>
-    </section>
-   }
-   <button class="full" [disabled]="writing()||detailBusy()" (click)="openBooking(b)">Recargar detalle vigente</button>
-   @if(publicDetails();as details){<details class="history"><summary>Datos administrativos de reserva online</summary><dl><dt>Documento</dt><dd>{{details.documentCountry}} · {{details.documentType}} {{details.document}}</dd><dt>Email</dt><dd>{{details.email}}</dd></dl><p>Formulario versión {{details.formVersion}}</p>@for(question of details.form.questions;track question.key){<p><strong>{{question.label}}</strong><br />{{details.answers[question.key]||'Sin respuesta'}}</p>}</details>}
-   <details class="history"><summary>Historial de modificaciones · {{events().length}}</summary><ol>@for(event of events();track event.version){<li><strong>{{eventLabel(event.kind)}}</strong><br />{{eventDate(event.occurredAt)}} · versión {{event.version}}</li>}</ol></details>
-   </section>
-  }
- @if(visibleDays().length || editor()==='create'){
-  <section class="manual-booking" aria-labelledby="manual-booking-heading">
-   <header class="section-heading">
-    <div><h2 #manualHeading id="manual-booking-heading" tabindex="-1">Crear turno manual</h2><p class="muted">Elegí un horario libre y completá los datos de la reserva.</p></div>
-   </header>
-   @if(visibleDays()[0];as day){
-    <div class="manual-hours">
-     <h3>Horarios libres <span class="muted">· {{displayDay(day.date)}}</span></h3>
-     @for(group of slotGroups(day);track group.key){
-      <div class="slot-group">
-       <h4>{{group.name}} <span>· {{group.specialty}}</span></h4>
-       <div class="slots">@for(s of group.slots;track s.clinic.id+s.start){
-        <button type="button" class="slot" [attr.data-slot-start]="s.start" [attr.aria-pressed]="isSelectedSlot(s)" [disabled]="!canBook(s.clinic)||writing()" (click)="openSlot(s)">
-         {{localTime(s.start,calendarZone)}} @if(slotOffsetLabel(s.start,calendarZone);as offset){<small>{{offset}}</small>}
-        </button>
-       }</div>
-      </div>
-     }@empty{<p class="muted">No hay horarios libres para este día con los filtros actuales.</p>}
+<main class="staff-page doctor-calendar" (keydown.escape)="editor() && dismissEditor()">
+  <header class="agenda-heading">
+    <h1>Agenda de consultorios</h1>
+    <div class="assignment-picker">
+      <ng-icon name="lucideBuilding2" />
+      <label class="sr-only" for="calendar-clinic">Consultorio</label>
+      <select id="calendar-clinic" [ngModel]="clinicId" (ngModelChange)="changeClinic($event)"
+        [disabled]="writing() || !clinics().length">
+        <option value="">Todas mis agendas</option>
+        @for (clinic of clinics(); track clinic.id) {
+          <option [value]="clinic.id">{{ clinic.name }} · {{ modalityLabel(clinic.modality) }}{{ clinic.status === 'ACTIVE' ? '' : ' · Desactivado' }}</option>
+        }
+      </select>
     </div>
-   }
-   @if(editor()==='create'&&slot();as s){
-    <form class="manual-form" aria-labelledby="manual-form-heading" (ngSubmit)="create()" #createForm="ngForm">
-     <header class="section-heading"><h3 id="manual-form-heading">Datos del turno</h3><button type="button" [disabled]="writing()||loading()" (click)="focusManualHours()">Cambiar horario</button></header>
-     <div class="slot-summary manual-summary"><strong>{{displayDay(civilDay(s.start,s.clinic.timezone))}} · {{localTime(s.start,s.clinic.timezone)}}–{{localTime(s.end,s.clinic.timezone)}}</strong><span>{{s.clinic.name}} · {{modalityLabel(s.clinic.modality)}} · {{slotSpecialty(s)}}</span>@if(s.clinic.timezone!==calendarZone){<small>Hora de la agenda · {{s.clinic.timezone}}</small>}</div>
-     @if(editorError()){<p class="notice error" role="alert">{{editorError()}}</p>}
-     @if(conflict()){
-      <div class="slot-recovery">
-       <label>Nuevo horario disponible<select name="replacement" [ngModel]="''" (ngModelChange)="chooseDraftSlot($event)" [disabled]="loading()"><option value="">Seleccioná otra opción</option>@for(replacement of draftSlots();track replacement.clinic.id+replacement.start){<option [value]="replacement.clinic.id+'|'+replacement.start">{{displayDay(civilDay(replacement.start,replacement.clinic.timezone))}} {{localTime(replacement.start,replacement.clinic.timezone)}} · {{replacement.clinic.name}}</option>}</select></label>
-       <button type="button" (click)="refreshCreateSlot()" [disabled]="loading()">Revalidar horario original</button>
-      </div>
-     }
-     <fieldset class="manual-fields" [disabled]="writing()">
-      <legend>Datos del solicitante</legend>
-      <div class="contact-fields">
-       <label>Nombre y apellido<input #contactInput id="booking-contact" name="contactName" [(ngModel)]="contactName" maxlength="160" required autocomplete="name" /></label>
-       <label><span>Teléfono de contacto <span class="muted">(opcional)</span></span><input id="booking-phone" name="phone" [(ngModel)]="contactPhone" maxlength="80" type="tel" autocomplete="tel" /></label>
-      </div>
-      <label class="checkbox"><input id="booking-different" name="different" type="checkbox" [(ngModel)]="differentPerson" />El turno es para otra persona</label>
-      @if(differentPerson){<label class="attendee-field">Nombre de quien será atendido<input id="booking-attendee" name="attendee" [(ngModel)]="attendeeName" maxlength="160" required /></label>}
-     </fieldset>
-     <footer class="manual-actions"><button type="button" [disabled]="writing()" (click)="cancelCreate()">Descartar</button><button type="submit" id="booking-create" class="primary" [disabled]="!validCreate()||createForm.invalid">{{writing()?'Confirmando…':'Confirmar turno'}}</button></footer>
-    </form>
-   }
-  </section>
- }
- </div>
+    <div class="heading-actions">
+      <button class="icon-button" type="button" aria-label="Actualizar calendario" title="Actualizar calendario"
+        (click)="load()" [disabled]="loading() || writing()">
+        <ng-icon name="lucideRefreshCw" />
+      </button>
+      <button class="icon-button" type="button" [attr.aria-label]="activeFilterCount() ? 'Filtros (' + activeFilterCount() + ')' : 'Filtros'"
+        title="Filtros" [attr.aria-expanded]="filtersOpen()" [attr.aria-controls]="filtersOpen() ? 'calendar-filters' : null"
+        (click)="filtersOpen.set(!filtersOpen())">
+        <ng-icon name="lucideSlidersHorizontal" />
+        @if (activeFilterCount()) { <span class="filter-count">{{ activeFilterCount() }}</span> }
+      </button>
+    </div>
+  </header>
+  @if (filtersOpen()) {
+    <div id="calendar-filters" class="calendar-filters">
+      <label>Modalidad
+        <select aria-label="Filtrar agenda por modalidad" [(ngModel)]="modalityFilter" (ngModelChange)="changeFilters()" [disabled]="writing()">
+          <option value="">Todas</option><option value="IN_PERSON">Presencial</option><option value="TELECONSULTATION">Teleconsulta</option>
+        </select>
+      </label>
+      <label>Especialidad
+        <select aria-label="Filtrar agenda por especialidad" [(ngModel)]="contextFilter" (ngModelChange)="changeFilters()" [disabled]="writing()">
+          <option value="">Todas las especialidades</option>
+          @for (context of workspace.contexts(); track context.id) {
+            <option [value]="'' + context.id">{{ context.specialty.name }}</option>
+          }
+        </select>
+      </label>
+      <label>Estado
+        <select aria-label="Filtrar agenda por estado" [(ngModel)]="statusFilter" (ngModelChange)="changeFilters()" [disabled]="writing()">
+          <option value="">Todos los estados</option>
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ labels[status] }}</option>
+          }
+        </select>
+      </label>
+      <a routerLink="/clinics">Gestionar consultorios</a>
+    </div>
+  }
+  @if (error()) {
+    <p class="agenda-alert error" role="alert">{{ error() }} <button type="button" (click)="load()" [disabled]="loading() || writing()">Reintentar</button></p>
+  }
+  @if (!loading() && !allowed()) {
+    <p class="agenda-alert" role="status">Modo de consulta. <button type="button" (click)="retryCapabilities()">Verificar permisos</button></p>
+  } @else if (allowed() && !canBook()) {
+    <p class="agenda-alert">Regularizá el cupo para crear o reprogramar turnos presenciales.</p>
+  }
+  @if (clinics().length || loading()) {
+    <app-agenda
+      dateInputId="calendar-date"
+      [date]="selectedDay()"
+      [view]="view()"
+      [zone]="calendarZone"
+      [now]="clock()"
+      [availability]="days()"
+      [bookings]="agendaBookings()"
+      [calendarKey]="clinicId"
+      [loading]="loading()"
+      [pendingRange]="loading()"
+      [writing]="writing()"
+      [editor]="editor()"
+      [selected]="selected()"
+      [allowSlot]="allowSlot"
+      [slotSelected]="selectedSlot"
+      [slotContext]="slotContext"
+      [bookingContext]="bookingContext"
+      (dateChange)="changeDate($event)"
+      (viewChange)="changeView($event)"
+      (dayRequested)="changeView('1', $event)"
+      (bookingSelected)="openBooking($event.booking, $event.trigger)"
+      (slotChosen)="chooseSlot($event.slot, $event.trigger)"
+    >
+      @if (editor(); as mode) {
+        <div class="editor-content">
+          <header class="editor-top">
+            <h2 #detailHeading tabindex="-1">{{ mode === 'create' ? 'Nuevo turno' : mode === 'move' ? 'Reprogramar turno' : 'Detalle del turno' }}</h2>
+            <button type="button" class="icon-button" aria-label="Cerrar detalle" (click)="dismissEditor()" [disabled]="writing()">
+              <ng-icon name="lucideX" />
+            </button>
+          </header>
+          @if (editorError()) { <p class="error" role="alert">{{ editorError() }}</p> }
+          @if (mode === 'create' && slot(); as s) {
+            <p class="editor-date">
+              {{ displayDay(civilDay(s.start, s.clinic.timezone)) }} · {{ localTime(s.start, s.clinic.timezone) }}<br />
+              {{ s.clinic.name }} · {{ slotSpecialty(s) }}
+            </p>
+            <form (ngSubmit)="create()" #createForm="ngForm">
+              @if (conflict()) {
+                <label>Nuevo horario disponible
+                  <select name="replacement" [ngModel]="''" (ngModelChange)="chooseDraftSlot($event)" [disabled]="loading() || writing()">
+                    <option value="">Seleccioná otra opción</option>
+                    @for (replacement of draftSlots(); track replacement.clinic.id + replacement.start) {
+                      <option [value]="replacement.clinic.id + '|' + replacement.start">{{ displayDay(civilDay(replacement.start, replacement.clinic.timezone)) }} {{ localTime(replacement.start, replacement.clinic.timezone) }} · {{ replacement.clinic.name }}</option>
+                    }
+                  </select>
+                </label>
+                <button type="button" (click)="refreshCreateSlot()" [disabled]="loading() || writing()">Revalidar horario original</button>
+              }
+              <fieldset [disabled]="writing()">
+                <legend class="sr-only">Datos administrativos</legend>
+                <label>Nombre y apellido<input #contactInput id="booking-contact" name="contactName" [(ngModel)]="contactName" maxlength="160" required autocomplete="name" /></label>
+                <label>Teléfono de contacto (opcional)<input id="booking-phone" name="phone" [(ngModel)]="contactPhone" maxlength="80" type="tel" autocomplete="tel" /></label>
+                <label class="check"><input id="booking-different" name="different" type="checkbox" [(ngModel)]="differentPerson" />El turno es para otra persona</label>
+                @if (differentPerson) {
+                  <label>Nombre de quien será atendido<input id="booking-attendee" name="attendee" [(ngModel)]="attendeeName" maxlength="160" required /></label>
+                }
+              </fieldset>
+              <div class="editor-actions">
+                <button type="submit" id="booking-create" [disabled]="!validCreate() || createForm.invalid">{{ writing() ? 'Guardando…' : 'Confirmar turno' }}</button>
+                <button type="button" [disabled]="writing()" (click)="cancelCreate()">Descartar</button>
+              </div>
+            </form>
+          }
+          @if (selected(); as booking) {
+            <h3>{{ booking.attendeeName || booking.contactName }}</h3>
+            <p class="status-label" [attr.data-status]="booking.status">
+              <ng-icon [name]="statusIcons[booking.status]" />{{ labels[booking.status] }}
+            </p>
+            @if (detailBusy()) { <p role="status">Consultando la versión vigente…</p> }
+            <p class="editor-date">
+              {{ displayDay(civilDay(booking.start, bookingZone(booking))) }} · {{ time(booking) }} – {{ localTime(booking.end, bookingZone(booking)) }}<br />
+              {{ bookingClinic(booking) }} · {{ modalityLabel(bookingModality(booking)) }} · {{ specialtyName(booking) }}
+            </p>
+            <dl class="contact-list">
+              <div><dt>Solicitante</dt><dd>{{ booking.contactName }}</dd></div>
+              <div><dt>Teléfono</dt><dd>{{ booking.contactPhone || 'Sin registrar' }}</dd></div>
+            </dl>
+            @if (mode === 'move') {
+              <div class="move-confirm">
+                <label>Consultorio
+                  <select id="move-clinic" [(ngModel)]="moveClinic" (ngModelChange)="loadTargets()" [disabled]="writing()">
+                    @for (clinic of clinics(); track clinic.id) {
+                      @if (clinic.status === 'ACTIVE' && canBook(clinic)) {
+                        <option [value]="clinic.id">{{ clinic.name }} · {{ modalityLabel(clinic.modality) }}</option>
+                      }
+                    }
+                  </select>
+                </label>
+                <label>Fecha<app-date-picker inputId="move-date" [value]="moveDate" (valueChange)="moveDate = $event; loadTargets()" /></label>
+                @if (targetBusy()) { <p role="status">Buscando horarios…</p> }
+                <label>Horario
+                  <select id="move-slot" [(ngModel)]="moveStart" [disabled]="targetBusy() || writing()">
+                    <option value="">Seleccioná un horario</option>
+                    @for (slot of targetSlots(); track slot.start) {
+                      <option [value]="slot.start">{{ localTime(slot.start, slot.clinic.timezone) }}@if (slotOffsetLabel(slot.start, slot.clinic.timezone); as offset) { · {{ offset }} }</option>
+                    }
+                  </select>
+                </label>
+                <button type="button" id="move-confirm" class="primary"
+                  [disabled]="!moveStart || writing() || !canBook(clinic(moveClinic)) || conflict() || targetBusy()" (click)="move()">
+                  {{ writing() ? 'Guardando…' : 'Confirmar reprogramación' }}
+                </button>
+                <button type="button" (click)="editor.set('detail')" [disabled]="writing()">Volver al detalle</button>
+              </div>
+            } @else {
+              <div class="editor-actions">
+                @for (target of transitions(booking.status); track target) {
+                  <button type="button" [class.primary]="target === 'CHECKED_IN' || target === 'COMPLETED'" [class.danger]="target === 'CANCELLED'"
+                    [disabled]="!allowed() || writing() || conflict() || detailBusy()" (click)="status(target)">
+                    {{ actionLabels[target] }}
+                  </button>
+                }
+                @if (booking.status === 'CONFIRMED') {
+                  <button type="button" id="booking-move" [disabled]="!canReschedule() || writing() || conflict() || detailBusy()" (click)="beginMove()">Reprogramar</button>
+                }
+                <button type="button" [disabled]="writing() || detailBusy()" (click)="openBooking(booking)">Recargar detalle vigente</button>
+              </div>
+            }
+            @if (publicDetails(); as details) {
+              <details><summary>Datos de reserva online</summary>
+                <dl><dt>Documento</dt><dd>{{ details.documentCountry }} · {{ details.documentType }} {{ details.document }}</dd><dt>Email</dt><dd>{{ details.email }}</dd></dl>
+                <p>Formulario versión {{ details.formVersion }}</p>
+                @for (question of details.form.questions; track question.key) {
+                  <p><strong>{{ question.label }}</strong><br />{{ details.answers[question.key] || 'Sin respuesta' }}</p>
+                }
+              </details>
+            }
+            <details><summary>Historial de modificaciones · {{ events().length }}</summary>
+              <ol>
+                @for (event of events(); track event.version) {
+                  <li><strong>{{ eventLabel(event.kind) }}</strong><br />{{ eventDate(event.occurredAt) }} · versión {{ event.version }}</li>
+                }
+              </ol>
+            </details>
+          }
+        </div>
+      }
+    </app-agenda>
+  } @else if (!error()) {
+    <div class="calendar-empty">
+      <ng-icon name="lucideCalendarDays" />
+      <h2>Configurá tu primera agenda</h2>
+      <p>Creá un consultorio o una agenda virtual y cargá sus horarios.</p>
+      <a routerLink="/clinics">Ir a consultorios</a>
+    </div>
+  }
 </main>

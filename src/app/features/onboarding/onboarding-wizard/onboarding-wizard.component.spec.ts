@@ -22,6 +22,8 @@ class TestFieldEditor {
   readonly readonly = input(false);
   readonly definitionChange = output<WizardFormDefinition>();
   readonly categorySelected = output<string>();
+  readonly fieldDraft = input<null>(null);
+  pendingChanges(): boolean { return false; }
 }
 
 describe('OnboardingWizardComponent', () => {
@@ -135,7 +137,7 @@ describe('OnboardingWizardComponent', () => {
   });
 
   it('renders an unfamiliar backend category and a common History section without local defaults', () => {
-    expect(component.steps().map(step => step.key)).toEqual(['specialty', 'patient:new_patient_category', 'encounter']);
+    expect(component.steps().map(step => step.key)).toEqual(['patient:new_patient_category', 'encounter']);
     expect(component.definition()).toEqual(customSpecialtyFixture.definition);
     expect(fixture.nativeElement.textContent).toContain(customSpecialtyFixture.name);
     expect(fixture.nativeElement.textContent).toContain('Categoría inédita de prueba');
@@ -143,12 +145,27 @@ describe('OnboardingWizardComponent', () => {
     expect(component.activeStepKey()).toBe('patient:new_patient_category');
   });
 
+  it('resumes a pending draft saved on the old specialty step without redirecting', async () => {
+    remote.currentStepKey = 'specialty';
+    remote.draftDefinition!.patientForm.categories[0].title = 'Mi borrador guardado';
+    await component.loadInitial(true);
+    expect(component.activeStepKey()).toBe('patient:new_patient_category');
+    expect(component.definition()?.patientForm.categories[0].title).toBe('Mi borrador guardado');
+    await component.goPrevious();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(store.saveOnboardingDraft).not.toHaveBeenCalled();
+    await component.goNext();
+    expect(store.saveOnboardingDraft).toHaveBeenCalledWith(expect.objectContaining({
+      currentStepKey: 'encounter',
+    }));
+  });
+
   it('keeps the category manager reachable before onboarding when no patient categories are enabled', () => {
     const patient = clone(component.definition()!.patientForm);
     patient.categories.forEach(category => category.enabled = false);
     component.onPatientDefinitionChange(patient);
     fixture.detectChanges();
-    expect(component.steps().map(step => step.key)).toEqual(['specialty', 'encounter']);
+    expect(component.steps().map(step => step.key)).toEqual(['encounter']);
     expect(component.showPatientCategories()).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('Categorías de la ficha del paciente');
     patient.categories.push({ key: 'brand_new', title: 'Categoría nueva', enabled: true, fields: [] });

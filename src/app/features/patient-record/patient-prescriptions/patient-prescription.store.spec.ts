@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../../core/services/interaction-status.service';
 import { signal } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { TestBed } from '@angular/core/testing';
@@ -47,7 +48,7 @@ describe('PatientPrescriptionStore with real HTTP client', () => {
   });
   it('keeps failed saves out of history, clears success, and permits retry', () => {
     load(); store.save(draft); http.expectOne(url(10)).flush({message:'Datos no válidos'}, {status:400,statusText:'Bad Request'});
-    expect(store.error()).toBe('Datos no válidos'); expect(store.success()).toBeNull(); expect(store.records()).toEqual([]);
+    expect(store.error()).toBe('Datos no válidos'); expect(TestBed.inject(InteractionStatusService).success()).toBe(''); expect(store.records()).toEqual([]);
     store.save(draft); http.expectOne(url(10)).flush(record); expect(store.records()).toEqual([record]);
   });
   it('cancels an obsolete patient load and clears the previous history immediately', () => {
@@ -71,7 +72,7 @@ describe('PatientPrescriptionStore with real HTTP client', () => {
     load(); const printed=vi.fn(); store.save(draft,printed); const request=http.expectOne(url(10));
     TestBed.inject(AuthService).currentUser.set({id:'doctor-b'} as any); request.flush(record);
     expect(printed).not.toHaveBeenCalled(); expect(store.records()).toEqual([]); TestBed.tick();
-    expect(store.busy()).toBe(false); expect(store.success()).toBeNull();
+    expect(store.busy()).toBe(false); expect(TestBed.inject(InteractionStatusService).success()).toBe('');
     store.setPatient(10); http.expectOne(url(10)).flush([]); expect(store.records()).toEqual([]);
   });
   it('cancels account-scoped writes and suppresses late deletion errors', () => {

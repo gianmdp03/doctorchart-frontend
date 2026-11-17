@@ -118,9 +118,7 @@
                   }
                 </div>
                 <div class="field-actions">
-                  @if (section() === 'encounterForm' && field.key === measurementModeKey) {
-                    <span class="hint">Vinculado a la talla</span>
-                  } @else if (!field.system) {
+                  @if (!field.system) {
                     <button
                       type="button"
                       (click)="moveField(category.key, field.key, -1)"

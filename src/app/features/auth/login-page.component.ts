@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { GOOGLE_AUTH_ENABLED, LOCAL_REGISTRATION_ENABLED } from '../../auth-policy';
 import { environment } from '../../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
@@ -7,6 +8,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { matchingPasswords, trimmedRequired } from '../../core/models/form-validation';
+import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 
 @Component({
   selector: 'app-login-page',
@@ -15,7 +17,9 @@ import { matchingPasswords, trimmedRequired } from '../../core/models/form-valid
   styleUrl: './login-page.component.css',
 })
 export class LoginPageComponent {
+  private readonly interaction = inject(InteractionStatusService);
   readonly googleAuthEnabled = GOOGLE_AUTH_ENABLED;
+  readonly staffEnabled = FEATURE_FLAGS.STAFF_ENABLED;
   readonly bycodeRegisterUrl = environment.bycodePlansUrl.replace(/\/(?:panel|dashboard)\/?$/, '') + '/register';
   readonly bycodeLoginUrl = environment.bycodePlansUrl.replace(/\/(?:panel|dashboard)\/?$/, '') + '/login';
   goToBycodeRegistration(): void {
@@ -30,7 +34,6 @@ export class LoginPageComponent {
   readonly isSubmitting = signal<boolean>(false);
   readonly mode = signal<'login' | 'register'>('login');
   readonly errorMessage = signal<string | null>(null);
-  readonly successMessage = signal<string | null>(null);
   readonly showPassword = signal<boolean>(false);
 
   readonly loginForm = this.fb.group({
@@ -50,7 +53,7 @@ export class LoginPageComponent {
     if (newMode === 'register') { this.goToBycodeRegistration(); return; }
     this.mode.set(newMode);
     this.errorMessage.set(null);
-    this.successMessage.set(null);
+
   }
 
   togglePasswordVisibility(): void {
@@ -90,7 +93,7 @@ export class LoginPageComponent {
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
-    this.successMessage.set(null);
+
 
     const { email, password } = this.loginForm.getRawValue();
 
@@ -106,7 +109,7 @@ export class LoginPageComponent {
         return;
       }
 
-      this.successMessage.set('¡Inicio de sesión exitoso!');
+      this.interaction.notifySuccess('Iniciaste sesión correctamente.');
       this.isSubmitting.set(false);
 
       if (isPlatformBrowser(this.platformId)) {
@@ -142,7 +145,7 @@ export class LoginPageComponent {
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
-    this.successMessage.set(null);
+
 
     try {
       const response = await this.authService.signUp({
@@ -171,11 +174,11 @@ export class LoginPageComponent {
       }
 
       if (response.data.session) {
-        this.successMessage.set('¡Cuenta creada e inicio de sesión exitoso!');
+        this.interaction.notifySuccess('Tu cuenta se creó correctamente.');
         const targetUrl = this.loginDestination();
         await this.router.navigateByUrl(targetUrl, { onSameUrlNavigation: 'reload' });
       } else {
-        this.successMessage.set('¡Cuenta creada con éxito! Por favor inicia sesión.');
+        this.interaction.notifySuccess('Tu cuenta se creó correctamente. Ya podés iniciar sesión.');
         this.mode.set('login');
         this.loginForm.patchValue({ email: (email ?? '').trim() });
         this.registerForm.reset();

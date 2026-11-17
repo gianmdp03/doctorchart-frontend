@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CALCULATOR_CATALOG_FIXTURE } from '../../core/testing/calculator-catalog.fixture';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -106,7 +107,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     const request = http.expectOne(req => req.url.endsWith('/calculators/execute'));
     expect(request.request.body).toEqual({ patientId: 10, calculationCode: 'holliday_segar', inputSnapshot: { weightKg: 15 } });
     request.flush({ message: 'No se pudo guardar.' }, { status: 500, statusText: 'Error' });
-    expect(component.saveFeedback()).toBe(false);
+    expect(TestBed.inject(InteractionStatusService).success()).toBe('');
     expect(component.saveError()).toBe('No se pudo guardar.');
     expect(TestBed.inject(CalculatorSessionHistoryService).items()).toEqual([]);
   });
@@ -121,7 +122,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
       resultUnit: 'mL/día', resultInterpretation: RESULT.interpretation.label, severity: 'normal',
       plainTextEvolution: 'Evolución confirmada al guardar', createdAt: RESULT.calculatedAt,
     });
-    expect(component.saveFeedback()).toBe(true);
+    expect(TestBed.inject(InteractionStatusService).success()).toBe('El cálculo se guardó en el historial del paciente.');
     expect(component.patientBackendHistory()[0].id).toBe(50);
     expect(component.patientBackendHistory()[0].plainTextEvolution).toBe('Evolución confirmada al guardar');
     expect(component.historyInputSummary(component.patientBackendHistory()[0])).toEqual({ 'Peso Pediátrico (kg)': 15 });
@@ -568,7 +569,7 @@ describe('MedicalCalculatorsComponent server calculations', () => {
     await Promise.resolve(); fixture.detectChanges();
     expect(component.isCurrentInputComplete()).toBe(false);
     expect(numberInputs().every(input=>input.value==='')).toBe(true);
-    expect(component.saveFeedback()).toBe(false); expect(component.isSavingLog()).toBe(false);
+    expect(TestBed.inject(InteractionStatusService).success()).toBe(''); expect(component.isSavingLog()).toBe(false);
     expect(TestBed.inject(CalculatorSessionHistoryService).items()).toEqual([]);
     const preview = requestPreview(15);
     patient.set(null); fixture.detectChanges();

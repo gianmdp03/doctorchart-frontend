@@ -214,9 +214,6 @@ export class ClinicalOverviewComponent {
       );
     }
   }
-  isOverdue(value: string): boolean {
-    return value < (this.data()?.asOfDate ?? '');
-  }
   patientSource(): void {
     void this.router.navigate(['/patients', this.active.patientId()], {
       queryParams: { tab: 'summary' },

@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import {
@@ -112,6 +113,7 @@ import { DatePickerComponent } from '../../shared/date-picker/date-picker.compon
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MedicalCalculatorsComponent implements OnInit {
+  private readonly interaction = inject(InteractionStatusService);
   readonly calcService = inject(MedicalCalculatorsService);
   private readonly sessionHistoryService = inject(CalculatorSessionHistoryService);
   private readonly auth = inject(AuthService);
@@ -151,7 +153,6 @@ export class MedicalCalculatorsComponent implements OnInit {
 
   // Notifications & Feedbacks
   readonly copyFeedback = signal<boolean>(false);
-  readonly saveFeedback = signal<boolean>(false);
   readonly autofillBannerMessage = signal<string | null>(null);
   readonly autofillAlertSeverity = signal<'success' | 'warning' | 'info'>('info');
   readonly isAutofilling = signal<boolean>(false);
@@ -263,7 +264,6 @@ export class MedicalCalculatorsComponent implements OnInit {
         this.syncContext();
         if (context !== this.contextKey() || JSON.stringify(request) !== JSON.stringify(this.previewRequest())) return of(null);
         this.calculationError.set(null);
-        this.saveFeedback.set(false);
         this.saveError.set(null);
         this.isCalculating.set(!!request);
         if (!request) return of(null);
@@ -303,7 +303,7 @@ export class MedicalCalculatorsComponent implements OnInit {
     this.isCalculating.set(false); this.previewResult.set(null); this.patientBackendHistory.set([]); this.expandedHistoryLogId.set(null);
     this.historyFilterCode.set('all'); this.historyDateFrom.set(''); this.historyDateTo.set('');
     this.isAutofilling.set(false); this.isSavingLog.set(false); this.isLoadingHistory.set(false);
-    this.autofillBannerMessage.set(null); this.saveFeedback.set(false); this.copyFeedback.set(false);
+    this.autofillBannerMessage.set(null); this.copyFeedback.set(false);
     this.saveError.set(null); this.calculationError.set(null); this.catalogView.set(false);
   }
 
@@ -487,7 +487,6 @@ export class MedicalCalculatorsComponent implements OnInit {
     const patient = this.activePatient();
     const snapshot = this.currentInputs();
     this.saveError.set(null);
-    this.saveFeedback.set(false);
     if (!patient?.id) {
       const saved = this.sessionHistoryService.save({
         calculatorId: result.calculatorId, calculatorName: result.calculationName,
@@ -496,7 +495,7 @@ export class MedicalCalculatorsComponent implements OnInit {
         calculatedAt: result.calculatedAt, plainTextEvolution: result.plainTextEvolution,
         inputsSummary: summarizeCalculatorInputs(result.calculatorId, snapshot),
       });
-      if (saved) this.showSaveSuccess();
+      if (saved) this.interaction.notifySuccess('El cálculo se guardó en esta sesión.');
       return;
     }
     this.isSavingLog.set(true);
@@ -510,7 +509,7 @@ export class MedicalCalculatorsComponent implements OnInit {
         this.isSavingLog.set(false);
         if (this.activePatient()?.id === savedLog.patientId) {
           this.patientBackendHistory.update(history => [savedLog, ...history]);
-          this.showSaveSuccess();
+          this.interaction.notifySuccess('El cálculo se guardó en el historial del paciente.');
         }
       },
       error: error => {
@@ -519,12 +518,6 @@ export class MedicalCalculatorsComponent implements OnInit {
         this.saveError.set(error.error?.message ?? 'No se pudo guardar el cálculo.');
       },
     });
-  }
-
-  private showSaveSuccess(): void {
-    this.saveFeedback.set(true);
-    const revision = this.contextRevision();
-    const context = this.context; setTimeout(() => { if (revision === this.contextRevision() && context === this.contextKey() && !this.destroyRef.destroyed) this.saveFeedback.set(false); }, 2500);
   }
 
   historyInputSummary(log: PatientCalculationLogDetailDTO): Record<string, string | number | boolean> {

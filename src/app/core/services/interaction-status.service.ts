@@ -1,10 +1,29 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { DestroyRef, computed, inject, Injectable, signal } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class InteractionStatusService {
   private readonly requests = signal(0);
   readonly busy = computed(() => this.requests() > 0);
   readonly error = signal('');
+  private readonly successMessage = signal('');
+  readonly success = this.successMessage.asReadonly();
+  private successTimer?: ReturnType<typeof setTimeout>;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.successTimer));
+  }
+
+  notifySuccess(message: string): void {
+    clearTimeout(this.successTimer);
+    this.successMessage.set(message);
+    this.successTimer = setTimeout(() => this.dismissSuccess(), 5500);
+  }
+
+  dismissSuccess(): void {
+    clearTimeout(this.successTimer);
+    this.successMessage.set('');
+  }
+
   begin(): () => void {
     this.requests.update(value => value + 1);
     let finished = false;

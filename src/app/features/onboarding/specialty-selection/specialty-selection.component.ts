@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../../core/services/interaction-status.service';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -13,6 +14,7 @@ import { WorkspaceStore } from '../../../core/services/workspace.store';
   styleUrl: './specialty-selection.component.css',
 })
 export class SpecialtySelectionComponent implements OnInit {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly specialtyService = inject(SpecialtyService);
   private readonly doctorProfileService = inject(DoctorProfileService);
   private readonly authService = inject(AuthService);
@@ -72,6 +74,7 @@ export class SpecialtySelectionComponent implements OnInit {
     this.errorMessage.set(null);
     try {
       await this.workspaceStore.selectSpecialty(specialty.id, this.expectedVersion());
+      this.interaction.notifySuccess('La especialidad se seleccionó correctamente.');
       await this.router.navigate(['/onboarding/setup']);
     } catch (error: unknown) {
       const response = error as { status?: number; error?: { code?: string } } | null;

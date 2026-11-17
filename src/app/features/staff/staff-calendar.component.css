@@ -1,0 +1,43 @@
+:host { min-height: 100dvh; }
+
+.staff-calendar {
+  max-width: none;
+  padding: 0 clamp(12px, 2.3vw, 40px) 16px;
+  font-family: var(--font-sans);
+}
+
+.masthead {
+  min-height: 56px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--agenda-rule);
+}
+.brand { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--agenda-ink); font-weight: 700; font-size: 1rem; }
+.profile-menu { position: relative; }
+.profile-menu details, .profile-menu summary { border: 0; padding: 0; }
+.profile-menu summary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--agenda-muted);
+  font-size: .86rem;
+}
+.profile-menu summary::-webkit-details-marker { display: none; }
+.profile-popover {
+  position: absolute; z-index: 8; inset: 100% 0 auto auto; min-width: 232px; display: grid; gap: 8px;
+  padding: 14px; border-radius: 14px; background: var(--agenda-base); box-shadow: 0 10px 30px #0003;
+  overflow-wrap: anywhere;
+}
+.profile-popover button { text-align: left; }
+.profile-overlay { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 16px; background: #0008; }
+.profile-dialog { width: min(100%, 440px); }
+.recovery-notice { margin-block: 12px; }
+.agenda-alert { margin: 0 0 12px; }
+
+@media (max-width: 640px) {
+  .masthead { min-height: 48px; }
+}

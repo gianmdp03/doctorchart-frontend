@@ -32,4 +32,11 @@ describe('Secretaria invitation links',()=>{
  it('asks an existing secretary for her current password',async()=>{
   api.inspectInvitation.mockResolvedValue({email:'ana@example.invalid',name:'Ana',existingAccount:true});const c=make();await Promise.resolve();expect(c.existingAccount()).toBe(true);
  });
+ it('keeps a private invitation available to retry after a connection interruption',async()=>{
+  api.inspectInvitation.mockRejectedValueOnce({status:0});
+  const c=make();await Promise.resolve();await c.submit();
+  expect(c.retryInvitation()).toBe(true);expect(c.invalidInvitation()).toBe(false);expect(api.authenticate).not.toHaveBeenCalled();
+  await c.inspectInvitation();expect(api.inspectInvitation).toHaveBeenLastCalledWith(code);
+  expect(c.retryInvitation()).toBe(false);expect(c.email).toBe('ana@example.invalid');
+ });
 });

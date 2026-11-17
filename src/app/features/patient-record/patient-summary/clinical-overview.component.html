@@ -160,18 +160,10 @@
           </div>
         </header>
         @if (summary.lastEncounter; as last) {
-          @if (last.followUpDate || last.followUp) {
+          @if (last.followUp) {
             <div class="summary-item">
-              <strong>{{ last.followUpDate ? 'Próximo control' : 'Seguimiento indicado' }}</strong>
-              @if (last.followUpDate) {
-                <span class="date-tag" [class.is-overdue]="isOverdue(last.followUpDate)"
-                  >{{ date(last.followUpDate)
-                  }}{{ isOverdue(last.followUpDate) ? ' · fecha pasada' : '' }}</span
-                >
-              }
-              @if (last.followUp) {
-                <span class="summary-details">{{ last.followUp }}</span>
-              }
+              <strong>Seguimiento indicado</strong>
+              <span class="summary-details">{{ last.followUp }}</span>
               <small>Indicado el {{ date(last.date) }}</small
               ><a class="source-link" [routerLink]="['/encounters', last.id]"
                 >Ver indicación original<ng-icon name="lucideArrowUpRight"
@@ -180,7 +172,7 @@
           } @else {
             <div class="empty-copy">
               <strong>Sin seguimientos indicados</strong>
-              <p>La última consulta no tiene un próximo control registrado.</p>
+              <p>La última consulta no tiene indicaciones de seguimiento.</p>
             </div>
           }
         } @else {

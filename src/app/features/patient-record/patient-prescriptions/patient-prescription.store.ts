@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../../core/services/interaction-status.service';
 import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
@@ -9,6 +10,7 @@ import { PatientPrescriptionService } from '../../../core/services/patient-presc
 /** Component-scoped history: HTTP responses cannot cross patient changes or outlive the screen. */
 @Injectable()
 export class PatientPrescriptionStore {
+  private readonly interaction = inject(InteractionStatusService);
  private readonly clinicalScope = inject(ClinicalContextService);
  private contextKey(): string | null { const owner=this.auth.currentUser()?.id; return owner ? JSON.stringify([owner,this.clinicalScope.id()]) : null; }
   private readonly api = inject(PatientPrescriptionService);
@@ -27,7 +29,7 @@ export class PatientPrescriptionStore {
     if (owner === this.owner) return;
     this.owner = owner; this.changed.next(); this.patientId = null;
     this.records.set([]); this.loading.set(false); this.writing.set(false);
-    this.loadError.set(null); this.error.set(null); this.success.set(null);
+    this.loadError.set(null); this.error.set(null);
   }
   private currentOwner(): boolean { return this.owner === (this.contextKey()); }
 
@@ -37,7 +39,6 @@ export class PatientPrescriptionStore {
   readonly busy = computed(() => this.loading() || this.writing());
   readonly loadError = signal<string | null>(null);
   readonly error = signal<string | null>(null);
-  readonly success = signal<string | null>(null);
 
   setPatient(patientId: number | null): void {
     this.syncOwner();
@@ -45,7 +46,7 @@ export class PatientPrescriptionStore {
     this.changed.next();
     this.patientId = patientId;
     this.records.set([]); this.loading.set(false); this.writing.set(false);
-    this.loadError.set(null); this.error.set(null); this.success.set(null);
+    this.loadError.set(null); this.error.set(null);
     if (patientId) this.reload();
   }
   reload(): void {
@@ -60,12 +61,12 @@ export class PatientPrescriptionStore {
   save(request: PrescriptionRequest, onSaved?: (record: SavedPrescriptionRecord) => void): void {
     const patientId = this.patientId;
     if (!patientId || this.busy() || !this.currentOwner()) return;
-    this.writing.set(true); this.error.set(null); this.success.set(null);
+    this.writing.set(true); this.error.set(null);
     this.api.create(patientId,request).pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef)).subscribe({
       next: record => {
         if (!this.currentOwner()) return;
         this.records.update(records => [record, ...records]); this.writing.set(false);
-        this.success.set('Receta / orden registrada en el historial del paciente.'); onSaved?.(record);
+        this.interaction.notifySuccess('El documento se guardó en el historial del paciente.'); onSaved?.(record);
       },
       error: error => { if (!this.currentOwner()) return; this.writing.set(false); this.error.set(error?.error?.message || 'No se pudo guardar la receta u orden. El borrador se conserva.'); },
     });
@@ -73,9 +74,9 @@ export class PatientPrescriptionStore {
   delete(id: number): void {
     const patientId = this.patientId;
     if (!patientId || this.busy() || !this.currentOwner()) return;
-    this.writing.set(true); this.error.set(null); this.success.set(null);
+    this.writing.set(true); this.error.set(null);
     this.api.delete(patientId,id).pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => { if (!this.currentOwner()) return; this.records.update(records => records.filter(record => record.id !== id)); this.writing.set(false); },
+      next: () => { if (!this.currentOwner()) return; this.records.update(records => records.filter(record => record.id !== id)); this.writing.set(false); this.interaction.notifySuccess('El documento se eliminó correctamente.'); },
       error: () => { if (!this.currentOwner()) return; this.writing.set(false); this.error.set('No se pudo eliminar el documento. El registro se conserva.'); },
     });
   }

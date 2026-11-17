@@ -1,0 +1,308 @@
+<section class="agenda" aria-label="Agenda de turnos">
+  <div class="calendar-toolbar">
+    <nav class="date-nav" aria-label="Navegar fechas">
+      <button type="button" (click)="dateChange.emit(today())" [disabled]="writing()">Hoy</button>
+      <div class="stepper">
+        <button
+          class="icon-button"
+          type="button"
+          (click)="shiftDate(-1)"
+          [disabled]="writing()"
+          [attr.aria-label]="view() === '7' ? 'Semana anterior' : 'Día anterior'"
+        >
+          <ng-icon name="lucideChevronLeft" />
+        </button>
+        <button
+          class="icon-button"
+          type="button"
+          (click)="shiftDate(1)"
+          [disabled]="writing()"
+          [attr.aria-label]="view() === '7' ? 'Semana siguiente' : 'Día siguiente'"
+        >
+          <ng-icon name="lucideChevronRight" />
+        </button>
+      </div>
+    </nav>
+    <h2 class="date-range">
+      {{ displayDay(rangeStart()) }}
+      @if (view() === '7') {
+        <span>– {{ displayDay(rangeEnd()) }}</span>
+      }
+    </h2>
+    <div class="toolbar-options">
+      <div class="date-jump">
+        <label class="sr-only" [attr.for]="dateInputId()">Ir a fecha</label>
+        <app-date-picker
+          [inputId]="dateInputId()"
+          [ngModel]="date()"
+          (ngModelChange)="dateChange.emit($event)"
+          [disabled]="writing()"
+        />
+      </div>
+      <div class="view-switch" role="group" aria-label="Vista de la agenda">
+        <button
+          type="button"
+          [attr.aria-pressed]="view() === '1'"
+          [disabled]="writing()"
+          (click)="viewChange.emit('1')"
+        >
+          Día
+        </button>
+        <button
+          type="button"
+          [attr.aria-pressed]="view() === '7'"
+          [disabled]="writing()"
+          (click)="viewChange.emit('7')"
+        >
+          Semana
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (pendingRange()) {
+    <div class="agenda-loading" role="status">
+      <span>Actualizando agenda…</span>
+      <div class="skeleton" aria-hidden="true"></div>
+    </div>
+  } @else {
+    @let calendar = timeline();
+    @let stats = summary();
+    <div class="agenda-summary">
+      <div class="daily-stats" [attr.aria-label]="'Resumen del ' + displayDay(stats.date)">
+        <strong>{{ stats.date === today() ? 'Hoy' : displayDay(stats.date) }}</strong>
+        <span
+          ><b>{{ stats.total }}</b> {{ stats.total === 1 ? 'turno' : 'turnos' }}</span
+        >
+        <span class="stat" data-status="CONFIRMED"
+          ><ng-icon name="lucideCheck" /><b>{{ stats.confirmed }}</b>
+          {{ stats.confirmed === 1 ? 'confirmado' : 'confirmados' }}</span
+        >
+        <span class="stat" data-status="CHECKED_IN"
+          ><ng-icon name="lucideLogIn" /><b>{{ stats.checkedIn }}</b> en consultorio</span
+        >
+        @if (stats.cancelled) {
+          <span class="stat" data-status="CANCELLED"
+            ><ng-icon name="lucideX" /><b>{{ stats.cancelled }}</b>
+            {{ stats.cancelled === 1 ? 'cancelado' : 'cancelados' }}</span
+          >
+        }
+      </div>
+      @if (stats.next; as next) {
+        <button
+          class="next-booking"
+          type="button"
+          (click)="bookingSelected.emit({ booking: next, trigger: $event.currentTarget })"
+          [disabled]="writing()"
+        >
+          <ng-icon name="lucideClock3" />
+          <span
+            ><b>Próximo {{ bookingTime(next) }}</b> ·
+            {{ next.attendeeName || next.contactName }}</span
+          >
+        </button>
+      }
+    </div>
+    @if (editor() === 'move') {
+      <p class="move-banner" role="status">
+        <ng-icon name="lucideCalendarDays" /> Elegí un horario libre. Podés cambiar la fecha.
+      </p>
+    }
+    <div
+      class="calendar-workspace"
+      [class.has-editor]="editor()"
+      [class.is-moving]="editor() === 'move'"
+    >
+      <section
+        #board
+        class="calendar-board"
+        aria-label="Grilla de turnos"
+        [attr.aria-busy]="loading()"
+        tabindex="0"
+      >
+        <div
+          class="timeline-grid"
+          [class.single-day]="view() === '1'"
+          [style.--track-height.px]="pixels(calendar.to - calendar.from)"
+        >
+          <div class="timeline-corner">
+            <ng-icon name="lucideClock3" /><span>Hora local</span>
+          </div>
+          @for (day of calendar.days; track day.date) {
+            <header
+              class="day-header"
+              [class.today]="day.date === today()"
+              [attr.data-date]="day.date"
+            >
+              @if (view() === '7') {
+                <button
+                  type="button"
+                  (click)="dayRequested.emit(day.date)"
+                  [disabled]="writing()"
+                  [attr.aria-current]="day.date === today() ? 'date' : null"
+                  [attr.aria-label]="'Ver ' + weekday(day.date) + ' ' + displayDay(day.date)"
+                >
+                  <span>{{ weekday(day.date) }}</span
+                  ><strong>{{ day.date.slice(8) }}</strong>
+                </button>
+              } @else {
+                <div [attr.aria-current]="day.date === today() ? 'date' : null">
+                  <span>{{ weekday(day.date) }}</span
+                  ><strong>{{ day.date.slice(8) }}</strong>
+                </div>
+              }
+            </header>
+          }
+          <div class="hour-axis" aria-hidden="true">
+            @for (tick of calendar.ticks; track tick) {
+              <span [style.top.px]="pixels(tick - calendar.from)">{{ hourLabel(tick) }}</span>
+            }
+          </div>
+          @for (day of calendar.days; track day.date) {
+            <div
+              class="day-track"
+              [class.today]="day.date === today()"
+              [class.closed]="day.closed"
+              role="group"
+              [attr.aria-label]="weekday(day.date) + ' ' + displayDay(day.date)"
+            >
+              @for (tick of calendar.ticks; track tick) {
+                <div
+                  class="hour-rule"
+                  [style.top.px]="pixels(tick - calendar.from)"
+                  aria-hidden="true"
+                ></div>
+              }
+              @for (hour of day.hours; track hour.from) {
+                <div
+                  class="office-hours"
+                  [style.top.px]="pixels(hour.from - calendar.from)"
+                  [style.height.px]="pixels(hour.to - hour.from)"
+                  aria-hidden="true"
+                ></div>
+              }
+              @if (day.closed || !day.entries.length) {
+                <span class="day-note">{{
+                  day.closed
+                    ? 'Consultorio cerrado'
+                    : day.hours.length
+                      ? 'Sin horarios reservables'
+                      : 'Sin atención programada'
+                }}</span>
+              }
+              @for (
+                entry of day.entries;
+                track entry.booking ? 'booking-' + entry.booking.id : entry.slot?.start
+              ) {
+                @if (entry.booking; as booking) {
+                  @let name = booking.attendeeName || booking.contactName;
+                  <button
+                    type="button"
+                    class="event"
+                    [class.short-event]="pixels(entry.height) < 34"
+                    [class.shared-cancellation]="entry.sharedCancellation"
+                    [attr.data-status]="booking.status"
+                    [attr.data-booking-id]="booking.id"
+                    [style.top.px]="pixels(entry.from - calendar.from)"
+                    [style.height.px]="pixels(entry.height)"
+                    [style.--lane]="entry.lane"
+                    [style.--lanes]="entry.laneCount"
+                    [attr.aria-pressed]="selected()?.id === booking.id"
+                    [attr.aria-label]="
+                      entry.time +
+                      ', ' +
+                      name +
+                      ', ' +
+                      labels[booking.status] +
+                      bookingHint(booking, ', ')
+                    "
+                    [title]="
+                      entry.time +
+                      ' · ' +
+                      name +
+                      ' · ' +
+                      labels[booking.status] +
+                      bookingHint(booking, ' · ')
+                    "
+                    (click)="bookingSelected.emit({ booking, trigger: $event.currentTarget })"
+                    [disabled]="writing() || loading()"
+                  >
+                    <span class="event-title"
+                      ><time>{{ entry.time }}</time
+                      ><span>{{ name }}</span></span
+                    >
+                    <span class="event-meta"
+                      ><ng-icon [name]="statusIcons[booking.status]" /><span
+                        >{{ labels[booking.status] }}
+                        @if (booking.specialty && pixels(entry.height) >= 52) {
+                          · {{ booking.specialty.name }}
+                        }
+                      </span></span
+                    >
+                  </button>
+                } @else if (entry.slot; as slot) {
+                  @let allowed = allowSlot()(slot);
+                  @let slotLabel = allowed ? (editor() === 'move' ? 'Reprogramar' : 'Agregar turno') : 'Disponible';
+                  <button
+                    type="button"
+                    class="available-slot"
+                    [class.shared-cancellation]="entry.sharedCancellation"
+                    [style.top.px]="pixels(entry.from - calendar.from)"
+                    [style.height.px]="pixels(entry.height)"
+                    [style.--lane]="entry.lane"
+                    [style.--lanes]="entry.laneCount"
+                    [attr.aria-label]="
+                      slotLabel + ' ' + entry.time + ', ' + displayDay(day.date) + slotHint(slot, ', ')
+                    "
+                    [attr.aria-pressed]="slotSelected()(slot)"
+                    [attr.data-slot-start]="slot.start"
+                    [title]="slotLabel + ' ' + entry.time + slotHint(slot, ' · ')"
+                    (click)="slotChosen.emit({ slot, trigger: $event.currentTarget })"
+                    [disabled]="writing() || loading() || !allowed"
+                  >
+                    @if (slotLabel !== 'Disponible') {
+                      <ng-icon name="lucidePlus" aria-hidden="true" />
+                    }
+                    <span>{{ slotLabel }}</span
+                    ><time>{{ entry.time }}</time>
+                  </button>
+                }
+              }
+              @if (
+                day.date === today() &&
+                minute(clock()) >= calendar.from &&
+                minute(clock()) < calendar.to
+              ) {
+                <div
+                  class="now-line"
+                  [style.top.px]="pixels(minute(clock()) - calendar.from)"
+                >
+                  <time [attr.aria-label]="'Hora actual del consultorio, ' + clock()">{{
+                    clock()
+                  }}</time>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      @if (editor()) {
+        <aside class="editor" aria-label="Gestión del turno">
+          <ng-content />
+        </aside>
+      }
+    </div>
+    <footer class="agenda-footer">
+      <div class="calendar-key">
+        <span><i class="key-free"></i> Horario libre</span>
+        <span><i class="key-unavailable"></i> Fuera de horario o bloqueado</span>
+      </div>
+      <button type="button" [attr.aria-pressed]="fullDay()" (click)="fullDay.set(!fullDay())">
+        <ng-icon [name]="fullDay() ? 'lucideMinimize2' : 'lucideMaximize2'" />{{
+          fullDay() ? 'Ver jornada' : 'Ver 24 horas'
+        }}
+      </button>
+    </footer>
+  }
+</section>

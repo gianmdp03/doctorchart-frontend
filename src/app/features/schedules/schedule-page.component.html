@@ -19,7 +19,6 @@
    <div aria-live="polite">
     @if (draftStatus() === 'stored') {<strong>Borrador en esta pestaña</strong><span>Guardá la agenda para aplicar los cambios.</span>}
     @else if (draftStatus() === 'unavailable') {<strong>No se pudo guardar el borrador</strong><span>Guardá la agenda antes de recargar.</span>}
-    @else if (feedback()) {<strong>{{ feedback() }}</strong>}
     @else {<strong>Agenda del consultorio</strong><span>Podés guardar la configuración por etapas.</span>}
    </div>
    <button type="button" class="primary" data-testid="save-schedule" [disabled]="!canSave()" (click)="save()">{{ saving() ? 'Guardando…' : 'Guardar agenda' }}</button>

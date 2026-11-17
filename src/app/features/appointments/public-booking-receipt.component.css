@@ -1,0 +1,18 @@
+:host { display: block; min-width: 0; }
+.receipt {
+  padding: clamp(18px, 4.5vw, 30px); background: var(--booking-surface);
+  border-radius: 16px; box-shadow: var(--booking-shadow);
+  overflow-wrap: anywhere;
+}
+.receipt h2 { margin: 0; font-size: 1.43rem; line-height: 1.22; letter-spacing: -.025em; font-weight: 700; }
+.receipt > p { margin: 4px 0 0; color: var(--booking-accent); font-weight: 650; }
+.muted { color: var(--booking-muted); }
+dl { display: grid; gap: 0; margin: 14px 0 0; }
+dl > div { padding: 13px 0; border-bottom: 1px solid var(--booking-line); }
+dl > div:last-child { padding-bottom: 0; border-bottom: 0; }
+dt { display: flex; align-items: center; gap: 8px; font-size: .875rem; color: var(--booking-muted); }
+dt ng-icon { color: var(--booking-accent); }
+dd { margin: 4px 0 0; font-weight: 650; }
+dd.muted { font-size: .84rem; font-weight: 400; }
+.reference { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; align-items: baseline; }
+.reference dd { margin: 0; }

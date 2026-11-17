@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../../core/services/interaction-status.service';
 import { Component, computed, inject, OnInit, signal, viewChildren } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -7,11 +8,11 @@ import { WorkspaceSetup } from '../../../core/models/workspace.model';
 import { WizardDefinition, WizardFormDefinition, WizardStepKey } from '../../../core/models/wizard-definition.model';
 import { FormFieldEditorComponent } from '../../form-field-editor/form-field-editor.component';
 
-type EditableStepKey = Exclude<WizardStepKey, 'completed'>;
+type EditableStepKey = Exclude<WizardStepKey, 'specialty' | 'completed'>;
 interface WizardStep {
   key: EditableStepKey;
   title: string;
-  kind: 'specialty' | 'patient' | 'encounter';
+  kind: 'patient' | 'encounter';
   categoryKey?: string;
 }
 
@@ -22,6 +23,7 @@ interface WizardStep {
   styleUrl: './onboarding-wizard.component.css',
 })
 export class OnboardingWizardComponent implements OnInit {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly workspaceStore = inject(WorkspaceStore);
   private readonly doctorProfileService = inject(DoctorProfileService);
   private readonly authService = inject(AuthService);
@@ -43,11 +45,9 @@ export class OnboardingWizardComponent implements OnInit {
   readonly showResetConfirmation = signal(false);
   readonly showDiscardConfirmation = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly successMessage = signal<string | null>(null);
   readonly isEditMode = computed(() => this.workspace()?.onboardingCompleted ?? false);
   readonly editorReadonly = computed(() => this.isLoading() || this.isSaving() || this.hasConflict());
   readonly steps = computed<WizardStep[]>(() => [
-    { key: 'specialty', title: 'Especialidad médica', kind: 'specialty' },
     ...(this.definition()?.patientForm.categories.filter(category => category.enabled).map(category => ({
       key: `patient:${category.key}` as EditableStepKey, title: category.title, kind: 'patient' as const, categoryKey: category.key,
     })) ?? []),
@@ -73,7 +73,7 @@ export class OnboardingWizardComponent implements OnInit {
     this.errorMessage.set(null);
     try {
       const workspace = await this.workspaceStore.loadSetup(force);
-      if (!workspace || (!workspace.onboardingCompleted && workspace.currentStepKey === 'specialty')) {
+      if (!workspace) {
         await this.router.navigate(['/onboarding/select-specialty']);
         return;
       }
@@ -89,7 +89,6 @@ export class OnboardingWizardComponent implements OnInit {
     if (this.editorReadonly()) return;
     this.definition.update(current => current ? { ...current, patientForm: this.copy(form) } : current);
     if (this.activeStepIndex() < 0) this.showPatientCategories.set(true);
-    this.successMessage.set(null);
   }
 
   onPatientCategorySelected(key: string): void {
@@ -101,14 +100,12 @@ export class OnboardingWizardComponent implements OnInit {
   onEncounterDefinitionChange(form: WizardFormDefinition): void {
     if (this.editorReadonly()) return;
     this.definition.update(current => current ? { ...current, encounterForm: this.copy(form) } : current);
-    this.successMessage.set(null);
   }
 
   async goToStep(index: number): Promise<void> {
     const step = this.steps()[index];
-    if (!step || this.editorReadonly() || (step.kind === 'specialty' && this.isEditMode())) return;
-    const saved = await this.saveDraft(step.key);
-    if (saved && step.kind === 'specialty') await this.router.navigate(['/onboarding/select-specialty']);
+    if (!step || this.editorReadonly() || step.key === this.activeStepKey()) return;
+    await this.saveDraft(step.key);
   }
 
   async goNext(): Promise<void> {
@@ -118,13 +115,13 @@ export class OnboardingWizardComponent implements OnInit {
 
   async goPrevious(): Promise<void> {
     const index = this.activeStepIndex();
-    if (index <= 1 && this.isEditMode()) return;
+    if (index <= 0) return;
     await this.goToStep(index - 1);
   }
 
   async saveProgress(): Promise<void> {
     if (await this.saveDraft(this.activeStepKey())) {
-      this.successMessage.set('Borrador guardado. La configuración activa se conserva hasta aplicar los cambios.');
+      this.interaction.notifySuccess('Borrador guardado. La configuración activa se conserva hasta aplicar los cambios.');
     }
   }
 
@@ -136,6 +133,7 @@ export class OnboardingWizardComponent implements OnInit {
     try {
       const applied = await this.workspaceStore.finishOnboarding(saved.version);
       this.acceptWorkspace(applied);
+      this.interaction.notifySuccess('La configuración se aplicó correctamente.');
       await this.router.navigate(['/dashboard']);
     } catch (error: unknown) {
       this.handleWriteError(error, 'El borrador está guardado, pero no pudimos aplicar los cambios. Revisá los campos e intentá nuevamente.');
@@ -146,7 +144,10 @@ export class OnboardingWizardComponent implements OnInit {
 
   async exitWizard(): Promise<void> {
     if (!this.isEditMode() || this.editorReadonly()) return;
-    if (await this.saveDraft(this.activeStepKey())) await this.router.navigate(['/dashboard']);
+    if (await this.saveDraft(this.activeStepKey())) {
+      this.interaction.notifySuccess('El borrador se guardó correctamente.');
+      await this.router.navigate(['/dashboard']);
+    }
   }
 
   async returnWithoutSaving(): Promise<void> {
@@ -164,6 +165,7 @@ export class OnboardingWizardComponent implements OnInit {
       const restored = await this.workspaceStore.discardDraft(workspace.version);
       this.acceptWorkspace(restored);
       this.showDiscardConfirmation.set(false);
+      this.interaction.notifySuccess('El borrador se descartó correctamente.');
       await this.router.navigate(['/dashboard']);
     } catch (error: unknown) {
       this.handleWriteError(error, 'No pudimos descartar el borrador. Tus cambios locales siguen visibles.');
@@ -181,7 +183,7 @@ export class OnboardingWizardComponent implements OnInit {
       const reset = await this.workspaceStore.resetToDefaults(workspace.version);
       this.acceptWorkspace(reset);
       this.showResetConfirmation.set(false);
-      this.successMessage.set('Valores iniciales copiados al borrador. Revisalos y aplicá los cambios para usarlos.');
+      this.interaction.notifySuccess('Valores iniciales copiados al borrador. Revisalos y aplicá los cambios para usarlos.');
     } catch (error: unknown) {
       this.handleWriteError(error, 'No pudimos restablecer los valores iniciales. Tus cambios locales siguen visibles.');
     } finally {
@@ -227,7 +229,7 @@ export class OnboardingWizardComponent implements OnInit {
     this.serverCopyLoaded.set(false);
     this.serverCopy.set(null);
     this.errorMessage.set(null);
-    this.successMessage.set('Copia del servidor cargada. Podés revisarla antes de editar.');
+    this.interaction.notifySuccess('Copia del servidor cargada. Podés revisarla antes de editar.');
   }
 
   private async saveDraft(stepKey: EditableStepKey): Promise<WorkspaceSetup | null> {
@@ -237,7 +239,6 @@ export class OnboardingWizardComponent implements OnInit {
     if (!workspace || !definition || this.editorReadonly()) return null;
     this.isSaving.set(true);
     this.errorMessage.set(null);
-    this.successMessage.set(null);
     try {
       const saved = await this.workspaceStore.saveOnboardingDraft({
         expectedVersion: workspace.version, definition: this.copy(definition), currentStepKey: stepKey,
@@ -257,10 +258,9 @@ export class OnboardingWizardComponent implements OnInit {
     if (!definition) throw new Error('El backend no devolvió una configuración personal.');
     this.workspace.set(this.copy(workspace));
     this.definition.set(this.copy(definition));
-    const firstCategory = definition.patientForm.categories.find(category => category.enabled);
-    this.activeStepKey.set(workspace.currentStepKey === 'completed'
-      ? firstCategory ? `patient:${firstCategory.key}` : 'encounter'
-      : workspace.currentStepKey);
+    // Older drafts can still point at the specialty picker or a category that is no longer enabled.
+    const step = this.steps().find(candidate => candidate.key === workspace.currentStepKey);
+    this.activeStepKey.set((step ?? this.steps()[0]).key);
     this.showPatientCategories.set(false);
   }
 

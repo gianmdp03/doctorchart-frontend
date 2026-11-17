@@ -5,6 +5,7 @@ import {ClinicalNavigationService} from '../services/clinical-navigation.service
 import {AuthService} from '../services/auth.service';
 
 export const clinicalContextGuard:CanActivateFn=async(route,state)=>{
+ const navigation=inject(ClinicalNavigationService);
  const store=inject(WorkspaceStore),router=inject(Router),auth=inject(AuthService);await auth.authReady;if(!auth.isLoggedIn())return true;if(auth.isSuperAdmin())return router.createUrlTree(['/admin/specialties']);
  try{
   const contexts=await store.loadContexts();const values=route.queryParamMap.getAll('specialtyContextId');if(values.length>1)return router.createUrlTree(['/specialties']);
@@ -16,7 +17,10 @@ export const clinicalContextGuard:CanActivateFn=async(route,state)=>{
   await store.activateContext(id);
   if(route.data['clinicalContext']&&!route.data['allowPending']&&!store.isOnboardingCompleted())return router.createUrlTree(['/onboarding/setup'],{queryParams:{specialtyContextId:id}});
   return true;
- }catch{return false;}
+ }catch{
+  if(route.data['allowPending'])navigation.notice.set('No pudimos abrir la configuración de esta especialidad. Volvé a intentar.');
+  return false;
+ }
 };
 export const clinicalLeaveGuard:CanDeactivateFn<unknown>=(_component,_route,_state,next)=>{
  const store=inject(WorkspaceStore),navigation=inject(ClinicalNavigationService),router=inject(Router);

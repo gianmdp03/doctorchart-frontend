@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { Component, DestroyRef, computed, effect, inject, signal, viewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -25,6 +26,7 @@ function emptyDraft():Draft{return {minNoticeMinutes:null,maxAdvanceDays:null,we
  templateUrl:'./schedule-page.component.html',styleUrl:'./schedule-page.component.css',
 })
 export class SchedulePageComponent {
+  private readonly interaction = inject(InteractionStatusService);
  private readonly api=inject(SchedulesService);
  private readonly workspace=inject(WorkspaceStore);
  readonly readySpecialties=signal<{id:string;name:string}[]>([]);
@@ -52,7 +54,6 @@ export class SchedulePageComponent {
  readonly saving=signal(false);
  readonly validatingBlocks=signal(false);
  readonly error=signal('');
- readonly feedback=signal('');
  readonly conflict=signal(false);
  readonly draftStatus=signal<'clean'|'stored'|'unavailable'>('clean');
  readonly availability=signal<Availability|null>(null);
@@ -129,7 +130,7 @@ export class SchedulePageComponent {
  async load(){
   const generation=++this.generation,owner=this.auth.currentUser()?.id??null,id=this.id;
   this.specialty.set(null);this.selectedDays=[];this.blockError.set('');
-  this.saving.set(false);this.validatingBlocks.set(false);this.previewBusy.set(false);this.choicesBusy.set(false);this.choicePage.set(0);this.choiceTotal.set(0);this.choices.set([]);this.clinic.set(null);this.availability.set(null);this.scheduleConflict.set(null);this.occupied.set(null);this.occupiedError.set('');this.occupiedBusy.set(false);this.setCapabilities(null);this.draft=emptyDraft();this.version='0';this.conflict.set(false);this.feedback.set('');this.error.set('');
+  this.saving.set(false);this.validatingBlocks.set(false);this.previewBusy.set(false);this.choicesBusy.set(false);this.choicePage.set(0);this.choiceTotal.set(0);this.choices.set([]);this.clinic.set(null);this.availability.set(null);this.scheduleConflict.set(null);this.occupied.set(null);this.occupiedError.set('');this.occupiedBusy.set(false);this.setCapabilities(null);this.draft=emptyDraft();this.version='0';this.conflict.set(false);this.error.set('');
   this.draftStatus.set('clean');
   if(!owner){this.busy.set(false);return;}
   if(!id){
@@ -182,7 +183,6 @@ export class SchedulePageComponent {
   if(!owner||!this.id||this.owner!==owner||!this.clinic()||this.busy())return;
   const stored=this.storage.writeScheduleDraft(owner,this.id,JSON.stringify({version:this.version,draft:this.draft}));
   this.draftStatus.set(stored?'stored':'unavailable');
-  this.feedback.set('');
  }
  async discardDraft(){
   const owner=this.auth.currentUser()?.id;
@@ -231,13 +231,13 @@ export class SchedulePageComponent {
   const generation=this.generation,owner=this.auth.currentUser()?.id??null,id=this.id;
   const request=this.scheduleUpdate(structuredClone(this.draft));
   this.keepDraft();
-  this.saving.set(true);this.error.set('');this.scheduleConflict.set(null);this.feedback.set('');
+  this.saving.set(true);this.error.set('');this.scheduleConflict.set(null);
   try{
    const result=await firstValueFrom(this.api.save(id,request));
    if(!this.current(generation,owner,id))return;
    if(owner)this.storage.writeScheduleDraft(owner,id,null);
    this.draftStatus.set('clean');
-   this.apply(result);this.feedback.set('La agenda se guardó correctamente.');this.availability.set(null);
+   this.apply(result);this.interaction.notifySuccess('La agenda se guardó correctamente.');this.availability.set(null);
   }catch(e){
    if(!this.current(generation,owner,id))return;
    const parsed=parseClinicHttpError(e,'No pudimos guardar. Los campos ingresados se conservaron.');

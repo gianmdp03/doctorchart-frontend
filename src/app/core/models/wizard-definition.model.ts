@@ -47,30 +47,13 @@ export interface WizardFormDefinition {
 
 export const heightMeasurementModeKey = 'heightMeasurementMode';
 
-export function withHeightMeasurementMode(form: WizardFormDefinition): WizardFormDefinition {
-  const categories = form.categories.map((category) => ({
-    ...category,
-    fields: category.fields.filter((field) => field.key !== heightMeasurementModeKey),
-  }));
-  const hasHeight = (field: WizardFieldDefinition) =>
-    field.type === 'NUMBER' && ['heightCm', 'height'].includes(field.key);
-  const target = categories.find((category) => category.enabled && category.fields.some(hasHeight))
-    ?? categories.find((category) => category.fields.some(hasHeight));
-  if (target) {
-    const index = target.fields.findIndex(hasHeight);
-    const { visibleWhen } = target.fields[index];
-    target.fields.splice(index + 1, 0, {
-      key: heightMeasurementModeKey,
-      label: 'Cómo se midió la talla',
-      type: 'SELECT',
-      required: false,
-      options: [
-        { value: 'RECUMBENT', label: 'Acostado (longitud)' },
-        { value: 'STANDING', label: 'De pie (estatura)' },
-      ],
-      ...(visibleWhen && { visibleWhen }),
-    });
-  }
+export const hiddenEncounterFieldKeys: readonly string[] = [heightMeasurementModeKey, 'followUpDate', 'encounter.followUpDate'];
+
+export function visibleEncounterForm(form: WizardFormDefinition): WizardFormDefinition {
+  const categories = form.categories.flatMap((category) => {
+    const fields = category.fields.filter((field) => !hiddenEncounterFieldKeys.includes(field.key));
+    return fields.length === 0 && category.fields.length > 0 ? [] : [{ ...category, fields }];
+  });
   return { ...form, categories };
 }
 export interface WizardModulesConfig {

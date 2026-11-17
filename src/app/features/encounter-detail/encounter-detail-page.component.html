@@ -13,7 +13,7 @@
     <div>
       <span class="eyebrow">HISTORIA CLÍNICA</span>
       <h1 id="encounter-title">{{ isEditing() ? 'Editar consulta' : 'Detalle de la consulta' }}</h1>
-      <p>La atención, su evolución y el próximo control, en un solo lugar.</p>
+      <p>Información clínica registrada durante la atención.</p>
     </div>
     @if (encounter(); as record) {
       <a
@@ -91,6 +91,16 @@
             }
           </select></label
         >
+      </fieldset>
+    }
+    @if (isEditing() && canCorrectHeightPosition()) {
+      <fieldset class="consultation-metadata" [disabled]="readonly()">
+        <legend>Corregir la postura registrada</legend>
+        <p>Esta talla quedó registrada como medida acostado.</p>
+        <label class="height-position-confirmation">
+          <input type="checkbox" [ngModel]="correctHeightPosition()" (ngModelChange)="correctHeightPosition.set($event)" />
+          Confirmo que la talla se midió de pie
+        </label>
       </fieldset>
     }
     <div class="encounter-content" [class.is-editing]="isEditing()">

@@ -107,13 +107,6 @@
     </div>
   }
 
-  @if (actionFeedback()) {
-    <div class="alert-box alert-success" role="status" data-testid="action-feedback-alert">
-      <ng-icon name="lucideCheckCircle2" size="18" aria-hidden="true"></ng-icon>
-      <span>{{ actionFeedback() }}</span>
-    </div>
-  }
-
   <div class="toolbar-card">
     <div class="filter-tabs" role="group" aria-label="Filtrar consultorios por estado">
       @for (opt of statusFilters; track opt.value) {

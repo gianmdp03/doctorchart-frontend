@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { ClinicalContextService } from '../../core/services/clinical-context.service';
 import { UserClockService } from '../../core/services/user-clock.service';
 import {
@@ -28,7 +29,7 @@ import {
   WizardFormDefinition,
   WizardFormValues,
   withClinicalHistory,
-  withHeightMeasurementMode,
+  visibleEncounterForm,
 } from '../../core/models/wizard-definition.model';
 import {
   DynamicFormRendererComponent,
@@ -49,6 +50,7 @@ import {
   styleUrl: './encounter-form.component.css',
 })
 export class EncounterFormComponent implements OnInit, OnDestroy {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly clinicalScope = inject(ClinicalContextService);
   private readonly encounterService = inject(ClinicalEncounterService);
   private readonly workspaceStore = inject(WorkspaceStore);
@@ -214,7 +216,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
         throw new Error('El formulario clínico no está disponible.');
       }
       this.workspace.set(structuredClone(workspace));
-      this.definition.set(withClinicalHistory(withHeightMeasurementMode(workspace.definition.encounterForm)));
+      this.definition.set(withClinicalHistory(visibleEncounterForm(workspace.definition.encounterForm)));
     } catch (error) {
       if (this.alive(epoch)) {
         this.errorMessage.set(
@@ -273,7 +275,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
           patientId,
           workspaceVersion: workspace.version,
           consultationType: effectiveConsultationType,
-          values: inputValues(definition, this.dynamicFormData()),
+          values: inputValues(visibleEncounterForm(definition), this.dynamicFormData()),
         }),
       );
 
@@ -283,6 +285,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
       }
 
       this.historyStore?.clearEncounterDraft();
+      this.interaction.notifySuccess('La consulta se registró correctamente.');
       this.encounterCreated.emit(created);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('encounter-created', { detail: created }));
@@ -352,7 +355,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const next = withClinicalHistory(withHeightMeasurementMode(remote.definition.encounterForm));
+    const next = withClinicalHistory(visibleEncounterForm(remote.definition.encounterForm));
     this.dynamicFormData.set(retainCompatibleValues(previous, next, this.dynamicFormData()));
     this.workspace.set(structuredClone(remote));
     this.definition.set(next);

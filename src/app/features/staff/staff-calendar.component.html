@@ -1,0 +1,330 @@
+<main
+  class="staff-page staff-calendar"
+  (keydown.escape)="editor() && !writing() && dismissEditor()"
+>
+  <header class="masthead">
+    <a class="brand" routerLink="/"
+      ><img src="/doctorchart-logo.svg" width="28" height="28" alt="" />DoctorChart</a
+    >
+    <div class="profile-menu">
+      <details>
+        <summary aria-label="Abrir perfil">
+          <ng-icon name="lucideUserRound" /> <span>Mi perfil</span>
+        </summary>
+        <div class="profile-popover">
+          <strong>{{ api.session()?.name || 'Secretaría' }}</strong>
+          <span class="muted">{{ api.session()?.email }}</span>
+          <button type="button" (click)="passwordOpen.set(true)">Cambiar contraseña</button>
+          <button type="button" (click)="logout()" [disabled]="writing()">Cerrar sesión</button>
+        </div>
+      </details>
+    </div>
+  </header>
+
+  @if (activationRecovery()) {
+    <details class="recovery-notice">
+      <summary>Guardar un código de recuperación (opcional)</summary>
+      <p>
+        Guardalo para recuperar tu cuenta si perdés el acceso al correo. Es personal: no lo
+        compartas.
+      </p>
+      <code class="recovery">{{ activationRecovery() }}</code>
+      <button type="button" (click)="activationRecovery.set('')">Cerrar</button>
+    </details>
+  }
+
+  <div class="agenda-heading">
+    <h1>Agenda de consultorios</h1>
+    <div class="assignment-picker">
+      <ng-icon name="lucideBuilding2" />
+      <label class="sr-only" for="staff-assignment">Consultorio asignado</label>
+      <select
+        id="staff-assignment"
+        [ngModel]="assignmentKey"
+        (ngModelChange)="changeAssignment($event)"
+        [disabled]="writing() || !assignments().length"
+        [title]="
+          selectedAssignment()
+            ? selectedAssignment()!.clinicName +
+              ' · ' +
+              (selectedAssignment()!.doctorName || 'Profesional asignado') +
+              ' · ' +
+              modalityLabel(selectedAssignment()!.modality)
+            : 'Consultorio asignado'
+        "
+      >
+        <option value="">Seleccioná un consultorio</option>
+        @for (assignment of assignments(); track key(assignment)) {
+          <option [value]="key(assignment)">
+            {{ assignment.clinicName }} · {{ assignment.doctorName || 'Profesional asignado' }} ·
+            {{ modalityLabel(assignment.modality) }}
+          </option>
+        }
+      </select>
+    </div>
+    <button
+      class="icon-button refresh"
+      type="button"
+      aria-label="Actualizar permisos y agenda"
+      title="Actualizar permisos y agenda"
+      (click)="refresh()"
+      [disabled]="loading() || writing()"
+    >
+      <ng-icon name="lucideRefreshCw" />
+    </button>
+  </div>
+
+  @if (error()) {
+    <p class="agenda-alert error" role="alert">{{ error() }}</p>
+  }
+
+  @if (selectedAssignment(); as assignment) {
+    @if (can('view')) {
+      <app-agenda
+        dateInputId="staff-date"
+        [date]="date()"
+        [view]="view()"
+        [zone]="zone()"
+        [now]="now()"
+        [availability]="days()"
+        [bookings]="bookings()"
+        [calendarKey]="key(assignment)"
+        [loading]="loading()"
+        [pendingRange]="loading() && loadedRange() !== calendarKey()"
+        [writing]="writing()"
+        [editor]="editor()"
+        [selected]="selected()"
+        [allowSlot]="allowSlot"
+        [slotSelected]="isMoveSlot"
+        (dateChange)="changeDate($event)"
+        (viewChange)="changeView($event)"
+        (dayRequested)="changeView('1', $event)"
+        (bookingSelected)="selectBooking($event.booking, $event.trigger)"
+        (slotChosen)="chooseSlot($event.slot.start, $event.trigger)"
+      >
+        @if (editor()) {
+          <div class="editor-content">
+            <div class="editor-top">
+              <h2 #editorHeading tabindex="-1">
+                {{
+                  editor() === 'create'
+                    ? 'Nuevo turno'
+                    : editor() === 'move'
+                      ? 'Reprogramar turno'
+                      : 'Detalle del turno'
+                }}
+              </h2>
+              <button
+                type="button"
+                class="icon-button"
+                aria-label="Cerrar detalle"
+                (click)="dismissEditor()"
+                [disabled]="writing()"
+              >
+                <ng-icon name="lucideX" />
+              </button>
+            </div>
+            @if (editor() === 'create') {
+              <p class="editor-date">
+                {{ displayDay(civilDate(start, assignment.timezone)) }} · {{ time(start)
+                }}<br />{{ assignment.clinicName }}
+              </p>
+              <form (ngSubmit)="create()" #form="ngForm">
+                <fieldset [disabled]="writing()">
+                  <legend class="sr-only">Datos administrativos</legend>
+                  <label
+                    >Nombre de quien será atendido<input
+                      name="attendee"
+                      [(ngModel)]="attendeeName"
+                      required
+                      maxlength="160"
+                  /></label>
+                  <label
+                    >Nombre del solicitante<input
+                      name="contact"
+                      [(ngModel)]="contactName"
+                      required
+                      maxlength="160"
+                      autocomplete="name"
+                  /></label>
+                  <label
+                    >Teléfono<input
+                      name="phone"
+                      [(ngModel)]="contactPhone"
+                      type="tel"
+                      maxlength="80"
+                      autocomplete="tel"
+                  /></label>
+                  <p class="muted">
+                    Este turno solo registra los datos administrativos de la reserva.
+                  </p>
+                  @if (editorError()) {
+                    <p class="error" role="alert">{{ editorError() }}</p>
+                  }
+                  <button
+                    type="submit"
+                    [disabled]="writing() || form.invalid || !can('create')"
+                  >
+                    {{ writing() ? 'Guardando…' : 'Confirmar turno' }}
+                  </button>
+                </fieldset>
+              </form>
+            }
+            @if (selected(); as booking) {
+              <h3>{{ booking.attendeeName || booking.contactName }}</h3>
+              <p class="status-label" [attr.data-status]="booking.status">
+                <ng-icon [name]="statusIcons[booking.status]" />{{ labels[booking.status] }}
+              </p>
+              <p class="editor-date">
+                {{
+                  displayDay(
+                    civilDate(
+                      booking.start,
+                      booking.clinicSnapshot?.timezone || assignment.timezone
+                    )
+                  )
+                }}
+                · {{ bookingTime(booking) }}<br />
+                {{ booking.clinicSnapshot?.name || assignment.clinicName }}
+                @if (booking.specialty) {
+                  · {{ booking.specialty.name }}
+                }
+              </p>
+              <dl class="contact-list">
+                <div>
+                  <dt>Solicitante</dt>
+                  <dd>{{ booking.contactName }}</dd>
+                </div>
+                <div>
+                  <dt>Teléfono</dt>
+                  <dd>{{ booking.contactPhone || 'Sin teléfono' }}</dd>
+                </div>
+              </dl>
+              @if (editorError()) {
+                <p class="error" role="alert">{{ editorError() }}</p>
+              }
+              @if (editor() === 'move') {
+                <div class="move-confirm">
+                  @if (start) {
+                    <p>
+                      Nuevo horario
+                      <strong
+                        >{{ displayDay(civilDate(start, assignment.timezone)) }} ·
+                        {{ time(start) }}</strong
+                      >
+                    </p>
+                    <button
+                      class="primary"
+                      type="button"
+                      (click)="move()"
+                      [disabled]="writing() || !can('reschedule')"
+                    >
+                      {{ writing() ? 'Guardando…' : 'Confirmar reprogramación' }}
+                    </button>
+                  } @else {
+                    <p class="muted">Seleccioná un horario libre en la agenda.</p>
+                  }
+                  <button type="button" (click)="editor.set('detail')" [disabled]="writing()">
+                    Volver al detalle
+                  </button>
+                </div>
+              } @else {
+                <div class="editor-actions">
+                  @for (state of transitions(booking.status); track state) {
+                    <button
+                      type="button"
+                      [class.primary]="state === 'CHECKED_IN' || state === 'COMPLETED'"
+                      [class.danger]="state === 'CANCELLED'"
+                      [disabled]="
+                        writing() || !can(state === 'CANCELLED' ? 'cancel' : 'status')
+                      "
+                      (click)="status(state)"
+                    >
+                      {{ actionLabels[state] }}
+                    </button>
+                  }
+                  @if (booking.status === 'CONFIRMED') {
+                    <button
+                      type="button"
+                      [disabled]="writing() || !can('reschedule')"
+                      (click)="beginMove()"
+                    >
+                      Reprogramar
+                    </button>
+                  }
+                </div>
+              }
+            }
+          </div>
+        }
+      </app-agenda>
+    } @else {
+      <div class="calendar-empty">
+        <ng-icon name="lucideCalendarX" />
+        <h2>Permisos de agenda sin vigencia</h2>
+        <p>Actualizá los permisos y la agenda para volver a consultar los turnos.</p>
+      </div>
+    }
+  } @else if (loading()) {
+    <div class="agenda-loading" role="status">
+      <span>Buscando consultorios…</span>
+      <div class="skeleton" aria-hidden="true"></div>
+    </div>
+  } @else if (!error()) {
+    <div class="calendar-empty">
+      <ng-icon name="lucideCalendarDays" />
+      @if (assignments().length) {
+        <h2>Elegí un consultorio</h2>
+        <p>Seleccioná uno de tus consultorios asignados para ver sus turnos.</p>
+      } @else {
+        <h2>Sin agendas asignadas</h2>
+        <p>Consultá con el profesional que te invitó para habilitar el acceso.</p>
+      }
+    </div>
+  }
+
+  @if (passwordOpen()) {
+    <div class="profile-overlay" (click)="!writing() && passwordOpen.set(false)">
+      <section
+        class="profile-dialog panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="password-title"
+        (click)="$event.stopPropagation()"
+      >
+        <h2 id="password-title">Cambiar contraseña</h2>
+        <form (ngSubmit)="password()" #passwordForm="ngForm">
+          <label
+            >Contraseña actual<input
+              type="password"
+              name="currentPassword"
+              [(ngModel)]="currentPassword"
+              autocomplete="current-password"
+              required
+          /></label>
+          <label
+            >Contraseña nueva<input
+              type="password"
+              name="newPassword"
+              [(ngModel)]="newPassword"
+              autocomplete="new-password"
+              required
+              minlength="12"
+              maxlength="72"
+          /></label>
+          @if (error()) {
+            <p class="error" role="alert">{{ error() }}</p>
+          }
+          <div class="actions">
+            <button type="button" (click)="passwordOpen.set(false)" [disabled]="writing()">
+              Cerrar
+            </button>
+            <button type="submit" [disabled]="writing() || passwordForm.invalid">
+              Actualizar contraseña
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+</main>

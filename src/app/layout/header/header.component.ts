@@ -12,7 +12,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideSearch,
@@ -25,6 +25,7 @@ import {
   lucideX,
   lucideSliders,
   lucideType,
+  lucideCalendarDays,
 } from '@ng-icons/lucide';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
@@ -35,10 +36,11 @@ import { PatientListDTO } from '../../core/models/patient.model';
 import { environment } from '../../../environments/environment';
 import { BycodeAvatarComponent } from '../../shared/components/bycode-avatar/bycode-avatar';
 import { BycodeAccountService } from '../../core/services/bycode-account.service';
+import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 
 @Component({
   selector: 'app-header',
-  imports: [NgIcon, ThemeToggleComponent, BycodeAvatarComponent],
+  imports: [NgIcon, ThemeToggleComponent, BycodeAvatarComponent, RouterLink],
   providers: [
     provideIcons({
       lucideSearch,
@@ -51,12 +53,14 @@ import { BycodeAccountService } from '../../core/services/bycode-account.service
       lucideX,
       lucideSliders,
       lucideType,
+      lucideCalendarDays,
     }),
   ],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css',
 })
 export class HeaderComponent implements OnDestroy {
+  readonly staffEnabled = FEATURE_FLAGS.STAFF_ENABLED;
   readonly bycodeAccount = inject(BycodeAccountService);
   readonly authService = inject(AuthService);
   readonly activePatientService = inject(ActivePatientService);

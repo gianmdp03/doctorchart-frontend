@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { ClinicalContextService } from '../../core/services/clinical-context.service';
 import {
   Component,
@@ -42,6 +43,7 @@ import {
   styleUrl: './patient-form-page.component.css',
 })
 export class PatientFormPageComponent implements OnInit {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly clinicalScope = inject(ClinicalContextService);
   private readonly document = inject(DOCUMENT);
   private focusedHistory = false;
@@ -238,6 +240,7 @@ export class PatientFormPageComponent implements OnInit {
 
       this.activePatientService.setActivePatient(saved);
       this.activePatientService.loadPatient(saved.id);
+      this.interaction.notifySuccess(record ? 'Los cambios del paciente se guardaron correctamente.' : 'El paciente se creó correctamente.');
       void this.router.navigate(['/patients', saved.id]);
     } catch (error) {
       if (this.alive(epoch)) {

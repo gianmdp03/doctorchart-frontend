@@ -106,24 +106,17 @@ describe('EncounterFormComponent inline clinical creation', () => {
     );
   });
 
-  it('preserves the next consultation in the canonical create payload', async () => {
+  it('omits legacy appointment dates and posture from new consultations', async () => {
     const form = structuredClone(component.definition()!);
-    form.categories[0].fields.push({
-      key: 'followUpDate',
-      label: 'Próximo control',
-      type: 'DATE',
-      required: false,
-    });
+    form.categories[0].fields.push(
+      { key: 'followUpDate', label: 'Próximo control', type: 'DATE', required: false },
+      { key: 'heightMeasurementMode', label: 'Postura', type: 'TEXT', required: false },
+    );
     component.definition.set(form);
-    component.onDynamicDataChange({
-      readingA: 0,
-      readingB: 10,
-      notes: 'Control',
-      followUpDate: '2028-02-29',
-    });
+    component.onDynamicDataChange({ readingA: 0, readingB: 10, notes: 'Control', followUpDate: '2028-02-29', heightMeasurementMode: 'RECUMBENT' });
     component.onDynamicFormValidityChange(true);
     await component.submitEncounter();
-    expect(service.create.mock.calls[0][0].values.followUpDate).toBe('2028-02-29');
+    expect(service.create.mock.calls[0][0].values).toEqual({ readingA: 0, readingB: 10, notes: 'Control' });
   });
 
   it('emits cancel when back link or cancel button is clicked', () => {

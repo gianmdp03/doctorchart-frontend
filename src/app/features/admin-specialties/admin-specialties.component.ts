@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { Component, computed, effect, inject, OnDestroy, OnInit, signal, untracked, viewChildren } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -18,6 +19,7 @@ const clone = <T>(value: T): T => structuredClone(value);
   templateUrl: './admin-specialties.component.html', styleUrl: './admin-specialties.component.css',
 })
 export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly service = inject(AdminSpecialtyService);
   private readonly auth = inject(AuthService);
   private owner = this.identity();
@@ -153,10 +155,11 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
       if (!this.alive(epoch)) return;
       this.upsertSpecialty(specialty); this.selectedSpecialty.set(clone(specialty)); this.creating.set(false); this.code.set(specialty.code);
       this.name.set(specialty.name); this.description.set(specialty.description ?? ''); this.wizard.set(null);
+      this.interaction.notifySuccess('La especialidad se creó como borrador inactivo.');
       // The POST succeeded: never offer to create the same resource again if this GET fails.
       const wizard = await firstValueFrom(this.service.getWizard(specialty.id));
       if (!this.alive(epoch)) return;
-      this.acceptCopy({ specialty, wizard }); this.clearFeedback(); this.success.set('Especialidad creada como borrador inactivo. Completá el wizard y publicalo cuando esté listo.');
+      this.acceptCopy({ specialty, wizard }); this.clearFeedback();
     } catch (error) { if (this.alive(epoch)) this.handleError(error, 'No pudimos completar la operación. Si la especialidad fue creada, volvé a abrirla desde la lista para cargar su wizard.'); }
     finally { if (this.alive(epoch)) this.busy.set(false); }
   }
@@ -179,7 +182,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
       if (!this.alive(epoch)) return;
       this.upsertSpecialty(updated); this.selectedSpecialty.set(clone(updated));
       if (patch.name !== undefined || !metadataWasDirty) { this.name.set(updated.name); this.description.set(updated.description ?? ''); }
-      this.clearFeedback(); this.success.set(patch.active !== undefined ? 'Disponibilidad actualizada.' : 'Datos de la especialidad guardados.');
+      this.clearFeedback(); this.interaction.notifySuccess(patch.active !== undefined ? 'Disponibilidad actualizada.' : 'Datos de la especialidad guardados.');
     } catch (error) { if (this.alive(epoch)) this.handleError(error, 'No pudimos guardar los datos de la especialidad.'); }
     finally { if (this.alive(epoch)) this.busy.set(false); }
   }
@@ -206,7 +209,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
         this.specialties.set(clone(list));
         this.refreshSelectedMetadata(list);
       }
-      this.clearFeedback(); this.success.set(publish ? 'Wizard publicado. Las copias personales de los médicos se conservan.' : 'Borrador guardado. La publicación vigente se conserva.');
+      this.clearFeedback(); this.interaction.notifySuccess(publish ? 'Wizard publicado. Las copias personales de los médicos se conservan.' : 'Borrador guardado. La publicación vigente se conserva.');
     } catch (error) { if (this.alive(epoch)) this.handleError(error, publish ? 'No pudimos completar la publicación. El borrador guardado se conserva.' : 'No pudimos guardar el borrador. Tus cambios locales se conservan.'); }
     finally { if (this.alive(epoch)) this.busy.set(false); }
   }

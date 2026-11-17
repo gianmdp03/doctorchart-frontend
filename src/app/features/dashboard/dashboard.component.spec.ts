@@ -12,6 +12,7 @@ import { signal } from '@angular/core';
 import { of, Subject, throwError } from 'rxjs';
 import { provideRouter } from '@angular/router';
 import { UserClockService } from '../../core/services/user-clock.service';
+import { ClinicalContextService } from '../../core/services/clinical-context.service';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -106,6 +107,9 @@ describe('DashboardComponent', () => {
 
     workspaceStoreMock = {
       quickNotes: signal('Mis notas guardadas'),
+      specialtyDisplayName: signal('Pediatría'),
+      clinicsEnabled: signal(true),
+      hasReadyContext: signal(true),
       updateQuickNotes: vi.fn().mockResolvedValue(undefined),
     };
 
@@ -148,7 +152,7 @@ describe('DashboardComponent', () => {
       ['Hoy', '2026-12-31', 1], ['Mañana', '2027-01-01', 2], ['Pasado mañana', '2027-01-02', 1],
     ]);
     const days = [...fixture.nativeElement.querySelectorAll('.followup-day')] as HTMLElement[];
-    expect(days[1].textContent).toContain('2 consultas');
+    expect(days[1].textContent).toContain('2 controles');
     expect(days[1].textContent).toContain('01/01/2027');
     expect(days[1].textContent).toContain('Mateo Rossi');
     const link = days[1].querySelector('a')!;
@@ -159,7 +163,7 @@ describe('DashboardComponent', () => {
 
   it('shows a quiet empty state separately from loading, errors, and an unavailable API field', () => {
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.followup-empty')).toHaveLength(3);
+    expect(fixture.nativeElement.querySelectorAll('.followup-empty')).toHaveLength(1);
     const pending = new Subject<any>();
     clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(pending);
     component.loadKpiData(); fixture.detectChanges();
@@ -202,6 +206,7 @@ describe('DashboardComponent', () => {
 
   it('should compute greeting message with doctor name', () => {
     expect(component.greeting()).toContain('Dra. Sofía Mendoza');
+    expect(component.greeting()).not.toContain('Dr(a).');
   });
 
   it('should load KPIs and directory on init', () => {
@@ -217,6 +222,20 @@ describe('DashboardComponent', () => {
   it('should hydrate quick notes from workspace store', () => {
     expect(component.quickNotes()).toBe('Mis notas guardadas');
     expect(component.isNotesDirty()).toBe(false);
+  });
+  it('loads the new specialty note and ignores a late save from the previous specialty', async () => {
+    let finish!: () => void;
+    workspaceStoreMock.updateQuickNotes.mockImplementation(() => new Promise<void>((resolve) => finish = resolve));
+    component.onNotesInput('Borrador de Pediatría');
+    const saving = component.saveNotes();
+    TestBed.inject(ClinicalContextService).bind(202);
+    workspaceStoreMock.quickNotes.set('Nota de Medicina General');
+    fixture.detectChanges();
+    finish();
+    await saving;
+    expect(component.quickNotes()).toBe('Nota de Medicina General');
+    expect(component.isNotesDirty()).toBe(false);
+    expect(component.isNotesSaved()).toBe(false);
   });
   it('keeps the save action for edits typed while an earlier save is pending', async () => {
     let finish!:()=>void;

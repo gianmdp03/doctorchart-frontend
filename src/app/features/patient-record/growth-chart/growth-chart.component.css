@@ -168,6 +168,14 @@
 .reference-curve[data-percentile='50'] {
   stroke-width: 2;
 }
+.de-chart .right-axis-label { display: none; }
+.de-chart .reference-curve.de-median { stroke-width: 2; }
+.reference-curve.de-middle { stroke-dasharray: 5 3; }
+.reference-curve.de-outer { stroke-dasharray: 2 3; }
+.curve-label-leader { stroke-width: 0.8; }
+.legend-sample.de-middle { border-top-style: dashed; }
+.legend-sample.de-outer { border-top-style: dotted; }
+
 .patient-line {
   fill: none;
   stroke: var(--patient-color);
@@ -244,6 +252,7 @@
   font-size: 11px;
   font-weight: 600;
 }
+.position-review-link { display: inline-block; margin-top: 8px; color: var(--dc-teal-ink, #006874); text-decoration: underline; font-size: .875rem; }
 .point-tooltip {
   min-height: 36px;
   padding: 8px 12px;
@@ -355,4 +364,7 @@ th {
 
 @media (max-width: 700px) { .bmi-period-label { display: none; } }
 
-@media(max-width:700px) { .year-label { display: none; } }
+@media (max-width: 700px) {
+  .year-label { display: none; }
+  .long-age-chart .year-label { display: initial; }
+}

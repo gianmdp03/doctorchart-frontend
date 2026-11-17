@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../../core/services/interaction-status.service';
 import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import { Subject, takeUntil } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -33,6 +34,7 @@ import { validIsoDate } from '../../../core/models/form-validation';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientVaccinationsComponent {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly clinicalScope = inject(ClinicalContextService);
   private readonly api = inject(PatientVaccinationService);
   private readonly patients = inject(PatientService);
@@ -223,6 +225,7 @@ export class PatientVaccinationsComponent {
             return;
           }
           this.schedule.set(saved.schedule);
+          this.interaction.notifySuccess(applied ? 'La aplicación de la vacuna se guardó correctamente.' : 'La dosis se actualizó correctamente.');
           this.patientUpdated.emit(saved.patient);
         },
         error: (error) => {
