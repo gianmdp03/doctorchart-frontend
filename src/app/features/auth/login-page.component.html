@@ -22,18 +22,14 @@
       <div class="login-card-body">
         <div class="login-form-heading">
           <h1 id="login-title">Iniciar sesión</h1>
-          <p>Acceso médico con tu cuenta de Bycode.</p>
+          <p>Accedé a DoctorChart con tu cuenta.</p>
         </div>
         @if (errorMessage()) {
           <p class="m3-alert-error" role="alert">{{ errorMessage() }}</p>
         }
-<<<<<<< Updated upstream
-        @if (mode() === 'login') {
-=======
         @if (successMessage()) {
           <p class="m3-alert-success" role="status">{{ successMessage() }}</p>
         }
->>>>>>> Stashed changes
           <form [formGroup]="loginForm" class="auth-form" (ngSubmit)="onLoginSubmit()">
             @if (googleAuthEnabled) {
               <button type="button" class="dc-button m3-oauth-btn" (click)="handleGoogleOAuth()" [disabled]="isSubmitting()">Continuar con Google</button>
@@ -64,14 +60,7 @@
             </button>
           </form>
         <div class="login-secondary-links">
-<<<<<<< Updated upstream
-          @if (staffEnabled) {
-            <a routerLink="/staff/login" class="login-staff-link">Ingresar como secretaria</a>
-          }
-          <p>¿No tenés cuenta? <a [href]="bycodeRegisterUrl">Crear cuenta en Bycode</a></p>
-=======
           <p>¿No tenés cuenta? <a routerLink="/register">Crear cuenta</a></p>
->>>>>>> Stashed changes
           <a [href]="bycodeLoginUrl">Recuperar acceso en Bycode</a>
         </div>
       </div>

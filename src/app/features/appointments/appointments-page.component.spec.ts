@@ -7,19 +7,7 @@ describe('Anonymous public booking page',()=>{
  beforeEach(async()=>{Element.prototype.scrollIntoView=vi.fn();window.matchMedia=vi.fn(()=>({matches:true,media:'',onchange:null,addListener:()=>{},removeListener:()=>{},addEventListener:()=>{},removeEventListener:()=>{},dispatchEvent:()=>true} as MediaQueryList));api={profile:vi.fn(()=>of(structuredClone(profile))),availability:vi.fn(()=>of(slots)),search:vi.fn(()=>of({items:[profile],page:0,size:12,hasMore:false})),challenge:vi.fn(()=>of({token:"m6-fixture-355947",difficulty:18})),book:vi.fn(()=>of({reference:'public-reference',status:'CONFIRMED',start:slots.days[0].slots[0].start,end:slots.days[0].slots[0].end,doctorName:profile.name,specialtyName:'Pediatría histórica',clinicName:'Consultorio',address:'Público',timezone:'UTC',contactName:'Solicitante',attendeeName:'Atendido'}))};await TestBed.configureTestingModule({imports:[AppointmentsPageComponent],providers:[provideRouter([]),{provide:ActivatedRoute,useValue:{paramMap:of(convertToParamMap({publicId:profile.id}))}},{provide:AppointmentsService,useValue:api}]}).compileComponents();f=TestBed.createComponent(AppointmentsPageComponent);c=f.componentInstance;await c.loadProfile();f.detectChanges();});
  afterEach(()=>f.destroy());
  function fill(){c.selectSlot(slots.days[0].slots[0].start);c.contactName='Solicitante';c.different=true;c.attendeeName='Atendido';c.document='12345678';c.contactPhone='123456789';c.email='test@example.invalid';c.answers={insurance:'Cobertura'};c.consent=true;}
- it('loads a public profile without injecting any medical authentication service',()=>{expect(c.profile()?.name).toBe('Profesional publicado');expect(f.nativeElement.textContent).toContain('Elegí fecha y horario');});
- it('requires an explicit confirmation after review and preserves the draft while editing',()=>{
-   fill();
-   c.advanceBooking(false);
-   expect(c.step()).toBe(3);
-   c.advanceBooking(true);
-   expect(c.step()).toBe(4);
-   expect(api.challenge).not.toHaveBeenCalled();
-   c.editDetails();
-   expect(c.step()).toBe(3);
-   expect(c.contactName).toBe('Solicitante');
-   expect(c.selectedSlot()?.start).toBe(slots.days[0].slots[0].start);
- });
+ it('loads a public profile without injecting any medical authentication service',()=>{expect(c.profile()?.name).toBe('Profesional publicado');expect(f.nativeElement.textContent).toContain('Elegí dónde y cuándo');});
  it('limits the directory and direct profiles to enabled countries',async()=>{
   const foreignClinic={...profile.clinics[0],id:'foreign',country:'Uruguay'};
   const mixed={...profile,clinics:[foreignClinic,...profile.clinics]};

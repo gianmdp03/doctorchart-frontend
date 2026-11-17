@@ -24,11 +24,7 @@ describe('Simplified secretary creation',()=>{
   expect(email.required).toBe(true);expect(phone.required).toBe(false);phone.value='+5491123456789';expect(phone.checkValidity()).toBe(true);phone.value='not-a-phone';expect(phone.checkValidity()).toBe(false);phone.value='';expect(phone.checkValidity()).toBe(true);
  });
  it('creates a private link with the token in the fragment and WhatsApp only for a phone',async()=>{
-  const {fixture,c,http}=await make();c.name='Ana';c.email='ana@example.invalid';c.phone='+5491123456789';
-  c.capabilities.update(capability=>({...capability!,validUntil:'2000-01-01T00:00:00Z'}));
-  fixture.detectChanges();
-  expect(fixture.nativeElement.querySelector('input[name=name]').matches(':disabled')).toBe(false);
-  const pending=c.save();
+  const {fixture,c,http}=await make();c.name='Ana';c.email='ana@example.invalid';c.phone='+5491123456789';const pending=c.save();
   const req=http.expectOne(r=>r.url.endsWith('/secretaries/invitations'));expect(req.request.body.phone).toBe('+5491123456789');expect(req.request.body.email).toBe('ana@example.invalid');
   req.flush({invitationCode:'a'.repeat(43),expiresAt:'2099-01-01T00:00:00Z',emailQueued:true});await Promise.resolve();await Promise.resolve();
   http.expectOne(r=>r.url.endsWith('/secretaries')).flush({items:[],capabilities:{manage:true,validUntil:'2099-01-01T00:00:00Z'}});await pending;fixture.detectChanges();

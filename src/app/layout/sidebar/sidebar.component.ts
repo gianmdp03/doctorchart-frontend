@@ -1,9 +1,7 @@
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { afterNextRender, Component, computed, HostListener, inject, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatSelectChange, MatSelectModule } from '@angular/material/select';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map } from 'rxjs';
 import { ClinicalNavigationService } from '../../core/services/clinical-navigation.service';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -19,7 +17,6 @@ import {
   lucideContact,
   lucideGlobe,
   lucideCalendarClock,
-  lucideMenu,
 } from '@ng-icons/lucide';
 import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
@@ -42,7 +39,6 @@ import { AuthService } from '../../core/services/auth.service';
       lucideContact,
       lucideGlobe,
       lucideCalendarClock,
-      lucideMenu,
     }),
   ],
   templateUrl: './sidebar.component.html',
@@ -53,14 +49,6 @@ export class SidebarComponent {
   readonly authService = inject(AuthService);
   readonly workspace = inject(WorkspaceStore);
   private readonly router = inject(Router);
-  private readonly currentUrl = toSignal(
-    this.router.events.pipe(
-      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      map((event) => event.urlAfterRedirects),
-    ),
-    { initialValue: this.router.url },
-  );
-  readonly dashboardMode = computed(() => this.currentUrl().split(/[?#]/)[0] === '/dashboard');
   private readonly clinicalNavigation = inject(ClinicalNavigationService);
 
   async changeSpecialty({ source, value: id }: MatSelectChange): Promise<void> {

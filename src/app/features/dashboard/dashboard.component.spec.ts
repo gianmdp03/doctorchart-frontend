@@ -139,57 +139,7 @@ describe('DashboardComponent', () => {
   it('does not display legacy upcoming consultations from the dashboard response', () => {
     clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(of({ totalPatients: 1, asOfDate: '2026-10-05', encountersThisMonth: 1, encountersToday: 1, recentEncounters: [], upcomingFollowUps: [{ encounterId: 1, patientId: 1, patientFullName: 'Paciente', followUpDate: '2026-10-06' }] }));
     component.loadKpiData(); fixture.detectChanges();
-<<<<<<< Updated upstream
-    expect(component.upcomingGroups().map(group => [group.label, group.date, group.items.length])).toEqual([
-      ['Hoy', '2026-12-31', 1], ['Mañana', '2027-01-01', 2], ['Pasado mañana', '2027-01-02', 1],
-    ]);
-    const days = [...fixture.nativeElement.querySelectorAll('.followup-day')] as HTMLElement[];
-    expect(days[1].textContent).toContain('2 controles');
-    expect(days[1].textContent).toContain('01/01/2027');
-    expect(days[1].textContent).toContain('Mateo Rossi');
-    const link = days[1].querySelector('a')!;
-    expect(link.getAttribute('href')).toBe('/patients/2');
-    expect(link.getAttribute('aria-label')).toBe('Ver ficha de Mateo Rossi');
-    expect(clinicalEncounterServiceMock.getByPatient).not.toHaveBeenCalled();
-  });
-
-  it('shows a quiet empty state separately from loading, errors, and an unavailable API field', () => {
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.followup-empty')).toHaveLength(1);
-    const pending = new Subject<any>();
-    clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(pending);
-    component.loadKpiData(); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.followup-card [role="status"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('.followup-empty')).toHaveLength(0);
-    pending.error({ status: 503 }); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.followup-message').textContent).toContain('No se pudieron cargar');
-    expect(fixture.nativeElement.querySelectorAll('.followup-empty')).toHaveLength(0);
-    clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(of({ totalPatients: 0, asOfDate: '2026-10-05', encountersThisMonth: 0, encountersToday: 0, recentEncounters: [] }));
-    fixture.nativeElement.querySelector('.followup-retry').click(); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.followup-empty')).toHaveLength(0);
-    expect(fixture.nativeElement.querySelector('.followup-retry')).not.toBeNull();
-  });
-
-  it('refreshes reminder dates and names after a clinical edit and clears reminders across accounts', () => {
-    const activity = { totalPatients: 1, asOfDate: '2026-10-05', encountersThisMonth: 1, encountersToday: 1, recentEncounters: [],
-      upcomingFollowUps: [{ encounterId: 101, patientId: 1, patientFullName: 'Mateo Rossi', followUpDate: '2026-10-06' }] };
-    clinicalEncounterServiceMock.getDashboard.mockReturnValue(of(activity));
-    window.dispatchEvent(new CustomEvent('encounter-updated')); fixture.detectChanges();
-    expect(component.upcomingGroups()[1].items[0].patientFullName).toBe('Mateo Rossi');
-    clinicalEncounterServiceMock.getDashboard.mockReturnValue(of({ ...activity, upcomingFollowUps: [] }));
-    window.dispatchEvent(new CustomEvent('encounter-deleted')); fixture.detectChanges();
-    expect(component.upcomingFollowUps()).toEqual([]);
-    const pending = new Subject<any>();
-    clinicalEncounterServiceMock.getDashboard.mockReturnValue(pending);
-    component.loadKpiData();
-    authServiceMock.currentUser.set(null);
-    pending.next(activity); fixture.detectChanges();
-    expect(component.upcomingFollowUps()).toBeNull();
-    expect(fixture.nativeElement.querySelector('.followup-card').textContent).not.toContain('Mateo Rossi');
-    expect(pending.observed).toBe(false);
-=======
     expect(fixture.nativeElement.querySelector('.followup-card')).toBeNull();
->>>>>>> Stashed changes
   });
 
   it('reloads reminders when the local calendar day changes', () => {

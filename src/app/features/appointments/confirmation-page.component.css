@@ -1,25 +1,3 @@
-<<<<<<< Updated upstream
-.lookup {
-  width: min(1040px, calc(100% - 2 * var(--booking-gutter))); margin-inline: auto;
-  min-height: calc(100dvh - 143px); padding-block: 19px 45px;
-}
-.lookup-grid { display: grid; grid-template-columns: minmax(0, 545px); gap: clamp(18px, 4vw, 60px); margin-top: 19px; align-items: start; }
-.lookup-grid.has-receipt { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.lookup-intro h1 { margin-bottom: 10px; }
-.lookup-intro > p { max-width: 48ch; }
-form {
-  display: grid; gap: 8px; justify-items: start; padding: 22px; margin-top: 20px;
-  border-radius: 15px; background: var(--booking-surface); box-shadow: var(--booking-shadow);
-}
-form button { margin-top: 7px; }
-.privacy-note { display: flex; align-items: flex-start; gap: 8px; color: var(--booking-muted); font-size: .87rem; margin-top: 15px; }
-.privacy-note ng-icon { color: var(--booking-accent); margin-top: 2px; }
-.result-status { display: inline-flex; padding: 6px 10px; border-radius: 7px; background: var(--booking-tint); color: var(--booking-accent); font-size: .88rem; font-weight: 700; margin-bottom: 8px; }
-.result-status[data-status='CANCELLED'], .result-status[data-status='NO_SHOW'] { background: var(--booking-error-bg); color: var(--booking-error); }
-.lookup-result > p:last-child { margin-top: 12px; font-size: .9rem; }
-@media (max-width: 780px) { .lookup-grid.has-receipt { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 540px) { .lookup { padding-block: 13px 30px; } form { padding: 15px; } form button { width: 100%; } }
-=======
 
 :host { display: block; min-height: 100dvh; background: var(--dc-canvas); color: var(--dc-text); }
 .recovery-page { max-width: 760px; margin: auto; padding: 40px 24px 64px; }
@@ -48,4 +26,3 @@ code { font-size: .875rem; overflow-wrap: anywhere; }
 .error { margin-top: 24px; padding: 16px; border: 1px solid currentColor; border-radius: var(--dc-radius-control); color: var(--dc-danger); background: var(--dc-danger-soft); }
 footer { margin-top: 28px; }
 @media (max-width: 600px) { .recovery-page { padding: 24px 16px 48px; } h1 { font-size: 1.75rem; } form, .constancia { padding: 24px 20px; } .code-row { flex-direction: column; align-items: stretch; } }
->>>>>>> Stashed changes

@@ -236,11 +236,7 @@ export class PatientVaccinationsComponent {
             return;
           }
           this.schedule.set(saved.schedule);
-<<<<<<< Updated upstream
-          this.interaction.notifySuccess(applied ? 'La aplicación de la vacuna se guardó correctamente.' : 'La dosis se actualizó correctamente.');
-=======
           this.pendingAnnulment.set(null);
->>>>>>> Stashed changes
           this.patientUpdated.emit(saved.patient);
         },
         error: (error) => {

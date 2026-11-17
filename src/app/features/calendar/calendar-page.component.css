@@ -1,37 +1,3 @@
-<<<<<<< Updated upstream
-.doctor-calendar {
-  max-width: none;
-  padding: 0 clamp(12px, 2.3vw, 40px) 16px;
-  font-family: var(--font-sans);
-}
-
-.heading-actions { display: flex; gap: 8px; }
-.heading-actions button { position: relative; }
-.filter-count {
-  position: absolute;
-  inset: 2px 2px auto auto;
-  padding: 1px 3px;
-  color: var(--md-sys-color-on-primary);
-  background: var(--agenda-accent);
-  border-radius: 4px;
-  font-size: .65rem;
-}
-.calendar-filters {
-  display: flex;
-  align-items: end;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  margin-bottom: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--agenda-rule);
-  border-radius: 10px;
-  background: var(--agenda-base);
-}
-.calendar-filters label { flex: 1 1 145px; min-width: 0; margin: 0; }
-.calendar-filters a { align-self: center; }
-.agenda-alert { margin: 0 0 12px; }
-.move-confirm label { margin: 0 0 4px; }
-=======
 
 :host { display: block; min-width: 0; }
 .calendar-page { max-width: 1440px; margin-inline: auto; color: var(--dc-text); }
@@ -155,4 +121,3 @@ dd { margin: 0; overflow-wrap: anywhere; }
  .booking .status { grid-column: 2; grid-row: auto; }
  .manual-actions > button { flex: 1 1 auto; }
 }
->>>>>>> Stashed changes

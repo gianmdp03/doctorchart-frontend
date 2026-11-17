@@ -18,12 +18,12 @@
   gap: 0.4rem;
   font-size: 0.86rem;
   font-weight: 600;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #475569);
   text-decoration: none;
 }
 
 .back-link:hover {
-  color: var(--md-sys-color-primary);
+  color: var(--color-primary, #1f6feb);
 }
 
 .page-header {
@@ -49,27 +49,23 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--md-sys-color-primary);
+  color: var(--color-primary, #1f6feb);
 }
 
 .page-header h1 {
   margin: 0;
   font-weight: 700;
-<<<<<<< Updated upstream
-  color: var(--md-sys-color-on-surface);
-=======
   color: var(--text-main, #0f172a);
   font-size: 1.75rem;
   letter-spacing: -.03em;
   line-height: 1.25;
->>>>>>> Stashed changes
 }
 
 .subtitle {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.45;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #475569);
 }
 
 .clinic-status-panel {
@@ -78,8 +74,8 @@
   align-items: flex-end;
   gap: 0.6rem;
   padding: 0.8rem 1rem;
-  background: var(--md-surface-container-lowest);
-  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-subtle, #e2e8f0);
   border-radius: 0.75rem;
 }
 
@@ -92,7 +88,7 @@
 
 .meta-item {
   font-size: 0.78rem;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #64748b);
 }
 
 .status-badge {
@@ -105,20 +101,6 @@
 }
 
 .status-active {
-<<<<<<< Updated upstream
-  background: var(--md-sys-color-success-container);
-  color: var(--md-sys-color-on-success-container);
-}
-
-.status-inactive {
-  background: var(--md-sys-color-warning-container);
-  color: var(--md-sys-color-on-warning-container);
-}
-
-.status-archived {
-  background: var(--md-surface-container-high);
-  color: var(--md-sys-color-on-surface-variant);
-=======
   background: var(--dc-positive-soft);
   color: var(--dc-positive);
 }
@@ -131,7 +113,6 @@
 .status-archived {
   background: var(--dc-raised);
   color: var(--dc-text-secondary);
->>>>>>> Stashed changes
 }
 
 .status-actions {
@@ -150,29 +131,6 @@
 }
 
 .banner-archived {
-<<<<<<< Updated upstream
-  background: var(--md-surface-container-low);
-  border-color: var(--md-sys-color-outline-variant);
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-.banner-info {
-  background: var(--md-sys-color-primary-container);
-  border-color: var(--md-sys-color-outline-variant);
-  color: var(--md-sys-color-on-primary-container);
-}
-
-.banner-warning {
-  background: var(--md-sys-color-warning-container);
-  border-color: var(--md-sys-color-warning);
-  color: var(--md-sys-color-on-warning-container);
-}
-
-.banner-danger {
-  background: var(--md-sys-color-error-container);
-  border-color: var(--md-sys-color-error);
-  color: var(--md-sys-color-on-error-container);
-=======
   background: var(--dc-subtle);
   border-color: var(--dc-line);
   color: var(--dc-text-secondary);
@@ -194,7 +152,6 @@
   background: var(--dc-danger-soft);
   border-color: var(--dc-danger-soft);
   color: var(--dc-danger);
->>>>>>> Stashed changes
 }
 
 .banner-content {
@@ -231,24 +188,6 @@
 }
 
 .alert-danger {
-<<<<<<< Updated upstream
-  background: var(--md-sys-color-error-container);
-  border: 1px solid var(--md-sys-color-error);
-  color: var(--md-sys-color-on-error-container);
-}
-
-.alert-success {
-  background: var(--md-sys-color-success-container);
-  border: 1px solid var(--md-sys-color-success);
-  color: var(--md-sys-color-on-success-container);
-}
-
-.form-card {
-  background: var(--md-surface-container-lowest);
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: 0.85rem;
-  padding: 1.5rem;
-=======
   background: var(--dc-danger-soft);
   border: 1px solid var(--dc-danger-soft);
   color: var(--dc-danger);
@@ -263,7 +202,6 @@
 .form-card {
   background: var(--bg-surface, #ffffff);
   border: 1px solid var(--border-subtle, #e2e8f0);
->>>>>>> Stashed changes
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -291,15 +229,11 @@
 .form-field label {
   font-size: 0.86rem;
   font-weight: 600;
-  color: var(--md-sys-color-on-surface);
+  color: var(--text-main, #0f172a);
 }
 
 .required-mark {
-<<<<<<< Updated upstream
-  color: var(--md-sys-color-error);
-=======
   color: var(--dc-danger);
->>>>>>> Stashed changes
 }
 
 .form-field input {
@@ -307,68 +241,45 @@
   box-sizing: border-box;
   padding: 0.6rem 0.8rem;
   border-radius: 0.55rem;
-<<<<<<< Updated upstream
-  border: 1px solid var(--md-sys-color-outline-variant);
-  background: var(--md-surface-container-lowest);
-=======
   border: 1px solid var(--border-subtle, #cbd5e1);
   background: var(--dc-paper);
->>>>>>> Stashed changes
   font-size: 0.9rem;
-  color: var(--md-sys-color-on-surface);
+  color: var(--text-main, #0f172a);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .form-field input:focus {
   outline: none;
-  border-color: var(--md-sys-color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent);
+  border-color: var(--color-primary, #1f6feb);
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14);
 }
 
 .form-field input[readonly] {
-<<<<<<< Updated upstream
-  background: var(--md-surface-container-low);
-  color: var(--md-sys-color-on-surface-variant);
-=======
   background: var(--dc-subtle);
   color: var(--dc-text-secondary);
->>>>>>> Stashed changes
   cursor: not-allowed;
 }
 
 .form-field input:user-invalid,
 .form-field input.field-invalid {
-<<<<<<< Updated upstream
-  border-color: var(--md-sys-color-error);
-  background: var(--md-sys-color-error-container);
-}
-
-.form-field input:user-valid {
-  border-color: var(--md-sys-color-outline);
-=======
   border-color: var(--dc-danger);
   background: var(--dc-danger-soft);
 }
 
 .form-field input:user-valid {
   border-color: var(--dc-text-muted);
->>>>>>> Stashed changes
 }
 
 .field-hint {
   font-size: 0.78rem;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #64748b);
 }
 
 .field-error {
   margin: 0;
   font-size: 0.8rem;
   font-weight: 600;
-<<<<<<< Updated upstream
-  color: var(--md-sys-color-error);
-=======
   color: var(--dc-danger);
->>>>>>> Stashed changes
 }
 
 .form-footer {
@@ -377,11 +288,7 @@
   align-items: center;
   gap: 0.75rem;
   padding-top: 1rem;
-<<<<<<< Updated upstream
-  border-top: 1px solid var(--md-surface-container-low);
-=======
   border-top: 1px solid var(--dc-raised);
->>>>>>> Stashed changes
 }
 
 .btn-primary,
@@ -408,11 +315,6 @@
 }
 
 .btn-primary {
-<<<<<<< Updated upstream
-  background: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
-=======
->>>>>>> Stashed changes
   border: 1px solid transparent;
   box-shadow: none;
   background: var(--dc-brand);
@@ -423,17 +325,6 @@
 }
 
 .btn-secondary {
-<<<<<<< Updated upstream
-  background: var(--md-surface-container-lowest);
-  color: var(--md-sys-color-on-surface);
-  border: 1px solid var(--md-sys-color-outline-variant);
-}
-
-.btn-danger-outline {
-  background: var(--md-sys-color-error-container);
-  color: var(--md-sys-color-error);
-  border: 1px solid var(--md-sys-color-error);
-=======
   background: var(--dc-paper);
   color: var(--text-main, #0f172a);
   border: 1px solid var(--border-subtle, #cbd5e1);
@@ -443,7 +334,6 @@
   background: var(--dc-danger-soft);
   color: var(--dc-danger);
   border: 1px solid var(--dc-danger-soft);
->>>>>>> Stashed changes
 }
 
 .btn-primary:disabled,

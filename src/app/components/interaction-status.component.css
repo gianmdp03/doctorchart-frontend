@@ -1,5 +1,5 @@
 
-:host { position: fixed; z-index: 2000; top: 12px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 24px); pointer-events: none; }
+.status-stack { position: fixed; z-index: 2000; top: 12px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 24px); pointer-events: none; }
 .interaction-status { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: var(--dc-radius-card); background: var(--dc-paper); color: var(--dc-text); box-shadow: var(--dc-shadow-overlay); font-size: .875rem; line-height: 1.5; }
 .spinner { width: 18px; height: 18px; flex-shrink: 0; border: 2px solid var(--dc-line); border-top-color: var(--dc-brand); border-radius: 50%; animation: interaction-spin .9s linear infinite; }
 .error { flex-wrap: wrap; color: var(--dc-danger); background: var(--dc-danger-soft); border: 1px solid currentColor; }
@@ -7,3 +7,40 @@ button { pointer-events: auto; min-height: 44px; padding: 10px 14px; border: 1px
 button:focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }
 @keyframes interaction-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }
+
+.success-toast {
+  position: fixed;
+  z-index: 2000;
+  inset-inline-end: max(16px, env(safe-area-inset-right));
+  inset-block-end: max(76px, calc(env(safe-area-inset-bottom) + 16px));
+  pointer-events: none;
+}
+
+.success-toast.visible {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  inline-size: max-content;
+  max-inline-size: min(25rem, calc(100vw - 32px));
+  padding: 10px 10px 10px 14px;
+  border: 1px solid var(--dc-line);
+  border-inline-start: 4px solid var(--dc-positive);
+  border-radius: var(--dc-radius-card);
+  background: var(--dc-paper);
+  color: var(--dc-text);
+  box-shadow: var(--dc-shadow-overlay);
+  pointer-events: auto;
+}
+
+.success-icon, .close-toast { display: grid; place-items: center; }
+.success-icon {
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: 50%;
+  background: var(--dc-positive-soft);
+  color: var(--dc-positive);
+}
+.success-message { font-size: .875rem; font-weight: 600; overflow-wrap: anywhere; }
+.close-toast { inline-size: 44px; padding: 0; border-color: transparent; }
+.close-toast:hover { background: var(--dc-positive-soft); }

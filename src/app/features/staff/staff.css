@@ -1,47 +1,4 @@
 
-<<<<<<< Updated upstream
-.staff-page {
-  box-sizing: border-box;
-  max-width: 1160px;
-  margin-inline: auto;
-  padding: clamp(16px, 3vw, 36px) clamp(16px, 3vw, 32px) 64px;
-}
-
-.auth-page { max-width: 580px; }
-.page-heading { margin: 22px 0 24px; }
-.page-heading p:last-child { max-width: 65ch; }
-h1 { font-size: clamp(1.75rem, 3.5vw, 2.35rem); line-height: 1.15; margin: 8px 0 12px; font-weight: 650; }
-h2 { font-size: 1.2rem; margin: 0 0 8px; font-weight: 650; }
-h3 { font-size: 1rem; margin: 0 0 6px; font-weight: 650; }
-p { line-height: 1.55; margin: 0 0 12px; }
-.eyebrow { color: var(--md-sys-color-primary); text-transform: uppercase; letter-spacing: .1em; font-size: .75rem; font-weight: 700; margin: 0; }
-.muted { color: var(--md-sys-color-on-surface-variant); }
-a { color: var(--md-sys-color-primary); text-underline-offset: 3px; }
-.back-link { display: inline-block; margin-bottom: 6px; font-size: .9rem; }
-
-.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
-@container (min-width: 720px) {
-  .grid.has-editor { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-.staff-page { container-type: inline-size; }
-
-.panel, .notice, .toolbar {
-  border: 1px solid var(--md-sys-color-outline-variant);
-  background: var(--md-surface-container-lowest);
-  border-radius: 16px;
-  padding: clamp(16px, 2.5vw, 24px);
-  min-width: 0;
-}
-.notice, .toolbar { margin: 18px 0; }
-.empty-state, .assignment, .form-group {
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: 12px;
-  padding: 14px;
-  margin: 16px 0 0;
-  overflow-wrap: anywhere;
-}
-.empty-state { background: var(--md-surface-container-low); border-style: dashed; }
-=======
 :host { display: block; min-width: 0; color: var(--dc-text); }
 .staff-page { width: 100%; max-width: 1240px; min-width: 0; margin-inline: auto; padding: 32px 24px 64px; container-type: inline-size; }
 .secretaries { padding: 0 0 32px; }
@@ -62,7 +19,6 @@ a { color: var(--dc-brand-ink); text-underline-offset: 3px; }
 .auth-page .panel { border: 0; box-shadow: var(--dc-shadow-panel); padding: 28px; }
 .empty-state, .assignment, .form-group { min-width: 0; padding: 16px; margin: 16px 0 0; border: 1px solid var(--dc-line); border-radius: 12px; background: var(--dc-subtle); overflow-wrap: anywhere; }
 .empty-state { border-style: dashed; }
->>>>>>> Stashed changes
 .empty-state p:last-child { margin-bottom: 0; }
 .form-group > .check:last-child { margin-bottom: 0; }
 .form-actions { margin-top: 24px; }

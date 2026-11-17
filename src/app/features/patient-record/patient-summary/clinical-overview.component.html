@@ -163,13 +163,9 @@
           @if (last.followUp) {
             <div class="summary-item">
               <strong>Seguimiento indicado</strong>
-<<<<<<< Updated upstream
-              <span class="summary-details">{{ last.followUp }}</span>
-=======
               @if (last.followUp) {
                 <span class="summary-details">{{ last.followUp }}</span>
               }
->>>>>>> Stashed changes
               <small>Indicado el {{ date(last.date) }}</small
               ><a class="source-link" [routerLink]="['/encounters', last.id]"
                 >Ver indicación original<ng-icon name="lucideArrowUpRight"

@@ -140,11 +140,7 @@ export class LandingComponent {
     {
       number: '04',
       title: 'Continuá el seguimiento',
-<<<<<<< Updated upstream
-      description: 'Revisá las consultas anteriores y gestioná las próximas citas desde la agenda.',
-=======
       description: 'Revisá las consultas anteriores y la evolución de cada paciente.',
->>>>>>> Stashed changes
     },
   ];
   readonly faqs = [

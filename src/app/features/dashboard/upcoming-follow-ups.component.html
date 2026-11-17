@@ -1,10 +1,3 @@
-<<<<<<< Updated upstream
-<section class="followup-card" aria-labelledby="followup-title">
-  <header class="followup-heading">
-    <div>
-      <h2 id="followup-title">Controles previstos</h2>
-      <p>Indicados en las historias clínicas</p>
-=======
   <section class="followup-card" aria-labelledby="followup-title" [attr.aria-busy]="isLoading()">
     <div class="followup-heading">
       <div class="followup-heading-icon" aria-hidden="true"><ng-icon name="lucideCalendar" /></div>
@@ -14,60 +7,47 @@
         <p>Controles indicados en la última historia clínica de cada paciente.</p>
       </div>
       <span class="followup-period"><ng-icon name="lucideClock" aria-hidden="true" /> Hoy y los próximos 2 días</span>
->>>>>>> Stashed changes
     </div>
-    <span class="followup-period"
-      ><ng-icon name="lucideCalendar" aria-hidden="true" /> Hoy y los próximos 2 días</span
-    >
-  </header>
 
-  @if (isLoading()) {
-    <div class="followup-message" role="status">
-      <span class="sr-only">Cargando controles previstos…</span>
-      <div class="followup-skeleton" aria-hidden="true"><i></i><i></i></div>
-    </div>
-  } @else if (!available()) {
-    <div class="followup-message">
-      <span>No se pudieron cargar los controles.</span>
-      <button type="button" class="followup-retry" (click)="retry.emit()">
-        Reintentar controles
-      </button>
-    </div>
-  } @else if (!populatedDays().length) {
-    <p class="followup-message followup-empty">No hay controles previstos para estos días.</p>
-  } @else {
-    <div class="followup-days">
-      @for (group of populatedDays(); track group.date) {
-        <section
-          class="followup-day"
-          [class.is-today]="group.label === 'Hoy'"
-          [attr.aria-label]="group.label + ', ' + displayDate(group.date)"
-        >
-          <div class="followup-date">
-            <h3>{{ group.label }}</h3>
-            <time [attr.datetime]="group.date">{{ displayDate(group.date) }}</time>
-            <small
-              >{{ group.items.length }}
-              {{ group.items.length === 1 ? 'control' : 'controles' }}</small
-            >
-          </div>
-          <ul>
-            @for (item of group.items; track item.patientId) {
-              <li>
-                <a
-                  class="followup-patient"
-                  [routerLink]="['/patients', item.patientId]"
-                  [attr.aria-label]="'Ver ficha de ' + item.patientFullName"
-                >
-                  <span class="followup-avatar" aria-hidden="true">{{ item.initials }}</span>
-                  <strong>{{ item.patientFullName }}</strong>
-                  <ng-icon name="lucideArrowRight" aria-hidden="true" />
-                </a>
-              </li>
-            }
-          </ul>
-        </section>
-      }
-    </div>
-  }
-</section>
+    @if (isLoading()) {
+      <p class="followup-message" role="status">Cargando tus próximos controles...</p>
+    } @else if (!available()) {
+      <div class="followup-message">
+        <span>No se pudieron cargar los recordatorios.</span>
+        <button type="button" class="followup-retry" (click)="retry.emit()">Reintentar</button>
+      </div>
+    } @else {
+      <div class="followup-days">
+        @for (group of groups(); track group.date) {
+          <section class="followup-day" [class.followup-day-today]="$first" [class.is-empty-day]="group.items.length === 0" [attr.aria-label]="group.label + ', ' + displayDate(group.date)">
+            <div class="followup-day-heading">
+              <div>
+                <h3>{{ group.label }}</h3>
+                <time [attr.datetime]="group.date">{{ displayDate(group.date) }}</time>
+              </div>
+              <span class="followup-count" [class.has-followups]="group.items.length > 0">
+                {{ group.items.length }} {{ group.items.length === 1 ? 'consulta' : 'consultas' }}
+              </span>
+            </div>
+            <ul class="followup-patients">
+              @for (item of group.items; track item.patientId) {
+                <li>
+                  <a class="followup-patient" [routerLink]="['/patients', item.patientId]" [attr.aria-label]="'Ver ficha de ' + item.patientFullName">
+                    <span class="followup-avatar" aria-hidden="true">{{ item.initials }}</span>
+                    <span class="followup-patient-text">
+                      <span class="followup-patient-name">{{ item.patientFullName }}</span>
+                      <span class="followup-patient-action">Ver ficha del paciente</span>
+                    </span>
+                    <ng-icon name="lucideArrowRight" aria-hidden="true" />
+                  </a>
+                </li>
+              } @empty {
+                <li class="followup-empty"><ng-icon name="lucideCheckCircle2" aria-hidden="true" />Sin controles previstos</li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+      <p class="followup-footnote">Se actualiza al guardar o modificar la próxima consulta en la historia clínica.</p>
+    }
+  </section>

@@ -66,13 +66,9 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly encounter = signal<ClinicalEncounterDetail | null>(null);
   readonly effectiveForm = computed(() => {
-<<<<<<< Updated upstream
-    const form = visibleEncounterForm(this.encounter()?.formDefinitionSnapshot ?? { categories: [] });
-    return this.isEditing() ? withClinicalHistory(form) : form;
-=======
     const form = this.encounter()?.formDefinitionSnapshot ?? { categories: [] };
-    return this.isEditing() ? withClinicalHistory(form) : wizardRecordForm(form);
->>>>>>> Stashed changes
+    const visible = visibleEncounterForm(form);
+    return this.isEditing() ? withClinicalHistory(visible) : wizardRecordForm(visible);
   });
   readonly correctHeightPosition = signal(false);
   readonly canCorrectHeightPosition = computed(() =>
@@ -227,12 +223,8 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
             expectedVersion: record.version,
             encounterDate,
             consultationType: this.consultationType(),
-<<<<<<< Updated upstream
             values: this.valuesForUpdate(record),
-=======
-            values: inputValues(this.effectiveForm(), this.values()),
             ...(reason ? { reason } : {}),
->>>>>>> Stashed changes
           })
           .pipe(takeUntilDestroyed(this.destroyRef)),
       );

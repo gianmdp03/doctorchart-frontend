@@ -254,7 +254,7 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
    const pendingId=Number(new URL(page.url()).searchParams.get('specialtyContextId'));
    assert.equal((await api(page,'GET','/patients',null,pendingId,409)).code,'ONBOARDING_REQUIRED');
    await api(page,'PUT','/booking-publication',{expectedVersion:'0',name:'M6 pending test',description:'',published:false,clinics:[],questions:[],specialtyContextIds:[String(pendingId)]},null,404);
-   await page.goto(origin+'/calendar?specialtyContextId='+pendingId);await page.getByRole('heading',{name:'Agenda de consultorios',exact:true}).waitFor();
+   await page.goto(origin+'/calendar?specialtyContextId='+pendingId);await page.getByRole('heading',{name:'Agenda de turnos',exact:true}).waitFor();
    await page.goto(origin+'/onboarding/setup?specialtyContextId='+pendingId);await finishWizard(page);
    const setup=await api(page,'GET','/workspace',null,pendingId);setups[code]=setup;
    const patient=await patientUI(page,pendingId,'Juan');patients[code]=patient;
@@ -335,9 +335,6 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
   let releaseOld;const oldGate=new Promise(r=>releaseOld=r);await pub.route('**/availability?**',async route=>{if(new URL(route.request().url()).searchParams.get('specialtyContextId')===String(general))await oldGate;await route.continue();});
   await pub.getByLabel('Especialidad de la reserva').selectOption(String(general));await pub.getByLabel('Especialidad de la reserva').selectOption(String(derm));releaseOld();await pub.locator('[data-public-slot]').first().waitFor();assert.equal(await pub.getByLabel('Especialidad de la reserva').inputValue(),String(derm));await pub.unroute('**/availability?**');
   await pub.locator('[data-public-slot]').first().click();await pub.locator('#public-contact').fill('Visitante sintético');await pub.locator('#public-document').fill('12345678');await pub.locator('#public-phone').fill('2231234567');await pub.locator('#public-email').fill('visitor-m6@local.test');await pub.locator('#public-consent').check();
-<<<<<<< Updated upstream
-  const publicResponse=pub.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/bookings')&&r.request().method()==='POST');await pub.locator('#public-review').click();await pub.locator('#public-confirm').click();const publicReply=await publicResponse;assert.equal(publicReply.status(),201);const confirmation=await publicReply.json();await pub.getByText(confirmation.reference,{exact:true}).waitFor();const originalBody=publicReply.request().postDataJSON(),receipt=publicReply.request().headers()['idempotency-key'];
-=======
   const publicResponse=pub.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/bookings')&&r.request().method()==='POST',{timeout:60000});
   await pub.locator('#public-confirm').click();
   const publicReply=await publicResponse.catch(async error=>{
@@ -345,7 +342,6 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
    throw new Error('Public booking confirmation did not arrive. '+alerts.join(' '),{cause:error});
   });
   assert.equal(publicReply.status(),201);const confirmation=await publicReply.json();await pub.getByText(confirmation.reference,{exact:true}).waitFor();const originalBody=publicReply.request().postDataJSON(),receipt=publicReply.request().headers()['idempotency-key'];
->>>>>>> Stashed changes
   assert.equal(originalBody.specialtyContextId,String(derm));assert.equal(db('SELECT count(*) FROM patients'),'3');
   const publicBooking=JSON.parse(db("SELECT json_build_object('context',specialty_context_id::text,'patient',patient_id,'slot',provenance->>'blockId','minutes',provenance->>'slotMinutes','end',end_at)::text FROM bookings b JOIN booking_public_details p ON p.booking_id=b.id WHERE p.reference='"+confirmation.reference+"'"));assert.equal(publicBooking.context,String(derm));assert.equal(publicBooking.patient,null);assert.equal(publicBooking.minutes,'30');assert.ok(publicBooking.slot);
   const replay=await api(pub,'POST','/public/appointments/doctors/'+publication.publicId+'/bookings',originalBody,null,201,receipt);assert.deepEqual(replay,confirmation);
@@ -363,7 +359,7 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
   await api(staff,'GET','/patients',null,derm,401);await api(staff,'GET',staffPrefix+'/clinics/'+clinics[1].id+'/availability?from='+monday+'&days=1',null,null,404);
   const session=await api(staff,'GET','/staff/session');const staffSlots=await api(staff,'GET',staffPrefix+'/clinics/'+clinics[0].id+'/availability?from='+monday+'&days=1');const free=staffSlots.days[0].slots[0];assert.ok(free);
   const delegated=await api(staff,'POST',staffPrefix+'/bookings',{clinicId:clinics[0].id,start:free.start,contactName:'Turno de secretaría',attendeeName:'Persona administrativa',contactPhone:'2231234567'},null,201,crypto.randomUUID(),{'X-CSRF-Token':session.csrfToken});
-  const staffMove=await api(staff,'POST',staffPrefix+'/bookings/'+delegated.id+'/reschedule',{expectedVersion:delegated.version,clinicId:clinics[0].id,start:staffSlots.days[0].slots.find(s=>s.specialtyContextId===free.specialtyContextId&&s.start!==free.start).start},null,200,crypto.randomUUID(),{'X-CSRF-Token':session.csrfToken});assert.deepEqual(staffMove.specialty,delegated.specialty);await api(staff,'PATCH',staffPrefix+'/bookings/'+delegated.id+'/status',{expectedVersion:staffMove.version,status:'CANCELLED'},null,200,crypto.randomUUID(),{'X-CSRF-Token':session.csrfToken});assert.equal(await staff.getByText('Vincular ficha clínica',{exact:true}).count(),0);await staff.locator('.calendar-board .event').first().waitFor();assert.ok(await staff.locator('.calendar-board .event').first().getAttribute('aria-label'));assert.equal(await staff.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await staff.screenshot({path:path.join(out,'staff-mobile.png')});
+  const staffMove=await api(staff,'POST',staffPrefix+'/bookings/'+delegated.id+'/reschedule',{expectedVersion:delegated.version,clinicId:clinics[0].id,start:staffSlots.days[0].slots.find(s=>s.specialtyContextId===free.specialtyContextId&&s.start!==free.start).start},null,200,crypto.randomUUID(),{'X-CSRF-Token':session.csrfToken});assert.deepEqual(staffMove.specialty,delegated.specialty);await api(staff,'PATCH',staffPrefix+'/bookings/'+delegated.id+'/status',{expectedVersion:staffMove.version,status:'CANCELLED'},null,200,crypto.randomUUID(),{'X-CSRF-Token':session.csrfToken});assert.equal(await staff.getByText('Vincular ficha clínica',{exact:true}).count(),0);await staff.locator('.booking').first().waitFor();const staffName=await staff.locator('.booking > strong').first().boundingBox(),staffSpecialty=await staff.locator('.booking > span').first().boundingBox();assert.ok(staffSpecialty.y>=staffName.y+staffName.height,'Staff specialty must be readable on its own line');assert.equal(await staff.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await staff.screenshot({path:path.join(out,'staff-mobile.png')});
   add('real staff activation/session/CSRF restricts one assigned clinic, manages bookings, and exposes no clinical IDs, files or search');
   await page.goto(origin+'/clinics');
   await page.getByRole('link',{name:'Crear agenda virtual'}).click();
@@ -404,9 +400,9 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
   assert.ok(virtualProfile.publicId,JSON.stringify(virtualProfile));
 
   await pub.goto(origin+'/appointments');
-  await pub.getByRole('heading',{name:'Encontrá tu próximo turno',exact:true}).waitFor();
+  await pub.getByRole('heading',{name:'Encontrá un turno',exact:true}).waitFor();
   await pub.getByRole('combobox',{name:'Modalidad',exact:true}).selectOption('TELECONSULTATION');
-  await pub.getByRole('link',{name:/Ver disponibilidad/}).click();
+  await pub.getByRole('link',{name:/Ver horarios/}).click();
   await pub.locator('#public-date').fill(monday.split('-').reverse().join('/'));
   await pub.locator('#public-date').press('Tab');
   await pub.locator('[data-public-slot]').first().click();
@@ -417,7 +413,7 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
   await pub.locator('#public-email').fill('virtual-m6@local.test');
   await pub.locator('#public-consent').check();
   const virtualResponse=pub.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/bookings')&&r.request().method()==='POST');
-  await pub.locator('#public-review').click();await pub.locator('#public-confirm').click();
+  await pub.locator('#public-confirm').click();
   const virtualReceipt=await virtualResponse;
   assert.equal(virtualReceipt.status(),201);
   const confirmedVirtual=await virtualReceipt.json();

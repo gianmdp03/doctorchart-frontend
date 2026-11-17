@@ -1,4 +1,4 @@
-<aside class="sidebar-container" [class.is-collapsed]="isCollapsed()" [class.dashboard-sidebar]="dashboardMode()">
+<aside class="sidebar-container" [class.is-collapsed]="isCollapsed()">
   <!-- Sidebar Header: Brand Logo & Title -->
   <div class="sidebar-brand">
     <div class="brand-logo-icon" title="DoctorChart">
@@ -15,7 +15,6 @@
     </button>
   </div>
 
-  <div class="sidebar-toolbar">
   @if (!authService.isSuperAdmin() && (!isCollapsed() || narrowViewport) && workspace.contexts().length) {
     <div class="specialty-switch">
       <span id="sidebar-specialty-label">Especialidad actual</span>
@@ -28,20 +27,9 @@
       </mat-select>
     </div>
   }
-  @if (dashboardMode()) {
-    <button type="button" class="dashboard-menu" aria-controls="sidebar-primary-nav"
-      [attr.aria-expanded]="!isCollapsed()" (click)="toggleCollapse()">
-      <ng-icon name="lucideMenu" aria-hidden="true" /> Menú
-    </button>
-  }
-  </div>
 
   <!-- Main Navigation Links -->
-<<<<<<< Updated upstream
-  <nav id="sidebar-primary-nav" class="sidebar-nav" aria-label="Navegación principal" (click)="collapseAfterNavigation()">
-=======
   <nav id="workspace-navigation" class="sidebar-nav" aria-label="Navegación principal" (click)="collapseAfterNavigation()">
->>>>>>> Stashed changes
     @if (authService.isSuperAdmin()) {
       <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">Administración</div>
       <a routerLink="/admin/specialties" routerLinkActive="active" class="nav-item" title="Especialidades y wizards">

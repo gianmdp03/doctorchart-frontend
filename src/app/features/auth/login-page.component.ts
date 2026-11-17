@@ -1,9 +1,4 @@
-<<<<<<< Updated upstream
-import { InteractionStatusService } from '../../core/services/interaction-status.service';
-import { GOOGLE_AUTH_ENABLED, LOCAL_REGISTRATION_ENABLED } from '../../auth-policy';
-=======
 import { GOOGLE_AUTH_ENABLED } from '../../auth-policy';
->>>>>>> Stashed changes
 import { environment } from '../../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
@@ -11,11 +6,6 @@ import { Component, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-<<<<<<< Updated upstream
-import { matchingPasswords, trimmedRequired } from '../../core/models/form-validation';
-import { FEATURE_FLAGS } from '../../core/config/feature-flags';
-=======
->>>>>>> Stashed changes
 
 @Component({
   selector: 'app-login-page',
@@ -24,13 +14,7 @@ import { FEATURE_FLAGS } from '../../core/config/feature-flags';
   styleUrl: './login-page.component.css',
 })
 export class LoginPageComponent {
-  private readonly interaction = inject(InteractionStatusService);
   readonly googleAuthEnabled = GOOGLE_AUTH_ENABLED;
-<<<<<<< Updated upstream
-  readonly staffEnabled = FEATURE_FLAGS.STAFF_ENABLED;
-  readonly bycodeRegisterUrl = environment.bycodePlansUrl.replace(/\/(?:panel|dashboard)\/?$/, '') + '/register';
-=======
->>>>>>> Stashed changes
   readonly bycodeLoginUrl = environment.bycodePlansUrl.replace(/\/(?:panel|dashboard)\/?$/, '') + '/login';
 
   private readonly fb = inject(FormBuilder);
@@ -40,6 +24,7 @@ export class LoginPageComponent {
 
   readonly isSubmitting = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly successMessage = signal<string | null>(null);
   readonly showPassword = signal<boolean>(false);
 
   readonly loginForm = this.fb.group({
@@ -47,24 +32,6 @@ export class LoginPageComponent {
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
-<<<<<<< Updated upstream
-  readonly registerForm = this.fb.group({
-    fullName: ['', [trimmedRequired, Validators.minLength(2), Validators.maxLength(150)]],
-    dni: ['', [trimmedRequired, Validators.pattern(/^\d{6,8}$/)]],
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
-    confirmPassword: ['', [Validators.required, Validators.minLength(6)]],
-  }, { validators: matchingPasswords });
-
-  setMode(newMode: 'login' | 'register'): void {
-    if (newMode === 'register') { this.goToBycodeRegistration(); return; }
-    this.mode.set(newMode);
-    this.errorMessage.set(null);
-
-  }
-
-=======
->>>>>>> Stashed changes
   togglePasswordVisibility(): void {
     this.showPassword.update((val) => !val);
   }
@@ -86,7 +53,7 @@ export class LoginPageComponent {
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
-
+    this.successMessage.set(null);
 
     const { email, password } = this.loginForm.getRawValue();
 
@@ -102,7 +69,7 @@ export class LoginPageComponent {
         return;
       }
 
-      this.interaction.notifySuccess('Iniciaste sesión correctamente.');
+      this.successMessage.set('¡Inicio de sesión exitoso!');
       this.isSubmitting.set(false);
 
       if (isPlatformBrowser(this.platformId)) {
@@ -120,72 +87,6 @@ export class LoginPageComponent {
     }
   }
 
-<<<<<<< Updated upstream
-  async onRegisterSubmit(): Promise<void> {
-    this.registerAttempted.set(true);
-    if (!LOCAL_REGISTRATION_ENABLED) { this.goToBycodeRegistration(); return; }
-    if (this.registerForm.invalid) {
-      this.registerForm.markAllAsTouched();
-      this.errorMessage.set(this.registerForm.hasError('passwordMismatch') ? 'Las contraseñas no coinciden.' : 'Por favor complete todos los campos obligatorios.');
-      return;
-    }
-
-    const { fullName, dni, email, password, confirmPassword } = this.registerForm.getRawValue();
-
-    if (password !== confirmPassword) {
-      this.errorMessage.set('Las contraseñas no coinciden.');
-      return;
-    }
-
-    this.isSubmitting.set(true);
-    this.errorMessage.set(null);
-
-
-    try {
-      const response = await this.authService.signUp({
-        email: (email ?? '').trim(),
-        password: password ?? '',
-        options: {
-          data: {
-            full_name: (fullName ?? '').trim(),
-            dni: (dni ?? '').trim(),
-          },
-        },
-      });
-
-      if (response.error) {
-        this.errorMessage.set(this.translateAuthError(response.error.message));
-        this.isSubmitting.set(false);
-        return;
-      }
-
-      this.isSubmitting.set(false);
-
-      if (isPlatformBrowser(this.platformId)) {
-        window.dispatchEvent(
-          new CustomEvent('auth-register-success', { detail: { user: response.data.user } })
-        );
-      }
-
-      if (response.data.session) {
-        this.interaction.notifySuccess('Tu cuenta se creó correctamente.');
-        const targetUrl = this.loginDestination();
-        await this.router.navigateByUrl(targetUrl, { onSameUrlNavigation: 'reload' });
-      } else {
-        this.interaction.notifySuccess('Tu cuenta se creó correctamente. Ya podés iniciar sesión.');
-        this.mode.set('login');
-        this.loginForm.patchValue({ email: (email ?? '').trim() });
-        this.registerForm.reset();
-      }
-    } catch (err: unknown) {
-      this.isSubmitting.set(false);
-      const msg = err instanceof Error ? err.message : 'Error inesperado al registrar usuario.';
-      this.errorMessage.set(this.translateAuthError(msg));
-    }
-  }
-
-=======
->>>>>>> Stashed changes
   async handleGoogleOAuth(): Promise<void> {
     if (!GOOGLE_AUTH_ENABLED) return;
     if (!isPlatformBrowser(this.platformId)) return;

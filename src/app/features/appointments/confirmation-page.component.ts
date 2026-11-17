@@ -1,36 +1,11 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideArrowLeft, lucideArrowRight, lucideShieldCheck } from '@ng-icons/lucide';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
-import { environment } from '../../../environments/environment';
-import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
-import { PublicBookingReceiptComponent } from './public-booking-receipt.component';
+import {Component,DestroyRef,inject,signal} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {RouterLink} from '@angular/router';
+import {HttpClient,HttpErrorResponse} from '@angular/common/http';
+import {firstValueFrom} from 'rxjs';
+import {environment} from '../../../environments/environment';
+import {civilDate,displayDay,localTime} from '../calendar/bookings.models';
 
-<<<<<<< Updated upstream
-export interface RecoveredConfirmation {
-  modality?: 'IN_PERSON' | 'TELECONSULTATION';
-  specialtyName?: string;
-  reference: string;
-  status: string;
-  start: string;
-  end: string;
-  doctorName: string;
-  clinicName: string;
-  address: string;
-  timezone: string;
-  accessExpiresAt: string;
-}
-@Component({
-  selector: 'app-confirmation-page',
-  imports: [FormsModule, RouterLink, NgIcon, ThemeToggleComponent, PublicBookingReceiptComponent],
-  providers: [provideIcons({ lucideArrowLeft, lucideArrowRight, lucideShieldCheck })],
-  styleUrls: ['./public-booking.css', './confirmation-page.component.css'],
-  templateUrl: './confirmation-page.component.html',
-})
-=======
 export interface RecoveredConfirmation {modality?:'IN_PERSON'|'TELECONSULTATION';specialtyName?:string;reference:string;status:string;start:string;end:string;doctorName:string;clinicName:string;address:string;timezone:string;accessExpiresAt:string;}
 @Component({selector:'app-confirmation-page',imports:[FormsModule,RouterLink],styleUrl:'./confirmation-page.component.css',template:`
 <main class="recovery-page"><a routerLink="/appointments" class="brand">Doctor Chart · Turnos online</a><h1>Consultá tu turno</h1><p class="intro">Ingresá el código de tu confirmación o del correo que recibiste. No necesitás crear una cuenta.</p>
@@ -38,60 +13,13 @@ export interface RecoveredConfirmation {modality?:'IN_PERSON'|'TELECONSULTATION'
 @if(error()){<p class="error" role="alert">{{error()}}</p>}
 @if(confirmation();as c){<section class="constancia" aria-label="Constancia del turno"><p class="status">{{statusLabel(c.status)}}</p><h2>{{c.doctorName}}</h2>@if(c.specialtyName){<p>{{c.specialtyName}}</p>}<p class="when">{{displayDay(civilDate(c.start,c.timezone))}} · {{localTime(c.start,c.timezone)}} – {{localTime(c.end,c.timezone)}}</p><p>{{c.clinicName}} · {{c.modality==='TELECONSULTATION'?'Teleconsulta':'Presencial'}}</p>@if(c.address){<p>{{c.address}}</p>}<p class="zone">Hora de la agenda</p><div class="reference"><span>Referencia administrativa</span><code>{{c.reference}}</code></div><p class="help">Para cancelar o cambiar el turno, comunicate con el profesional. Este acceso permite consultar la información administrativa.</p></section>}
 <footer>No compartas tu código. Esta página no muestra historias clínicas ni guarda el código en tu navegador.</footer></main>`})
->>>>>>> Stashed changes
 export class ConfirmationPageComponent {
-  private readonly http = inject(HttpClient);
-  private alive = true;
-  readonly busy = signal(false);
-  readonly error = signal('');
-  readonly confirmation = signal<RecoveredConfirmation | null>(null);
-  accessCode = '';
-  constructor() {
-    inject(DestroyRef).onDestroy(() => {
-      this.alive = false;
-      this.accessCode = '';
-      this.confirmation.set(null);
-    });
-  }
-  statusLabel(status: string) {
-    return (
-      (
-        {
-          CONFIRMED: 'Turno confirmado',
-          CANCELLED: 'Turno cancelado',
-          CHECKED_IN: 'Llegada registrada',
-          COMPLETED: 'Turno atendido',
-          NO_SHOW: 'Ausencia registrada',
-        } as Record<string, string>
-      )[status] ?? 'Estado del turno'
-    );
-  }
-  async consult() {
-    if (this.busy()) return;
-    this.busy.set(true);
-    this.error.set('');
-    this.confirmation.set(null);
-    try {
-      const c = await firstValueFrom(
-        this.http.post<RecoveredConfirmation>(
-          environment.apiUrl.replace(/\/$/, '') + '/public/appointments/confirmation',
-          { accessCode: this.accessCode.trim() },
-          { transferCache: false },
-        ),
-      );
-      if (this.alive) this.confirmation.set(c);
-    } catch (e) {
-      if (!this.alive) return;
-      const status = (e as HttpErrorResponse).status;
-      this.error.set(
-        status === 404
-          ? 'No encontramos una constancia vigente para ese código. Revisalo o contactá al consultorio.'
-          : status === 429
-            ? 'Demasiadas consultas. Esperá un minuto y reintentá.'
-            : 'No pudimos consultar el turno. Conservamos tu código para que puedas reintentar.',
-      );
-    } finally {
-      if (this.alive) this.busy.set(false);
-    }
-  }
+ private readonly http=inject(HttpClient);private alive=true;
+ readonly busy=signal(false);readonly error=signal('');readonly confirmation=signal<RecoveredConfirmation|null>(null);accessCode='';
+ readonly civilDate=civilDate;readonly displayDay=displayDay;readonly localTime=localTime;
+ constructor(){inject(DestroyRef).onDestroy(()=>{this.alive=false;this.accessCode='';this.confirmation.set(null);});}
+ statusLabel(status:string){return ({CONFIRMED:'Turno confirmado',CANCELLED:'Turno cancelado',CHECKED_IN:'Llegada registrada',COMPLETED:'Turno atendido',NO_SHOW:'Ausencia registrada'} as Record<string,string>)[status]??'Estado del turno';}
+ async consult(){if(this.busy())return;this.busy.set(true);this.error.set('');this.confirmation.set(null);try{
+  const c=await firstValueFrom(this.http.post<RecoveredConfirmation>(environment.apiUrl.replace(/\/$/,'')+'/public/appointments/confirmation',{accessCode:this.accessCode.trim()},{transferCache:false}));if(this.alive)this.confirmation.set(c);
+ }catch(e){if(!this.alive)return;const status=(e as HttpErrorResponse).status;this.error.set(status===404?'No encontramos una constancia vigente para ese código. Revisalo o contactá al consultorio.':status===429?'Demasiadas consultas. Esperá un minuto y reintentá.':'No pudimos consultar el turno. Conservamos tu código para que puedas reintentar.');}finally{if(this.alive)this.busy.set(false);}}
 }

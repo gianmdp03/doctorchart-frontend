@@ -94,7 +94,7 @@ describe('Theme integration', () => {
     expect(fixture.nativeElement.querySelector('.date-picker-input').value).toBe('13/10/2026');
     expect(fixture.nativeElement.querySelectorAll('.reference-curve').length).toBe(5);
     expect(fixture.nativeElement.querySelector('.recent-patient-info h3')?.textContent).toContain('Paciente de ejemplo');
-    expect(fixture.nativeElement.querySelector('.clinical-summary strong')?.textContent).toContain('Evolución');
+    expect(fixture.nativeElement.querySelector('.recent-clinical-summary b')?.textContent).toContain('Evolución');
     saveWorkspace('dark');
     button.click(); fixture.detectChanges();
     expect(document.documentElement.classList.contains('dark')).toBe(false);

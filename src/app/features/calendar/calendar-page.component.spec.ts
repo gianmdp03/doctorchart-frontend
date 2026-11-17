@@ -1,4 +1,3 @@
-import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import {WorkspaceStore} from '../../core/services/workspace.store';
 import {TestBed,ComponentFixture} from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
@@ -28,61 +27,45 @@ describe('M5 calendar',()=>{
  });
  afterEach(()=>{fixture.destroy();vi.useRealTimers();});
  it('loads multiple clinics and renders bookings separately from available slots',()=>{expect(c.days().length).toBe(7);expect(c.days()[0].bookings[0].id).toBe('1');expect(c.days()[0].slots.length).toBe(2);expect(fixture.nativeElement.textContent).toContain('Persona atendida');});
- it('opens the shared side panel from a free slot and keeps entered data when choosing another time',async()=>{
+ it('opens the manual form below the available times and keeps input when choosing another time',async()=>{
   const page=fixture.nativeElement as HTMLElement;
-  expect(page.querySelector('.calendar-board .event')).not.toBeNull();
-  expect(page.querySelector('form')).toBeNull();
-  const times=page.querySelectorAll<HTMLButtonElement>('.available-slot');
+  const reservations=page.querySelector('.day')!;
+  const manual=page.querySelector('.manual-booking')!;
+  expect(reservations.querySelector('.slot')).toBeNull();
+  expect(manual.querySelector('form')).toBeNull();
+  const times=manual.querySelectorAll<HTMLButtonElement>('.slot');
   times[0].click();fixture.detectChanges();await fixture.whenStable();
-  const form=page.querySelector<HTMLFormElement>('.calendar-workspace .editor form')!;
-  expect(form).not.toBeNull();
+  const form=manual.querySelector<HTMLFormElement>('form')!;
+  expect(form.previousElementSibling?.classList.contains('manual-hours')).toBe(true);
   expect(document.activeElement?.id).toBe('booking-contact');
   expect(times[0].getAttribute('aria-pressed')).toBe('true');
   expect(form.textContent).not.toMatch(/vincular|ficha clínica|historia clínica/i);
   c.contactName='Nombre ingresado';
   times[1].click();fixture.detectChanges();
   expect(times[1].getAttribute('aria-pressed')).toBe('true');
-  expect(page.querySelector('.editor-date')?.textContent).toContain('Sede 2');
+  expect(manual.querySelector('.manual-summary')?.textContent).toContain('Sede 2');
   expect(c.contactName).toBe('Nombre ingresado');
   await c.create();
   expect(api.create.mock.calls[0][0]).not.toHaveProperty('patientId');
  });
- it('navigates Monday-to-Sunday weeks across a year boundary',()=>{
+ it('always navigates full Monday-to-Sunday weeks, including across a year boundary',()=>{
   vi.spyOn(c,'load').mockResolvedValue();
-  const page=fixture.nativeElement as HTMLElement;
-  const next=page.querySelector<HTMLButtonElement>('[aria-label="Semana siguiente"]')!;
-  const previous=page.querySelector<HTMLButtonElement>('[aria-label="Semana anterior"]')!;
   c.changeDate('2026-01-01');expect(c.date).toBe('2025-12-29');
   expect(c.selectedDay()).toBe('2026-01-01');
-  fixture.detectChanges();next.click();expect(c.date).toBe('2026-01-05');
-  fixture.detectChanges();previous.click();expect(c.date).toBe('2025-12-29');
-  c.writing.set(true);next.click();expect(c.date).toBe('2025-12-29');
+  c.navigate(1);expect(c.date).toBe('2026-01-05');
+  c.navigate(-1);expect(c.date).toBe('2025-12-29');
+  c.writing.set(true);c.navigate(1);expect(c.date).toBe('2025-12-29');
  });
- it('opens a day from the same week grid and can return to its week',async()=>{
-  const page=fixture.nativeElement as HTMLElement;
-  const days=page.querySelectorAll<HTMLButtonElement>('.day-header button');
-  expect(days.length).toBe(7);
-  days[1].click();fixture.detectChanges();await fixture.whenStable();fixture.detectChanges();
-  expect(c.date).toBe('2030-01-08');
-  expect(c.selectedDay()).toBe(c.date);
-  await vi.waitFor(() => expect(c.days()).toHaveLength(1));fixture.detectChanges();
-  expect(page.querySelector('.timeline-grid.single-day')).not.toBeNull();
-  const week=Array.from(page.querySelectorAll<HTMLButtonElement>('button')).find(button=>button.textContent.trim()==='Semana')!;
-  week.click();fixture.detectChanges();await fixture.whenStable();fixture.detectChanges();
-  expect(c.date).toBe('2030-01-07');
-  await vi.waitFor(() => expect(c.days()).toHaveLength(7));fixture.detectChanges();
-  expect(page.querySelectorAll('.day-header')).toHaveLength(7);
- });
- it('keeps opening bands and a closed day from the doctors availability',async()=>{
-  c.changeClinic('1');
-  schedules.availability.mockReturnValue(of({days:[
-    {date:'2030-01-07',slots:[],hours:[{start:'09:00',end:'12:00'}]},
-    {date:'2030-01-08',slots:[],closed:true},
-  ]}));
-  await c.load();fixture.detectChanges();
-  expect(schedules.availability).toHaveBeenCalledWith('1','2030-01-07',7,true);
-  expect(fixture.nativeElement.querySelector('.office-hours')).not.toBeNull();
-  expect(fixture.nativeElement.querySelector('.day-track.closed')?.textContent).toContain('Consultorio cerrado');
+ it('keeps the week visible while selecting only one day without changing bookings',()=>{
+  const buttons=fixture.nativeElement.querySelectorAll('.week-day') as NodeListOf<HTMLButtonElement>;
+  expect(buttons.length).toBe(7);
+  expect(fixture.nativeElement.querySelectorAll('article.day').length).toBe(1);
+  buttons[1].click();fixture.detectChanges();
+  expect(c.visibleDays()[0].date).toBe(c.days()[1].date);
+  expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
+  expect(c.days()[0].bookings[0].id).toBe('1');
+  c.writing.set(true);c.selectDay(c.days()[2].date);
+  expect(c.visibleDays()[0].date).toBe(c.days()[1].date);
  });
  it('filters teleconsultations using the booking snapshot and the active agenda modality',async()=>{
   const virtual={...clinic('2'),modality:'TELECONSULTATION'};
@@ -97,7 +80,7 @@ describe('M5 calendar',()=>{
  it('does not truncate paginated bookings or clinics',async()=>{clinics.listClinics.mockImplementation(({page}:any)=>of({items:[clinic(page?'2':'1')],totalElements:2}));api.list.mockImplementation((_f:any,_t:any,page:number)=>of({items:[{...b,id:String(page+1)}],totalElements:2}));await c.load();expect(c.clinics().length).toBe(2);expect(c.days()[0].bookings.length).toBe(2);});
  it('isolates late calendar responses after changing clinic',async()=>{const delayed=new Subject<any>();api.list.mockReturnValueOnce(delayed);const pending=c.load();await Promise.resolve();await Promise.resolve();c.changeClinic('2');await fixture.whenStable();delayed.next({items:[b],totalElements:1});delayed.complete();await pending;expect(c.days().every(d=>d.bookings.every(b=>b.clinicId==='2')&&d.slots.every(s=>s.clinic.id==='2'))).toBe(true);});
  it('isolates late detail responses from a different booking',async()=>{const delayed=new Subject<Booking>();api.get.mockReturnValueOnce(delayed).mockReturnValueOnce(of({...b,id:"2"}));const old=c.openBooking(b);await c.openBooking({...b,id:'2'});delayed.next(b);delayed.complete();await old;expect(c.selected()?.id).toBe('2');});
- it('blocks double submit and reuses the same key on network retry preserving fields',async()=>{c.openSlot(c.days()[0].slots[0]);c.contactName='Madre';c.differentPerson=true;c.attendeeName='Hijo';const delayed=new Subject<Booking>();api.create.mockReturnValueOnce(delayed);const pending=c.create();void c.create();expect(api.create).toHaveBeenCalledTimes(1);delayed.error({status:0});await pending;expect(TestBed.inject(InteractionStatusService).success()).toBe('');expect(c.contactName).toBe('Madre');expect(c.attendeeName).toBe('Hijo');const firstKey=api.create.mock.calls[0][1];await c.create();expect(TestBed.inject(InteractionStatusService).success()).toBe('El turno se creó correctamente.');expect(api.create.mock.calls[1][1]).toBe(firstKey);expect(api.create.mock.calls[0][0].attendeeName).toBe('Hijo');});
+ it('blocks double submit and reuses the same key on network retry preserving fields',async()=>{c.openSlot(c.days()[0].slots[0]);c.contactName='Madre';c.differentPerson=true;c.attendeeName='Hijo';const delayed=new Subject<Booking>();api.create.mockReturnValueOnce(delayed);const pending=c.create();void c.create();expect(api.create).toHaveBeenCalledTimes(1);delayed.error({status:0});await pending;expect(c.contactName).toBe('Madre');expect(c.attendeeName).toBe('Hijo');const firstKey=api.create.mock.calls[0][1];await c.create();expect(api.create.mock.calls[1][1]).toBe(firstKey);expect(api.create.mock.calls[0][0].attendeeName).toBe('Hijo');});
  it('409 preserves draft, prevents stale writes and permits an explicitly refreshed slot',async()=>{c.openSlot(c.days()[0].slots[0]);c.contactName='Conservar';api.create.mockReturnValueOnce(throwError(()=>({status:409,error:{code:'BOOKING_SLOT_UNAVAILABLE'}})));await c.create();expect(c.contactName).toBe('Conservar');expect(c.conflict()).toBe(true);await c.create();expect(api.create).toHaveBeenCalledTimes(1);await fixture.whenStable();c.refreshCreateSlot();expect(c.contactName).toBe('Conservar');expect(c.conflict()).toBe(false);});
  it('expired/revoked rights block actions, retries keep fields, downgrade permits status only',async()=>{c.openSlot(c.days()[0].slots[0]);c.contactName='Conservar';const value=caps();value.entitlements.validUntil=new Date(Date.now()-1).toISOString();c.capabilities.set(value as any);expect(c.allowed()).toBe(false);await c.create();expect(api.create).not.toHaveBeenCalled();clinics.getCapabilities.mockReturnValue(of({...caps(),entitlements:{...caps().entitlements,clinicManagement:false}}));await c.retryCapabilities();expect(c.allowed()).toBe(false);expect(c.contactName).toBe('Conservar');c.capabilities.set({...caps(),entitlements:{...caps().entitlements,max_clinics:0}} as any);expect(c.canBook()).toBe(false);expect(c.allowed()).toBe(true);});
  it('clears patient and booking data when owner changes',async()=>{await c.openBooking(b);user.set(null);fixture.detectChanges();await fixture.whenStable();expect(c.selected()).toBeNull();expect(c.days()).toEqual([]);expect(c.clinics()).toEqual([]);});

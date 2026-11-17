@@ -30,27 +30,23 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--md-sys-color-primary);
+  color: var(--color-primary, #1f6feb);
 }
 
 .page-header h1 {
   margin: 0;
   font-weight: 700;
-<<<<<<< Updated upstream
-  color: var(--md-sys-color-on-surface);
-=======
   color: var(--text-main, #0f172a);
   font-size: 1.75rem;
   letter-spacing: -.03em;
   line-height: 1.25;
->>>>>>> Stashed changes
 }
 
 .subtitle {
   margin: 0;
   font-size: 0.92rem;
   line-height: 1.45;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #475569);
 }
 
 .header-actions {
@@ -79,11 +75,6 @@
 }
 
 .btn-primary {
-<<<<<<< Updated upstream
-  background: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
-=======
->>>>>>> Stashed changes
   border: 1px solid transparent;
   box-shadow: none;
   background: var(--dc-brand);
@@ -94,27 +85,22 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-<<<<<<< Updated upstream
-  background: var(--md-sys-color-primary);
-  filter: brightness(.92);
-=======
   box-shadow: none;
   background: var(--dc-brand-hover);
   color: var(--dc-on-brand);
   border-color: transparent;
   border-radius: var(--dc-radius-control);
   min-height: var(--dc-control-height);
->>>>>>> Stashed changes
 }
 
 .btn-secondary {
-  background: var(--md-surface-container-lowest);
-  color: var(--md-sys-color-on-surface);
-  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-main, #0f172a);
+  border: 1px solid var(--border-subtle, #cbd5e1);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--md-surface-container-low);
+  background: var(--bg-subtle, #f8fafc);
 }
 
 .btn-primary:disabled,
@@ -130,17 +116,10 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
-<<<<<<< Updated upstream
-  padding: 0.85rem 1.1rem;
-  background: var(--md-surface-container-lowest);
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: 0.75rem;
-=======
   padding: 16px 20px;
   border-radius: var(--dc-radius-control);
   background: var(--dc-brand-soft);
   border: 0;
->>>>>>> Stashed changes
 }
 
 .quota-summary-main {
@@ -157,15 +136,6 @@
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 600;
-<<<<<<< Updated upstream
-  background: var(--md-surface-container-low);
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-.quota-badge-verified {
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
-=======
   background: var(--dc-raised);
   color: var(--dc-text-secondary);
 }
@@ -173,16 +143,11 @@
 .quota-badge-verified {
   background: var(--dc-blue-soft);
   color: var(--dc-blue);
->>>>>>> Stashed changes
 }
 
 .quota-hint {
   font-size: 0.82rem;
-<<<<<<< Updated upstream
-  color: var(--md-sys-color-on-surface-variant);
-=======
   color: var(--dc-text-secondary);
->>>>>>> Stashed changes
 }
 
 .capability-banner {
@@ -195,23 +160,6 @@
 }
 
 .banner-info {
-<<<<<<< Updated upstream
-  background: var(--md-sys-color-primary-container);
-  border-color: var(--md-sys-color-outline-variant);
-  color: var(--md-sys-color-on-primary-container);
-}
-
-.banner-warning {
-  background: var(--md-sys-color-warning-container);
-  border-color: var(--md-sys-color-warning);
-  color: var(--md-sys-color-on-warning-container);
-}
-
-.banner-danger {
-  background: var(--md-sys-color-error-container);
-  border-color: var(--md-sys-color-error);
-  color: var(--md-sys-color-on-error-container);
-=======
   background: var(--dc-subtle);
   border-color: var(--dc-blue-soft);
   color: var(--dc-text-secondary);
@@ -227,7 +175,6 @@
   background: var(--dc-danger-soft);
   border-color: var(--dc-danger-soft);
   color: var(--dc-danger);
->>>>>>> Stashed changes
 }
 
 .banner-icon {
@@ -260,7 +207,7 @@
 }
 
 .btn-banner {
-  background: var(--md-surface-container-lowest);
+  background: rgba(255, 255, 255, 0.9);
   color: inherit;
   border: 1px solid currentColor;
   padding: 0.45rem 0.8rem;
@@ -279,17 +226,6 @@
 }
 
 .alert-danger {
-<<<<<<< Updated upstream
-  background: var(--md-sys-color-error-container);
-  border: 1px solid var(--md-sys-color-error);
-  color: var(--md-sys-color-on-error-container);
-}
-
-.alert-success {
-  background: var(--md-sys-color-success-container);
-  border: 1px solid var(--md-sys-color-success);
-  color: var(--md-sys-color-on-success-container);
-=======
   background: var(--dc-danger-soft);
   border: 1px solid var(--dc-danger-soft);
   color: var(--dc-danger);
@@ -299,7 +235,6 @@
   background: var(--dc-positive-soft);
   border: 1px solid var(--dc-positive-soft);
   color: var(--dc-positive);
->>>>>>> Stashed changes
 }
 
 .toolbar-card {
@@ -309,8 +244,8 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.65rem 0.85rem;
-  background: var(--md-surface-container-lowest);
-  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-subtle, #e2e8f0);
   border-radius: 0.75rem;
 }
 
@@ -327,32 +262,26 @@
   padding: 0.4rem 0.8rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #475569);
   cursor: pointer;
 }
 
 .filter-tab.active {
-<<<<<<< Updated upstream
-  background: var(--md-sys-color-primary-container);
-  border-color: var(--md-sys-color-outline-variant);
-  color: var(--md-sys-color-on-primary-container);
-=======
   background: var(--dc-blue-soft);
   border-color: var(--dc-blue-soft);
   color: var(--dc-blue);
->>>>>>> Stashed changes
 }
 
 .results-meta {
   font-size: 0.82rem;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #64748b);
 }
 
 .table-wrapper {
   container-type: inline-size;
   overflow-x: auto;
-  background: var(--md-surface-container-lowest);
-  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-subtle, #e2e8f0);
   border-radius: 0.85rem;
 }
 
@@ -365,35 +294,22 @@
 .clinics-table thead th {
   position: sticky;
   top: 0;
-<<<<<<< Updated upstream
-  background: var(--md-surface-container-low);
-  color: var(--md-sys-color-on-surface-variant);
-=======
   background: var(--dc-subtle);
   color: var(--dc-text-secondary);
->>>>>>> Stashed changes
   font-size: 0.76rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.85rem 1rem;
-<<<<<<< Updated upstream
-  border-bottom: 1px solid var(--md-surface-container-high);
-=======
   border-bottom: 1px solid var(--dc-raised);
->>>>>>> Stashed changes
 }
 
 .clinics-table tbody td {
   padding: 0.95rem 1rem;
-<<<<<<< Updated upstream
-  border-bottom: 1px solid var(--md-surface-container-low);
-=======
   border-bottom: 1px solid var(--dc-raised);
->>>>>>> Stashed changes
   vertical-align: middle;
   font-size: 0.88rem;
-  color: var(--md-sys-color-on-surface);
+  color: var(--text-main, #0f172a);
 }
 
 .clinics-table tbody tr:last-child td {
@@ -401,19 +317,14 @@
 }
 
 .clinic-name {
-<<<<<<< Updated upstream
-  font-weight: 600;
-  color: var(--md-sys-color-on-surface);
-=======
   color: var(--text-main, #0f172a);
   font-size: .9375rem;
   font-weight: 650;
->>>>>>> Stashed changes
 }
 
 .clinic-meta {
   font-size: 0.75rem;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #64748b);
   margin-top: 0.15rem;
 }
 
@@ -423,7 +334,7 @@
 
 .location-region {
   font-size: 0.8rem;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #64748b);
   margin-top: 0.15rem;
 }
 
@@ -437,20 +348,6 @@
 }
 
 .status-active {
-<<<<<<< Updated upstream
-  background: var(--md-sys-color-success-container);
-  color: var(--md-sys-color-on-success-container);
-}
-
-.status-inactive {
-  background: var(--md-sys-color-warning-container);
-  color: var(--md-sys-color-on-warning-container);
-}
-
-.status-archived {
-  background: var(--md-surface-container-high);
-  color: var(--md-sys-color-on-surface-variant);
-=======
   background: var(--dc-positive-soft);
   color: var(--dc-positive);
 }
@@ -463,7 +360,6 @@
 .status-archived {
   background: var(--dc-raised);
   color: var(--dc-text-secondary);
->>>>>>> Stashed changes
 }
 
 .row-actions {
@@ -476,23 +372,6 @@
   padding: 0.35rem 0.65rem;
   min-height: 2rem;
   font-size: 0.78rem;
-<<<<<<< Updated upstream
-  background: var(--md-surface-container-lowest);
-  color: var(--md-sys-color-on-surface);
-  border: 1px solid var(--md-sys-color-outline-variant);
-}
-
-.btn-row-primary {
-  border-color: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary-container);
-  background: var(--md-sys-color-primary-container);
-}
-
-.btn-row-danger {
-  border-color: var(--md-sys-color-error);
-  color: var(--md-sys-color-error);
-  background: var(--md-sys-color-error-container);
-=======
   background: var(--dc-paper);
   color: var(--dc-text);
   border: 1px solid var(--dc-line);
@@ -508,7 +387,6 @@
   border-color: var(--dc-danger-soft);
   color: var(--dc-danger);
   background: var(--dc-danger-soft);
->>>>>>> Stashed changes
 }
 
 .empty-state {
@@ -527,27 +405,22 @@
   width: 3.25rem;
   height: 3.25rem;
   border-radius: 999px;
-<<<<<<< Updated upstream
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
-=======
   background: var(--dc-blue-soft);
   color: var(--dc-blue);
->>>>>>> Stashed changes
 }
 
 .empty-title {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--md-sys-color-on-surface);
+  color: var(--text-main, #0f172a);
 }
 
 .empty-subtitle {
   margin: 0;
   max-width: 52ch;
   font-size: 0.88rem;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #64748b);
 }
 
 .pagination-bar {
@@ -561,7 +434,7 @@
 .pagination-status {
   font-size: 0.86rem;
   font-weight: 600;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--text-muted, #475569);
 }
 
 @container (max-width: 720px) {
@@ -586,11 +459,7 @@
 
   .clinics-table tbody tr {
     padding: 0.85rem 1rem;
-<<<<<<< Updated upstream
-    border-bottom: 1px solid var(--md-surface-container-high);
-=======
     border-bottom: 1px solid var(--dc-raised);
->>>>>>> Stashed changes
   }
 
   .clinics-table tbody td {
@@ -608,11 +477,7 @@
     font-weight: 600;
     font-size: 0.78rem;
     text-transform: uppercase;
-<<<<<<< Updated upstream
-    color: var(--md-sys-color-on-surface-variant);
-=======
     color: var(--dc-text-muted);
->>>>>>> Stashed changes
     text-align: left;
   }
 

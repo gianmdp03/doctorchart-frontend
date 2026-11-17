@@ -78,10 +78,6 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     expect(emitted['reviewDate']).toBe('2028-02-29');
     expect(component.formValid()).toBe(true);
     expect(picker.max()).toBeNull();
-<<<<<<< Updated upstream
-    expect(fixture.nativeElement.textContent).not.toContain('Se recordará en Inicio');
-=======
->>>>>>> Stashed changes
     picker.onTextInput('29/02/2027'); fixture.detectChanges();
     expect(component.formValid()).toBe(false);
     expect(fixture.nativeElement.querySelector('.field-error').textContent).toContain('fecha válida');

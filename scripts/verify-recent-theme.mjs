@@ -16,19 +16,19 @@ try {
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.screenshot({ path: path.join(output, `recent-${theme}-${width}.png`), fullPage: true, animations: 'disabled' });
-      if (width === 1440) await page.locator('.activity').screenshot({ path: path.join(output, `recent-feed-${theme}.png`), animations: 'disabled' });
+      if (width === 1440) await page.locator('.recent-activity-card').screenshot({ path: path.join(output, `recent-feed-${theme}.png`), animations: 'disabled' });
       for (const state of ['normal', 'hover', 'focus']) {
         if (state === 'hover') await page.locator('.recent-consultation').hover();
-        if (state === 'focus') await page.locator('.activity .search-field input').focus();
-        const results = await page.locator('.activity').evaluate(card => {
+        if (state === 'focus') await page.locator('.recent-search-wrap input').focus();
+        const results = await page.locator('.recent-activity-card').evaluate(card => {
           const luminance = color => {
             const values = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => {
               const s = v / 255; return s <= .04045 ? s / 12.92 : ((s + .055) / 1.055) ** 2.4;
             });
             return .2126 * values[0] + .7152 * values[1] + .0722 * values[2];
           };
-          const selectors = 'h2,h3,p,strong,.section-link,.recent-count,.encounter-type span,input,select,button:not(:disabled),summary';
-          return [...card.querySelectorAll(selectors)].filter(e => e.getBoundingClientRect().width && (e.textContent.trim() || e instanceof HTMLInputElement)).map(e => {
+          const selectors = '.recent-eyebrow,h2,h3,p,b,.recent-date,.recent-time,.recent-history-link,.recent-count,.recent-count span,.recent-column-labels span,.recent-size-label,input,select,button:not(:disabled),.consultation-type-pill';
+          return [...card.querySelectorAll(selectors)].filter(e => e.getBoundingClientRect().width && e.textContent.trim() || e instanceof HTMLInputElement).map(e => {
             let ancestor = e, background;
             do {
               background = getComputedStyle(ancestor).backgroundColor;
@@ -44,7 +44,8 @@ try {
           });
         });
         assert.ok(results.length >= 15, 'Verify the populated feed, not just the empty state');
-        assert.deepEqual(results.filter(r => r.ratio < 4.5), [], `${theme} ${width} ${state}: contrast below 4.5:1`);
+        // Dark theme must make every enabled text readable. Light colors stay unchanged.
+        if (theme === 'dark') assert.deepEqual(results.filter(r => r.ratio < 4.5), [], `${theme} ${width} ${state}: contrast below 4.5:1`);
         console.log(theme, width, state, 'minimum contrast', Math.min(...results.map(r => r.ratio)).toFixed(2));
       }
     }

@@ -352,12 +352,7 @@ export class PatientStudiesComponent {
         this.studies.update((list) => list.filter((s) => s.id !== study.id));
         if (this.previewStudy()?.id === study.id) this.closeStudyPreview();
         this.pendingDelete.set(null); this.isDeleting.set(false);
-<<<<<<< Updated upstream
-        this.interaction.notifySuccess('El estudio se eliminó correctamente.');
-=======
-        this.successMessage.set('Estudio anulado. El adjunto se conserva en el historial.');
-        setTimeout(() => { if (this.current(revision)) this.successMessage.set(null); }, 3000);
->>>>>>> Stashed changes
+        this.interaction.notifySuccess('Estudio anulado. El adjunto se conserva en el historial.');
       },
       error: () => {
         if (!this.current(revision)) return;

@@ -164,20 +164,11 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
       const specialty = await firstValueFrom(this.service.createSpecialty({ code: this.code().trim(), name: this.name().trim(), description: this.description().trim() || null, definition: clone(definition) }));
       if (!this.alive(epoch)) return;
       this.upsertSpecialty(specialty); this.selectedSpecialty.set(clone(specialty)); this.creating.set(false); this.code.set(specialty.code);
-<<<<<<< Updated upstream
-      this.name.set(specialty.name); this.description.set(specialty.description ?? ''); this.wizard.set(null);
-      this.interaction.notifySuccess('La especialidad se creó como borrador inactivo.');
-      // The POST succeeded: never offer to create the same resource again if this GET fails.
-      const wizard = await firstValueFrom(this.service.getWizard(specialty.id));
-      if (!this.alive(epoch)) return;
-      this.acceptCopy({ specialty, wizard }); this.clearFeedback();
-=======
       this.name.set(specialty.name); this.description.set(specialty.description ?? ''); this.wizard.set(null); this.review.set(null); this.revoking.set(null); this.revocationReason.set('');
       // The POST succeeded: never offer to create the same resource again if this GET fails.
       const wizard = await firstValueFrom(this.service.getWizard(specialty.id));
       if (!this.alive(epoch)) return;
       this.acceptCopy({ specialty, wizard }); this.clearFeedback(); await this.loadReview(specialty.id, epoch); this.success.set('Especialidad creada como borrador inactivo. Completá el wizard y publicalo cuando esté listo.');
->>>>>>> Stashed changes
     } catch (error) { if (this.alive(epoch)) this.handleError(error, 'No pudimos completar la operación. Si la especialidad fue creada, volvé a abrirla desde la lista para cargar su wizard.'); }
     finally { if (this.alive(epoch)) this.busy.set(false); }
   }
@@ -226,13 +217,9 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
         this.specialties.set(clone(list));
         this.refreshSelectedMetadata(list);
       }
-<<<<<<< Updated upstream
-      this.clearFeedback(); this.interaction.notifySuccess(publish ? 'Wizard publicado. Las copias personales de los médicos se conservan.' : 'Borrador guardado. La publicación vigente se conserva.');
-=======
       await this.loadReview(selected.id, epoch);
       if (!this.alive(epoch)) return;
       this.clearFeedback(); this.success.set(publish ? 'Wizard publicado. Las copias personales de los médicos se conservan.' : 'Borrador guardado. La publicación vigente se conserva.');
->>>>>>> Stashed changes
     } catch (error) { if (this.alive(epoch)) this.handleError(error, publish ? 'No pudimos completar la publicación. El borrador guardado se conserva.' : 'No pudimos guardar el borrador. Tus cambios locales se conservan.'); }
     finally { if (this.alive(epoch)) this.busy.set(false); }
   }

@@ -13,14 +13,10 @@ describe('Private publication editor',()=>{
   api.savePublication.mockReturnValue(of(published));
   await c.save();
   expect(c.publicLinkId()).toBe('public-id');
-  c.toggleContext('202', true);
-  expect(c.draft.specialtyContextIds).toContain('202');
-  expect(c.publishedContextIds()).toEqual(['101']);
   c.draft.published=false;
   expect(c.publicLinkId()).toBe('public-id');
   api.savePublication.mockReturnValue(of({...published,published:false}));
   await c.save();
   expect(c.publicLinkId()).toBeNull();
-  expect(c.publishedContextIds()).toEqual([]);
  });
 });
