@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -107,6 +108,7 @@ function clinicTimezoneValidator(): ValidatorFn {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClinicFormPageComponent implements OnInit {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -588,6 +590,7 @@ export class ClinicFormPageComponent implements OnInit {
           return;
         }
         this.clinic.set(created);
+        this.interaction.notifySuccess(virtual ? 'La agenda de teleconsultas se creó correctamente.' : 'El consultorio se creó correctamente.');
         void this.router.navigate(virtual ? ['/clinics', created.id, 'schedule'] : ['/clinics']);
         return;
       }
@@ -605,7 +608,7 @@ export class ClinicFormPageComponent implements OnInit {
         return;
       }
       this.applyServerClinicToForm(updated);
-      this.submitFeedback.set('Los datos del consultorio se guardaron correctamente.');
+      this.interaction.notifySuccess('Los datos del consultorio se guardaron correctamente.');
       await this.refreshCapabilitiesSilently(opGen, opOwner, opEditMode, opClinicId);
     } catch (error) {
       if (!isMutationCurrent()) {
@@ -669,7 +672,7 @@ export class ClinicFormPageComponent implements OnInit {
         return;
       }
       this.clinic.set(structuredClone(updated));
-      this.submitFeedback.set(
+      this.interaction.notifySuccess(
         `El estado se actualizó a ${formatClinicStatusLabel(updated.status)}.${preservedBookingsNotice(updated)}`,
       );
       await this.refreshCapabilitiesSilently(opGen, opOwner, true, opClinicId);

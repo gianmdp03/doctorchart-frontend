@@ -17,7 +17,7 @@
   overflow-x: hidden;
 }
 
-.app-main-viewport:has(app-schedule-page) {
+.app-main-viewport:has(app-schedule-page, app-publication-page) {
   overflow-x: clip;
 }
 
@@ -105,3 +105,9 @@
 @media (max-width: 768px) { .app-main-content { padding: 12px 10px; } }
 
 @media (max-width: 768px) { .app-layout-shell { position: relative; } }
+
+@media (max-width: 768px) {
+  .app-main-viewport:has(> main > app-dashboard) .top-app-header:not(:has(.clinical-selector)) {
+    min-height: 0;
+  }
+}

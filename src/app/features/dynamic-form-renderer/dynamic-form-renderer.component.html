@@ -87,11 +87,6 @@
                         (ngModelChange)="setValue(field, $event)"
                         [max]="isBirthDateField(field.key) ? todayIso : null"
                       />
-                      @if (field.key === 'followUpDate' || field.key === 'encounter.followUpDate') {
-                        <span class="field-hint"
-                          >Se recordará en Inicio al acercarse la fecha del próximo control.</span
-                        >
-                      }
                     }
                     @case ('SELECT') {
                       <select

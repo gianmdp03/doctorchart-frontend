@@ -10,8 +10,10 @@ import { PatientGrowthService } from '../../../core/services/patient-growth.serv
 import {
   BiologicalSex,
   GrowthMetricType,
+  PatientGrowthChart,
   PatientGrowthResponse,
 } from '../../../core/models/growth-chart.model';
+import { DownGrowthMetric, selectDownGrowthCharts } from './down-growth-reference';
 
 /** Record-scoped state survives tabs; confirmations and responses never cross patients/accounts. */
 @Injectable()
@@ -27,35 +29,23 @@ export class PatientGrowthStore {
   private readSubscription?: Subscription;
   private readonly today = signal(this.userDay());
   readonly selectedGrowthMetric = signal<GrowthMetricType | 'ALL'>('WEIGHT');
+  readonly referenceFamily = signal<'GENERAL' | 'DOWN'>('GENERAL');
+  readonly selectedDownMetric = signal<DownGrowthMetric | 'ALL'>('ALL');
   readonly showHistorical = signal(false);
   readonly response = signal<PatientGrowthResponse | null>(null);
   readonly confirmedSex = signal<BiologicalSex | null>(null);
   readonly isLoadingGrowthCurves = signal(false);
   readonly growthError = signal<string | null>(null);
   readonly patientSex = computed(() => this.response()?.referenceSex || null);
+  readonly downCharts = computed(() => selectDownGrowthCharts(this.response(), this.showHistorical()));
   readonly backendGrowthMeasurements = computed(() => this.response()?.observations ?? []);
   readonly availableCharts = computed(() =>
     (this.response()?.charts ?? []).filter(
       (c) => c.applicable || (this.showHistorical() && c.points.length > 0),
     ),
   );
-  readonly categories = computed(() => {
-    const categories = new Map<
-      GrowthMetricType,
-      { indicator: GrowthMetricType; title: string; count: number }
-    >();
-    for (const chart of this.availableCharts()) {
-      const d = chart.definition;
-      const category = categories.get(d.indicator) ?? {
-        indicator: d.indicator,
-        title: d.title,
-        count: 0,
-      };
-      category.count += chart.points.length;
-      categories.set(d.indicator, category);
-    }
-    return [...categories.values()];
-  });
+  readonly categories = computed(() => this.categoriesFor(this.availableCharts()));
+  readonly downCategories = computed(() => this.categoriesFor(this.downCharts()));
   readonly effectiveMetric = computed(() => {
     const selected = this.selectedGrowthMetric();
     return selected === 'ALL' || this.categories().some((c) => c.indicator === selected)
@@ -67,6 +57,18 @@ export class PatientGrowthStore {
       (c) => this.effectiveMetric() === 'ALL' || c.definition.indicator === this.effectiveMetric(),
     ),
   );
+  private categoriesFor(charts: PatientGrowthChart[]) {
+    const categories = new Map<
+      GrowthMetricType,
+      { indicator: GrowthMetricType; title: string; count: number }
+    >();
+    for (const { definition: { indicator, title }, points } of charts) {
+      const category = categories.get(indicator) ?? { indicator, title, count: 0 };
+      category.count += points.length;
+      categories.set(indicator, category);
+    }
+    return [...categories.values()];
+  }
   private points(indicators: GrowthMetricType[]) {
     return (this.response()?.charts ?? [])
       .filter((c) => indicators.includes(c.definition.indicator))
@@ -111,6 +113,8 @@ export class PatientGrowthStore {
           this.growthError.set(null);
           this.confirmedSex.set(null);
           this.selectedGrowthMetric.set('WEIGHT');
+          this.referenceFamily.set('GENERAL');
+          this.selectedDownMetric.set('ALL');
           this.showHistorical.set(false);
         }
         if (patient?.id) this.loadGrowthCurves(patient.id);
@@ -222,7 +226,7 @@ export class PatientGrowthStore {
           )
             return;
           this.response.set(null);
-          this.growthError.set('No se pudieron cargar las curvas y mediciones OMS.');
+          this.growthError.set('No se pudieron cargar las curvas y mediciones de crecimiento.');
           this.isLoadingGrowthCurves.set(false);
         },
       });

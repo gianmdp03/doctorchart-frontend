@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { ClinicalContextService } from '../../core/services/clinical-context.service';
 import {
   PatientRecordModuleId,
@@ -643,7 +644,7 @@ describe('PatientRecordComponent', () => {
     expect(growth.weightMeasurements()).toEqual([]);
     expect(growth.isLoadingGrowthCurves()).toBe(false);
     const alert = fixture.nativeElement.querySelector('[role="alert"]');
-    expect(alert.textContent).toContain('No se pudieron cargar las curvas y mediciones OMS');
+    expect(alert.textContent).toContain('No se pudieron cargar las curvas y mediciones de crecimiento');
     alert.querySelector('button').click();
     fixture.detectChanges();
     expect(growth.growthError()).toBeNull();
@@ -873,7 +874,7 @@ describe('PatientRecordComponent', () => {
     expect(toolbar).toBeTruthy();
 
     // Verify pills
-    const pills = fixture.nativeElement.querySelectorAll('.growth-pill-btn');
+    const pills = toolbar.querySelectorAll('.growth-pill-btn');
     expect(pills.length).toBe(6);
 
     // Switch metric to HEIGHT
@@ -886,6 +887,40 @@ describe('PatientRecordComponent', () => {
     fixture.detectChanges();
     const charts = fixture.nativeElement.querySelectorAll('app-growth-chart');
     expect(charts.length).toBe(5);
+  });
+
+  it('renders interactive Down syndrome charts while keeping the selected WHO indicator', () => {
+    component.setTab('curvas');
+    growth.selectedGrowthMetric.set('BMI');
+    fixture.detectChanges();
+    const priorReads = growthReadSpy.mock.calls.length;
+    const measurementCount = growth.backendGrowthMeasurements().length;
+    const options = fixture.nativeElement.querySelectorAll('.reference-options button');
+    options[1].click();
+    fixture.detectChanges();
+    const pages = () => [...fixture.nativeElement.querySelectorAll('.de-chart')]
+      .map((chart) => (chart as HTMLElement).dataset['referencePage']);
+    expect(pages()).toEqual(['1', '5']);
+    for (const chart of fixture.nativeElement.querySelectorAll('.de-chart')) {
+      expect([...chart.querySelectorAll('[data-standard-deviation]')].map((path) =>
+        Number((path as SVGElement).dataset['standardDeviation']),
+      )).toEqual([-3, -2, -1, 0, 1, 2, 3]);
+      expect(chart.querySelector('img, image')).toBeNull();
+    }
+    const svg = fixture.nativeElement.querySelector('.de-chart .growth-svg');
+    expect(svg.querySelectorAll('.patient-point').length).toBeGreaterThan(1);
+    expect(svg.querySelector('.patient-line').getAttribute('d')).toContain('L');
+    const metrics = fixture.nativeElement.querySelectorAll('.growth-toolbar button');
+    metrics[1].click();
+    fixture.detectChanges();
+    expect(pages()).toEqual(['5']);
+    options[0].click();
+    fixture.detectChanges();
+    expect(pages()).toEqual([]);
+    expect(growth.selectedGrowthMetric()).toBe('BMI');
+    expect(fixture.nativeElement.querySelector('app-growth-chart')).toBeTruthy();
+    expect(growthReadSpy.mock.calls).toHaveLength(priorReads);
+    expect(growth.backendGrowthMeasurements()).toHaveLength(measurementCount);
   });
 
   it('renders the canonical backend birth and consultation measurements', () => {
@@ -932,7 +967,7 @@ describe('PatientRecordComponent', () => {
     rx.printRecord(history.encounters()[0]);
     expect(rx.draftStudies()).toEqual(['Tomografía']);
     expect(rx.savedPrescriptionRecords()).toEqual([]);
-    expect(rx.rxSuccessMessage()).toBeNull();
+    expect(TestBed.inject(InteractionStatusService).success()).toBe('');
     expect(rx.rxErrorMessage()).toContain('No se pudo guardar');
     expect(rx.rxBusy()).toBe(false);
     expect(dispatch).not.toHaveBeenCalled();

@@ -22,13 +22,10 @@
       <div class="login-card-body">
         <div class="login-form-heading">
           <h1 id="login-title">Iniciar sesión</h1>
-          <p>Accedé a DoctorChart con tu cuenta.</p>
+          <p>Acceso médico con tu cuenta de Bycode.</p>
         </div>
         @if (errorMessage()) {
           <p class="m3-alert-error" role="alert">{{ errorMessage() }}</p>
-        }
-        @if (successMessage()) {
-          <p class="m3-alert-success" role="status">{{ successMessage() }}</p>
         }
         @if (mode() === 'login') {
           <form [formGroup]="loginForm" class="auth-form" (ngSubmit)="onLoginSubmit()">
@@ -62,6 +59,9 @@
           </form>
         }
         <div class="login-secondary-links">
+          @if (staffEnabled) {
+            <a routerLink="/staff/login" class="login-staff-link">Ingresar como secretaria</a>
+          }
           <p>¿No tenés cuenta? <a [href]="bycodeRegisterUrl">Crear cuenta en Bycode</a></p>
           <a [href]="bycodeLoginUrl">Recuperar acceso en Bycode</a>
         </div>

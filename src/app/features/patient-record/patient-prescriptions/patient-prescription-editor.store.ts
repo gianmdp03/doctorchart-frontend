@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../../core/services/interaction-status.service';
 import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import { formatInstant } from '../../../core/date/user-time-zone';
 import {
@@ -33,6 +34,7 @@ export type PrescriptionOrderFormMode = 'MEDICATION' | 'STUDY';
 /** Record-scoped editor, independent of the consultation and growth modules. */
 @Injectable()
 export class PatientPrescriptionEditorStore {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly clinicalScope = inject(ClinicalContextService);
   private readonly workspace = inject(WorkspaceStore);
   readonly prescriptionsEnabled = computed(() => this.workspace.hasRecordTab('PRESCRIPTIONS'));
@@ -98,7 +100,6 @@ export class PatientPrescriptionEditorStore {
 
   readonly rxErrorMessage = this.prescriptionStore.error;
 
-  readonly rxSuccessMessage = this.prescriptionStore.success;
 
   readonly rxBusy = this.prescriptionStore.busy;
 
@@ -167,7 +168,6 @@ export class PatientPrescriptionEditorStore {
   setRxFormMode(mode: PrescriptionOrderFormMode): void {
     this.rxFormMode.set(mode);
     this.rxErrorMessage.set(null);
-    this.rxSuccessMessage.set(null);
   }
 
   addMedicationToDraft(): void {
@@ -197,7 +197,6 @@ export class PatientPrescriptionEditorStore {
     this.rxDurationDays.set(null);
     this.rxMedInstructions.set('');
     this.rxErrorMessage.set(null);
-    this.rxSuccessMessage.set(null);
   }
 
   removeMedicationFromDraft(index: number): void {
@@ -225,7 +224,6 @@ export class PatientPrescriptionEditorStore {
     this.rxStudyName.set('');
     this.rxStudySpecification.set('');
     this.rxErrorMessage.set(null);
-    this.rxSuccessMessage.set(null);
   }
 
   removeStudyFromDraft(index: number): void {
@@ -244,7 +242,7 @@ export class PatientPrescriptionEditorStore {
     };
     this.draftPrescriptions.update((list) => [...list, item]);
     this.rxErrorMessage.set(null);
-    this.rxSuccessMessage.set(`Se agregó "${medName}" a la receta actual.`);
+    this.interaction.notifySuccess('El medicamento se agregó al borrador de la receta.');
   }
 
   clearRxForm(): void {
@@ -260,7 +258,6 @@ export class PatientPrescriptionEditorStore {
     this.draftPrescriptions.set([]);
     this.draftStudies.set([]);
     this.rxErrorMessage.set(null);
-    this.rxSuccessMessage.set(null);
   }
 
   private commitPendingRxInputs(): boolean {

@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../../core/services/interaction-status.service';
 import { ClinicalContextService } from '../../../core/services/clinical-context.service';
 import { formatInstant, instantParts } from '../../../core/date/user-time-zone';
 import { Subject, takeUntil } from 'rxjs';
@@ -27,7 +28,6 @@ import {
   lucideDownload,
   lucideExternalLink,
   lucideTrash2,
-  lucideCheckCircle2,
   lucideAlertCircle,
   lucideFolderOpen,
 } from '@ng-icons/lucide';
@@ -50,7 +50,6 @@ const MAX_STUDY_FILE_BYTES = 10_000_000;
       lucideDownload,
       lucideExternalLink,
       lucideTrash2,
-      lucideCheckCircle2,
       lucideAlertCircle,
       lucideFolderOpen,
     }),
@@ -60,6 +59,7 @@ const MAX_STUDY_FILE_BYTES = 10_000_000;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PatientStudiesComponent {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly clinicalScope = inject(ClinicalContextService);
   private readonly studyService = inject(PatientMedicalStudyService);
   private readonly auth = inject(AuthService);
@@ -81,7 +81,7 @@ export class PatientStudiesComponent {
     if (!isInitial) {
       this.clearSelectedFile();
     }
-    this.errorMessage.set(null); this.successMessage.set(null);
+    this.errorMessage.set(null);
     this.isLoading.set(false); this.isUploading.set(false);
     this.releasePreviews();
   }
@@ -103,7 +103,6 @@ export class PatientStudiesComponent {
   readonly isLoading = signal<boolean>(false);
   readonly isUploading = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly successMessage = signal<string | null>(null);
 
   readonly selectedFile = signal<File | null>(null);
   readonly studyName = signal('');
@@ -235,7 +234,6 @@ export class PatientStudiesComponent {
     const pid = this.patientId();
     this.isUploading.set(true);
     this.errorMessage.set(null);
-    this.successMessage.set(null);
 
     this.studyService.uploadStudy(pid, file, this.studyName(), this.description()).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
@@ -244,8 +242,7 @@ export class PatientStudiesComponent {
         this.studies.update((list) => [created, ...list]);
         this.clearSelectedFile();
         this.isUploading.set(false);
-        this.successMessage.set('Estudio médico subido exitosamente.');
-        setTimeout(() => { if (this.current(revision)) this.successMessage.set(null); }, 4000);
+        this.interaction.notifySuccess('El estudio se subió correctamente.');
       },
       error: (error) => {
         if (!this.current(revision)) return;
@@ -355,8 +352,7 @@ export class PatientStudiesComponent {
         this.studies.update((list) => list.filter((s) => s.id !== study.id));
         if (this.previewStudy()?.id === study.id) this.closeStudyPreview();
         this.pendingDelete.set(null); this.isDeleting.set(false);
-        this.successMessage.set('Estudio eliminado correctamente.');
-        setTimeout(() => { if (this.current(revision)) this.successMessage.set(null); }, 3000);
+        this.interaction.notifySuccess('El estudio se eliminó correctamente.');
       },
       error: () => {
         if (!this.current(revision)) return;

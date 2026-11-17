@@ -13,6 +13,12 @@ describe('M5 explicit clinical routes',()=>{
  it('adds the chosen tab context to a clinical URL',async()=>{expect(String(await run({}))).toBe('/patients?specialtyContextId=101');expect(store.activateContext).not.toHaveBeenCalled();});
  it('honors the URL and sends only its pending context to the existing wizard',async()=>{expect(String(await run({specialtyContextId:'202'}))).toBe('/onboarding/setup?specialtyContextId=202');expect(store.activateContext).toHaveBeenCalledWith(202);});
  it('does not block global administration when the selected context is pending',async()=>{expect(await run({specialtyContextId:'202'},{})).toBe(true);});
+ it('reports a failed wizard load and allows retrying the same specialty',async()=>{
+  store.activateContext.mockRejectedValueOnce(new Error('offline'));
+  expect(await run({specialtyContextId:'202'},{clinicalContext:true,allowPending:true})).toBe(false);
+  expect(TestBed.inject(ClinicalNavigationService).notice()).toContain('Volvé a intentar');
+  expect(await run({specialtyContextId:'202'},{clinicalContext:true,allowPending:true})).toBe(true);
+ });
  it('rejects foreign and malformed context URLs before loading a configuration',async()=>{for(const id of ['999','bad','0',''])expect(String(await run({specialtyContextId:id}))).toBe('/specialties');expect(store.activateContext).not.toHaveBeenCalled();});
  it('requires a decision for dirty edits and blocks switching during a write',async()=>{const nav=TestBed.inject(ClinicalNavigationService);nav.dirty.set(true);const decision=TestBed.runInInjectionContext(()=>clinicalLeaveGuard({},{} as any,{url:'/patients?specialtyContextId=101'} as any,{url:'/patients?specialtyContextId=202'} as any));expect(nav.dialog()).toBe(true);nav.answer('cancel');expect(await decision).toBe(false);const write=nav.beginWrite();expect(await nav.canLeaveEditing()).toBe(false);write.end();});
 });

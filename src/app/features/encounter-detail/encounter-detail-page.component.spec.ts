@@ -27,20 +27,24 @@ describe('EncounterDetailPageComponent saved snapshot editing', () => {
     await fixture.whenStable(); fixture.detectChanges();
   });
   function edit(): void { component.startEditing(); component.onValuesChange({ readingA: 0, readingB: 20, notes: 'Edición local', result: 100, unknown: 'No enviar' }); component.formValid.set(true); }
-  it('displays a saved next consultation and preserves edits or clearing in the update payload', async () => {
-    record.formDefinitionSnapshot.categories[0].fields.push({ key: 'followUpDate', label: 'Próximo control', type: 'DATE', required: false });
-    record.formValues['followUpDate'] = '2028-02-29'; record.followUpDate = '2028-02-29';
+  it('hides legacy scheduling and posture fields, and only changes the posture when confirmed', async () => {
+    record.formDefinitionSnapshot.categories[0].fields.push(
+      { key: 'followUpDate', label: 'Próximo control', type: 'DATE', required: false },
+      { key: 'heightMeasurementMode', label: 'Postura', type: 'TEXT', required: false },
+    );
+    record.formValues['followUpDate'] = '2028-02-29';
+    record.formValues['heightMeasurementMode'] = 'RECUMBENT';
     await component.loadEncounter(77); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[data-field-key="followUpDate"]').textContent).toContain('29/02/2028');
-    component.startEditing();
-    component.onValuesChange({ ...record.formValues, followUpDate: '2028-03-01' }); component.formValid.set(true);
-    await component.save();
-    expect(service.update.mock.calls[0][1].values.followUpDate).toBe('2028-03-01');
-    component.startEditing();
-    component.onValuesChange({ ...record.formValues, followUpDate: null }); component.formValid.set(true);
-    await component.save();
-    expect(service.update.mock.calls[1][1].values.followUpDate).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-field-key="followUpDate"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-field-key="heightMeasurementMode"]')).toBeNull();
+    edit(); await component.save();
+    expect(service.update.mock.calls[0][1].values).toMatchObject({ followUpDate: '2028-02-29', heightMeasurementMode: 'RECUMBENT' });
+    edit(); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Confirmo que la talla se midió de pie');
+    component.correctHeightPosition.set(true); await component.save();
+    expect(service.update.mock.calls[1][1].values).toMatchObject({ followUpDate: '2028-02-29', heightMeasurementMode: 'STANDING' });
   });
+
   it('keeps the consultation readable and editable without a print action even when printing is enabled', () => {
     expect([...fixture.nativeElement.querySelectorAll('button')].some((el:any)=>el.textContent.trim()==='Imprimir')).toBe(false);
     expect([...fixture.nativeElement.querySelectorAll('button')].some((el:any)=>el.textContent.trim()==='Editar consulta')).toBe(true);

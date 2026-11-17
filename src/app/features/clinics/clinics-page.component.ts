@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 import {
   ChangeDetectionStrategy,
@@ -14,7 +15,6 @@ import {
   lucideArchive,
   lucideArchiveRestore,
   lucideBuilding2,
-  lucideCheckCircle2,
   lucideChevronLeft,
   lucideChevronRight,
   lucideClock,
@@ -75,7 +75,6 @@ interface StatusFilterOption {
       lucideArchive,
       lucideArchiveRestore,
       lucideShieldAlert,
-      lucideCheckCircle2,
       lucideChevronLeft,
       lucideChevronRight,
       lucideExternalLink,
@@ -86,6 +85,7 @@ interface StatusFilterOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClinicsPageComponent implements OnInit {
+  private readonly interaction = inject(InteractionStatusService);
  readonly schedulesEnabled=FEATURE_FLAGS.SCHEDULES_ENABLED;
   private readonly clinicsService = inject(ClinicsService);
   private readonly router = inject(Router);
@@ -116,7 +116,6 @@ export class ClinicsPageComponent implements OnInit {
   readonly isLoading = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly actionError = signal<string | null>(null);
-  readonly actionFeedback = signal<string | null>(null);
   readonly mutatingClinicId = signal<string | null>(null);
 
   readonly plansUrl = environment.bycodePlansUrl || '';
@@ -209,7 +208,6 @@ export class ClinicsPageComponent implements OnInit {
     this.isLoading.set(false);
     this.loadError.set(null);
     this.actionError.set(null);
-    this.actionFeedback.set(null);
     this.mutatingClinicId.set(null);
   }
 
@@ -278,7 +276,6 @@ export class ClinicsPageComponent implements OnInit {
     this.statusFilter.set(filter);
     this.currentPage.set(0);
     this.actionError.set(null);
-    this.actionFeedback.set(null);
     void this.reloadAll();
   }
 
@@ -341,7 +338,6 @@ export class ClinicsPageComponent implements OnInit {
 
     this.mutatingClinicId.set(clinic.id);
     this.actionError.set(null);
-    this.actionFeedback.set(null);
 
     try {
       const updated = await firstValueFrom(
@@ -353,7 +349,7 @@ export class ClinicsPageComponent implements OnInit {
       if (!isMutationCurrent() || updated.id !== clinic.id) {
         return;
       }
-      this.actionFeedback.set(
+      this.interaction.notifySuccess(
         `El estado de "${updated.name}" se actualizó a ${formatClinicStatusLabel(updated.status)}.${preservedBookingsNotice(updated)}`,
       );
       await this.reloadAll();

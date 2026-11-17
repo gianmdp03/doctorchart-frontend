@@ -147,7 +147,7 @@ async function scheduleUI(page,clinic,context,days,start,end,minutes){
   let releaseOld;const oldGate=new Promise(r=>releaseOld=r);await pub.route('**/availability?**',async route=>{if(new URL(route.request().url()).searchParams.get('specialtyContextId')===String(general))await oldGate;await route.continue();});
   await pub.getByLabel('Especialidad de la reserva').selectOption(String(general));await pub.getByLabel('Especialidad de la reserva').selectOption(String(derm));releaseOld();await pub.locator('[data-public-slot]').first().waitFor();assert.equal(await pub.getByLabel('Especialidad de la reserva').inputValue(),String(derm));await pub.unroute('**/availability?**');
   await pub.locator('[data-public-slot]').first().click();await pub.locator('#public-contact').fill('Visitante sintético');await pub.locator('#public-document').fill('12345678');await pub.locator('#public-phone').fill('2231234567');await pub.locator('#public-email').fill('visitor-m6@local.test');await pub.locator('#public-consent').check();
-  const publicResponse=pub.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/bookings')&&r.request().method()==='POST');await pub.locator('#public-confirm').click();const publicReply=await publicResponse;assert.equal(publicReply.status(),201);const confirmation=await publicReply.json();await pub.getByText(confirmation.reference,{exact:true}).waitFor();const originalBody=publicReply.request().postDataJSON(),receipt=publicReply.request().headers()['idempotency-key'];
+  const publicResponse=pub.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/bookings')&&r.request().method()==='POST');await pub.locator('#public-review').click();await pub.locator('#public-confirm').click();const publicReply=await publicResponse;assert.equal(publicReply.status(),201);const confirmation=await publicReply.json();await pub.getByText(confirmation.reference,{exact:true}).waitFor();const originalBody=publicReply.request().postDataJSON(),receipt=publicReply.request().headers()['idempotency-key'];
   assert.equal(originalBody.specialtyContextId,String(derm));assert.equal(db('SELECT count(*) FROM patients'),'3');
   const publicBooking=JSON.parse(db("SELECT json_build_object('context',specialty_context_id::text,'patient',patient_id,'slot',provenance->>'blockId','minutes',provenance->>'slotMinutes','end',end_at)::text FROM bookings b JOIN booking_public_details p ON p.booking_id=b.id WHERE p.reference='"+confirmation.reference+"'"));assert.equal(publicBooking.context,String(derm));assert.equal(publicBooking.patient,null);assert.equal(publicBooking.minutes,'30');assert.ok(publicBooking.slot);
   const replay=await api(pub,'POST','/public/appointments/doctors/'+publication.publicId+'/bookings',originalBody,null,201,receipt);assert.deepEqual(replay,confirmation);
@@ -206,9 +206,9 @@ async function scheduleUI(page,clinic,context,days,start,end,minutes){
   assert.ok(virtualProfile.publicId,JSON.stringify(virtualProfile));
 
   await pub.goto(origin+'/appointments');
-  await pub.getByRole('heading',{name:'Encontrá un turno',exact:true}).waitFor();
+  await pub.getByRole('heading',{name:'Encontrá tu próximo turno',exact:true}).waitFor();
   await pub.getByRole('combobox',{name:'Modalidad',exact:true}).selectOption('TELECONSULTATION');
-  await pub.getByRole('link',{name:/Ver horarios/}).click();
+  await pub.getByRole('link',{name:/Ver disponibilidad/}).click();
   await pub.locator('#public-date').fill(monday.split('-').reverse().join('/'));
   await pub.locator('#public-date').press('Tab');
   await pub.locator('[data-public-slot]').first().click();
@@ -219,7 +219,7 @@ async function scheduleUI(page,clinic,context,days,start,end,minutes){
   await pub.locator('#public-email').fill('virtual-m6@local.test');
   await pub.locator('#public-consent').check();
   const virtualResponse=pub.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/bookings')&&r.request().method()==='POST');
-  await pub.locator('#public-confirm').click();
+  await pub.locator('#public-review').click();await pub.locator('#public-confirm').click();
   const virtualReceipt=await virtualResponse;
   assert.equal(virtualReceipt.status(),201);
   const confirmedVirtual=await virtualReceipt.json();

@@ -44,7 +44,7 @@
                 [class.active]="step.key === activeStepKey()"
                 [class.completed]="index < activeStepIndex()"
                 [attr.aria-current]="step.key === activeStepKey() ? 'step' : null"
-                [disabled]="editorReadonly() || (isEditMode() && step.kind === 'specialty')"
+                [disabled]="editorReadonly() || step.key === activeStepKey()"
                 (click)="goToStep(index)">
                 <span class="step-indicator" aria-hidden="true">
                   @if (index < activeStepIndex()) {
@@ -68,7 +68,6 @@
 
     @if (isLoading()) { <p role="status">Cargando tu configuración...</p> }
     @if (errorMessage()) { <div class="error-banner" role="alert">{{ errorMessage() }}</div> }
-    @if (successMessage()) { <div class="success-banner" role="status">{{ successMessage() }}</div> }
 
     @if (hasConflict()) {
       <section class="conflict-review" aria-label="Revisar conflicto">
@@ -122,19 +121,16 @@
             [selectedCategoryKey]="activeStep().categoryKey ?? null"
             [readonly]="editorReadonly()" (definitionChange)="onPatientDefinitionChange($event)"
             (categorySelected)="onPatientCategorySelected($event)" />
-        } @else if (activeStep().kind === 'encounter') {
+        } @else {
           <p class="section-note">Historia Clínica está presente en todas las especialidades. Sus categorías y campos se usan en cada consulta.</p>
           <app-form-field-editor [definition]="current.encounterForm" section="encounterForm"
             [readonly]="editorReadonly()" (definitionChange)="onEncounterDefinitionChange($event)" />
-        } @else {
-          <p>Tu especialidad seleccionada es {{ workspace()?.specialty?.name }}.</p>
-          <button type="button" class="secondary-button" [disabled]="editorReadonly()" (click)="goToStep(0)">Revisar la selección de especialidad</button>
         }
       </section>
 
       <footer class="wizard-footer">
         <div class="footer-left">
-          @if (activeStepIndex() > (isEditMode() ? 1 : 0)) {
+          @if (activeStepIndex() > 0) {
             <button type="button" class="secondary-button" [disabled]="editorReadonly()" (click)="goPrevious()">Anterior</button>
           }
           @if (isEditMode()) {

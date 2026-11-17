@@ -19,12 +19,13 @@ export interface GrowthChartDefinition {
   sex: BiologicalSex;
   ageMinMonths: number;
   ageMaxMonths: number;
-  reference: 'WHO 2006' | 'WHO 2007';
+  reference: 'WHO 2006' | 'WHO 2007' | 'Myrelid 2002';
   dataset: string;
   measurementMode: string;
   x: GrowthAxis;
   y: GrowthAxis;
   percentiles: number[];
+  standardDeviations?: number[];
   source: string;
 }
 export interface GrowthEvaluation {
@@ -52,7 +53,7 @@ export interface PatientGrowthPoint extends GrowthObservation {
 }
 export interface GrowthCurvePoint {
   x: number;
-  values: number[];
+  values: (number | null)[];
 }
 export interface GrowthReferenceChart {
   definition: GrowthChartDefinition;

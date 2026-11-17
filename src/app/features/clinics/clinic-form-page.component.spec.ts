@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from '@angular/router';
@@ -91,6 +92,7 @@ describe('ClinicFormPageComponent', () => {
     fixture.detectChanges();
 
     expect(navSpy).toHaveBeenCalledWith(['/clinics']);
+    expect(TestBed.inject(InteractionStatusService).success()).toBe('El consultorio se creó correctamente.');
     const created = mockBackend
       .snapshotClinics()
       .find((item) => item.name === 'Consultorio Caballito');

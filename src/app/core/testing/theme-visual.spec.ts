@@ -63,7 +63,7 @@ describe('Theme integration', () => {
           { key: 'weight', label: 'Peso', type: 'NUMBER', required: false, unit: 'kg' },
         ] }] },
       }], page: { totalElements: 1, totalPages: 1 } }) } },
-      { provide: WorkspaceStore, useValue: { contexts:()=>[],hasReadyContext:()=>true, quickNotes: signal('Recordatorio de ejemplo'), navigation: signal([
+      { provide: WorkspaceStore, useValue: { contexts:()=>[],hasReadyContext:()=>true, clinicsEnabled:signal(true), specialtyDisplayName:signal('Pediatría'), quickNotes: signal('Recordatorio de ejemplo'), navigation: signal([
         { id: 'DASHBOARD', path: '/dashboard', label: 'Inicio', title: 'Inicio', icon: 'lucideLayoutDashboard' },
         { id: 'PATIENTS', path: '/patients', label: 'Pacientes', title: 'Pacientes', icon: 'lucideUsers' },
         { id: 'VACCINATION', path: '/vaccination-calendar', label: 'Vacunación', title: 'Vacunación', icon: 'lucideCalendarDays' },
@@ -73,6 +73,7 @@ describe('Theme integration', () => {
     const fixture = TestBed.createComponent(ThemeVisualHost);
     fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
     const output = process.env['THEME_VISUAL_DIR'];
+    const previewOrigin = process.env['THEME_VISUAL_ORIGIN'] ?? 'http://127.0.0.1:4202';
     const saveWorkspace = (theme: 'light' | 'dark') => {
       if (!output) return;
       mkdirSync(output, { recursive: true });
@@ -85,7 +86,7 @@ describe('Theme integration', () => {
       const styles = document.head.innerHTML + `<style>${readFileSync('src/app/app.css', 'utf8')}</style>`;
       writeFileSync(join(output, `workspace-${theme}.html`), `<!doctype html><html lang="es" class="${theme === 'dark' ? 'dark' : ''}"><head>
         <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-        <link rel="stylesheet" href="http://127.0.0.1:4202/styles.css">${styles}</head><body>${clone.outerHTML}</body></html>`);
+        <link rel="stylesheet" href="${previewOrigin}/styles.css">${styles}</head><body>${clone.outerHTML}</body></html>`);
     };
     const button = fixture.nativeElement.querySelector('app-theme-toggle button') as HTMLButtonElement;
     button.click(); fixture.detectChanges();
@@ -93,7 +94,7 @@ describe('Theme integration', () => {
     expect(fixture.nativeElement.querySelector('.date-picker-input').value).toBe('13/10/2026');
     expect(fixture.nativeElement.querySelectorAll('.reference-curve').length).toBe(5);
     expect(fixture.nativeElement.querySelector('.recent-patient-info h3')?.textContent).toContain('Paciente de ejemplo');
-    expect(fixture.nativeElement.querySelector('.recent-clinical-summary b')?.textContent).toContain('Evolución');
+    expect(fixture.nativeElement.querySelector('.clinical-summary strong')?.textContent).toContain('Evolución');
     saveWorkspace('dark');
     button.click(); fixture.detectChanges();
     expect(document.documentElement.classList.contains('dark')).toBe(false);
@@ -106,7 +107,7 @@ describe('Theme integration', () => {
     const overlay = document.querySelector('.cdk-overlay-container');
     expect(overlay?.querySelector('mat-calendar')).toBeTruthy();
     writeFileSync(join(output, 'calendar.html'), `<!doctype html><html lang="es"><head>
-      <meta charset="utf-8"><link rel="stylesheet" href="http://127.0.0.1:4202/styles.css">
+      <meta charset="utf-8"><link rel="stylesheet" href="${previewOrigin}/styles.css">
       ${document.head.innerHTML}</head><body>${overlay?.outerHTML}</body></html>`);
   });
 });

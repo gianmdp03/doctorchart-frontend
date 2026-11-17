@@ -20,6 +20,7 @@ h2 { margin: 0 0 6px; color: var(--dc-ink, #0f172a); font-size: 1.125rem; font-w
 .consultation-metadata, .encounter-content.is-editing { padding: 24px; border: 1px solid var(--dc-outline, #dce7e9); border-radius: 14px; background: var(--dc-surface, #fff); }
 .consultation-metadata p { color: var(--dc-ink-secondary, #52647a); font-size: .8125rem; }
 .consultation-metadata label { display: flex; flex-direction: column; gap: 8px; max-width: 400px; margin-top: 16px; font-size: .8125rem; color: var(--dc-ink, #0f172a); }
+.consultation-metadata .height-position-confirmation { flex-direction: row; align-items: center; }
 select { padding: 10px; border-radius: 8px; border: 1px solid var(--dc-outline, #dce7e9); color: inherit; background: var(--dc-surface-low, #f8fafc); }
 .page-actions { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 12px; padding: 20px 0; border-top: 1px solid var(--dc-outline, #dce7e9); }
 .page-actions > span { margin-right: auto; color: var(--dc-ink-secondary, #52647a); font-size: .75rem; }

@@ -11,7 +11,12 @@ export type AdministrativeBooking=Omit<Booking,'patientId'|'provenance'|'clinicS
 export interface StaffSession {email:string;name:string;csrfToken:string;expiresAt:string;recoveryCode?:string;}
 export interface Assignment {modality?:AppointmentModality;doctorName?:string;ownerId:string;accessId:string;clinicId:string;clinicName:string;timezone:string;permissions:StaffPermission[];validUntil:string;}
 export interface StaffAccess {phone?:string;id:string;email:string;name:string;version:string;active:boolean;activated:boolean;permissions:StaffPermission[];clinicIds:string[];}
-export interface SlotDay {date:string;slots:{start:string;end:string}[];}
+export interface SlotDay {
+ date:string;
+ slots:{start:string;end:string}[];
+ hours?:{start:string;end:string}[];
+ closed?:boolean;
+}
 export function staffError(error:unknown):string {
  const e=error as HttpErrorResponse; const code=e?.error?.code;
  if(e?.status===400&&code==='INVALID_REQUEST'&&typeof e.error.message==='string')return e.error.message;

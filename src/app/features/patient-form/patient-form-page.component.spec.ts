@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -90,6 +91,7 @@ describe('PatientFormPageComponent dedicated page', () => {
 
     expect(patientService.createPatient).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith(['/patients', patient.id]);
+    expect(TestBed.inject(InteractionStatusService).success()).toBe('El paciente se creó correctamente.');
   });
   it('collects clinical history when it is enabled in the specialty definition', async () => {
     workspace.definition!.patientForm.categories.push(createClinicalHistoryCategory());

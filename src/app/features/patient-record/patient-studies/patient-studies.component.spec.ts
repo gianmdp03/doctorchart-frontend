@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../../core/services/interaction-status.service';
 import { signal } from '@angular/core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -164,7 +165,7 @@ describe('PatientStudiesComponent', () => {
     expect(component.selectedFile()).toBeNull();
     expect(draftStore.draftFile()).toBeNull();
     expect(draftStore.draftDescription()).toBe('');
-    expect(component.successMessage()).toContain('exitosamente');
+    expect(TestBed.inject(InteractionStatusService).success()).toBe('El estudio se subió correctamente.');
     expect(component.studies()[0].id).toBe(2);
   });
 
@@ -314,7 +315,7 @@ describe('PatientStudiesComponent', () => {
     component.selectedFile.set(new File(['old'],'old.pdf')); component.description.set('Descripción A'); component.submitUpload();
     fixture.componentRef.setInput('patientId',20); fixture.detectChanges();
     expect(pending.observed).toBe(false); expect(component.selectedFile()).toBeNull(); expect(component.description()).toBe('');
-    pending.next({...mockStudies[0],id:99}); expect(component.isUploading()).toBe(false); expect(component.successMessage()).toBeNull();
+    pending.next({...mockStudies[0],id:99}); expect(component.isUploading()).toBe(false); expect(TestBed.inject(InteractionStatusService).success()).toBe('');
   });
   it('rejects a late upload success after account changes before the context effect runs', () => {
     const pending=new Subject<PatientMedicalStudy>(); studyServiceMock.uploadStudy.mockReturnValue(pending);

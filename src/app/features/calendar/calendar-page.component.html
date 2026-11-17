@@ -12,7 +12,6 @@
   <button class="refresh-calendar" (click)="load()" [disabled]="loading()" aria-label="Actualizar calendario">↻ Actualizar</button>
  </section>
  @if(error()){<div class="notice error" role="alert">{{error()}} <button (click)="load()">Reintentar</button></div>}
- @if(feedback()){<p class="notice success" role="status">{{feedback()}}</p>}
  @if(!allowed()){<div class="notice" role="status">Modo de consulta: los permisos comerciales no están vigentes o no pudieron verificarse. <button (click)="retryCapabilities()">Verificar permisos</button></div>}
  @else if(!canBook()){<p class="notice">Regularizá el cupo de consultorios para crear o reprogramar turnos presenciales. Podés gestionar los estados de los turnos existentes.</p>}
  @if(!loading() && clinics().length){

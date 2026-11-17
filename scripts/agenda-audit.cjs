@@ -218,7 +218,7 @@ async function publicProfile(page, modality, doctor, clinic, specialty, value = 
   await page.goto(origin + '/appointments');
   const directory = page.locator('.search-results');
   await page.getByRole('combobox', { name: 'Modalidad', exact: true }).selectOption(modality);
-  await directory.locator(`article`).filter({ hasText: doctor }).filter({ hasText: clinic }).getByRole('link', { name: /Ver horarios/ }).click();
+  await directory.locator(`article`).filter({ hasText: doctor }).filter({ hasText: clinic }).getByRole('link', { name: /Ver disponibilidad/ }).click();
   await page.getByRole('heading', { name: doctor, exact: true }).waitFor();
   const filter = page.getByLabel('Especialidad de la reserva');
   if (await filter.count()) await filter.selectOption({ label: specialty });
@@ -232,6 +232,7 @@ async function publicForm(page, start, name, email) {
   await page.locator('#public-phone').fill('2231234567');
   await page.locator('#public-email').fill(email);
   await page.locator('#public-consent').check();
+  await page.locator('#public-review').click();
 }
 
 async function confirmed(page, receipt, modality, start) {
@@ -499,7 +500,7 @@ async function main() {
       physicalReceipt = await action(physicalPatient, 'POST', /\/public\/appointments\/doctors\/[^/]+\/bookings$/, () => physicalPatient.locator('#public-confirm').click(), 201);
       await confirmed(physicalPatient, physicalReceipt, 'IN_PERSON', physicalStart);
       assert.equal(physicalReceipt.address, a.address);
-      await physicalPatient.locator('.confirmation-card').getByText(/09:00.*09:30/).waitFor();
+      await physicalPatient.locator('app-public-booking-receipt').getByText(/09:00.*09:30/).waitFor();
       return { start: physicalReceipt.start, address: physicalReceipt.address, reference: physicalReceipt.reference };
     });
 
@@ -519,7 +520,7 @@ async function main() {
       virtualWinner = { name: virtualNames[winner], receipt, page: pages[winner], loser: pages[loser] };
       await confirmed(pages[winner], receipt, 'TELECONSULTATION', virtualStart);
       assert.equal(receipt.address, '');
-      assert.equal(await pages[winner].locator('.confirmation-card').getByText(/Dirección de ensayo/).count(), 0);
+      assert.equal(await pages[winner].locator('app-public-booking-receipt').getByText(/Dirección de ensayo/).count(), 0);
       assert.equal(rejected.code, 'BOOKING_SLOT_UNAVAILABLE');
       await pages[loser].getByRole('alert').filter({ hasText: /horario|disponible/i }).first().waitFor();
       await pages[loser].screenshot({ path: output('B06-turno-ocupado.png'), fullPage: true });

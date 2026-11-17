@@ -1,6 +1,6 @@
-<section class="tab-panel animate-fade-in" aria-label="Evolución y curvas de crecimiento OMS">
+<section class="tab-panel animate-fade-in" aria-label="Evolución y curvas de crecimiento">
   @if (growth.isLoadingGrowthCurves()) {
-    <p role="status">Cargando referencias y mediciones OMS…</p>
+    <p role="status">Cargando referencias y mediciones de crecimiento…</p>
   } @else if (growth.growthError()) {
     <div class="growth-state" role="alert">
       <p>{{ growth.growthError() }}</p>
@@ -16,7 +16,7 @@
       <div class="growth-state" role="alert">
         <p>
           El registro no permite identificar el sexo de referencia antropométrica. Confirmá qué
-          referencia OMS corresponde a este paciente.
+          referencia de crecimiento corresponde a este paciente.
         </p>
         <button type="button" class="growth-pill-btn" (click)="growth.confirmSex('FEMALE')">
           Confirmar referencia femenina
@@ -29,6 +29,33 @@
         </p>
       </div>
     } @else {
+      <div class="growth-reference-selector">
+        <span id="growth-reference-label">Referencias de crecimiento</span>
+        <div
+          class="growth-selector-pills reference-options"
+          role="group"
+          aria-labelledby="growth-reference-label"
+        >
+          <button
+            type="button"
+            class="growth-pill-btn"
+            [class.active]="!isDown()"
+            [attr.aria-pressed]="!isDown()"
+            (click)="growth.referenceFamily.set('GENERAL')"
+          >
+            Curvas generales OMS
+          </button>
+          <button
+            type="button"
+            class="growth-pill-btn"
+            [class.active]="isDown()"
+            [attr.aria-pressed]="isDown()"
+            (click)="growth.referenceFamily.set('DOWN')"
+          >
+            Síndrome de Down
+          </button>
+        </div>
+      </div>
       <div class="growth-context">
         <span
           >{{ response.ageFormatted }} · Referencia
@@ -55,15 +82,25 @@
           />Consultar también períodos históricos</label
         >
       </div>
+      @if (isDown()) {
+        <h3 class="down-growth-title">Curvas de crecimiento para síndrome de Down</h3>
+      }
       @if (
-        response.referenceSex === 'FEMALE' && response.ageDays >= 731 && response.ageDays <= 1856
+        !isDown() &&
+        response.referenceSex === 'FEMALE' &&
+        response.ageDays >= 731 &&
+        response.ageDays <= 1856
       ) {
         <p class="growth-note">
           El PDF no incluye IMC de niñas de 2 a 5 años. Ese gráfico no se incorpora al catálogo de
           20 láminas.
         </p>
       }
-      @if (growth.categories().length === 0) {
+      @if (isDown() && response.sexSource !== 'SYSTEM_SEX') {
+        <p class="growth-state" role="status">
+          Registrá el sexo en la ficha del paciente para seleccionar estas curvas.
+        </p>
+      } @else if (metricOptions().length === 0) {
         <p class="growth-state" role="status">
           No hay una curva de este catálogo aplicable a la edad actual{{
             growth.showHistorical()
@@ -72,42 +109,54 @@
           }}.
         </p>
       } @else {
-        <label class="mobile-growth-select">Gráfico de crecimiento<select [value]="growth.effectiveMetric()" (change)="growth.selectedGrowthMetric.set($any($event.target).value)">@for (category of growth.categories(); track category.indicator) { <option [value]="category.indicator">{{ category.title }} ({{ category.count }})</option> }<option value="ALL">Todos los gráficos</option></select></label><div class="growth-toolbar">
+        <label class="mobile-growth-select"
+          >Gráfico de crecimiento
+          <select [value]="metric()" (change)="selectMetric($any($event.target).value)">
+            @for (category of metricOptions(); track category.indicator) {
+              <option [value]="category.indicator">
+                {{ category.title }}
+                ({{ category.count }})
+              </option>
+            }
+            <option value="ALL">Todos los gráficos</option>
+          </select>
+        </label>
+        <div class="growth-toolbar">
           <div
             class="growth-selector-pills"
             role="group"
             aria-label="Indicadores de crecimiento disponibles"
           >
-            @for (category of growth.categories(); track category.indicator) {
+            @for (category of metricOptions(); track category.indicator) {
               <button
                 type="button"
                 class="growth-pill-btn"
-                [class.active]="growth.effectiveMetric() === category.indicator"
-                [attr.aria-pressed]="growth.effectiveMetric() === category.indicator"
-                (click)="growth.selectedGrowthMetric.set(category.indicator)"
+                [class.active]="metric() === category.indicator"
+                [attr.aria-pressed]="metric() === category.indicator"
+                (click)="selectMetric(category.indicator)"
               >
-                <span>{{ category.title }}</span
-                ><span class="pill-badge">{{ category.count }}</span>
+                <span>{{ category.title }}</span>
+                <span class="pill-badge">{{ category.count }}</span>
               </button>
             }
             <button
               type="button"
               class="growth-pill-btn"
-              [class.active]="growth.effectiveMetric() === 'ALL'"
-              [attr.aria-pressed]="growth.effectiveMetric() === 'ALL'"
-              (click)="growth.selectedGrowthMetric.set('ALL')"
+              [class.active]="metric() === 'ALL'"
+              [attr.aria-pressed]="metric() === 'ALL'"
+              (click)="selectMetric('ALL')"
             >
               Ver todos los gráficos disponibles
             </button>
           </div>
         </div>
-        @for (chart of growth.visibleCharts(); track chart.definition.id) {
+        @for (chart of visibleCharts(); track chart.definition.id) {
           <app-growth-chart [chart]="chart" [encounters]="encounters()" />
         }
       }
       <p class="growth-note">
-        Edad cronológica calculada con fechas locales de la zona horaria del dispositivo. El sistema no dispone de una
-        política validada de edad corregida por prematuridad.
+        Edad cronológica calculada con fechas locales de la zona horaria del dispositivo. El sistema
+        no dispone de una política validada de edad corregida por prematuridad.
       </p>
     }
   }

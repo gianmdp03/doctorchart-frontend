@@ -1,6 +1,9 @@
 <article
   class="growth-chart-card"
   [class.theme-girl]="definition().sex === 'FEMALE'"
+  [class.long-age-chart]="usesYearsOnly()"
+  [class.de-chart]="usesStandardDeviations()"
+  [attr.data-reference-page]="usesStandardDeviations() ? definition().pdfPage : null"
   [class.bmi-chart]="definition().indicator === 'BMI'"
   [attr.data-chart-id]="definition().id"
 >
@@ -33,20 +36,24 @@
         <dt>Fecha</dt>
         <dd>{{ latestMeasurement() ? formatDate(latestMeasurement()!.date) : '—' }}</dd>
       </div>
-      <div>
-        <dt>Percentil OMS / Z</dt>
-        <dd>
-          {{ latestMeasurement() ? percentileLabel(latestMeasurement()!) : '—' }}
-          @if (latestMeasurement()?.evaluation) {
-            · Z {{ latestMeasurement()!.evaluation!.zScore | number: '1.2-3' }}
-          }
-        </dd>
-      </div>
+      @if (!usesStandardDeviations()) {
+        <div>
+          <dt>Percentil OMS / Z</dt>
+          <dd>
+            {{ latestMeasurement() ? percentileLabel(latestMeasurement()!) : '—' }}
+            @if (latestMeasurement()?.evaluation) {
+              · Z {{ latestMeasurement()!.evaluation!.zScore | number: '1.2-3' }}
+            }
+          </dd>
+        </div>
+      }
       <div>
         <dt>Puntos en gráfico</dt>
         <dd>
-          {{ visiblePoints().length }} de {{ chart().points.length }} ·
-          {{ evaluatedCount() }} evaluados
+          {{ visiblePoints().length }} de {{ chart().points.length }}
+          @if (!usesStandardDeviations()) {
+            · {{ evaluatedCount() }} evaluados
+          }
         </dd>
       </div>
       <div>
@@ -56,8 +63,10 @@
     </dl>
     @if (chart().points.length === 0) {
       <p class="notice">
-        No hay mediciones compatibles registradas para este gráfico. Se muestran las curvas
-        oficiales de referencia.
+        No hay mediciones compatibles registradas para este gráfico.
+        @if (!usesStandardDeviations()) {
+          Se muestran las curvas oficiales de referencia.
+        }
       </p>
     }
     @if (chart().omitted > 0) {
@@ -97,7 +106,10 @@
           {{ definition().title }} · {{ sexLabel() }} · {{ rangeLabel() }}
         </title>
         <desc [attr.id]="clipId() + '-desc'">
-          Curvas OMS P3, P15, P50, P85 y P97. Eje horizontal: {{ xTitle() }}. Eje vertical:
+          {{ usesStandardDeviations()
+            ? 'Curvas de −3 a +3 desviaciones estándar, digitalizadas de las láminas del INAN.'
+            : 'Curvas OMS P3, P15, P50, P85 y P97.' }}
+          Eje horizontal: {{ xTitle() }}. Eje vertical:
           {{ yTitle() }}. Las mediciones se identifican con {{ markerLabel() }}. Sus valores y
           fechas están disponibles también en el detalle.
         </desc>
@@ -191,7 +203,7 @@
           <text
             class="year-label"
             [attr.x]="xScale()(tick)"
-            [attr.y]="plot.bottom + 36"
+            [attr.y]="plot.bottom + (usesYearsOnly() ? 19 : 36)"
             text-anchor="middle"
           >
             {{ tick === 0 ? 'Nacimiento' : tick / 12 + (tick === 12 ? ' año' : ' años') }}
@@ -202,29 +214,39 @@
           {{ yTitle() }}
         </text>
         <g [attr.clip-path]="'url(#' + clipId() + ')'">
-          @for (curve of curvePaths(); track curve.percentile) {
+          @for (curve of curvePaths(); track curve.value) {
             <path
               class="reference-curve"
               [attr.data-percentile]="curve.percentile"
+              [attr.data-standard-deviation]="curve.deviation"
+              [class]="curve.style"
               [attr.d]="curve.path"
               [attr.stroke]="curve.color"
             >
-              <title>OMS P{{ curve.percentile }}</title>
+              <title>{{ usesStandardDeviations() ? curve.label : 'OMS P' + curve.percentile }}</title>
             </path>
           }
           <path class="patient-line" [attr.d]="patientPath()" />
         </g>
-        @for (curve of curvePaths(); track curve.percentile) {
-          @if (curve.end !== undefined && curve.end >= axes().y.min && curve.end <= axes().y.max) {
-            <text
-              class="percentile-label"
-              [attr.x]="plot.right + 9"
-              [attr.y]="yScale()(curve.end) + 4"
-              [attr.fill]="curve.color"
-            >
-              {{ curve.percentile }}
-            </text>
+        @for (curve of curveLabels(); track curve.value) {
+          @if (usesStandardDeviations() && curve.labelY !== curve.anchorY) {
+            <line
+              class="curve-label-leader"
+              [attr.stroke]="curve.color"
+              [attr.x1]="plot.right"
+              [attr.y1]="curve.anchorY"
+              [attr.x2]="plot.right + 7"
+              [attr.y2]="curve.labelY"
+            />
           }
+          <text
+            class="percentile-label"
+            [attr.x]="plot.right + 9"
+            [attr.y]="curve.labelY + 4"
+            [attr.fill]="curve.color"
+          >
+            {{ curve.label }}
+          </text>
         }
         @for (point of visiblePoints(); track $index) {
           <g
@@ -232,6 +254,7 @@
             #origin="cdkOverlayOrigin"
             (mouseenter)="showPoint(point, origin)"
             (mouseleave)="scheduleHide()"
+            (click)="showPoint(point, origin)"
           >
             <circle
               class="point-hit-area"
@@ -242,7 +265,7 @@
             />
             <path
               class="patient-point"
-              [class.unconfirmed-point]="!point.evaluation"
+              [class.unconfirmed-point]="!usesStandardDeviations() && !point.evaluation"
               [attr.d]="markerPath()"
               [attr.transform]="
                 'translate(' + xScale()(point.x) + ' ' + yScale()(point.value) + ')'
@@ -254,7 +277,6 @@
               (focus)="showPoint(point, origin)"
               (blur)="hidePoint()"
               (keydown.escape)="hidePoint()"
-              (click)="showPoint(point, origin)"
             />
           </g>
         }
@@ -315,7 +337,10 @@
               }
             }
             <p class="consultation-percentile">
-              {{ yTitle() }} · {{ point.value | number: '1.0-3' }} · {{ percentileLabel(point) }}
+              {{ yTitle() }} · {{ point.value | number: '1.0-3' }}
+              @if (!usesStandardDeviations()) {
+                · {{ percentileLabel(point) }}
+              }
               @if (point.evaluation) {
                 · Z {{ point.evaluation.zScore | number: '1.2-3' }}
               }
@@ -330,13 +355,22 @@
         }
       </ng-template>
     }
-    <div class="point-tooltip" role="status">
-      {{
-        focusedPoint()
-          ? tooltip(focusedPoint()!)
-          : 'Pasá el cursor o enfocá una medición para ver sus datos.'
-      }}
-    </div>
+    @if (!usesStandardDeviations() || visiblePoints().length > 0) {
+      <div class="point-tooltip" role="status">
+        {{
+          focusedPoint()
+            ? tooltip(focusedPoint()!)
+            : 'Pasá el cursor o enfocá una medición para ver sus datos.'
+        }}
+      </div>
+    }
+    @if (!usesStandardDeviations() && definition().indicator === 'HEIGHT') {
+      @if (latestMeasurement(); as latest) {
+        @if (latest.encounterId && latest.measurementMode === 'RECUMBENT' && !latest.evaluation) {
+          <a class="position-review-link" [routerLink]="['/encounters', latest.encounterId]">Revisar postura en la consulta</a>
+        }
+      }
+    }
     <ul class="legend-container" aria-label="Leyenda">
       <li>
         <svg class="legend-marker" viewBox="-6 -6 12 12" aria-hidden="true">
@@ -344,16 +378,30 @@
         </svg>
         Paciente · {{ markerLabel() }}
       </li>
-      <li><span class="legend-sample median"></span>P50 (mediana)</li>
-      <li><span class="legend-sample middle"></span>P15 y P85</li>
-      <li><span class="legend-sample outer"></span>P3 y P97</li>
+      @if (usesStandardDeviations()) {
+        <li><span class="legend-sample" [style.color]="deviationColors[0]"></span>0 DE</li>
+        <li><span class="legend-sample" [style.color]="deviationColors[1]"></span>−1 y +1 DE</li>
+        <li><span class="legend-sample de-middle" [style.color]="deviationColors[2]"></span>−2 y +2 DE</li>
+        <li><span class="legend-sample de-outer" [style.color]="deviationColors[3]"></span>−3 y +3 DE</li>
+      } @else {
+        <li><span class="legend-sample median"></span>P50 (mediana)</li>
+        <li><span class="legend-sample middle"></span>P15 y P85</li>
+        <li><span class="legend-sample outer"></span>P3 y P97</li>
+      }
     </ul>
     <footer>
-      <a [href]="definition().source" target="_blank" rel="noopener noreferrer"
-        >{{ definition().reference.replace('WHO', 'OMS') }} · fuente oficial</a
-      >
-      · Lámina {{ definition().pdfNumber }} / página {{ definition().pdfPage }} del PDF. Las
-      evaluaciones usan edad cronológica y no constituyen un diagnóstico.
+      @if (usesStandardDeviations()) {
+        <a [href]="definition().source" target="_blank" rel="noopener noreferrer"
+          >Myrelid et al. (2002)</a
+        >
+        · INAN, lámina {{ definition().pdfPage }} digitalizada (aprox.)
+      } @else {
+        <a [href]="definition().source" target="_blank" rel="noopener noreferrer"
+          >{{ definition().reference.replace('WHO', 'OMS') }} · fuente oficial</a
+        >
+        · Lámina {{ definition().pdfNumber }} / página {{ definition().pdfPage }} del PDF. Las
+        evaluaciones usan edad cronológica y no constituyen un diagnóstico.
+      }
     </footer>
     @if (chart().points.length > 0) {
       <details class="measurement-details">
@@ -368,7 +416,9 @@
                   <th>{{ xTitle() }}</th>
                 }
                 <th>{{ yTitle() }}</th>
-                <th>Percentil / Z</th>
+                @if (!usesStandardDeviations()) {
+                  <th>Percentil / Z</th>
+                }
                 <th>Observaciones</th>
               </tr>
             </thead>
@@ -381,14 +431,19 @@
                     <td>{{ point.x | number: '1.0-4' }}</td>
                   }
                   <td>{{ point.value | number: '1.0-4' }}</td>
-                  <td>
-                    {{ percentileLabel(point) }}
-                    @if (point.evaluation) {
-                      · Z {{ point.evaluation.zScore | number: '1.2-4' }}
-                    }
-                  </td>
+                  @if (!usesStandardDeviations()) {
+                    <td>
+                      {{ percentileLabel(point) }}
+                      @if (point.evaluation) {
+                        · Z {{ point.evaluation.zScore | number: '1.2-4' }}
+                      }
+                    </td>
+                  }
                   <td>
                     {{ point.note ?? '—' }}
+                    @if (!usesStandardDeviations() && point.encounterId && point.measurementMode === 'RECUMBENT' && !point.evaluation && definition().indicator === 'HEIGHT') {
+                      <a [routerLink]="['/encounters', point.encounterId]">Revisar consulta</a>
+                    }
                     @if (point.adjustmentCm) {
                       {{ point.adjustmentCm }} cm. Original: {{ point.heightCm }} cm.
                     }

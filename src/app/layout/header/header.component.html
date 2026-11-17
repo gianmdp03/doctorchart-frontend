@@ -88,6 +88,13 @@
             <span>{{ authService.isSuperAdmin() ? 'Especialidades y wizards' : 'Personalizar Fichas y Consultas' }}</span>
           </button>
 
+          @if (staffEnabled && !authService.isSuperAdmin()) {
+            <a routerLink="/staff/calendar" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">
+              <ng-icon name="lucideCalendarDays" class="menu-action-icon" aria-hidden="true" />
+              <span>Acceso de secretaría</span>
+            </a>
+          }
+
           <div class="profile-menu-divider"></div>
 
           <button

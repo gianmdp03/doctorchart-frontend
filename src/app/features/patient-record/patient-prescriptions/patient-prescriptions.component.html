@@ -80,13 +80,6 @@
           </div>
         }
 
-        @if (editor.rxSuccessMessage()) {
-          <div class="rx-feedback-banner rx-success" role="status">
-            <ng-icon name="lucideCheckCircle2" />
-            <span>{{ editor.rxSuccessMessage() }}</span>
-          </div>
-        }
-
         <!-- MODO 1: FORMULARIO DE MEDICACIÓN -->
         @if (editor.rxFormMode() === 'MEDICATION') {
           <div class="rx-form-section animate-fade-in">

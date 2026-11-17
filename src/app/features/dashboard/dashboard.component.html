@@ -1,439 +1,422 @@
 <div class="dashboard-page">
   <header class="dashboard-welcome-header">
-    <div class="welcome-text-group">
-      <div class="welcome-title-row">
-        <h1 class="welcome-title">{{ greeting() }}</h1>
-      </div>
-      <p class="welcome-subtitle">{{ todayDateString() }}</p>
+    <div class="welcome-copy">
+      <h1 class="welcome-title">{{ greeting() }}</h1>
+      <p class="welcome-context">
+        <span><ng-icon name="lucideCalendar" aria-hidden="true" /> {{ todayDateString() }}</span>
+        @if (specialty(); as name) {
+          <span class="welcome-specialty"
+            ><ng-icon name="lucideStethoscope" aria-hidden="true" /> {{ name }}</span
+          >
+        }
+      </p>
     </div>
+    <nav class="welcome-actions" aria-label="Acciones rápidas">
+      @if (calendarAvailable()) {
+        <a class="welcome-link" routerLink="/calendar"
+          >Agenda de turnos <ng-icon name="lucideArrowRight" aria-hidden="true"
+        /></a>
+      }
+      <button type="button" class="welcome-search" (click)="patientSearch.focus()">
+        <ng-icon name="lucideSearch" aria-hidden="true" /> Buscar paciente
+      </button>
+    </nav>
   </header>
 
-  @if (metricsError(); as error) {
-    <p role="alert">
-      {{ error }}
-      <button type="button" class="secondary-outline-btn btn-xs" (click)="loadKpiData()">
-        Reintentar
-      </button>
-    </p>
-  }
-  <section class="kpi-grid" aria-label="Métricas principales">
-    <div class="kpi-card" role="region" aria-label="Total de pacientes">
-      <div class="kpi-header">
-        <span class="kpi-title">Pacientes registrados</span>
-        <div class="kpi-icon-wrap bg-blue-50 text-blue-600"><ng-icon name="lucideUsers" /></div>
-      </div>
-      <div class="kpi-value-row">
-        @if (isLoadingMetrics()) {
-          <span class="kpi-loading-skeleton"></span>
-        } @else {
-          <span class="kpi-number">{{ totalPatients() ?? '—' }}</span>
-        }
-      </div>
-      <div class="kpi-footer">
-        <a routerLink="/patients" class="kpi-link"
-          >Ver directorio <ng-icon name="lucideArrowRight"
-        /></a>
-      </div>
-    </div>
-
-    <div class="kpi-card" role="region" aria-label="Consultas del mes">
-      <div class="kpi-header">
-        <span class="kpi-title">Consultas este mes</span>
-        <div class="kpi-icon-wrap bg-teal-50 text-teal-600">
-          <ng-icon name="lucideStethoscope" />
-        </div>
-      </div>
-      <div class="kpi-value-row">
-        @if (isLoadingMetrics()) {
-          <span class="kpi-loading-skeleton"></span>
-        } @else {
-          <span class="kpi-number">{{ encountersMonthCount() ?? '—' }}</span>
-        }
-      </div>
-      <div class="kpi-footer">
-        <span class="kpi-subtext">Consultas registradas en el mes actual</span>
-      </div>
-    </div>
-
-    <div class="kpi-card" role="region" aria-label="Consultas de hoy">
-      <div class="kpi-header">
-        <span class="kpi-title">Atenciones hoy</span>
-        <div class="kpi-icon-wrap bg-purple-50 text-purple-600"><ng-icon name="lucideClock" /></div>
-      </div>
-      <div class="kpi-value-row">
-        @if (isLoadingMetrics()) {
-          <span class="kpi-loading-skeleton"></span>
-        } @else {
-          <span class="kpi-number">{{ encountersTodayCount() ?? '—' }}</span>
-          @if ((encountersTodayCount() ?? 0) > 0) {
-            <span class="kpi-badge-trend positive">Actividad del día</span>
-          }
-        }
-      </div>
-      <div class="kpi-footer">
-        <span class="kpi-subtext">Consultas realizadas en la fecha actual</span>
-      </div>
-    </div>
-  </section>
-
-  <app-upcoming-follow-ups
-    [groups]="upcomingGroups()"
-    [available]="upcomingFollowUps() !== null"
-    [isLoading]="isLoadingMetrics()"
-    (retry)="loadKpiData()"
-  />
-
-  <section class="content-card recent-activity-card" aria-labelledby="recent-activity-title">
-    <div class="recent-card-heading">
-      <div class="recent-heading-icon" aria-hidden="true"><ng-icon name="lucideClock" /></div>
-      <div class="recent-heading-text">
-        <span class="recent-eyebrow">ACTIVIDAD CLÍNICA</span>
-        <h2 id="recent-activity-title">Últimos pacientes atendidos</h2>
-        <p>Consultas recientes y acceso directo a cada historia clínica.</p>
-      </div>
-      <a routerLink="/encounters" class="recent-history-link"
-        >Ver historial completo <ng-icon name="lucideArrowRight"
-      /></a>
-    </div>
-    <div class="recent-toolbar">
-      <div class="recent-search-wrap">
-        <ng-icon name="lucideSearch" aria-hidden="true" />
-        <input
-          type="search"
-          aria-label="Buscar consultas por paciente, motivo o diagnóstico"
-          placeholder="Buscar paciente, motivo o diagnóstico..."
-          [value]="recentSearch()"
-          (input)="onRecentSearchInput($event)"
-          (keydown.enter)="loadRecentPage(0)"
-        />
-      </div>
-      <button
-        type="button"
-        class="recent-refresh-btn"
-        [disabled]="isLoadingRecentPage()"
-        (click)="refreshRecentActivity()"
-      >
-        <ng-icon name="lucideRefreshCw" /> Actualizar
-      </button>
-      <label class="recent-size-label"
-        >Mostrar
-        <select
-          aria-label="Consultas por página"
-          [value]="recentPageSize()"
-          [disabled]="isLoadingRecentPage()"
-          (change)="changeRecentPageSize($any($event.target).value)"
-        >
-          <option value="5">5 consultas</option>
-          <option value="10">10 consultas</option>
-          <option value="20">20 consultas</option>
-        </select>
-      </label>
-    </div>
-    @if (isLoadingRecentPage()) {
-      <div class="recent-loading" role="status">
-        <div class="mini-spinner"></div>
-        Cargando consultas...
-      </div>
-    } @else if (recentPageError(); as error) {
-      <div class="recent-empty" role="alert">
-        <ng-icon name="lucideFileText" />
-        <h3>No pudimos cargar el historial</h3>
-        <p>{{ error }}</p>
-        <button
-          type="button"
-          class="secondary-outline-btn btn-sm"
-          (click)="loadRecentPage(recentPage())"
-        >
-          Reintentar consultas
-        </button>
-      </div>
-    } @else if (recentPageItems().length > 0) {
-      <div class="recent-column-labels" aria-hidden="true">
-        <span>Paciente y atención</span><span>Resumen clínico</span><span>Fecha y acciones</span>
-      </div>
-      <div class="recent-consultation-list" role="list" aria-label="Consultas recientes">
-        @for (encounter of recentPageItems(); track encounter.id) {
-          <article
-            class="recent-consultation"
-            [class.consultation-today]="encounter.isToday"
-            role="listitem"
-          >
-            <div class="recent-patient">
-              <div class="recent-avatar" aria-hidden="true">
-                {{ encounter.patientName.slice(0, 2).toUpperCase() }}
-              </div>
-              <div class="recent-patient-info">
-                <h3 [title]="encounter.patientName">{{ encounter.patientName }}</h3>
-                <p>{{ encounter.patientMeta }}</p>
-                <span
-                  class="consultation-type-pill"
-                  [class.type-emergency]="encounter.consultationTypeKey === 'EMERGENCY'"
-                  [class.type-first]="encounter.consultationTypeKey === 'FIRST_VISIT'"
-                  >{{ encounter.consultationTypeLabel }}</span
-                >
-              </div>
-            </div>
-            <div class="recent-clinical-summary">
-              @if (encounter.clinicalHighlights.length > 0) {
-                @for (item of encounter.clinicalHighlights; track $index) {
-                  <p [title]="item.value">
-                    <b>{{ item.label }}:</b> {{ item.value }}
-                  </p>
-                }
+  <section
+    class="daily-metrics"
+    aria-label="Métricas principales"
+    [attr.aria-busy]="isLoadingMetrics()"
+  >
+    <dl class="metrics-list">
+      @for (
+        metric of [
+          {
+            label: 'Atenciones hoy',
+            value: encountersTodayCount(),
+            icon: 'lucideClock',
+            tone: 'today',
+          },
+          {
+            label: 'Consultas este mes',
+            value: encountersMonthCount(),
+            icon: 'lucideStethoscope',
+            tone: 'month',
+          },
+          {
+            label: 'Pacientes registrados',
+            value: totalPatients(),
+            icon: 'lucideUsers',
+            tone: 'patients',
+          },
+        ];
+        track metric.tone
+      ) {
+        <div class="metric" [attr.data-tone]="metric.tone">
+          <span class="metric-icon"><ng-icon [name]="metric.icon" aria-hidden="true" /></span>
+          <div>
+            <dt>{{ metric.label }}</dt>
+            <dd>
+              @if (isLoadingMetrics()) {
+                <span class="metric-placeholder skeleton" aria-hidden="true"></span
+                ><span class="sr-only">Cargando</span>
               } @else {
-                <p>{{ encounter.chiefComplaint }}</p>
+                {{ metric.value ?? '—' }}
               }
-            </div>
-            <div class="recent-date-actions">
-              <div class="recent-date">
-                <span>{{ encounter.encounterDateOnly }}</span>
-                @if (encounter.isToday) {
-                  <span class="today-pill-badge">Hoy</span>
-                }
-              </div>
-              <span class="recent-time">{{ encounter.encounterTimeOnly }}</span>
-              <div class="recent-actions">
-                <button
-                  type="button"
-                  class="recent-detail-btn"
-                  [attr.aria-label]="'Ver consulta de ' + encounter.patientName"
-                  (click)="openEncounterDetail(encounter.id, $event)"
-                >
-                  <ng-icon name="lucideEye" /> Ver consulta
-                </button>
-                <button
-                  type="button"
-                  class="recent-record-btn"
-                  [attr.aria-label]="'Abrir ficha de ' + encounter.patientName"
-                  (click)="openPatient(encounter.patientId)"
-                >
-                  Ficha <ng-icon name="lucideArrowRight" />
-                </button>
-              </div>
-            </div>
-          </article>
-        }
-      </div>
-      <footer class="recent-pagination">
-        <span class="recent-count" role="status" aria-live="polite"
-          ><b>{{ recentRange() }}</b> consultas
-          <span>· Página {{ recentPage() + 1 }} de {{ recentTotalPages() }}</span></span
-        >
-        <nav class="recent-page-buttons" aria-label="Páginas de consultas recientes">
-          <button
-            type="button"
-            aria-label="Página anterior de consultas"
-            [disabled]="recentPage() === 0"
-            (click)="loadRecentPage(recentPage() - 1)"
-          >
-            <ng-icon name="lucideChevronLeft" />
-          </button>
-          @for (page of recentPageNumbers(); track page) {
-            <button
-              type="button"
-              [class.current-page]="page === recentPage()"
-              [attr.aria-current]="page === recentPage() ? 'page' : null"
-              [attr.aria-label]="'Página ' + (page + 1) + ' de consultas'"
-              (click)="loadRecentPage(page)"
-            >
-              {{ page + 1 }}
-            </button>
-          }
-          <button
-            type="button"
-            aria-label="Página siguiente de consultas"
-            [disabled]="recentPage() + 1 >= recentTotalPages()"
-            (click)="loadRecentPage(recentPage() + 1)"
-          >
-            <ng-icon name="lucideChevronRight" />
-          </button>
-        </nav>
-      </footer>
-    } @else {
-      <div class="recent-empty">
-        <ng-icon name="lucideSearch" />
-        <h3>
-          {{
-            recentSearch().trim()
-              ? 'No encontramos esas consultas'
-              : 'Tu actividad clínica empieza aquí'
-          }}
-        </h3>
-        <p>
-          {{
-            recentSearch().trim()
-              ? 'Probá con otro nombre, motivo o diagnóstico.'
-              : 'Al registrar una atención, podrás encontrarla aquí y acceder a su historia clínica.'
-          }}
-        </p>
-        @if (recentSearch().trim()) {
-          <button type="button" class="secondary-outline-btn btn-sm" (click)="clearRecentSearch()">
-            Limpiar búsqueda
-          </button>
-        }
+            </dd>
+          </div>
+        </div>
+      }
+    </dl>
+    @if (metricsError(); as error) {
+      <div class="issue metric-error" role="alert">
+        <p>{{ error }}</p>
+        <button type="button" class="control" (click)="loadKpiData()">Reintentar actividad</button>
       </div>
     }
   </section>
-  <div class="dashboard-main-split">
-    <div class="dashboard-primary-col">
-      <div class="content-card patients-directory-card">
-        <div class="card-header-row">
-          <div class="header-title-wrap">
-            <h2 class="card-title">
-              <ng-icon name="lucideUsers" class="title-icon text-blue-600" /> Acceso rápido a
-              pacientes
-            </h2>
-            <p class="card-subtitle">Búsqueda en el padrón de pacientes</p>
-          </div>
-          <div class="directory-search-box">
-            <ng-icon name="lucideSearch" class="search-box-icon" /><input
+
+  <div class="workbench">
+    <div class="clinical-column">
+      <app-upcoming-follow-ups
+        [groups]="upcomingGroups()"
+        [available]="upcomingFollowUps() !== null"
+        [isLoading]="isLoadingMetrics()"
+        (retry)="loadKpiData()"
+      />
+
+      <section class="activity" aria-labelledby="recent-activity-title">
+        <div class="section-heading">
+          <h2 id="recent-activity-title">Actividad clínica reciente</h2>
+          <a routerLink="/encounters" class="section-link"
+            >Ver historial <ng-icon name="lucideArrowRight" aria-hidden="true"
+          /></a>
+        </div>
+        <div class="recent-toolbar">
+          <div class="search-field">
+            <ng-icon name="lucideSearch" aria-hidden="true" />
+            <input
               type="search"
-              class="directory-search-input"
-              placeholder="Buscar paciente..."
-              [value]="directorySearch()"
-              (input)="onDirectorySearchInput($event)"
-              (keydown.enter)="onDirectorySearchEnter()"
+              aria-label="Buscar consultas por paciente, motivo o diagnóstico"
+              placeholder="Paciente, motivo, diagnóstico"
+              [value]="recentSearch()"
+              (input)="onRecentSearchInput($event)"
+              (keydown.enter)="loadRecentPage(0)"
             />
           </div>
+          <select
+            class="control"
+            aria-label="Consultas por página"
+            [value]="recentPageSize()"
+            [disabled]="isLoadingRecentPage()"
+            (change)="changeRecentPageSize($any($event.target).value)"
+          >
+            <option value="5">5 por página</option>
+            <option value="10">10 por página</option>
+            <option value="20">20 por página</option>
+          </select>
+          <button
+            type="button"
+            class="control icon-control"
+            aria-label="Actualizar actividad"
+            title="Actualizar actividad"
+            [disabled]="isLoadingRecentPage()"
+            (click)="refreshRecentActivity()"
+          >
+            <ng-icon name="lucideRefreshCw" aria-hidden="true" />
+          </button>
         </div>
-        @if (directoryError(); as error) {
-          <p role="alert">
-            {{ error }}
-            <button
-              type="button"
-              class="secondary-outline-btn btn-xs"
-              (click)="loadDirectory(directoryPage(), directorySearch())"
-            >
-              Reintentar
+        @if (isLoadingRecentPage()) {
+          <div class="activity-loading" role="status">
+            <span class="sr-only">Cargando consultas…</span>
+            @for (row of [1, 2, 3]; track row) {
+              <div class="loading-row" aria-hidden="true">
+                <span class="avatar skeleton"></span><span class="skeleton skeleton-line"></span>
+              </div>
+            }
+          </div>
+        } @else if (recentPageError(); as error) {
+          <div class="recent-empty issue" role="alert">
+            <h3>No pudimos cargar el historial</h3>
+            <p>{{ error }}</p>
+            <button type="button" class="control" (click)="loadRecentPage(recentPage())">
+              Reintentar consultas
             </button>
-          </p>
-        }
-        @if (isSearchingDirectory()) {
-          <div class="card-loading-state">
-            <div class="mini-spinner"></div>
-            <span>Buscando pacientes...</span>
           </div>
-        } @else if (directoryPatients().length > 0) {
-          <div class="encounters-table-wrap">
-            <table class="clinical-table">
-              <thead>
-                <tr>
-                  <th>Paciente</th>
-                  <th>Fecha de nacimiento</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (patient of directoryPatients(); track patient.id) {
-                  <tr>
-                    <td>
-                      <span class="patient-cell-name">{{ patient.fullName }}</span>
-                    </td>
-                    <td>
-                      <span class="cell-datetime">{{ displayDate(patient.birthDate) }}</span>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        class="btn-open-record"
-                        (click)="openPatient(patient.id)"
-                      >
-                        Abrir ficha
-                      </button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <div class="table-pagination-row">
-            <span class="pagination-info"
-              >Página {{ directoryPage() + 1 }} de {{ directoryTotalPages() }}</span
+        } @else if (recentPageItems().length > 0) {
+          <ul class="recent-consultation-list" aria-label="Consultas recientes">
+            @for (encounter of recentPageItems(); track encounter.id) {
+              <li class="recent-consultation" [class.consultation-today]="encounter.isToday">
+                <span class="avatar" aria-hidden="true">{{ initials(encounter.patientName) }}</span>
+                <div class="recent-patient-info">
+                  <div class="recent-patient-heading">
+                    <h3>{{ encounter.patientName }}</h3>
+                    @if (encounter.isToday) {
+                      <span class="today-label">Hoy</span>
+                    }
+                  </div>
+                  <div class="encounter-type">
+                    <span [class.urgent]="encounter.consultationTypeKey === 'EMERGENCY'">{{
+                      encounter.consultationTypeLabel
+                    }}</span>
+                    <span>{{ encounter.patientMeta }}</span>
+                  </div>
+                  @if (encounter.clinicalHighlights[0]; as highlight) {
+                    <p class="clinical-summary">
+                      <strong>{{ highlight.label }}</strong> · {{ highlight.value }}
+                    </p>
+                    @if (encounter.clinicalHighlights.length > 1) {
+                      <details class="more-highlights">
+                        <summary>Más datos de la consulta</summary>
+                        <dl>
+                          @for (item of encounter.clinicalHighlights.slice(1); track $index) {
+                            <div>
+                              <dt>{{ item.label }}</dt>
+                              <dd>{{ item.value }}</dd>
+                            </div>
+                          }
+                        </dl>
+                      </details>
+                    }
+                  } @else {
+                    <p class="clinical-summary">{{ encounter.chiefComplaint }}</p>
+                  }
+                </div>
+                <div class="recent-date-actions">
+                  <p class="recent-date">
+                    {{ encounter.encounterDateOnly }}
+                    @if (encounter.encounterTimeOnly) {
+                      <span>· {{ encounter.encounterTimeOnly }}</span>
+                    }
+                  </p>
+                  <div class="recent-actions">
+                    <button
+                      type="button"
+                      class="recent-detail-btn row-action"
+                      [attr.aria-label]="'Ver consulta de ' + encounter.patientName"
+                      (click)="openEncounterDetail(encounter.id, $event)"
+                    >
+                      Ver consulta
+                    </button>
+                    <button
+                      type="button"
+                      class="recent-record-btn row-action"
+                      [attr.aria-label]="'Abrir ficha de ' + encounter.patientName"
+                      (click)="openPatient(encounter.patientId)"
+                    >
+                      Ficha <ng-icon name="lucideArrowRight" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </li>
+            }
+          </ul>
+          <footer class="recent-pagination">
+            <span class="recent-count" role="status"
+              ><strong>{{ recentRange() }}</strong> consultas</span
             >
-            <div class="pagination-btns">
-              <button
-                type="button"
-                class="btn-page"
-                [disabled]="directoryPage() === 0"
-                (click)="loadDirectory(directoryPage() - 1, directorySearch())"
-              >
-                <ng-icon name="lucideChevronLeft" /> Anterior</button
-              ><button
-                type="button"
-                class="btn-page"
-                [disabled]="directoryPage() + 1 >= directoryTotalPages()"
-                (click)="loadDirectory(directoryPage() + 1, directorySearch())"
-              >
-                Siguiente <ng-icon name="lucideChevronRight" />
-              </button>
-            </div>
-          </div>
+            @if (recentTotalPages() > 1) {
+              <nav class="recent-page-buttons" aria-label="Páginas de consultas recientes">
+                <button
+                  type="button"
+                  class="control page-control"
+                  aria-label="Página anterior de consultas"
+                  [disabled]="recentPage() === 0"
+                  (click)="loadRecentPage(recentPage() - 1)"
+                >
+                  <ng-icon name="lucideChevronLeft" aria-hidden="true" />
+                </button>
+                @for (page of recentPageNumbers(); track page) {
+                  <button
+                    type="button"
+                    class="control page-control"
+                    [attr.aria-current]="page === recentPage() ? 'page' : null"
+                    [attr.aria-label]="'Página ' + (page + 1) + ' de consultas'"
+                    (click)="loadRecentPage(page)"
+                  >
+                    {{ page + 1 }}
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="control page-control"
+                  aria-label="Página siguiente de consultas"
+                  [disabled]="recentPage() + 1 >= recentTotalPages()"
+                  (click)="loadRecentPage(recentPage() + 1)"
+                >
+                  <ng-icon name="lucideChevronRight" aria-hidden="true" />
+                </button>
+              </nav>
+            }
+          </footer>
         } @else {
-          <div class="empty-state-wrap"><p class="empty-desc">No se encontraron pacientes.</p></div>
+          <div class="recent-empty">
+            <ng-icon name="lucideFileText" aria-hidden="true" />
+            <h3>
+              {{
+                recentSearch().trim()
+                  ? 'No encontramos esas consultas'
+                  : 'Todavía no hay consultas registradas'
+              }}
+            </h3>
+            @if (recentSearch().trim()) {
+              <p>Probá con otro paciente, motivo o diagnóstico.</p>
+              <button type="button" class="control" (click)="clearRecentSearch()">
+                Limpiar búsqueda
+              </button>
+            } @else {
+              <p>Las atenciones que registres van a aparecer acá.</p>
+            }
+          </div>
         }
-      </div>
+      </section>
     </div>
 
-    <div class="dashboard-side-col">
-      <div class="content-card">
-        <div class="widget-header">
-          <h3 class="widget-title">
-            <ng-icon name="lucideSparkles" class="text-amber-500" /> Acciones rápidas
-          </h3>
+    <div class="support-column">
+      <section class="directory" aria-labelledby="directory-title">
+        <div class="section-heading">
+          <h2 id="directory-title">Buscar pacientes</h2>
+          <a routerLink="/patients" class="section-link"
+            >Directorio <ng-icon name="lucideArrowRight" aria-hidden="true"
+          /></a>
         </div>
-        <div class="quick-actions-list">
-          <a routerLink="/patients" class="quick-action-btn"
-            ><div class="qa-icon-wrap bg-teal-100 text-teal-700">
-              <ng-icon name="lucideUsers" />
-            </div>
-            <div class="qa-text">
-              <span class="qa-title">Directorio de pacientes</span
-              ><span class="qa-desc">Consultar fichas y evoluciones</span>
-            </div></a
-          >
+        <div class="search-field">
+          <ng-icon name="lucideSearch" aria-hidden="true" />
+          <input
+            #patientSearch
+            type="search"
+            class="directory-search-input"
+            aria-label="Buscar en el padrón de pacientes"
+            placeholder="Nombre del paciente"
+            [value]="directorySearch()"
+            (input)="onDirectorySearchInput($event)"
+            (keydown.enter)="onDirectorySearchEnter()"
+          />
         </div>
-      </div>
 
-      <div class="content-card quick-notes-card">
-        <div class="widget-header">
-          <div class="flex items-center gap-1.5">
-            <ng-icon name="lucideFileText" class="text-slate-500" />
-            <h3 class="widget-title">Notas rápidas</h3>
+        @if (directoryError(); as error) {
+          <div class="issue directory-message" role="alert">
+            <p>{{ error }}</p>
+            <button
+              type="button"
+              class="control"
+              (click)="loadDirectory(directoryPage(), directorySearch())"
+            >
+              Reintentar pacientes
+            </button>
           </div>
+        } @else if (isSearchingDirectory()) {
+          <div role="status" class="directory-loading">
+            <span class="sr-only">Buscando pacientes…</span>
+            @for (row of [1, 2, 3]; track row) {
+              <div class="loading-row" aria-hidden="true">
+                <span class="avatar skeleton"></span><span class="skeleton skeleton-line"></span>
+              </div>
+            }
+          </div>
+        } @else if (directoryPatients().length) {
+          <ul class="directory-list" aria-label="Resultados de pacientes">
+            @for (patient of directoryPatients(); track patient.id) {
+              <li>
+                <button
+                  type="button"
+                  class="directory-result"
+                  (click)="openPatient(patient.id)"
+                  [attr.aria-label]="
+                    'Abrir ficha de ' +
+                    patient.fullName +
+                    (patient.birthDate ? ', nacimiento ' + displayDate(patient.birthDate) : '')
+                  "
+                >
+                  <span class="avatar" aria-hidden="true">{{ initials(patient.fullName) }}</span>
+                  <span
+                    ><strong>{{ patient.fullName }}</strong>
+                    @if (patient.birthDate) {
+                      <small>Nac. {{ displayDate(patient.birthDate) }}</small>
+                    }
+                  </span>
+                  <ng-icon name="lucideArrowRight" aria-hidden="true" />
+                </button>
+              </li>
+            }
+          </ul>
+          @if (directoryTotalPages() > 1) {
+            <div class="directory-pagination">
+              <span role="status"
+                >Página {{ directoryPage() + 1 }} de {{ directoryTotalPages() }}</span
+              >
+              <nav class="recent-page-buttons" aria-label="Páginas de pacientes">
+                <button
+                  type="button"
+                  class="control page-control"
+                  aria-label="Página anterior de pacientes"
+                  [disabled]="directoryPage() === 0"
+                  (click)="loadDirectory(directoryPage() - 1, directorySearch())"
+                >
+                  <ng-icon name="lucideChevronLeft" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  class="control page-control"
+                  aria-label="Página siguiente de pacientes"
+                  [disabled]="directoryPage() + 1 >= directoryTotalPages()"
+                  (click)="loadDirectory(directoryPage() + 1, directorySearch())"
+                >
+                  <ng-icon name="lucideChevronRight" aria-hidden="true" />
+                </button>
+              </nav>
+            </div>
+          }
+        } @else {
+          <p class="directory-message" role="status">
+            {{
+              directorySearch().trim()
+                ? 'No encontramos pacientes con esa búsqueda.'
+                : 'Todavía no hay pacientes en el padrón.'
+            }}
+          </p>
+        }
+      </section>
+
+      <section class="quick-notes" aria-labelledby="notes-title">
+        <div class="section-heading">
+          <h2 id="notes-title">
+            <ng-icon name="lucideNotebookPen" aria-hidden="true" /> Notas rápidas
+          </h2>
           @if (isNotesSaved()) {
-            <span class="text-xs text-emerald-600 flex items-center gap-1"
-              ><ng-icon name="lucideCheckCircle2" /> Guardado</span
+            <span class="saved-status" role="status"
+              ><ng-icon name="lucideCheckCircle2" aria-hidden="true" /> Guardado</span
             >
           }
         </div>
         <div class="notes-widget-body">
-          @if (notesError()) { <p role="alert">{{ notesError() }}</p> }
           <textarea
             class="notes-textarea"
-            placeholder="Escribí recordatorios rápidos o pendientes..."
+            aria-labelledby="notes-title"
+            aria-describedby="notes-scope"
+            placeholder="Anotá un recordatorio o pendiente…"
+            rows="3"
             [ngModel]="quickNotes()"
             (ngModelChange)="onNotesInput($event)"
-            rows="4"
           ></textarea>
+          @if (notesError(); as error) {
+            <p class="issue note-error" role="alert">{{ error }}</p>
+          }
           <div class="notes-actions">
-            <span class="notes-footer-hint">Estas notas se guardan para esta especialidad.</span>
-            @if (isNotesDirty()) {
-              <button
-                type="button"
-                class="save-notes-button"
-                [disabled]="isSavingNotes()"
-                (click)="saveNotes()"
-              >
-                @if (isSavingNotes()) {
-                  Guardando...
-                } @else {
-                  Guardar
-                }
-              </button>
-            }
+            <span id="notes-scope">{{
+              specialty() ? 'Notas de ' + specialty() : 'Notas de la especialidad actual'
+            }}</span>
+            <button
+              type="button"
+              class="save-notes-button control"
+              [disabled]="!isNotesDirty() || isSavingNotes()"
+              (click)="saveNotes()"
+            >
+              {{ isSavingNotes() ? 'Guardando…' : 'Guardar' }}
+            </button>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   </div>
 </div>

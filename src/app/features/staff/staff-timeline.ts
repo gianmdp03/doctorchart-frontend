@@ -1,0 +1,130 @@
+import { addDays, civilDate, localTime } from '../calendar/bookings.models';
+import type { AdministrativeBooking, SlotDay } from './staff.service';
+
+const DAY_MINUTES = 1440;
+export const PIXELS_PER_MINUTE = 1.8;
+const MIN_TARGET_MINUTES = Math.ceil(24 / PIXELS_PER_MINUTE);
+
+interface Span {
+  from: number;
+  to: number;
+}
+
+interface TimelineEntry extends Span {
+  time: string;
+  booking?: AdministrativeBooking;
+  slot?: SlotDay['slots'][number];
+  lane: number;
+  laneCount: number;
+  height: number;
+  sharedCancellation?: boolean;
+}
+
+export function minute(time: string): number {
+  const [hour, minutes] = time.split(':').map(Number);
+  return hour * 60 + minutes;
+}
+
+export function hourLabel(minutes: number): string {
+  return String(Math.floor(minutes / 60)).padStart(2, '0') + ':00';
+}
+
+export function monday(date: string): string {
+  const weekday = new Date(date + 'T12:00:00Z').getUTCDay();
+  return addDays(date, -((weekday + 6) % 7));
+}
+
+function entryFor(
+  event: { start: string; end: string },
+  zone: string,
+  data: Pick<TimelineEntry, 'booking' | 'slot'>,
+): TimelineEntry {
+  const time = localTime(event.start, zone);
+  const from = minute(time);
+  const duration = (Date.parse(event.end) - Date.parse(event.start)) / 60_000;
+  const to = Math.min(DAY_MINUTES, from + Math.max(1, duration));
+  return { ...data, time, from, to, lane: 0, laneCount: 1, height: to - from };
+}
+
+function placeEntries(entries: TimelineEntry[], end: number): void {
+  let activeUntil: number[] = [];
+  let group: TimelineEntry[] = [];
+  let groupEnd = 0;
+  for (const entry of entries) {
+    if (entry.from >= groupEnd && group.length) {
+      finishGroup(group, activeUntil.length);
+      group = [];
+      activeUntil = [];
+    }
+    const nextLane = activeUntil.findIndex((until) => until <= entry.from);
+    entry.lane = nextLane < 0 ? activeUntil.length : nextLane;
+    entry.height = Math.min(end - entry.from, Math.max(MIN_TARGET_MINUTES, entry.height));
+    activeUntil[entry.lane] = entry.from + entry.height;
+    groupEnd = Math.max(groupEnd, activeUntil[entry.lane]);
+    group.push(entry);
+  }
+  finishGroup(group, activeUntil.length);
+}
+
+function finishGroup(group: TimelineEntry[], lanes: number): void {
+  const bookings = group.filter((entry) => entry.booking);
+  const slots = group.filter((entry) => entry.slot);
+  // A reopened slot can share the column with its cancelled booking. Keep the name
+  // readable and reserve a narrow action as long as the slots can stack vertically.
+  const sharedCancellation =
+    lanes === 2 &&
+    bookings.length === 1 &&
+    bookings[0].booking?.status === 'CANCELLED' &&
+    slots.every(
+      (slot, index) => !index || slots[index - 1].from + slots[index - 1].height <= slot.from,
+    );
+  for (const entry of group) {
+    entry.laneCount = lanes;
+    entry.sharedCancellation = sharedCancellation;
+  }
+}
+
+export function makeTimeline(
+  startDate: string,
+  length: number,
+  availability: SlotDay[],
+  bookings: AdministrativeBooking[],
+  zone: string,
+  fullDay: boolean,
+) {
+  const slotsByDate = new Map(availability.map((day) => [day.date, day]));
+  const days = Array.from({ length }, (_, index) => {
+    const date = addDays(startDate, index);
+    const available = slotsByDate.get(date);
+    const hours = (available?.hours ?? []).map(({ start, end }) => ({
+      from: minute(start),
+      to: minute(end),
+    }));
+    const entries = (available?.slots ?? []).map((slot) => entryFor(slot, zone, { slot }));
+    return { date, hours, entries, closed: available?.closed ?? false };
+  });
+  const byDate = new Map(days.map((day) => [day.date, day]));
+  for (const booking of bookings) {
+    const bookingZone = booking.clinicSnapshot?.timezone || zone;
+    const day = byDate.get(civilDate(booking.start, bookingZone));
+    day?.entries.push(entryFor(booking, bookingZone, { booking }));
+  }
+  const spans = days.flatMap((day) => [...day.hours, ...day.entries]);
+  const from = fullDay
+    ? 0
+    : spans.length
+      ? Math.max(0, Math.floor((Math.min(...spans.map((span) => span.from)) - 30) / 30) * 30)
+      : 9 * 60;
+  const to = fullDay
+    ? DAY_MINUTES
+    : spans.length
+      ? Math.min(DAY_MINUTES, Math.ceil((Math.max(...spans.map((span) => span.to)) + 30) / 30) * 30)
+      : 12 * 60;
+  for (const day of days) {
+    day.entries.sort((a, b) => a.from - b.from || Number(!!b.booking) - Number(!!a.booking));
+    placeEntries(day.entries, to);
+  }
+  const ticks: number[] = [];
+  for (let tick = Math.ceil(from / 60) * 60; tick < to; tick += 60) ticks.push(tick);
+  return { days, ticks, from, to };
+}

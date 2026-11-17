@@ -195,3 +195,17 @@
 
 .mobile-growth-select { display: none; }
 @media(max-width:640px) { .growth-toolbar { display: none; } .mobile-growth-select { display: grid; gap: 5px; font-size: 11px; margin-bottom: 10px; } .mobile-growth-select select { width: 100%; min-height: 38px; padding: 8px; border: 1px solid var(--dc-outline); border-radius: 8px; background: var(--dc-surface); color: var(--dc-ink); font: inherit; font-size: 12px; } }
+
+.growth-reference-selector { display: grid; justify-items: start; gap: 6px; font-size: .875rem; font-weight: 650; }
+.reference-options { max-width: 100%; }
+.reference-options .growth-pill-btn { min-height: 40px; }
+.reference-options .growth-pill-btn:focus-visible {
+  outline: 2px solid var(--dc-teal-ink, #006874);
+  outline-offset: 3px;
+}
+.down-growth-title { margin: 0; font-size: 1rem; font-weight: 700; }
+.growth-context:has(+ .down-growth-title) { margin-bottom: 0; }
+@media(max-width:640px) {
+  .reference-options .growth-pill-btn:last-child { grid-column: auto; }
+  .reference-options .growth-pill-btn { justify-content: center; text-align: center; }
+}

@@ -1,6 +1,9 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { UserClockService } from '../../core/services/user-clock.service';
 import { userTimeZone, instantParts, shiftCalendarDate } from '../../core/date/user-time-zone';
 import { AccountReadScope } from '../../core/services/account-read-scope';
+import { ClinicalContextService } from '../../core/services/clinical-context.service';
+import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 import { displayLocalDate } from '../../core/date/display-date';
 import { wizardRecordEntries } from '../../core/models/wizard-record-display';
 import {
@@ -28,10 +31,9 @@ import {
   lucideFileText,
   lucideSearch,
   lucideRefreshCw,
-  lucideSparkles,
   lucideStethoscope,
-  lucideUserPlus,
   lucideUsers,
+  lucideNotebookPen,
 } from '@ng-icons/lucide';
 import { takeUntil } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
@@ -85,21 +87,22 @@ export interface RecentEncounterItem {
       lucideFileText,
       lucideSearch,
       lucideRefreshCw,
-      lucideSparkles,
       lucideStethoscope,
-      lucideUserPlus,
       lucideUsers,
+      lucideNotebookPen,
     }),
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
 export class DashboardComponent implements OnInit {
+  private readonly interaction = inject(InteractionStatusService);
   readonly authService = inject(AuthService);
   readonly patientService = inject(PatientService);
   readonly activePatientService = inject(ActivePatientService);
   private readonly clinicalEncounterService = inject(ClinicalEncounterService);
   private readonly workspaceStore = inject(WorkspaceStore);
+  private readonly clinicalContext = inject(ClinicalContextService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -173,6 +176,14 @@ export class DashboardComponent implements OnInit {
   readonly isSavingNotes = signal<boolean>(false);
   readonly isNotesSaved = signal<boolean>(false);
   readonly notesError = signal<string | null>(null);
+  readonly specialty = this.workspaceStore.specialtyDisplayName;
+  readonly calendarAvailable = computed(
+    () => FEATURE_FLAGS.CALENDAR_ENABLED && FEATURE_FLAGS.SCHEDULES_ENABLED
+      && this.workspaceStore.clinicsEnabled() && this.workspaceStore.hasReadyContext(),
+  );
+  private readonly notesScope = computed(() =>
+    JSON.stringify([this.authService.currentUser()?.id, this.clinicalContext.id()]),
+  );
 
   readonly todayDateString = computed(() =>
     new Date(this.clock.now()).toLocaleDateString('es-AR', {
@@ -185,12 +196,16 @@ export class DashboardComponent implements OnInit {
   );
 
   readonly greeting = computed(() => {
-    const hour = new Date(this.clock.now()).getHours();
+    const hour = Number(instantParts(new Date(this.clock.now()), this.clock.timeZone()).time.slice(0, 2));
     const prefix =
       hour >= 20 || hour < 6 ? 'Buenas noches' : hour >= 13 ? 'Buenas tardes' : 'Buen día';
-    const name = this.authService.userName();
-    return name ? `${prefix}, Dr(a). ${name}` : `${prefix}, Doctor(a)`;
+    const name = this.authService.userName()?.trim();
+    return name ? `${prefix}, ${name}` : prefix;
   });
+
+  initials(name: string): string {
+    return name.trim().split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toLocaleUpperCase('es-AR');
+  }
 
   private directorySearchTimer: ReturnType<typeof setTimeout> | null = null;
   private recentSearchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -206,6 +221,23 @@ export class DashboardComponent implements OnInit {
   });
 
   constructor() {
+    let notesScope = this.notesScope();
+    effect(() => {
+      const scope = this.notesScope();
+      const saved = this.workspaceStore.quickNotes() ?? '';
+      untracked(() => {
+        if (scope !== notesScope) {
+          notesScope = scope;
+          this.isNotesDirty.set(false);
+          this.isNotesSaved.set(false);
+          this.isSavingNotes.set(false);
+          this.notesError.set(null);
+          this.quickNotes.set(saved);
+        } else if (!this.isNotesDirty() && !this.isSavingNotes()) {
+          this.quickNotes.set(saved);
+        }
+      });
+    });
     let observedDay = this.clock.day();
     let observedZone = this.clock.timeZone();
     effect(() => {
@@ -398,6 +430,10 @@ export class DashboardComponent implements OnInit {
   onDirectorySearchInput(event: Event): void {
     const query = (event.target as HTMLInputElement).value;
     this.directorySearch.set(query);
+    this.directoryReads.cancel();
+    this.directoryPatients.set([]);
+    this.directoryError.set(null);
+    this.isSearchingDirectory.set(true);
     if (this.directorySearchTimer) {
       clearTimeout(this.directorySearchTimer);
     }
@@ -442,15 +478,20 @@ export class DashboardComponent implements OnInit {
     this.isNotesSaved.set(false);
     this.notesError.set(null);
     const submitted = this.quickNotes();
+    const scope = this.notesScope();
     try {
       await this.workspaceStore.updateQuickNotes(submitted);
+      if (this.destroyRef.destroyed || this.notesScope() !== scope) return;
       const unchanged = this.quickNotes() === submitted;
       this.isNotesDirty.set(!unchanged);
       this.isNotesSaved.set(unchanged);
+      if (unchanged) this.interaction.notifySuccess('Las notas se guardaron correctamente.');
     } catch {
-      this.notesError.set('No pudimos confirmar el guardado. Tus notas se conservan; revisá el estado antes de volver a guardar.');
+      if (!this.destroyRef.destroyed && this.notesScope() === scope) {
+        this.notesError.set('No pudimos confirmar el guardado. Tus notas se conservan para que puedas reintentar.');
+      }
     } finally {
-      this.isSavingNotes.set(false);
+      if (!this.destroyRef.destroyed && this.notesScope() === scope) this.isSavingNotes.set(false);
     }
   }
 

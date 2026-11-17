@@ -64,6 +64,15 @@ describe('WorkspaceStore canonical lifecycle', () => {
     expect(store.preferences()).toBeNull();
   });
 
+  it('updates the selected specialty in its existing list position', () => {
+    const first = store.contexts()[0];
+    store.contexts.set([first, { ...first, id: 202 }]);
+    store.setSetup({ ...setup, version: 4 });
+
+    expect(store.contexts().map(context => [context.id, context.version]))
+      .toEqual([[101, 4], [202, 3]]);
+  });
+
   it('composes navigation without changing the personal wizard and clears it with the session', async () => {
     await store.loadSetup();
     expect(store.navigation().map(item => item.path)).toEqual(['/dashboard', '/patients', '/onboarding/setup']);

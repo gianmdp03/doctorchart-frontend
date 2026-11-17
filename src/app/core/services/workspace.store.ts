@@ -253,7 +253,20 @@ export class WorkspaceStore {
     const id = this.specialtyContextId();
     return id === null ? {} : { specialtyContextId: id };
   }
-  private recordContext(setup:WorkspaceSetup){const item:SpecialtyContextSummary={id:setup.specialtyContextId,workspaceId:setup.id,version:setup.version,specialty:setup.specialty,onboardingCompleted:setup.onboardingCompleted,ready:setup.onboardingCompleted&&!!setup.definition,hasDraft:!!setup.draftDefinition};this.contexts.update(all=>[...all.filter(c=>c.id!==item.id),item]);}
+  private recordContext(setup: WorkspaceSetup): void {
+    const item: SpecialtyContextSummary = {
+      id: setup.specialtyContextId,
+      workspaceId: setup.id,
+      version: setup.version,
+      specialty: setup.specialty,
+      onboardingCompleted: setup.onboardingCompleted,
+      ready: setup.onboardingCompleted && !!setup.definition,
+      hasDraft: !!setup.draftDefinition,
+    };
+    this.contexts.update(all => all.some(context => context.id === item.id)
+      ? all.map(context => context.id === item.id ? item : context)
+      : [...all, item]);
+  }
   private applyPreferences(result: WorkspacePreferences): void {
     this.preferences.set(this.clone(result));
   }

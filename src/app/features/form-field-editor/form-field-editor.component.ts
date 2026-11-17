@@ -11,8 +11,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  heightMeasurementModeKey,
-  withHeightMeasurementMode,
+  visibleEncounterForm,
   WizardFormDefinition,
   WizardFieldDefinition,
   WizardFormulaDefinition,
@@ -84,7 +83,6 @@ export class FormFieldEditorComponent {
     () => this.categories().find((c) => c.key === this.selectedKey()) ?? null,
   );
   readonly allFields = computed(() => this.categories().flatMap((c) => c.fields));
-  readonly measurementModeKey = heightMeasurementModeKey;
   readonly formulaInputs = computed(
     () => FORMULA_INPUTS[this.fieldDraft()?.formula?.kind ?? 'CUSTOM'],
   );
@@ -174,7 +172,7 @@ export class FormFieldEditorComponent {
       const section = this.section();
       const requested = this.selectedCategoryKey();
       untracked(() => {
-        this.working.set(clone(section === 'encounterForm' ? withHeightMeasurementMode(form) : form));
+        this.working.set(clone(section === 'encounterForm' ? visibleEncounterForm(form) : form));
         const preferred =
           requested !== this.lastRequestedCategory
             ? (requested ?? this.selectedKey())
@@ -481,7 +479,7 @@ export class FormFieldEditorComponent {
     const previous = this.working();
     const edited = clone(previous);
     change(edited);
-    const next = this.section() === 'encounterForm' ? withHeightMeasurementMode(edited) : edited;
+    const next = edited;
     const error = this.validate(next);
     if (error) {
       this.error.set(error);

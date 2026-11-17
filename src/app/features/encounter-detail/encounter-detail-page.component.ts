@@ -1,3 +1,4 @@
+import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { UserClockService } from '../../core/services/user-clock.service';
 import {
   Component,
@@ -26,6 +27,9 @@ import {
   WizardFormValues,
   WizardFormulaResults,
   withClinicalHistory,
+  visibleEncounterForm,
+  heightMeasurementModeKey,
+  hiddenEncounterFieldKeys,
 } from '../../core/models/wizard-definition.model';
 import {
   DynamicFormRendererComponent,
@@ -44,6 +48,7 @@ import {
   styleUrl: './encounter-detail-page.component.css',
 })
 export class EncounterDetailPageComponent implements OnInit, OnDestroy {
+  private readonly interaction = inject(InteractionStatusService);
   private readonly service = inject(ClinicalEncounterService);
   private readonly auth = inject(AuthService);
   private readonly activePatient = inject(ActivePatientService);
@@ -59,9 +64,13 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly encounter = signal<ClinicalEncounterDetail | null>(null);
   readonly effectiveForm = computed(() => {
-    const form = this.encounter()?.formDefinitionSnapshot ?? { categories: [] };
+    const form = visibleEncounterForm(this.encounter()?.formDefinitionSnapshot ?? { categories: [] });
     return this.isEditing() ? withClinicalHistory(form) : form;
   });
+  readonly correctHeightPosition = signal(false);
+  readonly canCorrectHeightPosition = computed(() =>
+    this.encounter()?.formValues[heightMeasurementModeKey] === 'RECUMBENT',
+  );
   readonly values = signal<WizardFormValues>({});
   readonly formulaResults = signal<WizardFormulaResults>({});
   readonly consultationType = signal<ConsultationType>('FIRST_VISIT');
@@ -120,6 +129,7 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
     this.epoch++;
     this.submissionAttempted.set(false);
     this.encounter.set(null);
+    this.correctHeightPosition.set(false);
     this.values.set({});
     this.formulaResults.set({});
     this.isLoading.set(false);
@@ -152,6 +162,7 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   }
   private acceptRecord(record: ClinicalEncounterDetail): void {
     this.encounter.set(structuredClone(record));
+    this.correctHeightPosition.set(false);
     this.values.set(structuredClone(record.formValues));
     this.formulaResults.set(structuredClone(record.formulaResults));
     this.consultationType.set(record.consultationType);
@@ -206,7 +217,7 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
             expectedVersion: record.version,
             encounterDate,
             consultationType: this.consultationType(),
-            values: inputValues(this.effectiveForm(), this.values()),
+            values: this.valuesForUpdate(record),
           })
           .pipe(takeUntilDestroyed(this.destroyRef)),
       );
@@ -215,6 +226,7 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
         throw new Error('La respuesta no corresponde a esta consulta.');
       this.acceptRecord(saved);
       this.isEditing.set(false);
+      this.interaction.notifySuccess('Los cambios de la consulta se guardaron correctamente.');
       if (typeof window !== 'undefined')
         window.dispatchEvent(new CustomEvent('encounter-updated', { detail: saved }));
     } catch (error) {
@@ -228,6 +240,17 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
       if (this.alive(epoch)) this.isSubmitting.set(false);
     }
   }
+  private valuesForUpdate(record: ClinicalEncounterDetail): WizardFormValues {
+    const saved = inputValues(record.formDefinitionSnapshot, record.formValues);
+    const hiddenValues = Object.fromEntries(
+      Object.entries(saved).filter(([key]) => hiddenEncounterFieldKeys.includes(key)),
+    );
+    if (this.canCorrectHeightPosition() && this.correctHeightPosition()) {
+      hiddenValues[heightMeasurementModeKey] = 'STANDING';
+    }
+    return { ...inputValues(this.effectiveForm(), this.values()), ...hiddenValues };
+  }
+
   async reviewRemote(): Promise<void> {
     const record = this.encounter();
     if (

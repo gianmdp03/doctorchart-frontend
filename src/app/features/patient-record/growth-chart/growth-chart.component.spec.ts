@@ -55,12 +55,13 @@ describe('GrowthChartComponent — all twenty official references', () => {
       expect(component.xScale()(reference.definition.x.min)).toBe(component.plot.left);
       expect(component.yScale()(reference.definition.y.max)).toBe(component.plot.top);
       const middle = reference.curves[Math.floor(reference.curves.length / 2)];
+      const median = middle.values[2]!;
       const expectedY =
         component.plot.bottom -
-        ((middle.values[2] - reference.definition.y.min) /
+        ((median - reference.definition.y.min) /
           (reference.definition.y.max - reference.definition.y.min)) *
           (component.plot.bottom - component.plot.top);
-      expect(component.yScale()(middle.values[2])).toBeCloseTo(expectedY, 8);
+      expect(component.yScale()(median)).toBeCloseTo(expectedY, 8);
       expect(fixture.nativeElement.querySelector('canvas')).toBeNull();
       expect(fixture.nativeElement.textContent).not.toMatch(/Adecuado|Normal|[+-][12] DE/);
       expect(fixture.nativeElement.querySelector('.notice').textContent).toContain(
