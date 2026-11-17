@@ -40,10 +40,11 @@ describe('PatientPrescriptionStore with real HTTP client', () => {
   });
   it('does not optimistically delete persisted records and exposes backend errors', () => {
     store.setPatient(10); http.expectOne(url(10)).flush([record]);
-    store.delete(31); const failed=http.expectOne(url(10)+'/31'); expect(failed.request.method).toBe('DELETE');
+    store.delete(31, 'Documento duplicado'); const failed=http.expectOne(url(10)+'/31'); expect(failed.request.method).toBe('DELETE');
+    expect(failed.request.body).toEqual({ reason: 'Documento duplicado' });
     expect(store.records()).toEqual([record]); failed.flush({}, {status:500,statusText:'Error'});
-    expect(store.records()).toEqual([record]); expect(store.error()).toContain('No se pudo eliminar');
-    store.delete(31); http.expectOne(url(10)+'/31').flush(null,{status:204,statusText:'No Content'});
+    expect(store.records()).toEqual([record]); expect(store.error()).toContain('No se pudo anular');
+    store.delete(31, 'Documento duplicado'); http.expectOne(url(10)+'/31').flush(null,{status:204,statusText:'No Content'});
     expect(store.records()).toEqual([]); expect(store.busy()).toBe(false);
   });
   it('keeps failed saves out of history, clears success, and permits retry', () => {
@@ -76,7 +77,7 @@ describe('PatientPrescriptionStore with real HTTP client', () => {
     store.setPatient(10); http.expectOne(url(10)).flush([]); expect(store.records()).toEqual([]);
   });
   it('cancels account-scoped writes and suppresses late deletion errors', () => {
-    load(); store.delete(31); const request=http.expectOne(url(10)+'/31');
+    load(); store.delete(31, 'Documento duplicado'); const request=http.expectOne(url(10)+'/31');
     TestBed.inject(AuthService).currentUser.set(null); TestBed.tick();
     expect(request.cancelled).toBe(true); expect(store.busy()).toBe(false); expect(store.error()).toBeNull();
   });

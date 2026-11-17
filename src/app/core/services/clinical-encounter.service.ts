@@ -178,13 +178,13 @@ export class ClinicalEncounterService {
       );
   }
 
-  delete(id: number): Observable<void> {
+  delete(id: number, reason: string): Observable<void> {
     this.syncContext();
     const generation = this.generation;
     const context = this.context;
     const owner = this.auth.currentUser()?.id;
     this.loading.set(true);
-    return this.http.delete<void>(`${this.baseUrl}/${id}`).pipe(
+    return this.http.delete<void>(`${this.baseUrl}/${id}`, { body: { reason } }).pipe(
       tap({
         next: () => {
           if (generation !== this.generation || owner !== this.auth.currentUser()?.id || context !== this.contextKey()) return;

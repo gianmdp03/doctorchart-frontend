@@ -1,6 +1,6 @@
 import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { UserClockService } from '../../core/services/user-clock.service';
-import { userTimeZone, instantParts, shiftCalendarDate } from '../../core/date/user-time-zone';
+import { userTimeZone, instantParts } from '../../core/date/user-time-zone';
 import { AccountReadScope } from '../../core/services/account-read-scope';
 import { ClinicalContextService } from '../../core/services/clinical-context.service';
 import { FEATURE_FLAGS } from '../../core/config/feature-flags';
@@ -45,10 +45,8 @@ import { PatientListDTO } from '../../core/models/patient.model';
 import {
   ClinicalEncounterList,
   DashboardRecentEncounter,
-  UpcomingFollowUp,
 } from '../../core/models/clinical-encounter.model';
 import { getTotalElements, getTotalPages } from '../../core/models/api-response.model';
-import { UpcomingFollowUpsComponent } from './upcoming-follow-ups.component';
 
 export interface ClinicalHighlightItem {
   label: string;
@@ -74,7 +72,7 @@ export interface RecentEncounterItem {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [FormsModule, RouterLink, NgIcon, UpcomingFollowUpsComponent],
+  imports: [FormsModule, RouterLink, NgIcon],
   providers: [
     provideIcons({
       lucideArrowRight,
@@ -115,20 +113,6 @@ export class DashboardComponent implements OnInit {
   private readonly recentRecords = signal<ClinicalEncounterList[]>([]);
   private readonly clock = inject(UserClockService);
   private readonly activityDay = signal(this.userDay());
-  readonly upcomingFollowUps = signal<UpcomingFollowUp[] | null>(null);
-  readonly upcomingGroups = computed(() =>
-    ['Hoy', 'Mañana', 'Pasado mañana'].map((label, offset) => {
-      const date = shiftCalendarDate(this.activityDay(), offset);
-      return {
-        label,
-        date,
-        items: (this.upcomingFollowUps() ?? []).filter(item => item.followUpDate === date).map(item => ({
-          ...item,
-          initials: item.patientFullName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase(),
-        })),
-      };
-    }),
-  );
   readonly recentSearch = signal('');
   readonly recentPage = signal(0);
   readonly recentPageSize = signal(5);
@@ -281,7 +265,6 @@ export class DashboardComponent implements OnInit {
     this.encountersMonthCount.set(null);
     this.encountersTodayCount.set(null);
     this.recentEncounters.set([]);
-    this.upcomingFollowUps.set(null);
     this.metricsError.set(null);
     if (!this.metricsReads.authenticated()) {
       this.isLoadingMetrics.set(false);
@@ -298,7 +281,6 @@ export class DashboardComponent implements OnInit {
           if (!current()) return;
           this.totalPatients.set(activity.totalPatients);
           this.activityDay.set(activity.asOfDate);
-          this.upcomingFollowUps.set(activity.upcomingFollowUps ?? null);
           this.encountersMonthCount.set(activity.encountersThisMonth);
           this.encountersTodayCount.set(activity.encountersToday);
           this.recentEncounters.set(

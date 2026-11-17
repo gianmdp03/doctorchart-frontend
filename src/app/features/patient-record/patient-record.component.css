@@ -8,56 +8,65 @@
 .patient-record-page {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
   width: 100%;
   flex: 1;
+  gap: 24px;
 }
 
 .cta-primary-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background-color: #006874;
-  color: #ffffff;
   border: none;
-  border-radius: 9px;
   padding: 0.55rem 1rem;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 104, 116, 0.25);
-  transition: all 0.15s ease;
+  box-shadow: none;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
   white-space: nowrap;
+  background: var(--dc-brand);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .cta-primary-btn:hover {
-  background-color: #00505a;
+  box-shadow: none;
+  background: var(--dc-brand-hover);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 .flattened-tabs-nav {
   display: flex;
   border-bottom: 2px solid var(--dc-outline, #e2e8f0);
-  gap: 0.5rem;
-  background: var(--dc-surface, #ffffff);
-  padding: 0 0.5rem;
-  border-radius: 10px 10px 0 0;
   overflow-x: auto;
+  padding: 6px;
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-radius-card);
+  gap: 6px;
+  background: var(--dc-paper);
 }
 
 .flat-tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.85rem 1.25rem;
   background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--dc-ink-muted, #64748b);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
   white-space: nowrap;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--dc-radius-control);
+  margin-bottom: 0;
 }
 
 .flat-tab-btn:hover {
@@ -65,8 +74,10 @@
 }
 
 .flat-tab-btn.active {
-  color: var(--dc-teal-ink, #006874);
-  border-bottom-color: #006874;
+  border-bottom-color: var(--dc-brand);
+  background: var(--dc-brand-soft);
+  border-color: var(--dc-brand);
+  color: var(--dc-brand-ink);
 }
 
 .tab-counter-badge {
@@ -98,7 +109,7 @@
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 }
 
 .secondary-outline-btn:hover {
@@ -106,15 +117,16 @@
   color: var(--dc-ink, #0f172a);
 }
 .no-patient-card {
-  background: var(--dc-surface, #ffffff);
-  border: 1px solid var(--dc-outline, #e2e8f0);
-  border-radius: 14px;
-  padding: 3.5rem 1.5rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
+  border-radius: var(--dc-radius-card);
+  background: var(--dc-paper);
+  box-shadow: none;
+  border: 1px solid var(--dc-line);
+  padding: 40px 24px;
 }
 
 .no-patient-circle {
@@ -165,7 +177,7 @@
   width: 24px;
   height: 24px;
   border: 3px solid var(--dc-outline, #e2e8f0);
-  border-top-color: #006874;
+  border-top-color: var(--dc-brand);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }

@@ -155,3 +155,15 @@
 /specialties
   X-Robots-Tag: noindex, follow
   Cache-Control: no-store
+
+/register
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/register/confirmed
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+
+/pricing
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache

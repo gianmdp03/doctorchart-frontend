@@ -1,0 +1,7 @@
+
+:host { display: grid; place-items: center; min-height: 70dvh; }
+.not-found { width: min(100%, 640px); margin-inline: auto; padding: 40px 24px; text-align: center; color: var(--dc-text); }
+.not-found h1 { margin: 0 0 16px; font-size: 2rem; line-height: 1.2; font-weight: 700; letter-spacing: -.03em; }
+.not-found p { margin: 0 0 24px; font-size: .9375rem; line-height: 1.6; color: var(--dc-text-secondary); }
+.not-found a { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 12px 20px; border-radius: var(--dc-radius-control); background: var(--dc-brand); color: var(--dc-on-brand); font-size: .875rem; font-weight: 600; text-decoration: none; }
+.not-found a:focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }

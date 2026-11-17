@@ -15,9 +15,8 @@
 
   @if (pendingDelete(); as study) {
     <section class="inline-confirmation" aria-label="Confirmar eliminación del estudio">
-      <p>¿Eliminar el estudio <strong>{{ study.originalFileName }}</strong>?</p>
-      <button type="button" [disabled]="isDeleting()" (click)="pendingDelete.set(null)">Conservar estudio</button>
-      <button type="button" [disabled]="isDeleting()" (click)="confirmDeleteStudy()">{{ isDeleting() ? 'Eliminando...' : 'Eliminar estudio' }}</button>
+      <p>El estudio <strong>{{ study.name }}</strong> y su adjunto se conservarán en el historial.</p>
+      <app-annulment-prompt [target]="study.id" [busy]="isDeleting()" (cancel)="pendingDelete.set(null)" (confirm)="confirmDeleteStudy($event)" />
     </section>
   }
   <!-- Mensajes de Estado -->
@@ -114,7 +113,7 @@
       <div class="upload-actions">
         <button
           type="submit"
-          class="btn-primary"
+          class="dc-button dc-button--primary btn-primary"
           [disabled]="!!fileError() || !!nameError() || !!descriptionError() || isUploading()"
         >
           @if (isUploading()) {
@@ -258,8 +257,8 @@
                 type="button"
                 class="btn-action btn-delete"
                 (click)="deleteStudy(study)"
-                title="Eliminar estudio"
-                aria-label="Eliminar estudio"
+                title="Anular estudio"
+                aria-label="Anular estudio"
               >
                 <ng-icon name="lucideTrash2" />
               </button>

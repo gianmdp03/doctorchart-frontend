@@ -5,7 +5,7 @@
 .vaccines-panel {
   background: var(--dc-surface, #fff);
   border: 1px solid var(--dc-outline, #e2e8f0);
-  border-radius: 16px;
+  border-radius: var(--dc-radius-card);
   padding: 24px;
 }
 
@@ -85,7 +85,7 @@
 .dose-card {
   align-items: center;
   border: 1px solid var(--dc-outline, #e2e8f0);
-  border-left: 4px solid #94a3b8;
+  border-left: 1px solid var(--dc-text-muted);
   border-radius: 10px;
   display: flex;
   gap: 14px;
@@ -95,19 +95,19 @@
 }
 
 .pending-card {
-  border-left-color: #ef4444;
+  border-left-color: var(--dc-danger);
 }
 
 .current-card {
-  border-left-color: #f59e0b;
+  border-left-color: var(--dc-caution);
 }
 
 .applied-card {
-  border-left-color: #22c55e;
+  border-left-color: var(--dc-positive);
 }
 
 .future-card {
-  border-left-color: #0284c7;
+  border-left-color: var(--dc-blue);
   background: var(--dc-surface-low, #fcfdfe);
 }
 
@@ -144,7 +144,7 @@
 
 .save-error {
   background: var(--dc-error-surface, #fef2f2);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--dc-danger-soft);
   border-radius: 8px;
   color: var(--dc-error-ink, #b91c1c);
   font-size: 0.82rem;
@@ -254,7 +254,7 @@
   font-size: 0.78rem;
   color: var(--dc-blue-ink, #0369a1);
   background: var(--dc-blue-surface, #f0f9ff);
-  border: 1px solid #e0f2fe;
+  border: 1px solid var(--dc-blue-soft);
   padding: 2px 8px;
   border-radius: 6px;
 }
@@ -293,3 +293,10 @@
   }
 }
 .field-error { display: block; margin-top: 6px; color: var(--dc-error-ink, #b91c1c); font-size: .8rem; }
+h2 {
+  font-size: 1.125rem;
+  font-weight: 650;
+}
+.vaccine-row {
+  padding: 16px;
+}

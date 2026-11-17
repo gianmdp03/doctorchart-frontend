@@ -84,7 +84,7 @@ export class SchedulePageComponent {
    const parts = formatter.formatToParts(date);
    return {
     time: parts.filter(({type}) => type === 'hour' || type === 'minute').map(({value}) => value).join(':'),
-    offset: parts.find(({type}) => type === 'timeZoneName')?.value ?? result.timezone,
+    offset: parts.find(({type}) => type === 'timeZoneName')?.value ?? '',
    };
   };
   return result.days.map(day => ({

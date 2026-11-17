@@ -10,5 +10,7 @@ export class PatientPrescriptionService {
   private url(patientId: number): string { return `${environment.apiUrl}/patients/${patientId}/prescriptions`; }
   list(patientId: number): Observable<SavedPrescriptionRecord[]> { return this.http.get<SavedPrescriptionRecord[]>(this.url(patientId)); }
   create(patientId: number, request: PrescriptionRequest): Observable<SavedPrescriptionRecord> { return this.http.post<SavedPrescriptionRecord>(this.url(patientId), request); }
-  delete(patientId: number, id: number): Observable<void> { return this.http.delete<void>(`${this.url(patientId)}/${id}`); }
+  delete(patientId: number, id: number, reason: string): Observable<void> {
+    return this.http.delete<void>(`${this.url(patientId)}/${id}`, { body: { reason } });
+  }
 }

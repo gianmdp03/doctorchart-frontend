@@ -34,7 +34,6 @@ import {
   lucideShieldAlert,
 } from '@ng-icons/lucide';
 import { firstValueFrom, takeUntil } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
 import { AccountReadScope } from '../../core/services/account-read-scope';
 import { BOOKING_COUNTRIES, bookingCountry, localitiesFor } from '../../core/location/booking-locations';
@@ -126,7 +125,6 @@ export class ClinicFormPageComponent implements OnInit {
   readonly limits = CLINIC_FIELD_LIMITS;
   readonly commonTimezones = COMMON_IANA_TIMEZONES;
   readonly locationCountries = BOOKING_COUNTRIES;
-  readonly plansUrl = environment.bycodePlansUrl || '';
 
   readonly isEditMode = signal(false);
   readonly clinicId = signal<string | null>(null);

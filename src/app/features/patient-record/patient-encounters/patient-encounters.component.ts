@@ -5,10 +5,11 @@ import { ClinicalEncounterDetail } from '../../../core/models/clinical-encounter
 import { ClinicalTimelineComponent } from '../clinical-timeline/clinical-timeline.component';
 import { EncounterFormComponent } from '../../encounter-form/encounter-form.component';
 import { PatientEncountersStore } from './patient-encounters.store';
+import { AnnulmentPromptComponent } from '../annulment-prompt.component';
 
 @Component({
   selector: 'app-patient-encounters',
-  imports: [ClinicalTimelineComponent, EncounterFormComponent],
+  imports: [ClinicalTimelineComponent, EncounterFormComponent, AnnulmentPromptComponent],
   templateUrl: './patient-encounters.component.html',
   styleUrl: './patient-encounters.component.css',
 })

@@ -2,7 +2,7 @@
   <!-- Controls: Title, Search, Filters & New Patient CTA -->
   <div class="patient-directory-controls">
     <div>
-      <h2>Directorio de Pacientes</h2>
+      <h1 class="dc-page-title">Directorio de Pacientes</h1>
       <p class="directory-subtitle">
         {{ totalElements() }} pacientes en seguimiento clínico
         @if (searchQuery()) {
@@ -38,10 +38,11 @@
         }
       </div>
 
-      <button type="button" class="m3-button m3-button-tonal" (click)="createPatient()">
+      <button type="button" class="dc-button dc-button--primary" (click)="createPatient()">
         + Nuevo paciente
       </button>
     </div>
+    <app-clinical-revisions />
 
     <section class="directory-filters" aria-label="Categorías de pacientes">
       <div class="directory-filters-heading">
@@ -302,7 +303,7 @@
                       No existen pacientes que coincidan con el filtro actual o la búsqueda ingresada.
                     </p>
                     <div class="empty-state-actions">
-                      <button type="button" class="m3-button m3-button-tonal" (click)="resetFilters()">
+                      <button type="button" class="dc-button dc-button--primary m3-button m3-button-tonal" (click)="resetFilters()">
                         Restablecer Filtros
                       </button>
                     </div>

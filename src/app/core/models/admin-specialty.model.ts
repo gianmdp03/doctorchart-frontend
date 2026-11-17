@@ -29,3 +29,28 @@ export interface SaveWizardDefaultDraftRequest {
   expectedVersion: number;
   definition: WizardDefinition;
 }
+
+export interface TemplateReviewDecision {
+  id: number;
+  revision: number;
+  fingerprint: string;
+  actor: string;
+  kind: 'CLINICAL' | 'SYNTHETIC';
+  reference: string;
+  occurredAt: string;
+  revokedBy: string | null;
+  revokedAt: string | null;
+  revocationReason: string | null;
+}
+export interface TemplateReviewStatus {
+  revision: number;
+  fingerprint: string;
+  draftState: 'PENDING' | 'APPROVED' | 'PUBLISHED' | 'BLOCKED';
+  publicationState: 'UNPUBLISHED' | 'LEGACY' | 'APPROVED' | 'REVOKED' | 'BLOCKED';
+  canApprove: boolean;
+  canPublish: boolean;
+  canActivate: boolean;
+  publishedApprovalId: number | null;
+  history: TemplateReviewDecision[];
+  nextBefore: number | null;
+}

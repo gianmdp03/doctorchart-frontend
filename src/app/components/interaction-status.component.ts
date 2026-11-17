@@ -33,6 +33,7 @@ import { InteractionStatusService } from '../core/services/interaction-status.se
       }
     </div>
   `,
+<<<<<<< Updated upstream
   styles: `
     .status-stack { position:fixed;z-index:2000;top:12px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 24px);pointer-events:none; }
     .interaction-status { display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid var(--border);border-radius:12px;background:var(--background);color:var(--foreground);box-shadow:0 4px 16px #0002;font-size:14px; }
@@ -87,6 +88,9 @@ import { InteractionStatusService } from '../core/services/interaction-status.se
     @keyframes toast-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @media(prefers-reduced-motion:reduce) { .spinner, .success-toast.visible { animation:none; } }
   `,
+=======
+  styleUrl: './interaction-status.component.css',
+>>>>>>> Stashed changes
 })
 export class InteractionStatusComponent {
   readonly status = inject(InteractionStatusService);

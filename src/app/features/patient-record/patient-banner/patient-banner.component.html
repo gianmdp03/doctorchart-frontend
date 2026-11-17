@@ -38,7 +38,7 @@
             <ng-icon name="lucideCreditCard" class="text-teal-600" />
             <strong class="coverage-provider">{{ coverageInfo().label }}</strong>
             @if (coverageInfo().affiliate) {
-              <span class="coverage-divider">·</span>
+              <span class="coverage-divider" aria-hidden="true">·</span>
               <span class="coverage-affiliate">Afiliado: {{ coverageInfo().affiliate }}</span>
             }
           </span>
@@ -47,13 +47,13 @@
 
       <div class="patient-demographics-row">
         <span class="demo-item"><strong>DNI:</strong> {{ nationalId() }}</span>
-        <span class="demo-bullet">•</span>
+        <span class="demo-bullet" aria-hidden="true">•</span>
         <span class="demo-item"><strong>Edad:</strong> {{ dynamicAge() }}</span>
-        <span class="demo-bullet">•</span>
+        <span class="demo-bullet" aria-hidden="true">•</span>
         <span class="demo-item"><strong>Sexo:</strong> {{ sexLabel() }}</span>
         @if ((patient || activePatientService.activePatient())?.bloodType; as bg) {
           @if (bg !== 'Sin registrar') {
-            <span class="demo-bullet">•</span>
+            <span class="demo-bullet" aria-hidden="true">•</span>
             <span class="demo-item"><strong>Grupo:</strong> {{ bg }}</span>
           }
         }

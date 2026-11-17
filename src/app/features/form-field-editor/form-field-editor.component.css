@@ -4,6 +4,7 @@
 }
 .editor {
   width: 100%;
+  gap: 24px;
 }
 .editor-layout {
   display: grid;
@@ -11,10 +12,10 @@
   gap: 1.5rem;
 }
 .category-manager {
-  background: var(--color-surface-container-low, #f8fafc);
   padding: 1rem;
   border: 1px solid var(--color-outline-variant, #e2e8f0);
-  border-radius: 1rem;
+  border-radius: var(--dc-radius-card);
+  background: var(--dc-subtle);
 }
 h3,
 h4 {
@@ -37,7 +38,7 @@ h4 {
   margin: 0.5rem 0;
 }
 .category-row.selected {
-  border-color: #93c5fd;
+  border-color: var(--dc-blue-soft);
   background: var(--dc-blue-surface, #eff6ff);
 }
 .category-row.inactive .category-name {
@@ -80,13 +81,15 @@ button:disabled {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--dc-blue);
   outline-offset: 2px;
 }
 .primary {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: white;
+  background: var(--dc-brand);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 .danger {
   color: var(--dc-error-ink, #b91c1c);
@@ -125,9 +128,10 @@ select {
   justify-content: space-between;
   gap: 1rem;
   border: 1px solid var(--dc-outline, #e2e8f0);
-  border-radius: 0.75rem;
-  padding: 1rem;
   margin-bottom: 0.75rem;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: none;
 }
 .field-summary {
   display: flex;
@@ -170,7 +174,7 @@ select {
   overflow-y: auto;
   padding: 1.5rem;
   border-radius: 1rem;
-  box-shadow: 0 20px 60px #0003;
+  box-shadow: var(--dc-shadow-sm);
 }
 fieldset {
   border: 0;
@@ -267,7 +271,7 @@ fieldset {
 .health-system-note {
   padding: 16px 18px;
   border: 1px solid var(--dc-outline, #dce5e8);
-  border-left: 3px solid var(--dc-teal-ink, #0f766e);
+  border-left: 1px solid var(--dc-teal-ink, #0f766e);
   border-radius: 10px;
   background: var(--dc-teal-surface, #effaf8);
   color: var(--dc-ink-secondary, #526773);

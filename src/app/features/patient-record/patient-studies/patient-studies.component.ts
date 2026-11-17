@@ -40,7 +40,7 @@ const MAX_STUDY_FILE_BYTES = 10_000_000;
 
 @Component({
   selector: 'app-patient-studies',
-  imports: [CommonModule, FormsModule, NgIcon],
+  imports: [CommonModule, FormsModule, NgIcon, AnnulmentPromptComponent],
   providers: [
     provideIcons({
       lucideUpload,
@@ -340,24 +340,29 @@ export class PatientStudiesComponent {
     this.pendingDelete.set(study);
   }
 
-  confirmDeleteStudy(): void {
+  confirmDeleteStudy(reason: string): void {
     this.syncContext();
     const study = this.pendingDelete();
     if (!study || study.patientId !== this.patientId() || this.isDeleting()) return;
     const revision = this.revision;
     this.isDeleting.set(true); this.errorMessage.set(null);
-    this.studyService.deleteStudy(this.patientId(), study.id).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.studyService.deleteStudy(this.patientId(), study.id, reason).pipe(takeUntil(this.changed),takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         if (!this.current(revision)) return;
         this.studies.update((list) => list.filter((s) => s.id !== study.id));
         if (this.previewStudy()?.id === study.id) this.closeStudyPreview();
         this.pendingDelete.set(null); this.isDeleting.set(false);
+<<<<<<< Updated upstream
         this.interaction.notifySuccess('El estudio se eliminó correctamente.');
+=======
+        this.successMessage.set('Estudio anulado. El adjunto se conserva en el historial.');
+        setTimeout(() => { if (this.current(revision)) this.successMessage.set(null); }, 3000);
+>>>>>>> Stashed changes
       },
       error: () => {
         if (!this.current(revision)) return;
         this.isDeleting.set(false);
-        this.errorMessage.set('No se pudo eliminar el estudio médico.');
+        this.errorMessage.set('No se pudo anular el estudio médico.');
       },
     });
   }
@@ -382,3 +387,4 @@ export class PatientStudiesComponent {
     return !!contentType && contentType.includes('pdf');
   }
 }
+import { AnnulmentPromptComponent } from '../annulment-prompt.component';

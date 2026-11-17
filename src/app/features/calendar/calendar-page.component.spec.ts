@@ -102,14 +102,20 @@ describe('M5 calendar',()=>{
  it('expired/revoked rights block actions, retries keep fields, downgrade permits status only',async()=>{c.openSlot(c.days()[0].slots[0]);c.contactName='Conservar';const value=caps();value.entitlements.validUntil=new Date(Date.now()-1).toISOString();c.capabilities.set(value as any);expect(c.allowed()).toBe(false);await c.create();expect(api.create).not.toHaveBeenCalled();clinics.getCapabilities.mockReturnValue(of({...caps(),entitlements:{...caps().entitlements,clinicManagement:false}}));await c.retryCapabilities();expect(c.allowed()).toBe(false);expect(c.contactName).toBe('Conservar');c.capabilities.set({...caps(),entitlements:{...caps().entitlements,max_clinics:0}} as any);expect(c.canBook()).toBe(false);expect(c.allowed()).toBe(true);});
  it('clears patient and booking data when owner changes',async()=>{await c.openBooking(b);user.set(null);fixture.detectChanges();await fixture.whenStable();expect(c.selected()).toBeNull();expect(c.days()).toEqual([]);expect(c.clinics()).toEqual([]);});
  it('shows the persisted specialty and clinic in calendar and detail',async()=>{await c.openBooking(b);fixture.detectChanges();expect(fixture.nativeElement.textContent).toContain('Medicina General histórica');expect(fixture.nativeElement.textContent).toContain('Sede original');expect(c.eventLabel('PATIENT_LINKED')).toBe('Ficha clínica vinculada');expect(c.selected()?.specialtyContextId).toBe('101');});
- it('shows administrative details without a clinical file section for linked and unlinked reservations',async()=>{
-  for(const patientId of [null,'44']){
-   const booking={...b,patientId};api.get.mockReturnValueOnce(of(booking));
+ it('offers the linked record in the booking context without restoring patient search',async()=>{
+  for(const [patientId,specialtyContextId,href] of [
+   [null,'202',null],
+   ['44',undefined,null],
+   ['44','202','/records/44?specialtyContextId=202'],
+  ] as const){
+   const booking={...b,patientId,specialtyContextId};api.get.mockReturnValueOnce(of(booking));
    await c.openBooking(booking);fixture.detectChanges();
    const detail=fixture.nativeElement.querySelector('.editor') as HTMLElement;
    expect(detail.textContent).toContain('Solicitante');
    expect(detail.textContent).not.toMatch(/vincular|ficha clínica|historia clínica/i);
-   expect(detail.querySelector('a[href*="/records/"]')).toBeNull();
+   const link=detail.querySelector('a[href*="/records/"]');
+   expect(link?.getAttribute('href')??null).toBe(href);
+   if(href)expect(link?.textContent).toContain('Abrir ficha de Medicina General histórica');
   }
  });
  it('disambiguates DST repeated hours and groups civil dates per clinic',()=>{expect(localTime('2026-11-01T05:30:00Z','America/New_York')).toBe('01:30');expect(localTime('2026-11-01T06:30:00Z','America/New_York')).toBe('01:30');expect(offsetLabel('2026-11-01T05:30:00Z','America/New_York')).not.toBe(offsetLabel('2026-11-01T06:30:00Z','America/New_York'));expect(civilDate('2026-11-01T01:00:00Z','America/Argentina/Buenos_Aires')).toBe('2026-10-31');expect(civilDate('2026-11-01T01:00:00Z','Pacific/Auckland')).toBe('2026-11-01');});

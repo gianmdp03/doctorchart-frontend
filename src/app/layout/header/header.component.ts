@@ -71,6 +71,7 @@ export class HeaderComponent implements OnDestroy {
   private readonly elementRef = inject(ElementRef);
 
   readonly searchInputRef = viewChild<ElementRef<HTMLInputElement>>('searchInput');
+  readonly profileTrigger = viewChild<ElementRef<HTMLButtonElement>>('profileTrigger');
 
   readonly searchQuery = signal('');
   readonly searchResults = signal<PatientListDTO[]>([]);
@@ -80,7 +81,6 @@ export class HeaderComponent implements OnDestroy {
   readonly isSearchOpen = signal(false);
   readonly isProfileMenuOpen = signal(false);
 
-  readonly bycodePlansUrl = environment.bycodePlansUrl;
   readonly bycodeUrl = new URL('/', environment.bycodePlansUrl).href;
 
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -124,6 +124,7 @@ export class HeaderComponent implements OnDestroy {
         input.select();
       }
     } else if (event.key === 'Escape') {
+      if (this.isProfileMenuOpen()) this.profileTrigger()?.nativeElement.focus();
       this.isSearchOpen.set(false);
       this.isProfileMenuOpen.set(false);
     }

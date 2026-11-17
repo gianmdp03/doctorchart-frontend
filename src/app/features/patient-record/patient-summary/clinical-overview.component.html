@@ -1,7 +1,7 @@
 <section class="overview" aria-label="Resumen clínico" [attr.aria-busy]="loading()">
   <header class="overview-header">
     <div>
-      <p class="eyebrow"><span class="live-dot"></span> Una mirada antes de atender</p>
+
       <h2>Resumen clínico</h2>
       <p class="intro">
         La información relevante de su ficha y sus consultas, siempre con su origen.
@@ -163,7 +163,13 @@
           @if (last.followUp) {
             <div class="summary-item">
               <strong>Seguimiento indicado</strong>
+<<<<<<< Updated upstream
               <span class="summary-details">{{ last.followUp }}</span>
+=======
+              @if (last.followUp) {
+                <span class="summary-details">{{ last.followUp }}</span>
+              }
+>>>>>>> Stashed changes
               <small>Indicado el {{ date(last.date) }}</small
               ><a class="source-link" [routerLink]="['/encounters', last.id]"
                 >Ver indicación original<ng-icon name="lucideArrowUpRight"

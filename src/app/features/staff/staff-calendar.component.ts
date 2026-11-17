@@ -48,6 +48,7 @@ import {
 import { monday } from '../calendar/agenda-timeline';
 import { AgendaComponent } from '../calendar/agenda.component';
 
+<<<<<<< Updated upstream
 @Component({
   selector: 'app-staff-calendar',
   imports: [FormsModule, RouterLink, AgendaComponent, NgIcon],
@@ -68,6 +69,40 @@ import { AgendaComponent } from '../calendar/agenda.component';
   styleUrls: ['./staff.css', '../calendar/agenda-page.css', './staff-calendar.component.css'],
   templateUrl: './staff-calendar.component.html',
 })
+=======
+@Component({selector:'app-staff-calendar',imports:[FormsModule,RouterLink,DatePickerComponent],styleUrl:'./staff.css',template:`
+<main class="staff-page"><header class="actions"><a routerLink="/">Doctor Chart</a><span>Agenda de secretaría</span><button (click)="logout()" [disabled]="writing()">Cerrar sesión</button></header>
+<div class="page-heading"><h1>Agenda de consultorios</h1><p>Gestioná turnos únicamente dentro de tus asignaciones. Este acceso no incluye historias clínicas.</p></div>
+@if(activationRecovery()){<details><summary>Guardar un código de recuperación (opcional)</summary><p>Podés guardarlo ahora para recuperar tu cuenta si no tenés acceso al correo. Es personal: no lo compartas.</p><code class="recovery">{{activationRecovery()}}</code><button (click)="activationRecovery.set('')">Cerrar</button></details>}
+@if(error()){<p class="error" role="alert">{{error()}}</p>}@if(feedback()){<p class="success" role="status">{{feedback()}}</p>}
+<div class="toolbar"><div class="assignment-control">
+ <label>Consultorio asignado<select aria-label="Consultorio asignado" [attr.aria-describedby]="selectedAssignment() ? 'staff-assignment-summary' : null" [ngModel]="assignmentKey" (ngModelChange)="changeAssignment($event)" [disabled]="writing()">
+  <option value="">Seleccioná un consultorio</option>
+  @for(a of assignments();track key(a)){<option [value]="key(a)">{{a.doctorName||'Profesional asignado'}} · {{a.clinicName}} · {{modalityLabel(a.modality)}}</option>}
+ </select></label>
+ @if(selectedAssignment();as assignment){
+  <p id="staff-assignment-summary" class="assignment-summary"><span>{{assignment.doctorName||'Profesional asignado'}}</span><span>{{assignment.clinicName}} · {{modalityLabel(assignment.modality)}}</span></p>
+ }
+</div>
+<label>Fecha<app-date-picker inputId="staff-date" [value]="date" (valueChange)="changeDate($event)" /></label><label>Vista<select [(ngModel)]="view" (ngModelChange)="load()"><option value="1">Día</option><option value="7">Semana</option></select></label>
+<button (click)="refresh()" [disabled]="loading()||writing()">Actualizar permisos y agenda</button></div>
+@if(loading()){<p role="status">Consultando agenda…</p>}@else if(!assignments().length){<p>No tenés agendas habilitadas. Consultá con el médico que te invitó.</p>}
+@if(selectedAssignment();as a){<p class="muted">Hora local del consultorio. @if(!can('view')){Actualizá la agenda para renovar los permisos.}</p>
+<div class="grid" [class.has-editor]="editor()"><section class="panel" aria-label="Agenda administrativa">@for(day of days();track day.date){<section class="day"><h2>{{displayDay(day.date)}}</h2>
+@for(b of dayBookings(day.date);track b.id){<button class="booking" [class.cancelled]="b.status==='CANCELLED'" [attr.data-status]="b.status" (click)="selectBooking(b)" [disabled]="writing()||!can('view')"><strong>{{bookingTime(b)}} · {{b.attendeeName||b.contactName}}</strong><span>{{b.specialty?.name||'Especialidad sin registro histórico'}} · {{b.clinicSnapshot?.name||a.clinicName}} @if((b.clinicSnapshot?.modality||a.modality)==='TELECONSULTATION'){· Teleconsulta}</span><small>{{labels[b.status]}} · {{b.contactName}}</small></button>}
+<div class="slot-list">@for(slot of day.slots;track slot.start){<button [attr.aria-pressed]="start===slot.start" (click)="chooseSlot(slot.start)" [disabled]="writing()||!can(editor()==='move'?'reschedule':'create')">{{time(slot.start)}} · Disponible</button>}</div>
+@if(!day.slots.length&&!dayBookings(day.date).length){<p class="muted">Sin turnos ni horarios disponibles.</p>}</section>}</section>
+@if(editor()){<aside class="panel editor">@if(editor()==='create'){<h2>Nuevo turno</h2><p>{{time(start)}} · {{a.clinicName}}</p><form (ngSubmit)="create()" #form="ngForm"><fieldset [disabled]="writing()"><legend class="sr-only">Datos administrativos</legend>
+<label>Nombre del solicitante<input name="contact" [(ngModel)]="contactName" required maxlength="160" autocomplete="name" /></label><label>Teléfono<input name="phone" [(ngModel)]="contactPhone" type="tel" maxlength="80" autocomplete="tel" /></label><label>Nombre de quien será atendido<input name="attendee" [(ngModel)]="attendeeName" required maxlength="160" /></label>
+<p>Este turno no crea un paciente ni una historia clínica.</p>@if(editorError()){<p class="error" role="alert">{{editorError()}}</p>}<button type="submit" [disabled]="writing()||form.invalid||!can('create')">{{writing()?'Guardando…':'Confirmar turno'}}</button><button type="button" (click)="closeEditor()">Cerrar</button></fieldset></form>}
+@if(selected();as b){<h2>{{b.attendeeName||b.contactName}}</h2><p>{{displayDay(civilDate(b.start,b.clinicSnapshot?.timezone||a.timezone))}} · {{bookingTime(b)}} · {{labels[b.status]}}</p><p>{{b.specialty?.name||'Especialidad sin registro histórico'}} · {{b.clinicSnapshot?.name||a.clinicName}}</p><p>Solicitante: {{b.contactName}}<br />Teléfono: {{b.contactPhone||'Sin teléfono'}}</p>
+@if(editorError()){<p class="error" role="alert">{{editorError()}}</p>}
+<div class="actions">@for(state of transitions(b.status);track state){<button [disabled]="writing()||!can(state==='CANCELLED'?'cancel':'status')" (click)="status(state)">{{labels[state]}}</button>}@if(b.status==='CONFIRMED'){<button [disabled]="writing()||!can('reschedule')" (click)="beginMove()">Reprogramar</button>}<button (click)="closeEditor()" [disabled]="writing()">Cerrar</button></div>
+@if(editor()==='move'){<p>Seleccioná un horario disponible en la agenda para reprogramar. Podés cambiar la fecha.</p>@if(start){<p>Nuevo horario: {{time(start)}}</p><button class="dc-button dc-button--primary primary" (click)="move()" [disabled]="writing()||!can('reschedule')">Confirmar reprogramación</button>}}
+}</aside>}</div>}
+<details><summary>Cambiar contraseña</summary><form (ngSubmit)="password()"><label>Contraseña actual<input type="password" name="currentPassword" [(ngModel)]="currentPassword" autocomplete="current-password" required /></label><label>Contraseña nueva<input type="password" name="newPassword" [(ngModel)]="newPassword" autocomplete="new-password" required minlength="12" maxlength="72" /></label><button type="submit" [disabled]="writing()">Actualizar contraseña</button></form></details>
+</main>`})
+>>>>>>> Stashed changes
 export class StaffCalendarComponent {
   private readonly interaction = inject(InteractionStatusService);
   protected readonly api = inject(StaffService);

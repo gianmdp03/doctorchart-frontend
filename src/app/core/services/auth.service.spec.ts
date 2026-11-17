@@ -26,6 +26,14 @@ describe('legacy DoctorChart email callbacks', () => {
     expect(destination.hash).toBe(fragment);
   });
 
+  it('keeps product signup callbacks local and prevents emailed tokens from becoming a session', () => {
+    const location = {hash:'#access_token=email-token&type=signup',pathname:'/register/confirmed',search:'',replace:vi.fn()};
+    const history = {replaceState:vi.fn()};
+    expect(forwardDoctorchartMailCallback(location, history)).toBe(true);
+    expect(history.replaceState).toHaveBeenCalledWith(null, '', '/register/confirmed');
+    expect(location.replace).not.toHaveBeenCalled();
+  });
+
   it('leaves normal navigation and non-email auth fragments unchanged', () => {
     for (const hash of ['', '#section', '#access_token=oauth-token&type=oauth']) {
       const location = {hash, pathname: '/login', search: '', replace: vi.fn()};
@@ -423,9 +431,16 @@ describe('AuthService', () => {
       expect(mockAuth.signInWithOAuth).not.toHaveBeenCalled();
     });
 
-    it('blocks local registration before contacting Supabase', async () => {
-      await expect(service.signUp({email: 'fixture@example.test', password: 'fixture-password'})).rejects.toThrow('Bycode');
-      expect(mockAuth.signUp).not.toHaveBeenCalled();
+    it('uses shared Auth for signup and returns confirmations to DoctorChart', async () => {
+      const response = { data: { user: null, session: null }, error: null };
+      mockAuth.signUp.mockResolvedValue(response);
+      const request = { email: 'fixture@example.test', password: 'fixture-password',
+        options: { data: { full_name: 'Fixture name', dni: '12345678' } } };
+      await expect(service.signUp(request)).resolves.toBe(response);
+      expect(mockAuth.signUp).toHaveBeenCalledWith({
+        ...request,
+        options: { ...request.options, emailRedirectTo: window.location.origin + '/register/confirmed' },
+      });
     });
 
     it('should sign out and clear session and currentUser', async () => {
@@ -455,7 +470,7 @@ describe('AuthService', () => {
 
       await expect(
         service.signUp({ email: 'a@b.com', password: '123' })
-      ).rejects.toThrow('Bycode');
+      ).rejects.toThrow('Supabase client is not available');
     });
   });
   it('refreshes the session to use the newly activated plan', async () => {

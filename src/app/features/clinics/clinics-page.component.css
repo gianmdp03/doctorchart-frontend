@@ -1,18 +1,18 @@
 .clinics-page {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  max-width: 1200px;
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 2.5rem;
+  max-width: none;
+  padding: 0;
+  gap: 24px;
 }
 
 .page-header {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
+  gap: 20px;
   align-items: flex-start;
-  gap: 1rem;
 }
 
 .page-header-copy {
@@ -35,9 +35,15 @@
 
 .page-header h1 {
   margin: 0;
-  font-size: 1.55rem;
   font-weight: 700;
+<<<<<<< Updated upstream
   color: var(--md-sys-color-on-surface);
+=======
+  color: var(--text-main, #0f172a);
+  font-size: 1.75rem;
+  letter-spacing: -.03em;
+  line-height: 1.25;
+>>>>>>> Stashed changes
 }
 
 .subtitle {
@@ -73,14 +79,32 @@
 }
 
 .btn-primary {
+<<<<<<< Updated upstream
   background: var(--md-sys-color-primary);
   color: var(--md-sys-color-on-primary);
+=======
+>>>>>>> Stashed changes
   border: 1px solid transparent;
+  box-shadow: none;
+  background: var(--dc-brand);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .btn-primary:hover:not(:disabled) {
+<<<<<<< Updated upstream
   background: var(--md-sys-color-primary);
   filter: brightness(.92);
+=======
+  box-shadow: none;
+  background: var(--dc-brand-hover);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
+>>>>>>> Stashed changes
 }
 
 .btn-secondary {
@@ -106,10 +130,17 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
+<<<<<<< Updated upstream
   padding: 0.85rem 1.1rem;
   background: var(--md-surface-container-lowest);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 0.75rem;
+=======
+  padding: 16px 20px;
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-brand-soft);
+  border: 0;
+>>>>>>> Stashed changes
 }
 
 .quota-summary-main {
@@ -126,6 +157,7 @@
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 600;
+<<<<<<< Updated upstream
   background: var(--md-surface-container-low);
   color: var(--md-sys-color-on-surface-variant);
 }
@@ -133,11 +165,24 @@
 .quota-badge-verified {
   background: var(--md-sys-color-primary-container);
   color: var(--md-sys-color-on-primary-container);
+=======
+  background: var(--dc-raised);
+  color: var(--dc-text-secondary);
+}
+
+.quota-badge-verified {
+  background: var(--dc-blue-soft);
+  color: var(--dc-blue);
+>>>>>>> Stashed changes
 }
 
 .quota-hint {
   font-size: 0.82rem;
+<<<<<<< Updated upstream
   color: var(--md-sys-color-on-surface-variant);
+=======
+  color: var(--dc-text-secondary);
+>>>>>>> Stashed changes
 }
 
 .capability-banner {
@@ -150,6 +195,7 @@
 }
 
 .banner-info {
+<<<<<<< Updated upstream
   background: var(--md-sys-color-primary-container);
   border-color: var(--md-sys-color-outline-variant);
   color: var(--md-sys-color-on-primary-container);
@@ -165,6 +211,23 @@
   background: var(--md-sys-color-error-container);
   border-color: var(--md-sys-color-error);
   color: var(--md-sys-color-on-error-container);
+=======
+  background: var(--dc-subtle);
+  border-color: var(--dc-blue-soft);
+  color: var(--dc-text-secondary);
+}
+
+.banner-warning {
+  background: var(--dc-caution-soft);
+  border-color: var(--dc-caution-soft);
+  color: var(--dc-caution);
+}
+
+.banner-danger {
+  background: var(--dc-danger-soft);
+  border-color: var(--dc-danger-soft);
+  color: var(--dc-danger);
+>>>>>>> Stashed changes
 }
 
 .banner-icon {
@@ -216,6 +279,7 @@
 }
 
 .alert-danger {
+<<<<<<< Updated upstream
   background: var(--md-sys-color-error-container);
   border: 1px solid var(--md-sys-color-error);
   color: var(--md-sys-color-on-error-container);
@@ -225,6 +289,17 @@
   background: var(--md-sys-color-success-container);
   border: 1px solid var(--md-sys-color-success);
   color: var(--md-sys-color-on-success-container);
+=======
+  background: var(--dc-danger-soft);
+  border: 1px solid var(--dc-danger-soft);
+  color: var(--dc-danger);
+}
+
+.alert-success {
+  background: var(--dc-positive-soft);
+  border: 1px solid var(--dc-positive-soft);
+  color: var(--dc-positive);
+>>>>>>> Stashed changes
 }
 
 .toolbar-card {
@@ -257,9 +332,15 @@
 }
 
 .filter-tab.active {
+<<<<<<< Updated upstream
   background: var(--md-sys-color-primary-container);
   border-color: var(--md-sys-color-outline-variant);
   color: var(--md-sys-color-on-primary-container);
+=======
+  background: var(--dc-blue-soft);
+  border-color: var(--dc-blue-soft);
+  color: var(--dc-blue);
+>>>>>>> Stashed changes
 }
 
 .results-meta {
@@ -284,19 +365,32 @@
 .clinics-table thead th {
   position: sticky;
   top: 0;
+<<<<<<< Updated upstream
   background: var(--md-surface-container-low);
   color: var(--md-sys-color-on-surface-variant);
+=======
+  background: var(--dc-subtle);
+  color: var(--dc-text-secondary);
+>>>>>>> Stashed changes
   font-size: 0.76rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.85rem 1rem;
+<<<<<<< Updated upstream
   border-bottom: 1px solid var(--md-surface-container-high);
+=======
+  border-bottom: 1px solid var(--dc-raised);
+>>>>>>> Stashed changes
 }
 
 .clinics-table tbody td {
   padding: 0.95rem 1rem;
+<<<<<<< Updated upstream
   border-bottom: 1px solid var(--md-surface-container-low);
+=======
+  border-bottom: 1px solid var(--dc-raised);
+>>>>>>> Stashed changes
   vertical-align: middle;
   font-size: 0.88rem;
   color: var(--md-sys-color-on-surface);
@@ -307,8 +401,14 @@
 }
 
 .clinic-name {
+<<<<<<< Updated upstream
   font-weight: 600;
   color: var(--md-sys-color-on-surface);
+=======
+  color: var(--text-main, #0f172a);
+  font-size: .9375rem;
+  font-weight: 650;
+>>>>>>> Stashed changes
 }
 
 .clinic-meta {
@@ -337,6 +437,7 @@
 }
 
 .status-active {
+<<<<<<< Updated upstream
   background: var(--md-sys-color-success-container);
   color: var(--md-sys-color-on-success-container);
 }
@@ -349,6 +450,20 @@
 .status-archived {
   background: var(--md-surface-container-high);
   color: var(--md-sys-color-on-surface-variant);
+=======
+  background: var(--dc-positive-soft);
+  color: var(--dc-positive);
+}
+
+.status-inactive {
+  background: var(--dc-caution-soft);
+  color: var(--dc-caution);
+}
+
+.status-archived {
+  background: var(--dc-raised);
+  color: var(--dc-text-secondary);
+>>>>>>> Stashed changes
 }
 
 .row-actions {
@@ -361,6 +476,7 @@
   padding: 0.35rem 0.65rem;
   min-height: 2rem;
   font-size: 0.78rem;
+<<<<<<< Updated upstream
   background: var(--md-surface-container-lowest);
   color: var(--md-sys-color-on-surface);
   border: 1px solid var(--md-sys-color-outline-variant);
@@ -376,6 +492,23 @@
   border-color: var(--md-sys-color-error);
   color: var(--md-sys-color-error);
   background: var(--md-sys-color-error-container);
+=======
+  background: var(--dc-paper);
+  color: var(--dc-text);
+  border: 1px solid var(--dc-line);
+}
+
+.btn-row-primary {
+  border-color: var(--dc-blue-soft);
+  color: var(--dc-blue);
+  background: var(--dc-blue-soft);
+}
+
+.btn-row-danger {
+  border-color: var(--dc-danger-soft);
+  color: var(--dc-danger);
+  background: var(--dc-danger-soft);
+>>>>>>> Stashed changes
 }
 
 .empty-state {
@@ -394,8 +527,13 @@
   width: 3.25rem;
   height: 3.25rem;
   border-radius: 999px;
+<<<<<<< Updated upstream
   background: var(--md-sys-color-primary-container);
   color: var(--md-sys-color-on-primary-container);
+=======
+  background: var(--dc-blue-soft);
+  color: var(--dc-blue);
+>>>>>>> Stashed changes
 }
 
 .empty-title {
@@ -448,7 +586,11 @@
 
   .clinics-table tbody tr {
     padding: 0.85rem 1rem;
+<<<<<<< Updated upstream
     border-bottom: 1px solid var(--md-surface-container-high);
+=======
+    border-bottom: 1px solid var(--dc-raised);
+>>>>>>> Stashed changes
   }
 
   .clinics-table tbody td {
@@ -466,7 +608,11 @@
     font-weight: 600;
     font-size: 0.78rem;
     text-transform: uppercase;
+<<<<<<< Updated upstream
     color: var(--md-sys-color-on-surface-variant);
+=======
+    color: var(--dc-text-muted);
+>>>>>>> Stashed changes
     text-align: left;
   }
 

@@ -16,7 +16,7 @@ describe('AdminSpecialtiesComponent', () => {
   let component: AdminSpecialtiesComponent;
   let metadata: SpecialtyDetail;
   let saved: WizardDefaultDetail;
-  let service: { getSpecialties: ReturnType<typeof vi.fn>; createSpecialty: ReturnType<typeof vi.fn>; updateSpecialty: ReturnType<typeof vi.fn>; getWizard: ReturnType<typeof vi.fn>; saveWizardDraft: ReturnType<typeof vi.fn>; publishWizard: ReturnType<typeof vi.fn> };
+  let service: { getSpecialties: ReturnType<typeof vi.fn>; createSpecialty: ReturnType<typeof vi.fn>; updateSpecialty: ReturnType<typeof vi.fn>; getWizard: ReturnType<typeof vi.fn>; saveWizardDraft: ReturnType<typeof vi.fn>; publishWizard: ReturnType<typeof vi.fn>; getReviewStatus: ReturnType<typeof vi.fn>; approveWizard: ReturnType<typeof vi.fn>; revokeWizard: ReturnType<typeof vi.fn> };
   const user = signal<{ id: string; app_metadata: { role: string } } | null>(null);
   const clone = <T>(value: T): T => structuredClone(value);
   const initial: SpecialtyDetail = { id: 81, code: customSpecialtyFixture.code, name: customSpecialtyFixture.name, description: null, active: false, version: 5 };
@@ -28,6 +28,12 @@ describe('AdminSpecialtiesComponent', () => {
     service = {
       getSpecialties: vi.fn().mockImplementation(() => of([clone(metadata)])),
       getWizard: vi.fn().mockImplementation(() => of(clone(saved))),
+      getReviewStatus: vi.fn().mockImplementation(() => of({
+        revision: saved.version, fingerprint: 'a'.repeat(64), draftState: 'APPROVED', publicationState: 'UNPUBLISHED',
+        canApprove: false, canPublish: true, canActivate: false, publishedApprovalId: null, history: [], nextBefore: null,
+      })),
+      approveWizard: vi.fn(() => of(undefined)),
+      revokeWizard: vi.fn(() => of(undefined)),
       createSpecialty: vi.fn().mockImplementation(request => {
         metadata = { id: 91, code: request.code, name: request.name, description: request.description, version: 0, active: false };
         saved = { specialtyId: 91, version: 0, publishedVersion: 0, publishedDefinition: null, draftDefinition: clone(request.definition) };
@@ -112,11 +118,26 @@ describe('AdminSpecialtiesComponent', () => {
     expect(service.publishWizard).not.toHaveBeenCalled();
   });
 
-  it('explicit publication saves first, uses the returned wizard revision and refreshes metadata without losing local edits', async () => {
+  it('requires the server approval capability and a saved revision before offering publication', async () => {
+    service.getReviewStatus.mockReturnValueOnce(of({
+      revision: 12, fingerprint: 'a'.repeat(64), draftState: 'PENDING', publicationState: 'UNPUBLISHED',
+      canApprove: true, canPublish: false, canActivate: false, publishedApprovalId: null, history: [], nextBefore: null,
+    }));
+    await select();
+    await component.publishWizard();
+    expect(service.publishWizard).not.toHaveBeenCalled();
+    await component.approveWizard();
+    expect(service.approveWizard).toHaveBeenCalledWith(81, 12);
+    changeDefinition();
+    await component.publishWizard();
+    expect(service.publishWizard).not.toHaveBeenCalled();
+  });
+
+  it('explicit publication uses the saved approved revision and refreshes metadata without losing local edits', async () => {
     await select(); component.updateName('Nombre todavía local');
     await component.publishWizard();
-    expect(service.saveWizardDraft).toHaveBeenCalledWith(81, expect.objectContaining({ expectedVersion: 12 }));
-    expect(service.publishWizard).toHaveBeenCalledWith(81, 13);
+    expect(service.saveWizardDraft).not.toHaveBeenCalled();
+    expect(service.publishWizard).toHaveBeenCalledWith(81, 12);
     expect(component.wizard()?.publishedVersion).toBe(1);
     expect(component.selectedSpecialty()?.version).toBe(6);
     expect(component.name()).toBe('Nombre todavía local');
@@ -194,7 +215,7 @@ describe('AdminSpecialtiesComponent', () => {
     expect(component.validationIssues()).toEqual([{ path: '/patientForm', code: 'MISSING_PATIENT_CORE' }]);
     expect(fixture.nativeElement.textContent).toContain('Ficha del paciente: Agregá nombre y fecha de nacimiento');
     expect(fixture.nativeElement.textContent).not.toContain('(/patientForm)');
-    expect(component.hasConflict()).toBe(false); expect(component.wizard()?.version).toBe(13);
+    expect(component.hasConflict()).toBe(false); expect(component.wizard()?.version).toBe(12);
   });
 
   it('shows availability domain errors without locking edits as a version conflict', async () => {

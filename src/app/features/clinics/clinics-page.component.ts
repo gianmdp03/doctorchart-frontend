@@ -28,7 +28,6 @@ import {
   lucideShieldAlert,
 } from '@ng-icons/lucide';
 import { firstValueFrom, takeUntil } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
 import { AccountReadScope } from '../../core/services/account-read-scope';
 import {
@@ -118,7 +117,6 @@ export class ClinicsPageComponent implements OnInit {
   readonly actionError = signal<string | null>(null);
   readonly mutatingClinicId = signal<string | null>(null);
 
-  readonly plansUrl = environment.bycodePlansUrl || '';
 
   constructor() {
     this.destroyRef.onDestroy(() => {

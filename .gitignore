@@ -68,6 +68,9 @@ src/environments/environment.local.generated.ts
 
 /.angular/bycode-avatar-review/
 /.angular/
+/.impeccable/review/
+/.impeccable/questions/
 /.angular/bycode-avatar-build.log
 /.angular/bycode-avatar-tests.log
 /src/environments/environment.m6.generated.ts
+/src/environments/environment.manual.generated.ts

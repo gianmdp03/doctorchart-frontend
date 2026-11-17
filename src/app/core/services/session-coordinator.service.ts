@@ -36,7 +36,7 @@ export class SessionCoordinatorService {
         this.workspaceStore.clearSetup();
         if (identity && adminIdentity) {
           const path = this.router.url.split(/[?#]/)[0];
-          if (!['/', '/professionals', '/404'].includes(path) && this.router.routerState.snapshot.root.firstChild?.routeConfig?.path !== '**') {
+          if (!['/', '/professionals', '/register', '/register/confirmed', '/pricing', '/404'].includes(path) && this.router.routerState.snapshot.root.firstChild?.routeConfig?.path !== '**') {
             void this.router.navigate(['/admin/specialties']).catch(() => undefined);
           }
         } else if (identity && planActive) {

@@ -75,10 +75,11 @@ describe('PatientMedicalStudyService', () => {
   });
 
   it('should delete a study file', () => {
-    service.deleteStudy(10, 1).subscribe();
+    service.deleteStudy(10, 1, 'Estudio duplicado').subscribe();
 
     const req = httpTesting.expectOne(`${environment.apiUrl}/patients/10/studies/1`);
     expect(req.request.method).toBe('DELETE');
+    expect(req.request.body).toEqual({ reason: 'Estudio duplicado' });
     req.flush(null, { status: 204, statusText: 'No Content' });
   });
 

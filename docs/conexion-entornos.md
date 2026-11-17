@@ -33,7 +33,7 @@ El VPS debe permitir los orígenes reales en CORS; Supabase Auth y el servicio d
 
 ## Autenticación y archivos
 
-Los registros vuelven a /login en la app desde la que se hicieron. Pointly usa su /dashboard para Google y enlaces de acceso; esos destinos también deben autorizarse. Bycode envía la recuperación a /reset-password, donde la sesión obtenida del enlace permite cambiar la contraseña. Google requiere habilitar su proveedor en Supabase y configurar sus credenciales y callback; cambiar la URL del frontend por sí solo no lo habilita.
+Bycode conserva su flujo de confirmación. Pointly y DoctorChart usan el mismo registro de Supabase Auth y sus correos vuelven a `/register/confirmed` en la misma app. El resultado descarta los tokens del enlace y pide un inicio de sesión explícito. Pointly usa su /dashboard para Google y enlaces de acceso; esos destinos también deben autorizarse. Bycode envía la recuperación a /reset-password, donde la sesión obtenida del enlace permite cambiar la contraseña. Google requiere habilitar su proveedor en Supabase y configurar sus credenciales y callback; cambiar la URL del frontend por sí solo no lo habilita.
 
 Las apps envían las imágenes a sus backends. Los backends las comprimen y guardan en R2; no se necesitan claves de R2 en el navegador.
 
@@ -49,9 +49,14 @@ Falta la prueba con una cuenta real desde el navegador (registro, correo de conf
 
 ## Política de acceso inicial
 
-Google está oculto y bloqueado en `src/app/auth-policy.ts`. El registro de
-cuentas se hace exclusivamente desde la interfaz de Bycode. Pointly y
-DoctorChart conservan login con email/contraseña y enlaces al registro de
-Bycode usando su URL del entorno; no contienen un formulario de alta activo.
-Esta política de interfaz no es una restricción de seguridad del endpoint
-público de Supabase. No se deshabilita el alta en Supabase porque Bycode la usa.
+Google sigue oculto y bloqueado. Las tres webs usan el mismo Auth para el
+registro y el acceso con correo y contraseña. Para habilitar la confirmación en
+Pointly y DoctorChart, autorizar estos destinos exactos en Supabase Auth y en
+la lista de redirecciones del hook de correo compartido, preservando las rutas actuales:
+
+- `https://pointly.bycode.com.ar/register/confirmed`
+- `https://doctorchart.bycode.com.ar/register/confirmed`
+
+En el entorno local se autorizan las mismas rutas bajo los orígenes de desarrollo.
+Verificar registro, entrega y retorno local, e inicio de sesión en otra web con
+la misma cuenta de prueba. El registro no contrata ningún plan.

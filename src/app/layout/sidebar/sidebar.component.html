@@ -8,6 +8,11 @@
       <span class="brand-title">DoctorChart</span>
       @if (authService.isSuperAdmin()) { <span class="brand-specialty-pill">Administración</span> }
     </div>
+    <button type="button" class="mobile-nav-toggle" (click)="toggleCollapse()"
+      [attr.aria-expanded]="!isCollapsed()" aria-controls="workspace-navigation">
+      <ng-icon [name]="isCollapsed() ? 'lucideChevronRight' : 'lucideChevronLeft'" aria-hidden="true" />
+      {{ isCollapsed() ? 'Menú' : 'Cerrar menú' }}
+    </button>
   </div>
 
   <div class="sidebar-toolbar">
@@ -32,7 +37,11 @@
   </div>
 
   <!-- Main Navigation Links -->
+<<<<<<< Updated upstream
   <nav id="sidebar-primary-nav" class="sidebar-nav" aria-label="Navegación principal" (click)="collapseAfterNavigation()">
+=======
+  <nav id="workspace-navigation" class="sidebar-nav" aria-label="Navegación principal" (click)="collapseAfterNavigation()">
+>>>>>>> Stashed changes
     @if (authService.isSuperAdmin()) {
       <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">Administración</div>
       <a routerLink="/admin/specialties" routerLinkActive="active" class="nav-item" title="Especialidades y wizards">

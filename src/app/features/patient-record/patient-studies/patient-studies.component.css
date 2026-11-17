@@ -12,13 +12,15 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .section-title {
-  font-size: 1.15rem;
   font-weight: 700;
   color: var(--dc-ink, #0f172a);
   margin: 0;
+  font-size: 1.125rem;
 }
 
 .count-badge {
@@ -48,13 +50,13 @@
 
 .alert-error {
   background-color: var(--dc-error-surface, #fef2f2);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--dc-danger-soft);
   color: var(--dc-error-ink, #b91c1c);
 }
 
 .alert-success {
   background-color: var(--dc-success-surface, #f0fdf4);
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--dc-positive-soft);
   color: var(--dc-success-ink, #15803d);
 }
 
@@ -69,7 +71,7 @@
   border: 1px solid var(--dc-outline, #e2e8f0);
   border-radius: 12px;
   padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--dc-shadow-sm);
 }
 
 .upload-card-header {
@@ -179,19 +181,19 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   align-items: center;
   gap: 0.4rem;
   background-color: var(--dc-surface-high, #f1f5f9);
-  border: 1px dashed #94a3b8;
+  border: 1px dashed var(--dc-text-muted);
   border-radius: 8px;
   padding: 0.5rem 0.85rem;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--dc-ink-secondary, #334155);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 }
 
 .file-select-btn:hover {
   background-color: var(--dc-surface-high, #e2e8f0);
-  border-color: #64748b;
+  border-color: var(--dc-text-muted);
   color: var(--dc-ink, #0f172a);
 }
 
@@ -200,7 +202,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   align-items: center;
   gap: 0.4rem;
   background-color: var(--dc-teal-surface, #f0fdfa);
-  border: 1px solid #99f6e4;
+  border: 1px solid var(--dc-brand-soft);
   padding: 0.35rem 0.65rem;
   border-radius: 6px;
   font-size: 0.78rem;
@@ -245,7 +247,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 }
 
 .text-input:focus {
-  border-color: #006874;
+  border-color: var(--dc-brand);
   box-shadow: 0 0 0 3px rgba(0, 104, 116, 0.1);
 }
 
@@ -258,19 +260,27 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #006874;
-  color: #ffffff;
   border: none;
-  border-radius: 8px;
   padding: 0.55rem 1.25rem;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s ease;
+  box-shadow: none;
+  background: var(--dc-brand);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #004d56;
+  box-shadow: none;
+  background: var(--dc-brand-hover);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .btn-primary:disabled {
@@ -346,19 +356,19 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .study-card {
   background: var(--dc-surface, #ffffff);
   border: 1px solid var(--dc-outline, #e2e8f0);
-  border-radius: 12px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border-radius: var(--dc-radius-card);
+  box-shadow: none;
 }
 
 .study-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--dc-shadow-sm);
 }
 
 .study-card-main {
@@ -432,7 +442,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   font-size: 0.8rem;
   color: var(--dc-ink-secondary, #334155);
   background-color: var(--dc-surface-low, #f8fafc);
-  border-left: 3px solid #006874;
+  border-left: 1px solid var(--dc-brand);
   padding: 0.35rem 0.5rem;
   border-radius: 0 4px 4px 0;
   margin: 0.15rem 0;
@@ -476,12 +486,12 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 }
 
 .btn-preview {
   background-color: var(--dc-teal-surface, #f0fdfa);
-  border-color: #99f6e4;
+  border-color: var(--dc-brand-soft);
   color: var(--dc-teal-ink, #0f766e);
 }
 
@@ -517,7 +527,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   width: 14px;
   height: 14px;
   border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #ffffff;
+  border-top-color: var(--dc-paper);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   display: inline-block;

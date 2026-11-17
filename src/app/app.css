@@ -1,13 +1,5 @@
-/* Layout Shell Architecture */
-.app-layout-shell {
-  display: flex;
-  flex: 1;
-  min-height: 100vh;
-  width: 100%;
-  background-color: var(--dc-surface-low, #f8fafc);
-  align-items: stretch;
-}
 
+<<<<<<< Updated upstream
 .app-main-viewport {
   flex: 1;
   display: flex;
@@ -117,3 +109,21 @@
   padding: 0;
   background: var(--md-surface-container-low);
 }
+=======
+.app-layout-shell { display: flex; flex: 1; align-items: stretch; min-height: 100dvh; width: 100%; background: var(--dc-canvas); }
+.app-main-viewport { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 100dvh; }
+.app-main-content { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 1560px; margin-inline: auto; padding: 32px; box-sizing: border-box; min-width: 0; }
+.workspace-shortcuts { margin-bottom: 16px; font-size: .875rem; color: var(--dc-brand-ink); }
+.app-splash-screen { min-height: 100dvh; width: 100%; display: grid; place-items: center; padding: 24px; background: var(--dc-canvas); }
+.splash-content { display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 420px; text-align: center; }
+.splash-logo { width: 64px; height: 64px; display: grid; place-items: center; border-radius: var(--dc-radius-card); background: var(--dc-paper); }
+.splash-title { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -.03em; color: var(--dc-text); }
+.splash-text { margin: 0; font-size: .9375rem; color: var(--dc-text-secondary); }
+.splash-spinner { width: 24px; height: 24px; border: 2px solid var(--dc-line); border-top-color: var(--dc-brand); border-radius: 50%; animation: spin .9s linear infinite; }
+.splash-content button { min-height: 44px; padding: 10px 16px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); background: var(--dc-paper); color: var(--dc-text); font: inherit; cursor: pointer; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1000px) { .app-main-content { padding: 24px; } }
+@media (max-width: 768px) { .app-layout-shell { flex-direction: column; } .app-main-viewport { min-height: 0; } .app-main-content { padding: 20px 16px; } }
+@media (prefers-reduced-motion: reduce) { .splash-spinner { animation-duration: 2s; } }
+@media print { .app-layout-shell, .app-splash-screen { display: none !important; } }
+>>>>>>> Stashed changes

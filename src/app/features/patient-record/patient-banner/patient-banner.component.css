@@ -1,308 +1,36 @@
-.patient-clinical-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.875rem 1.5rem;
-  background-color: var(--dc-surface, #ffffff);
-  border-bottom: 1px solid var(--dc-outline, #e2e8f0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  position: sticky;
-  top: 0;
-  z-index: 25;
-  transition: all 0.2s ease;
-}
 
-/* Left: Navigation and Demographics */
-.banner-left-block {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.btn-nav-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.4rem 0.65rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--dc-outline, #cbd5e1);
-  background-color: var(--dc-surface-low, #f8fafc);
-  color: var(--dc-ink-secondary, #475569);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.btn-nav-back:hover {
-  background-color: var(--dc-surface-high, #e2e8f0);
-  color: var(--dc-ink, #0f172a);
-}
-
-.patient-avatar-circle {
-  width: 44px;
-  height: 44px;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, #0d9488, #0f766e);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: -0.025em;
-  flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.2);
-}
-
-.patient-core-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
-}
-
-.patient-name-row {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  flex-wrap: wrap;
-}
-
-.patient-fullname {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--dc-ink, #0f172a);
-  margin: 0;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hc-number-chip {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--dc-ink-secondary, #475569);
-  background-color: var(--dc-surface-high, #f1f5f9);
-  padding: 0.15rem 0.45rem;
-  border-radius: 0.25rem;
-  border: 1px solid var(--dc-outline, #e2e8f0);
-  letter-spacing: 0.025em;
-}
-
-/* Coverage Badges */
-.coverage-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  line-height: 1;
-}
-
-.coverage-chip.insured {
-  background-color: var(--dc-success-surface, #f0fdf4);
-  border: 1px solid #bbf7d0;
-  color: var(--dc-success-ink, #166534);
-}
-
-.coverage-chip.particular {
-  background-color: var(--dc-surface-low, #f8fafc);
-  border: 1px solid var(--dc-outline, #e2e8f0);
-  color: var(--dc-ink-muted, #64748b);
-}
-
-.coverage-divider {
-  color: #86efac;
-}
-
-.coverage-affiliate {
-  color: var(--dc-success-ink, #15803d);
-  font-weight: 500;
-}
-
-.patient-demographics-row {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.8125rem;
-  color: var(--dc-ink-muted, #64748b);
-  flex-wrap: wrap;
-}
-
-.demo-item strong {
-  color: var(--dc-ink-secondary, #334155);
-}
-
-.demo-bullet {
-  color: #cbd5e1;
-}
-
-/* Center: Patient Safety Alerts */
-.banner-safety-block {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.alerts-group {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.safety-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.65rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.safety-badge.danger {
-  background-color: var(--dc-error-surface, #fef2f2);
-  border: 1px solid #fecaca;
-  color: var(--dc-error-ink, #b91c1c);
-}
-
-.safety-badge.warning {
-  background-color: var(--dc-warning-surface, #fffbeb);
-  border: 1px solid #fde68a;
-  color: var(--dc-warning-ink, #b45309);
-}
-
-.safety-badge.neutral {
-  background-color: var(--dc-success-surface, #f0fdf4);
-  border: 1px solid #bbf7d0;
-  color: var(--dc-success-ink, #15803d);
-}
-
-.safety-dot-pulse {
-  width: 7px;
-  height: 7px;
-  border-radius: 9999px;
-  display: inline-block;
-  animation: pulse-alert 1.8s infinite;
-}
-
-.safety-dot-pulse.red {
-  background-color: #ef4444;
-}
-
-@keyframes pulse-alert {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-  }
-  70% {
-    transform: scale(1.15);
-    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-  }
-}
-
-.safety-icon {
-  font-size: 0.95rem;
-  flex-shrink: 0;
-}
-
-/* Right: Contextual Actions */
-.banner-actions-block {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.btn-secondary-edit {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.55rem 0.85rem;
-  background-color: var(--dc-surface, #ffffff);
-  color: var(--dc-ink-secondary, #334155);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  border: 1px solid var(--dc-outline, #cbd5e1);
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.btn-secondary-edit:hover {
-  background-color: var(--dc-surface-low, #f8fafc);
-  color: var(--dc-ink, #0f172a);
-  border-color: #94a3b8;
-  transform: translateY(-1px);
-}
-
-.btn-primary-soap {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.55rem 1rem;
-  background: linear-gradient(135deg, #0d9488, #0f766e);
-  color: #ffffff;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.25);
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.btn-primary-soap:hover {
-  background: linear-gradient(135deg, #0f766e, #115e59);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(13, 148, 136, 0.3);
-}
-
-@media (max-width: 960px) {
-  .patient-clinical-banner {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-  .banner-safety-block {
-    justify-content: flex-start;
-  }
-  .banner-actions-block {
-    justify-content: flex-end;
-  }
-}
-
-@media (max-width: 600px) {
-  .patient-clinical-banner { position: static; padding: 16px; border: 1px solid var(--dc-outline, #dce7e9); border-radius: 16px; }
-  .banner-left-block { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 12px; }
-  .btn-nav-back { grid-column: 1 / -1; justify-self: start; min-height: 44px; }
-  .patient-fullname { width: 100%; white-space: normal; overflow-wrap: anywhere; }
-  .patient-demographics-row { gap: 6px 12px; margin-top: 6px; }
-  .demo-bullet { display: none; }
-  .demo-item { overflow-wrap: anywhere; }
-  .coverage-chip { flex-wrap: wrap; line-height: 1.4; max-width: 100%; overflow-wrap: anywhere; }
-  .safety-badge { max-width: 100%; align-items: flex-start; padding: 8px 10px; border-radius: 10px; }
-  .safety-text { min-width: 0; overflow-wrap: anywhere; }
-  .safety-badge > ng-icon, .safety-dot-pulse { flex-shrink: 0; margin-top: 3px; }
-  .banner-actions-block { flex-wrap: wrap; justify-content: stretch; }
-  .banner-actions-block button { flex: 1 1 140px; min-height: 44px; justify-content: center; white-space: normal; }
-}
-
-@media (max-width: 600px) { .patient-clinical-banner { padding: 10px; gap: 8px; } .banner-left-block { grid-template-columns: 32px minmax(0,1fr); gap: 8px; } .btn-nav-back { min-height: 32px; padding: 5px 8px; } .patient-avatar-circle { width: 32px; height: 32px; font-size: 12px; } .patient-fullname { font-size: 15px; } .patient-demographics-row { font-size: 11px; margin-top: 3px; } .banner-actions-block button { flex-basis: 120px; min-height: 36px; padding: 6px 8px; font-size: 11px; } .safety-badge { font-size: 10px; padding: 5px 7px; } }
+:host { display: block; min-width: 0; }
+.patient-clinical-banner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; padding: 24px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-card); background: var(--dc-paper); }
+.banner-left-block { display: flex; flex: 1 1 360px; align-items: center; gap: 16px; min-width: 0; }
+.btn-nav-back { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 10px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-control); color: var(--dc-text-secondary); background: var(--dc-subtle); font: inherit; font-size: .75rem; font-weight: 500; cursor: pointer; }
+.btn-nav-back:hover { border-color: var(--dc-brand); }
+.patient-avatar-circle { display: grid; place-items: center; width: 48px; height: 48px; flex-shrink: 0; border-radius: 14px; background: var(--dc-brand-soft); color: var(--dc-brand-ink); font-size: 1.125rem; font-weight: 650; }
+.patient-core-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.patient-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-width: 0; }
+.patient-fullname { margin: 0; color: var(--dc-text); font-size: 1.25rem; font-weight: 700; line-height: 1.4; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.hc-number-chip { padding: 3px 6px; border-radius: 5px; background: var(--dc-subtle); color: var(--dc-text-secondary); font-size: .6875rem; font-weight: 500; }
+.coverage-chip { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px; padding: 4px 8px; border-radius: var(--dc-radius-pill); font-size: .75rem; line-height: 1.5; }
+.coverage-chip.particular { background: var(--dc-raised); color: var(--dc-text-secondary); }
+.coverage-chip.insured { background: var(--dc-positive-soft); color: var(--dc-positive); }
+.coverage-divider, .demo-bullet { color: var(--dc-control-line); }
+.coverage-affiliate { font-variant-numeric: tabular-nums; }
+.patient-demographics-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; color: var(--dc-text-secondary); font-size: .75rem; line-height: 1.6; }
+.demo-item { overflow-wrap: anywhere; }
+.demo-item strong { font-weight: 550; }
+.banner-safety-block { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 220px; }
+.banner-safety-block:empty { display: none; }
+.alerts-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.safety-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid currentColor; border-radius: var(--dc-radius-control); font-size: .75rem; line-height: 1.5; }
+.safety-badge.danger { background: var(--dc-danger-soft); color: var(--dc-danger); }
+.safety-badge.warning { background: var(--dc-caution-soft); color: var(--dc-caution); }
+.safety-dot-pulse { display: none; }
+.safety-icon { font-size: 1rem; flex-shrink: 0; }
+.safety-text { overflow-wrap: anywhere; }
+.safety-text strong { font-weight: 650; }
+.banner-actions-block { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.btn-secondary-edit, .btn-primary-soap { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 44px; padding: 10px 14px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); background: var(--dc-paper); color: var(--dc-text-secondary); font: inherit; font-size: .8125rem; font-weight: 600; cursor: pointer; }
+.btn-primary-soap { border-color: transparent; background: var(--dc-brand); color: var(--dc-on-brand); }
+.btn-secondary-edit:hover { background: var(--dc-subtle); border-color: var(--dc-brand); }
+.btn-primary-soap:hover { background: var(--dc-brand-hover); }
+:where(button):focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }
+@media (max-width: 768px) { .patient-clinical-banner { padding: 20px 16px; gap: 16px; } .banner-left-block { flex-basis: 100%; gap: 12px; flex-wrap: wrap; } .patient-core-info { flex: 1; min-width: min(180px, 100%); } .patient-fullname { font-size: 1.125rem; } .btn-nav-back { flex-basis: 100%; justify-content: flex-start; order: -1; } .banner-safety-block, .banner-actions-block { flex-basis: 100%; } .banner-actions-block button { flex: 1 1 130px; } }

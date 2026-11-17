@@ -1,0 +1,74 @@
+<main class="pricing">
+  <header>
+    <div class="actions"><a class="dc-button button secondary" routerLink="/professionals">Volver a DoctorChart</a><app-theme-toggle /></div>
+    <h1>Planes de DoctorChart</h1>
+    <p>Elegí un plan y pagá por adelantado con Mercado Pago. Los planes no se renuevan automáticamente.</p>
+  </header>
+  @if (returned) {
+    <section class="notice" aria-label="Regreso del pago">
+      <p>Volviste de Mercado Pago. Si pagaste, la activación puede demorar mientras se verifica el pago. Revisá tu plan antes de intentar otro cobro.</p>
+      <button class="dc-button button secondary" type="button" (click)="load(true)" [disabled]="loading() || checking()">Actualizar planes</button>
+      <a class="dc-button button secondary" routerLink="/dashboard">Ir a mi panel</a>
+    </section>
+  }
+  @if (error()) {
+    <p class="notice" role="alert">{{ error() }}</p>
+    @if (loadingError()) { <button class="dc-button button secondary" type="button" (click)="load()">Reintentar</button> }
+  }
+  @if (checkoutError()) {
+    <p class="notice" role="alert">{{ checkoutError() }}
+      @if (pendingReference()) { Referencia: {{ pendingReference() }} }
+    </p>
+  }
+  @if (hasPending()) {
+    <section class="notice" aria-label="Pago pendiente de inicio">
+      <p>Hay una solicitud de pago guardada en esta pestaña. Podés reintentarla con la misma referencia.</p>
+      <button class="button" type="button" (click)="checkout(true)" [disabled]="checking() || loading()">Reintentar el mismo pago</button>
+    </section>
+  }
+  @if (loading()) {
+    <p role="status">Cargando planes…</p>
+  } @else if (cycles().length) {
+    @if (!isLoggedIn()) {
+      <nav class="actions" aria-label="Acceso para contratar">
+        <a class="button" routerLink="/login" [queryParams]="{ returnUrl: '/pricing' }">Iniciar sesión</a>
+        <a class="dc-button button secondary" routerLink="/register">Crear cuenta</a>
+      </nav>
+    }
+    <div class="actions" role="group" aria-label="Elegí el período">
+      @for (days of cycles(); track days) {
+        <button class="dc-button button secondary" type="button" (click)="setCycle(days)" [disabled]="checking()" [attr.aria-pressed]="cycle() === days">{{ duration(days) }}</button>
+      }
+    </div>
+    <div class="plans">
+      @for (plan of visible(); track plan.id) {
+        <article class="plan">
+          <h2>{{ tierName(plan.tier) }}</h2>
+          <p class="price">{{ money(plan.price, plan.currency) }} <small>por {{ duration(plan.days) }}</small></p>
+          @if (plan.description) { <p>{{ plan.description }}</p> }
+          @if (plan.lockReason) { <p>{{ plan.lockReason }}</p> }
+          @if (isLoggedIn() && plan.action && plan.action !== 'LOCKED') {
+            <button class="button" type="button" (click)="select(plan)" [disabled]="checking() || hasPending()" [attr.aria-pressed]="selected()?.id === plan.id">{{ actionLabel(plan) }} {{ tierName(plan.tier) }}</button>
+          }
+        </article>
+      }
+    </div>
+    @if (selected(); as plan) {
+      <section class="notice" aria-labelledby="checkout-title">
+        <h2 id="checkout-title">{{ actionLabel(plan) }} {{ tierName(plan.tier) }}</h2>
+        @if (plan.action === 'UPGRADE') {
+          @if (quote(); as preview) {
+            @if (preview.canUpgrade) {
+              <p>Quedan {{ preview.remainingDays }} días en tu plan. Pagás <strong>{{ money(preview.proratedUpgradeAmount, preview.currency) }}</strong> por la mejora.</p>
+            } @else { <p>{{ preview.message }}</p> }
+          } @else if (checking()) { <p role="status">Calculando el importe…</p> }
+        } @else {
+          <p>Total por {{ duration(plan.days) }}: <strong>{{ money(plan.price, plan.currency) }}</strong>.</p>
+        }
+        <button class="button" type="button" (click)="checkout()" [disabled]="checking() || hasPending() || (plan.action === 'UPGRADE' && !quote()?.canUpgrade)">Continuar a Mercado Pago</button>
+      </section>
+    }
+  } @else if (!loadingError()) {
+    <p class="notice">No hay planes publicados en este momento.</p>
+  }
+</main>

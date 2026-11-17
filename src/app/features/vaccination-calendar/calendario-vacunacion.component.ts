@@ -48,6 +48,10 @@ export class VaccinationCalendarComponent implements OnInit {
   private readonly vaccinationCalendarService = inject(VaccinationCalendarService);
   private readonly themeService = inject(ThemeService);
 
+  retryLoad(): void {
+    this.vaccinationCalendarService.load();
+  }
+
   /** Optional caller-supplied calendar. It overrides the service response. */
   readonly data = input<CalendarioVacunacionJSON | null>(null);
   readonly isDarkMode = computed(() => this.themeService.theme() === 'dark');

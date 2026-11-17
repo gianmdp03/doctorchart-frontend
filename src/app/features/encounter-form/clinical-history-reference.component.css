@@ -1,0 +1,13 @@
+
+.reference { margin: 20px 0 28px; padding: 20px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-card); background: var(--dc-subtle); color: var(--dc-text); }
+.reference-heading { display: flex; flex-direction: column; gap: 5px; margin-bottom: 20px; }
+.reference-heading strong { font-size: .9375rem; font-weight: 600; }
+.reference-heading span, .reference-hint { color: var(--dc-text-secondary); font-size: .75rem; line-height: 1.6; }
+.reference-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 20px; }
+.reference-grid small { color: var(--dc-text-secondary); font-size: .75rem; font-weight: 550; }
+p { margin: 8px 0; font-size: .8125rem; line-height: 1.6; overflow-wrap: anywhere; }
+.reference-hint { margin: 20px 0 0; }
+button { display: inline-flex; align-items: center; min-height: 44px; margin-top: 8px; padding: 10px 12px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-control); background: var(--dc-paper); color: var(--dc-brand-ink); font: inherit; font-size: .75rem; font-weight: 600; cursor: pointer; }
+button:hover { border-color: var(--dc-brand); }
+button:focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }
+@media (max-width: 600px) { .reference { padding: 20px 16px; } }

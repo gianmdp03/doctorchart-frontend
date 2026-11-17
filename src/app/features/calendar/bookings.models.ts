@@ -28,7 +28,7 @@ export function civilDate(instant:string,zone:string):string {
  const get=(key:string)=>parts.find(p=>p.type===key)?.value;return `${get('year')}-${get('month')}-${get('day')}`;
 }
 export function localTime(instant:string,zone:string):string {return new Intl.DateTimeFormat('es-AR',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(instant));}
-export function offsetLabel(instant:string,zone:string):string {return new Intl.DateTimeFormat('en',{timeZone:zone,timeZoneName:'shortOffset'}).formatToParts(new Date(instant)).find(p=>p.type==='timeZoneName')?.value??zone;}
+export function offsetLabel(instant:string,zone:string):string {return new Intl.DateTimeFormat('en',{timeZone:zone,timeZoneName:'shortOffset'}).formatToParts(new Date(instant)).find(p=>p.type==='timeZoneName')?.value??'';}
 export function slotOffsetLabel(instant: string, zone: string): string {
   return isArgentineTimezone(zone) ? '' : offsetLabel(instant, zone);
 }

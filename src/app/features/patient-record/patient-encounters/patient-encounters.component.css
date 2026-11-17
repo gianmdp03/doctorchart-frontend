@@ -5,7 +5,7 @@
 .tab-panel {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 24px;
 }
 
 @keyframes spin {
@@ -37,4 +37,11 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.inline-confirmation {
+  padding: 20px;
+  border-radius: var(--dc-radius-card);
+  border: 1px solid var(--dc-caution);
+  background: var(--dc-caution-soft);
 }

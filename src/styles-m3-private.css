@@ -344,33 +344,41 @@
   font-family: var(--md-ref-typeface-brand);
   font-size: 0.9rem;
   font-weight: 500;
-  border-radius: var(--md-shape-full);
   cursor: pointer;
   text-decoration: none;
   border: none;
   outline: none;
-  transition: all var(--md-sys-motion-standard);
   user-select: none;
+  border-radius: var(--dc-radius-control);
+  min-height: 44px;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease);
 }
 
 .m3-button-filled {
-  background-color: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
   box-shadow: var(--md-elevation-1);
+  background: var(--dc-brand);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .m3-button-filled:hover {
   box-shadow: var(--md-elevation-2);
-  background-color: #005660;
+  background: var(--dc-brand-hover);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .m3-button-tonal {
-  background-color: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
+  background-color: var(--dc-brand-soft);
+  color: var(--dc-brand-ink);
 }
 
 .m3-button-tonal:hover {
-  background-color: #b7dbe2;
+  background-color: var(--dc-raised);
 }
 
 .m3-button-outlined {
@@ -1015,12 +1023,12 @@ details.m3-accordion .accordion-content {
 }
 
 .milestone-card.alarm-card {
-  border-left: 5px solid var(--md-sys-color-error);
+  border-left: 1px solid var(--md-sys-color-error);
   background: linear-gradient(135deg, #fffafa 0%, var(--md-sys-color-surface-container-lowest) 100%);
 }
 
 .milestone-card.nutrition-card {
-  border-left: 5px solid #2e7d32;
+  border-left: 1px solid #2e7d32;
 }
 
 .milestone-list {

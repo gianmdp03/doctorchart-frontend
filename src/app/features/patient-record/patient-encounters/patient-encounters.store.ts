@@ -143,7 +143,7 @@ export class PatientEncountersStore {
     this.pendingDeleteId.set(encounterId); this.deleteError.set(null);
   }
 
-  confirmDeleteEncounter(): void {
+  confirmDeleteEncounter(reason: string): void {
     if (this.recordContext !== this.contextKey()) { this.pendingDeleteId.set(null); return; }
     const encounterId = this.pendingDeleteId();
     if (!encounterId || this.isDeleting() || !this.encounters().some(item => item.id === encounterId)) return;
@@ -156,7 +156,7 @@ export class PatientEncountersStore {
       patientId === this.activePatientService.patientId() &&
       owner === this.authService.currentUser()?.id;
     this.clinicalEncounterService
-      .delete(encounterId)
+      .delete(encounterId, reason)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -171,7 +171,7 @@ export class PatientEncountersStore {
         error: (err) => {
           if (!current()) return;
           this.isDeleting.set(false);
-          this.deleteError.set(err?.error?.message || 'No se pudo eliminar la consulta clínica.');
+          this.deleteError.set(err?.error?.message || 'No se pudo anular la consulta clínica.');
         },
       });
   }

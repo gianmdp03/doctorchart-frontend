@@ -1,14 +1,14 @@
 .patient-form-page {
   width: 100%;
-  max-width: 1040px;
   margin: 0 auto;
-  padding: 1.5rem 1rem 3rem 1rem;
+  padding: 0 0 24px;
+  max-width: 1040px;
 }
 
 .patient-form-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 24px;
 }
 
 .patient-form-header {
@@ -32,11 +32,11 @@
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 
   &:hover {
     background: var(--dc-surface-high, #f1f5f9);
-    border-color: #0d9488;
+    border-color: var(--dc-brand);
     color: var(--dc-teal-ink, #0f766e);
   }
 }
@@ -56,27 +56,28 @@
   align-items: center;
   background-color: var(--dc-teal-surface, #ecfdf5);
   color: var(--dc-teal-ink, #047857);
-  font-size: 0.75rem;
   font-weight: 700;
   padding: 0.2rem 0.65rem;
   border-radius: 9999px;
-  border: 1px solid #a7f3d0;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  border: 1px solid var(--dc-brand-soft);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: .75rem;
 }
 
 .mode-badge.badge-edit {
   background-color: var(--dc-blue-surface, #eff6ff);
   color: var(--dc-blue-ink, #1d4ed8);
-  border-color: #bfdbfe;
+  border-color: var(--dc-blue-soft);
 }
 
 .page-title {
   margin: 0;
-  font-size: 1.65rem;
   font-weight: 800;
   color: var(--dc-ink, #0f172a);
-  letter-spacing: -0.025em;
+  font-size: 1.75rem;
+  line-height: 1.25;
+  letter-spacing: -.03em;
 }
 
 .page-subtitle {
@@ -87,23 +88,23 @@
 }
 
 .form-card {
-  background: var(--dc-surface, #ffffff);
   border: 1px solid var(--dc-outline, #e2e8f0);
-  border-radius: 14px;
-  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05);
-  padding: 2rem;
+  border-radius: var(--dc-radius-card);
+  background: var(--dc-paper);
+  box-shadow: none;
+  padding: 28px;
 }
 
 .form-actions-bar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
   background: var(--dc-surface, #ffffff);
   border: 1px solid var(--dc-outline, #e2e8f0);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--dc-shadow-sm);
+  border-radius: var(--dc-radius-card);
+  padding: 20px 24px;
+  gap: 12px;
 }
 
 .btn-cancel {
@@ -111,15 +112,14 @@
   background: var(--dc-surface, #ffffff);
   color: var(--dc-ink-secondary, #475569);
   border: 1px solid var(--dc-outline, #cbd5e1);
-  border-radius: 8px;
   font-weight: 600;
   font-size: 0.92rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 
   &:hover:not(:disabled) {
     background: var(--dc-surface-low, #f8fafc);
-    border-color: #94a3b8;
+    border-color: var(--dc-text-muted);
     color: var(--dc-ink, #1e293b);
   }
 
@@ -127,31 +127,42 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
+
+  min-height: 44px;
+
+  border-radius: var(--dc-radius-control)
 }
 
 .btn-submit {
   padding: 0.65rem 1.6rem;
-  background: #0d9488;
-  color: #ffffff;
-  border: 1px solid #0f766e;
-  border-radius: 8px;
+  border: 1px solid var(--dc-brand-hover);
   font-weight: 700;
   font-size: 0.92rem;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: all 0.15s ease;
+  box-shadow: var(--dc-shadow-sm);
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 
   &:hover:not(:disabled) {
-    background: #0f766e;
-    box-shadow: 0 3px 6px rgba(13, 148, 136, 0.25);
+    background: var(--dc-brand-hover);
+    box-shadow: var(--dc-shadow-sm);
   }
 
   &:disabled {
     opacity: 0.5;
-    background: #94a3b8;
-    border-color: #94a3b8;
+    background: var(--dc-text-muted);
+    border-color: var(--dc-text-muted);
     cursor: not-allowed;
   }
+
+  background: var(--dc-brand);
+
+  color: var(--dc-on-brand);
+
+  border-color: transparent;
+
+  border-radius: var(--dc-radius-control);
+
+  min-height: var(--dc-control-height)
 }
 
 .alert-banner {
@@ -163,7 +174,7 @@
 
 .alert-error {
   background-color: var(--dc-error-surface, #fef2f2);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--dc-danger-soft);
   color: var(--dc-error-ink, #b91c1c);
 }
 
@@ -181,7 +192,7 @@
   width: 24px;
   height: 24px;
   border: 3px solid var(--dc-outline, #cbd5e1);
-  border-top-color: #0d9488;
+  border-top-color: var(--dc-brand);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -194,7 +205,7 @@
 
 .conflict-card {
   background: var(--dc-teal-surface, #f0fdfa);
-  border: 1px solid #99f6e4;
+  border: 1px solid var(--dc-brand-soft);
   border-radius: 10px;
   padding: 1.25rem;
   color: var(--dc-teal-ink, #115e59);
@@ -208,11 +219,11 @@
 .remote-box {
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #ccfbf1;
+  border-top: 1px solid var(--dc-brand-soft);
 }
 
 .btn-conflict-action {
-  background: #0d9488;
+  background: var(--dc-brand);
   color: white;
   border: none;
   border-radius: 6px;
@@ -222,7 +233,7 @@
   cursor: pointer;
 
   &:hover {
-    background: #0f766e;
+    background: var(--dc-brand-hover);
   }
 }
 
@@ -237,7 +248,7 @@
 
 .btn-retry {
   margin-top: 0.5rem;
-  background: #0d9488;
+  background: var(--dc-brand);
   color: white;
   border: none;
   border-radius: 6px;

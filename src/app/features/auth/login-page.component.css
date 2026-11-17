@@ -4,8 +4,8 @@
   min-height:100svh;
   display:grid;
   grid-template-rows:auto 1fr auto;
-  background:var(--dc-surface-low, #f0f7f8);
   color:var(--md-sys-color-on-surface, #191c1d);
+  background:var(--dc-canvas);
 }
 .login-tools {
   width:min(1120px, 100%);
@@ -30,30 +30,33 @@
   width:min(1040px,100%);
   margin:auto;
   display:grid;
-  grid-template-columns:minmax(0, .9fr) minmax(0, 1.1fr);
-  border:1px solid var(--md-sys-color-outline-variant, #bfc8ca);
-  border-radius:20px;
   background:var(--md-sys-color-surface, #fff);
+  grid-template-columns:minmax(0, .9fr) minmax(0, 1.1fr);
+  border:0;
+  border-radius:var(--dc-radius-card);
+  box-shadow:var(--dc-shadow-panel);
+  overflow:hidden;
 }
 .login-introduction {
-  padding:36px;
   display:flex;
   flex-direction:column;
   justify-content:center;
   gap:30px;
-  border-right:1px solid var(--md-sys-color-outline-variant, #bfc8ca);
+  background:var(--dc-brand-soft);
+  border-right:0;
+  padding:40px;
 }
 .brand-logo-row { display:flex; align-items:center; gap:12px; }
-.brand-logo-row img { flex-shrink:0; background:#fff; border-radius:10px; }
+.brand-logo-row img { flex-shrink:0; background:var(--dc-paper); border-radius:10px; }
 .brand-title { font-size:1.5rem; line-height:1.2; font-weight:750; letter-spacing:-.03em; }
-.login-introduction h2 { margin:0 0 12px; font-size:clamp(1.7rem, 2.5vw, 2.1rem); line-height:1.18; letter-spacing:-.035em; font-weight:700; }
+.login-introduction h2 { margin:0 0 12px; line-height:1.18; letter-spacing:-.035em; font-weight:700; font-size:2rem; color:var(--dc-text); }
 p { margin:0; }
-.login-introduction-copy p { max-width:30ch; color:var(--md-sys-color-on-surface-variant, #3f484a); line-height:1.55; font-size:.95rem; }
-.login-account-note { border-top:1px solid var(--md-sys-color-outline-variant, #bfc8ca); padding-top:20px; color:var(--md-sys-color-on-surface-variant, #3f484a); font-size:.875rem; line-height:1.5; }
+.login-introduction-copy p { max-width:30ch; line-height:1.55; font-size:.95rem; color:var(--dc-text-secondary); }
+.login-account-note { padding-top:20px; color:var(--md-sys-color-on-surface-variant, #3f484a); font-size:.875rem; line-height:1.5; border-top:1px solid color-mix(in srgb, var(--dc-brand-ink) 20%, transparent); }
 .login-account-note p + p { margin-top:8px; }
-.login-card-body { padding:32px 40px; width:100%; min-width:0; }
+.login-card-body { width:100%; min-width:0; padding:40px 44px; }
 .login-form-heading { margin-bottom:22px; }
-.login-form-heading h1 { font-size:1.65rem; line-height:1.2; font-weight:750; letter-spacing:-.025em; margin:0 0 7px; }
+.login-form-heading h1 { line-height:1.2; font-weight:750; letter-spacing:-.025em; margin:0 0 7px; font-size:1.75rem; }
 .login-form-heading p { color:var(--md-sys-color-on-surface-variant, #3f484a); font-size:.9rem; line-height:1.5; }
 .auth-form { display:grid; gap:16px; }
 .login-textfield { min-width:0; display:grid; gap:7px; }
@@ -62,9 +65,9 @@ p { margin:0; }
   width:100%; min-height:48px; padding:11px 14px;
   border:1px solid var(--md-sys-color-outline-variant, #bfc8ca);
   border-radius:10px; background:var(--dc-surface, #fff);
-  color:var(--md-sys-color-on-surface, #191c1d); font:inherit; font-size:1rem;
+  color:var(--md-sys-color-on-surface, #191c1d); font:inherit; font-size:1rem; border-color:var(--dc-control-line);
 }
-.login-textfield input::placeholder { color:var(--md-sys-color-on-surface-variant, #3f484a); opacity:.75; }
+.login-textfield input::placeholder { opacity:1; color:var(--dc-text-muted); }
 .login-textfield input:focus { outline:2px solid var(--md-sys-color-primary, #006874); outline-offset:2px; }
 .login-textfield.has-error input { border-color:var(--dc-error-ink, #ba1a1a); }
 .error-helper-text { font-size:.8rem; line-height:1.4; color:var(--dc-error-ink, #ba1a1a); }
@@ -78,9 +81,9 @@ p { margin:0; }
 }
 .pwd-toggle-btn:hover { background:var(--md-sys-color-surface-container-high, #e8edee); }
 .auth-submit-btn,.m3-oauth-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; min-height:48px; padding:11px 16px; border:1px solid var(--md-sys-color-primary, #006874); border-radius:10px; font:inherit; font-weight:650; cursor:pointer; }
-.auth-submit-btn { background:var(--md-sys-color-primary, #006874); color:var(--md-sys-color-on-primary, #fff); }
+.auth-submit-btn { box-shadow:none; background:var(--dc-brand); color:var(--dc-on-brand); border-color:transparent; border-radius:var(--dc-radius-control); min-height:var(--dc-control-height); }
 .m3-oauth-btn { background:transparent; color:inherit; }
-.auth-submit-btn:hover:not(:disabled) { filter:brightness(.94); }
+.auth-submit-btn:hover:not(:disabled) { filter:brightness(.94); box-shadow:none; background:var(--dc-brand-hover); color:var(--dc-on-brand); border-color:transparent; border-radius:var(--dc-radius-control); min-height:var(--dc-control-height); }
 button:disabled { opacity:.65; cursor:wait; }
 .auth-divider { text-align:center; font-size:.8rem; color:var(--md-sys-color-on-surface-variant, #3f484a); }
 .login-secondary-links { margin-top:20px; display:grid; gap:10px; font-size:.875rem; line-height:1.45; }
@@ -102,6 +105,10 @@ a { color:var(--md-sys-color-primary, #006874); }
 a:focus-visible, button:focus-visible { outline:2px solid var(--md-sys-color-primary, #006874); outline-offset:3px; }
 .m3-alert-error { padding:10px 12px; margin:0 0 16px; border-radius:8px; font-size:.875rem; line-height:1.45; overflow-wrap:anywhere; }
 .m3-alert-error { background:var(--dc-error-surface, #ffdad6); color:var(--md-sys-color-on-error-container, #410002); border:1px solid var(--dc-error-ink, #ba1a1a); }
+<<<<<<< Updated upstream
+=======
+.m3-alert-success { background:var(--md-sys-color-success-container, #bbf2c8); color:var(--md-sys-color-on-success-container, #002108); border:1px solid var(--dc-positive); }
+>>>>>>> Stashed changes
 .login-page-footer { padding:12px 24px 16px; text-align:center; font-size:.75rem; line-height:1.4; color:var(--md-sys-color-on-surface-variant, #3f484a); }
 .spinner-small { width:18px; height:18px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:auth-spin .7s linear infinite; }
 @keyframes auth-spin { to { transform:rotate(360deg); } }

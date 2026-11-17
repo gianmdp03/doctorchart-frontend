@@ -15,13 +15,28 @@ export function isWizardFieldVisible(definition: WizardFormDefinition, values: W
 }
 
 export function wizardRecordEntries(record: ClinicalFormRecord): { label: string; value: string }[] {
-  return record.formDefinitionSnapshot.categories.flatMap(category => category.fields.flatMap(field => {
+  const display = wizardRecordForm(record.formDefinitionSnapshot);
+  return display.categories.flatMap(category => category.fields.flatMap(field => {
     if (!isWizardFieldVisible(record.formDefinitionSnapshot, record.formValues, field.key)) return [];
     const result = record.formulaResults[field.key];
     const value = field.type === 'FORMULA' ? (result?.status === 'READY' ? result.value : null) : record.formValues[field.key];
     if (value === null || value === undefined || value === '') return [];
     return [{ label: field.label, value: formatWizardValue(field, value) }];
   }));
+}
+
+/** Keep historical answers intact for editing. A canonical field owns the read view even when hidden or empty. */
+export function wizardRecordForm(form: WizardFormDefinition): WizardFormDefinition {
+  if (!form.categories.some(category => category.fields.some(field => field.key === 'followUpInstructions'))) {
+    return form;
+  }
+  return {
+    ...form,
+    categories: form.categories.map(category => ({
+      ...category,
+      fields: category.fields.filter(field => field.key !== 'followUp'),
+    })),
+  };
 }
 
 function formatWizardValue(field: WizardFieldDefinition, value: string | number | boolean): string {

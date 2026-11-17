@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 .lookup {
   width: min(1040px, calc(100% - 2 * var(--booking-gutter))); margin-inline: auto;
   min-height: calc(100dvh - 143px); padding-block: 19px 45px;
@@ -18,3 +19,33 @@ form button { margin-top: 7px; }
 .lookup-result > p:last-child { margin-top: 12px; font-size: .9rem; }
 @media (max-width: 780px) { .lookup-grid.has-receipt { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 540px) { .lookup { padding-block: 13px 30px; } form { padding: 15px; } form button { width: 100%; } }
+=======
+
+:host { display: block; min-height: 100dvh; background: var(--dc-canvas); color: var(--dc-text); }
+.recovery-page { max-width: 760px; margin: auto; padding: 40px 24px 64px; }
+.brand { display: inline-flex; align-items: center; min-height: 44px; margin-bottom: 32px; color: var(--dc-text); font-size: 1.125rem; font-weight: 750; text-decoration: none; }
+h1 { margin: 0 0 16px; font-size: 2rem; font-weight: 700; letter-spacing: -.03em; line-height: 1.2; }
+h2 { margin: 12px 0; font-size: 1.25rem; font-weight: 650; }
+p { line-height: 1.65; }
+.intro { max-width: 65ch; margin-bottom: 28px; color: var(--dc-text-secondary); font-size: .9375rem; }
+form, .constancia { padding: 28px; border-radius: var(--dc-radius-card); background: var(--dc-paper); box-shadow: var(--dc-shadow-panel); }
+form label { display: block; margin-bottom: 10px; font-size: .8125rem; font-weight: 600; }
+.code-row { display: flex; align-items: center; gap: 12px; }
+input { min-width: 0; width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); color: var(--dc-text); background: var(--dc-paper); font: inherit; font-size: .9375rem; }
+button { flex-shrink: 0; min-height: 46px; padding: 10px 18px; border: 0; border-radius: var(--dc-radius-control); background: var(--dc-brand); color: var(--dc-on-brand); font: inherit; font-size: .875rem; font-weight: 600; cursor: pointer; }
+button:hover:not(:disabled) { background: var(--dc-brand-hover); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+:where(a, input, button):focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }
+.help, footer { color: var(--dc-text-secondary); font-size: .8125rem; line-height: 1.6; }
+.help { margin: 16px 0 0; }
+.constancia { margin-top: 24px; }
+.status { display: inline-flex; margin: 0; padding: 4px 10px; border-radius: var(--dc-radius-pill); background: var(--dc-brand-soft); color: var(--dc-brand-ink); font-size: .8125rem; font-weight: 600; }
+.when { font-size: 1.125rem; font-weight: 600; }
+.zone { color: var(--dc-text-secondary); font-size: .8125rem; }
+.reference { display: grid; gap: 8px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--dc-line); }
+.reference span { color: var(--dc-text-secondary); font-size: .75rem; }
+code { font-size: .875rem; overflow-wrap: anywhere; }
+.error { margin-top: 24px; padding: 16px; border: 1px solid currentColor; border-radius: var(--dc-radius-control); color: var(--dc-danger); background: var(--dc-danger-soft); }
+footer { margin-top: 28px; }
+@media (max-width: 600px) { .recovery-page { padding: 24px 16px 48px; } h1 { font-size: 1.75rem; } form, .constancia { padding: 24px 20px; } .code-row { flex-direction: column; align-items: stretch; } }
+>>>>>>> Stashed changes

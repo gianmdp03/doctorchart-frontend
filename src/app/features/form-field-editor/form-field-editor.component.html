@@ -62,7 +62,7 @@
             <span class="field-error" role="alert">{{ error }}</span>
           }
         </label>
-        <button type="button" class="primary" (click)="addCategory()" [disabled]="readonly()">
+        <button type="button" class="dc-button dc-button--primary primary" (click)="addCategory()" [disabled]="readonly()">
           Agregar categoría
         </button>
       </aside>
@@ -170,7 +170,7 @@
           @if (!category.system) {
             <button
               type="button"
-              class="primary"
+              class="dc-button dc-button--primary primary"
               (click)="openField(category.key)"
               [disabled]="readonly()"
             >
@@ -397,7 +397,7 @@
       }
       <footer class="field-page-actions">
         <button type="button" (click)="closeField()">Cancelar</button
-        ><button type="button" class="primary" (click)="saveField()" [disabled]="readonly()">
+        ><button type="button" class="dc-button dc-button--primary primary" (click)="saveField()" [disabled]="readonly()">
           Aplicar campo
         </button>
       </footer>

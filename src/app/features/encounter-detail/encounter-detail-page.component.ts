@@ -19,6 +19,8 @@ import { firstValueFrom } from 'rxjs';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ClinicalRevisionsComponent } from '../patient-record/clinical-revisions.component';
+import { wizardRecordForm } from '../../core/models/wizard-record-display';
 import {
   ClinicalEncounterDetail,
   ConsultationType,
@@ -43,7 +45,7 @@ import {
 
 @Component({
   selector: 'app-encounter-detail-page',
-  imports: [FormsModule, RouterLink, DynamicFormRendererComponent],
+  imports: [FormsModule, RouterLink, DynamicFormRendererComponent, ClinicalRevisionsComponent],
   templateUrl: './encounter-detail-page.component.html',
   styleUrl: './encounter-detail-page.component.css',
 })
@@ -64,8 +66,13 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly encounter = signal<ClinicalEncounterDetail | null>(null);
   readonly effectiveForm = computed(() => {
+<<<<<<< Updated upstream
     const form = visibleEncounterForm(this.encounter()?.formDefinitionSnapshot ?? { categories: [] });
     return this.isEditing() ? withClinicalHistory(form) : form;
+=======
+    const form = this.encounter()?.formDefinitionSnapshot ?? { categories: [] };
+    return this.isEditing() ? withClinicalHistory(form) : wizardRecordForm(form);
+>>>>>>> Stashed changes
   });
   readonly correctHeightPosition = signal(false);
   readonly canCorrectHeightPosition = computed(() =>
@@ -74,6 +81,7 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   readonly values = signal<WizardFormValues>({});
   readonly formulaResults = signal<WizardFormulaResults>({});
   readonly consultationType = signal<ConsultationType>('FIRST_VISIT');
+  readonly correctionReason = signal('');
   readonly formValid = signal(false);
   readonly submissionAttempted = signal(false);
   private readonly formRenderer = viewChild(DynamicFormRendererComponent);
@@ -166,6 +174,7 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
     this.values.set(structuredClone(record.formValues));
     this.formulaResults.set(structuredClone(record.formulaResults));
     this.consultationType.set(record.consultationType);
+    this.correctionReason.set('');
     this.submissionAttempted.set(false);
     this.formValid.set(false);
     this.errorMessage.set(null);
@@ -211,13 +220,19 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
     this.errorMessage.set(null);
     const epoch = this.epoch;
     try {
+      const reason = this.correctionReason().trim();
       const saved = await firstValueFrom(
         this.service
           .update(record.id, {
             expectedVersion: record.version,
             encounterDate,
             consultationType: this.consultationType(),
+<<<<<<< Updated upstream
             values: this.valuesForUpdate(record),
+=======
+            values: inputValues(this.effectiveForm(), this.values()),
+            ...(reason ? { reason } : {}),
+>>>>>>> Stashed changes
           })
           .pipe(takeUntilDestroyed(this.destroyRef)),
       );

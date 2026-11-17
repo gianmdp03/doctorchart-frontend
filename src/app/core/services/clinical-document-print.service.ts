@@ -1,11 +1,10 @@
 import { ClinicalContextService } from './clinical-context.service';
 import { DestroyRef, effect, inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { EMPTY, Observable, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ClinicalPrintDocument, PrintDocumentReference } from '../models/clinical-print-document.model';
 import { AuthService } from './auth.service';
-import { doctorPrintIdentity } from '../models/doctor-print-identity';
 
 @Injectable({ providedIn: 'root' })
 export class ClinicalDocumentPrintService {
@@ -40,20 +39,23 @@ export class ClinicalDocumentPrintService {
   }
 
   getPdfBlob(reference: PrintDocumentReference): Observable<Blob> {
-    const user = this.auth.currentUser(); this.clinicalScope.id();
-    const identity = doctorPrintIdentity(user?.user_metadata);
+    const source = this.origin(reference);
+    const params = reference.type ? new HttpParams().set('type', reference.type) : new HttpParams();
+    return this.http.get(source + '/pdf', { params, responseType: 'blob' });
+  }
+
+  private origin(reference: PrintDocumentReference): string {
     const collection = reference.source === 'PRESCRIPTION_RECORD' ? 'prescriptions' : 'encounters';
+    return `${environment.apiUrl}/patients/${reference.patientId}/${collection}/${reference.id}`;
+  }
 
-    let params = new HttpParams();
-    if (identity.fullName) params = params.set('doctorName', identity.fullName);
-    if (identity.license) params = params.set('license', identity.license);
-    if (identity.clinic.name) params = params.set('clinicName', identity.clinic.name);
-    if (identity.clinic.address) params = params.set('clinicAddress', identity.clinic.address);
-    if (identity.clinic.phone) params = params.set('clinicPhone', identity.clinic.phone);
-    if (reference.type) params = params.set('type', reference.type);
+  issue(reference: PrintDocumentReference): Observable<{id: number}> {
+    const body = reference.type ? { type: reference.type } : {};
+    return this.http.post<{id: number}>(this.origin(reference) + '/documents', body);
+  }
 
-    const url = `${environment.apiUrl}/patients/${reference.patientId}/${collection}/${reference.id}/pdf`;
-    return this.http.get(url, { params, responseType: 'blob' });
+  originalPdf(patientId: number, issueId: number): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/patients/${patientId}/documents/${issueId}/pdf`, { responseType: 'blob' });
   }
 
   openPdfInNewTab(reference: PrintDocumentReference): void {
@@ -74,7 +76,11 @@ export class ClinicalDocumentPrintService {
       targetWindow = null;
     }
 
-    this.getPdfBlob(reference).subscribe({
+    this.issue(reference).pipe(switchMap(issue => {
+      if (owner === this.contextKey()) return this.originalPdf(reference.patientId, issue.id);
+      try { targetWindow?.close(); } catch {}
+      return EMPTY;
+    })).subscribe({
       next: (blob) => {
         if (owner !== (this.contextKey())) {
           try { targetWindow?.close(); } catch {}
@@ -88,8 +94,8 @@ export class ClinicalDocumentPrintService {
           } else if (typeof window.open === 'function') {
             this.previews.set(blobUrl, window.open(blobUrl, '_blank', 'noopener,noreferrer'));
           }
-        } catch (e) {
-          console.error('Error handling PDF blob:', e);
+        } catch {
+          this.errorMessage.set('No se pudo abrir el PDF guardado.');
         }
       },
       error: (err) => {

@@ -1,6 +1,6 @@
 <header class="top-app-header">
   <!-- Left: Header spacing / Navigation anchor -->
-  <div class="header-left"></div>
+  <div class="header-left"><span class="workspace-label">{{ authService.isSuperAdmin() ? "Administración" : "Espacio clínico" }}</span></div>
 
   <!-- Center -->
   <div class="header-center">
@@ -34,17 +34,20 @@
     <!-- User Profile Dropdown Button -->
     <div class="profile-menu-container">
       <button
+        #profileTrigger
         type="button"
         class="profile-avatar-btn"
+        [attr.aria-expanded]="isProfileMenuOpen()"
+        [attr.aria-controls]="isProfileMenuOpen() ? 'account-options' : null"
+        [attr.aria-label]="'Opciones de cuenta: ' + (bycodeAccount.name() || 'Mi cuenta')"
         (click)="toggleProfileMenu($event)"
         [title]="bycodeAccount.name() || 'Mi cuenta'"
       >
         <app-bycode-avatar />
-        <span class="online-indicator"></span>
       </button>
 
       @if (isProfileMenuOpen()) {
-        <div class="profile-dropdown-menu" (click)="$event.stopPropagation()">
+        <div id="account-options" class="profile-dropdown-menu" (click)="$event.stopPropagation()">
           <div class="profile-dropdown-header">
             <span class="user-fullname">{{ bycodeAccount.name() || 'Mi cuenta' }}</span>
             <span class="user-email">{{ authService.userEmail() }}</span>
@@ -59,13 +62,11 @@
 
           @if (!authService.isSuperAdmin()) {
           <a
-            [href]="bycodePlansUrl"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/pricing"
             class="dropdown-action-item"
           >
             <ng-icon name="lucideExternalLink" class="menu-action-icon" />
-            <span>Planes y Suscripción ByCode</span>
+            <span>Planes y suscripción</span>
           </a>
 
           <button

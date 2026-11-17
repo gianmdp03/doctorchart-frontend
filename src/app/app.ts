@@ -32,7 +32,7 @@ export class App {
    const path=this.pageUrl().split(/[?#]/)[0];
    return (FEATURE_FLAGS.PUBLIC_APPOINTMENTS_ENABLED && path==='/') || /^\/appointments(?:\/[^/]+)?$/.test(path);
  });
- readonly isPublicPage = computed(() => this.isPublicAppointmentsPage() || ['/', '/professionals', '/login', '/404'].includes(this.pageUrl().split(/[?#]/)[0]) || this.router.routerState.snapshot.root.firstChild?.routeConfig?.path === '**');
+ readonly isPublicPage = computed(() => this.isPublicAppointmentsPage() || ['/', '/professionals', '/login', '/register', '/register/confirmed', '/pricing', '/404'].includes(this.pageUrl().split(/[?#]/)[0]) || this.router.routerState.snapshot.root.firstChild?.routeConfig?.path === '**');
   constructor() {
     effect(() => {
       if (this.isStaffPage() || this.isPublicAppointmentsPage() || !this.authService.currentUser() || this.coordinatorLoading) return;

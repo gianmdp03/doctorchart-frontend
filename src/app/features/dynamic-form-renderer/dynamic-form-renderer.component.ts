@@ -133,7 +133,7 @@ export class DynamicFormRendererComponent {
     this.valuesChange.emit(structuredClone(inputValues(this.definition(), this.currentValues())));
   }
   isFieldVisible(key: string): boolean {
-    return isWizardFieldVisible(this.definition(), this.currentValues(), key);
+    return key !== 'followUpDate' && key !== 'encounter.followUpDate' && isWizardFieldVisible(this.definition(), this.currentValues(), key);
   }
   setNumberValue(field: WizardFieldDefinition, raw: string): void {
     if (this.readonly()) return;

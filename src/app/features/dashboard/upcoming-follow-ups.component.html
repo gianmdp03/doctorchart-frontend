@@ -1,8 +1,20 @@
+<<<<<<< Updated upstream
 <section class="followup-card" aria-labelledby="followup-title">
   <header class="followup-heading">
     <div>
       <h2 id="followup-title">Controles previstos</h2>
       <p>Indicados en las historias clínicas</p>
+=======
+  <section class="followup-card" aria-labelledby="followup-title" [attr.aria-busy]="isLoading()">
+    <div class="followup-heading">
+      <div class="followup-heading-icon" aria-hidden="true"><ng-icon name="lucideCalendar" /></div>
+      <div class="followup-heading-text">
+
+        <h2 id="followup-title">Próximas consultas</h2>
+        <p>Controles indicados en la última historia clínica de cada paciente.</p>
+      </div>
+      <span class="followup-period"><ng-icon name="lucideClock" aria-hidden="true" /> Hoy y los próximos 2 días</span>
+>>>>>>> Stashed changes
     </div>
     <span class="followup-period"
       ><ng-icon name="lucideCalendar" aria-hidden="true" /> Hoy y los próximos 2 días</span

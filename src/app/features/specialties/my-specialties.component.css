@@ -3,9 +3,9 @@
 }
 
 .specialties-page {
-  max-width: 940px;
   margin-inline: auto;
-  padding: clamp(12px, 3vw, 40px) clamp(0px, 2vw, 24px);
+  max-width: 1120px;
+  padding: 0;
 }
 
 .page-heading,
@@ -28,9 +28,9 @@ h1, h2, p {
 }
 
 h1 {
-  font-size: clamp(1.6rem, 2.6vw, 2rem);
-  line-height: 1.2;
-  letter-spacing: -0.035em;
+  font-size: 1.75rem;
+  letter-spacing: -.03em;
+  line-height: 1.25;
 }
 
 h2 {
@@ -57,12 +57,14 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px;
+  padding: 24px;
 }
 
 .specialty-card.is-current {
-  border-inline-start: 3px solid var(--dc-teal-ink, #006874);
-  padding-inline-start: 14px;
+  border-inline-start: 1px solid var(--dc-teal-ink, #006874);
+  border: 1px solid var(--dc-brand);
+  padding-inline-start: 24px;
+  background: var(--dc-brand-soft);
 }
 
 .specialty-info {
@@ -77,10 +79,10 @@ h2 {
   flex: 0 0 46px;
   block-size: 46px;
   place-items: center;
-  border-radius: 12px;
-  background: var(--dc-teal-surface, #e6f6f8);
   color: var(--dc-teal-ink, #006874);
   font-size: 1.25rem;
+  background: var(--dc-paper);
+  border-radius: 12px;
 }
 
 .specialty-details {
@@ -128,7 +130,6 @@ h2 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
   padding: 8px 12px;
   box-sizing: border-box;
   border: 1px solid transparent;
@@ -141,15 +142,24 @@ h2 {
   line-height: 1.35;
   text-decoration: none;
   cursor: pointer;
+  min-height: 44px;
 }
 
 .primary {
-  background: var(--md-sys-color-primary, #006874);
-  color: var(--md-sys-color-on-primary, #fff);
+  background: var(--dc-brand);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .primary:hover:not(:disabled) {
   filter: brightness(0.9);
+  background: var(--dc-brand-hover);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .secondary,
@@ -220,4 +230,8 @@ button:disabled {
   .specialty-actions {
     justify-content: flex-start;
   }
+}
+
+.specialty-list {
+  gap: 16px;
 }

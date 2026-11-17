@@ -26,9 +26,10 @@ import { PatientService } from '../../../core/services/patient.service';
 import { PatientVaccinationService } from '../../../core/services/patient-vaccination.service';
 import { DatePickerComponent } from '../../../shared/date-picker/date-picker.component';
 import { validIsoDate } from '../../../core/models/form-validation';
+import { AnnulmentPromptComponent } from '../annulment-prompt.component';
 @Component({
   selector: 'app-patient-vaccinations',
-  imports: [FormsModule, DatePickerComponent],
+  imports: [FormsModule, DatePickerComponent, AnnulmentPromptComponent],
   templateUrl: './patient-vaccinations.component.html',
   styleUrl: './patient-vaccinations.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,6 +50,7 @@ export class PatientVaccinationsComponent {
   readonly isSaving = signal(false);
   readonly isLoading = signal(false);
   readonly saveError = signal<string | null>(null);
+  readonly pendingAnnulment = signal<PatientVaccinationDose | null>(null);
   readonly dateErrors = signal<Record<string, string | null>>({});
   readonly loadError = signal<string | null>(null);
   readonly ageLabel = computed(() => this.schedule()?.ageLabel ?? '—');
@@ -95,6 +97,7 @@ export class PatientVaccinationsComponent {
     this.changed.next();
     this.epoch++;
     this.dateErrors.set({});
+    this.pendingAnnulment.set(null);
     this.context = key;
     this.isSaving.set(false);
     this.isLoading.set(false);
@@ -175,7 +178,13 @@ export class PatientVaccinationsComponent {
     this.markApplied(dose, applied);
   }
   markApplied(dose: PatientVaccinationDose, applied: boolean) {
-    this.persist(dose, applied);
+    this.syncContext();
+    if (applied) this.persist(dose, true);
+    else if (this.canSave() && dose.status === 'APLICADA') this.pendingAnnulment.set(dose);
+  }
+  annulVaccination(reason: string): void {
+    const dose = this.pendingAnnulment();
+    if (dose) this.persist(dose, false, undefined, reason);
   }
   updateDate(dose: PatientVaccinationDose, appliedAt: string, picker?: DatePickerComponent) {
     const maximum = this.schedule()?.asOfDate;
@@ -189,14 +198,15 @@ export class PatientVaccinationsComponent {
     picker?.writeValue(dose.appliedAt);
     if (dose.status === 'APLICADA') this.persist(dose, true, appliedAt);
   }
-  private persist(dose: PatientVaccinationDose, applied: boolean, appliedAt?: string) {
+  private persist(dose: PatientVaccinationDose, applied: boolean, appliedAt?: string, reason?: string) {
     this.syncContext();
     const schedule = this.schedule();
     if (
       !this.auth.currentUser()?.id ||
       !this.canSave() ||
       !schedule ||
-      !this.doses().some((d) => d.id === dose.id)
+      !this.doses().some((d) => d.id === dose.id) ||
+      (!applied && (!reason?.trim() || this.pendingAnnulment()?.id !== dose.id))
     )
       return;
     const key = this.context,
@@ -210,6 +220,7 @@ export class PatientVaccinationsComponent {
         calendarId: dose.calendarId,
         applied,
         ...(appliedAt !== undefined ? { appliedAt } : {}),
+        ...(reason ? { reason } : {}),
       })
       .pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -225,7 +236,11 @@ export class PatientVaccinationsComponent {
             return;
           }
           this.schedule.set(saved.schedule);
+<<<<<<< Updated upstream
           this.interaction.notifySuccess(applied ? 'La aplicación de la vacuna se guardó correctamente.' : 'La dosis se actualizó correctamente.');
+=======
+          this.pendingAnnulment.set(null);
+>>>>>>> Stashed changes
           this.patientUpdated.emit(saved.patient);
         },
         error: (error) => {

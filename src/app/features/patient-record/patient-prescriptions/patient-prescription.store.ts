@@ -71,13 +71,20 @@ export class PatientPrescriptionStore {
       error: error => { if (!this.currentOwner()) return; this.writing.set(false); this.error.set(error?.error?.message || 'No se pudo guardar la receta u orden. El borrador se conserva.'); },
     });
   }
-  delete(id: number): void {
+  delete(id: number, reason: string): void {
     const patientId = this.patientId;
     if (!patientId || this.busy() || !this.currentOwner()) return;
+<<<<<<< Updated upstream
     this.writing.set(true); this.error.set(null);
     this.api.delete(patientId,id).pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => { if (!this.currentOwner()) return; this.records.update(records => records.filter(record => record.id !== id)); this.writing.set(false); this.interaction.notifySuccess('El documento se eliminó correctamente.'); },
       error: () => { if (!this.currentOwner()) return; this.writing.set(false); this.error.set('No se pudo eliminar el documento. El registro se conserva.'); },
+=======
+    this.writing.set(true); this.error.set(null); this.success.set(null);
+    this.api.delete(patientId,id,reason).pipe(takeUntil(this.changed), takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => { if (!this.currentOwner()) return; this.records.update(records => records.filter(record => record.id !== id)); this.writing.set(false); },
+      error: () => { if (!this.currentOwner()) return; this.writing.set(false); this.error.set('No se pudo anular el documento.'); },
+>>>>>>> Stashed changes
     });
   }
 }

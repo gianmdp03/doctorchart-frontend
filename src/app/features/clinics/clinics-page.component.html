@@ -1,10 +1,6 @@
 <div class="clinics-page">
   <header class="page-header">
     <div class="page-header-copy">
-      <div class="eyebrow">
-        <ng-icon name="lucideBuilding2" size="16" aria-hidden="true"></ng-icon>
-        <span>Operación y Sedes de Atención</span>
-      </div>
       <h1 id="clinics-table-heading">Administración de Consultorios</h1>
       <p class="subtitle">
         Gestioná tus consultorios y la agenda de teleconsultas.
@@ -12,10 +8,10 @@
     </div>
 
     <div class="header-actions">
-      <a class="btn-secondary" routerLink="/schedules">Mis horarios</a>
+      <a class="dc-button btn-secondary" routerLink="/schedules">Mis horarios</a>
       <button
         type="button"
-        class="btn-secondary"
+        class="dc-button btn-secondary"
         (click)="reloadAll()"
         [disabled]="isLoading()"
         aria-label="Actualizar consultorios y cupo"
@@ -25,11 +21,11 @@
       </button>
 
       @if (canCreateVirtual()) {
-        <a class="btn-secondary" routerLink="/clinics/new" [queryParams]="{modality: 'teleconsultation'}">Crear agenda virtual</a>
+        <a class="dc-button btn-secondary" routerLink="/clinics/new" [queryParams]="{modality: 'teleconsultation'}">Crear agenda virtual</a>
       }
       <button
         type="button"
-        class="btn-primary"
+        class="dc-button dc-button--primary btn-primary"
         data-testid="create-clinic-btn"
         (click)="navigateToCreate()"
         [disabled]="!canCreate() || isLoading()"
@@ -78,12 +74,10 @@
             Reintentar verificación
           </button>
         }
-        @if (banner.showUpgradeLink && plansUrl) {
+        @if (banner.showUpgradeLink) {
           <a
             class="btn-banner"
-            [href]="plansUrl"
-            target="_blank"
-            rel="noopener noreferrer"
+            routerLink="/pricing"
           >
             <span>Ver planes</span>
             <ng-icon name="lucideExternalLink" size="14" aria-hidden="true"></ng-icon>
@@ -162,7 +156,7 @@
           }
         </p>
         @if (statusFilter() === 'ALL' && canCreate()) {
-          <button type="button" class="btn-primary" (click)="navigateToCreate()">
+          <button type="button" class="dc-button dc-button--primary btn-primary" (click)="navigateToCreate()">
             <ng-icon name="lucidePlus" size="16" aria-hidden="true"></ng-icon>
             <span>Crear primer consultorio</span>
           </button>
@@ -289,7 +283,7 @@
     <nav class="pagination-bar" aria-label="Paginación de consultorios">
       <button
         type="button"
-        class="btn-secondary"
+        class="dc-button btn-secondary"
         [disabled]="currentPage() <= 0 || isLoading()"
         (click)="goToPage(currentPage() - 1)"
       >
@@ -301,7 +295,7 @@
       </span>
       <button
         type="button"
-        class="btn-secondary"
+        class="dc-button btn-secondary"
         [disabled]="currentPage() + 1 >= totalPages() || isLoading()"
         (click)="goToPage(currentPage() + 1)"
       >

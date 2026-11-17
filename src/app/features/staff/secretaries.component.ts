@@ -13,6 +13,7 @@ import {Clinic} from '../clinics/clinics.models';
 import {StaffAccess,StaffPermission,staffError} from './staff.service';
 
 interface StaffAccessList {items:StaffAccess[];capabilities:{manage:boolean;reason:string|null;validUntil:string|null};}
+<<<<<<< Updated upstream
 interface Invitation {url:string;phone:string;expiresAt:string;email:string;emailQueued:boolean;}
 @Component({
   selector: 'app-secretaries',
@@ -21,6 +22,98 @@ interface Invitation {url:string;phone:string;expiresAt:string;email:string;emai
   templateUrl: './secretaries.component.html',
   styleUrls: ['./staff.css', './secretaries.component.css'],
 })
+=======
+interface Invitation {url:string;phone:string;expiresAt:string;}
+@Component({selector:'app-secretaries',imports:[FormsModule,RouterLink],styleUrl:'./staff.css',template:`
+<main class="staff-page secretaries">
+  <a class="back-link" routerLink="/calendar">← Agenda de turnos</a>
+  <header class="page-heading">
+
+    <h1>Secretarias</h1>
+    <p class="muted">Invitá a alguien para gestionar turnos de las agendas que elijas. Cada persona tiene su propio acceso.</p>
+  </header>
+  @if(error()){<p role="alert" class="notice error">{{error()}}</p>}
+  @if(capabilities() && !canManage()){<p class="notice">La administración requiere permisos comerciales vigentes. Podés revocar accesos existentes.</p>}
+  @if(invitation();as invite){
+    <section class="notice" role="status">
+      <h2>Invitación creada</h2>
+      <p>Este enlace privado vence en 6 horas y se puede usar una sola vez. La secretaria lo abre, elige su contraseña y entra a la agenda.</p>
+      <label>Enlace de invitación<input readonly [value]="invite.url" (click)="$any($event.target).select()" /></label>
+      <div class="actions">
+        <button (click)="copyInvitation()">{{copied()?'Enlace copiado':'Copiar enlace'}}</button>
+        @if(invite.phone){<a [href]="whatsappUrl(invite)" target="_blank" rel="noopener noreferrer">Compartir por WhatsApp</a>}
+        <button (click)="invitation.set(null)">Cerrar</button>
+      </div>
+      <p class="muted">Si vence, podés generar uno nuevo desde la lista.</p>
+    </section>
+  }
+  <div class="grid">
+    <section class="panel" aria-labelledby="staff-assigned">
+      <h2 id="staff-assigned">Personas asignadas</h2>
+      @for(a of items();track a.id){
+        <section class="assignment">
+          <h3>{{a.name}}</h3>
+          <p class="muted">{{a.email}} @if(a.phone){ · {{a.phone}}} · {{!a.active?'Acceso revocado':a.activated?'Cuenta activada':'Invitación pendiente'}}</p>
+          <p>{{clinicNames(a)}}<br />Permisos: {{permissionNames(a)}}</p>
+          <div class="actions">
+            <button (click)="edit(a)" [disabled]="busy()||!canManage()">Editar permisos</button>
+            @if(!a.activated){<button (click)="renew(a)" [disabled]="busy()||!canManage()">Generar nuevo enlace</button>}
+            <button (click)="revoke(a)" [disabled]="busy()||!a.active">Revocar acceso</button>
+          </div>
+        </section>
+      }@empty{
+        @if(capabilities()){
+          <div class="empty-state"><h3>Sin personas asignadas</h3><p class="muted">Las invitaciones y accesos que crees aparecerán acá.</p></div>
+        }
+      }
+      <div class="actions form-actions"><button (click)="load()" [disabled]="busy()">Actualizar asignaciones</button></div>
+    </section>
+    <section class="panel" aria-labelledby="staff-invite">
+      <h2 id="staff-invite">{{selected()?'Editar permisos':'Agregar secretaria'}}</h2>
+      @if(!capabilities()){
+        <p class="muted">{{error() ? 'Reintentá desde Actualizar asignaciones.' : 'Cargando consultorios y permisos…'}}</p>
+      }@else if(!clinics().length){
+        <div class="empty-state">
+          <h3>Primero, creá un consultorio</h3>
+          <p class="muted">Cada invitación debe incluir al menos un consultorio.</p>
+          <a routerLink="/clinics">Ir a Consultorios →</a>
+        </div>
+      }@else{
+        <form (ngSubmit)="save()" #form="ngForm">
+          <fieldset [disabled]="busy()||!canManage()">
+            <legend class="sr-only">Datos y permisos</legend>
+            @if(!selected()){
+              <label>Nombre<input name="name" [(ngModel)]="name" required maxlength="160" /></label>
+              <label>Correo electrónico<input type="email" name="email" [(ngModel)]="email" required maxlength="254" /></label>
+              <label>Teléfono (opcional)<input type="tel" name="phone" [(ngModel)]="phone" pattern="\\+[1-9][0-9]{7,14}" maxlength="16" placeholder="+5491123456789" autocomplete="tel" /><span class="muted">Incluí el código de país para compartir por WhatsApp.</span></label>
+            }
+            <div class="form-group" role="group" aria-labelledby="staff-clinics">
+              <h3 id="staff-clinics">Consultorios autorizados</h3>
+              @for(c of clinics();track c.id){
+                <label class="check"><input type="checkbox" [checked]="clinicIds.includes(c.id)" (change)="toggleClinic(c.id,$any($event.target).checked)" />{{c.name}} @if(c.modality==='TELECONSULTATION'){· Teleconsulta}</label>
+              }
+            </div>
+            <div class="form-group" role="group" aria-labelledby="staff-permissions">
+              <h3 id="staff-permissions">Permisos administrativos</h3>
+              <p class="muted">Ver la agenda está incluido. Las historias clínicas y la configuración de horarios quedan reservadas al profesional.</p>
+              <label>Acceso<select name="permissionPreset" [ngModel]="permissionPreset()" (ngModelChange)="setPermissionPreset($event)"><option value="manage">Gestionar turnos</option><option value="view">Solo ver agenda</option><option value="custom">Personalizar permisos</option></select></label>
+              @if(permissionPreset()==='custom'){
+                @for(p of availablePermissions;track p.value){
+                  <label class="check"><input type="checkbox" [checked]="permissions.includes(p.value)" (change)="togglePermission(p.value,$any($event.target).checked)" />{{p.label}}</label>
+                }
+              }
+            </div>
+            <div class="actions form-actions">
+              <button type="submit" [disabled]="busy()||form.invalid||!clinicIds.length||!canManage()">{{busy()?'Guardando…':selected()?'Guardar permisos':'Crear invitación'}}</button>
+              @if(selected()){<button type="button" (click)="clear()">Cancelar edición</button>}
+            </div>
+          </fieldset>
+        </form>
+      }
+    </section>
+  </div>
+</main>`})
+>>>>>>> Stashed changes
 export class SecretariesComponent {
   private readonly interaction = inject(InteractionStatusService);
  private readonly document=inject(DOCUMENT);

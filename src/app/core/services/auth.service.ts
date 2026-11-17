@@ -1,4 +1,4 @@
-import { GOOGLE_AUTH_ENABLED, LOCAL_REGISTRATION_ENABLED } from '../../auth-policy';
+import { GOOGLE_AUTH_ENABLED } from '../../auth-policy';
 import { computed, DestroyRef, effect, inject, Injectable, InjectionToken, PLATFORM_ID, signal, untracked } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
@@ -25,6 +25,10 @@ export function forwardDoctorchartMailCallback(
   location: Pick<Location, 'hash' | 'pathname' | 'search' | 'replace'>,
   history: Pick<History, 'replaceState'>,
 ): boolean {
+  if (location.pathname === '/register/confirmed') {
+    if (location.hash || location.search) history.replaceState(null, '', location.pathname);
+    return true;
+  }
   const type = new URLSearchParams(location.hash.replace(/^#/, '')).get('type');
   if (!type || !['signup', 'invite', 'email_change', 'recovery', 'magiclink'].includes(type)) return false;
   const path = type === 'recovery' ? '/reset-password' : type === 'email_change' ? '/email-change-success' : '/auth-success';
@@ -330,7 +334,6 @@ export class AuthService {
   }
 
   async signUp(params: SignUpParams): Promise<AuthResponse> {
-    if (!LOCAL_REGISTRATION_ENABLED) throw new Error('Creá tu cuenta en Bycode.');
     if (!this.supabaseClient) {
       throw new Error('Supabase client is not available in this environment.');
     }
@@ -339,7 +342,7 @@ export class AuthService {
       password: params.password,
       options: {
         ...params.options,
-        emailRedirectTo: params.options?.emailRedirectTo || (this.isBrowser ? window.location.origin : environment.appUrl) + '/login',
+        emailRedirectTo: params.options?.emailRedirectTo || (this.isBrowser ? window.location.origin : environment.appUrl) + '/register/confirmed',
       },
     });
     if (response.data?.session) {

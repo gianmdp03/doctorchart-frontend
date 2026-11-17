@@ -340,9 +340,9 @@ export class PatientPrescriptionEditorStore {
     }
   }
 
-  deleteSavedRecord(recordId: number): void {
+  deleteSavedRecord(recordId: number, reason: string): void {
     if (!this.prescriptionsEnabled()) return;
-    this.prescriptionStore.delete(recordId);
+    this.prescriptionStore.delete(recordId, reason);
   }
 
   formatRxDate(isoString: string): string { return formatInstant(isoString, false); }

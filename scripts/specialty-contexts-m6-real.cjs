@@ -6,6 +6,13 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const http=require('node:http'),https=require('node:https'),crypto=require('node:crypto');
 const {pathToFileURL}=require('node:url');const assert=require('node:assert/strict');
 const {execFileSync}=require('node:child_process');
+const runCardiology=require('./cardiology-sp02b.cjs');
+const runSpecialtyBatch=require('./specialty-batch-sp03b.cjs');
+const runClinicalRevisions=require('./clinical-revisions-sp04b.cjs');
+const runTemplateReviews=require('./template-reviews-sp04c.cjs');
+const runClinicalAccess=require('./clinical-access-sp04d.cjs');
+const runDocumentEvidence=require('./documents-sp04e.cjs');
+const runProjectionCompatibility=require('./projections-sp04f.cjs');
 const root=path.resolve(__dirname,'..'),lab=path.join(os.tmpdir(),'doctorchart-specialty-m6-20261110');
 const state=JSON.parse(fs.readFileSync(path.join(lab,'settings.json')));
 assert.equal(state.task,'doctorchart-specialty-m6-20261110');
@@ -26,8 +33,15 @@ async function api(page,method,endpoint,body,context,status=200,key,extraHeaders
  assert.equal(result.status,status,`${method} ${endpoint}: ${JSON.stringify(result.data).slice(0,450)}`);return result.data;
 }
 async function finishWizard(page){await page.locator('.step-navigation .step-button').filter({hasText:'Historia Clínica'}).click();await page.getByRole('button',{name:'Finalizar configuración',exact:true}).click();await page.waitForURL(/\/dashboard\?specialtyContextId=/);await page.locator('.notes-textarea').waitFor();}
-async function patientUI(page,id,first){
- await page.goto(origin+'/patients/new?specialtyContextId='+id);await page.locator('#field-sys_firstName').fill(first);await page.locator('#field-sys_lastName').fill('Pérez');await page.locator('#field-sys_dni').fill('12345678');await page.locator('#field-sys_dob').fill('01/01/2020');await page.locator('#field-sys_dob').press('Tab');await page.locator('#field-sys_sex').selectOption('MALE');await page.getByRole('button',{name:'Crear Paciente',exact:true}).click();
+async function patientUI(page,id,first,extraValues={}){
+ await page.goto(origin+'/patients/new?specialtyContextId='+id);await page.locator('#field-sys_firstName').fill(first);await page.locator('#field-sys_lastName').fill('Pérez');await page.locator('#field-sys_dni').fill('12345678');await page.locator('#field-sys_dob').fill('01/01/2020');await page.locator('#field-sys_dob').press('Tab');await page.locator('#field-sys_sex').selectOption('MALE');
+ for(const [key,value] of Object.entries(extraValues)){
+  const input=page.locator('#field-'+key);
+  if(await input.evaluate(element=>element.tagName)==='SELECT'){
+   assert.equal(await input.locator('option:checked').innerText(),'Seleccionar');await input.selectOption(value);
+  }else await input.fill(value);
+ }
+ await page.getByRole('button',{name:'Crear Paciente',exact:true}).click();
  await page.waitForURL(/\/(?:patients|records)\/[0-9]+/);const match=new URL(page.url()).pathname.match(/\/(\d+)/);assert.ok(match);return Number(match[1]);
 }
 async function draftScheduleBlock(page,clinic,context,days,start,end,minutes){
@@ -39,9 +53,112 @@ async function scheduleUI(page,clinic,context,days,start,end,minutes){
  await draftScheduleBlock(page,clinic,context,days,start,end,minutes);
  await page.getByTestId('save-schedule').click();await page.getByText('La agenda se guardó correctamente.',{exact:true}).waitFor();
 }
+
+async function chooseClinicalContext(page,name){
+ await page.getByRole('combobox',{name:'Especialidad actual',exact:true}).click();
+ await page.getByRole('listbox',{name:'Especialidad actual',exact:true}).getByRole('option',{name,exact:true}).click();
+}
+
+async function fourthSpecialty(page,browser,clinic,originalContext){
+ assert.ok(state.admin,'Prepare the isolated lab with --sp01 first');
+ const adminContext=await browser.newContext();
+ try{
+  const admin=await adminContext.newPage();
+  await admin.goto(origin+'/login');
+  await admin.locator('#login-email').fill(state.admin.email);
+  await admin.locator('#login-password').fill(state.admin.password);
+  await admin.getByRole('button',{name:'Ingresar a DoctorChart',exact:true}).click();
+  await admin.getByRole('heading',{name:'Especialidades y wizard'}).waitFor();
+  await admin.getByRole('button',{name:'Crear especialidad',exact:true}).click();
+  await admin.getByLabel('Nombre',{exact:true}).fill('Especialidad de prueba');
+  await admin.getByLabel(/^Código/).fill('sp01_fixture');
+  const saved=admin.waitForResponse(r=>new URL(r.url()).pathname===base+'/admin/specialties'&&r.request().method()==='POST');
+  await admin.getByRole('button',{name:'Crear como borrador',exact:true}).click();
+  const createdResponse=await saved;
+  assert.equal(createdResponse.status(),201);
+  const specialty=await createdResponse.json();
+  assert.equal(specialty.active,false);
+  const existing=await api(page,'GET','/specialties');
+  assert.equal(existing.length,3);
+  assert.equal(existing.some(s=>s.id===specialty.id),false);
+  const general=existing.find(s=>s.code==='general_medicine');
+  const {definition:template}=await api(page,'GET','/specialties/'+general.id+'/wizard');
+  const endpoint='/admin/specialties/'+specialty.id;
+  await api(admin,'PUT',endpoint+'/wizard/draft',{expectedVersion:0,definition:template});
+  await admin.reload();
+  await admin.getByRole('button',{name:/Especialidad de prueba/}).click();
+  const approved=admin.waitForResponse(r=>new URL(r.url()).pathname===base+endpoint+'/wizard/reviews'&&r.request().method()==='POST');
+  await admin.getByRole('button',{name:'Registrar aprobación',exact:true}).click();
+  assert.equal((await approved).status(),204);
+  const publication=admin.waitForResponse(r=>new URL(r.url()).pathname===base+endpoint+'/wizard/publish'&&r.request().method()==='POST');
+  await admin.getByRole('button',{name:'Publicar revisión aprobada',exact:true}).click();
+  assert.equal((await publication).status(),200);
+
+  await page.goto(origin+'/specialties');
+  await page.getByRole('button',{name:'Agregar especialidad',exact:true}).click();
+  await page.getByRole('button',{name:'Especialidad de prueba',exact:true}).click();
+  await page.waitForURL(/\/onboarding\/setup\?specialtyContextId=/);
+  const id=Number(new URL(page.url()).searchParams.get('specialtyContextId'));
+  const label='Motivo de prueba SP-01';
+  await page.locator('.step-navigation .step-button').filter({hasText:'Historia Clínica'}).click();
+  await page.locator('article[data-field-key="chiefComplaint"]').getByRole('button',{name:'Editar',exact:true}).click();
+  await page.getByLabel('Etiqueta',{exact:true}).fill(label);
+  await page.getByRole('button',{name:'Aplicar campo',exact:true}).click();
+  await finishWizard(page);
+  const patient=await patientUI(page,id,'SP01');
+  await page.getByRole('button',{name:'Nueva historia clínica',exact:true}).first().click();
+  await page.getByLabel(label,{exact:true}).fill('Consulta de prueba SP-01');
+  const encounterResponse=page.waitForResponse(r=>new URL(r.url()).pathname===base+'/encounters'&&r.request().method()==='POST');
+  await page.getByRole('button',{name:'Guardar historia clínica',exact:true}).click();
+  const savedEncounter=await encounterResponse;
+  assert.equal(savedEncounter.status(),201);
+  const encounter=await savedEncounter.json();
+  assert.equal(encounter.specialtyContextId,id);
+  assert.ok(encounter.formDefinitionSnapshot.categories.flatMap(c=>c.fields).some(f=>f.label===label));
+
+  await scheduleUI(page,clinic,id,['Sábado'],'16:00','17:00',20);
+  const saturday=db("SELECT (current_date+(12-extract(isodow FROM current_date)::integer)%7+1)::text");
+  const availability=await api(page,'GET','/clinics/'+clinic+'/availability?from='+saturday+'&days=1');
+  const slot=availability.days.flatMap(day=>day.slots).find(s=>s.specialtyContextId===String(id));
+  assert.ok(slot,'fourth specialty must offer an available slot');
+  await page.goto(origin+'/calendar?specialtyContextId='+id);
+  await page.locator('#calendar-date').fill(saturday.split('-').reverse().join('/'));
+  await page.locator('#calendar-date').press('Tab');
+  await page.locator('[data-slot-start="'+slot.start+'"]').click();
+  await page.locator('#booking-contact').fill('Reserva de prueba SP-01');
+  const bookingResponse=page.waitForResponse(r=>new URL(r.url()).pathname===base+'/bookings'&&r.request().method()==='POST');
+  await page.getByRole('button',{name:'Confirmar turno',exact:true}).click();
+  const savedBooking=await bookingResponse;
+  assert.equal(savedBooking.status(),201);
+  const booking=await savedBooking.json();
+  assert.equal(booking.specialtyContextId,String(id));
+
+  await admin.getByRole('button',{name:'Desactivar especialidad',exact:true}).click();
+  await admin.getByRole('status').filter({hasText:'Disponibilidad actualizada.'}).waitFor();
+  const catalog=await api(page,'GET','/specialties');
+  assert.equal(catalog.some(s=>s.id===specialty.id),false);
+  await api(page,'GET','/specialties/'+specialty.id+'/wizard',null,null,404);
+  await api(page,'GET','/patients/'+patient,null,originalContext,404);
+  await page.goto(origin+'/specialties');
+  await page.getByRole('link',{name:'Entrar a Especialidad de prueba',exact:true}).click();
+  await page.waitForURL('**/dashboard?specialtyContextId='+id);
+  assert.equal((await api(page,'GET','/patients/'+patient,null,id)).id,patient);
+  assert.equal((await api(page,'GET','/encounters/'+encounter.id,null,id)).id,encounter.id);
+  assert.equal((await api(page,'GET','/bookings/'+booking.id)).specialtyContextId,String(id));
+  add('SP-01 fourth specialty uses the existing admin, wizard, clinical context and booking flows; deactivation preserves history');
+ }finally{
+  await adminContext.close();
+ }
+}
 (async()=>{
  const serveOnly=process.argv.includes('--serve');
- if(!serveOnly)assert.equal(db('SELECT count(*) FROM doctor_workspaces'),'0','Use reset-e2e on the owned lab before a fresh journey.');
+ const documentsOnly=process.argv.includes('--sp04e-only');
+ const projectionsOnly=process.argv.includes('--sp04f-only');
+ const recoveryOnly=process.argv.includes('--sp04e-restored');
+ const accessOnly=process.argv.includes('--sp04d-only');
+ const reviewsOnly=process.argv.includes('--sp04c-only');
+ const revisionsOnly=process.argv.includes('--sp04b-only');
+ if(!serveOnly&&!revisionsOnly&&!reviewsOnly&&!accessOnly&&!documentsOnly&&!recoveryOnly&&!projectionsOnly)assert.equal(db('SELECT count(*) FROM doctor_workspaces'),'0','Use reset-e2e on the owned lab before a fresh journey.');
  const {createPreview}=await import(pathToFileURL(path.join(root,'scripts/preview-server.mjs')));const site=JSON.parse(fs.readFileSync(path.join(root,'src/app/core/config/site.config.json')));
  const preview=createPreview({directory:path.join(root,'.angular/m6-lab/browser'),...site});
  const server=https.createServer({cert,key},(req,res)=>req.url.startsWith('/api/')?proxy(req,res,18087):req.url.startsWith('/auth/v1/')?proxy(req,res,19447,true):preview.emit('request',req,res));
@@ -51,8 +168,64 @@ async function scheduleUI(page,clinic,context,days,start,end,minutes){
  const errors=[];
  try{
   const context=await browser.newContext({viewport:{width:1440,height:1000}});context.on('page',p=>p.on('pageerror',e=>errors.push(e.message)));
-  page=await context.newPage();page.setDefaultTimeout(20000);
+  page=await context.newPage();page.setDefaultTimeout(45000);
   await page.goto(origin+'/login');await page.locator('#login-email').fill(state.email);await page.locator('#login-password').fill(state.password);await page.getByRole('button',{name:'Ingresar a DoctorChart',exact:true}).click();
+  if(projectionsOnly){
+   await page.waitForURL(url=>url.pathname!=='/login');
+   await runProjectionCompatibility({page,browser,state,origin,api,add,db});
+   assert.deepEqual(errors,[]);evidence.result='PASS';
+   fs.writeFileSync(path.join(out,'sp04f-only-results.json'),JSON.stringify(evidence,null,2));
+   console.log(`${evidence.flows.length} grupos; ${evidence.requests} llamadas API verificadas`);return;
+  }
+  if(documentsOnly || recoveryOnly){
+   await page.waitForURL(url=>url.pathname!=='/login');
+   const previous=recoveryOnly?JSON.parse(fs.readFileSync(path.join(out,process.env.SP04E_SOURCE_EVIDENCE??'sp04e-results.json'))).documents:null;
+   evidence.documents=await runDocumentEvidence({page,browser,state,origin,base,api,add,db,previous});
+   assert.deepEqual(errors,[]);
+   evidence.result='PASS';
+   fs.writeFileSync(path.join(out,recoveryOnly?'sp04e-restored-results.json':'sp04e-only-results.json'),JSON.stringify(evidence,null,2));
+   console.log(`${evidence.flows.length} grupos; ${evidence.requests} llamadas API verificadas`);
+   return;
+  }
+  if(accessOnly){
+   await page.waitForURL(url=>url.pathname!=='/login');
+   await runClinicalAccess({page,browser,state,origin,base,api,add});
+   assert.deepEqual(errors,[]);
+   evidence.result='PASS';
+   fs.writeFileSync(path.join(out,'sp04d-only-results.json'),JSON.stringify(evidence,null,2));
+   console.log(`${evidence.flows.length} grupos; ${evidence.requests} llamadas API verificadas`);
+   return;
+  }
+  if(reviewsOnly){
+   await page.waitForURL(url=>url.pathname!=='/login');
+   await runTemplateReviews({page,browser,state,origin,base,api,add});
+   assert.deepEqual(errors,[]);
+   evidence.result='PASS';
+   fs.writeFileSync(path.join(out,'sp04c-only-results.json'),JSON.stringify(evidence,null,2));
+   console.log(`${evidence.flows.length} grupos; ${evidence.requests} llamadas API verificadas`);
+   return;
+  }
+  if(revisionsOnly){
+   await page.waitForURL(url=>url.pathname!=='/login');
+   const contexts=await api(page,'GET','/workspace/contexts');
+   const pediatric=contexts.find(item=>item.specialty.code==='pediatrics'&&item.ready);
+   const dermatology=contexts.find(item=>item.specialty.code==='dermatology'&&item.ready);
+   assert.ok(pediatric&&dermatology,'Run the M6 journey first to set up the clinical contexts and secretary.');
+   const staffContext=await browser.newContext();
+   try{
+    const staff=await staffContext.newPage();
+    await staff.goto(origin+'/staff/login');
+    await staff.getByLabel('Correo electrónico',{exact:true}).fill('staff-m6@local.test');
+    await staff.getByLabel('Contraseña',{exact:true}).fill(state.password);
+    await staff.getByRole('button',{name:'Ingresar',exact:true}).click();
+    await staff.getByRole('heading',{name:'Agenda de consultorios',exact:true}).waitFor();
+    await runClinicalRevisions({page,staff,origin,base,api,add,patientUI,context:pediatric.id,otherContext:dermatology.id});
+   }finally{await staffContext.close();}
+   assert.deepEqual(errors,[]);
+   evidence.result='PASS';
+   fs.writeFileSync(path.join(out,'sp04b-only-results.json'),JSON.stringify(evidence,null,2));
+   return;
+  }
   await page.getByRole('heading',{name:'Elegí tu especialidad médica'}).waitFor();await page.getByRole('button',{name:/Pediatría/}).click();await page.getByRole('button',{name:'Continuar',exact:true}).click();await page.waitForURL(/\/onboarding\/setup/);await finishWizard(page);
   const contexts=await api(page,'GET','/workspace/contexts');assert.equal(contexts.length,1);const pediatric=contexts[0];assert.equal(pediatric.specialty.code,'pediatrics');add('new doctor logs in through signed test Auth and real Gateway; pediatric wizard completes');
   const pedsPatient=await patientUI(page,pediatric.id,'Juan');const patients={pediatrics:pedsPatient};const setups={pediatrics:await api(page,'GET','/workspace',null,pediatric.id)};
@@ -61,6 +234,21 @@ async function scheduleUI(page,clinic,context,days,start,end,minutes){
   const clinics=[await api(page,'POST','/clinics',{name:'Consultorio Centro',country:'Argentina',province:'Buenos Aires',city:'Mar del Plata',address:'Dirección sintética Centro',timezone:'America/Argentina/Buenos_Aires'},null,201)];
   await page.goto(origin+'/schedules');await page.waitForURL(new RegExp('/clinics/'+clinics[0].id+'/schedule'));await page.getByLabel('Especialidad del bloque').waitFor();assert.equal(await page.getByLabel('Especialidad del bloque').inputValue(),String(pediatric.id));
   await scheduleUI(page,clinics[0].id,pediatric.id,['Viernes'],'08:00','12:00',20);add('one-clinic/one-specialty flow auto-selects both without extra setup steps');
+  if(process.argv.includes('--sp02b')){
+   await runCardiology({page,browser,state,origin,base,api,db,add,finishWizard,patientUI,scheduleUI,
+    clinic:clinics[0].id,originalContext:pediatric.id,originalPatient:pedsPatient});
+   assert.deepEqual(errors,[]);
+   evidence.result='PASS';
+   fs.writeFileSync(path.join(out,'sp02b-results.json'),JSON.stringify(evidence,null,2));
+   return;
+  }
+  if(process.argv.includes('--sp01')){
+   await fourthSpecialty(page,browser,clinics[0].id,pediatric.id);
+   assert.deepEqual(errors,[]);
+   evidence.result='PASS';
+   fs.writeFileSync(path.join(out,'sp01-results.json'),JSON.stringify(evidence,null,2));
+   return;
+  }
   for(const [name,code]of [['Medicina General','general_medicine'],['Dermatología','dermatology']]){
    await page.goto(origin+'/specialties');await page.getByRole('button',{name:'Agregar especialidad',exact:true}).click();await page.getByRole('button',{name,exact:true}).click();await page.waitForURL(/\/onboarding\/setup\?specialtyContextId=/);
    const pendingId=Number(new URL(page.url()).searchParams.get('specialtyContextId'));
@@ -123,16 +311,16 @@ async function scheduleUI(page,clinic,context,days,start,end,minutes){
   await page.goto(origin+'/calendar?specialtyContextId='+general);await page.locator('#calendar-date').fill(monday.split('-').reverse().join('/'));await page.locator('#calendar-date').press('Tab');await page.locator('[data-booking-id="'+one.id+'"]').waitFor();await page.locator('[data-booking-id="'+two.id+'"]').waitFor();
   if(!await page.getByLabel('Filtrar agenda por especialidad').isVisible())await page.getByRole('button',{name:/^Filtros/}).click();
   await page.getByLabel('Filtrar agenda por especialidad').selectOption(String(derm));await page.locator('[data-booking-id="'+two.id+'"]').click();const link=page.getByRole('link',{name:/Abrir ficha de Dermatología/});assert.ok((await link.getAttribute('href')).includes('specialtyContextId='+derm));
-  await page.getByLabel('Especialidad actual',{exact:true}).selectOption(String(derm));assert.equal(await page.getByLabel('Filtrar agenda por especialidad').inputValue(),String(derm));await page.getByLabel('Filtrar agenda por especialidad').selectOption('');await page.locator('[data-booking-id="'+one.id+'"]').waitFor();
+  await chooseClinicalContext(page,'Dermatología');assert.equal(await page.getByLabel('Filtrar agenda por especialidad').inputValue(),String(derm));await page.getByLabel('Filtrar agenda por especialidad').selectOption('');await page.locator('[data-booking-id="'+one.id+'"]').waitFor();
   add('global calendar keeps all specialties and independent filters; reprogramming, clinical link and historical snapshots use persisted context');
   const a=page,b=await context.newPage();await Promise.all([a.goto(origin+'/patients/'+patients.general_medicine+'?specialtyContextId='+general),b.goto(origin+'/patients/'+patients.dermatology+'?specialtyContextId='+derm)]);
   for(const tab of [a,b]){await tab.bringToFront();await tab.getByRole('button',{name:'Nueva historia clínica',exact:true}).first().click();await tab.locator('#field-chiefComplaint').waitFor();}
   await a.bringToFront();await a.locator('#field-chiefComplaint').fill('Borrador exclusivo General M6');await b.bringToFront();await b.locator('#field-chiefComplaint').fill('Borrador exclusivo Dermatología M6');
   let release;const gate=new Promise(r=>release=r);await a.route('**/api/doctorchart/encounters?**',async route=>{if(route.request().method()==='POST')await gate;await route.continue();});
-  await a.bringToFront();const savedA=a.waitForResponse(r=>new URL(r.url()).pathname===base+'/encounters'&&r.request().method()==='POST',{timeout:60000});savedA.catch(()=>{});await a.getByRole('button',{name:'Guardar historia clínica',exact:true}).click();await a.getByLabel('Especialidad actual',{exact:true}).selectOption(String(derm));await a.locator('.switch-notice').filter({hasText:'Esperá a que termine el guardado'}).waitFor();assert.ok(a.url().includes('specialtyContextId='+general));release();const aDocument=await (await savedA).json();assert.equal(aDocument.specialtyContextId,general);await a.unroute('**/api/doctorchart/encounters?**');
+  await a.bringToFront();const savedA=a.waitForResponse(r=>new URL(r.url()).pathname===base+'/encounters'&&r.request().method()==='POST',{timeout:60000});savedA.catch(()=>{});await a.getByRole('button',{name:'Guardar historia clínica',exact:true}).click();await chooseClinicalContext(a,'Dermatología');await a.locator('.switch-notice').filter({hasText:'Esperá a que termine el guardado'}).waitFor();assert.ok(a.url().includes('specialtyContextId='+general));release();const aDocument=await (await savedA).json();assert.equal(aDocument.specialtyContextId,general);await a.unroute('**/api/doctorchart/encounters?**');
   await b.bringToFront();assert.equal(await b.locator('#field-chiefComplaint').inputValue(),'Borrador exclusivo Dermatología M6');const savedB=b.waitForResponse(r=>new URL(r.url()).pathname===base+'/encounters'&&r.request().method()==='POST');savedB.catch(()=>{});await b.getByRole('button',{name:'Guardar historia clínica',exact:true}).click();assert.equal((await (await savedB).json()).specialtyContextId,derm);
-  await a.goto(origin+'/patients/new?specialtyContextId='+general);await a.locator('#field-sys_firstName').fill('Borrador sin guardar');await a.getByLabel('Especialidad actual',{exact:true}).selectOption(String(derm));await a.getByRole('alertdialog').waitFor();await a.getByRole('alertdialog').getByRole('button',{name:'Cancelar',exact:true}).click();assert.equal(await a.locator('#field-sys_firstName').inputValue(),'Borrador sin guardar');
-  await a.getByLabel('Especialidad actual',{exact:true}).selectOption(String(derm));await a.getByRole('button',{name:'Guardar antes de cambiar',exact:true}).click();assert.ok(a.url().includes('specialtyContextId='+general));await a.getByLabel('Especialidad actual',{exact:true}).selectOption(String(derm));await a.getByRole('button',{name:'Descartar y continuar',exact:true}).click();await a.waitForURL('**/dashboard?specialtyContextId='+derm);
+  await a.goto(origin+'/patients/new?specialtyContextId='+general);await a.locator('#field-sys_firstName').fill('Borrador sin guardar');await chooseClinicalContext(a,'Dermatología');await a.getByRole('alertdialog').waitFor();await a.getByRole('alertdialog').getByRole('button',{name:'Cancelar',exact:true}).click();assert.equal(await a.locator('#field-sys_firstName').inputValue(),'Borrador sin guardar');
+  await chooseClinicalContext(a,'Dermatología');await a.getByRole('button',{name:'Guardar antes de cambiar',exact:true}).click();assert.ok(a.url().includes('specialtyContextId='+general));await chooseClinicalContext(a,'Dermatología');await a.getByRole('button',{name:'Descartar y continuar',exact:true}).click();await a.waitForURL('**/dashboard?specialtyContextId='+derm);
   add('two real tabs retain independent encounter drafts; saving never retargets an in-flight write; patient edits support save-first/cancel/discard');
   const untouchedPediatrics=JSON.stringify((await api(page,'GET','/workspace',null,pediatric.id)).definition);
   const personalized=structuredClone(setups.general_medicine.definition);personalized.patientForm.categories[0].title+=' · Personalización M6';
@@ -147,7 +335,17 @@ async function scheduleUI(page,clinic,context,days,start,end,minutes){
   let releaseOld;const oldGate=new Promise(r=>releaseOld=r);await pub.route('**/availability?**',async route=>{if(new URL(route.request().url()).searchParams.get('specialtyContextId')===String(general))await oldGate;await route.continue();});
   await pub.getByLabel('Especialidad de la reserva').selectOption(String(general));await pub.getByLabel('Especialidad de la reserva').selectOption(String(derm));releaseOld();await pub.locator('[data-public-slot]').first().waitFor();assert.equal(await pub.getByLabel('Especialidad de la reserva').inputValue(),String(derm));await pub.unroute('**/availability?**');
   await pub.locator('[data-public-slot]').first().click();await pub.locator('#public-contact').fill('Visitante sintético');await pub.locator('#public-document').fill('12345678');await pub.locator('#public-phone').fill('2231234567');await pub.locator('#public-email').fill('visitor-m6@local.test');await pub.locator('#public-consent').check();
+<<<<<<< Updated upstream
   const publicResponse=pub.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/bookings')&&r.request().method()==='POST');await pub.locator('#public-review').click();await pub.locator('#public-confirm').click();const publicReply=await publicResponse;assert.equal(publicReply.status(),201);const confirmation=await publicReply.json();await pub.getByText(confirmation.reference,{exact:true}).waitFor();const originalBody=publicReply.request().postDataJSON(),receipt=publicReply.request().headers()['idempotency-key'];
+=======
+  const publicResponse=pub.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/bookings')&&r.request().method()==='POST',{timeout:60000});
+  await pub.locator('#public-confirm').click();
+  const publicReply=await publicResponse.catch(async error=>{
+   const alerts=await pub.getByRole('alert').allTextContents();
+   throw new Error('Public booking confirmation did not arrive. '+alerts.join(' '),{cause:error});
+  });
+  assert.equal(publicReply.status(),201);const confirmation=await publicReply.json();await pub.getByText(confirmation.reference,{exact:true}).waitFor();const originalBody=publicReply.request().postDataJSON(),receipt=publicReply.request().headers()['idempotency-key'];
+>>>>>>> Stashed changes
   assert.equal(originalBody.specialtyContextId,String(derm));assert.equal(db('SELECT count(*) FROM patients'),'3');
   const publicBooking=JSON.parse(db("SELECT json_build_object('context',specialty_context_id::text,'patient',patient_id,'slot',provenance->>'blockId','minutes',provenance->>'slotMinutes','end',end_at)::text FROM bookings b JOIN booking_public_details p ON p.booking_id=b.id WHERE p.reference='"+confirmation.reference+"'"));assert.equal(publicBooking.context,String(derm));assert.equal(publicBooking.patient,null);assert.equal(publicBooking.minutes,'30');assert.ok(publicBooking.slot);
   const replay=await api(pub,'POST','/public/appointments/doctors/'+publication.publicId+'/bookings',originalBody,null,201,receipt);assert.deepEqual(replay,confirmation);
@@ -180,18 +378,18 @@ async function scheduleUI(page,clinic,context,days,start,end,minutes){
   assert.equal(virtual.address,'');
   assert.equal((await api(page,'GET','/clinics/capabilities')).usage.counted,clinics.length);
 
+  const rejected=page.waitForResponse(r=>new URL(r.url()).pathname===base+'/clinics/'+virtual.id+'/schedule/validate'&&r.request().method()==='POST');
   await draftScheduleBlock(page,virtual.id,general,['Lunes'],'11:30','14:00',30);
   await page.locator('#occupied-date').fill(monday.split('-').reverse().join('/'));
   await page.locator('#occupied-date').press('Tab');
   await page.locator('.occupied-preview li').filter({hasText:'Consultorio Centro'}).first().waitFor();
-  const rejected=page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/schedule')&&r.request().method()==='PUT');
-  await page.getByTestId('save-schedule').click();
   const overlap=await rejected;
   assert.equal(overlap.status(),409);
   assert.equal((await overlap.json()).details.existing.name,'Consultorio Centro');
-  await page.getByTestId('schedule-error').filter({hasText:'11:30–12:00'}).waitFor();
-  await page.getByRole('textbox',{name:'Lunes inicio 1',exact:true}).fill('12:00');
-  await page.getByRole('textbox',{name:'Lunes inicio 1',exact:true}).press('Tab');
+  await page.getByRole('alert').filter({hasText:'11:30–12:00'}).waitFor();
+  await page.getByRole('textbox',{name:'Inicio del nuevo bloque',exact:true}).fill('12:00');
+  await page.getByRole('button',{name:'Agregar a los días seleccionados',exact:true}).click();
+  await page.getByRole('textbox',{name:'Lunes inicio 1',exact:true}).waitFor();
   await page.getByTestId('save-schedule').click();
   await page.getByText('La agenda se guardó correctamente.',{exact:true}).waitFor();
 
@@ -240,8 +438,30 @@ async function scheduleUI(page,clinic,context,days,start,end,minutes){
 
   const completed=await api(page,'PATCH','/bookings/'+one.id+'/status',{expectedVersion:one.version,status:'CHECKED_IN'},null,200,crypto.randomUUID());await api(page,'PATCH','/bookings/'+one.id+'/status',{expectedVersion:completed.version,status:'COMPLETED'},null,200,crypto.randomUUID());
   assert.equal(db('SELECT count(*) FROM media_events'),'0','Managed study events must be delivered with the restricted media login');
-  evidence.catalog=JSON.parse(db("SELECT json_build_object('version',(SELECT baseline_version FROM app_schema_state),'workspaces',(SELECT count(*) FROM doctor_workspaces),'contexts',(SELECT count(*) FROM doctor_specialty_contexts),'patients',(SELECT count(*) FROM patients),'bookings',(SELECT count(*) FROM bookings),'studies',(SELECT count(*) FROM patient_medical_studies),'outbox',(SELECT count(*) FROM notification_outbox))::text"));assert.equal(evidence.catalog.version,16);assert.equal(evidence.catalog.workspaces,1);assert.equal(evidence.catalog.contexts,3);assert.equal(evidence.catalog.patients,3);assert.equal(evidence.catalog.studies,3);
-  add('final real database retains schema 16, one workspace, three contexts, independent clinical files, booking audit and notification outbox');
+  evidence.catalog=JSON.parse(db("SELECT json_build_object('version',(SELECT baseline_version FROM app_schema_state),'workspaces',(SELECT count(*) FROM doctor_workspaces),'contexts',(SELECT count(*) FROM doctor_specialty_contexts),'patients',(SELECT count(*) FROM patients),'bookings',(SELECT count(*) FROM bookings),'studies',(SELECT count(*) FROM patient_medical_studies),'outbox',(SELECT count(*) FROM notification_outbox))::text"));assert.equal(evidence.catalog.version,20);assert.equal(evidence.catalog.workspaces,1);assert.equal(evidence.catalog.contexts,3);assert.equal(evidence.catalog.patients,3);assert.equal(evidence.catalog.studies,3);
+  add('final real database retains schema 20, one workspace, three contexts, independent clinical files, booking audit and notification outbox');
+  const projections=process.argv.includes('--sp04f');
+  const documents=projections||process.argv.includes('--sp04e');
+  const access=documents||process.argv.includes('--sp04d');
+  const reviews=access||process.argv.includes('--sp04c');
+  const revisions=reviews||process.argv.includes('--sp04b');
+  if(process.argv.includes('--sp03b')||process.argv.includes('--sp03c')||process.argv.includes('--sp03d')||process.argv.includes('--sp03f')||revisions){
+   const milestone=revisions||process.argv.includes('--sp03f')?'sp03f':process.argv.includes('--sp03d')?'sp03d':process.argv.includes('--sp03c')?'sp03c':'sp03b';
+   evidence.batch=await runSpecialtyBatch({page,browser,state,origin,base,api,db,add,finishWizard,patientUI,scheduleUI,chooseClinicalContext,
+    clinic:clinics[0].id,originalContext:pediatric.id,originalPatient:pedsPatient},milestone);
+   assert.deepEqual(errors,[]);
+   const regression={groups:evidence.flows.length,requests:evidence.requests};
+   if(revisions)await runClinicalRevisions({page,staff,origin,base,api,add,patientUI,context:pediatric.id,otherContext:derm});
+   if(reviews)await runTemplateReviews({page,browser,state,origin,base,api,add});
+   if(access)await runClinicalAccess({page,browser,state,origin,base,api,add});
+   if(documents)evidence.documents=await runDocumentEvidence({page,browser,state,origin,base,api,add,db});
+   if(projections)await runProjectionCompatibility({page,browser,state,origin,api,add,db});
+   assert.deepEqual(errors,[]);evidence.result='PASS';
+   if(revisions)evidence.regression=regression;
+   fs.writeFileSync(path.join(out,(projections?'sp04f':documents?'sp04e':access?'sp04d':reviews?'sp04c':revisions?'sp04b':milestone)+'-results.json'),JSON.stringify(evidence,null,2));
+   console.log(`${evidence.flows.length} grupos; ${evidence.requests} llamadas API verificadas`);
+   return;
+  }
   assert.deepEqual(errors,[]);evidence.result='PASS';fs.writeFileSync(path.join(out,'real-results.json'),JSON.stringify(evidence,null,2));console.log(JSON.stringify(evidence));
  }catch(error){if(page){console.error('Failure at',page.url());console.error((await page.locator('body').innerText()).slice(-2200));await page.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});}throw error;
  }finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));preview.close();}

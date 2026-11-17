@@ -10,6 +10,7 @@ import {
   PatientUpdateRequestDTO,
 } from '../models/patient.model';
 import { PagedResponse } from '../models/api-response.model';
+import { ArchivedCalculation, ArchivedPatient, ClinicalAccessEvent, PatientRevisions, RevisionPage } from '../models/clinical-revision.model';
 
 @Injectable({
   providedIn: 'root',
@@ -51,7 +52,36 @@ export class PatientService {
     return this.http.put<PatientDetailDTO>(`${this.baseUrl}/${id}`, patient);
   }
 
-  deletePatient(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  deletePatient(id: number, reason: string, expectedVersion: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`, { body: { reason, expectedVersion } });
+  }
+
+  getArchivedPatients(before?: number): Observable<RevisionPage<ArchivedPatient>> {
+    return this.http.get<RevisionPage<ArchivedPatient>>(`${this.baseUrl}/archived`, {
+      params: before ? { before } : {},
+    });
+  }
+
+  getRevisions(patientId: number, before?: number, encounterId?: number): Observable<PatientRevisions> {
+    let params = new HttpParams();
+    if (before) params = params.set('before', before);
+    if (encounterId) params = params.set('encounterId', encounterId);
+    return this.http.get<PatientRevisions>(`${this.baseUrl}/${patientId}/revisions`, { params });
+  }
+
+  getArchivedStudy(patientId: number, studyId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/${patientId}/revisions/studies/${studyId}/file`, { responseType: 'blob' });
+  }
+
+  getArchivedCalculations(patientId: number, before?: number): Observable<RevisionPage<ArchivedCalculation>> {
+    return this.http.get<RevisionPage<ArchivedCalculation>>(`${this.baseUrl}/${patientId}/revisions/calculations`, {
+      params: before ? { before } : {},
+    });
+  }
+  listClinicalAccess(patientId?: number, before?: number): Observable<RevisionPage<ClinicalAccessEvent>> {
+    let params = new HttpParams();
+    if (patientId !== undefined) params = params.set('patientId', patientId);
+    if (before !== undefined) params = params.set('before', before);
+    return this.http.get<RevisionPage<ClinicalAccessEvent>>(`${environment.apiUrl}/workspace/clinical-access`, { params });
   }
 }

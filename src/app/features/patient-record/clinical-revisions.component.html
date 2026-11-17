@@ -1,0 +1,92 @@
+@if (!encounterId()) {
+  <app-clinical-access [patientId]="patientId()" />
+}
+@if (!opened()) {
+  <button type="button" class="dc-button" (click)="show()">
+    {{ patientId() ? 'Historial de revisiones' : 'Fichas anuladas' }}
+  </button>
+  @if (version() !== undefined) { <span> · Versión {{ version() }} </span> }
+} @else {
+  <section [attr.aria-label]="patientId() ? 'Historial de revisiones' : 'Fichas anuladas'">
+    <button type="button" class="dc-button" (click)="close()">Cerrar historial</button>
+    @if (selected(); as patient) {
+      <h3>Historial de revisiones de {{ patient.fullName }}</h3>
+      @if (patient.annulledAt) {
+        <p><strong>Ficha anulada</strong> el {{ patient.annulledAt | date:'dd/MM/yyyy HH:mm' }}</p>
+      }
+      @if (!patientId()) {
+        <button type="button" class="dc-button" (click)="loadArchived()">Volver a fichas anuladas</button>
+        <app-clinical-document-tools [patientId]="patient.id" />
+      }
+      @for (revision of revisions(); track revision.id) {
+        <details>
+          <summary>
+            {{ revision.operation === 'ANNUL' ? 'Anulación' : 'Corrección' }} ·
+            {{ entityLabels[revision.entity] }} #{{ revision.entityId }} ·
+            {{ revision.occurredAt | date:'dd/MM/yyyy HH:mm:ss' }}
+          </summary>
+          <p>Usuario responsable {{ revision.actorUserId }} · Versión {{ revision.previousVersion }} → {{ revision.newVersion }}</p>
+          @if (revision.reason) { <p><strong>Motivo</strong> {{ revision.reason }}</p> }
+          <h4>Interpretación de la versión anterior</h4>
+          @if (revision.firstRecorded) { <p>Estado anterior a la primera revisión registrada.</p> }
+          <dl>
+            @for (field of fields(revision); track $index) {
+              <dt>{{ field.label }}</dt>
+              <dd>{{ isText(field.value) ? field.value : (field.value | json) }}</dd>
+            }
+          </dl>
+          <details>
+            <summary>Ver todos los datos guardados de esta versión</summary>
+            <pre>{{ revision.previous | json }}</pre>
+          </details>
+          @if (revision.entity === 'STUDY' && revision.operation === 'ANNUL') {
+            <button type="button" class="dc-button" [disabled]="loading()" (click)="download(revision)">Descargar adjunto histórico</button>
+          }
+        </details>
+      } @empty {
+        @if (!loading() && !error()) { <p>No hay revisiones registradas para esta selección.</p> }
+      }
+      @if (nextBefore(); as cursor) {
+        <button type="button" class="dc-button" [disabled]="loading()" (click)="loadRevisions(patient.id, cursor)">Más revisiones</button>
+      }
+      @if (calculationsEnabled()) {
+        @if (calculations(); as archivedCalculations) {
+          <h4>Cálculos archivados</h4>
+          @for (calculation of archivedCalculations; track calculation.id) {
+            <details>
+              <summary>{{ calculation.calculationName }} · {{ calculation.createdAt | date:'dd/MM/yyyy HH:mm' }}</summary>
+              @if (calculation.encounterId) { <p>Consulta #{{ calculation.encounterId }}</p> }
+              <p>{{ calculation.formattedResult }} {{ calculation.resultInterpretation }}</p>
+              @if (calculation.plainTextEvolution) { <p>{{ calculation.plainTextEvolution }}</p> }
+              <pre>{{ calculation.inputSnapshot | json }}</pre>
+            </details>
+          } @empty { <p>No hay cálculos archivados en esta ficha.</p> }
+          @if (nextCalculation(); as cursor) {
+            <button type="button" class="dc-button" [disabled]="loading()" (click)="loadCalculations(cursor)">Más cálculos</button>
+          }
+        } @else {
+          <button type="button" class="dc-button" [disabled]="loading()" (click)="loadCalculations()">Ver cálculos archivados</button>
+        }
+      }
+    } @else if (!patientId()) {
+      <h3>Fichas anuladas</h3>
+      <ul>
+        @for (patient of archived(); track patient.id) {
+          <li>
+            <button type="button" class="dc-button" [disabled]="loading()" (click)="loadRevisions(patient.id)">{{ patient.fullName }}</button>
+            {{ patient.annulledAt | date:'dd/MM/yyyy HH:mm' }}
+          </li>
+        }
+      </ul>
+      @if (!archived().length && !loading() && !error()) { <p>No hay fichas anuladas en este contexto.</p> }
+      @if (nextBefore(); as cursor) {
+        <button type="button" class="dc-button" [disabled]="loading()" (click)="loadArchived(cursor)">Más fichas</button>
+      }
+    }
+    @if (loading()) { <p role="status">Consultando historial…</p> }
+    @if (error()) {
+      <p role="alert">{{ error() }}</p>
+      <button type="button" class="dc-button" (click)="retry()">Reintentar consulta</button>
+    }
+  </section>
+}

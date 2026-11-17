@@ -4,87 +4,48 @@
 }
 
 .vaccination-calendar {
-  --surface: #f8fafc;
-  --surface-container: #ffffff;
-  --surface-container-low: #f1f5f9;
-  --surface-container-high: #e2e8f0;
-  --on-surface: #1e293b;
-  --on-surface-variant: #475569;
-  --outline: #94a3b8;
-  --outline-variant: #e2e8f0;
-  --header-surface: #f0f7ff;
-  --header-text: #0369a1;
-  --header-border: #bae6fd;
-  --sticky-surface: #ffffff;
-  --table-header: #f8fafc;
-  --table-group-header: #f1f5f9;
-  --row-divider: #f1f5f9;
-  --empty: #cbd5e1;
-  --risk-surface: #fff1f2;
-  --risk-text: #9f1239;
-  --risk-border: #fecdd3;
-  --chip-primary-bg: #e0f2fe;
-  --chip-primary-text: #0369a1;
-  --chip-primary-border: #bae6fd;
-  --chip-booster-bg: #ecfdf5;
-  --chip-booster-text: #047857;
-  --chip-booster-border: #a7f3d0;
-  --chip-flu-bg: #f3e8ff;
-  --chip-flu-text: #6b21a8;
-  --chip-flu-border: #e9d5ff;
-  --chip-single-bg: #fef3c7;
-  --chip-single-text: #92400e;
-  --chip-single-border: #fde68a;
-  --chip-scheme-bg: #f1f5f9;
-  --chip-scheme-text: #334155;
-  --chip-scheme-border: #cbd5e1;
-  --chip-risk-bg: #fee2e2;
-  --chip-risk-text: #991b1b;
-  --chip-risk-border: #fecaca;
+  --surface: var(--dc-canvas);
+  --surface-container: var(--dc-paper);
+  --surface-container-low: var(--dc-subtle);
+  --surface-container-high: var(--dc-raised);
+  --on-surface: var(--dc-text);
+  --on-surface-variant: var(--dc-text-secondary);
+  --outline: var(--dc-control-line);
+  --outline-variant: var(--dc-line);
+  --header-surface: var(--dc-brand-soft);
+  --header-text: var(--dc-brand-ink);
+  --header-border: var(--dc-line);
+  --sticky-surface: var(--dc-paper);
+  --table-header: var(--dc-subtle);
+  --table-group-header: var(--dc-raised);
+  --row-divider: var(--dc-line);
+  --empty: var(--dc-text-muted);
+  --risk-surface: var(--dc-danger-soft);
+  --risk-text: var(--dc-danger);
+  --risk-border: var(--dc-danger);
+  --chip-primary-bg: var(--dc-blue-soft);
+  --chip-primary-text: var(--dc-blue);
+  --chip-primary-border: var(--dc-line);
+  --chip-booster-bg: var(--dc-positive-soft);
+  --chip-booster-text: var(--dc-positive);
+  --chip-booster-border: var(--dc-line);
+  --chip-flu-bg: var(--dc-violet-soft);
+  --chip-flu-text: var(--dc-violet);
+  --chip-flu-border: var(--dc-line);
+  --chip-single-bg: var(--dc-caution-soft);
+  --chip-single-text: var(--dc-caution);
+  --chip-single-border: var(--dc-line);
+  --chip-scheme-bg: var(--dc-raised);
+  --chip-scheme-text: var(--dc-text-secondary);
+  --chip-scheme-border: var(--dc-line);
+  --chip-risk-bg: var(--dc-danger-soft);
+  --chip-risk-text: var(--dc-danger);
+  --chip-risk-border: var(--dc-line);
   background: var(--surface);
   color: var(--on-surface);
   padding: 32px 24px;
   line-height: 1.5;
-}
-
-:host(.dark-theme) .vaccination-calendar {
-  --surface: #0f141c;
-  --surface-container: #19202c;
-  --surface-container-low: #141a24;
-  --surface-container-high: #222b3b;
-  --on-surface: #e2e8f0;
-  --on-surface-variant: #94a3b8;
-  --outline: #475569;
-  --outline-variant: #283344;
-  --header-surface: #19202c;
-  --header-text: #38bdf8;
-  --header-border: #283344;
-  --sticky-surface: #19202c;
-  --table-header: #151b26;
-  --table-group-header: #111620;
-  --row-divider: #1f2736;
-  --empty: #475569;
-  --risk-surface: #2b1115;
-  --risk-text: #fca5a5;
-  --risk-border: #5c1d24;
-  --chip-primary-bg: #0c2d48;
-  --chip-primary-text: #7dd3fc;
-  --chip-primary-border: #0369a1;
-  --chip-booster-bg: #063725;
-  --chip-booster-text: #6ee7b7;
-  --chip-booster-border: #047857;
-  --chip-flu-bg: #2e1047;
-  --chip-flu-text: #d8b4fe;
-  --chip-flu-border: #7c3aed;
-  --chip-single-bg: #3d2007;
-  --chip-single-text: #fde047;
-  --chip-single-border: #a16207;
-  --chip-scheme-bg: #1e293b;
-  --chip-scheme-text: #cbd5e1;
-  --chip-scheme-border: #475569;
-  --chip-risk-bg: #3e1015;
-  --chip-risk-text: #fca5a5;
-  --chip-risk-border: #991b1b;
+  gap: 24px;
 }
 
 .header-card,
@@ -92,7 +53,7 @@
 .status-card {
   background: var(--surface-container);
   border: 1px solid var(--outline-variant);
-  border-radius: 20px;
+  border-radius: var(--dc-radius-card);
 }
 
 .header-card {
@@ -102,7 +63,9 @@
   gap: 24px;
   justify-content: space-between;
   margin-bottom: 24px;
-  padding: 28px 32px;
+  border-radius: var(--dc-radius-card);
+  padding: 24px;
+  box-shadow: none;
 }
 
 h1, h2, h3, p { margin: 0; }
@@ -191,7 +154,7 @@ tbody td { border-bottom: 1px solid var(--row-divider); border-right: 1px solid 
   border: 1px solid var(--outline);
   border-radius: 10px;
   box-sizing: border-box;
-  box-shadow: 0 8px 20px color-mix(in srgb, #0f172a 20%, transparent);
+  box-shadow: var(--dc-shadow-sm);
   color: var(--on-surface);
   font-size: .78rem;
   font-weight: 400;
@@ -226,7 +189,7 @@ tbody td { border-bottom: 1px solid var(--row-divider); border-right: 1px solid 
 }
 .notes-list strong { color: var(--on-surface); font-weight: 600; margin-right: 4px; }
 .status-card { color: var(--on-surface-variant); padding: 28px 32px; text-align: center; }
-.status-error { border-color: var(--risk-border); color: var(--risk-text); }
+.status-error { border-color: var(--risk-border); color: var(--risk-text); background: var(--dc-danger-soft); }
 
 
 @media (max-width: 640px) {
@@ -249,3 +212,11 @@ tbody td { border-bottom: 1px solid var(--row-divider); border-right: 1px solid 
  .mobile-risk { font-size: 9px; color: var(--risk-text); } .mobile-vaccine-row details { font-size: 11px; line-height: 1.5; } .mobile-vaccine-row summary { cursor: pointer; color: var(--on-surface-variant); } .mobile-vaccine-row details p { margin: 7px 0 0; }
  .notes-container { padding: 14px; } .notes-container h2 { font-size: 14px; margin-bottom: 12px; padding-bottom: 8px; } .notes-grid { grid-template-columns: minmax(0,1fr); gap: 12px; } .notes-grid summary { font-size: 12px; } .notes-list li { font-size: 11px; }
 }
+h1 {
+  font-size: 1.75rem;
+  letter-spacing: -.03em;
+  line-height: 1.25;
+}
+.status-error h2 { margin: 0 0 12px; font-size: 1.25rem; font-weight: 650; color: inherit; }
+.status-error p { margin: 0 0 20px; font-size: .875rem; line-height: 1.6; }
+.status-error .dc-button { border-color: currentColor; color: inherit; background: transparent; }

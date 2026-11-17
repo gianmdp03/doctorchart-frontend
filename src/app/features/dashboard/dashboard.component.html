@@ -23,6 +23,7 @@
     </nav>
   </header>
 
+<<<<<<< Updated upstream
   <section
     class="daily-metrics"
     aria-label="Métricas principales"
@@ -60,9 +61,178 @@
               @if (isLoadingMetrics()) {
                 <span class="metric-placeholder skeleton" aria-hidden="true"></span
                 ><span class="sr-only">Cargando</span>
+=======
+  @if (metricsError(); as error) {
+    <p role="alert">
+      {{ error }}
+      <button type="button" class="dc-button secondary-outline-btn btn-xs" (click)="loadKpiData()">
+        Reintentar
+      </button>
+    </p>
+  }
+  <section class="kpi-grid" aria-label="Métricas principales">
+    <div class="kpi-card" role="region" aria-label="Total de pacientes">
+      <div class="kpi-header">
+        <span class="kpi-title">Pacientes registrados</span>
+        <div class="kpi-icon-wrap bg-blue-50 text-blue-600"><ng-icon name="lucideUsers" /></div>
+      </div>
+      <div class="kpi-value-row">
+        @if (isLoadingMetrics()) {
+          <span class="kpi-loading-skeleton"></span>
+        } @else {
+          <span class="kpi-number">{{ totalPatients() ?? '—' }}</span>
+        }
+      </div>
+      <div class="kpi-footer">
+        <a routerLink="/patients" class="kpi-link"
+          >Ver directorio <ng-icon name="lucideArrowRight"
+        /></a>
+      </div>
+    </div>
+
+    <div class="kpi-card" role="region" aria-label="Consultas del mes">
+      <div class="kpi-header">
+        <span class="kpi-title">Consultas este mes</span>
+        <div class="kpi-icon-wrap bg-teal-50 text-teal-600">
+          <ng-icon name="lucideStethoscope" />
+        </div>
+      </div>
+      <div class="kpi-value-row">
+        @if (isLoadingMetrics()) {
+          <span class="kpi-loading-skeleton"></span>
+        } @else {
+          <span class="kpi-number">{{ encountersMonthCount() ?? '—' }}</span>
+        }
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-subtext">Consultas registradas en el mes actual</span>
+      </div>
+    </div>
+
+    <div class="kpi-card" role="region" aria-label="Consultas de hoy">
+      <div class="kpi-header">
+        <span class="kpi-title">Atenciones hoy</span>
+        <div class="kpi-icon-wrap bg-purple-50 text-purple-600"><ng-icon name="lucideClock" /></div>
+      </div>
+      <div class="kpi-value-row">
+        @if (isLoadingMetrics()) {
+          <span class="kpi-loading-skeleton"></span>
+        } @else {
+          <span class="kpi-number">{{ encountersTodayCount() ?? '—' }}</span>
+          @if ((encountersTodayCount() ?? 0) > 0) {
+            <span class="kpi-badge-trend positive">Actividad del día</span>
+          }
+        }
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-subtext">Consultas realizadas en la fecha actual</span>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="content-card recent-activity-card" aria-labelledby="recent-activity-title">
+    <div class="recent-card-heading">
+      <div class="recent-heading-icon" aria-hidden="true"><ng-icon name="lucideClock" /></div>
+      <div class="recent-heading-text">
+
+        <h2 id="recent-activity-title">Últimos pacientes atendidos</h2>
+        <p>Consultas recientes y acceso directo a cada historia clínica.</p>
+      </div>
+      <a routerLink="/encounters" class="recent-history-link"
+        >Ver historial completo <ng-icon name="lucideArrowRight"
+      /></a>
+    </div>
+    <div class="recent-toolbar">
+      <div class="recent-search-wrap">
+        <ng-icon name="lucideSearch" aria-hidden="true" />
+        <input
+          type="search"
+          aria-label="Buscar consultas por paciente, motivo o diagnóstico"
+          placeholder="Buscar paciente, motivo o diagnóstico..."
+          [value]="recentSearch()"
+          (input)="onRecentSearchInput($event)"
+          (keydown.enter)="loadRecentPage(0)"
+        />
+      </div>
+      <button
+        type="button"
+        class="recent-refresh-btn"
+        [disabled]="isLoadingRecentPage()"
+        (click)="refreshRecentActivity()"
+      >
+        <ng-icon name="lucideRefreshCw" /> Actualizar
+      </button>
+      <label class="recent-size-label"
+        >Mostrar
+        <select
+          aria-label="Consultas por página"
+          [value]="recentPageSize()"
+          [disabled]="isLoadingRecentPage()"
+          (change)="changeRecentPageSize($any($event.target).value)"
+        >
+          <option value="5">5 consultas</option>
+          <option value="10">10 consultas</option>
+          <option value="20">20 consultas</option>
+        </select>
+      </label>
+    </div>
+    @if (isLoadingRecentPage()) {
+      <div class="recent-loading" role="status">
+        <div class="mini-spinner"></div>
+        Cargando consultas...
+      </div>
+    } @else if (recentPageError(); as error) {
+      <div class="recent-empty" role="alert">
+        <ng-icon name="lucideFileText" />
+        <h3>No pudimos cargar el historial</h3>
+        <p>{{ error }}</p>
+        <button
+          type="button"
+          class="dc-button secondary-outline-btn btn-sm"
+          (click)="loadRecentPage(recentPage())"
+        >
+          Reintentar consultas
+        </button>
+      </div>
+    } @else if (recentPageItems().length > 0) {
+      <div class="recent-column-labels" aria-hidden="true">
+        <span>Paciente y atención</span><span>Resumen clínico</span><span>Fecha y acciones</span>
+      </div>
+      <div class="recent-consultation-list" role="list" aria-label="Consultas recientes">
+        @for (encounter of recentPageItems(); track encounter.id) {
+          <article
+            class="recent-consultation"
+            [class.consultation-today]="encounter.isToday"
+            role="listitem"
+          >
+            <div class="recent-patient">
+              <div class="recent-avatar" aria-hidden="true">
+                {{ encounter.patientName.slice(0, 2).toUpperCase() }}
+              </div>
+              <div class="recent-patient-info">
+                <h3 [title]="encounter.patientName">{{ encounter.patientName }}</h3>
+                <p>{{ encounter.patientMeta }}</p>
+                <span
+                  class="consultation-type-pill"
+                  [class.type-emergency]="encounter.consultationTypeKey === 'EMERGENCY'"
+                  [class.type-first]="encounter.consultationTypeKey === 'FIRST_VISIT'"
+                  >{{ encounter.consultationTypeLabel }}</span
+                >
+              </div>
+            </div>
+            <div class="recent-clinical-summary">
+              @if (encounter.clinicalHighlights.length > 0) {
+                @for (item of encounter.clinicalHighlights; track $index) {
+                  <p [title]="item.value">
+                    <b>{{ item.label }}:</b> {{ item.value }}
+                  </p>
+                }
+>>>>>>> Stashed changes
               } @else {
                 {{ metric.value ?? '—' }}
               }
+<<<<<<< Updated upstream
             </dd>
           </div>
         </div>
@@ -72,6 +242,96 @@
       <div class="issue metric-error" role="alert">
         <p>{{ error }}</p>
         <button type="button" class="control" (click)="loadKpiData()">Reintentar actividad</button>
+=======
+            </div>
+            <div class="recent-date-actions">
+              <div class="recent-date">
+                <span>{{ encounter.encounterDateOnly }}</span>
+                @if (encounter.isToday) {
+                  <span class="today-pill-badge">Hoy</span>
+                }
+              </div>
+              <span class="recent-time">{{ encounter.encounterTimeOnly }}</span>
+              <div class="recent-actions">
+                <button
+                  type="button"
+                  class="recent-detail-btn"
+                  [attr.aria-label]="'Ver consulta de ' + encounter.patientName"
+                  (click)="openEncounterDetail(encounter.id, $event)"
+                >
+                  <ng-icon name="lucideEye" /> Ver consulta
+                </button>
+                <button
+                  type="button"
+                  class="recent-record-btn"
+                  [attr.aria-label]="'Abrir ficha de ' + encounter.patientName"
+                  (click)="openPatient(encounter.patientId)"
+                >
+                  Ficha <ng-icon name="lucideArrowRight" />
+                </button>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+      <footer class="recent-pagination">
+        <span class="recent-count" role="status" aria-live="polite"
+          ><b>{{ recentRange() }}</b> consultas
+          <span>· Página {{ recentPage() + 1 }} de {{ recentTotalPages() }}</span></span
+        >
+        <nav class="recent-page-buttons" aria-label="Páginas de consultas recientes">
+          <button
+            type="button"
+            aria-label="Página anterior de consultas"
+            [disabled]="recentPage() === 0"
+            (click)="loadRecentPage(recentPage() - 1)"
+          >
+            <ng-icon name="lucideChevronLeft" />
+          </button>
+          @for (page of recentPageNumbers(); track page) {
+            <button
+              type="button"
+              [class.current-page]="page === recentPage()"
+              [attr.aria-current]="page === recentPage() ? 'page' : null"
+              [attr.aria-label]="'Página ' + (page + 1) + ' de consultas'"
+              (click)="loadRecentPage(page)"
+            >
+              {{ page + 1 }}
+            </button>
+          }
+          <button
+            type="button"
+            aria-label="Página siguiente de consultas"
+            [disabled]="recentPage() + 1 >= recentTotalPages()"
+            (click)="loadRecentPage(recentPage() + 1)"
+          >
+            <ng-icon name="lucideChevronRight" />
+          </button>
+        </nav>
+      </footer>
+    } @else {
+      <div class="recent-empty">
+        <ng-icon name="lucideSearch" />
+        <h3>
+          {{
+            recentSearch().trim()
+              ? 'No encontramos esas consultas'
+              : 'Tu actividad clínica empieza aquí'
+          }}
+        </h3>
+        <p>
+          {{
+            recentSearch().trim()
+              ? 'Probá con otro nombre, motivo o diagnóstico.'
+              : 'Al registrar una atención, podrás encontrarla aquí y acceder a su historia clínica.'
+          }}
+        </p>
+        @if (recentSearch().trim()) {
+          <button type="button" class="dc-button secondary-outline-btn btn-sm" (click)="clearRecentSearch()">
+            Limpiar búsqueda
+          </button>
+        }
+>>>>>>> Stashed changes
       </div>
     }
   </section>
@@ -97,11 +357,20 @@
             <ng-icon name="lucideSearch" aria-hidden="true" />
             <input
               type="search"
+<<<<<<< Updated upstream
               aria-label="Buscar consultas por paciente, motivo o diagnóstico"
               placeholder="Paciente, motivo, diagnóstico"
               [value]="recentSearch()"
               (input)="onRecentSearchInput($event)"
               (keydown.enter)="loadRecentPage(0)"
+=======
+              class="directory-search-input"
+              aria-label="Buscar en el acceso rápido a pacientes"
+              placeholder="Buscar paciente..."
+              [value]="directorySearch()"
+              (input)="onDirectorySearchInput($event)"
+              (keydown.enter)="onDirectorySearchEnter()"
+>>>>>>> Stashed changes
             />
           </div>
           <select
@@ -126,6 +395,7 @@
             <ng-icon name="lucideRefreshCw" aria-hidden="true" />
           </button>
         </div>
+<<<<<<< Updated upstream
         @if (isLoadingRecentPage()) {
           <div class="activity-loading" role="status">
             <span class="sr-only">Cargando consultas…</span>
@@ -141,8 +411,20 @@
             <p>{{ error }}</p>
             <button type="button" class="control" (click)="loadRecentPage(recentPage())">
               Reintentar consultas
+=======
+        @if (directoryError(); as error) {
+          <p role="alert">
+            {{ error }}
+            <button
+              type="button"
+              class="dc-button secondary-outline-btn btn-xs"
+              (click)="loadDirectory(directoryPage(), directorySearch())"
+            >
+              Reintentar
+>>>>>>> Stashed changes
             </button>
           </div>
+<<<<<<< Updated upstream
         } @else if (recentPageItems().length > 0) {
           <ul class="recent-consultation-list" aria-label="Consultas recientes">
             @for (encounter of recentPageItems(); track encounter.id) {
@@ -214,6 +496,44 @@
           <footer class="recent-pagination">
             <span class="recent-count" role="status"
               ><strong>{{ recentRange() }}</strong> consultas</span
+=======
+        } @else if (directoryPatients().length > 0) {
+          <div class="encounters-table-wrap">
+            <table class="clinical-table" role="table">
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th>Paciente</th>
+                  <th>Fecha de nacimiento</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody role="rowgroup">
+                @for (patient of directoryPatients(); track patient.id) {
+                  <tr role="row">
+                    <td role="cell">
+                      <span class="patient-cell-name">{{ patient.fullName }}</span>
+                    </td>
+                    <td role="cell" data-label="Nacimiento">
+                      <span class="cell-datetime">{{ displayDate(patient.birthDate) }}</span>
+                    </td>
+                    <td role="cell">
+                      <button
+                        type="button"
+                        class="btn-open-record"
+                        (click)="openPatient(patient.id)"
+                      >
+                        Abrir ficha
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="table-pagination-row">
+            <span class="pagination-info"
+              >Página {{ directoryPage() + 1 }} de {{ directoryTotalPages() }}</span
+>>>>>>> Stashed changes
             >
             @if (recentTotalPages() > 1) {
               <nav class="recent-page-buttons" aria-label="Páginas de consultas recientes">
@@ -384,18 +704,28 @@
             <ng-icon name="lucideNotebookPen" aria-hidden="true" /> Notas rápidas
           </h2>
           @if (isNotesSaved()) {
+<<<<<<< Updated upstream
             <span class="saved-status" role="status"
               ><ng-icon name="lucideCheckCircle2" aria-hidden="true" /> Guardado</span
+=======
+            <span class="notes-saved-status"
+              ><ng-icon name="lucideCheckCircle2" /> Guardado</span
+>>>>>>> Stashed changes
             >
           }
         </div>
         <div class="notes-widget-body">
           <textarea
+<<<<<<< Updated upstream
             class="notes-textarea"
             aria-labelledby="notes-title"
             aria-describedby="notes-scope"
             placeholder="Anotá un recordatorio o pendiente…"
             rows="3"
+=======
+            id="quick-notes" aria-label="Notas rápidas de la especialidad" class="notes-textarea"
+            placeholder="Escribí recordatorios rápidos o pendientes..."
+>>>>>>> Stashed changes
             [ngModel]="quickNotes()"
             (ngModelChange)="onNotesInput($event)"
           ></textarea>
@@ -403,6 +733,7 @@
             <p class="issue note-error" role="alert">{{ error }}</p>
           }
           <div class="notes-actions">
+<<<<<<< Updated upstream
             <span id="notes-scope">{{
               specialty() ? 'Notas de ' + specialty() : 'Notas de la especialidad actual'
             }}</span>
@@ -414,6 +745,23 @@
             >
               {{ isSavingNotes() ? 'Guardando…' : 'Guardar' }}
             </button>
+=======
+            <span class="notes-footer-hint">Estas notas se guardan para esta especialidad.</span>
+            @if (isNotesDirty()) {
+              <button
+                type="button"
+                class="dc-button dc-button--primary save-notes-button"
+                [disabled]="isSavingNotes()"
+                (click)="saveNotes()"
+              >
+                @if (isSavingNotes()) {
+                  Guardando...
+                } @else {
+                  Guardar
+                }
+              </button>
+            }
+>>>>>>> Stashed changes
           </div>
         </div>
       </section>

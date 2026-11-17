@@ -9,6 +9,9 @@
 /consultas /encounters 301
 /calculadoras /calculators 301
 /login /index.csr 200
+/register /index.csr 200
+/register/confirmed /index.csr 200
+/pricing /index.csr 200
 /dashboard /index.csr 200
 /consultas/:id /index.csr 200
 /pacientes/:id/editar /index.csr 200

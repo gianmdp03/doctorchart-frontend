@@ -1,13 +1,12 @@
 <div class="encounter-form-card animate-fade-in" aria-label="Formulario de nueva historia clínica">
   <div class="encounter-form-header">
     <div class="header-text">
+      <h3 class="encounter-form-title">Nueva Historia Clínica</h3>
       <div class="header-badge-row">
-        <span class="clinical-badge">Historia Clínica</span>
         @if (patientName()) {
           <span class="patient-name-tag">{{ patientName() }}</span>
         }
       </div>
-      <h3 class="encounter-form-title">Nueva Historia Clínica</h3>
       <p class="encounter-form-subtitle">
         Registrá la evolución médica, antecedentes, examen físico y diagnósticos del paciente.
       </p>
@@ -88,7 +87,7 @@
             <span class="datetime-value">{{ formattedCurrentDateTime() }}</span>
           </div>
           <span class="field-hint"
-            >Vista previa en {{ timeZone }}. La fecha y hora definitivas las registra el servidor al
+            >Vista previa. La fecha y hora definitivas las registra el servidor al
             guardar.</span
           >
         </div>
@@ -202,12 +201,12 @@
 
   <!-- Form Actions Bar -->
   <div class="encounter-form-footer">
-    <button type="button" class="btn-secondary" [disabled]="isSubmitting()" (click)="onCancel()">
+    <button type="button" class="dc-button btn-secondary" [disabled]="isSubmitting()" (click)="onCancel()">
       Cancelar
     </button>
     <button
       type="button"
-      class="btn-primary"
+      class="dc-button dc-button--primary btn-primary"
       [disabled]="readonly() || !definition()"
       (click)="submitEncounter()"
     >

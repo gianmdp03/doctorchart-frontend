@@ -1,0 +1,36 @@
+<main class="register-page">
+  <section class="register-card" aria-labelledby="register-title">
+    <div class="register-tools"><p class="brand">DoctorChart</p><app-theme-toggle /></div>
+    @if (fromConfirmationLink) {
+      <h1 id="register-title">Ingresá a DoctorChart</h1>
+      <p>Si el correo se confirmó correctamente, ya podés ingresar con tu contraseña. Si el enlace venció, volvé a solicitar el registro.</p>
+    } @else if (awaitingConfirmation()) {
+      <h1 id="register-title">Revisá tu correo</h1>
+      <p>Si esta dirección puede registrarse, vas a recibir un enlace para confirmar tu cuenta y volver a DoctorChart. Revisá también el correo no deseado.</p>
+    } @else {
+      <h1 id="register-title">Creá tu cuenta en DoctorChart</h1>
+      <p>La misma cuenta te sirve para entrar a Bycode, Pointly y DoctorChart. Crear la cuenta no activa un plan.</p>
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <label for="signup-name">Nombre completo</label>
+        <input id="signup-name" formControlName="fullName" autocomplete="name" required minlength="3" />
+        <label for="signup-dni">DNI</label>
+        <input id="signup-dni" formControlName="dni" inputmode="numeric" required aria-describedby="signup-dni-help" />
+        <small id="signup-dni-help">Ingresá entre 7 y 9 dígitos, sin puntos ni espacios.</small>
+        <label for="signup-email">Correo electrónico</label>
+        <input id="signup-email" type="email" formControlName="email" autocomplete="email" required />
+        <label for="signup-pass">Contraseña</label>
+        <input id="signup-pass" type="password" formControlName="password" autocomplete="new-password" required minlength="6" aria-describedby="signup-pass-help" />
+        <small id="signup-pass-help">Usá al menos 6 caracteres.</small>
+        <label for="signup-confirm">Repetí la contraseña</label>
+        <input id="signup-confirm" type="password" formControlName="confirmation" autocomplete="new-password" required />
+        @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+        <button type="submit" [disabled]="submitting()">{{ submitting() ? 'Creando cuenta…' : 'Crear cuenta' }}</button>
+      </form>
+    }
+    <nav aria-label="Acceso">
+      <a routerLink="/login" [queryParams]="{ returnUrl: '/pricing' }">Iniciar sesión</a>
+      @if (fromConfirmationLink) { <a routerLink="/register">Volver al registro</a> }
+      @else { <a routerLink="/pricing">Ver planes</a> }
+    </nav>
+  </section>
+</main>

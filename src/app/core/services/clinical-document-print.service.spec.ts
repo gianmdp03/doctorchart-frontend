@@ -58,7 +58,7 @@ describe('ClinicalDocumentPrintService', () => {
     req.flush(mockDoc);
   });
 
-  it('should fetch PDF blob with metadata query parameters via getPdfBlob()', () => {
+  it('should fetch PDF blob without client identity query parameters via getPdfBlob()', () => {
     const mockBlob = new Blob(['%PDF-1.4 test content'], { type: 'application/pdf' });
 
     service.getPdfBlob({ source: 'PRESCRIPTION_RECORD', id: 15, patientId: 2, type: 'PRESCRIPTION' }).subscribe((blob) => {
@@ -68,9 +68,9 @@ describe('ClinicalDocumentPrintService', () => {
     const req = httpMock.expectOne((request) => {
       return (
         request.url === `${environment.apiUrl}/patients/2/prescriptions/15/pdf` &&
-        request.params.get('doctorName') === 'Dra. María Gómez' &&
-        request.params.get('license') === 'MN 88412' &&
-        request.params.get('clinicName') === 'Clínica Pediátrica Central' &&
+        !request.params.has('doctorName') &&
+        !request.params.has('license') &&
+        !request.params.has('clinicName') &&
         request.params.get('type') === 'PRESCRIPTION'
       );
     });
@@ -103,8 +103,8 @@ describe('ClinicalDocumentPrintService', () => {
     vi.spyOn(window, 'open').mockReturnValue({ closed: false, document: {}, close } as unknown as Window);
     const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
     service.openPdfInNewTab({ source: 'PRESCRIPTION_RECORD', id: 20, patientId: 3 });
-    const req = httpMock.expectOne(request => request.url.endsWith('/patients/3/prescriptions/20/pdf'));
-    req.flush(new Blob([JSON.stringify({ code: 'FORBIDDEN' })], { type: 'application/json' }), { status: 403, statusText: 'Forbidden' });
+    const req = httpMock.expectOne(request => request.url.endsWith('/patients/3/prescriptions/20/documents'));
+    req.flush({ code: 'FORBIDDEN' }, { status: 403, statusText: 'Forbidden' });
     expect(close).toHaveBeenCalled();
     expect(service.errorMessage()).toContain('No tenés permiso');
     expect(alert).not.toHaveBeenCalled();
@@ -115,9 +115,11 @@ describe('ClinicalDocumentPrintService', () => {
     vi.spyOn(window, 'open').mockReturnValue({ closed: false, document: {}, close } as unknown as Window);
     const create = vi.spyOn(URL, 'createObjectURL');
     service.openPdfInNewTab({ source: 'PRESCRIPTION_RECORD', id: 20, patientId: 3 });
-    const req = httpMock.expectOne(request => request.url.endsWith('/patients/3/prescriptions/20/pdf'));
+    const req = httpMock.expectOne(request => request.url.endsWith('/patients/3/prescriptions/20/documents'));
+    req.flush({ id: 8 });
+    const pdf = httpMock.expectOne(request => request.url.endsWith('/patients/3/documents/8/pdf'));
     authMock.currentUser.mockReturnValueOnce({ ...mockUser, id: 'other-user' });
-    req.flush(new Blob(['%PDF-synthetic'], { type: 'application/pdf' }));
+    pdf.flush(new Blob(['%PDF-synthetic'], { type: 'application/pdf' }));
     expect(create).not.toHaveBeenCalled();
     expect(close).toHaveBeenCalled();
   });
@@ -127,8 +129,8 @@ describe('ClinicalDocumentPrintService', () => {
     vi.spyOn(window, 'open').mockReturnValue({ closed: false, document: {}, close } as unknown as Window);
     const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
     service.openPdfInNewTab({ source: 'PRESCRIPTION_RECORD', id: 20, patientId: 3 });
-    httpMock.expectOne(request => request.url.endsWith('/patients/3/prescriptions/20/pdf')).flush(
-      new Blob([JSON.stringify({ code: 'PDF_UNSUPPORTED_CHARACTER' })], { type: 'application/json' }),
+    httpMock.expectOne(request => request.url.endsWith('/patients/3/prescriptions/20/documents')).flush(
+      { code: 'PDF_UNSUPPORTED_CHARACTER' },
       { status: 422, statusText: 'Unprocessable Content' });
     expect(close).toHaveBeenCalled();
     expect(service.errorMessage()).toContain('los datos guardados no se modificaron');
@@ -150,9 +152,11 @@ describe('ClinicalDocumentPrintService', () => {
 
     service.openPdfInNewTab({ source: 'PRESCRIPTION_RECORD', id: 20, patientId: 3 });
 
-    const req = httpMock.expectOne((request) =>
-      request.url === `${environment.apiUrl}/patients/3/prescriptions/20/pdf`
-    );
+    const issue = httpMock.expectOne(`${environment.apiUrl}/patients/3/prescriptions/20/documents`);
+    expect(issue.request.method).toBe('POST');
+    expect(issue.request.body).toEqual({});
+    issue.flush({ id: 8 });
+    const req = httpMock.expectOne(`${environment.apiUrl}/patients/3/documents/8/pdf`);
     req.flush(mockBlob);
 
     expect(windowOpenSpy).toHaveBeenCalledWith('about:blank', '_blank');

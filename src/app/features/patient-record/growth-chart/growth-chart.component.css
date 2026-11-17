@@ -5,10 +5,11 @@
   --patient-color: #2563eb;
   --patient-focus: #072b76;
   border: 1px solid var(--dc-outline, #bed0e5);
-  border-radius: 12px;
   background: var(--dc-surface, #fff);
   overflow: hidden;
   margin: 0 0 24px;
+  border-radius: var(--dc-radius-card);
+  box-shadow: none;
 }
 .theme-girl {
   --patient-color: #ec4899;
@@ -21,8 +22,8 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 16px 20px;
-  background: #789fce;
-  color: white;
+  background: var(--dc-blue-soft);
+  color: var(--dc-blue);
 }
 .theme-girl .oms-top-banner {
   background: #8d92c2;
@@ -36,7 +37,7 @@
   font-size: 13px;
 }
 .chart-card-content {
-  padding: 18px 20px;
+  padding: 24px;
 }
 .metrics-summary-bar {
   display: flex;
@@ -200,17 +201,17 @@
   box-sizing: border-box;
   padding: 14px 16px;
   border: 1px solid #bed0e5;
-  border-top: 3px solid #2563eb;
+  border-top: 1px solid var(--dc-blue);
   border-radius: 10px;
   background: white;
-  color: #17233c;
-  box-shadow: 0 8px 28px rgb(15 23 42 / 18%);
+  color: var(--dc-text);
+  box-shadow: var(--dc-shadow-sm);
   font-size: 12px;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 .consultation-tooltip.tooltip-girl {
-  border-top-color: #ec4899;
+  border-top-color: var(--dc-pink);
 }
 .consultation-tooltip header {
   display: flex;
@@ -222,7 +223,7 @@
 }
 .consultation-tooltip header span,
 .consultation-type {
-  color: #64748b;
+  color: var(--dc-text-muted);
 }
 .consultation-tooltip p {
   margin: 8px 0 0;
@@ -236,7 +237,7 @@
   border-block: 1px solid #e2e8f0;
 }
 .consultation-percentile {
-  color: #35576b;
+  color: var(--dc-text-secondary);
 }
 .unconfirmed-point {
   fill: white;
@@ -279,7 +280,7 @@
 }
 .legend-sample {
   width: 24px;
-  border-top: 3px solid;
+  border-top: 1px solid;
 }
 .legend-marker {
   width: 14px;

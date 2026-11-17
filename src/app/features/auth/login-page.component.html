@@ -27,10 +27,16 @@
         @if (errorMessage()) {
           <p class="m3-alert-error" role="alert">{{ errorMessage() }}</p>
         }
+<<<<<<< Updated upstream
         @if (mode() === 'login') {
+=======
+        @if (successMessage()) {
+          <p class="m3-alert-success" role="status">{{ successMessage() }}</p>
+        }
+>>>>>>> Stashed changes
           <form [formGroup]="loginForm" class="auth-form" (ngSubmit)="onLoginSubmit()">
             @if (googleAuthEnabled) {
-              <button type="button" class="m3-oauth-btn" (click)="handleGoogleOAuth()" [disabled]="isSubmitting()">Continuar con Google</button>
+              <button type="button" class="dc-button m3-oauth-btn" (click)="handleGoogleOAuth()" [disabled]="isSubmitting()">Continuar con Google</button>
               <p class="auth-divider">o con tu correo</p>
             }
             <div class="login-textfield" [class.has-error]="isLoginInvalid('email')">
@@ -52,17 +58,20 @@
                 <span class="error-helper-text" id="login-password-error">La contraseña debe tener al menos 6 caracteres.</span>
               }
             </div>
-            <button type="submit" class="auth-submit-btn" [disabled]="isSubmitting()" [attr.aria-busy]="isSubmitting()">
+            <button type="submit" class="dc-button dc-button--primary auth-submit-btn" [disabled]="isSubmitting()" [attr.aria-busy]="isSubmitting()">
               @if (isSubmitting()) { <span class="spinner-small" aria-hidden="true"></span><span>Iniciando sesión…</span> }
               @else { <span>Ingresar a DoctorChart</span> }
             </button>
           </form>
-        }
         <div class="login-secondary-links">
+<<<<<<< Updated upstream
           @if (staffEnabled) {
             <a routerLink="/staff/login" class="login-staff-link">Ingresar como secretaria</a>
           }
           <p>¿No tenés cuenta? <a [href]="bycodeRegisterUrl">Crear cuenta en Bycode</a></p>
+=======
+          <p>¿No tenés cuenta? <a routerLink="/register">Crear cuenta</a></p>
+>>>>>>> Stashed changes
           <a [href]="bycodeLoginUrl">Recuperar acceso en Bycode</a>
         </div>
       </div>

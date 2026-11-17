@@ -17,6 +17,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { PatientService } from '../../core/services/patient.service';
+import { ClinicalRevisionsComponent } from '../patient-record/clinical-revisions.component';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import {
@@ -124,7 +125,7 @@ import { WorkspaceStore } from '../../core/services/workspace.store';
 
 @Component({
   selector: 'app-patient-list',
-  imports: [],
+  imports: [ClinicalRevisionsComponent],
   templateUrl: './patient-list.component.html',
   styleUrl: './patient-list.component.css',
 })

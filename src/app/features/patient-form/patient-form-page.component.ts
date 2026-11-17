@@ -73,6 +73,7 @@ export class PatientFormPageComponent implements OnInit {
   readonly isEditMode = signal(false);
   readonly patientId = signal<number | null>(null);
   readonly record = signal<PatientDetailDTO | null>(null);
+  readonly correctionReason = signal('');
   readonly workspace = signal<WorkspaceSetup | null>(null);
   readonly definition = signal<WizardFormDefinition | null>(null);
   readonly values = signal<WizardFormValues>({});
@@ -143,6 +144,7 @@ export class PatientFormPageComponent implements OnInit {
       const patient = await firstValueFrom(this.patientService.getPatientById(id));
       if (!this.alive(epoch)) return;
       this.record.set(structuredClone(patient));
+      this.correctionReason.set('');
       this.definition.set(withClinicalHistory(structuredClone(patient.formDefinitionSnapshot)));
       this.values.set(structuredClone(patient.formValues));
       this.formulaResults.set(structuredClone(patient.formulaResults));
@@ -224,11 +226,13 @@ export class PatientFormPageComponent implements OnInit {
 
     try {
       const values = inputValues(definition, this.values());
+      const reason = this.correctionReason().trim();
       const saved = await firstValueFrom(
         record
           ? this.patientService.updatePatient(record.id, {
               expectedVersion: record.version,
               values,
+              ...(reason ? { reason } : {}),
             })
           : this.patientService.createPatient({
               workspaceVersion: workspace!.version,

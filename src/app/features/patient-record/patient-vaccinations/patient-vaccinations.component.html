@@ -1,8 +1,13 @@
 <section class="vaccines-panel" aria-label="Vacunas del paciente">
+  @if (pendingAnnulment(); as dose) {
+    <p>Se anulará la aplicación de {{ dose.vaccineName }}. El dato anterior quedará en el historial.</p>
+    <app-annulment-prompt [target]="dose.id" [busy]="isSaving()"
+      (cancel)="pendingAnnulment.set(null)" (confirm)="annulVaccination($event)" />
+  }
   <header class="vaccines-header">
     <div>
-      <p class="eyebrow">Calendario Nacional de Vacunación</p>
       <h3>Vacunas de {{ patient().fullName }}</h3>
+      <p class="calendar-source">Calendario Nacional de Vacunación</p>
       <p>Edad al día de hoy: <strong>{{ ageLabel() }}</strong>. El estado se calcula a partir del calendario oficial.</p>
     </div>
     @if (isSaving()) { <span class="saving">Guardando…</span> }

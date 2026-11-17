@@ -1,5 +1,9 @@
+<<<<<<< Updated upstream
 import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { GOOGLE_AUTH_ENABLED, LOCAL_REGISTRATION_ENABLED } from '../../auth-policy';
+=======
+import { GOOGLE_AUTH_ENABLED } from '../../auth-policy';
+>>>>>>> Stashed changes
 import { environment } from '../../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
@@ -7,8 +11,11 @@ import { Component, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+<<<<<<< Updated upstream
 import { matchingPasswords, trimmedRequired } from '../../core/models/form-validation';
 import { FEATURE_FLAGS } from '../../core/config/feature-flags';
+=======
+>>>>>>> Stashed changes
 
 @Component({
   selector: 'app-login-page',
@@ -19,12 +26,12 @@ import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 export class LoginPageComponent {
   private readonly interaction = inject(InteractionStatusService);
   readonly googleAuthEnabled = GOOGLE_AUTH_ENABLED;
+<<<<<<< Updated upstream
   readonly staffEnabled = FEATURE_FLAGS.STAFF_ENABLED;
   readonly bycodeRegisterUrl = environment.bycodePlansUrl.replace(/\/(?:panel|dashboard)\/?$/, '') + '/register';
+=======
+>>>>>>> Stashed changes
   readonly bycodeLoginUrl = environment.bycodePlansUrl.replace(/\/(?:panel|dashboard)\/?$/, '') + '/login';
-  goToBycodeRegistration(): void {
-    if (isPlatformBrowser(this.platformId)) window.location.assign(this.bycodeRegisterUrl);
-  }
 
   private readonly fb = inject(FormBuilder);
   readonly authService = inject(AuthService);
@@ -32,7 +39,6 @@ export class LoginPageComponent {
   private readonly router = inject(Router);
 
   readonly isSubmitting = signal<boolean>(false);
-  readonly mode = signal<'login' | 'register'>('login');
   readonly errorMessage = signal<string | null>(null);
   readonly showPassword = signal<boolean>(false);
 
@@ -41,6 +47,7 @@ export class LoginPageComponent {
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
+<<<<<<< Updated upstream
   readonly registerForm = this.fb.group({
     fullName: ['', [trimmedRequired, Validators.minLength(2), Validators.maxLength(150)]],
     dni: ['', [trimmedRequired, Validators.pattern(/^\d{6,8}$/)]],
@@ -56,30 +63,16 @@ export class LoginPageComponent {
 
   }
 
+=======
+>>>>>>> Stashed changes
   togglePasswordVisibility(): void {
     this.showPassword.update((val) => !val);
   }
 
   readonly loginAttempted = signal(false);
-  readonly registerAttempted = signal(false);
   isLoginInvalid(controlName: string): boolean {
     const control = this.loginForm.get(controlName);
     return !!(control && control.invalid && this.loginAttempted());
-  }
-
-  isRegisterInvalid(controlName: string): boolean {
-    const control = this.registerForm.get(controlName);
-    return !!(control && (control.invalid || (controlName === 'confirmPassword' && this.registerForm.hasError('passwordMismatch'))) && this.registerAttempted());
-  }
-
-  registerError(name: string): string {
-    const control = this.registerForm.get(name);
-    if (control?.hasError('required')) return 'Completá este campo.';
-    if (name === 'fullName') return 'Ingresá un nombre de 2 a 150 caracteres.';
-    if (name === 'dni') return 'Ingresá un DNI de 6 a 8 dígitos, sin puntos.';
-    if (name === 'email') return 'Ingresá un correo electrónico válido.';
-    if (control?.hasError('minlength')) return 'La contraseña debe tener al menos 6 caracteres.';
-    return 'Las contraseñas no coinciden.';
   }
 
   async onLoginSubmit(): Promise<void> {
@@ -127,6 +120,7 @@ export class LoginPageComponent {
     }
   }
 
+<<<<<<< Updated upstream
   async onRegisterSubmit(): Promise<void> {
     this.registerAttempted.set(true);
     if (!LOCAL_REGISTRATION_ENABLED) { this.goToBycodeRegistration(); return; }
@@ -190,6 +184,8 @@ export class LoginPageComponent {
     }
   }
 
+=======
+>>>>>>> Stashed changes
   async handleGoogleOAuth(): Promise<void> {
     if (!GOOGLE_AUTH_ENABLED) return;
     if (!isPlatformBrowser(this.platformId)) return;

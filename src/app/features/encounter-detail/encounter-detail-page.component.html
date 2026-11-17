@@ -11,13 +11,17 @@
   </nav>
   <header class="page-heading">
     <div>
-      <span class="eyebrow">HISTORIA CLÍNICA</span>
+
       <h1 id="encounter-title">{{ isEditing() ? 'Editar consulta' : 'Detalle de la consulta' }}</h1>
+<<<<<<< Updated upstream
       <p>Información clínica registrada durante la atención.</p>
+=======
+      <p>La atención y su evolución, en un solo lugar.</p>
+>>>>>>> Stashed changes
     </div>
     @if (encounter(); as record) {
       <a
-        class="page-button secondary"
+        class="dc-button page-button secondary"
         [routerLink]="['/patients', record.patientId]"
         [queryParams]="{ tab: 'history' }"
         >← Volver a la historia del paciente</a
@@ -28,7 +32,7 @@
     <div class="feedback" role="alert">
       <span>{{ message }}</span>
       @if (!encounter() && requestedId()) {
-        <button class="page-button secondary" type="button" (click)="loadEncounter(requestedId()!)">
+        <button class="dc-button page-button secondary" type="button" (click)="loadEncounter(requestedId()!)">
           Reintentar
         </button>
       }
@@ -47,7 +51,7 @@
       <div class="recorded-at">
         <span>Fecha de atención</span><strong>{{ formatDate(record.encounterDate) }}</strong>
       </div>
-      <a class="page-button secondary" [routerLink]="['/patients', record.patientId]"
+      <a class="dc-button page-button secondary" [routerLink]="['/patients', record.patientId]"
         >Ver ficha del paciente →</a
       >
     </div>
@@ -55,7 +59,7 @@
       <section class="feedback" aria-label="Revisar cambios">
         <p>La consulta fue modificada. Tus respuestas locales siguen visibles.</p>
         <button
-          class="page-button secondary"
+          class="dc-button page-button secondary"
           type="button"
           [disabled]="isLoading()"
           (click)="reviewRemote()"
@@ -65,7 +69,7 @@
         @if (remoteRecord(); as remote) {
           <p>Copia guardada: {{ formatDate(remote.encounterDate) }}</p>
           <button
-            class="page-button secondary"
+            class="dc-button page-button secondary"
             type="button"
             [disabled]="isLoading()"
             (click)="useRemoteRecord()"
@@ -75,11 +79,19 @@
         }
       </section>
     }
+    @if (!isEditing()) {
+      <app-clinical-revisions [patientId]="record.patientId" [encounterId]="record.id" [version]="record.version" />
+    }
     @if (isEditing()) {
+      <label>
+        Motivo de corrección (opcional)
+        <textarea #reason rows="2" maxlength="1000" [value]="correctionReason()" [disabled]="readonly()"
+          (input)="correctionReason.set(reason.value)"></textarea>
+      </label>
       <fieldset class="consultation-metadata" [disabled]="readonly()">
         <legend>Datos de la consulta</legend>
         <p>
-          Fecha registrada por el servidor: {{ formatDate(record.encounterDate) }} ({{ timeZone }}).
+          Fecha registrada por el servidor: {{ formatDate(record.encounterDate) }}.
         </p>
         <label
           >Tipo de atención<select
@@ -123,17 +135,17 @@
       @if (isEditing()) {
         <button
           type="button"
-          class="page-button secondary"
+          class="dc-button page-button secondary"
           [disabled]="isSubmitting()"
           (click)="cancelEditing()"
         >
           Cancelar edición
         </button>
-        <button type="button" class="page-button primary" [disabled]="readonly()" (click)="save()">
+        <button type="button" class="dc-button dc-button--primary page-button primary" [disabled]="readonly()" (click)="save()">
           {{ isSubmitting() ? 'Guardando...' : 'Guardar cambios' }}
         </button>
       } @else {
-        <button type="button" class="page-button primary" (click)="startEditing()">
+        <button type="button" class="dc-button dc-button--primary page-button primary" (click)="startEditing()">
           Editar consulta
         </button>
       }

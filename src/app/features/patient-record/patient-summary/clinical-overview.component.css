@@ -23,13 +23,15 @@
 }
 .overview {
   color: var(--dc-ink, #18333b);
+  gap: 24px;
 }
 .overview-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 22px;
   margin: 2px 0 24px;
+  gap: 16px;
+  padding-bottom: 20px;
 }
 .eyebrow {
   display: flex;
@@ -129,7 +131,7 @@ ng-icon {
   border-radius: 16px;
   background: var(--dc-surface, #fff);
   min-width: 0;
-  box-shadow: 0 2px 4px #153a4611;
+  box-shadow: var(--dc-shadow-sm);
 }
 .allergy-card {
   border-top: 3px solid var(--dc-teal-ink, #0f766e);
@@ -449,4 +451,8 @@ small {
 }
 .card-title h3 {
   font-size: 0.9rem;
+}
+h2 {
+  font-size: 1.25rem;
+  letter-spacing: -.02em;
 }

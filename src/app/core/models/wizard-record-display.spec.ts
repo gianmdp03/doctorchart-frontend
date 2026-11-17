@@ -21,4 +21,15 @@ describe('Saved clinical form display', () => {
       formulaResults:{f:{status:'MISSING_INPUT' as const,value:null}}};
     expect(wizardRecordEntries(record)).toEqual([]);
   });
+  it('omits a historical followUp alias when the saved canonical field is hidden or empty', () => {
+    const legacy = {key:'followUp',label:'Histórico',type:'TEXTAREA' as const,required:false};
+    const canonical = {key:'followUpInstructions',label:'Seguimiento',type:'TEXTAREA' as const,required:false};
+    const category = {key:'follow_up',title:'Seguimiento',enabled:true,fields:[legacy]};
+    const record = {...clinicalFormFixture(),formValues:{followUp:'Indicación original',followUpInstructions:''}};
+    const legacySnapshot = {categories:[category]};
+    expect(wizardRecordEntries({...record,formDefinitionSnapshot:legacySnapshot})).toEqual([{label:'Histórico',value:'Indicación original'}]);
+    expect(wizardRecordEntries({...record,formDefinitionSnapshot:{categories:[{...category,fields:[legacy,canonical]}]}})).toEqual([]);
+    expect(wizardRecordEntries({...record,formDefinitionSnapshot:{categories:[category,{...category,key:'hidden',enabled:false,fields:[canonical]}]}})).toEqual([]);
+    expect(record.formValues.followUp).toBe('Indicación original');
+  });
 });

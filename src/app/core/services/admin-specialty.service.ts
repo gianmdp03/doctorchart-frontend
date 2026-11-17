@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   CreateSpecialtyDraftRequest, SaveWizardDefaultDraftRequest, SpecialtyDetail,
-  UpdateSpecialtyRequest, WizardDefaultDetail,
+  TemplateReviewStatus, UpdateSpecialtyRequest, WizardDefaultDetail,
 } from '../models/admin-specialty.model';
 
 @Injectable({ providedIn: 'root' })
@@ -29,5 +29,14 @@ export class AdminSpecialtyService {
   }
   publishWizard(id: number, expectedVersion: number): Observable<WizardDefaultDetail> {
     return this.http.post<WizardDefaultDetail>(`${this.baseUrl}/${id}/wizard/publish`, { expectedVersion });
+  }
+  getReviewStatus(id: number, before?: number): Observable<TemplateReviewStatus> {
+    return this.http.get<TemplateReviewStatus>(`${this.baseUrl}/${id}/wizard/reviews`, { params: before === undefined ? {} : { before } });
+  }
+  approveWizard(id: number, expectedVersion: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/wizard/reviews`, { expectedVersion });
+  }
+  revokeWizard(id: number, approval: number, reason: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/wizard/reviews/${approval}/revoke`, { reason });
   }
 }

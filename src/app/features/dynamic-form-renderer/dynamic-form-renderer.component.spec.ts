@@ -35,6 +35,14 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     fixture = TestBed.createComponent(DynamicFormRendererComponent); component = fixture.componentInstance;
     fixture.componentRef.setInput('definition', definition); fixture.componentRef.setInput('values', structuredClone(values)); fixture.detectChanges();
   });
+  it('hides legacy next appointment fields without clearing saved values', () => {
+    definition.categories[0].fields.push({ key: 'followUpDate', label: 'Próximo control', type: 'DATE', required: false });
+    fixture.componentRef.setInput('definition', structuredClone(definition));
+    fixture.componentRef.setInput('values', { ...values, followUpDate: '2030-01-01' });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-field-key="followUpDate"]')).toBeNull();
+    expect(component.currentValues()['followUpDate']).toBe('2030-01-01');
+  });
   it('renders unfamiliar stable categories and all seven field types with the shared date selector', () => {
     expect(fixture.nativeElement.querySelector('[data-category-key="new_patient_category"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-field-key="identity"] input')).not.toBeNull();
@@ -56,10 +64,10 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     expect(fixture.nativeElement.textContent).toContain('29/02/2000');
     expect(fixture.nativeElement.textContent).toContain('Grupo A'); expect(fixture.nativeElement.textContent).toContain('No');
   });
-  it('accepts a future follow-up, rejects invalid typed dates, and clears an optional date as null', () => {
+  it('accepts a future date, rejects invalid typed dates, and clears an optional date as null', () => {
     fixture.componentRef.setInput('showErrors', true);
     fixture.componentRef.setInput('definition', { categories: [{ key: 'plan', title: 'Plan e indicaciones', enabled: true, fields: [
-      { key: 'followUpDate', label: 'Próximo control', type: 'DATE', required: false },
+      { key: 'reviewDate', label: 'Fecha de revisión', type: 'DATE', required: false },
     ] }] });
     fixture.componentRef.setInput('values', {}); fixture.detectChanges();
     let emitted: WizardFormValues = {};
@@ -67,17 +75,20 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     const picker = fixture.debugElement.query(By.directive(DatePickerComponent)).componentInstance as DatePickerComponent;
     expect(fixture.nativeElement.querySelector('label').control).toBe(fixture.nativeElement.querySelector('input'));
     picker.selectDate(new Date(2028, 1, 29)); fixture.detectChanges();
-    expect(emitted['followUpDate']).toBe('2028-02-29');
+    expect(emitted['reviewDate']).toBe('2028-02-29');
     expect(component.formValid()).toBe(true);
     expect(picker.max()).toBeNull();
+<<<<<<< Updated upstream
     expect(fixture.nativeElement.textContent).not.toContain('Se recordará en Inicio');
+=======
+>>>>>>> Stashed changes
     picker.onTextInput('29/02/2027'); fixture.detectChanges();
     expect(component.formValid()).toBe(false);
     expect(fixture.nativeElement.querySelector('.field-error').textContent).toContain('fecha válida');
     picker.onTextInput('01/01/0000'); fixture.detectChanges();
     expect(component.formValid()).toBe(false);
     picker.selectDate(null); fixture.detectChanges();
-    expect(emitted['followUpDate']).toBeNull();
+    expect(emitted['reviewDate']).toBeNull();
     expect(component.formValid()).toBe(true);
   });
   it('accepts zero and required false while rejecting wrong types, nonfinite numbers and invalid options', () => {

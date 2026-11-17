@@ -1,16 +1,30 @@
-.form-category{margin: 0 0 24px}.form-category h3{margin: 0 0 16px;color: var(--dc-ink-secondary, #334155);font-size: 1rem;border-bottom: 1px solid var(--dc-outline, #e2e8f0);padding-bottom: 10px}.fields-grid{display: grid;grid-template-columns: repeat(2,minmax(0,1fr));gap: 16px}.field{display: flex;flex-direction: column;gap: 7px;min-width: 0}.field.wide{grid-column: 1/-1}.field label{font-size: .875rem;font-weight: 600;color: var(--dc-ink-secondary, #475569)}.field input,.field textarea,.field select{box-sizing: border-box;width: 100%;font: inherit;border: 1px solid var(--dc-outline, #cbd5e1);border-radius: 8px;padding: 10px;background: var(--dc-surface, white);color: var(--dc-ink, #0f172a)}.field input:focus,.field textarea:focus,.field select:focus{outline: 2px solid #a5b4fc;outline-offset: 2px}.number-with-unit{display: flex;gap: 8px;align-items: center}.number-with-unit span{color: var(--dc-ink-muted, #64748b);font-size: .8rem}.saved-value{margin: 0;white-space: pre-wrap;overflow-wrap: anywhere}.formula-result{background: var(--dc-surface-high, #f1f5f9);padding: 11px;border-radius: 8px;color: var(--dc-ink-secondary, #475569)}.field-error{font-size: .8rem;color: var(--dc-error-ink, #b91c1c)}.empty-form{color: var(--dc-ink-muted, #64748b)}@media(max-width:600px){.fields-grid{grid-template-columns: 1fr}}
 
-/* Read-only presentation: one card per category, labelled value tiles */
-.is-readonly{display: flex;flex-direction: column;gap: 20px}
-.is-readonly .form-category{margin: 0;background: var(--dc-surface, #fff);border: 1px solid var(--dc-outline, #e2e8f0);border-radius: 14px;box-shadow: 0 1px 3px rgba(15,23,42,.05);overflow: hidden}
-.is-readonly .form-category h3{margin: 0;padding: 14px 20px;background: var(--dc-surface, #fff);border-bottom: 1px solid var(--dc-outline, #e2e8f0);color: var(--dc-ink-secondary, #334155);font-size: .8rem;font-weight: 700;letter-spacing: .06em;text-transform: uppercase}
-.is-readonly .fields-grid{grid-template-columns: repeat(auto-fill,minmax(230px,1fr));gap: 0;padding: 6px}
-.is-readonly .field{gap: 4px;padding: 12px 14px;margin: 4px;border-radius: 10px;background: var(--dc-surface-low, #f8fafc);border: 1px solid transparent;transition: background .15s ease,border-color .15s ease}
-.is-readonly .field:hover{background: var(--dc-surface-high, #f1f5f9);border-color: var(--dc-outline, #e2e8f0)}
-.is-readonly .field label{font-size: .7rem;font-weight: 600;letter-spacing: .05em;text-transform: uppercase;color: var(--dc-ink-muted, #64748b)}
-.is-readonly .saved-value{font-size: .98rem;font-weight: 500;color: var(--dc-ink, #0f172a);line-height: 1.4}
-.is-readonly .saved-value.is-empty{color: var(--dc-ink-muted, #94a3b8);font-weight: 400;font-style: italic;font-size: .88rem}
-.is-readonly .field.wide{grid-column: 1/-1}
-.is-readonly .formula-result{background: var(--dc-surface, #fff);border: 1px solid var(--dc-outline, #e2e8f0);color: var(--dc-ink, #0f172a);font-weight: 600}
-.field.has-error input,.field.has-error textarea,.field.has-error select { border-color: #b91c1c; }
-.field-hint { color: var(--dc-ink-secondary, #52647a); font-size: .75rem; line-height: 1.6; }
+:host { display: block; min-width: 0; }
+.dynamic-form { display: grid; gap: 28px; }
+.form-category { min-width: 0; margin: 0; }
+.form-category h3 { margin: 0 0 20px; padding-bottom: 12px; border-bottom: 1px solid var(--dc-line); color: var(--dc-text); font-size: 1rem; font-weight: 650; line-height: 1.5; }
+.fields-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; }
+.field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.field label { color: var(--dc-text-secondary); font-size: .8125rem; font-weight: 600; line-height: 1.5; }
+.field label > span { color: var(--dc-danger); }
+.field input, .field textarea, .field select { width: 100%; min-height: var(--dc-control-height); padding: 11px 12px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); background: var(--dc-paper); color: var(--dc-text); font: inherit; font-size: .9375rem; line-height: 1.5; box-sizing: border-box; }
+.field textarea { resize: vertical; min-height: 108px; }
+.field input:hover, .field textarea:hover, .field select:hover { border-color: var(--dc-brand); }
+.field input:focus, .field textarea:focus, .field select:focus { outline: 2px solid var(--dc-focus); outline-offset: 2px; }
+.field.has-error input, .field.has-error textarea, .field.has-error select { border-color: var(--dc-danger); }
+.number-with-unit { display: flex; align-items: center; gap: 10px; }
+.number-with-unit span { flex-shrink: 0; min-width: 24px; color: var(--dc-text-secondary); font-size: .8125rem; }
+.saved-value { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--dc-text); font-size: .9375rem; line-height: 1.6; }
+.formula-result { display: block; min-height: 44px; padding: 11px 12px; border-radius: var(--dc-radius-control); background: var(--dc-brand-soft); color: var(--dc-brand-ink); font-size: .9375rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.field-error { color: var(--dc-danger); font-size: .8125rem; line-height: 1.5; }
+.field-hint { color: var(--dc-text-secondary); font-size: .75rem; line-height: 1.6; }
+.empty-form { margin: 0; padding: 24px; color: var(--dc-text-secondary); background: var(--dc-subtle); border-radius: var(--dc-radius-control); font-size: .875rem; }
+.is-readonly { gap: 24px; }
+.is-readonly .form-category { padding: 24px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-card); background: var(--dc-paper); }
+.is-readonly .fields-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 20px 28px; }
+.is-readonly .field { padding: 0; gap: 6px; }
+.is-readonly .field label { color: var(--dc-text-secondary); font-size: .75rem; font-weight: 500; }
+.is-readonly .saved-value.is-empty { color: var(--dc-text-muted); font-size: .875rem; }
+.is-readonly .formula-result { min-height: 0; padding: 8px 12px; }
+@media (max-width: 600px) { .fields-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } .is-readonly .form-category { padding: 20px 16px; } .is-readonly .fields-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; } }

@@ -33,6 +33,22 @@ describe('Vaccination calendar shared theme', () => {
     return fixture;
   }
 
+  it('recovers a failed remote calendar through the visible retry action', () => {
+    const service = TestBed.inject(VaccinationCalendarService);
+    service.error.set('No se pudo cargar el calendario (HTTP 503).');
+    const fixture = TestBed.createComponent(VaccinationCalendarComponent);
+    fixture.detectChanges();
+    const retry = fixture.nativeElement.querySelector('.status-error button') as HTMLButtonElement;
+    expect(retry.textContent).toContain('Reintentar carga');
+    vi.mocked(service.load).mockImplementation(() => {
+      service.error.set(null);
+      service.data.set(calendar);
+    });
+    retry.click(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.status-error')).toBeNull();
+    expect(fixture.nativeElement.querySelector('h1').textContent).toContain('Calendario de vacunación');
+  });
+
   it('has only the global selector and switches the calendar both ways with it', async () => {
     const fixture = await render();
     const element = fixture.nativeElement.querySelector('app-vaccination-calendar') as HTMLElement;

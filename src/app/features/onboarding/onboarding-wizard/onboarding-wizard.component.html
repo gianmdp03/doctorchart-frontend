@@ -10,8 +10,8 @@
           @if (definition()) {
             <button type="button" class="btn-reset-defaults" [disabled]="editorReadonly()" (click)="showResetConfirmation.set(true)">Restablecer valores iniciales</button>
             @if (isEditMode()) {
-              <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="returnWithoutSaving()">Volver sin guardar cambios</button>
-              <button type="button" class="secondary-button" [disabled]="editorReadonly()" (click)="exitWizard()">Salir conservando borrador</button>
+              <button type="button" class="dc-button secondary-button" [disabled]="isSaving()" (click)="returnWithoutSaving()">Volver sin guardar cambios</button>
+              <button type="button" class="dc-button secondary-button" [disabled]="editorReadonly()" (click)="exitWizard()">Salir conservando borrador</button>
             } @else {
               <button type="button" class="signout-button" [disabled]="editorReadonly()" (click)="handleSignOut()">Guardar y cerrar sesión</button>
             }
@@ -31,12 +31,16 @@
               <span class="progress-percent-label">{{ progressPercentage() }}% completado</span>
             }
           </div>
-          <div class="progress-track" role="progressbar" [attr.aria-valuenow]="progressPercentage()" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-track" role="progressbar" aria-label="Progreso de la configuración" [attr.aria-valuenow]="progressPercentage()" aria-valuemin="0" aria-valuemax="100">
             <div class="progress-bar-fill" [style.width.%]="progressPercentage()"></div>
           </div>
         </div>
 
-        <ol class="step-navigation" aria-label="Pasos de configuración">
+
+      }
+    </header>
+    <div class="wizard-layout" [class.has-steps]="!!definition()">
+      @if (definition()) { <ol class="step-navigation" aria-label="Pasos de configuración">
           @for (step of steps(); track step.key; let index = $index) {
             <li class="step-item">
               <button type="button"
@@ -56,15 +60,13 @@
                   }
                 </span>
                 <div class="step-content">
-                  <span class="step-kicker">Paso {{ index + 1 }}</span>
                   <span class="step-title" [title]="step.title">{{ step.title }}</span>
                 </div>
               </button>
             </li>
           }
-        </ol>
-      }
-    </header>
+        </ol> }
+      <div class="wizard-workspace">
 
     @if (isLoading()) { <p role="status">Cargando tu configuración...</p> }
     @if (errorMessage()) { <div class="error-banner" role="alert">{{ errorMessage() }}</div> }
@@ -72,41 +74,40 @@
     @if (hasConflict()) {
       <section class="conflict-review" aria-label="Revisar conflicto">
         <p>La copia que estabas editando se conserva en pantalla. Guardar, aplicar o restablecer requiere revisar el estado del servidor.</p>
-        <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="reviewServerCopy()">Consultar copia del servidor</button>
+        <button type="button" class="dc-button secondary-button" [disabled]="isSaving()" (click)="reviewServerCopy()">Consultar copia del servidor</button>
         @if (serverCopyLoaded()) {
           @if (serverCopy(); as latest) {
             <p>Copia guardada: {{ latest.specialty.name }}. {{ latest.draftDefinition ? 'Tiene un borrador pendiente.' : 'Tiene la configuración aplicada.' }}</p>
           } @else { <p>El servidor no tiene una especialidad seleccionada.</p> }
-          <button type="button" class="primary-button" [disabled]="isSaving()" (click)="useServerCopy()">Usar copia del servidor y descartar mis cambios locales</button>
+          <button type="button" class="dc-button dc-button--primary primary-button" [disabled]="isSaving()" (click)="useServerCopy()">Usar copia del servidor y descartar mis cambios locales</button>
         }
       </section>
     }
 
     @if (!isLoading() && !definition()) {
-      <button type="button" class="secondary-button" (click)="loadInitial(true)">Intentar cargar nuevamente</button>
+      <button type="button" class="dc-button secondary-button" (click)="loadInitial(true)">Intentar cargar nuevamente</button>
     }
 
     @if (showResetConfirmation()) {
       <section class="confirmation-panel" aria-label="Confirmar restablecimiento">
         <p>Se reemplazará este borrador por los valores iniciales publicados de tu especialidad. Tu configuración activa seguirá igual hasta aplicar los cambios.</p>
-        <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="showResetConfirmation.set(false)">Conservar mi borrador</button>
-        <button type="button" class="primary-button" [disabled]="editorReadonly()" (click)="confirmResetToDefaults()">Restablecer el borrador</button>
+        <button type="button" class="dc-button secondary-button" [disabled]="isSaving()" (click)="showResetConfirmation.set(false)">Conservar mi borrador</button>
+        <button type="button" class="dc-button dc-button--primary primary-button" [disabled]="editorReadonly()" (click)="confirmResetToDefaults()">Restablecer el borrador</button>
       </section>
     }
     @if (showDiscardConfirmation()) {
       <section class="confirmation-panel" aria-label="Confirmar descarte">
         <p>Se descartarán el borrador guardado y los cambios de esta pantalla. Tu configuración activa se conserva.</p>
-        <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="showDiscardConfirmation.set(false)">Seguir editando</button>
-        <button type="button" class="primary-button" [disabled]="editorReadonly()" (click)="cancelWizard()">Descartar y volver al panel</button>
+        <button type="button" class="dc-button secondary-button" [disabled]="isSaving()" (click)="showDiscardConfirmation.set(false)">Seguir editando</button>
+        <button type="button" class="dc-button dc-button--primary primary-button" [disabled]="editorReadonly()" (click)="cancelWizard()">Descartar y volver al panel</button>
       </section>
     }
 
     @if (definition(); as current) {
       <section class="wizard-content">
-        <span class="section-kicker">Categorías y campos</span>
         <h1 id="wizard-title">{{ activeStep().title }}</h1>
         <p>Agregá, quitá y organizá la información que necesitás registrar. Guardar el borrador permite continuar más adelante; aplicar cambios lo convierte en tu configuración activa.</p>
-        <button type="button" class="secondary-button category-manager-toggle"
+        <button type="button" class="dc-button secondary-button category-manager-toggle"
           [attr.aria-expanded]="showPatientCategories()" (click)="showPatientCategories.set(!showPatientCategories())">
           {{ showPatientCategories() ? 'Volver al paso actual' : 'Organizar todas las categorías de la ficha' }}
         </button>
@@ -125,30 +126,43 @@
           <p class="section-note">Historia Clínica está presente en todas las especialidades. Sus categorías y campos se usan en cada consulta.</p>
           <app-form-field-editor [definition]="current.encounterForm" section="encounterForm"
             [readonly]="editorReadonly()" (definitionChange)="onEncounterDefinitionChange($event)" />
+<<<<<<< Updated upstream
+=======
+        } @else {
+          <p>Tu especialidad seleccionada es {{ workspace()?.specialty?.name }}.</p>
+          <button type="button" class="dc-button secondary-button" [disabled]="editorReadonly()" (click)="goToStep(0)">Revisar la selección de especialidad</button>
+>>>>>>> Stashed changes
         }
       </section>
 
       <footer class="wizard-footer">
         <div class="footer-left">
+<<<<<<< Updated upstream
           @if (activeStepIndex() > 0) {
             <button type="button" class="secondary-button" [disabled]="editorReadonly()" (click)="goPrevious()">Anterior</button>
+=======
+          @if (activeStepIndex() > (isEditMode() ? 1 : 0)) {
+            <button type="button" class="dc-button secondary-button" [disabled]="editorReadonly()" (click)="goPrevious()">Anterior</button>
+>>>>>>> Stashed changes
           }
           @if (isEditMode()) {
-            <button type="button" class="secondary-button" [disabled]="editorReadonly()" (click)="showDiscardConfirmation.set(true)">Descartar edición</button>
+            <button type="button" class="dc-button secondary-button" [disabled]="editorReadonly()" (click)="showDiscardConfirmation.set(true)">Descartar edición</button>
           }
         </div>
         <div class="footer-right">
-          <button type="button" class="secondary-button" [disabled]="editorReadonly()" (click)="saveProgress()">Guardar borrador</button>
+          <button type="button" class="dc-button secondary-button" [disabled]="editorReadonly()" (click)="saveProgress()">Guardar borrador</button>
           @if (isEditMode() || isLastStep()) {
-            <button type="button" class="primary-button" [disabled]="editorReadonly()" (click)="finishOnboarding()">
+            <button type="button" class="dc-button dc-button--primary primary-button" [disabled]="editorReadonly()" (click)="finishOnboarding()">
               @if (isSaving()) { Guardando... } @else if (isEditMode()) { Aplicar cambios } @else { Finalizar configuración }
             </button>
           }
           @if (!isLastStep()) {
-            <button type="button" class="primary-button" [disabled]="editorReadonly()" (click)="goNext()">Siguiente</button>
+            <button type="button" class="dc-button dc-button--primary primary-button" [disabled]="editorReadonly()" (click)="goNext()">Siguiente</button>
           }
         </div>
       </footer>
     }
+      </div>
+    </div>
   </section>
 </main>

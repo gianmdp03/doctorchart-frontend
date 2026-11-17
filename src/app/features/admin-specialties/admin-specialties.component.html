@@ -1,8 +1,8 @@
 <main [class.field-editor-open]="fieldEditorOpen()" class="admin-specialties">
   <header class="page-header">
-    <div><span class="eyebrow">Administración</span><h1>Especialidades y wizard</h1>
+    <div><h1>Especialidades y wizard</h1>
       <p>Creá especialidades y configurá las fichas y consultas que reciben los médicos al elegirlas.</p></div>
-    <button type="button" class="primary" [disabled]="busy() || accessDenied()" (click)="requestCreate()">Crear especialidad</button>
+    <button type="button" class="dc-button dc-button--primary primary" [disabled]="busy() || accessDenied()" (click)="requestCreate()">Crear especialidad</button>
   </header>
   @if (busy()) { <p role="status">Procesando...</p> }
   @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
@@ -38,7 +38,7 @@
           <div class="section-heading"><h2>{{ creating() ? 'Nueva especialidad' : selectedSpecialty()?.name }}</h2>
             @if (wizard(); as saved) { <span class="publication">Publicación {{ saved.publishedVersion }}{{ saved.publishedDefinition ? '' : ' · sin publicar' }}</span> }
           </div>
-          <p class="hint">Los cambios del wizard se guardan como borrador. Publicar los habilita para nuevas selecciones y conserva las copias personales de los médicos existentes.</p>
+          <p class="hint">Guardá el borrador antes de solicitar su aprobación. La publicación conserva las configuraciones personales existentes.</p>
           @if (hasConflict()) {
             <section class="confirmation" aria-label="Revisar conflicto de versión">
               <p>El servidor cambió desde que abriste esta copia. Los datos y campos que estabas editando siguen visibles. Revisá el estado del servidor antes de continuar.</p>
@@ -63,7 +63,9 @@
           @if (!creating()) {
             <div class="actions metadata-actions">
               <button type="button" [disabled]="!canEditExisting() || metadataStale() || !metadataDirty()" (click)="saveMetadata()">Guardar nombre y descripción</button>
-              <button type="button" [disabled]="!canEditExisting() || metadataStale()" (click)="toggleActive()">{{ selectedSpecialty()?.active ? 'Desactivar especialidad' : 'Activar especialidad' }}</button>
+              @if (selectedSpecialty()?.active || review()?.canActivate) {
+                <button type="button" [disabled]="!canEditExisting() || metadataStale()" (click)="toggleActive()">{{ selectedSpecialty()?.active ? 'Desactivar especialidad' : 'Activar especialidad' }}</button>
+              }
             </div>
           }
           @if (!creating() && !wizard()) {
@@ -86,12 +88,57 @@
             @if (pendingEditor()) { <p class="notice">Aplicá o cancelá el campo abierto y completá las categorías pendientes antes de guardar el wizard.</p> }
             <footer class="actions wizard-actions">
               @if (creating()) {
-                <button type="button" class="primary" [disabled]="readonly() || pendingEditor()" (click)="createSpecialty()">Crear como borrador</button>
+                <button type="button" class="dc-button dc-button--primary primary" [disabled]="readonly() || pendingEditor()" (click)="createSpecialty()">Crear como borrador</button>
               } @else {
                 <button type="button" [disabled]="!canEditExisting() || metadataStale() || pendingEditor()" (click)="saveDraft()">Guardar borrador del wizard</button>
-                <button type="button" class="primary" [disabled]="!canEditExisting() || metadataStale() || pendingEditor()" (click)="publishWizard()">Guardar y publicar wizard</button>
+                @if (review()?.canApprove) {
+                  <button type="button" [disabled]="!reviewReady()" (click)="approveWizard()">Registrar aprobación</button>
+                }
+                @if (review()?.canPublish) {
+                  <button type="button" class="dc-button dc-button--primary primary" [disabled]="!reviewReady()" (click)="publishWizard()">Publicar revisión aprobada</button>
+                }
               }
             </footer>
+            @if (!creating() && wizard()) {
+              <section class="notice" aria-label="Revisión clínica">
+                <h3>Revisión clínica</h3>
+                @if (review(); as status) {
+                  <p>Revisión {{ status.revision }} · {{ draftLabels[status.draftState] }}</p>
+                  <p>Publicación {{ wizard()?.publishedVersion }} · {{ publicationLabels[status.publicationState] }}{{ selectedSpecialty()?.active ? '' : ' · Inactiva' }}</p>
+                  @if (status.draftState === 'PENDING' && !status.canApprove) {
+                    <p>Para aprobar esta revisión hace falta una constancia vinculada a su huella y a un revisor autorizado.</p>
+                  }
+                  @if (status.draftState === 'BLOCKED') {
+                    <p>Guardá una nueva revisión del borrador para solicitar otra aprobación.</p>
+                  }
+                  <details>
+                    <summary>Huella e historial de decisiones</summary>
+                    <p style="overflow-wrap: anywhere">{{ status.fingerprint }}</p>
+                    @for (decision of status.history; track decision.id) {
+                      <div>
+                        <p>Revisión {{ decision.revision }} · {{ decision.kind === 'SYNTHETIC' ? 'Aprobación sintética de laboratorio' : 'Constancia de revisión clínica' }} · {{ decision.actor }} · {{ decision.occurredAt | date:'dd/MM/yyyy HH:mm' }}</p>
+                        <p>{{ decision.reference }}</p>
+                        @if (decision.revokedAt) {
+                          <p>Revocada por {{ decision.revokedBy }} el {{ decision.revokedAt | date:'dd/MM/yyyy HH:mm' }}. {{ decision.revocationReason }}</p>
+                        } @else if (revoking() === decision.id) {
+                          <label>Motivo de revocación <textarea maxlength="500" [ngModel]="revocationReason()" (ngModelChange)="revocationReason.set($event)"></textarea></label>
+                          <button type="button" [disabled]="!canEditExisting() || !revocationReason().trim()" (click)="revokeWizard()">Confirmar revocación</button>
+                          <button type="button" [disabled]="busy()" (click)="revoking.set(null); revocationReason.set('')">Cancelar</button>
+                        } @else if (!accessDenied()) {
+                          <button type="button" [disabled]="!canEditExisting()" (click)="revoking.set(decision.id); revocationReason.set('')">Revocar aprobación de revisión {{ decision.revision }}</button>
+                        }
+                      </div>
+                    } @empty {
+                      <p>Todavía no hay decisiones registradas.</p>
+                    }
+                    @if (status.nextBefore) {
+                      <button type="button" [disabled]="!canEditExisting()" (click)="reloadReview(true)">Ver decisiones anteriores</button>
+                    }
+                  </details>
+                }
+                <button type="button" [disabled]="!canEditExisting()" (click)="reloadReview()">Actualizar revisión</button>
+              </section>
+            }
           }
         } @else { <p class="empty-state">Elegí una especialidad para editar su wizard o creá una nueva.</p> }
       </section>

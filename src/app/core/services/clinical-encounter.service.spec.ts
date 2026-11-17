@@ -50,7 +50,10 @@ describe('ClinicalEncounterService canonical records', () => {
   });
   it('evicts deleted records', () => {
     service.encounters.set([record]); service.currentEncounter.set(record);
-    service.delete(10).subscribe(); http.expectOne(`${base}/10`).flush(null);
+    service.delete(10, 'Consulta duplicada').subscribe();
+    const annulment = http.expectOne(`${base}/10`);
+    expect(annulment.request.body).toEqual({ reason: 'Consulta duplicada' });
+    annulment.flush(null);
     expect(service.encounters()).toEqual([]); expect(service.currentEncounter()).toBeNull();
   });
   it('does not restore a record or loading state after an identity clear', () => {

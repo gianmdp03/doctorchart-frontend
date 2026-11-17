@@ -1,0 +1,18 @@
+
+:host { display: block; }
+.plan-page { display: grid; place-items: center; min-height: 100dvh; padding: 32px 16px; background: var(--dc-canvas); color: var(--dc-text); }
+.plan-card { width: 100%; max-width: 520px; padding: 36px; border-radius: var(--dc-radius-card); background: var(--dc-paper); box-shadow: var(--dc-shadow-panel); text-align: center; }
+img { display: block; margin: 0 auto 16px; }
+.product { margin: 0 0 20px; font-size: 1.125rem; font-weight: 750; }
+.plan-status { display: inline-flex; padding: 4px 10px; border-radius: var(--dc-radius-pill); background: var(--dc-brand-soft); color: var(--dc-brand-ink); font-size: .8125rem; font-weight: 600; }
+h1 { margin: 20px 0 16px; font-size: 1.75rem; font-weight: 700; line-height: 1.25; letter-spacing: -.03em; }
+p { color: var(--dc-text-secondary); font-size: .875rem; line-height: 1.65; }
+.primary, .secondary, .logout { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 46px; margin-top: 16px; padding: 12px 16px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); background: var(--dc-paper); color: var(--dc-text); font: inherit; font-size: .875rem; font-weight: 600; text-decoration: none; cursor: pointer; }
+.primary { background: var(--dc-brand); color: var(--dc-on-brand); border-color: transparent; border-radius: var(--dc-radius-control); min-height: var(--dc-control-height); }
+.primary:hover { background: var(--dc-brand-hover); color: var(--dc-on-brand); border-color: transparent; border-radius: var(--dc-radius-control); min-height: var(--dc-control-height); }
+.secondary:hover { border-color: var(--dc-brand); }
+.logout { border-color: transparent; color: var(--dc-text-secondary); background: transparent; }
+.feedback { padding: 16px; border-radius: var(--dc-radius-control); background: var(--dc-subtle); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+:where(button, a):focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }
+@media (max-width: 600px) { .plan-card { padding: 28px 20px; } h1 { font-size: 1.5rem; } }

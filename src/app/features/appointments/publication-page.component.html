@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 <main class="publication-page" aria-labelledby="publication-title">
   <a class="back-link" routerLink="/calendar"><ng-icon name="lucideArrowLeft" aria-hidden="true" /> Agenda de turnos</a>
   <header class="page-heading">
@@ -13,6 +14,14 @@
         <span aria-hidden="true"></span>{{ publicLinkId() ? 'Publicado' : 'Sin publicar' }}
       </span>
     }
+=======
+<main class="publication-page">
+  <a class="back-link" routerLink="/calendar">← Agenda de turnos</a>
+  <header>
+
+    <h1>Tu perfil público</h1>
+    <p class="muted">Publicá los horarios que querés ofrecer para que tus pacientes puedan reservar desde un enlace.</p>
+>>>>>>> Stashed changes
   </header>
 
   @if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
@@ -183,6 +192,10 @@
         </div>
       </fieldset>
       <div class="save-actions">
+<<<<<<< Updated upstream
+=======
+        <button id="publication-save" class="dc-button dc-button--primary primary" [disabled]="publicationForm.invalid||saving()||conflict()">{{saving()?'Guardando…':'Guardar publicación'}}</button>
+>>>>>>> Stashed changes
         <button type="button" (click)="load()" [disabled]="saving()">Recargar versión guardada</button>
         <button id="publication-save" type="submit" class="primary" [disabled]="publicationForm.invalid || saving() || conflict()">
           {{ saving() ? 'Guardando…' : 'Guardar publicación' }}

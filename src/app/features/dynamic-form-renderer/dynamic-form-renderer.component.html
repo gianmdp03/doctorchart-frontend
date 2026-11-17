@@ -29,7 +29,7 @@
                   }
                 </label>
                 @if (field.type === 'FORMULA') {
-                  <output class="formula-result">{{ formulaText(field) }}</output>
+                  <output class="formula-result" [id]="'field-' + field.key">{{ formulaText(field) }}</output>
                 } @else if (readonly()) {
                   <p
                     class="saved-value"
@@ -45,6 +45,8 @@
                     @case ('TEXT') {
                       <input
                         [id]="'field-' + field.key"
+                        [attr.aria-invalid]="!!visibleFieldError(field)"
+                        [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null"
                         [ngModel]="currentValues()[field.key] ?? ''"
                         (ngModelChange)="setValue(field, $event)"
                         [placeholder]="field.placeholder ?? ''"
@@ -54,6 +56,8 @@
                       <textarea
                         [id]="'field-' + field.key"
                         rows="3"
+                        [attr.aria-invalid]="!!visibleFieldError(field)"
+                        [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null"
                         [ngModel]="currentValues()[field.key] ?? ''"
                         (ngModelChange)="setValue(field, $event)"
                         [placeholder]="field.placeholder ?? ''"
@@ -68,9 +72,7 @@
                           [ngModel]="numberInput(field)"
                           (ngModelChange)="setNumberValue(field, $event)"
                           [attr.aria-invalid]="!!visibleFieldError(field)"
-                          [attr.aria-describedby]="
-                            visibleFieldError(field) ? 'error-' + field.key : null
-                          "
+                          [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null"
                           [placeholder]="field.placeholder ?? ''"
                         />
                         @if (field.unit) {
@@ -91,6 +93,8 @@
                     @case ('SELECT') {
                       <select
                         [id]="'field-' + field.key"
+                        [attr.aria-invalid]="!!visibleFieldError(field)"
+                        [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null"
                         [ngModel]="currentValues()[field.key] ?? null"
                         (ngModelChange)="setValue(field, $event)"
                       >
@@ -103,6 +107,8 @@
                     @case ('BOOLEAN') {
                       <select
                         [id]="'field-' + field.key"
+                        [attr.aria-invalid]="!!visibleFieldError(field)"
+                        [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null"
                         [ngModel]="currentValues()[field.key] ?? null"
                         (ngModelChange)="setValue(field, $event)"
                       >

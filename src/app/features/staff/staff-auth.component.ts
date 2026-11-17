@@ -7,7 +7,7 @@ import {StaffService,staffError} from './staff.service';
 import {FEATURE_FLAGS} from '../../core/config/feature-flags';
 
 @Component({selector:'app-staff-auth',imports:[FormsModule,RouterLink],styleUrl:'./staff.css',template:`
-<main class="staff-page auth-page"><a routerLink="/">Doctor Chart</a><header class="page-heading"><p class="eyebrow">Acceso administrativo</p>
+<main class="staff-page auth-page"><a routerLink="/">Doctor Chart</a><header class="page-heading">
 <h1>{{mode==='activate'?'Aceptar invitación':mode==='recover'?'Recuperar acceso':'Ingresar como secretaria'}}</h1>
 <p>Tu cuenta es independiente del acceso médico. Solo permite gestionar los consultorios asignados.</p></header>
 @if(recovery()){<section class="notice" role="status"><h2>Guardá tu código de recuperación</h2><p>Es personal y se muestra una sola vez. Guardalo en un lugar seguro; no lo compartas con los médicos.</p><code class="recovery">{{recovery()}}</code><button type="button" (click)="continue()">Ya lo guardé · Continuar</button></section>}

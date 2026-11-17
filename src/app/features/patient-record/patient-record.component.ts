@@ -13,6 +13,10 @@ import {
   afterEveryRender,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { PatientService } from '../../core/services/patient.service';
+import { ClinicalRevisionsComponent } from './clinical-revisions.component';
+import { ClinicalDocumentToolsComponent } from './clinical-document-tools.component';
+import { AnnulmentPromptComponent } from './annulment-prompt.component';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -48,6 +52,9 @@ export interface RecordTabItem {
     NgIcon,
     PatientBannerComponent,
     PatientRecordModuleDirective,
+    ClinicalRevisionsComponent,
+    ClinicalDocumentToolsComponent,
+    AnnulmentPromptComponent,
   ],
   providers: [
     PatientEncountersStore,
@@ -68,6 +75,7 @@ export class PatientRecordComponent implements OnInit {
   readonly growth = inject(PatientGrowthStore);
   readonly prescriptions = inject(PatientPrescriptionEditorStore);
   readonly activePatientService = inject(ActivePatientService);
+  private readonly patientApi = inject(PatientService);
   private readonly workspace = inject(WorkspaceStore);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -86,6 +94,9 @@ export class PatientRecordComponent implements OnInit {
   readonly isEncounterFormOpen = signal<boolean>(false);
 
   readonly isPatientEditorOpen = signal<boolean>(false);
+  readonly confirmingAnnulment = signal(false);
+  readonly annulling = signal(false);
+  readonly annulmentError = signal('');
   readonly tabs = computed<RecordTabItem[]>(() =>
     this.workspace
       .patientRecordTabs()
@@ -136,6 +147,9 @@ export class PatientRecordComponent implements OnInit {
           this.recordContext = context;
           this.isEncounterFormOpen.set(false);
           this.isPatientEditorOpen.set(false);
+          this.confirmingAnnulment.set(false);
+          this.annulling.set(false);
+          this.annulmentError.set('');
           this.history.cancelCreatingEncounter();
         }
         if (!canEdit) this.isPatientEditorOpen.set(false);
@@ -197,6 +211,31 @@ export class PatientRecordComponent implements OnInit {
 
   navigateToPatients(): void {
     this.router.navigate(['/patients']);
+  }
+
+  annulPatient(patient: PatientDetailDTO, reason: string): void {
+    const owner = this.authService.currentUser()?.id;
+    const context = this.clinicalScope.id();
+    const current = () => owner === this.authService.currentUser()?.id &&
+      context === this.clinicalScope.id() && patient.id === this.activePatientService.patientId();
+    if (!owner || !current() || !this.recordActions.has('EDIT_PATIENT') || this.annulling()) return;
+    this.annulling.set(true);
+    this.annulmentError.set('');
+    this.patientApi.deletePatient(patient.id, reason, patient.version)
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          if (!current()) return;
+          this.activePatientService.clear();
+          this.navigateToPatients();
+        },
+        error: (error) => {
+          if (!current()) return;
+          this.annulling.set(false);
+          this.annulmentError.set(error?.status === 409
+            ? 'La ficha cambió. Actualizala antes de anularla.'
+            : 'No se pudo anular la ficha clínica.');
+        },
+      });
   }
 
   editPatient(event?: Event): void {

@@ -8,10 +8,6 @@
 
   <header class="page-header">
     <div class="header-main">
-      <div class="eyebrow">
-        <ng-icon name="lucideBuilding2" size="16" aria-hidden="true"></ng-icon>
-        <span>{{ isVirtual() ? 'Atención virtual' : 'Sede física de atención' }}</span>
-      </div>
       <h1>{{ pageTitle() }}</h1>
       <p class="subtitle">
         @if (isVirtual()) {
@@ -46,7 +42,7 @@
           @if (current.status === 'ACTIVE') {
             <button
               type="button"
-              class="btn-secondary btn-sm"
+              class="dc-button btn-secondary btn-sm"
               data-testid="form-deactivate-btn"
               [disabled]="!canTransition('INACTIVE')"
               (click)="changeStatus('INACTIVE')"
@@ -59,7 +55,7 @@
           @if (current.status === 'INACTIVE') {
             <button
               type="button"
-              class="btn-secondary btn-sm"
+              class="dc-button btn-secondary btn-sm"
               data-testid="form-activate-btn"
               [disabled]="!canTransition('ACTIVE')"
               (click)="changeStatus('ACTIVE')"
@@ -84,7 +80,7 @@
           @if (current.status === 'ARCHIVED') {
             <button
               type="button"
-              class="btn-primary btn-sm"
+              class="dc-button dc-button--primary btn-primary btn-sm"
               data-testid="form-restore-btn"
               [disabled]="!canTransition('INACTIVE')"
               (click)="changeStatus('INACTIVE')"
@@ -132,7 +128,7 @@
         @if (banner.showRetryButton) {
           <button
             type="button"
-            class="btn-secondary btn-sm"
+            class="dc-button btn-secondary btn-sm"
             data-testid="form-retry-capabilities-btn"
             (click)="retryCapabilities()"
             [disabled]="isLoading() || isSubmitting() || isRetryingCapabilities()"
@@ -141,12 +137,10 @@
             <span>{{ isRetryingCapabilities() ? 'Reintentando…' : 'Reintentar verificación' }}</span>
           </button>
         }
-        @if (banner.showUpgradeLink && plansUrl) {
+        @if (banner.showUpgradeLink) {
           <a
-            class="btn-secondary btn-sm"
-            [href]="plansUrl"
-            target="_blank"
-            rel="noopener noreferrer"
+            class="dc-button btn-secondary btn-sm"
+            routerLink="/pricing"
           >
             <span>Ver planes</span>
             <ng-icon name="lucideExternalLink" size="14" aria-hidden="true"></ng-icon>
@@ -171,7 +165,7 @@
         <div class="conflict-actions">
           <button
             type="button"
-            class="btn-primary btn-sm"
+            class="dc-button dc-button--primary btn-primary btn-sm"
             data-testid="conflict-keep-local-btn"
             (click)="resolveConflictKeepLocalEdits()"
             [disabled]="isLoading() || isSubmitting()"
@@ -180,7 +174,7 @@
           </button>
           <button
             type="button"
-            class="btn-secondary btn-sm"
+            class="dc-button btn-secondary btn-sm"
             data-testid="conflict-reload-server-btn"
             (click)="resolveConflictUseServerValues()"
             [disabled]="isLoading() || isSubmitting()"
@@ -394,10 +388,10 @@
       </div>
 
       <footer class="form-footer">
-        <a routerLink="/clinics" class="btn-secondary">Cancelar</a>
+        <a routerLink="/clinics" class="dc-button btn-secondary">Cancelar</a>
         <button
           type="submit"
-          class="btn-primary"
+          class="dc-button dc-button--primary btn-primary"
           data-testid="submit-clinic-btn"
           [disabled]="isReadOnly()"
         >

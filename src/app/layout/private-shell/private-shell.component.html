@@ -12,11 +12,12 @@
 } @else if (!authService.isLoggedIn()) {
   <app-login-page />
 } @else if (authService.isSuperAdmin()) {
+  <a href="#workspace-content" class="dc-skip-link">Ir al contenido</a>
   <div class="app-layout-shell">
     <app-sidebar />
     <div class="app-main-viewport">
       <app-header />
-      <main class="app-main-content">
+      <main id="workspace-content" tabindex="-1" class="app-main-content">
         @if (documents.errorMessage(); as message) { <div class="inline-confirmation" role="alert"><p>{{ message }}</p><button type="button" (click)="documents.errorMessage.set(null)">Entendido</button></div> }
         <router-outlet />
       </main>
@@ -59,11 +60,12 @@
   @if (documents.errorMessage(); as message) { <div class="inline-confirmation" role="alert"><p>{{ message }}</p><button type="button" (click)="documents.errorMessage.set(null)">Entendido</button></div> }
         <router-outlet />
 } @else {
+  <a href="#workspace-content" class="dc-skip-link">Ir al contenido</a>
   <div class="app-layout-shell">
     <app-sidebar />
     <div class="app-main-viewport">
       <app-header />
-      <main class="app-main-content">
+      <main id="workspace-content" tabindex="-1" class="app-main-content">
         @if (featureFlags.AI_ASSISTANT_ENABLED && workspaceStore.isModuleActive('AI_ASSISTANT')) { <nav class="workspace-shortcuts" aria-label="Herramientas"><a routerLink="/assistant">Asistente clínico →</a></nav> }
         @if (documents.errorMessage(); as message) { <div class="inline-confirmation" role="alert"><p>{{ message }}</p><button type="button" (click)="documents.errorMessage.set(null)">Entendido</button></div> }
         <router-outlet />

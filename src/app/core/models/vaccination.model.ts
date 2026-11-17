@@ -26,6 +26,7 @@ export interface VaccinationUpdateRequest {
   calendarId: string;
   applied: boolean;
   appliedAt?: string | null;
+  reason?: string;
 }
 export interface SavedPatientVaccination {
   patient: PatientDetailDTO;

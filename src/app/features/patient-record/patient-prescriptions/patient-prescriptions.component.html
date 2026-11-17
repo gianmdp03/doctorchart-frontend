@@ -23,7 +23,7 @@
           @if (editor.recordActions.has('PRINT_DOCUMENT')) {
             <button
               type="button"
-              class="cta-primary-btn btn-sm"
+              class="dc-button dc-button--primary cta-primary-btn btn-sm"
               [disabled]="editor.rxBusy()"
               (click)="editor.printRecord(latestEncounter())"
             >
@@ -31,8 +31,8 @@
               <span>
                 {{
                   editor.rxFormMode() === 'STUDY'
-                    ? 'Imprimir Orden de Estudios'
-                    : 'Imprimir Receta Médica'
+                    ? 'Emitir PDF de orden de estudios'
+                    : 'Emitir PDF de receta'
                 }}
               </span>
             </button>
@@ -362,14 +362,14 @@
 
         <!-- BARRA DE ACCIONES FINALES -->
         <div class="rx-bottom-actions">
-          <button type="button" class="secondary-outline-btn btn-sm" (click)="editor.clearRxForm()">
+          <button type="button" class="dc-button secondary-outline-btn btn-sm" (click)="editor.clearRxForm()">
             Limpiar formulario
           </button>
 
           <div class="rx-bottom-right-btns">
             <button
               type="button"
-              class="secondary-outline-btn btn-sm"
+              class="dc-button secondary-outline-btn btn-sm"
               [disabled]="editor.rxBusy()"
               (click)="editor.saveCurrentRxToHistory()"
             >
@@ -379,7 +379,7 @@
             @if (editor.recordActions.has('PRINT_DOCUMENT')) {
               <button
                 type="button"
-                class="cta-primary-btn btn-sm"
+                class="dc-button dc-button--primary cta-primary-btn btn-sm"
                 [disabled]="editor.rxBusy()"
                 (click)="editor.printRecord(latestEncounter())"
               >
@@ -419,7 +419,7 @@
             </p>
             <button
               type="button"
-              class="secondary-outline-btn btn-xs"
+              class="dc-button secondary-outline-btn btn-xs"
               (click)="editor.prescriptionStore.reload()"
             >
               Reintentar
@@ -462,26 +462,30 @@
                     @if (editor.recordActions.has('PRINT_DOCUMENT')) {
                       <button
                         type="button"
-                        class="secondary-outline-btn btn-xs"
+                        class="dc-button secondary-outline-btn btn-xs"
                         [disabled]="editor.rxBusy()"
                         (click)="editor.reprintSavedRecord(rec)"
-                        title="Reimprimir documento"
+                        title="Emitir un nuevo PDF"
                       >
                         <ng-icon name="lucidePrinter" />
-                        <span>Imprimir</span>
+                        <span>Emitir PDF</span>
                       </button>
                     }
                     <button
                       type="button"
                       class="rx-btn-remove"
                       [disabled]="editor.rxBusy()"
-                      (click)="editor.deleteSavedRecord(rec.id)"
-                      title="Eliminar registro"
-                      aria-label="Eliminar registro"
+                      (click)="pendingAnnulment.set(rec.id)"
+                      title="Anular documento"
+                      aria-label="Anular documento"
                     >
                       <ng-icon name="lucideTrash2" />
                     </button>
                   </div>
+                  @if (pendingAnnulment() === rec.id) {
+                    <app-annulment-prompt [target]="rec.id" [busy]="editor.rxBusy()"
+                      (cancel)="pendingAnnulment.set(null)" (confirm)="editor.deleteSavedRecord(rec.id, $event)" />
+                  }
                 </li>
               }
             </ul>

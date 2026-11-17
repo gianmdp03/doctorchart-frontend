@@ -1,0 +1,36 @@
+
+    .scroll-to-top {
+      position: fixed;
+      right: max(1rem, env(safe-area-inset-right));
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid var(--dc-outline, #e2e8f0);
+      border-radius: var(--dc-radius-control);
+      background: var(--dc-surface, #fff);
+      color: var(--md-sys-color-primary, #006874);
+      box-shadow: var(--dc-shadow-panel);
+      cursor: pointer;
+      transition: background-color var(--dc-motion) var(--dc-ease);
+    }
+    .scroll-to-top:hover {
+      background: var(--dc-brand-soft);
+      box-shadow: var(--dc-shadow-panel);
+    }
+    .scroll-to-top:focus-visible {
+      outline: 2px solid var(--md-sys-color-primary, #006874);
+      outline-offset: 3px;
+    }
+    @media (min-width: 640px) {
+      .scroll-to-top { right: max(2rem, env(safe-area-inset-right)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .scroll-to-top { transition: none; }
+      .scroll-to-top:hover { transform: none; }
+    }
+    @media (max-width: 768px) { .scroll-to-top { display: none; } }
+    @media print { .scroll-to-top { display: none; } }
+  

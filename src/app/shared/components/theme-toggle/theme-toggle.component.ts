@@ -20,7 +20,7 @@ import { ThemeService } from '../../../core/services/theme.service';
     :host { display: inline-flex; }
     button {
       display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
-      min-height: 36px; padding: .4rem .65rem; border-radius: 8px;
+      min-height: 44px; padding: .4rem .65rem; border-radius: var(--dc-radius-control);
       border: 1px solid var(--md-sys-color-outline-variant);
       background: var(--md-sys-color-surface-container-low);
       color: var(--md-sys-color-on-surface); font: inherit; font-size: .8rem;
@@ -29,7 +29,7 @@ import { ThemeService } from '../../../core/services/theme.service';
     button:hover { background: var(--md-sys-color-surface-container-high); }
     button:focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 3px; }
     ng-icon { font-size: 1rem; }
-    @media (max-width: 600px) { span { display: none; } button { min-width: 36px; } }
+    @media (max-width: 600px) { span { display: none; } button { min-width: 44px; } }
   `,
 })
 export class ThemeToggleComponent {

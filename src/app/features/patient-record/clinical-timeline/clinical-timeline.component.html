@@ -3,7 +3,7 @@
     <div class="toolbar-left">
       <div class="accordion-quick-toggles">
         <button type="button" class="btn-toggle-subtle" (click)="expandAll()">Expandir todo</button>
-        <span class="toggle-sep">|</span>
+        <span class="toggle-sep" aria-hidden="true">|</span>
         <button type="button" class="btn-toggle-subtle" (click)="collapseAll()">Colapsar todo</button>
       </div>
 
@@ -86,7 +86,7 @@
         }
       </span>
       @if (canCreateEncounter()) {
-      <button type="button" class="btn-new-encounter-cta" (click)="createEncounter()">
+      <button type="button" class="dc-button dc-button--primary btn-new-encounter-cta" (click)="createEncounter()">
         <ng-icon name="lucidePlus" /><span>+ Nueva historia clínica</span>
       </button>
       }
@@ -109,7 +109,7 @@
         <h3>Sin historias clínicas registradas</h3>
         <p>No se encontraron registros previos en la historia clínica.</p>
       @if (canCreateEncounter()) {
-        <button type="button" class="btn-new-encounter-cta mt-3" (click)="createEncounter()"><ng-icon name="lucidePlus" /><span>+ Nueva historia clínica</span></button>
+        <button type="button" class="dc-button dc-button--primary btn-new-encounter-cta mt-3" (click)="createEncounter()"><ng-icon name="lucidePlus" /><span>+ Nueva historia clínica</span></button>
       }
       </div>
     }
@@ -143,7 +143,7 @@
             }
             @if (isCardExpanded(encounter.id)) { <div class="card-footer-actions"><div></div><div class="actions-right">
               <button type="button" class="btn-action-view" (click)="onViewCard(encounter.id, $event)"><ng-icon name="lucideEye" /><span>Ver detalle</span></button>
-              <button type="button" class="btn-action-delete" (click)="onDeleteCard(encounter.id, $event)" title="Eliminar registro de historia clínica"><ng-icon name="lucideTrash2" /></button>
+              <button type="button" class="btn-action-delete" (click)="onDeleteCard(encounter.id, $event)" title="Anular consulta"><ng-icon name="lucideTrash2" /></button>
             </div></div> }
           </div>
         </article>

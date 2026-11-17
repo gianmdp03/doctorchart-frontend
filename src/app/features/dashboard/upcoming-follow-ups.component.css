@@ -1,6 +1,13 @@
 :host { display: block; min-width: 0; }
 .followup-card {
+<<<<<<< Updated upstream
   padding: 14px 16px; border-radius: 14px; background: var(--desk-subtle);
+=======
+  padding: 24px;
+  border: 1px solid var(--dc-outline, #dce7e9);
+  border-radius: var(--dc-radius-card);
+  background: var(--dc-surface, #fff);
+>>>>>>> Stashed changes
 }
 .followup-heading { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: 4px 9px; }
 h2 { color: inherit; font-size: 1.25rem; line-height: 1.2; font-weight: 750; letter-spacing: -.027em; }

@@ -1,0 +1,9 @@
+
+:host { position: fixed; z-index: 2000; top: 12px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 24px); pointer-events: none; }
+.interaction-status { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: var(--dc-radius-card); background: var(--dc-paper); color: var(--dc-text); box-shadow: var(--dc-shadow-overlay); font-size: .875rem; line-height: 1.5; }
+.spinner { width: 18px; height: 18px; flex-shrink: 0; border: 2px solid var(--dc-line); border-top-color: var(--dc-brand); border-radius: 50%; animation: interaction-spin .9s linear infinite; }
+.error { flex-wrap: wrap; color: var(--dc-danger); background: var(--dc-danger-soft); border: 1px solid currentColor; }
+button { pointer-events: auto; min-height: 44px; padding: 10px 14px; border: 1px solid currentColor; border-radius: var(--dc-radius-control); background: transparent; color: inherit; font: inherit; font-size: .8125rem; font-weight: 600; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }
+@keyframes interaction-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }

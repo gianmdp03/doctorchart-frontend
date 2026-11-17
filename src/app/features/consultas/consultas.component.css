@@ -8,9 +8,9 @@
 .consultas-page {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
   width: 100%;
   flex: 1;
+  gap: 24px;
 }
 
 .consultas-header {
@@ -28,10 +28,12 @@
 }
 
 .page-title {
-  font-size: 1.5rem;
   font-weight: 700;
   color: var(--dc-ink, #0f172a);
   margin: 0;
+  font-size: 1.75rem;
+  letter-spacing: -.03em;
+  line-height: 1.25;
 }
 
 .page-subtitle {
@@ -44,38 +46,46 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background-color: #006874;
-  color: #ffffff;
   border: none;
-  border-radius: 9px;
   padding: 0.55rem 1rem;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s ease;
+  box-shadow: none;
+  background: var(--dc-brand);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .cta-primary-btn:hover {
-  background-color: #00505a;
+  box-shadow: none;
+  background: var(--dc-brand-hover);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .filter-toolbar-card {
   background: var(--dc-surface, #ffffff);
   border: 1px solid var(--dc-outline, #e2e8f0);
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
   flex-wrap: wrap;
+  padding: 20px;
+  gap: 16px;
+  border-radius: var(--dc-radius-card);
 }
 
 .search-input-wrap {
   flex: 1;
-  min-width: 240px;
   position: relative;
   display: flex;
   align-items: center;
+  min-width: min(240px, 100%);
 }
 
 .search-icon {
@@ -93,11 +103,14 @@
   font-size: 0.85rem;
   background-color: var(--dc-surface-low, #f8fafc);
   outline: none;
+  min-height: 44px;
+  border-color: var(--dc-control-line);
+  background: var(--dc-paper);
 }
 
 .filter-input:focus {
   background-color: var(--dc-surface, #ffffff);
-  border-color: #006874;
+  border-color: var(--dc-brand);
 }
 
 
@@ -105,7 +118,7 @@
   background: var(--dc-surface, #ffffff);
   border: 1px solid var(--dc-outline, #e2e8f0);
   border-radius: 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--dc-shadow-sm);
   overflow: hidden;
 }
 
@@ -196,7 +209,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 }
 
 .btn-detail:hover {
@@ -212,7 +225,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 }
 
 .btn-view-patient:hover {
@@ -233,7 +246,7 @@
 
 .empty-icon {
   font-size: 2.5rem;
-  color: #cbd5e1;
+  color: var(--dc-line);
   margin-bottom: 0.5rem;
 }
 
@@ -241,7 +254,7 @@
   width: 24px;
   height: 24px;
   border: 3px solid var(--dc-outline, #e2e8f0);
-  border-top-color: #006874;
+  border-top-color: var(--dc-brand);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }

@@ -64,10 +64,8 @@ export class LandingComponent {
 
   readonly bycodeUrl = site.applicationUrls.bycode;
   readonly publicAppointmentsEnabled = FEATURE_FLAGS.PUBLIC_APPOINTMENTS_ENABLED;
-  readonly plansUrl = new URL('/pricing', this.bycodeUrl).href;
   readonly contactUrl = new URL('/#bc-contact', this.bycodeUrl).href;
   readonly supportUrl = new URL('/support', this.bycodeUrl).href;
-  readonly registerUrl = new URL('/register', this.bycodeUrl).href;
   readonly productViews = [
     {
       key: 'growth',
@@ -142,7 +140,11 @@ export class LandingComponent {
     {
       number: '04',
       title: 'Continuá el seguimiento',
+<<<<<<< Updated upstream
       description: 'Revisá las consultas anteriores y gestioná las próximas citas desde la agenda.',
+=======
+      description: 'Revisá las consultas anteriores y la evolución de cada paciente.',
+>>>>>>> Stashed changes
     },
   ];
   readonly faqs = [
@@ -164,12 +166,12 @@ export class LandingComponent {
     {
       question: '¿Cómo ingreso?',
       answer:
-        'Ingresá con el correo y la contraseña de tu cuenta de Bycode. Si todavía no tenés una, podés crearla en Bycode. Para entrar al espacio clínico necesitás un plan DoctorChart activo; crear la cuenta no activa un plan por sí solo.',
+        'Ingresá con el correo y la contraseña de tu cuenta de Bycode. Si todavía no tenés una, podés crearla desde DoctorChart. Para entrar al espacio clínico necesitás un plan DoctorChart activo; crear la cuenta no activa un plan por sí solo.',
     },
     {
       question: '¿Dónde contrato el plan y gestiono mi cuenta?',
       answer:
-        'DoctorChart forma parte del ecosistema Bycode. Allí creás tu cuenta, consultás los planes y administrás tu suscripción. Después ingresás a DoctorChart con la misma cuenta para trabajar con tus pacientes.',
+        'DoctorChart forma parte del ecosistema Bycode. Podés crear tu cuenta, consultar los planes y contratar desde DoctorChart. Usá la misma cuenta en los demás productos de Bycode.',
     },
     {
       question: '¿Dónde puedo pedir ayuda?',

@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T00:54:47.057Z",
+  "title": "Design System: DoctorChart",
+  "extensions": {
+    "colorMeta": {
+      "dc-brand": {
+        "role": "primary",
+        "displayName": "Acción teal"
+      },
+      "dc-blue": {
+        "role": "secondary",
+        "displayName": "Foco azul"
+      },
+      "dc-canvas": {
+        "role": "neutral",
+        "displayName": "Canvas gris azulado"
+      },
+      "dc-paper": {
+        "role": "neutral",
+        "displayName": "Papel"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "display",
+        "purpose": "Título del directorio público."
+      },
+      "headline": {
+        "displayName": "headline",
+        "purpose": "Título de página operativa."
+      },
+      "title": {
+        "displayName": "title",
+        "purpose": "Categorías del formulario clínico."
+      },
+      "body": {
+        "displayName": "body",
+        "purpose": "Lectura global."
+      },
+      "label": {
+        "displayName": "label",
+        "purpose": "Etiquetas clínicas."
+      }
+    },
+    "shadows": [
+      {
+        "name": "dc-shadow-sm",
+        "value": "0 2px 5px rgb(25 49 63 / 5%)",
+        "purpose": "Elevación baja."
+      },
+      {
+        "name": "dc-shadow-panel",
+        "value": "0 8px 28px rgb(25 49 63 / 7%)",
+        "purpose": "Paneles elevados."
+      },
+      {
+        "name": "dc-shadow-overlay",
+        "value": "0 18px 54px rgb(16 35 47 / 18%)",
+        "purpose": "Menús y overlays."
+      },
+      {
+        "name": "dc-shadow-sm-dark",
+        "value": "0 2px 5px rgb(0 0 0 / 12%)",
+        "purpose": "Elevación baja."
+      },
+      {
+        "name": "dc-shadow-panel-dark",
+        "value": "0 8px 28px rgb(0 0 0 / 16%)",
+        "purpose": "Paneles elevados."
+      },
+      {
+        "name": "dc-shadow-overlay-dark",
+        "value": "0 18px 54px rgb(0 0 0 / 38%)",
+        "purpose": "Menús y overlays."
+      }
+    ],
+    "motion": [
+      {
+        "name": "dc-motion",
+        "value": "160ms",
+        "purpose": "Transiciones compartidas; 0ms con prefers-reduced-motion."
+      },
+      {
+        "name": "dc-ease",
+        "value": "cubic-bezier(.2, .8, .2, 1)",
+        "purpose": "Curva compartida de transición."
+      },
+      {
+        "name": "md-sys-motion-emphasized",
+        "value": "220ms cubic-bezier(.2, .8, .2, 1)",
+        "purpose": "Movimiento enfatizado definido en tokens Material."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "clinical-single-column",
+        "value": "600px"
+      },
+      {
+        "name": "booking-single-column",
+        "value": "760px"
+      },
+      {
+        "name": "mobile-shell",
+        "value": "768px"
+      },
+      {
+        "name": "wizard-horizontal-steps",
+        "value": "900px"
+      },
+      {
+        "name": "shell-medium-padding",
+        "value": "1000px"
+      },
+      {
+        "name": "calendar-single-column",
+        "value": "1120px"
+      }
+    ],
+    "focus": {
+      "colorToken": "dc-blue",
+      "width": "2px",
+      "offset": "3px",
+      "clinicalOffset": "2px"
+    },
+    "theme": {
+      "selector": ":root.dark",
+      "colorTokenSuffix": "-dark",
+      "source": "src/design-tokens.css"
+    },
+    "evidence": {
+      "mode": "code-led",
+      "sources": [
+        "src/design-tokens.css",
+        "src/styles-ui.css",
+        "src/styles-m3.css",
+        "src/styles-m3-private.css",
+        "src/app/app.css",
+        "src/app/layout/sidebar/sidebar.component.css",
+        "src/app/layout/header/header.component.css",
+        "src/app/layout/private-shell/private-shell.component.html",
+        "src/app/features/calendar/calendar-page.component.css",
+        "src/app/features/appointments/appointments-page.component.css",
+        "src/app/features/dynamic-form-renderer/dynamic-form-renderer.component.css",
+        "src/app/features/onboarding/onboarding-wizard/onboarding-wizard.component.css"
+      ],
+      "scope": "Documentación factual de código; revisión visual en curso. Sin comp ni tarjeta QUALITY BAR aprobada.",
+      "tonalRamps": "No añadidas: no existe una escala de ocho pasos definida y el alcance excluye valores sintéticos."
+    }
+  },
+  "components": [
+    {
+      "name": "Botón primary",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal compartida.",
+      "html": "<button type=\"button\" class=\"ds-button-primary\">Continuar</button>",
+      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:var(--dc-control-height,44px);padding:.625rem 1rem;border:1px solid var(--dc-control-line,#93a5af);border-radius:var(--dc-radius-control,10px);font-family:var(--dc-font,'Google Sans',sans-serif);font-size:.875rem;font-weight:600;line-height:1.35;text-decoration:none;cursor:pointer;transition:background-color var(--dc-motion,160ms) var(--dc-ease,cubic-bezier(.2,.8,.2,1)),border-color var(--dc-motion,160ms) var(--dc-ease,cubic-bezier(.2,.8,.2,1));background:var(--dc-brand,#08767b);color:var(--dc-on-brand,#fff);border-color:transparent;}.ds-button-primary:hover:not(:disabled){background:var(--dc-brand-hover,#06686d);}.ds-button-primary:focus-visible{outline:2px solid var(--dc-focus,#285cd6);outline-offset:3px;}.ds-button-primary:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-primary{transition:none;}}"
+    },
+    {
+      "name": "Botón secondary",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Acción secundaria con borde.",
+      "html": "<button type=\"button\" class=\"ds-button-secondary\">Volver</button>",
+      "css": ".ds-button-secondary{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:var(--dc-control-height,44px);padding:.625rem 1rem;border:1px solid var(--dc-control-line,#93a5af);border-radius:var(--dc-radius-control,10px);font-family:var(--dc-font,'Google Sans',sans-serif);font-size:.875rem;font-weight:600;line-height:1.35;text-decoration:none;cursor:pointer;transition:background-color var(--dc-motion,160ms) var(--dc-ease,cubic-bezier(.2,.8,.2,1)),border-color var(--dc-motion,160ms) var(--dc-ease,cubic-bezier(.2,.8,.2,1));background:var(--dc-paper,#fff);color:var(--dc-text,#19313f);}.ds-button-secondary:hover:not(:disabled){background:var(--dc-subtle,#f7f9fa);border-color:var(--dc-brand,#08767b);}.ds-button-secondary:focus-visible{outline:2px solid var(--dc-focus,#285cd6);outline-offset:3px;}.ds-button-secondary:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-secondary{transition:none;}}"
+    },
+    {
+      "name": "Botón quiet",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Acción de menor énfasis.",
+      "html": "<button type=\"button\" class=\"ds-button-quiet\">Cancelar</button>",
+      "css": ".ds-button-quiet{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:var(--dc-control-height,44px);padding:.625rem 1rem;border:1px solid var(--dc-control-line,#93a5af);border-radius:var(--dc-radius-control,10px);font-family:var(--dc-font,'Google Sans',sans-serif);font-size:.875rem;font-weight:600;line-height:1.35;text-decoration:none;cursor:pointer;transition:background-color var(--dc-motion,160ms) var(--dc-ease,cubic-bezier(.2,.8,.2,1)),border-color var(--dc-motion,160ms) var(--dc-ease,cubic-bezier(.2,.8,.2,1));background:transparent;color:var(--dc-brand-ink,#08666a);border-color:transparent;}.ds-button-quiet:hover:not(:disabled){background:var(--dc-subtle,#f7f9fa);border-color:var(--dc-brand,#08767b);}.ds-button-quiet:focus-visible{outline:2px solid var(--dc-focus,#285cd6);outline-offset:3px;}.ds-button-quiet:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-quiet{transition:none;}}"
+    },
+    {
+      "name": "Campo clínico",
+      "kind": "input",
+      "refersTo": "clinical-field",
+      "description": "Etiqueta externa, borde de control y foco azul del formulario clínico.",
+      "html": "<label class=\"ds-field\">Nombre<input class=\"ds-field-input\" type=\"text\" /></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:8px;font-family:var(--dc-font,'Google Sans',sans-serif);color:var(--dc-text-secondary,#4f6471);font-size:.8125rem;font-weight:600;line-height:1.5;}.ds-field-input{min-height:var(--dc-control-height,44px);padding:11px 12px;border:1px solid var(--dc-control-line,#93a5af);border-radius:var(--dc-radius-control,10px);background:var(--dc-paper,#fff);color:var(--dc-text,#19313f);font-family:var(--dc-font,'Google Sans',sans-serif);font-size:.9375rem;font-weight:400;line-height:1.5;}.ds-field-input:hover{border-color:var(--dc-brand,#08767b);}.ds-field-input:focus-visible{outline:2px solid var(--dc-focus,#285cd6);outline-offset:2px;}.ds-field-input:disabled{cursor:not-allowed;}"
+    },
+    {
+      "name": "Navegación activa",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Destino seleccionado en el menú lateral.",
+      "html": "<nav aria-label=\"Navegación\"><a class=\"ds-nav-active\" href=\"/calendar\" aria-current=\"page\">Agenda de turnos</a></nav>",
+      "css": ".ds-nav-active{display:flex;align-items:center;gap:12px;min-height:44px;padding:10px 12px;border-radius:var(--dc-radius-control,10px);background:var(--dc-brand-soft,#e5f4f1);color:var(--dc-brand-ink,#08666a);font-family:var(--dc-font,'Google Sans',sans-serif);font-size:.875rem;font-weight:650;line-height:1.4;text-decoration:none;transition:background-color var(--dc-motion,160ms) var(--dc-ease,cubic-bezier(.2,.8,.2,1));}.ds-nav-active:hover{background:var(--dc-brand-soft,#e5f4f1);color:var(--dc-brand-ink,#08666a);}.ds-nav-active:focus-visible{outline:2px solid var(--dc-focus,#285cd6);outline-offset:3px;}@media(prefers-reduced-motion:reduce){.ds-nav-active{transition:none;}}"
+    },
+    {
+      "name": "Estado",
+      "kind": "chip",
+      "refersTo": "status-chip",
+      "description": "Etiqueta compacta de estado con texto.",
+      "html": "<span class=\"ds-status\">Pendiente</span>",
+      "css": ".ds-status{display:inline-flex;align-items:center;width:fit-content;padding:4px 8px;border-radius:var(--dc-radius-pill,999px);background:var(--dc-raised,#edf2f5);color:var(--dc-text,#19313f);font-family:var(--dc-font,'Google Sans',sans-serif);font-size:.6875rem;font-weight:600;}"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Contenedor compartido de contenido operativo.",
+      "html": "<section class=\"ds-panel\"><h3 class=\"ds-panel-title\">Disponibilidad</h3></section>",
+      "css": ".ds-panel{padding:var(--dc-space-6,1.5rem);border:1px solid var(--dc-line,#dce5ea);border-radius:var(--dc-radius-card,16px);background:var(--dc-paper,#fff);color:var(--dc-text,#19313f);font-family:var(--dc-font,'Google Sans',sans-serif);}.ds-panel-title{margin:0;font-size:1rem;font-weight:650;line-height:1.5;}@media(max-width:768px){.ds-panel{padding:var(--dc-space-4,1rem);}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Espacio clínico",
+    "overview": "Interfaz clínica precisa y tranquila: fondo gris azulado, superficies de lectura separadas por bordes suaves y acciones teal. La misma familia tipográfica sirve a navegación, datos y formularios; el tema oscuro conserva las funciones semánticas de cada color.\n\nEl trabajo operativo domina la aplicación y las reservas. La superficie `/professionals` adopta el modo Persuade definido en el brief. Este documento describe código existente; no constituye una aprobación visual ni una certificación de cobertura.",
+    "keyCharacteristics": [
+      "Superficies neutrales con acciones y selección teal.",
+      "Tipografía única con escala en rem y ajuste de tamaño de letra.",
+      "Contexto clínico visible, formularios por categorías y estados con texto."
+    ],
+    "rules": [],
+    "dos": [
+      "Do conservar logotipos, etiquetas en español y fechas dd/MM/aaaa mediante los selectores compartidos.",
+      "Do mantener visibles especialidad, profesional, consultorio y modalidad cuando el flujo los requiere.",
+      "Do usar tokens compartidos para ambos temas, foco y estados semánticos con texto.",
+      "Do conservar navegación, permisos, campos, unidades, fórmulas, validaciones, borradores y flags."
+    ],
+    "donts": [
+      "Don't introducir profesionales, fotos, opiniones, precios ni garantías que el API no proporciona.",
+      "Don't sustituir la navegación móvil por iconos sin nombre ni ocultar el selector de especialidad.",
+      "Don't activar asistente o calculadoras ni reinterpretar tablas o datos por motivos visuales."
+    ]
+  }
+}

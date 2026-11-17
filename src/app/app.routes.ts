@@ -72,6 +72,9 @@ const baseRoutes: Routes = [
     path: 'professionals',
     loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent),
   },
+  { path: 'pricing', title: 'Planes de DoctorChart', loadComponent: () => import('./features/pricing/pricing.component').then(m => m.PricingComponent) },
+  { path: 'register/confirmed', data: { confirmation: true }, loadComponent: () => import('./features/auth/register-page.component').then(m => m.RegisterPageComponent) },
+  { path: 'register', loadComponent: () => import('./features/auth/register-page.component').then(m => m.RegisterPageComponent) },
   {
     path: 'login',
     canActivate: [publicEntryGuard],

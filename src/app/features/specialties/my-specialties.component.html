@@ -2,7 +2,7 @@
   <header class="page-heading">
     <h1 id="specialties-title">Mis especialidades</h1>
     @if (available().length) {
-      <button type="button" class="action primary" [disabled]="loading() || store.isMutating()"
+      <button type="button" class="dc-button dc-button--primary action primary" [disabled]="loading() || store.isMutating()"
         [attr.aria-expanded]="adding()" [attr.aria-controls]="adding() ? 'specialty-picker' : null"
         (click)="adding.set(!adding())">
         <ng-icon name="lucidePlus" aria-hidden="true" />
@@ -14,7 +14,7 @@
   @if (error()) {
     <div class="message" role="alert">
       <span>{{ error() }}</span>
-      <button type="button" class="action secondary" (click)="load()">Reintentar</button>
+      <button type="button" class="dc-button action secondary" (click)="load()">Reintentar</button>
     </div>
   }
   @if (loading()) {
@@ -64,13 +64,13 @@
             <a class="action text-action" [routerLink]="['/onboarding/setup']"
               [attr.aria-label]="'Personalizar ficha de ' + context.specialty.name"
               [queryParams]="{ specialtyContextId: context.id }">Personalizar ficha</a>
-            <a class="action secondary" [routerLink]="['/dashboard']" [queryParams]="{ specialtyContextId: context.id }"
+            <a class="dc-button action secondary" [routerLink]="['/dashboard']" [queryParams]="{ specialtyContextId: context.id }"
               [attr.aria-label]="'Entrar a ' + context.specialty.name">
               Entrar
               <ng-icon name="lucideArrowRight" aria-hidden="true" />
             </a>
           } @else {
-            <a class="action secondary" [routerLink]="['/onboarding/setup']"
+            <a class="dc-button action secondary" [routerLink]="['/onboarding/setup']"
               [queryParams]="{ specialtyContextId: context.id }">
               Continuar configuración
               <ng-icon name="lucideArrowRight" aria-hidden="true" />
@@ -82,7 +82,7 @@
       @if (!loading() && !error() && !(adding() && available().length)) {
         <div class="empty-state">
           <p>Todavía no configuraste una especialidad.</p>
-          <a class="action secondary" routerLink="/onboarding/select-specialty">Empezar configuración</a>
+          <a class="dc-button action secondary" routerLink="/onboarding/select-specialty">Empezar configuración</a>
         </div>
       }
     }

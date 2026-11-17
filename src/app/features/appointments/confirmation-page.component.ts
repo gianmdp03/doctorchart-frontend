@@ -9,6 +9,7 @@ import { environment } from '../../../environments/environment';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { PublicBookingReceiptComponent } from './public-booking-receipt.component';
 
+<<<<<<< Updated upstream
 export interface RecoveredConfirmation {
   modality?: 'IN_PERSON' | 'TELECONSULTATION';
   specialtyName?: string;
@@ -29,6 +30,15 @@ export interface RecoveredConfirmation {
   styleUrls: ['./public-booking.css', './confirmation-page.component.css'],
   templateUrl: './confirmation-page.component.html',
 })
+=======
+export interface RecoveredConfirmation {modality?:'IN_PERSON'|'TELECONSULTATION';specialtyName?:string;reference:string;status:string;start:string;end:string;doctorName:string;clinicName:string;address:string;timezone:string;accessExpiresAt:string;}
+@Component({selector:'app-confirmation-page',imports:[FormsModule,RouterLink],styleUrl:'./confirmation-page.component.css',template:`
+<main class="recovery-page"><a routerLink="/appointments" class="brand">Doctor Chart · Turnos online</a><h1>Consultá tu turno</h1><p class="intro">Ingresá el código de tu confirmación o del correo que recibiste. No necesitás crear una cuenta.</p>
+<form (ngSubmit)="consult()" #form="ngForm"><label for="confirmation-code">Código privado de consulta</label><div class="code-row"><input id="confirmation-code" name="accessCode" [(ngModel)]="accessCode" required minlength="43" maxlength="43" autocomplete="off" autocapitalize="off" spellcheck="false" [disabled]="busy()" /><button type="submit" [disabled]="busy()||form.invalid">{{busy()?'Consultando…':'Consultar turno'}}</button></div><p class="help">El código es personal. Nunca te pediremos DNI, contraseña ni información clínica para esta consulta.</p></form>
+@if(error()){<p class="error" role="alert">{{error()}}</p>}
+@if(confirmation();as c){<section class="constancia" aria-label="Constancia del turno"><p class="status">{{statusLabel(c.status)}}</p><h2>{{c.doctorName}}</h2>@if(c.specialtyName){<p>{{c.specialtyName}}</p>}<p class="when">{{displayDay(civilDate(c.start,c.timezone))}} · {{localTime(c.start,c.timezone)}} – {{localTime(c.end,c.timezone)}}</p><p>{{c.clinicName}} · {{c.modality==='TELECONSULTATION'?'Teleconsulta':'Presencial'}}</p>@if(c.address){<p>{{c.address}}</p>}<p class="zone">Hora de la agenda</p><div class="reference"><span>Referencia administrativa</span><code>{{c.reference}}</code></div><p class="help">Para cancelar o cambiar el turno, comunicate con el profesional. Este acceso permite consultar la información administrativa.</p></section>}
+<footer>No compartas tu código. Esta página no muestra historias clínicas ni guarda el código en tu navegador.</footer></main>`})
+>>>>>>> Stashed changes
 export class ConfirmationPageComponent {
   private readonly http = inject(HttpClient);
   private alive = true;

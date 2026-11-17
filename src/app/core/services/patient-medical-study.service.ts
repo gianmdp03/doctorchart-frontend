@@ -35,7 +35,7 @@ export class PatientMedicalStudyService {
     });
   }
 
-  deleteStudy(patientId: number, studyId: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${patientId}/studies/${studyId}`);
+  deleteStudy(patientId: number, studyId: number, reason: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${patientId}/studies/${studyId}`, { body: { reason } });
   }
 }

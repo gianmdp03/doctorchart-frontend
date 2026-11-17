@@ -154,11 +154,14 @@ describe('Patient vaccination backend schedule and revision handoff', () => {
     fixture.detectChanges();
     const dose = child().appliedDoses()[0];
     child().markApplied(dose, false);
+    expect(api.save).toHaveBeenCalledTimes(2);
+    child().annulVaccination('Registro duplicado');
     fixture.detectChanges();
     expect(api.save).toHaveBeenLastCalledWith(22, dose.id, {
       expectedVersion: 5,
       calendarId: 'calendar-test',
       applied: false,
+      reason: 'Registro duplicado',
     });
     expect(child().appliedDoses()).toHaveLength(1);
     expect(child().appliedDoses()[0].id).toBe('dose-opaque-2');

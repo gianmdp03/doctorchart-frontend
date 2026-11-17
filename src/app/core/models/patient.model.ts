@@ -16,7 +16,7 @@ export interface PatientRequestDTO {
   workspaceVersion: number;
   values: WizardFormValues;
 }
-export interface PatientUpdateRequestDTO { expectedVersion: number; values: WizardFormValues; }
+export interface PatientUpdateRequestDTO { expectedVersion: number; values: WizardFormValues; reason?: string; }
 
 export interface PatientDetailDTO extends ClinicalFormRecord {
   id: number;

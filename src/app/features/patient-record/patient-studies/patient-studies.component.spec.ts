@@ -34,17 +34,22 @@ describe('PatientStudiesComponent', () => {
     studyServiceMock.deleteStudy.mockReturnValue(of(undefined));
     component.deleteStudy(mockStudies[0]); fixture.detectChanges();
     expect(studyServiceMock.deleteStudy).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.querySelector('.inline-confirmation').textContent).toContain('radiografia_torax.pdf');
-    component.confirmDeleteStudy(); fixture.detectChanges();
-    expect(studyServiceMock.deleteStudy).toHaveBeenCalledWith(10, 1);
+    expect(fixture.nativeElement.querySelector('.inline-confirmation').textContent).toContain(mockStudies[0].name);
+    const confirmation = fixture.nativeElement.querySelector('.inline-confirmation app-annulment-prompt');
+    const input = confirmation.querySelector('textarea') as HTMLTextAreaElement;
+    const submit = confirmation.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+    input.value = 'Estudio duplicado'; input.dispatchEvent(new Event('input')); fixture.detectChanges();
+    submit.click(); fixture.detectChanges();
+    expect(studyServiceMock.deleteStudy).toHaveBeenCalledWith(10, 1, 'Estudio duplicado');
     expect(component.studies()).toEqual([]); expect(component.pendingDelete()).toBeNull();
   });
 
   it('discards a pending deletion on patient changes and allows cancel without a request', () => {
-    component.deleteStudy(mockStudies[0]); component.pendingDelete.set(null); component.confirmDeleteStudy();
+    component.deleteStudy(mockStudies[0]); component.pendingDelete.set(null); component.confirmDeleteStudy('Duplicado');
     expect(studyServiceMock.deleteStudy).not.toHaveBeenCalled();
     component.deleteStudy(mockStudies[0]); fixture.componentRef.setInput('patientId', 11);
-    component.confirmDeleteStudy();
+    component.confirmDeleteStudy('Duplicado');
     expect(studyServiceMock.deleteStudy).not.toHaveBeenCalled(); expect(component.pendingDelete()).toBeNull();
   });
 

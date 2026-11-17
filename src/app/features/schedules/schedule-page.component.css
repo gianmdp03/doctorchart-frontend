@@ -5,12 +5,12 @@
 
 .schedule-page {
   box-sizing: border-box;
-  max-width: 1140px;
   margin-inline: auto;
-  padding: clamp(16px, 3vw, 32px) clamp(16px, 3vw, 28px) 64px;
+  max-width: 1200px;
+  padding: 0 0 32px;
 }
 .page-heading { margin: 20px 0 24px; }
-h1 { margin: 6px 0 10px; font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 650; line-height: 1.12; }
+h1 { margin: 6px 0 10px; font-weight: 650; font-size: 1.75rem; letter-spacing: -.03em; line-height: 1.25; }
 h2 { margin: 0 0 8px; font-size: 1.2rem; font-weight: 650; }
 h3 { margin: 0; font-size: 1rem; font-weight: 650; }
 p { margin: 0 0 10px; line-height: 1.55; }
@@ -27,8 +27,8 @@ p { margin: 0 0 10px; line-height: 1.55; }
 .panel, .selected-clinic, .save-bar {
   background: var(--md-surface-container-lowest);
   border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: 14px;
   padding: clamp(16px, 2.5vw, 24px);
+  border-radius: var(--dc-radius-card);
 }
 .selected-clinic {
   display: flex;
@@ -36,14 +36,14 @@ p { margin: 0 0 10px; line-height: 1.55; }
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  background: var(--md-surface-container-low);
+  background: var(--dc-brand-soft);
+  padding: 24px;
 }
 .selected-clinic p { margin-bottom: 3px; overflow-wrap: anywhere; }
 .selected-clinic > label { flex: 0 1 250px; }
 
 .save-bar {
   position: sticky;
-  top: calc(var(--app-header-height, 64px) + 8px);
   z-index: 4;
   display: flex;
   justify-content: space-between;
@@ -51,9 +51,10 @@ p { margin: 0 0 10px; line-height: 1.55; }
   gap: 10px 16px;
   flex-wrap: wrap;
   margin: 14px 0;
-  padding: 10px 14px;
   padding-inline-end: 36px;
-  box-shadow: 0 3px 14px color-mix(in srgb, var(--md-sys-color-on-surface) 9%, transparent);
+  top: calc(var(--app-header-height) + 8px);
+  padding: 16px 20px;
+  box-shadow: var(--dc-shadow-sm);
 }
 .save-bar strong { display: block; font-size: .9rem; }
 .save-bar span { display: block; color: var(--md-sys-color-on-surface-variant); font-size: .82rem; }
@@ -79,16 +80,19 @@ button { cursor: pointer; font-size: .875rem; font-weight: 650; }
 button:hover:not(:disabled) { background: var(--md-surface-container-high); }
 button:disabled { opacity: .55; cursor: not-allowed; }
 :where(button, input, select, a):focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 3px; }
-.primary { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); border-color: transparent; }
-.primary:hover:not(:disabled) { background: var(--md-sys-color-primary); filter: brightness(.92); }
+.primary {
+  background: var(--dc-brand);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height); }
+.primary:hover:not(:disabled) { filter: brightness(.92); background: var(--dc-brand-hover); color: var(--dc-on-brand); border-color: transparent; border-radius: var(--dc-radius-control); min-height: var(--dc-control-height); }
 
 .day-row {
   display: grid;
   grid-template-columns: 105px minmax(0, 1fr) auto;
-  gap: 12px;
   align-items: center;
   border-top: 1px solid var(--md-sys-color-outline-variant);
-  padding: 12px 0;
 }
 .day-row:last-child { padding-bottom: 0; }
 .ranges { display: grid; gap: 10px; }
@@ -155,19 +159,39 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .day-row { grid-template-columns: minmax(0, 1fr) auto; }
   .day-row > .ranges { grid-column: 1 / -1; grid-row: 2; }
   .day-row > button { grid-column: 2; grid-row: 1; }
-  .save-bar { top: 8px; padding-inline-end: 14px; }
+  .save-bar { top: calc(var(--app-header-height) + 8px); padding-inline-end: 14px; }
 }
 
 .day-options {border:0;padding:8px 0;display:flex;gap:10px 18px;flex-wrap:wrap;margin:12px 0;}
-.day-options label {display:flex;align-items:center;gap:6px;}
+.day-options label {display:flex;align-items:center;gap:6px;padding: 8px 10px;min-height: 44px;border: 1px solid var(--dc-line);border-radius: var(--dc-radius-control);background: var(--dc-subtle);}
 .day-options input {width:18px;min-height:18px;accent-color:var(--md-sys-color-primary);}
-.block-card {padding:14px;border:1px solid var(--md-sys-color-outline-variant);border-radius:10px;background:var(--md-surface-container-low);}
+.block-card {border:1px solid var(--md-sys-color-outline-variant);border-radius:10px;padding: 16px;background: var(--dc-subtle);border-color: var(--dc-line);}
 .block-card p {overflow-wrap:anywhere;}
-.day-row {grid-template-columns:105px minmax(0,1fr);align-items:start;}
+.day-row {grid-template-columns:105px minmax(0,1fr);align-items:start;padding: 20px 0;gap: 20px;}
 .actions {margin-top:14px;}
 @media(max-width:680px){.day-row{grid-template-columns:minmax(0,1fr);}.day-row>.ranges{grid-column:1;grid-row:auto;}.range>button{width:100%;}}
 
-.occupied-preview { border: 1px solid currentColor; border-radius: .75rem; padding: .75rem 1rem; margin-block: 1rem; }
+.occupied-preview { margin-block: 1rem; padding: 20px; border: 1px solid var(--dc-line); background: var(--dc-paper); border-radius: var(--dc-radius-card); }
 .occupied-preview header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem; align-items: center; }
 .occupied-preview ul { list-style: none; padding: 0; display: grid; gap: .35rem; max-height: 15rem; overflow: auto; }
-.occupied-preview li { display: flex; flex-wrap: wrap; gap: .5rem; padding: .35rem .65rem; border-inline-start: .2rem solid currentColor; }
+.occupied-preview li { display: flex; flex-wrap: wrap; gap: .5rem; padding: 10px 12px; border-inline-start: 0; border-radius: var(--dc-radius-sm); background: var(--dc-subtle); }
+
+/* Keep related labels and descriptions readable without crowding the controls. */
+.schedule-page h2 { line-height: 1.35; margin-bottom: .75rem; }
+.schedule-page h3 { line-height: 1.4; }
+.schedule-page label { line-height: 1.4; gap: .5rem; }
+.panel > h2 + p { margin-bottom: 1.25rem; }
+.panel > label + p { margin-top: .875rem; }
+.selected-clinic > div > h2 { margin-bottom: .625rem; }
+.selected-clinic > div > p:not(.eyebrow) { margin-bottom: .375rem; }
+.selected-clinic > div > p:last-child { margin-bottom: 0; }
+.block-card > p { margin-bottom: 1rem; }
+.block-card > p strong, .block-card > p span { line-height: 1.5; }
+.day-options { row-gap: .75rem; margin-block: 1rem; }
+.day-options legend { padding-bottom: .5rem; }
+.occupied-preview header { gap: 1rem 1.5rem; }
+.occupied-preview header + p { margin-top: 1rem; }
+@media (max-width: 680px) {
+  .panel > h2 + p { margin-bottom: 1rem; }
+  .occupied-preview header > label { flex: 1 1 100%; }
+}

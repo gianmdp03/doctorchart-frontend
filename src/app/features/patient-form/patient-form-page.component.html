@@ -93,13 +93,20 @@
           (valuesChange)="onValuesChange($event)"
           (validityChange)="onFormValidityChange($event)"
         />
+        @if (isEditMode()) {
+          <label>
+            Motivo de corrección (opcional)
+            <textarea #reason rows="2" maxlength="1000" [value]="correctionReason()" [disabled]="readonly()"
+              (input)="correctionReason.set(reason.value)"></textarea>
+          </label>
+        }
       </main>
 
       <!-- Bottom Sticky Action Bar -->
       <footer class="form-actions-bar">
         <button
           type="button"
-          class="btn-cancel"
+          class="dc-button btn-cancel"
           [disabled]="isSubmitting()"
           (click)="cancel()"
         >
@@ -107,7 +114,7 @@
         </button>
         <button
           type="button"
-          class="btn-submit"
+          class="dc-button dc-button--primary btn-submit"
           [disabled]="readonly() || !definition()"
           (click)="submit()"
         >

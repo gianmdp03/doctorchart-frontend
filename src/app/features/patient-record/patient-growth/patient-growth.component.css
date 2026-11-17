@@ -65,14 +65,15 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border-radius: 8px;
   border: none;
   background: transparent;
   color: var(--dc-ink-secondary, #475569);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
+  min-height: 44px;
+  border-radius: var(--dc-radius-control);
 }
 
 .growth-pill-btn:hover {
@@ -138,7 +139,7 @@
 
 .growth-state {
   padding: 18px;
-  border: 1px solid #d9e3ec;
+  border: 1px solid var(--dc-line);
   border-radius: 8px;
   background: var(--dc-surface-low, #f8fafc);
   color: var(--dc-ink-secondary, #344155);
@@ -153,11 +154,14 @@
   font-size: 12px;
   line-height: 1.7;
   color: var(--dc-ink-muted, #62758c);
+  padding: 16px;
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-subtle);
 }
 
 .growth-position-panel {
   padding: 12px 16px;
-  border: 1px solid #d9e3ec;
+  border: 1px solid var(--dc-line);
   border-radius: 8px;
   margin-bottom: 16px;
   font-size: 13px;
@@ -181,12 +185,12 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 9px 0;
-  border-bottom: 1px solid #edf1f5;
+  border-bottom: 1px solid var(--dc-line);
 }
 
 .position-row select {
   padding: 7px;
-  border: 1px solid #c7d5e5;
+  border: 1px solid var(--dc-line);
   border-radius: 6px;
   background: var(--dc-surface, white);
   max-width: 100%;

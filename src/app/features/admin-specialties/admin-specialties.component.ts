@@ -1,10 +1,11 @@
 import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { Component, computed, effect, inject, OnDestroy, OnInit, signal, untracked, viewChildren } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { AdminSpecialtyService } from '../../core/services/admin-specialty.service';
 import { AuthService } from '../../core/services/auth.service';
-import { SpecialtyDetail, WizardDefaultDetail } from '../../core/models/admin-specialty.model';
+import { SpecialtyDetail, TemplateReviewStatus, WizardDefaultDetail } from '../../core/models/admin-specialty.model';
 import { createDefaultWizardDefinition, WizardDefinition, WizardFormDefinition, WizardModulesConfig, WizardSection } from '../../core/models/wizard-definition.model';
 import { FormFieldEditorComponent } from '../form-field-editor/form-field-editor.component';
 
@@ -15,7 +16,7 @@ const defaultDefinition = (): WizardDefinition => createDefaultWizardDefinition(
 const clone = <T>(value: T): T => structuredClone(value);
 
 @Component({
-  selector: 'app-admin-specialties', imports: [FormsModule, FormFieldEditorComponent],
+  selector: 'app-admin-specialties', imports: [DatePipe, FormsModule, FormFieldEditorComponent],
   templateUrl: './admin-specialties.component.html', styleUrl: './admin-specialties.component.css',
 })
 export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
@@ -32,6 +33,11 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   readonly specialties = signal<SpecialtyDetail[]>([]);
   readonly selectedSpecialty = signal<SpecialtyDetail | null>(null);
   readonly wizard = signal<WizardDefaultDetail | null>(null);
+  readonly review = signal<TemplateReviewStatus | null>(null);
+  readonly revoking = signal<number | null>(null);
+  readonly revocationReason = signal('');
+  readonly draftLabels = { PENDING: 'Pendiente de aprobación', APPROVED: 'Aprobada', PUBLISHED: 'Publicada', BLOCKED: 'Revisión bloqueada' };
+  readonly publicationLabels = { UNPUBLISHED: 'Sin publicar', LEGACY: 'Heredada, con altas bloqueadas', APPROVED: 'Aprobada', REVOKED: 'Revocada', BLOCKED: 'Bloqueada' };
   readonly definition = signal<WizardDefinition | null>(null);
   readonly creating = signal(false);
   readonly name = signal('');
@@ -66,13 +72,17 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   readonly readonly = computed(() => this.busy() || this.accessDenied() || this.hasConflict() || !this.auth.isSuperAdmin() || this.identity() !== this.owner);
   readonly canEditExisting = computed(() => !this.readonly() && !!this.selectedSpecialty() && this.wizard()?.specialtyId === this.selectedSpecialty()?.id);
 
+  readonly reviewReady = computed(() => this.canEditExisting() && !this.metadataStale() && !this.pendingEditor()
+    && this.review() !== null && this.wizard()?.version === this.review()?.revision
+    && JSON.stringify(this.definition()) === JSON.stringify(this.wizard()?.draftDefinition));
+
   constructor() {
     effect(() => {
       const identity = this.identity();
       untracked(() => {
         if (identity === this.owner) return;
         this.owner = identity; this.epoch++; this.busy.set(false);
-        this.specialties.set([]); this.selectedSpecialty.set(null); this.wizard.set(null); this.definition.set(null);
+        this.specialties.set([]); this.selectedSpecialty.set(null); this.wizard.set(null); this.review.set(null); this.revoking.set(null); this.revocationReason.set(''); this.definition.set(null);
         this.creating.set(false); this.name.set(''); this.code.set(''); this.description.set(''); this.pendingSelection.set(null); this.metadataStale.set(false);
         this.clearFeedback(); this.accessDenied.set(!this.auth.isSuperAdmin());
         if (this.auth.isSuperAdmin()) void this.refreshCatalog();
@@ -114,7 +124,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
     if (this.busy() || this.accessDenied() || !this.auth.isSuperAdmin() || this.identity() !== this.owner) return;
     const epoch = ++this.epoch;
     if (selection.kind === 'create') {
-      this.selectedSpecialty.set(null); this.wizard.set(null); this.definition.set(defaultDefinition());
+      this.selectedSpecialty.set(null); this.wizard.set(null); this.review.set(null); this.revoking.set(null); this.revocationReason.set(''); this.definition.set(defaultDefinition());
       this.metadataAttempted.set(false); this.creating.set(true); this.name.set(''); this.code.set(''); this.description.set(''); this.codeEdited.set(false);
       this.clearFeedback(); this.editorGeneration.update(n => n + 1); return;
     }
@@ -125,7 +135,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
       const wizard = await firstValueFrom(this.service.getWizard(selection.id));
       if (!this.alive(epoch)) return;
       if (wizard.specialtyId !== selection.id) throw new Error('La configuración recibida corresponde a otra especialidad.');
-      this.acceptCopy({ specialty, wizard }); this.clearFeedback();
+      this.acceptCopy({ specialty, wizard }); this.clearFeedback(); await this.loadReview(specialty.id, epoch);
     } catch (error) { if (this.alive(epoch)) this.handleError(error, 'No pudimos abrir el wizard. La edición anterior se conserva.'); }
     finally { if (this.alive(epoch)) this.busy.set(false); }
   }
@@ -154,12 +164,20 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
       const specialty = await firstValueFrom(this.service.createSpecialty({ code: this.code().trim(), name: this.name().trim(), description: this.description().trim() || null, definition: clone(definition) }));
       if (!this.alive(epoch)) return;
       this.upsertSpecialty(specialty); this.selectedSpecialty.set(clone(specialty)); this.creating.set(false); this.code.set(specialty.code);
+<<<<<<< Updated upstream
       this.name.set(specialty.name); this.description.set(specialty.description ?? ''); this.wizard.set(null);
       this.interaction.notifySuccess('La especialidad se creó como borrador inactivo.');
       // The POST succeeded: never offer to create the same resource again if this GET fails.
       const wizard = await firstValueFrom(this.service.getWizard(specialty.id));
       if (!this.alive(epoch)) return;
       this.acceptCopy({ specialty, wizard }); this.clearFeedback();
+=======
+      this.name.set(specialty.name); this.description.set(specialty.description ?? ''); this.wizard.set(null); this.review.set(null); this.revoking.set(null); this.revocationReason.set('');
+      // The POST succeeded: never offer to create the same resource again if this GET fails.
+      const wizard = await firstValueFrom(this.service.getWizard(specialty.id));
+      if (!this.alive(epoch)) return;
+      this.acceptCopy({ specialty, wizard }); this.clearFeedback(); await this.loadReview(specialty.id, epoch); this.success.set('Especialidad creada como borrador inactivo. Completá el wizard y publicalo cuando esté listo.');
+>>>>>>> Stashed changes
     } catch (error) { if (this.alive(epoch)) this.handleError(error, 'No pudimos completar la operación. Si la especialidad fue creada, volvé a abrirla desde la lista para cargar su wizard.'); }
     finally { if (this.alive(epoch)) this.busy.set(false); }
   }
@@ -171,7 +189,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   }
   async toggleActive(): Promise<void> {
     const selected = this.selectedSpecialty();
-    if (!selected || !this.canEditExisting() || this.metadataStale()) return;
+    if (!selected || !this.canEditExisting() || this.metadataStale() || (!selected.active && !this.review()?.canActivate)) return;
     await this.patchSpecialty({ active: !selected.active });
   }
   private async patchSpecialty(patch: { name?: string; description?: string | null; active?: boolean }): Promise<void> {
@@ -192,26 +210,86 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   private async writeWizard(publish: boolean): Promise<void> {
     const selected = this.selectedSpecialty(); const wizard = this.wizard(); const definition = this.definition();
     if (!selected || !wizard || !definition || !this.canEditExisting() || this.metadataStale() || this.pendingEditor()) return;
+    if (publish && (!this.reviewReady() || !this.review()?.canPublish)) return;
     this.beginOperation(); this.busy.set(true); const epoch = this.epoch;
     try {
-      const saved = await firstValueFrom(this.service.saveWizardDraft(selected.id, { expectedVersion: wizard.version, definition: clone(definition) }));
+      const saved = publish
+        ? await firstValueFrom(this.service.publishWizard(selected.id, wizard.version))
+        : await firstValueFrom(this.service.saveWizardDraft(selected.id, { expectedVersion: wizard.version, definition: clone(definition) }));
       if (!this.alive(epoch)) return;
       this.assertWizardIdentity(saved, selected.id);
-      this.wizard.set(clone(saved)); this.definition.set(clone(saved.draftDefinition));
+      this.wizard.set(clone(saved)); this.definition.set(clone(saved.draftDefinition)); this.review.set(null);
       if (publish) {
-        const published = await firstValueFrom(this.service.publishWizard(selected.id, saved.version));
-        if (!this.alive(epoch)) return;
-        this.assertWizardIdentity(published, selected.id);
-        this.wizard.set(clone(published)); this.definition.set(clone(published.draftDefinition));
         this.metadataStale.set(true);
         const list = await firstValueFrom(this.service.getSpecialties());
         if (!this.alive(epoch)) return;
         this.specialties.set(clone(list));
         this.refreshSelectedMetadata(list);
       }
+<<<<<<< Updated upstream
       this.clearFeedback(); this.interaction.notifySuccess(publish ? 'Wizard publicado. Las copias personales de los médicos se conservan.' : 'Borrador guardado. La publicación vigente se conserva.');
+=======
+      await this.loadReview(selected.id, epoch);
+      if (!this.alive(epoch)) return;
+      this.clearFeedback(); this.success.set(publish ? 'Wizard publicado. Las copias personales de los médicos se conservan.' : 'Borrador guardado. La publicación vigente se conserva.');
+>>>>>>> Stashed changes
     } catch (error) { if (this.alive(epoch)) this.handleError(error, publish ? 'No pudimos completar la publicación. El borrador guardado se conserva.' : 'No pudimos guardar el borrador. Tus cambios locales se conservan.'); }
     finally { if (this.alive(epoch)) this.busy.set(false); }
+  }
+
+  async reloadReview(more = false): Promise<void> {
+    const id = this.selectedSpecialty()?.id;
+    if (id === undefined || !this.canEditExisting()) return;
+    const epoch = this.epoch;
+    this.busy.set(true);
+    try { await this.loadReview(id, epoch, more); }
+    finally { if (this.alive(epoch)) this.busy.set(false); }
+  }
+
+  async approveWizard(): Promise<void> {
+    const revision = this.review();
+    if (!revision?.canApprove || !this.reviewReady()) return;
+    await this.recordDecision(id => firstValueFrom(this.service.approveWizard(id, revision.revision)));
+  }
+
+  async revokeWizard(): Promise<void> {
+    const approval = this.revoking();
+    const reason = this.revocationReason().trim();
+    if (approval === null || !reason || reason.length > 500 || !this.canEditExisting()) return;
+    if (!this.review()?.history.some(decision => decision.id === approval && !decision.revokedAt)) return;
+    await this.recordDecision(id => firstValueFrom(this.service.revokeWizard(id, approval, reason)));
+  }
+
+  private async recordDecision(write: (id: number) => Promise<void>): Promise<void> {
+    const id = this.selectedSpecialty()?.id;
+    if (id === undefined || !this.canEditExisting()) return;
+    this.beginOperation(); this.busy.set(true); const epoch = this.epoch;
+    try {
+      await write(id);
+      if (!this.alive(epoch)) return;
+      this.revoking.set(null); this.revocationReason.set('');
+      await this.loadReview(id, epoch);
+      if (this.alive(epoch)) this.success.set('Decisión registrada.');
+    } catch (error) {
+      if (this.alive(epoch)) this.handleError(error, 'No pudimos registrar la decisión.');
+    } finally {
+      if (this.alive(epoch)) this.busy.set(false);
+    }
+  }
+
+  private async loadReview(id: number, epoch: number, more = false): Promise<void> {
+    const prior = this.review();
+    if (more && !prior?.nextBefore) return;
+    try {
+      const status = await firstValueFrom(this.service.getReviewStatus(id, more ? prior?.nextBefore ?? undefined : undefined));
+      if (!this.alive(epoch)) return;
+      this.review.set(more && prior ? { ...status, history: [...prior.history, ...status.history] } : status);
+    } catch (error) {
+      if (this.alive(epoch)) {
+        this.review.set(null);
+        this.handleError(error, 'No pudimos consultar la revisión de la plantilla.');
+      }
+    }
   }
 
   async reviewRemote(): Promise<void> {
@@ -229,7 +307,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   }
   useRemote(): void {
     const remote = this.remoteCopy(); if (!remote || this.busy() || this.accessDenied() || !this.auth.isSuperAdmin() || this.identity() !== this.owner) return;
-    this.acceptCopy(remote); this.upsertSpecialty(remote.specialty); this.clearFeedback();
+    this.acceptCopy(remote); this.upsertSpecialty(remote.specialty); this.clearFeedback(); void this.reloadReview();
     this.success.set('Copia del servidor cargada. Los cambios locales anteriores fueron descartados.');
   }
 
@@ -248,6 +326,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
     return true;
   }
   private acceptCopy(copy: RemoteCopy): void {
+    this.review.set(null); this.revoking.set(null); this.revocationReason.set('');
     this.metadataAttempted.set(false);
     if (copy.wizard.specialtyId !== copy.specialty.id) throw new Error('La configuración recibida corresponde a otra especialidad.');
     this.selectedSpecialty.set(clone(copy.specialty)); this.wizard.set(clone(copy.wizard)); this.definition.set(clone(copy.wizard.draftDefinition));
@@ -274,7 +353,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   private beginOperation(): void { this.error.set(null); this.success.set(null); this.validationIssues.set([]); }
   private handleError(error: unknown, fallback: string): void {
     const response = error as { status?: number; error?: { code?: string; message?: unknown; errors?: ValidationIssue[] } };
-    if (response?.status === 403) { this.accessDenied.set(true); this.error.set('No tenés permiso de Superadmin para administrar especialidades.'); return; }
+    if (response?.status === 403 && response.error?.code !== 'TEMPLATE_REVIEW_NOT_AUTHORIZED') { this.accessDenied.set(true); this.error.set('No tenés permiso de Superadmin para administrar especialidades.'); return; }
     if (response?.status === 409 && response.error?.code === 'VERSION_CONFLICT') { this.hasConflict.set(true); this.remoteCopy.set(null); }
     this.error.set(typeof response?.error?.message === 'string' ? response.error.message : fallback);
     this.validationIssues.set(Array.isArray(response?.error?.errors) ? response.error.errors : []);

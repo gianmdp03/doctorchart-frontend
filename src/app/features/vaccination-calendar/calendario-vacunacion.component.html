@@ -203,7 +203,11 @@
   } @else if (loading()) {
     <div class="status-card" role="status">Cargando calendario nacional de vacunación…</div>
   } @else if (error(); as error) {
-    <div class="status-card status-error" role="alert">{{ error }}</div>
+    <div class="status-card status-error" role="alert">
+      <h2>No pudimos cargar el calendario</h2>
+      <p>El servicio no está disponible en este momento. Volvé a intentar en unos minutos.</p>
+      <button type="button" class="dc-button" (click)="retryLoad()">Reintentar carga</button>
+    </div>
   }
 
   @if (activeTooltip(); as tooltip) {

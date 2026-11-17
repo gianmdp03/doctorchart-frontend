@@ -17,42 +17,7 @@ import { afterNextRender, ChangeDetectionStrategy, Component, DestroyRef, inject
       </button>
     }
   `,
-  styles: `
-    .scroll-to-top {
-      position: fixed;
-      right: max(1rem, env(safe-area-inset-right));
-      z-index: 40;
-      display: grid;
-      place-items: center;
-      width: 44px;
-      height: 44px;
-      padding: 0;
-      border: 1px solid var(--dc-outline, #e2e8f0);
-      border-radius: 16px;
-      background: var(--dc-surface, #fff);
-      color: var(--md-sys-color-primary, #006874);
-      box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
-      cursor: pointer;
-      transition: transform 150ms ease, box-shadow 150ms ease;
-    }
-    .scroll-to-top:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
-    }
-    .scroll-to-top:focus-visible {
-      outline: 2px solid var(--md-sys-color-primary, #006874);
-      outline-offset: 3px;
-    }
-    @media (min-width: 640px) {
-      .scroll-to-top { right: max(2rem, env(safe-area-inset-right)); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .scroll-to-top { transition: none; }
-      .scroll-to-top:hover { transform: none; }
-    }
-    @media (max-width: 768px) { .scroll-to-top { display: none; } }
-    @media print { .scroll-to-top { display: none; } }
-  `,
+  styleUrl: './scroll-to-top.component.css',
 })
 export class ScrollToTopComponent {
   readonly visible = signal(false);

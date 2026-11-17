@@ -1,4 +1,5 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, signal } from '@angular/core';
+import { AnnulmentPromptComponent } from '../annulment-prompt.component';
 import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -15,7 +16,7 @@ import { ClinicalEncounterList } from '../../../core/models/clinical-encounter.m
 import { PatientPrescriptionEditorStore } from './patient-prescription-editor.store';
 @Component({
   selector: 'app-patient-prescriptions',
-  imports: [FormsModule, NgIcon],
+  imports: [FormsModule, NgIcon, AnnulmentPromptComponent],
   providers: [
     provideIcons({
       lucidePill,
@@ -32,6 +33,7 @@ import { PatientPrescriptionEditorStore } from './patient-prescription-editor.st
   styleUrl: './patient-prescriptions.component.css',
 })
 export class PatientPrescriptionsComponent {
+  readonly pendingAnnulment = signal<number | null>(null);
   readonly editor = inject(PatientPrescriptionEditorStore);
   readonly latestEncounter = input<ClinicalEncounterList>();
 }

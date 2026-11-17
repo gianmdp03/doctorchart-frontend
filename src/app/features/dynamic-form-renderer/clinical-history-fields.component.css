@@ -5,18 +5,19 @@
 }
 .health-block {
   border: 1px solid var(--dc-outline, #dce5e8);
-  border-radius: 18px;
   background: var(--dc-surface, #fff);
   overflow: hidden;
   color: var(--dc-ink, #18333b);
+  border-radius: var(--dc-radius-card);
+  box-shadow: none;
 }
 .health-header {
-  padding: 24px 26px 20px;
   display: flex;
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid var(--dc-outline, #e2e8f0);
   background: linear-gradient(120deg, var(--dc-teal-surface, #effaf8), var(--dc-surface, #fff) 75%);
+  padding: 20px 24px;
 }
 .eyebrow {
   font-size: 0.65rem;
@@ -56,7 +57,7 @@ ng-icon {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   padding: 22px;
-  gap: 16px;
+  gap: 20px;
 }
 .health-card {
   min-width: 0;
@@ -257,4 +258,8 @@ select {
 }
 .health-details {
   overflow-wrap: anywhere;
+}
+.health-header h3 {
+  font-size: 1rem;
+  font-weight: 650;
 }

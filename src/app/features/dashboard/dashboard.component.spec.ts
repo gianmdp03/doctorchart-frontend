@@ -136,18 +136,10 @@ describe('DashboardComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('groups all upcoming patients by the server calendar day and links to their records', () => {
-    const activity = {
-      totalPatients: 30, asOfDate: '2026-12-31', encountersThisMonth: 4, encountersToday: 0, recentEncounters: [],
-      upcomingFollowUps: [
-        { encounterId: 100, patientId: 1, patientFullName: 'Lucía Fernández', followUpDate: '2026-12-31' },
-        { encounterId: 101, patientId: 2, patientFullName: 'Mateo Rossi', followUpDate: '2027-01-01' },
-        { encounterId: 102, patientId: 3, patientFullName: 'Valentina López', followUpDate: '2027-01-01' },
-        { encounterId: 103, patientId: 4, patientFullName: 'Tomás Pérez', followUpDate: '2027-01-02' },
-      ],
-    };
-    clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(of(activity));
+  it('does not display legacy upcoming consultations from the dashboard response', () => {
+    clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(of({ totalPatients: 1, asOfDate: '2026-10-05', encountersThisMonth: 1, encountersToday: 1, recentEncounters: [], upcomingFollowUps: [{ encounterId: 1, patientId: 1, patientFullName: 'Paciente', followUpDate: '2026-10-06' }] }));
     component.loadKpiData(); fixture.detectChanges();
+<<<<<<< Updated upstream
     expect(component.upcomingGroups().map(group => [group.label, group.date, group.items.length])).toEqual([
       ['Hoy', '2026-12-31', 1], ['Mañana', '2027-01-01', 2], ['Pasado mañana', '2027-01-02', 1],
     ]);
@@ -195,6 +187,9 @@ describe('DashboardComponent', () => {
     expect(component.upcomingFollowUps()).toBeNull();
     expect(fixture.nativeElement.querySelector('.followup-card').textContent).not.toContain('Mateo Rossi');
     expect(pending.observed).toBe(false);
+=======
+    expect(fixture.nativeElement.querySelector('.followup-card')).toBeNull();
+>>>>>>> Stashed changes
   });
 
   it('reloads reminders when the local calendar day changes', () => {

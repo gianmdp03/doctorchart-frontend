@@ -1,0 +1,21 @@
+
+:host { display: block; min-height: 100dvh; background: var(--dc-canvas); color: var(--dc-text); }
+.register-page { display: grid; place-items: center; min-height: 100dvh; padding: 40px 24px; }
+.register-card { width: min(100%, 580px); padding: 36px; border-radius: var(--dc-radius-card); background: var(--dc-paper); box-shadow: var(--dc-shadow-panel); }
+.register-tools { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+.brand { margin: 0; color: var(--dc-brand-ink); font-size: 1.125rem; font-weight: 750; }
+h1 { margin: 0 0 16px; font-size: 1.75rem; font-weight: 700; letter-spacing: -.03em; line-height: 1.25; }
+p { margin: 0 0 16px; color: var(--dc-text-secondary); font-size: .875rem; line-height: 1.65; }
+form { display: grid; gap: 10px; margin-top: 24px; }
+label { margin-top: 8px; font-size: .8125rem; font-weight: 600; }
+input { width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); background: var(--dc-paper); color: var(--dc-text); font: inherit; font-size: .9375rem; }
+button, nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 10px 16px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); font: inherit; font-size: .875rem; font-weight: 600; text-decoration: none; cursor: pointer; }
+button { margin-top: 12px; border-color: transparent; background: var(--dc-brand); color: var(--dc-on-brand); }
+button:hover:not(:disabled) { background: var(--dc-brand-hover); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+a { color: var(--dc-brand-ink); text-underline-offset: 3px; }
+nav a { background: var(--dc-paper); }
+nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+:where(button, input, a):focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }
+.form-error { margin: 12px 0 0; padding: 16px; border: 1px solid currentColor; border-radius: var(--dc-radius-control); background: var(--dc-danger-soft); color: var(--dc-danger); }
+@media (max-width: 600px) { .register-page { padding: 24px 16px; } .register-card { padding: 24px 20px; } h1 { font-size: 1.5rem; } nav a { flex: 1; } }

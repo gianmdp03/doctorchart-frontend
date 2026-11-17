@@ -40,6 +40,7 @@ export interface ClinicalEncounterRequest {
   values: WizardFormValues;
 }
 export interface ClinicalEncounterUpdateRequest {
+  reason?: string;
   expectedVersion: number;
   encounterDate?: string;
   consultationType: ConsultationType;

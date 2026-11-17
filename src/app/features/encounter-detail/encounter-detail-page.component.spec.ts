@@ -27,6 +27,7 @@ describe('EncounterDetailPageComponent saved snapshot editing', () => {
     await fixture.whenStable(); fixture.detectChanges();
   });
   function edit(): void { component.startEditing(); component.onValuesChange({ readingA: 0, readingB: 20, notes: 'Edición local', result: 100, unknown: 'No enviar' }); component.formValid.set(true); }
+<<<<<<< Updated upstream
   it('hides legacy scheduling and posture fields, and only changes the posture when confirmed', async () => {
     record.formDefinitionSnapshot.categories[0].fields.push(
       { key: 'followUpDate', label: 'Próximo control', type: 'DATE', required: false },
@@ -43,6 +44,25 @@ describe('EncounterDetailPageComponent saved snapshot editing', () => {
     expect(fixture.nativeElement.textContent).toContain('Confirmo que la talla se midió de pie');
     component.correctHeightPosition.set(true); await component.save();
     expect(service.update.mock.calls[1][1].values).toMatchObject({ followUpDate: '2028-02-29', heightMeasurementMode: 'STANDING' });
+=======
+  it.each(['FIRST_VISIT', 'FOLLOW_UP'] as const)('preserves a hidden saved next consultation when editing %s', async (kind) => {
+    record.consultationType = kind;
+    for (const key of ['followUpDate', 'encounter.followUpDate']) {
+      record.formDefinitionSnapshot.categories[0].fields.push({ key, label: 'Próximo control', type: 'DATE', required: false });
+      record.formValues[key] = '2028-02-29';
+    }
+    record.followUpDate = '2028-02-29';
+    await component.loadEncounter(77); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-field-key="followUpDate"]')).toBeNull();
+    component.startEditing();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-field-key="encounter.followUpDate"]')).toBeNull();
+    component.onValuesChange({ ...record.formValues, notes: 'Corrección' }); component.formValid.set(true);
+    await component.save();
+    expect(service.update.mock.calls[0][1].values).toMatchObject({
+      followUpDate: '2028-02-29', 'encounter.followUpDate': '2028-02-29', notes: 'Corrección',
+    });
+>>>>>>> Stashed changes
   });
 
   it('keeps the consultation readable and editable without a print action even when printing is enabled', () => {

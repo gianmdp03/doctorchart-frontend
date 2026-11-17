@@ -26,7 +26,7 @@ describe('Clinical request scope', () => {
   });
   afterEach(()=>mock.verify());
   it('binds every clinical collection, including multipart, print and PDF requests', async()=>{
-    for(const path of ['/patients','/encounters/dashboard','/patients/1/studies','/patients/1/prescriptions/2/pdf','/patients/1/prescriptions/2/print','/calculators/catalog','/medications','/vaccination-calendar','/charts','/workspace/charts']){
+    for(const path of ['/patients','/encounters/dashboard','/patients/1/studies','/patients/1/prescriptions/2/pdf','/patients/1/prescriptions/2/print','/calculators/catalog','/medications','/vaccination-calendar','/charts','/workspace/charts','/workspace/clinical-access']){
       const body=new FormData();body.append('name','Synthetic');
       const done=firstValueFrom(http.post(environment.apiUrl+path,body));await Promise.resolve();
       const req=mock.expectOne(r=>r.url===environment.apiUrl+path);

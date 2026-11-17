@@ -1,0 +1,122 @@
+/* Shared, low-specificity foundations. Component CSS owns layout and density. */
+body {
+  font-family: var(--dc-font);
+  font-size: .9375rem;
+  line-height: 1.55;
+  background: var(--dc-canvas);
+  color: var(--dc-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--dc-brand-soft); color: var(--dc-brand-ink); }
+:where(input, textarea) { caret-color: var(--dc-brand); }
+:where(input, textarea)::placeholder { color: var(--dc-text-muted); opacity: 1; }
+:where(button, input, textarea, select) { font-family: inherit; }
+:where(button, input, textarea, select, a, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--dc-focus);
+  outline-offset: 3px;
+}
+:where(input[type='checkbox'], input[type='radio']) { accent-color: var(--dc-brand); }
+:where(button, a, summary) { -webkit-tap-highlight-color: transparent; }
+:where(a) { text-underline-offset: .2em; }
+:where(button:disabled, input:disabled, select:disabled, textarea:disabled) { cursor: not-allowed; }
+:where(h1, h2, h3) { text-wrap: balance; }
+:where(th, td, time, .slots, .slot-list, .booking-time, .kpi-number) {
+  font-variant-numeric: tabular-nums;
+}
+:where(img, svg) { vertical-align: middle; }
+
+.dc-page { min-width: 0; width: 100%; }
+.dc-page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dc-space-4);
+  margin-bottom: var(--dc-space-6);
+}
+.dc-page-title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -.03em;
+  color: var(--dc-text);
+}
+.dc-page-description {
+  margin-top: var(--dc-space-2);
+  max-width: 72ch;
+  color: var(--dc-text-secondary);
+  font-size: .9375rem;
+  line-height: 1.6;
+}
+.dc-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dc-space-2);
+  min-height: var(--dc-control-height);
+  padding: .625rem 1rem;
+  border: 1px solid var(--dc-control-line);
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-paper);
+  color: var(--dc-text);
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease);
+}
+.dc-button:hover:not(:disabled) { background: var(--dc-subtle); border-color: var(--dc-brand); }
+.dc-button--primary { background: var(--dc-brand); color: var(--dc-on-brand); border-color: transparent; }
+.dc-button--primary:hover:not(:disabled) { background: var(--dc-brand-hover); border-color: transparent; }
+.dc-button--quiet { border-color: transparent; background: transparent; color: var(--dc-brand-ink); }
+.dc-button:disabled { opacity: .55; cursor: not-allowed; }
+.dc-button ng-icon { flex-shrink: 0; font-size: 1.125rem; }
+
+.dc-panel { padding: var(--dc-space-6); border: 1px solid var(--dc-line); border-radius: var(--dc-radius-card); background: var(--dc-paper); }
+.dc-feedback { padding: var(--dc-space-4); border: 1px solid var(--dc-line); border-radius: var(--dc-radius-control); background: var(--dc-subtle); }
+.dc-feedback--error { background: var(--dc-danger-soft); color: var(--dc-danger); border-color: currentColor; }
+.dc-feedback--success { background: var(--dc-positive-soft); color: var(--dc-positive); }
+
+.dc-skip-link {
+  position: fixed;
+  z-index: 10010;
+  top: .75rem;
+  left: 1rem;
+  padding: .75rem 1rem;
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-text);
+  color: var(--dc-paper);
+  transform: translateY(-180%);
+}
+.dc-skip-link:focus { transform: translateY(0); }
+
+/* The existing Material date/select overlays remain in the CDK portal. */
+.mat-datepicker-content, .mat-mdc-select-panel {
+  --mat-datepicker-calendar-container-background-color: var(--dc-paper);
+  --mat-datepicker-calendar-container-text-color: var(--dc-text);
+  --mat-datepicker-calendar-date-selected-state-background-color: var(--dc-brand);
+  --mat-datepicker-calendar-date-selected-state-text-color: var(--dc-on-brand);
+  --mat-select-panel-background-color: var(--dc-paper);
+  border-radius: var(--dc-radius-card);
+  box-shadow: var(--dc-shadow-overlay);
+}
+
+@media (max-width: 768px) {
+  .dc-page-title { font-size: 1.5rem; }
+  .dc-page-heading { align-items: flex-start; gap: var(--dc-space-3); }
+  .dc-panel { padding: var(--dc-space-4); }
+}
+@media (pointer: coarse) {
+  :where(button:not(.mat-calendar-body-cell), summary) { min-height: 44px; }
+  :where(input[type='text'], input[type='email'], input[type='password'], input[type='tel'], input[type='search'], textarea, select) { font-size: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-fade-in { animation: none; }
+  .dc-button { transition: none; }
+  :where(.spinner, .spinner-small, .splash-spinner, .mini-spinner, .record-spinner) { animation-duration: 2s; }
+}

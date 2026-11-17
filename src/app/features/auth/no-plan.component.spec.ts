@@ -18,8 +18,8 @@ describe('No plan account screen', () => {
  it('explains the missing plan without automatically leaving DoctorChart', () => {
   const fixture=TestBed.createComponent(NoPlanComponent); fixture.detectChanges();
   expect(fixture.nativeElement.textContent).toContain('Iniciaste sesión correctamente');
-  expect(fixture.nativeElement.querySelector('a').textContent).toContain('Ver planes en Bycode');
-  expect(new URL(fixture.nativeElement.querySelector('a').href).pathname).toBe('/pricing');
+  expect(fixture.nativeElement.querySelector('a').textContent).toContain('Ver planes de DoctorChart');
+  expect(fixture.nativeElement.querySelector('a').getAttribute('href')).toBe('/pricing');
   expect(navigate).not.toHaveBeenCalled();
   expect(auth.refreshPlan).not.toHaveBeenCalled();
  });

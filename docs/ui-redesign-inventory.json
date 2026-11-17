@@ -1,0 +1,1016 @@
+{
+  "date": "2026-11-16",
+  "routes": [
+    {
+      "path": "specialties",
+      "components": [
+        "src/app/features/specialties/my-specialties.component.ts"
+      ]
+    },
+    {
+      "path": "staff/calendar",
+      "components": [
+        "src/app/features/staff/staff-calendar.component.ts"
+      ]
+    },
+    {
+      "path": "secretaries",
+      "components": [
+        "src/app/features/staff/secretaries.component.ts"
+      ]
+    },
+    {
+      "path": "plan-required",
+      "components": [
+        "src/app/features/auth/no-plan.component.ts"
+      ]
+    },
+    {
+      "path": "admin/specialties",
+      "components": [
+        "src/app/features/admin-specialties/admin-specialties.component.ts"
+      ]
+    },
+    {
+      "path": "/",
+      "components": [
+        "src/app/features/appointments/appointments-page.component.ts",
+        "src/app/features/landing/landing.component.ts"
+      ]
+    },
+    {
+      "path": "professionals",
+      "components": [
+        "src/app/features/landing/landing.component.ts"
+      ]
+    },
+    {
+      "path": "pricing",
+      "components": [
+        "src/app/features/pricing/pricing.component.ts"
+      ]
+    },
+    {
+      "path": "register/confirmed",
+      "components": [
+        "src/app/features/auth/register-page.component.ts"
+      ]
+    },
+    {
+      "path": "register",
+      "components": [
+        "src/app/features/auth/register-page.component.ts"
+      ]
+    },
+    {
+      "path": "login",
+      "components": [
+        "src/app/features/auth/login-page.component.ts"
+      ]
+    },
+    {
+      "path": "dashboard",
+      "components": [
+        "src/app/features/dashboard/dashboard.component.ts"
+      ]
+    },
+    {
+      "path": "vaccination-calendar",
+      "components": [
+        "src/app/features/vaccination-calendar/calendario-vacunacion.component.ts"
+      ]
+    },
+    {
+      "path": "patients",
+      "components": [
+        "src/app/features/patient-list/patient-list.component.ts"
+      ]
+    },
+    {
+      "path": "patients/new",
+      "components": [
+        "src/app/features/patient-form/patient-form-page.component.ts"
+      ]
+    },
+    {
+      "path": "patients/:id/edit",
+      "components": [
+        "src/app/features/patient-form/patient-form-page.component.ts"
+      ]
+    },
+    {
+      "path": "patients/:id",
+      "components": [
+        "src/app/features/patient-record/patient-record.component.ts"
+      ]
+    },
+    {
+      "path": "records",
+      "components": [
+        "src/app/features/patient-record/patient-record.component.ts"
+      ]
+    },
+    {
+      "path": "records/:id/edit",
+      "components": [
+        "src/app/features/patient-form/patient-form-page.component.ts"
+      ]
+    },
+    {
+      "path": "records/:id",
+      "components": [
+        "src/app/features/patient-record/patient-record.component.ts"
+      ]
+    },
+    {
+      "path": "encounters/:id",
+      "components": [
+        "src/app/features/encounter-detail/encounter-detail-page.component.ts"
+      ]
+    },
+    {
+      "path": "assistant",
+      "components": [
+        "src/app/features/ai-assistant/ai-assistant-page.component.ts"
+      ]
+    },
+    {
+      "path": "profile",
+      "components": [
+        "src/app/features/auth/user-profile-page.component.ts"
+      ]
+    },
+    {
+      "path": "encounters",
+      "components": [
+        "src/app/features/consultas/consultas.component.ts"
+      ]
+    },
+    {
+      "path": "calculators",
+      "components": [
+        "src/app/features/medical-calculators/medical-calculators.component.ts"
+      ]
+    },
+    {
+      "path": "appointments",
+      "components": [
+        "src/app/features/appointments/appointments-page.component.ts"
+      ]
+    },
+    {
+      "path": "appointments/confirmation",
+      "components": [
+        "src/app/features/appointments/confirmation-page.component.ts"
+      ]
+    },
+    {
+      "path": "appointments/:publicId",
+      "components": [
+        "src/app/features/appointments/appointments-page.component.ts"
+      ]
+    },
+    {
+      "path": "booking-publication",
+      "components": [
+        "src/app/features/appointments/publication-page.component.ts"
+      ]
+    },
+    {
+      "path": "calendar",
+      "components": [
+        "src/app/features/calendar/calendar-page.component.ts"
+      ]
+    },
+    {
+      "path": "clinics",
+      "components": [
+        "src/app/features/clinics/clinics-page.component.ts"
+      ]
+    },
+    {
+      "path": "schedules",
+      "components": [
+        "src/app/features/schedules/schedule-page.component.ts"
+      ]
+    },
+    {
+      "path": "clinics/:id/schedule",
+      "components": [
+        "src/app/features/schedules/schedule-page.component.ts"
+      ]
+    },
+    {
+      "path": "clinics/new",
+      "components": [
+        "src/app/features/clinics/clinic-form-page.component.ts"
+      ]
+    },
+    {
+      "path": "clinics/:id/edit",
+      "components": [
+        "src/app/features/clinics/clinic-form-page.component.ts"
+      ]
+    },
+    {
+      "path": "onboarding/select-specialty",
+      "components": [
+        "src/app/features/onboarding/specialty-selection/specialty-selection.component.ts"
+      ]
+    },
+    {
+      "path": "onboarding/setup",
+      "components": [
+        "src/app/features/onboarding/onboarding-wizard/onboarding-wizard.component.ts"
+      ]
+    },
+    {
+      "path": "**",
+      "components": [
+        "src/app/pages/not-found/not-found.component.ts"
+      ]
+    },
+    {
+      "path": "staff/login",
+      "components": [
+        "src/app/features/staff/staff-auth.component.ts"
+      ]
+    },
+    {
+      "path": "staff/activate",
+      "components": [
+        "src/app/features/staff/staff-auth.component.ts"
+      ]
+    },
+    {
+      "path": "staff/recover",
+      "components": [
+        "src/app/features/staff/staff-auth.component.ts"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "source": "src/app/app.ts",
+      "template": "src/app/app.html",
+      "styles": [
+        "src/app/app.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 0
+    },
+    {
+      "source": "src/app/components/interaction-status.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/components/interaction-status.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1
+    },
+    {
+      "source": "src/app/components/scroll-to-top/scroll-to-top.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/components/scroll-to-top/scroll-to-top.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1
+    },
+    {
+      "source": "src/app/features/admin-specialties/admin-specialties.component.ts",
+      "template": "src/app/features/admin-specialties/admin-specialties.component.html",
+      "styles": [
+        "src/app/features/admin-specialties/admin-specialties.component.css"
+      ],
+      "routes": [
+        "admin/specialties"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 18
+    },
+    {
+      "source": "src/app/features/ai-assistant/ai-assistant-page.component.ts",
+      "template": "src/app/features/ai-assistant/ai-assistant-page.component.html",
+      "styles": [
+        "src/app/features/ai-assistant/ai-assistant-page.component.css"
+      ],
+      "routes": [
+        "assistant"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 4,
+      "runtimeReview": "Módulo desactivado: estilos adaptados, sin activarlo ni certificar su revisión interactiva"
+    },
+    {
+      "source": "src/app/features/appointments/appointments-page.component.ts",
+      "template": "src/app/features/appointments/appointments-page.component.html",
+      "styles": [
+        "src/app/features/appointments/appointments-page.component.css"
+      ],
+      "routes": [
+        "/",
+        "appointments",
+        "appointments/:publicId"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 27
+    },
+    {
+      "source": "src/app/features/appointments/confirmation-page.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/features/appointments/confirmation-page.component.css"
+      ],
+      "routes": [
+        "appointments/confirmation"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 2
+    },
+    {
+      "source": "src/app/features/appointments/publication-page.component.ts",
+      "template": "src/app/features/appointments/publication-page.component.html",
+      "styles": [
+        "src/app/features/appointments/appointments-page.component.css",
+        "src/app/features/appointments/publication-page.component.css"
+      ],
+      "routes": [
+        "booking-publication"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 12
+    },
+    {
+      "source": "src/app/features/auth/login-page.component.ts",
+      "template": "src/app/features/auth/login-page.component.html",
+      "styles": [
+        "src/app/features/auth/login-page.component.css"
+      ],
+      "routes": [
+        "login"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 5
+    },
+    {
+      "source": "src/app/features/auth/no-plan.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/features/auth/no-plan.component.css"
+      ],
+      "routes": [
+        "plan-required"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 2
+    },
+    {
+      "source": "src/app/features/auth/register-page.component.ts",
+      "template": "src/app/features/auth/register-page.component.html",
+      "styles": [
+        "src/app/features/auth/register-page.component.css"
+      ],
+      "routes": [
+        "register/confirmed",
+        "register"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 6
+    },
+    {
+      "source": "src/app/features/auth/user-profile-page.component.ts",
+      "template": "src/app/features/auth/user-profile-page.component.html",
+      "styles": [
+        "src/app/features/auth/user-profile-page.component.css"
+      ],
+      "routes": [
+        "profile"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1
+    },
+    {
+      "source": "src/app/features/calendar/calendar-page.component.ts",
+      "template": "src/app/features/calendar/calendar-page.component.html",
+      "styles": [
+        "src/app/features/calendar/calendar-page.component.css"
+      ],
+      "routes": [
+        "calendar"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 32
+    },
+    {
+      "source": "src/app/features/clinics/clinic-form-page.component.ts",
+      "template": "src/app/features/clinics/clinic-form-page.component.html",
+      "styles": [
+        "src/app/features/clinics/clinic-form-page.component.css"
+      ],
+      "routes": [
+        "clinics/new",
+        "clinics/:id/edit"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 17
+    },
+    {
+      "source": "src/app/features/clinics/clinics-page.component.ts",
+      "template": "src/app/features/clinics/clinics-page.component.html",
+      "styles": [
+        "src/app/features/clinics/clinics-page.component.css"
+      ],
+      "routes": [
+        "clinics"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 11
+    },
+    {
+      "source": "src/app/features/consultas/consultas.component.ts",
+      "template": "src/app/features/consultas/consultas.component.html",
+      "styles": [
+        "src/app/features/consultas/consultas.component.css"
+      ],
+      "routes": [
+        "encounters"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 6
+    },
+    {
+      "source": "src/app/features/dashboard/dashboard.component.ts",
+      "template": "src/app/features/dashboard/dashboard.component.html",
+      "styles": [
+        "src/app/features/dashboard/dashboard.component.css"
+      ],
+      "routes": [
+        "dashboard"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 18
+    },
+    {
+      "source": "src/app/features/dashboard/upcoming-follow-ups.component.ts",
+      "template": "src/app/features/dashboard/upcoming-follow-ups.component.html",
+      "styles": [
+        "src/app/features/dashboard/upcoming-follow-ups.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1
+    },
+    {
+      "source": "src/app/features/dynamic-form-renderer/clinical-history-fields.component.ts",
+      "template": "src/app/features/dynamic-form-renderer/clinical-history-fields.component.html",
+      "styles": [
+        "src/app/features/dynamic-form-renderer/clinical-history-fields.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 3
+    },
+    {
+      "source": "src/app/features/dynamic-form-renderer/dynamic-form-renderer.component.ts",
+      "template": "src/app/features/dynamic-form-renderer/dynamic-form-renderer.component.html",
+      "styles": [
+        "src/app/features/dynamic-form-renderer/dynamic-form-renderer.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 6
+    },
+    {
+      "source": "src/app/features/encounter-detail/encounter-detail-page.component.ts",
+      "template": "src/app/features/encounter-detail/encounter-detail-page.component.html",
+      "styles": [
+        "src/app/features/encounter-detail/encounter-detail-page.component.css"
+      ],
+      "routes": [
+        "encounters/:id"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 7
+    },
+    {
+      "source": "src/app/features/encounter-form/clinical-history-reference.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/features/encounter-form/clinical-history-reference.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1
+    },
+    {
+      "source": "src/app/features/encounter-form/encounter-form.component.ts",
+      "template": "src/app/features/encounter-form/encounter-form.component.html",
+      "styles": [
+        "src/app/features/encounter-form/encounter-form.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 7
+    },
+    {
+      "source": "src/app/features/form-field-editor/form-field-editor.component.ts",
+      "template": "src/app/features/form-field-editor/form-field-editor.component.html",
+      "styles": [
+        "src/app/features/form-field-editor/form-field-editor.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 32
+    },
+    {
+      "source": "src/app/features/landing/landing.component.ts",
+      "template": "src/app/features/landing/landing.component.html",
+      "styles": [
+        "src/app/features/landing/landing.component.css"
+      ],
+      "routes": [
+        "/",
+        "professionals"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1
+    },
+    {
+      "source": "src/app/features/medical-calculators/calculators/bmi-calculator.component.ts",
+      "template": "src/app/features/medical-calculators/calculators/bmi-calculator.component.html",
+      "styles": [
+        "src/app/features/medical-calculators/calculators/calculator-form.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 2,
+      "runtimeReview": "Módulo desactivado: estilos adaptados, sin activarlo ni certificar su revisión interactiva"
+    },
+    {
+      "source": "src/app/features/medical-calculators/calculators/calcium-calculator.component.ts",
+      "template": "src/app/features/medical-calculators/calculators/calcium-calculator.component.html",
+      "styles": [
+        "src/app/features/medical-calculators/calculators/calculator-form.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 2,
+      "runtimeReview": "Módulo desactivado: estilos adaptados, sin activarlo ni certificar su revisión interactiva"
+    },
+    {
+      "source": "src/app/features/medical-calculators/calculators/chads-vasc-calculator.component.ts",
+      "template": "src/app/features/medical-calculators/calculators/chads-vasc-calculator.component.html",
+      "styles": [
+        "src/app/features/medical-calculators/calculators/calculator-form.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 7,
+      "runtimeReview": "Módulo desactivado: estilos adaptados, sin activarlo ni certificar su revisión interactiva"
+    },
+    {
+      "source": "src/app/features/medical-calculators/calculators/cockcroft-calculator.component.ts",
+      "template": "src/app/features/medical-calculators/calculators/cockcroft-calculator.component.html",
+      "styles": [
+        "src/app/features/medical-calculators/calculators/calculator-form.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 5,
+      "runtimeReview": "Módulo desactivado: estilos adaptados, sin activarlo ni certificar su revisión interactiva"
+    },
+    {
+      "source": "src/app/features/medical-calculators/calculators/holliday-segar-calculator.component.ts",
+      "template": "src/app/features/medical-calculators/calculators/holliday-segar-calculator.component.html",
+      "styles": [
+        "src/app/features/medical-calculators/calculators/calculator-form.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1,
+      "runtimeReview": "Módulo desactivado: estilos adaptados, sin activarlo ni certificar su revisión interactiva"
+    },
+    {
+      "source": "src/app/features/medical-calculators/calculators/mosteller-calculator.component.ts",
+      "template": "src/app/features/medical-calculators/calculators/mosteller-calculator.component.html",
+      "styles": [
+        "src/app/features/medical-calculators/calculators/calculator-form.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 2,
+      "runtimeReview": "Módulo desactivado: estilos adaptados, sin activarlo ni certificar su revisión interactiva"
+    },
+    {
+      "source": "src/app/features/medical-calculators/calculators/pediatric-dosage-calculator.component.ts",
+      "template": "src/app/features/medical-calculators/calculators/pediatric-dosage-calculator.component.html",
+      "styles": [
+        "src/app/features/medical-calculators/calculators/calculator-form.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 7,
+      "runtimeReview": "Módulo desactivado: estilos adaptados, sin activarlo ni certificar su revisión interactiva"
+    },
+    {
+      "source": "src/app/features/medical-calculators/calculators/tfge-calculator.component.ts",
+      "template": "src/app/features/medical-calculators/calculators/tfge-calculator.component.html",
+      "styles": [
+        "src/app/features/medical-calculators/calculators/calculator-form.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 4,
+      "runtimeReview": "Módulo desactivado: estilos adaptados, sin activarlo ni certificar su revisión interactiva"
+    },
+    {
+      "source": "src/app/features/medical-calculators/medical-calculators.component.ts",
+      "template": "src/app/features/medical-calculators/medical-calculators.component.html",
+      "styles": [
+        "src/app/features/medical-calculators/medical-calculators.component.css"
+      ],
+      "routes": [
+        "calculators"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 40,
+      "runtimeReview": "Módulo desactivado: estilos adaptados, sin activarlo ni certificar su revisión interactiva"
+    },
+    {
+      "source": "src/app/features/onboarding/onboarding-wizard/onboarding-wizard.component.ts",
+      "template": "src/app/features/onboarding/onboarding-wizard/onboarding-wizard.component.html",
+      "styles": [
+        "src/app/features/onboarding/onboarding-wizard/onboarding-wizard.component.css"
+      ],
+      "routes": [
+        "onboarding/setup"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 19
+    },
+    {
+      "source": "src/app/features/onboarding/specialty-selection/specialty-selection.component.ts",
+      "template": "src/app/features/onboarding/specialty-selection/specialty-selection.component.html",
+      "styles": [
+        "src/app/features/onboarding/specialty-selection/specialty-selection.component.css"
+      ],
+      "routes": [
+        "onboarding/select-specialty"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 5
+    },
+    {
+      "source": "src/app/features/patient-form/patient-form-page.component.ts",
+      "template": "src/app/features/patient-form/patient-form-page.component.html",
+      "styles": [
+        "src/app/features/patient-form/patient-form-page.component.css"
+      ],
+      "routes": [
+        "patients/new",
+        "patients/:id/edit",
+        "records/:id/edit"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 7
+    },
+    {
+      "source": "src/app/features/patient-list/patient-list.component.ts",
+      "template": "src/app/features/patient-list/patient-list.component.html",
+      "styles": [
+        "src/app/features/patient-list/patient-list.component.css"
+      ],
+      "routes": [
+        "patients"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 16
+    },
+    {
+      "source": "src/app/features/patient-record/clinical-timeline/clinical-timeline.component.ts",
+      "template": "src/app/features/patient-record/clinical-timeline/clinical-timeline.component.html",
+      "styles": [
+        "src/app/features/patient-record/clinical-timeline/clinical-timeline.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 16
+    },
+    {
+      "source": "src/app/features/patient-record/growth-chart/growth-chart.component.ts",
+      "template": "src/app/features/patient-record/growth-chart/growth-chart.component.html",
+      "styles": [
+        "src/app/features/patient-record/growth-chart/growth-chart.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1
+    },
+    {
+      "source": "src/app/features/patient-record/patient-banner/patient-banner.component.ts",
+      "template": "src/app/features/patient-record/patient-banner/patient-banner.component.html",
+      "styles": [
+        "src/app/features/patient-record/patient-banner/patient-banner.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 2
+    },
+    {
+      "source": "src/app/features/patient-record/patient-encounters/patient-encounters.component.ts",
+      "template": "src/app/features/patient-record/patient-encounters/patient-encounters.component.html",
+      "styles": [
+        "src/app/features/patient-record/patient-encounters/patient-encounters.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 2
+    },
+    {
+      "source": "src/app/features/patient-record/patient-growth/patient-growth.component.ts",
+      "template": "src/app/features/patient-record/patient-growth/patient-growth.component.html",
+      "styles": [
+        "src/app/features/patient-record/patient-growth/patient-growth.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 8
+    },
+    {
+      "source": "src/app/features/patient-record/patient-prescriptions/patient-prescriptions.component.ts",
+      "template": "src/app/features/patient-record/patient-prescriptions/patient-prescriptions.component.html",
+      "styles": [
+        "src/app/features/patient-record/patient-prescriptions/patient-prescriptions.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 24
+    },
+    {
+      "source": "src/app/features/patient-record/patient-record.component.ts",
+      "template": "src/app/features/patient-record/patient-record.component.html",
+      "styles": [
+        "src/app/features/patient-record/patient-record.component.css"
+      ],
+      "routes": [
+        "patients/:id",
+        "records",
+        "records/:id"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 4
+    },
+    {
+      "source": "src/app/features/patient-record/patient-studies/patient-studies.component.ts",
+      "template": "src/app/features/patient-record/patient-studies/patient-studies.component.html",
+      "styles": [
+        "src/app/features/patient-record/patient-studies/patient-studies.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 13
+    },
+    {
+      "source": "src/app/features/patient-record/patient-summary/clinical-overview.component.ts",
+      "template": "src/app/features/patient-record/patient-summary/clinical-overview.component.html",
+      "styles": [
+        "src/app/features/patient-record/patient-summary/clinical-overview.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 10
+    },
+    {
+      "source": "src/app/features/patient-record/patient-summary/patient-summary.component.ts",
+      "template": "src/app/features/patient-record/patient-summary/patient-summary.component.html",
+      "styles": [
+        "src/app/features/patient-record/patient-summary/patient-summary.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1
+    },
+    {
+      "source": "src/app/features/patient-record/patient-vaccinations/patient-vaccinations.component.ts",
+      "template": "src/app/features/patient-record/patient-vaccinations/patient-vaccinations.component.html",
+      "styles": [
+        "src/app/features/patient-record/patient-vaccinations/patient-vaccinations.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 5
+    },
+    {
+      "source": "src/app/features/pricing/pricing.component.ts",
+      "template": "src/app/features/pricing/pricing.component.html",
+      "styles": [
+        "src/app/features/pricing/pricing.component.css"
+      ],
+      "routes": [
+        "pricing"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 6
+    },
+    {
+      "source": "src/app/features/schedules/schedule-page.component.ts",
+      "template": "src/app/features/schedules/schedule-page.component.html",
+      "styles": [
+        "src/app/features/schedules/schedule-page.component.css"
+      ],
+      "routes": [
+        "schedules",
+        "clinics/:id/schedule"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 34
+    },
+    {
+      "source": "src/app/features/specialties/my-specialties.component.ts",
+      "template": "src/app/features/specialties/my-specialties.component.html",
+      "styles": [
+        "src/app/features/specialties/my-specialties.component.css"
+      ],
+      "routes": [
+        "specialties"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 4
+    },
+    {
+      "source": "src/app/features/staff/secretaries.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/features/staff/staff.css"
+      ],
+      "routes": [
+        "secretaries"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 15
+    },
+    {
+      "source": "src/app/features/staff/staff-auth.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/features/staff/staff.css"
+      ],
+      "routes": [
+        "staff/login",
+        "staff/activate",
+        "staff/recover"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 7
+    },
+    {
+      "source": "src/app/features/staff/staff-calendar.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/features/staff/staff.css"
+      ],
+      "routes": [
+        "staff/calendar"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 20
+    },
+    {
+      "source": "src/app/features/vaccination-calendar/calendario-vacunacion.component.ts",
+      "template": "src/app/features/vaccination-calendar/calendario-vacunacion.component.html",
+      "styles": [
+        "src/app/features/vaccination-calendar/calendario-vacunacion.component.css"
+      ],
+      "routes": [
+        "vaccination-calendar"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 5
+    },
+    {
+      "source": "src/app/layout/header/header.component.ts",
+      "template": "src/app/layout/header/header.component.html",
+      "styles": [
+        "src/app/layout/header/header.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 5
+    },
+    {
+      "source": "src/app/layout/main-nav/main-nav.component.ts",
+      "template": "src/app/layout/main-nav/main-nav.component.html",
+      "styles": [
+        "src/app/layout/main-nav/main-nav.component.css"
+      ],
+      "routes": [],
+      "presentation": "Fundaciones compartidas; estructura conservada",
+      "controls": 0,
+      "runtimeReview": "Componente heredado no montado en las rutas actuales"
+    },
+    {
+      "source": "src/app/layout/patient-quick-banner/patient-quick-banner.component.ts",
+      "template": "src/app/layout/patient-quick-banner/patient-quick-banner.component.html",
+      "styles": [
+        "src/app/layout/patient-quick-banner/patient-quick-banner.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 0
+    },
+    {
+      "source": "src/app/layout/private-shell/private-shell.component.ts",
+      "template": "src/app/layout/private-shell/private-shell.component.html",
+      "styles": [
+        "src/app/app.css",
+        "src/app/layout/private-shell/material.scss",
+        "src/styles-m3-private.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 5
+    },
+    {
+      "source": "src/app/layout/sidebar/sidebar.component.ts",
+      "template": "src/app/layout/sidebar/sidebar.component.html",
+      "styles": [
+        "src/app/layout/sidebar/sidebar.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 2
+    },
+    {
+      "source": "src/app/pages/not-found/not-found.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/pages/not-found/not-found.component.css"
+      ],
+      "routes": [
+        "**"
+      ],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 0
+    },
+    {
+      "source": "src/app/shared/clinical-switch-dialog.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/shared/clinical-switch-dialog.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 4
+    },
+    {
+      "source": "src/app/shared/components/bycode-avatar/bycode-avatar.ts",
+      "template": "inline",
+      "styles": [],
+      "routes": [],
+      "presentation": "Fundaciones compartidas; estructura conservada",
+      "controls": 0
+    },
+    {
+      "source": "src/app/shared/components/theme-toggle/theme-toggle.component.ts",
+      "template": "inline",
+      "styles": [],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1
+    },
+    {
+      "source": "src/app/shared/date-picker/date-picker.component.ts",
+      "template": "src/app/shared/date-picker/date-picker.component.html",
+      "styles": [
+        "src/app/shared/date-picker/date-picker.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 1
+    },
+    {
+      "source": "src/app/shared/time-picker/time-picker.component.ts",
+      "template": "inline",
+      "styles": [
+        "src/app/shared/time-picker/time-picker.component.css"
+      ],
+      "routes": [],
+      "presentation": "Estilos o composición actualizados",
+      "controls": 7
+    }
+  ],
+  "functionalBindingComparison": {
+    "components": 67,
+    "missing": []
+  },
+  "coverage": {
+    "routes": 41,
+    "components": 67,
+    "directPresentationUpdates": 65,
+    "sharedFoundations": 2
+  }
+}

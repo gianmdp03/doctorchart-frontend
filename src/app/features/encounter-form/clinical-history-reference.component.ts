@@ -39,74 +39,7 @@ import {
       </p>
     }
   </aside>`,
-  styles: `
-    :host {
-      display: block;
-    }
-    .reference {
-      padding: 18px 22px;
-      border: 1px solid var(--dc-outline, #dce5e8);
-      border-radius: 14px;
-      margin: 0 0 22px;
-      background: var(--dc-surface-low, #f8fafc);
-      color: var(--dc-ink, #18333b);
-    }
-    .reference-heading {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    strong {
-      font-size: 0.8rem;
-    }
-    .reference-heading span,
-    small {
-      font-size: 0.7rem;
-      color: var(--dc-ink-muted, #64748b);
-    }
-    .reference-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 20px;
-    }
-    p {
-      font-size: 0.8rem;
-      line-height: 1.6;
-      margin: 4px 0;
-      overflow-wrap: anywhere;
-    }
-    .reference-hint {
-      font-size: 0.7rem;
-      color: var(--dc-ink-muted, #64748b);
-      margin-top: 14px;
-    }
-    button {
-      border: 0;
-      background: none;
-      padding: 7px 0;
-      color: var(--dc-teal-ink, #0f766e);
-      font: inherit;
-      font-size: 0.7rem;
-      cursor: pointer;
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-    button:focus-visible {
-      outline: 2px solid var(--dc-teal-ink, #0f766e);
-      outline-offset: 3px;
-    }
-    @media (max-width: 700px) {
-      .reference-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-      }
-      .reference-heading {
-        flex-direction: column;
-        gap: 4px;
-      }
-    }
-  `,
+  styleUrl: './clinical-history-reference.component.css',
 })
 export class ClinicalHistoryReferenceComponent {
   readonly patientId = input.required<number>();

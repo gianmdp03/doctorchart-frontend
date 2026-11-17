@@ -6,21 +6,28 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background-color: #006874;
-  color: #ffffff;
   border: none;
-  border-radius: 9px;
   padding: 0.55rem 1rem;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 104, 116, 0.25);
-  transition: all 0.15s ease;
+  box-shadow: none;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
   white-space: nowrap;
+  background: var(--dc-brand);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .cta-primary-btn:hover {
-  background-color: #00505a;
+  box-shadow: none;
+  background: var(--dc-brand-hover);
+  color: var(--dc-on-brand);
+  border-color: transparent;
+  border-radius: var(--dc-radius-control);
+  min-height: var(--dc-control-height);
 }
 
 .cta-primary-btn.btn-sm {
@@ -43,9 +50,9 @@
 .clinical-section-card {
   background: var(--dc-surface, #ffffff);
   border: 1px solid var(--dc-outline, #e2e8f0);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   overflow: hidden;
+  border-radius: var(--dc-radius-card);
+  box-shadow: none;
 }
 
 .sec-card-header {
@@ -58,13 +65,13 @@
 }
 
 .sec-card-title {
-  font-size: 0.95rem;
-  font-weight: 700;
   color: var(--dc-ink, #0f172a);
   display: flex;
   align-items: center;
   gap: 0.45rem;
   margin: 0;
+  font-size: 1.125rem;
+  font-weight: 650;
 }
 
 .sec-card-body {
@@ -92,7 +99,7 @@
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 }
 
 .secondary-outline-btn:hover {
@@ -144,14 +151,14 @@
   border-radius: 6px;
 }
 .rx-builder-card {
-  border-color: var(--dc-outline, #cbd5e1);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--dc-shadow-sm);
+  border-color: var(--dc-line);
 }
 
 .rx-card-header {
   background: linear-gradient(180deg, var(--dc-surface-low, #f8fafc) 0%, var(--dc-surface, #ffffff) 100%);
-  padding: 1.1rem 1.35rem;
   flex-wrap: wrap;
+  padding: 24px;
 }
 
 .rx-header-title-group,
@@ -219,7 +226,7 @@
   font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 }
 
 .rx-mode-tab:hover {
@@ -233,8 +240,8 @@
 }
 
 .rx-mode-count {
-  background: #006874;
-  color: #ffffff;
+  background: var(--dc-brand);
+  color: var(--dc-on-brand);
   font-size: 0.7rem;
   font-weight: 700;
   padding: 1px 6px;
@@ -250,13 +257,13 @@
 
 .rx-feedback-banner.rx-error {
   background: var(--dc-error-surface, #fff1f2);
-  border: 1px solid #fecdd3;
+  border: 1px solid var(--dc-danger-soft);
   color: var(--dc-error-ink, #be123c);
 }
 
 .rx-feedback-banner.rx-success {
   background: var(--dc-success-surface, #f0fdf4);
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--dc-positive-soft);
   color: var(--dc-success-ink, #15803d);
 }
 
@@ -329,7 +336,7 @@
 
 .rx-input:focus {
   outline: none;
-  border-color: #006874;
+  border-color: var(--dc-brand);
   box-shadow: 0 0 0 3px rgba(0, 104, 116, 0.12);
 }
 
@@ -366,12 +373,12 @@
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 }
 
 .rx-quick-chip:hover {
   background: var(--dc-teal-surface, #e6f6f8);
-  border-color: #006874;
+  border-color: var(--dc-brand);
   color: var(--dc-teal-ink, #006874);
 }
 
@@ -384,14 +391,14 @@
   align-items: center;
   gap: 0.45rem;
   background: var(--dc-teal-surface, #f0fdfa);
-  border: 1px dashed #0d9488;
+  border: 1px dashed var(--dc-brand);
   color: var(--dc-teal-ink, #0f766e);
   padding: 0.5rem 1rem;
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
 }
 
 .rx-btn-add-item:hover {
@@ -544,6 +551,12 @@
 @media print {
   .cta-primary-btn {
     display: none !important;
+    box-shadow: none;
+    background: var(--dc-brand);
+    color: var(--dc-on-brand);
+    border-color: transparent;
+    border-radius: var(--dc-radius-control);
+    min-height: var(--dc-control-height);
   }
 
   .clinical-section-card {
@@ -551,4 +564,4 @@
     border: 1px solid #000000 !important;
   }
 }
-.field-error { display: block; margin-top: 6px; color: #b91c1c; font-size: .8rem; }
+.field-error { display: block; margin-top: 6px; color: var(--dc-danger); font-size: .8rem; }

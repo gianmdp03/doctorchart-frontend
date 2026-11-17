@@ -445,7 +445,7 @@ describe('PatientRecordComponent', () => {
     prescriptionApi.list.mockClear();
     rx.prescriptionStore.reload();
     rx.rxMedicationName.set('Intento directo');
-    rx.saveCurrentRxToHistory(); rx.deleteSavedRecord(1);
+    rx.saveCurrentRxToHistory(); rx.deleteSavedRecord(1, 'Documento duplicado');
     const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
     rx.reprintSavedRecord(issued(mockPatient.id, {}));
     expect(prescriptionApi.list).not.toHaveBeenCalled();
@@ -941,7 +941,7 @@ describe('PatientRecordComponent', () => {
     rx.saveCurrentRxToHistory();
     fixture.detectChanges();
     const emitButtons = [...fixture.nativeElement.querySelectorAll('button')].filter(
-      (button: any) => button.textContent.includes('Imprimir Receta Médica'),
+      (button: any) => /Imprimir Receta Médica|Emitir PDF de receta/.test(button.textContent),
     );
     expect(emitButtons).toHaveLength(2);
     expect(emitButtons.every((button: any) => button.disabled)).toBe(true);
@@ -1018,11 +1018,11 @@ describe('PatientRecordComponent', () => {
     rx.rxStudyName.set('ECG');
     rx.saveCurrentRxToHistory();
     prescriptionApi.delete.mockReturnValue(throwError(() => ({ status: 500 })));
-    rx.deleteSavedRecord(73);
+    rx.deleteSavedRecord(73, 'Documento duplicado');
     expect(rx.savedPrescriptionRecords()).toHaveLength(1);
     const response = new Subject<void>();
     prescriptionApi.delete.mockReturnValue(response);
-    rx.deleteSavedRecord(73);
+    rx.deleteSavedRecord(73, 'Documento duplicado');
     expect(rx.savedPrescriptionRecords()).toHaveLength(1);
     response.next();
     response.complete();
@@ -1146,9 +1146,9 @@ describe('PatientRecordComponent', () => {
     patientServiceSpy.getPatientById.mockClear();
     timeline.deleteEncounter.emit(1);
     expect(encounterServiceSpy.delete).not.toHaveBeenCalled();
-    history.confirmDeleteEncounter();
+    history.confirmDeleteEncounter('Consulta duplicada');
     fixture.detectChanges();
-    expect(encounterServiceSpy.delete).toHaveBeenCalledWith(1);
+    expect(encounterServiceSpy.delete).toHaveBeenCalledWith(1, 'Consulta duplicada');
     expect(patientServiceSpy.getPatientById).toHaveBeenCalledTimes(1);
   });
 
