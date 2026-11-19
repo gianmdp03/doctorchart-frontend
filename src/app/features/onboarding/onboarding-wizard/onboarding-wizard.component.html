@@ -1,4 +1,4 @@
-<main [class.field-editor-open]="fieldEditorOpen()" class="wizard-container">
+<div [class.field-editor-open]="fieldEditorOpen()" class="wizard-container">
   <section class="wizard-card" aria-labelledby="wizard-title">
     <header class="wizard-header">
       <div class="header-row">
@@ -7,12 +7,16 @@
           @if (workspace(); as current) { · {{ current.specialty.name }} }
         </span>
         <div class="header-actions">
+          @if (!isEditMode()) {
+            <a class="dc-button dc-button--secondary" href="/help/clinical#setup-specialty" target="_blank" rel="noopener">Ver guía (nueva pestaña)</a>
+          }
           @if (definition()) {
             <button type="button" class="btn-reset-defaults" [disabled]="editorReadonly()" (click)="showResetConfirmation.set(true)">Restablecer valores iniciales</button>
             @if (isEditMode()) {
               <button type="button" class="dc-button secondary-button" [disabled]="isSaving()" (click)="returnWithoutSaving()">Volver sin guardar cambios</button>
               <button type="button" class="dc-button secondary-button" [disabled]="editorReadonly()" (click)="exitWizard()">Salir conservando borrador</button>
             } @else {
+              <button type="button" class="dc-button secondary-button" [disabled]="editorReadonly()" (click)="backToSpecialties()">Guardar y volver a especialidades</button>
               <button type="button" class="signout-button" [disabled]="editorReadonly()" (click)="handleSignOut()">Guardar y cerrar sesión</button>
             }
           }
@@ -59,9 +63,9 @@
                     <span>{{ index + 1 }}</span>
                   }
                 </span>
-                <div class="step-content">
-                  <span class="step-title" [title]="step.title">{{ step.title }}</span>
-                </div>
+                <span class="step-content">
+                  <span class="step-title">{{ step.title }}</span>
+                </span>
               </button>
             </li>
           }
@@ -105,7 +109,7 @@
 
     @if (definition(); as current) {
       <section class="wizard-content">
-        <h1 id="wizard-title">{{ activeStep().title }}</h1>
+        <h1 id="wizard-title" #stepHeading tabindex="-1">{{ activeStep().title }}</h1>
         <p>Agregá, quitá y organizá la información que necesitás registrar. Guardar el borrador permite continuar más adelante; aplicar cambios lo convierte en tu configuración activa.</p>
         <button type="button" class="dc-button secondary-button category-manager-toggle"
           [attr.aria-expanded]="showPatientCategories()" (click)="showPatientCategories.set(!showPatientCategories())">
@@ -114,17 +118,17 @@
 
         @if (showPatientCategories()) {
           <h2>Categorías de la ficha del paciente</h2>
-          <app-form-field-editor [definition]="current.patientForm" section="patientForm"
+          <app-form-field-editor [standaloneHeading]="true" [definition]="current.patientForm" section="patientForm"
             [readonly]="editorReadonly()" (definitionChange)="onPatientDefinitionChange($event)"
             (categorySelected)="onPatientCategorySelected($event)" />
         } @else if (activeStep().kind === 'patient') {
-          <app-form-field-editor [definition]="current.patientForm" section="patientForm"
+          <app-form-field-editor [standaloneHeading]="true" [definition]="current.patientForm" section="patientForm"
             [selectedCategoryKey]="activeStep().categoryKey ?? null"
             [readonly]="editorReadonly()" (definitionChange)="onPatientDefinitionChange($event)"
             (categorySelected)="onPatientCategorySelected($event)" />
         } @else if (activeStep().kind === 'encounter') {
           <p class="section-note">Historia Clínica está presente en todas las especialidades. Sus categorías y campos se usan en cada consulta.</p>
-          <app-form-field-editor [definition]="current.encounterForm" section="encounterForm"
+          <app-form-field-editor [standaloneHeading]="true" [definition]="current.encounterForm" section="encounterForm"
             [readonly]="editorReadonly()" (definitionChange)="onEncounterDefinitionChange($event)" />
         } @else {
           <p>Tu especialidad seleccionada es {{ workspace()?.specialty?.name }}.</p>
@@ -157,4 +161,4 @@
       </div>
     </div>
   </section>
-</main>
+</div>

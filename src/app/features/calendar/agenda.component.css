@@ -44,7 +44,7 @@ button:focus-visible, select:focus-visible, .calendar-board:focus-visible { outl
 .calendar-workspace.has-editor { grid-template-columns: minmax(0, 1fr) 300px; }
 .calendar-board {
   --axis-width: 62px;
-  position: relative; overflow: auto; min-width: 0; max-height: max(380px, calc(100dvh - 316px));
+  position: relative; isolation: isolate; overflow: auto; min-width: 0; max-height: max(380px, calc(100dvh - 354px));
   scrollbar-color: var(--agenda-rule) transparent;
 }
 .calendar-board:focus-visible { outline-offset: -2px; }

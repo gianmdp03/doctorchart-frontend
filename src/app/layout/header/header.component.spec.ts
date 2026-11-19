@@ -115,12 +115,12 @@ describe('HeaderComponent', () => {
     expect(component.isProfileMenuOpen()).toBe(true);
   });
 
-  it('should focus search input on Ctrl+K shortcut', () => {
+  it('preserves the browser shortcut when the header has no search input', () => {
     const event = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true });
     const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
 
     component.handleGlobalShortcut(event);
-    expect(preventDefaultSpy).toHaveBeenCalled();
+    expect(preventDefaultSpy).not.toHaveBeenCalled();
   });
 
   it('provides administrative navigation and sign out without clinical search for a super admin', () => {

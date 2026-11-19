@@ -21,6 +21,60 @@
   gap: 0.5rem;
   align-items: center;
   flex-wrap: wrap;
+  width: 100%;
+}
+
+.directory-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: .75rem 1rem;
+}
+
+.directory-actions-group .directory-search-wrapper {
+  flex: 1 1 14rem;
+  max-width: 32rem;
+  min-width: 0;
+}
+
+.directory-more { position: relative; }
+.directory-more > summary {
+  box-sizing: border-box;
+  min-height: var(--dc-control-height);
+  padding: .65rem .75rem;
+  border-radius: var(--dc-radius-control);
+  cursor: pointer;
+  color: var(--dc-text-secondary);
+  font-size: .875rem;
+  font-weight: 600;
+}
+.directory-more > summary:hover { background: var(--dc-raised); }
+.directory-more nav {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 100%;
+  inset-inline-end: 0;
+  min-width: 11.5rem;
+  padding: .25rem;
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-paper);
+  box-shadow: var(--dc-shadow-overlay);
+}
+.directory-more nav a {
+  display: block;
+  padding: .7rem .75rem;
+  border-radius: var(--dc-radius-sm);
+  color: var(--dc-text);
+  font-size: .875rem;
+}
+.directory-more nav a:hover { background: var(--dc-raised); }
+
+@media (max-width: 440px) {
+  .directory-actions-group .directory-search-wrapper { flex-basis: 100%; }
+  .directory-more { margin-inline-start: auto; }
 }
 
 .directory-filters {
@@ -201,7 +255,6 @@
 .directory-search-input {
   border: none;
   background: transparent;
-  outline: none;
   font-family: inherit;
   font-size: 0.82rem;
   color: var(--md-sys-color-on-surface);
@@ -234,7 +287,6 @@
 /* M3 Chips interactive adjustments */
 .m3-chip {
   cursor: pointer;
-  outline: none;
   font-family: inherit;
   user-select: none;
 }
@@ -578,7 +630,7 @@
   color: var(--md-sys-color-outline);
 }
 
-.empty-state h3 {
+.empty-state h2 {
   margin: 0.5rem 0 0.25rem;
   color: var(--md-sys-color-on-surface);
   font-size: 1.15rem;
@@ -738,3 +790,5 @@
 @media (max-width: 768px) { .mobile-patient-main { padding: 8px 10px 5px; } .mobile-patient-row summary { padding: 0 10px 6px 50px; font-size: 10px; } .mobile-patient-list { gap: 5px; } }
 
 @media (max-width: 768px) { .patient-table tbody > tr:has(.empty-table-cell) { display: block; width: 100%; } .empty-table-cell { display: block; width: 100%; white-space: normal; } .empty-state { max-width: 100%; overflow-wrap: anywhere; } }
+
+.mobile-patient-row summary { display: flex; align-items: center; min-height: 24px; }

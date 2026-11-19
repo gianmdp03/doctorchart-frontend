@@ -2,22 +2,27 @@
   <input
     type="text"
     class="date-picker-input"
-    [id]="inputId()"
+    [id]="fieldId()"
+    [name]="fieldId()"
+    [attr.aria-labelledby]="fieldId() + '-label'"
+    [attr.aria-required]="required() || null"
+    [attr.aria-describedby]="fieldDescription()"
     [matDatepicker]="picker"
     [value]="selectedDate()"
     [max]="maxDate()"
     [disabled]="isDisabled()"
-    [attr.aria-invalid]="showError() && !!error()"
+    [attr.aria-invalid]="invalid() || (showError() && !!error())"
     [class.has-error]="showError() && !!error()"
     placeholder="dd/MM/aaaa"
     inputmode="numeric"
-    autocomplete="bday"
-    (click)="!isDisabled() && picker.open()"
+    [autocomplete]="autocomplete()"
     (input)="onTextInput($any($event.target).value)"
     (dateChange)="selectDate($event.value, $any($event.targetElement).value)"
     (blur)="markTouched()"
   />
-  <mat-datepicker-toggle [for]="picker" [disabled]="isDisabled()"></mat-datepicker-toggle>
+  <mat-datepicker-toggle [for]="picker" [disabled]="isDisabled()" [aria-label]="'Abrir calendario: ' + inputLabel()"></mat-datepicker-toggle>
   <mat-datepicker #picker [startView]="startView()" [startAt]="calendarStart()"></mat-datepicker>
 </div>
-@if (showError() && error() && !isDisabled()) { <span class="field-error" role="alert">{{ error() }}</span> }
+<span class="sr-only" [id]="fieldId() + '-label'">{{ inputLabel() }}</span>
+<span class="sr-only" [id]="fieldId() + '-format'">Formato: día, mes y año (dd/MM/aaaa).</span>
+@if (showError() && error() && !isDisabled()) { <span class="field-error" [id]="fieldId() + '-error'" role="alert">{{ error() }}</span> }

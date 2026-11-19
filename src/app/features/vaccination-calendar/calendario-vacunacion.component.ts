@@ -18,15 +18,8 @@ import {
   Vacuna,
 } from './calendario.types';
 import { VaccinationCalendarService } from './calendario.service';
+import { MatTooltip } from '@angular/material/tooltip';
 import { ThemeService } from '../../core/services/theme.service';
-
-interface ReferenceTooltip {
-  title: string;
-  content: string;
-  left: number;
-  top: number;
-  placement: 'above' | 'below';
-}
 
 /**
  * Renders the national vaccination schedule from its JSON representation.
@@ -36,7 +29,7 @@ interface ReferenceTooltip {
  */
 @Component({
   selector: 'app-vaccination-calendar',
-  imports: [],
+  imports: [MatTooltip],
   templateUrl: './calendario-vacunacion.component.html',
   styleUrl: './calendario-vacunacion.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,7 +54,6 @@ export class VaccinationCalendarComponent implements OnInit {
     const column = this.mobileColumn();
     return column ? (this.calendar()?.vacunas ?? []).map(vaccine => ({ vaccine, applications: vaccine.aplicaciones.filter(application => application.columnas.includes(column.id)) })).filter(row => row.applications.length > 0) : [];
   });
-  readonly activeTooltip = signal<ReferenceTooltip | null>(null);
 
   /** The effective calendar, either injected by the caller or fetched remotely. */
   readonly calendar = computed<CalendarioVacunacionJSON | null>(
@@ -113,29 +105,6 @@ export class VaccinationCalendarComponent implements OnInit {
     if (!this.data()) {
       this.vaccinationCalendarService.load();
     }
-  }
-
-  showTooltip(event: MouseEvent | FocusEvent, title: string, content: string): void {
-    const target = event.currentTarget as HTMLElement;
-    const bounds = target.getBoundingClientRect();
-    const width = Math.min(300, window.innerWidth - 32);
-    const left = Math.max(16 + width / 2, Math.min(bounds.left + bounds.width / 2, window.innerWidth - 16 - width / 2));
-    const estimatedHeight = Math.min(220, 54 + Math.ceil(content.length / 40) * 18);
-    const fitsAbove = bounds.top >= estimatedHeight + 16;
-    const fitsBelow = window.innerHeight - bounds.bottom >= estimatedHeight + 16;
-    const placement = fitsAbove || !fitsBelow ? 'above' : 'below';
-
-    this.activeTooltip.set({
-      title,
-      content,
-      left,
-      top: placement === 'above' ? bounds.top - 8 : bounds.bottom + 8,
-      placement,
-    });
-  }
-
-  hideTooltip(): void {
-    this.activeTooltip.set(null);
   }
 
   syncTableScroll(source: HTMLElement, target: HTMLElement): void {

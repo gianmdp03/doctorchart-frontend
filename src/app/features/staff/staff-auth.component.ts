@@ -11,16 +11,30 @@ import {FEATURE_FLAGS} from '../../core/config/feature-flags';
 <h1>{{mode==='activate'?'Aceptar invitación':mode==='recover'?'Recuperar acceso':'Ingresar como secretaria'}}</h1>
 <p>Tu cuenta es independiente del acceso médico. Solo permite gestionar los consultorios asignados.</p></header>
 @if(recovery()){<section class="notice" role="status"><h2>Guardá tu código de recuperación</h2><p>Es personal y se muestra una sola vez. Guardalo en un lugar seguro; no lo compartas con los médicos.</p><code class="recovery">{{recovery()}}</code><button type="button" (click)="continue()">Ya lo guardé · Continuar</button></section>}
-@else{<form class="panel" (ngSubmit)="submit()" #form="ngForm"><fieldset [disabled]="busy()||loadingInvitation()||invalidInvitation()||retryInvitation()"><legend class="sr-only">Datos de acceso</legend>
+@else{<form class="panel" ngNativeValidate (ngSubmit)="form.valid && submit()" #form="ngForm"><fieldset [disabled]="busy()||loadingInvitation()||invalidInvitation()||retryInvitation()"><legend class="sr-only">Datos de acceso</legend>
 @if(loadingInvitation()){<p role="status">Verificando invitación…</p>}
-@if(invitationName()){<p>Hola, {{invitationName()}}. {{existingAccount()?'Ingresá tu contraseña actual para sumar esta agenda a tu cuenta.':'Elegí una contraseña para empezar a trabajar.'}}</p>}
+@if(invitationName()){
+  <section class="invitation-context" aria-label="Datos de la invitación">
+    <h2>Hola, {{invitationName()}}</h2>
+    <p><strong>{{invitingDoctor() || 'Tu profesional'}}</strong> te invitó a acceder a sus agendas en DoctorChart.</p>
+    @if (invitedAgendas().length) {
+      <ul>@for (agenda of invitedAgendas(); track $index) { <li>{{agenda}}</li> }</ul>
+    }
+    <p class="muted">{{email}}</p>
+  </section>
+  <p>{{existingAccount() ? 'Ingresá tu contraseña habitual de Secretaría para sumar el acceso.' : 'Elegí una contraseña para empezar a trabajar.'}}</p>
+}
 @if(mode==='recover'&&emailRecoveryEnabled){<label>Método de recuperación<select name="recoveryMode" [(ngModel)]="recoveryMode"><option value="personal">Tengo mi código personal</option><option value="email">Recibir un código por email</option></select></label>}
-<label>Correo electrónico<input type="email" name="email" [(ngModel)]="email" [readonly]="fromLink" required autocomplete="username" maxlength="254" /></label>
+@if (fromLink) {
+  <input type="email" name="email" [value]="email" autocomplete="username" hidden readonly />
+} @else {
+  <label>Correo electrónico<input type="email" name="email" [(ngModel)]="email" required autocomplete="username" spellcheck="false" maxlength="254" /></label>
+}
 @if(mode==='recover'&&recoveryMode==='email'){<button type="button" (click)="requestEmail()" [disabled]="busy()||!email.trim()">Enviar código por email</button>@if(emailNotice()){<p role="status">{{emailNotice()}}</p>}}
 @if(mode!=='login'&&!fromLink){<label>{{mode==='activate'?'Código de invitación':recoveryMode==='email'?'Código recibido por email':'Código de recuperación'}}<input name="code" [(ngModel)]="code" required autocomplete="off" spellcheck="false" maxlength="43" /></label>}
 <label>{{mode==='recover'||(mode==='activate'&&!existingAccount())?'Contraseña nueva':'Contraseña'}}<input type="password" name="password" [(ngModel)]="password" required [attr.autocomplete]="mode==='login'||existingAccount()?'current-password':'new-password'" minlength="12" maxlength="72" /></label>
 @if(mode==='activate'&&!existingAccount()){<p class="muted">Usá al menos 12 caracteres. Después ingresás con tu email y esta contraseña.</p>}
-<button type="submit" [disabled]="busy()||form.invalid||loadingInvitation()||invalidInvitation()">{{busy()?'Verificando…':mode==='activate'?'Entrar a la agenda':mode==='recover'?'Recuperar acceso':'Ingresar'}}</button>
+<button type="submit" [disabled]="busy()||loadingInvitation()||invalidInvitation()">{{busy()?'Verificando…':mode==='activate'?'Entrar a la agenda':mode==='recover'?'Recuperar acceso':'Ingresar'}}</button>
 </fieldset></form>}
 @if(error()){<p role="alert" class="error">{{error()}}</p>}
 @if(retryInvitation() && !loadingInvitation()){
@@ -41,6 +55,8 @@ export class StaffAuthComponent {
  readonly emailRecoveryEnabled=FEATURE_FLAGS.NOTIFICATIONS_ENABLED;recoveryMode:'personal'|'email'=this.emailRecoveryEnabled?'email':'personal';readonly emailNotice=signal('');
  email='';password='';code='';readonly busy=signal(false);readonly error=signal('');readonly recovery=signal('');
  readonly loadingInvitation=signal(false);readonly invalidInvitation=signal(false);readonly retryInvitation=signal(false);readonly invitationName=signal('');readonly existingAccount=signal(false);fromLink=false;
+ readonly invitingDoctor = signal('');
+ readonly invitedAgendas = signal<string[]>([]);
  constructor(){
   const win=this.document.defaultView;
   if(this.mode!=='activate'||!win)return;
@@ -60,6 +76,8 @@ export class StaffAuthComponent {
      this.email = invitation.email;
      this.invitationName.set(invitation.name);
      this.existingAccount.set(invitation.existingAccount);
+     this.invitingDoctor.set(invitation.doctorName ?? '');
+     this.invitedAgendas.set(invitation.agendas ?? []);
    } catch (error) {
      const status = (error as {status?:number})?.status;
      if (status === 401) {

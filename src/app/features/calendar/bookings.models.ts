@@ -3,7 +3,7 @@ import { isArgentineTimezone } from '../../core/date/user-time-zone';
 
 export type BookingStatus = 'CONFIRMED'|'CHECKED_IN'|'COMPLETED'|'NO_SHOW'|'CANCELLED';
 export interface Booking {
- id:string;clinicId:string;patientId:string|null;start:string;end:string;status:BookingStatus;version:string;
+ id:string;clinicId:string;start:string;end:string;status:BookingStatus;version:string;
  contactName:string;contactPhone:string;attendeeName?:string;createdAt:string;updatedAt:string;
  // Optional only for replay receipts issued before schema 14.
  specialtyContextId?:string;specialty?:{id:string;code:string;name:string};
@@ -12,7 +12,8 @@ export interface Booking {
 }
 export interface BookingEvent {version:string;kind:string;actorId:string;occurredAt:string;before:Booking|null;after:Booking;}
 export interface BookingPage {items:Booking[];page:number;size:number;totalElements:number;}
-export interface BookingCreate {clinicId:string;start:string;contactName:string;contactPhone:string;attendeeName:string;patientId?:string|null;specialtyContextId?:string;}
+export interface BookingPortalIdentity {document:string;email:string;answers:Record<string,string>;}
+export interface BookingCreate {clinicId:string;start:string;contactName:string;contactPhone:string;attendeeName:string;specialtyContextId?:string;portal?:BookingPortalIdentity & {formVersion:string};}
 export const BOOKING_SUCCESS_MESSAGES = {
   create: 'El turno se creó correctamente.',
   reschedule: 'El turno se reprogramó correctamente.',

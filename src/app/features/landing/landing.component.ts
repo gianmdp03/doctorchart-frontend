@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { CdkMenuModule } from '@angular/cdk/menu';
+import { ConnectedPosition } from '@angular/cdk/overlay';
+import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowRight,
@@ -12,6 +14,7 @@ import {
   lucideActivity,
   lucidePlus,
   lucideStethoscope,
+  lucideChevronDown,
 } from '@ng-icons/lucide';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import site from '../../core/config/site.config.json';
@@ -21,7 +24,7 @@ import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 
 @Component({
   selector: 'app-landing',
-  imports: [RouterLink, NgIcon, ThemeToggleComponent],
+  imports: [CdkMenuModule, RouterLink, NgIcon, ThemeToggleComponent],
   providers: [
     provideIcons({
       lucideArrowRight,
@@ -34,6 +37,7 @@ import { FEATURE_FLAGS } from '../../core/config/feature-flags';
       lucideActivity,
       lucidePlus,
       lucideStethoscope,
+      lucideChevronDown,
     }),
   ],
   templateUrl: './landing.component.html',
@@ -41,10 +45,14 @@ import { FEATURE_FLAGS } from '../../core/config/feature-flags';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LandingComponent {
+  protected readonly router = inject(Router);
   readonly themeService = inject(ThemeService);
   readonly authService = inject(AuthService);
-  readonly appEntryUrl = computed(() => !this.authService.isLoggedIn()
-    ? '/login' : this.authService.isSuperAdmin() ? '/admin/specialties' : '/dashboard');
+  readonly appEntryUrl = computed(() => this.authService.isSuperAdmin() ? '/admin/specialties' : '/dashboard');
+  readonly loginMenuPositions: ConnectedPosition[] = [
+    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 8 },
+    { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 8 },
+  ];
   readonly signingOut = signal(false);
   readonly signOutError = signal<string | null>(null);
 

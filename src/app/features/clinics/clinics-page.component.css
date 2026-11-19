@@ -12,25 +12,7 @@
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 20px;
-  align-items: flex-start;
-}
-
-.page-header-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  max-width: 70ch;
-}
-
-.eyebrow {
-  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-primary, #1f6feb);
 }
 
 .page-header h1 {
@@ -40,20 +22,6 @@
   font-size: 1.75rem;
   letter-spacing: -.03em;
   line-height: 1.25;
-}
-
-.subtitle {
-  margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.45;
-  color: var(--text-muted, #475569);
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  flex-wrap: wrap;
 }
 
 .btn-primary,
@@ -110,45 +78,70 @@
   cursor: not-allowed;
 }
 
-.quota-summary-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 16px 20px;
-  border-radius: var(--dc-radius-control);
-  background: var(--dc-brand-soft);
-  border: 0;
+.in-person {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
 }
 
-.quota-summary-main {
+.in-person-heading, .teleconsultation {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px 16px;
 }
 
-.quota-badge {
+.section-copy { flex: 1 1 14rem; min-width: 0; }
+.section-copy h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.125rem;
+}
+.section-detail {
+  margin: 4px 0 0;
+  color: var(--dc-text-secondary);
+  font-size: .875rem;
+  overflow-wrap: anywhere;
+}
+
+.teleconsultation {
+  display: grid;
+  padding: 16px;
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-radius-card);
+  background: var(--dc-paper);
+}
+
+.teleconsultation-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 16px;
+}
+.teleconsultation-row .btn-row { min-height: var(--dc-control-height); }
+.switch-track {
   display: inline-flex;
   align-items: center;
-  padding: 0.28rem 0.65rem;
-  border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  background: var(--dc-raised);
-  color: var(--dc-text-secondary);
+  width: 28px;
+  height: 16px;
+  padding-inline: 3px;
+  border-radius: var(--dc-radius-pill);
+  background: var(--dc-text-secondary);
 }
-
-.quota-badge-verified {
-  background: var(--dc-blue-soft);
-  color: var(--dc-blue);
+.switch-track::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dc-paper);
 }
-
-.quota-hint {
-  font-size: 0.82rem;
-  color: var(--dc-text-secondary);
+.teleconsultation-switch[aria-checked='true'] .switch-track {
+  justify-content: flex-end;
+  background: var(--dc-brand);
 }
+.teleconsultation-switch[aria-checked='true'] .switch-track::after { background: var(--dc-on-brand); }
 
 .capability-banner {
   display: flex;
@@ -322,12 +315,6 @@
   font-weight: 650;
 }
 
-.clinic-meta {
-  font-size: 0.75rem;
-  color: var(--text-muted, #64748b);
-  margin-top: 0.15rem;
-}
-
 .location-address {
   font-weight: 500;
 }
@@ -377,6 +364,8 @@
   border: 1px solid var(--dc-line);
 }
 
+.btn-row:hover:not(:disabled) { background: var(--dc-subtle); }
+
 .btn-row-primary {
   border-color: var(--dc-blue-soft);
   color: var(--dc-blue);
@@ -414,13 +403,6 @@
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-main, #0f172a);
-}
-
-.empty-subtitle {
-  margin: 0;
-  max-width: 52ch;
-  font-size: 0.88rem;
-  color: var(--text-muted, #64748b);
 }
 
 .pagination-bar {
@@ -481,32 +463,14 @@
     text-align: left;
   }
 
-  .row-actions {
-    justify-content: flex-end;
+  .cell-actions .row-actions {
+    justify-content: flex-start;
+    flex-basis: 100%;
   }
-}
 
-.clinic-schedule-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 8px;
-  padding: 6px 9px;
-  border-radius: 8px;
-  color: var(--md-sys-color-on-primary-container);
-  background: var(--md-sys-color-primary-container);
-  font-size: .8rem;
-  font-weight: 650;
-  text-align: left;
-}
-.clinic-schedule-link:hover { text-decoration: underline; }
-.clinic-schedule-link:focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 3px; }
-
-@container (max-width: 720px) {
-  .clinics-table tbody td.cell-name {
-    flex-direction: column;
-    gap: 4px;
+  .clinics-table tbody td.cell-actions {
+    flex-wrap: wrap;
     text-align: left;
-    padding-bottom: 12px;
   }
+
 }

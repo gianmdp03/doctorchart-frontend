@@ -1,7 +1,7 @@
 import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import {
   ChangeDetectionStrategy,
-  Component,
+  afterNextRender, Component, ElementRef, Injector,
   DestroyRef,
   OnInit,
   computed,
@@ -36,6 +36,8 @@ import {
 import { firstValueFrom, takeUntil } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { AccountReadScope } from '../../core/services/account-read-scope';
+import { ClinicalContextService } from '../../core/services/clinical-context.service';
+import { WorkspaceStore } from '../../core/services/workspace.store';
 import { BOOKING_COUNTRIES, bookingCountry, localitiesFor } from '../../core/location/booking-locations';
 import {
   CLINIC_FIELD_LIMITS,
@@ -107,6 +109,8 @@ function clinicTimezoneValidator(): ValidatorFn {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClinicFormPageComponent implements OnInit {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   private readonly interaction = inject(InteractionStatusService);
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
@@ -114,7 +118,18 @@ export class ClinicFormPageComponent implements OnInit {
   private readonly clinicsService = inject(ClinicsService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly readScope = new AccountReadScope(() => this.resetOnAccountChange());
+  private readonly workspace = inject(WorkspaceStore);
+  private readonly clinicalContext = inject(ClinicalContextService);
+  private readonly readScope = new AccountReadScope(() => {
+    this.resetOnAccountChange();
+    const id = this.clinicId();
+    if (this.readScope.authenticated()) {
+      if (id) void this.loadForEdit(id);
+      else void this.loadCapabilitiesOnly();
+    }
+  });
+  readonly specialtyOptions = signal<{id: string; name: string}[]>([]);
+  readonly selectedSpecialtyIds = signal<string[]>([]);
 
   private contextGeneration = 0;
   private mutationOperationId = 0;
@@ -336,6 +351,25 @@ export class ClinicFormPageComponent implements OnInit {
     this.submitFeedback.set(null);
     this.versionConflict.set(false);
     this.serverFieldErrors.set({});
+    this.specialtyOptions.set([]);
+    this.selectedSpecialtyIds.set([]);
+  }
+
+  private async loadSpecialtyOptions() {
+    const contexts = await this.workspace.loadContexts();
+    return contexts.filter(context => context.ready)
+      .map(context => ({ id: String(context.id), name: context.specialty.name }));
+  }
+
+  private defaultSpecialtyIds(): string[] {
+    const options = this.specialtyOptions();
+    const active = String(this.clinicalContext.id());
+    const selected = options.find(option => option.id === active) ?? (options.length === 1 ? options[0] : undefined);
+    return selected ? [selected.id] : [];
+  }
+
+  toggleSpecialty(id: string): void {
+    this.selectedSpecialtyIds.update(ids => ids.includes(id) ? ids.filter(item => item !== id) : [...ids, id]);
   }
 
   async loadCapabilitiesOnly(): Promise<void> {
@@ -353,10 +387,13 @@ export class ClinicFormPageComponent implements OnInit {
     this.isLoading.set(true);
     this.loadError.set(null);
     try {
-      const caps = await firstValueFrom(
-        this.clinicsService.getCapabilities().pipe(takeUntil(this.readScope.canceled)),
-      );
+      const [caps, options] = await Promise.all([
+        firstValueFrom(this.clinicsService.getCapabilities().pipe(takeUntil(this.readScope.canceled))),
+        this.isVirtual() ? Promise.resolve([]) : this.loadSpecialtyOptions(),
+      ]);
       if (!active() || !this.isContextCurrent(expectedGen, expectedOwner, false, null)) return;
+      this.specialtyOptions.set(options);
+      this.selectedSpecialtyIds.set(this.defaultSpecialtyIds());
       this.setCapabilities(caps);
     } catch (error) {
       if (!active() || !this.isContextCurrent(expectedGen, expectedOwner, false, null)) return;
@@ -402,13 +439,14 @@ export class ClinicFormPageComponent implements OnInit {
     this.loadError.set(null);
 
     try {
-      const [capsResult, clinicResult] = await Promise.allSettled([
+      const [capsResult, clinicResult, specialtiesResult] = await Promise.allSettled([
         firstValueFrom(
           this.clinicsService.getCapabilities().pipe(takeUntil(this.readScope.canceled)),
         ),
         firstValueFrom(
           this.clinicsService.getClinic(id).pipe(takeUntil(this.readScope.canceled)),
         ),
+        this.loadSpecialtyOptions(),
       ]);
       if (!active() || !this.isContextCurrent(expectedGen, expectedOwner, true, id)) return;
 
@@ -418,8 +456,12 @@ export class ClinicFormPageComponent implements OnInit {
         this.setCapabilities(createUnavailableCapabilities(this.capabilities()));
       }
 
+      this.specialtyOptions.set(specialtiesResult.status === 'fulfilled' ? specialtiesResult.value : []);
       if (clinicResult.status === 'fulfilled' && clinicResult.value.id === id) {
         this.applyServerClinicToForm(clinicResult.value);
+        if (!this.isVirtual() && specialtiesResult.status === 'rejected') {
+          this.loadError.set('No pudimos cargar tus especialidades. Reintentá para editar el consultorio.');
+        }
       } else if (clinicResult.status === 'fulfilled') {
         this.clinic.set(null);
         this.loadError.set('La respuesta recibida no coincide con el consultorio solicitado.');
@@ -486,6 +528,7 @@ export class ClinicFormPageComponent implements OnInit {
   private applyServerClinicToForm(serverClinic: Clinic): void {
     this.clinic.set(structuredClone(serverClinic));
     this.setLocationControls(serverClinic.modality === 'TELECONSULTATION');
+    this.selectedSpecialtyIds.set(serverClinic.specialtyContextIds ?? this.defaultSpecialtyIds());
     this.form.reset(
       {
         name: serverClinic.name,
@@ -549,6 +592,9 @@ export class ClinicFormPageComponent implements OnInit {
 
     this.form.markAllAsTouched();
     if (this.form.invalid) {
+      afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(
+        'input[aria-invalid="true"]:not(:disabled):not([readonly]), select[aria-invalid="true"]:not(:disabled)',
+      )?.focus(), { injector: this.injector });
       return;
     }
 
@@ -574,6 +620,11 @@ export class ClinicFormPageComponent implements OnInit {
       country: raw.country.trim(), province: raw.province.trim(),
       city: raw.city.trim(), address: raw.address.trim(),
     };
+    const specialtyContextIds = this.selectedSpecialtyIds();
+    if (!virtual && (!this.specialtyOptions().length || !specialtyContextIds.length)) {
+      this.submitError.set('Elegí al menos una especialidad para este consultorio.');
+      return;
+    }
     this.isSubmitting.set(true);
 
     try {
@@ -581,7 +632,7 @@ export class ClinicFormPageComponent implements OnInit {
         const created = await firstValueFrom(
           this.clinicsService.createClinic(virtual
             ? { ...shared, modality: 'TELECONSULTATION' }
-            : { ...shared, ...location }),
+            : { ...shared, ...location, specialtyContextIds }),
 
         );
         if (!isMutationCurrent()) {
@@ -596,7 +647,7 @@ export class ClinicFormPageComponent implements OnInit {
       const patchPayload: UpdateClinicRequest = {
         expectedVersion: current!.version,
         ...shared,
-        ...(virtual ? {} : location),
+        ...(virtual ? {} : { ...location, specialtyContextIds }),
       };
 
       const updated = await firstValueFrom(

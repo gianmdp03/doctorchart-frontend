@@ -2,9 +2,11 @@ import { InteractionStatusService } from '../../core/services/interaction-status
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { throwError } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../../core/services/auth.service';
+import { ClinicalContextService } from '../../core/services/clinical-context.service';
+import { WorkspaceStore } from '../../core/services/workspace.store';
 import { MOCK_CLINIC_ERRORS, MockClinicsBackend } from './clinics.mocks';
 import { CLINICS_TRANSPORT, ClinicsService } from './clinics.service';
 import { ClinicsPageComponent } from './clinics-page.component';
@@ -24,6 +26,10 @@ describe('ClinicsPageComponent', () => {
       providers: [
         provideRouter([]),
         ClinicsService,
+        { provide: WorkspaceStore, useValue: { contexts: () => [
+          {id: 301, specialty: {name: 'Medicina General'}},
+          {id: 302, specialty: {name: 'Pediatría'}},
+        ] } },
         { provide: CLINICS_TRANSPORT, useValue: mockBackend },
         {
           provide: AuthService,
@@ -60,6 +66,55 @@ describe('ClinicsPageComponent', () => {
     expect(component.clinics()).toHaveLength(1);
     expect(component.clinics()[0].id).toBe('102');
     expect(component.clinics()[0].status).toBe('INACTIVE');
+  });
+
+  it('keeps teleconsultation independent of the physical clinic filter and toggles only the selected specialty', async () => {
+    const [clinic] = component.clinics();
+    const physical = Array.from({ length: 100 }, (_, index) => ({
+      ...clinic, id: String(index + 1), status: 'ACTIVE' as const,
+      specialtyContextIds: index === 0 ? ['301'] : ['302'],
+    }));
+    const virtual = { ...physical[0], id: '101', name: 'Agenda virtual', modality: 'TELECONSULTATION' as const };
+    const general = { specialtyContextId: '301', specialty: 'Medicina General', clinicId: '101', enabled: true };
+    const pediatrics = { specialtyContextId: '302', specialty: 'Pediatría', clinicId: '101', enabled: false };
+    vi.spyOn(mockBackend, 'listTeleconsultations').mockReturnValue(of([general, pediatrics]));
+    const update = vi.spyOn(mockBackend, 'setTeleconsultation').mockReturnValue(of({ ...general, enabled: false }));
+    vi.spyOn(mockBackend, 'listClinics').mockImplementation(query => of({
+      items: query?.page === 0 ? physical : [virtual],
+      totalElements: 101,
+      page: query?.page ?? 0,
+      size: 100,
+    }));
+    const scope = TestBed.inject(ClinicalContextService);
+    scope.bind(301);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(component.totalElements()).toBe(1));
+    component.selectStatusFilter('ARCHIVED');
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const section = el.querySelector('.teleconsultation');
+    expect(section?.textContent).toContain('Medicina General');
+    expect(section?.textContent).not.toContain('Agenda virtual');
+    expect(section?.querySelector('a.btn-row')?.getAttribute('href')).toContain('/clinics/101/schedule?specialtyContextId=301');
+    await component.toggleTeleconsultation(general);
+    expect(update).toHaveBeenCalledWith('301', false);
+    expect(component.teleconsultations()).toEqual([{ ...general, enabled: false }, pediatrics]);
+    expect(component.clinics()).toHaveLength(0);
+    expect(el.textContent).not.toContain('Versión');
+    component.selectStatusFilter('ALL');
+    scope.bind(302);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await vi.waitFor(() => {
+      expect(component.isLoading()).toBe(false);
+      expect(component.totalElements()).toBe(99);
+    });
+    fixture.detectChanges();
+    expect(section?.textContent).toContain('Pediatría');
+    expect(section?.querySelector('select')).toBeNull();
   });
 
   it('renders empty state when no clinics exist', async () => {

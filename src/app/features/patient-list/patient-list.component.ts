@@ -1,3 +1,5 @@
+import { PhoneDisplayPipe } from '../../shared/phone-input/phone-display.pipe';
+import { AsyncPipe } from '@angular/common';
 import { takeUntil } from 'rxjs';
 import { AccountReadScope } from '../../core/services/account-read-scope';
 import { displayLocalDate } from '../../core/date/display-date';
@@ -15,9 +17,8 @@ import {
   PLATFORM_ID,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { PatientService } from '../../core/services/patient.service';
-import { ClinicalRevisionsComponent } from '../patient-record/clinical-revisions.component';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
 import {
@@ -125,7 +126,7 @@ import { WorkspaceStore } from '../../core/services/workspace.store';
 
 @Component({
   selector: 'app-patient-list',
-  imports: [ClinicalRevisionsComponent],
+  imports: [RouterLink, PhoneDisplayPipe, AsyncPipe],
   templateUrl: './patient-list.component.html',
   styleUrl: './patient-list.component.css',
 })

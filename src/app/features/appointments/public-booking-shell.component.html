@@ -1,0 +1,22 @@
+<a class="dc-skip-link" href="#appointment-content" (click)="$event.preventDefault(); content.focus()">Ir al contenido</a>
+<header class="public-header">
+  <a routerLink="/appointments" class="brand">
+    <img src="/doctorchart-logo.svg" alt="" width="30" height="34" />DoctorChart <span>Turnos online</span>
+  </a>
+  <nav class="public-header-actions" aria-label="Acceso y apariencia">
+    <app-theme-toggle />
+    @if (inMyBookings()) {
+      <a routerLink="/appointments" class="portal-link">Buscar turnos</a>
+    } @else if (showMyBookings()) {
+      <a routerLink="/appointments/confirmation" class="portal-link">Mis turnos</a>
+    }
+    <a class="dc-audience-link" routerLink="/professionals">Soy médico <span aria-hidden="true">↗</span></a>
+  </nav>
+</header>
+<main #content id="appointment-content" tabindex="-1"><ng-content /></main>
+<footer class="public-footer">
+  <div class="footer-content">
+    <strong class="footer-brand"><img src="/doctorchart-logo.svg" width="20" height="23" alt="" /> DoctorChart</strong>
+    <p>Tu información clínica permanece en el espacio privado de tu médico.</p>
+  </div>
+</footer>

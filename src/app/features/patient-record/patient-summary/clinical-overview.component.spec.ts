@@ -5,6 +5,13 @@ import { of, Subject, throwError } from 'rxjs';
 import { ClinicalOverviewComponent } from './clinical-overview.component';
 import { ClinicalSummaryService } from '../../../core/services/clinical-summary.service';
 import { ActivePatientService } from '../../../core/services/active-patient.service';
+import { ClinicalContextService } from '../../../core/services/clinical-context.service';
+import { WorkspaceStore } from '../../../core/services/workspace.store';
+import { PatientRecordModuleId } from '../../../core/models/specialty-experience.model';
+import {
+  createClinicalHistoryCategory,
+  WizardDefinition,
+} from '../../../core/models/wizard-definition.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { UserClockService } from '../../../core/services/user-clock.service';
 import { PatientRecordActionsService } from '../../../core/experience/patient-record-actions.service';
@@ -17,6 +24,9 @@ describe('ClinicalOverviewComponent automatic history', () => {
   let fixture: ComponentFixture<ClinicalOverviewComponent>, component: ClinicalOverviewComponent;
   const patient = signal<PatientDetailDTO | null>(null),
     user = signal<{ id: string } | null>({ id: 'doctor' });
+  const tabs = signal<PatientRecordModuleId[]>([]);
+  const definition = signal<WizardDefinition | null>(null);
+  const specialtyName = signal('Pediatría');
   const api = { get: vi.fn(), save: vi.fn() };
   const active = {
     activePatient: patient,
@@ -28,6 +38,7 @@ describe('ClinicalOverviewComponent automatic history', () => {
     version: 0,
     id,
     fullName: 'Paciente sintético',
+    formDefinitionSnapshot: { categories: [createClinicalHistoryCategory()] },
     birthDate: '2020-01-01',
   });
   const summary = (extra: Partial<ClinicalSummary> = {}): ClinicalSummary => ({
@@ -46,12 +57,19 @@ describe('ClinicalOverviewComponent automatic history', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     patient.set(newPatient());
+    tabs.set(['SUMMARY', 'ENCOUNTERS', 'VACCINATION', 'PRESCRIPTIONS']);
+    definition.set(null);
+    specialtyName.set('Pediatría');
     user.set({ id: 'doctor' });
     api.get.mockReturnValue(of(summary()));
     await TestBed.configureTestingModule({
       imports: [ClinicalOverviewComponent],
       providers: [
         provideRouter([]),
+        {
+          provide: WorkspaceStore,
+          useValue: { patientRecordTabs: tabs, specialtyDisplayName: specialtyName, definition },
+        },
         { provide: ClinicalSummaryService, useValue: api },
         { provide: ActivePatientService, useValue: active },
         { provide: AuthService, useValue: { currentUser: user } },
@@ -59,6 +77,7 @@ describe('ClinicalOverviewComponent automatic history', () => {
         { provide: PatientRecordActionsService, useValue: { has: () => true } },
       ],
     }).compileComponents();
+    TestBed.inject(ClinicalContextService).bind(1);
     fixture = TestBed.createComponent(ClinicalOverviewComponent);
     component = fixture.componentInstance;
   });
@@ -69,9 +88,10 @@ describe('ClinicalOverviewComponent automatic history', () => {
     expect(text()).not.toContain('Registrar alergia');
     expect(api.save).not.toHaveBeenCalled();
   });
-  it('distinguishes missing information from an explicit negative report', () => {
+  it('leaves out unreviewed groups and preserves an explicit negative report', () => {
     fixture.detectChanges();
-    expect(text()).toContain('Sin alergias relevadas');
+    expect(text()).not.toContain('Alergias');
+    expect(text()).toContain('Todavía no hay datos');
     api.get.mockReturnValue(
       of(
         summary({
@@ -92,7 +112,7 @@ describe('ClinicalOverviewComponent automatic history', () => {
     fixture.detectChanges();
     expect(text()).toContain('No refiere alergias conocidas');
     expect(text()).toContain('Informado');
-    expect(text()).not.toContain('Sin alergias relevadas');
+    expect(text()).not.toContain('Todavía no hay datos');
   });
   it('shows structured patient and encounter values with dates and exact sources', () => {
     api.get.mockReturnValue(
@@ -125,10 +145,12 @@ describe('ClinicalOverviewComponent automatic history', () => {
     expect(text()).toContain('Corroborado');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     component.openItem(component.items('PROBLEM')[0]);
-    expect(navigate).toHaveBeenCalledWith(['/encounters', 45]);
+    expect(navigate).toHaveBeenCalledWith(['/encounters', 45], {
+      queryParams: { specialtyContextId: 1 },
+    });
     component.openItem(component.items('ALLERGY')[0]);
     expect(navigate).toHaveBeenCalledWith(['/patients', 10], {
-      queryParams: { tab: 'summary' },
+      queryParams: { specialtyContextId: 1, tab: 'summary' },
       fragment: 'clinical-history',
     });
   });
@@ -186,7 +208,7 @@ describe('ClinicalOverviewComponent automatic history', () => {
     expect(text()).toContain('No se pudo cargar');
     expect(text()).not.toContain('Sin alergias relevadas');
   });
-  it('shows prescriptions as unconfirmed use, never as current medication', () => {
+  it('keeps recent prescriptions out of the clinical summary', () => {
     api.get.mockReturnValue(
       of(
         summary({
@@ -204,8 +226,100 @@ describe('ClinicalOverviewComponent automatic history', () => {
     );
     fixture.detectChanges();
     expect(component.items('MEDICATION')).toEqual([]);
-    expect(text()).toContain('Uso actual a confirmar');
-    expect(text()).toContain('Tratamiento anterior');
+    expect(text()).not.toContain('Recetas recientes');
+    expect(text()).not.toContain('Tratamiento anterior');
+    expect(text()).toContain('Todavía no hay datos para el resumen clínico.');
+  });
+  it('uses the active specialty layout and the visibility of registered answers', () => {
+    const configured = {
+      key: 'cardiovascularHistory',
+      title: 'Antecedentes cardiovasculares',
+      enabled: true,
+      fields: [
+        {
+          key: 'history',
+          label: 'Antecedentes personales',
+          type: 'TEXT' as const,
+          required: false,
+        },
+        { key: 'showNote', label: 'Mostrar nota', type: 'BOOLEAN' as const, required: false },
+        {
+          key: 'note',
+          label: 'Nota',
+          type: 'TEXT' as const,
+          required: false,
+          visibleWhen: { fieldKey: 'showNote', equals: true },
+        },
+      ],
+    };
+    const identity = {
+      key: 'sys_patient_profile',
+      title: 'Datos personales',
+      enabled: true,
+      fields: [{ key: 'phone', label: 'Teléfono', type: 'TEXT' as const, required: false }],
+    };
+    const snapshot = { categories: [configured, identity] };
+    patient.set({
+      ...newPatient(),
+      formDefinitionSnapshot: snapshot,
+      formValues: {
+        history: 'Antecedente documentado',
+        showNote: false,
+        note: 'Nota oculta',
+        phone: '5551234',
+      },
+    });
+    specialtyName.set('Cardiología');
+    tabs.set(['SUMMARY']);
+    definition.set({
+      schemaVersion: 1,
+      patientForm: snapshot,
+      encounterForm: { categories: [] },
+      modulesConfig: { MEDICATION_CATALOG: false, AI_ASSISTANT: false, GROWTH_CHARTS: false },
+    });
+    api.get.mockReturnValue(
+      of(
+        summary({
+          lastEncounter: {
+            id: 45,
+            date: '2026-10-31',
+            complaint: 'Consulta registrada',
+            diagnosis: null,
+            followUp: 'Control registrado',
+            followUpDate: null,
+          },
+        }),
+      ),
+    );
+    fixture.detectChanges();
+    expect(text()).toContain('Cardiología');
+    expect(text()).toContain('Antecedentes cardiovasculares');
+    expect(text()).toContain('Antecedente documentado');
+    expect(text()).not.toContain('Nota oculta');
+    expect(text()).not.toContain('5551234');
+    expect(text()).not.toContain('Editar antecedentes');
+    expect(text()).not.toContain('Última consulta');
+    expect(text()).not.toContain('Próximos pasos');
+    expect(text()).not.toContain('Vacunación');
+
+    definition.update((value) => ({
+      ...value!,
+      patientForm: { categories: [{ ...configured, enabled: false }] },
+    }));
+    fixture.detectChanges();
+    expect(text()).not.toContain('Antecedentes cardiovasculares');
+    expect(text()).toContain('Todavía no hay datos');
+  });
+  it('cancels a pending summary when the specialty context changes', () => {
+    const late = new Subject<ClinicalSummary>();
+    api.get.mockReturnValueOnce(late);
+    fixture.detectChanges();
+    api.get.mockReturnValue(of(summary({ asOfDate: '2026-11-01' })));
+    TestBed.inject(ClinicalContextService).bind(2);
+    fixture.detectChanges();
+    late.next(summary());
+    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(component.data()?.asOfDate).toBe('2026-11-01');
   });
   it('renders representative sections and missing vaccines for visual review', () => {
     api.get.mockReturnValue(
@@ -274,11 +388,16 @@ describe('ClinicalOverviewComponent automatic history', () => {
     expect(fixture.nativeElement.querySelectorAll('.overview-card')).toHaveLength(6);
     expect(component.pendingVaccines()).toHaveLength(1);
     expect(text()).toContain('sin aplicación registrada');
+    expect(text()).not.toContain('Triple viral');
     const styles = [...document.querySelectorAll('style')].map((s) => s.textContent).join('\n');
     mkdirSync('.angular/clinical-summary', { recursive: true });
     writeFileSync(
       '.angular/clinical-summary/overview.html',
       `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:32px;font-family:Arial,sans-serif;background:#f6f8fa}*{box-sizing:border-box}${styles}</style></head><body>${fixture.nativeElement.outerHTML}</body></html>`,
     );
+    tabs.set(['SUMMARY', 'ENCOUNTERS']);
+    fixture.detectChanges();
+    expect(text()).not.toContain('Vacunación');
+    expect(text()).not.toContain('a revisar');
   });
 });

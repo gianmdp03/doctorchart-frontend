@@ -40,12 +40,13 @@
   </div>
 
   <div class="form-field-group">
-    <label class="form-label">Unidad de Dosificación</label>
-    <div class="radio-pill-group">
+    <span class="form-label">Unidad de Dosificación</span>
+    <div class="radio-pill-group" role="group" aria-label="Unidad de Dosificación">
       <button
         type="button"
         class="radio-pill-btn text-xs"
         [class.active]="form().doseUnit() === 'mg/kg/dia'"
+        [attr.aria-pressed]="form().doseUnit() === 'mg/kg/dia'"
         (click)="form().doseUnit.set('mg/kg/dia')"
       >
         mg/kg/día
@@ -54,6 +55,7 @@
         type="button"
         class="radio-pill-btn text-xs"
         [class.active]="form().doseUnit() === 'mg/kg/dosis'"
+        [attr.aria-pressed]="form().doseUnit() === 'mg/kg/dosis'"
         (click)="form().doseUnit.set('mg/kg/dosis')"
       >
         mg/kg/dosis
@@ -63,10 +65,10 @@
 </div>
 
 <div class="form-field-group">
-  <label class="form-label">
+  <span class="form-label">
     <span>Concentración del Fármaco (Suspensión / Jarabe)</span>
     <span class="text-xs text-rose-500 font-semibold">* Requerido</span>
-  </label>
+  </span>
   <div class="flex items-center gap-2">
     <div class="input-with-addon flex-1">
       <input
@@ -74,7 +76,7 @@
         step="5"
         min="1"
         placeholder="Ej. 250"
-        class="form-input"
+        class="form-input" aria-label="Concentración del fármaco en miligramos" aria-required="true"
         [class.border-rose-400]="!form().drugConcentrationMg()"
         [ngModel]="form().drugConcentrationMg()"
         (ngModelChange)="form().drugConcentrationMg.set($event)"
@@ -88,7 +90,7 @@
         step="1"
         min="0.5"
         placeholder="Ej. 5"
-        class="form-input"
+        class="form-input" aria-label="Volumen de la suspensión en mililitros" aria-required="true"
         [class.border-rose-400]="!form().drugConcentrationMl()"
         [ngModel]="form().drugConcentrationMl()"
         (ngModelChange)="form().drugConcentrationMl.set($event)"

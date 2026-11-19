@@ -1,0 +1,94 @@
+.patient-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--dc-line);
+  border-radius: 22px;
+  background: var(--dc-paper);
+}
+.patient-story {
+  display: grid;
+  grid-template-rows: auto minmax(230px, 1fr);
+  min-width: 0;
+  background: #143d39;
+  color: #faf8ef;
+}
+.patient-story-copy {
+  padding: clamp(28px, 3.5vw, 52px) clamp(24px, 4vw, 58px) clamp(24px, 3vw, 36px);
+}
+.patient-story h1 {
+  margin: 0 0 16px;
+  color: inherit;
+  font-size: clamp(2.55rem, 5vw, 4.7rem);
+  line-height: 1.03;
+  font-weight: 650;
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+.patient-story h1 span {
+  color: #bce3d3;
+}
+.patient-story p {
+  max-width: 38ch;
+  margin: 0;
+  color: #e2eee8;
+  font-size: clamp(.9375rem, 1.5vw, 1.0625rem);
+  line-height: 1.6;
+}
+.patient-photo-frame { position: relative; }
+.patient-photo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  object-position: 55% 58%;
+}
+.patient-panel {
+  min-width: 0;
+  padding: clamp(24px, 3.5vw, 50px);
+}
+.patient-panel-heading {
+  margin-bottom: 24px;
+}
+.patient-panel-heading h2 {
+  margin: 0;
+  font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+  font-weight: 650;
+  line-height: 1.18;
+  letter-spacing: -.025em;
+}
+.patient-panel-heading p {
+  max-width: 42ch;
+  margin: 8px 0 0;
+  color: var(--dc-text-secondary);
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+@media (max-width: 760px) {
+  .patient-entry {
+    grid-template-columns: minmax(0, 1fr);
+    border-radius: 16px;
+  }
+  .patient-story {
+    position: relative;
+    grid-template-rows: auto;
+  }
+  .patient-story-copy {
+    position: relative;
+    z-index: 1;
+    padding: 24px min(21%, 100px) 24px 20px;
+    background: linear-gradient(90deg, #143d39 47%, #143d39e8 70%, #143d3980);
+  }
+  .patient-story h1 {
+    margin-bottom: 10px;
+    font-size: clamp(2rem, 8vw, 3rem);
+    text-wrap: unset;
+  }
+  .patient-photo-frame { position: absolute; inset: 0; }
+  .patient-photo { object-position: 56% 56%; }
+  .patient-panel { padding: 22px 20px; }
+  .patient-panel-heading { margin-bottom: 18px; }
+}

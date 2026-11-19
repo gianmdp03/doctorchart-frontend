@@ -1,0 +1,183 @@
+<app-public-booking-shell [inMyBookings]="true">
+ @if (step() === 'identity' || step() === 'code') {
+  <div class="recovery-entry">
+   <section class="patient-entry" aria-labelledby="recovery-title">
+    <div class="patient-story">
+     <div class="patient-story-copy">
+      <h1 id="recovery-title">Mis <span>turnos</span></h1>
+      <p>Consultá o reprogramá tus turnos. Podés cancelar antes de la hora de inicio.</p>
+     </div>
+     <div class="patient-photo-frame"><img class="patient-photo" src="/patient-portal-room.webp" width="1050" height="700" alt="" fetchpriority="high" /></div>
+    </div>
+    <div class="recovery-form-area">
+     @if (step() === 'identity') {
+    <form class="entry-panel patient-panel" ngNativeValidate #form="ngForm" (ngSubmit)="form.valid && lookupBookings()" [attr.aria-busy]="busy()">
+      <div class="patient-panel-heading">
+       <h2 #stepHeading tabindex="-1">Buscá tus turnos</h2>
+       <p>Usá el DNI que ingresaste al reservar.</p>
+      </div>
+      <label for="portal-document">DNI de la reserva</label>
+      <input id="portal-document" name="document" [(ngModel)]="document" required pattern="[0-9]{5,8}"
+        aria-describedby="portal-document-hint" maxlength="8" inputmode="numeric" autocomplete="off" [disabled]="busy()" />
+      <p class="field-hint" id="portal-document-hint">Entre 5 y 8 dígitos, sin puntos.</p>
+      <button class="portal-primary" type="submit" [disabled]="busy()">{{busy() ? 'Buscando…' : 'Ver mis turnos'}}</button>
+    </form>
+     } @else {
+    <form class="entry-panel code-panel patient-panel" (ngSubmit)="verifyCode()" [attr.aria-busy]="busy()">
+      <div class="patient-panel-heading">
+       <h2 #stepHeading tabindex="-1">Ingresá el código</h2>
+      <p class="delivery-note">Te enviamos un código a <strong>{{maskedEmail}}</strong>. Tenés 10 minutos para usarlo.</p>
+      </div>
+      <label for="confirmation-code">Código de 6 dígitos</label>
+      <div class="code-cells">
+        <input id="confirmation-code" name="code" [value]="code" (input)="updateCode(codeField)" #codeField
+          maxlength="6" inputmode="numeric" autocomplete="one-time-code" [disabled]="busy()" />
+        @for (cell of codeCells; track cell) {
+          <span aria-hidden="true" [class.next-digit]="cell === code.length">{{code[cell] || ''}}</span>
+        }
+      </div>
+      <button class="portal-primary" type="submit" [disabled]="busy() || code.length !== 6">
+        {{busy() ? 'Verificando…' : 'Confirmar código'}}
+      </button>
+      <p class="session-note">El acceso queda abierto en este navegador durante 48 horas.</p>
+      <div class="portal-actions">
+        <button type="button" class="quiet-button" (click)="requestCode()" [disabled]="busy() || !canResend()">Reenviar código</button>
+        <button type="button" class="quiet-button" (click)="changeIdentity()" [disabled]="busy()">Volver</button>
+      </div>
+    </form>
+     }
+     @if (error()) { <p class="error" role="alert">{{error()}}</p> }
+    </div>
+   </section>
+  </div>
+ } @else {
+<div class="recovery-page">
+  <h1>Mis turnos</h1>
+  @if (step() === 'preview') {
+    <div class="portal-toolbar">
+      <h2 #stepHeading tabindex="-1">Turnos encontrados</h2>
+      <button type="button" class="quiet-button" (click)="changeIdentity()" [disabled]="busy()">Cambiar DNI</button>
+    </div>
+    @if (previews().length) {
+      <div class="intro">
+        <p>Para ver los detalles o hacer un cambio, confirmá el código que te vamos a enviar al correo de la reserva.</p>
+        <p class="booking-policy">Podés cancelar <strong>antes de la hora de inicio</strong>.</p>
+      </div>
+      <ul class="preview-list" [attr.aria-busy]="busy()">
+        @for (booking of previews(); track booking.reference) {
+          <li>
+            <h3>Turno del <time [attr.datetime]="booking.date">{{displayDay(booking.date)}}</time></h3>
+            <div class="preview-actions">
+              <button type="button" class="dc-button" (click)="selectPreview(booking)" [disabled]="busy()">Ver detalles</button>
+              @if (booking.canReschedule) {
+                <button type="button" class="dc-button" (click)="selectPreview(booking, 'reschedule')" [disabled]="busy()">Reprogramar</button>
+              }
+              @if (booking.canChange) {
+                <button type="button" class="quiet-button" (click)="selectPreview(booking, 'cancel')" [disabled]="busy()">Cancelar turno</button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+      @if (hasMorePreviews()) {
+        <button type="button" class="dc-button more" (click)="lookupBookings(true)" [disabled]="busy()">Ver más turnos</button>
+      }
+      @if (busy()) { <p role="status">Procesando…</p> }
+    } @else {
+      <p class="empty-state">No encontramos turnos con ese DNI. Revisá que sea el mismo que usaste al reservar.</p>
+    }
+  } @else {
+    <p class="intro">En una computadora compartida, cerrá el acceso al terminar.</p>
+    <div class="portal-actions">
+      <h2 #stepHeading tabindex="-1">Tus reservas</h2>
+      <button type="button" class="quiet-button" (click)="changeIdentity()" [disabled]="busy()">Buscar otros turnos</button>
+      <button type="button" class="dc-button" (click)="endSession()" [disabled]="busy()">Cerrar acceso</button>
+    </div>
+    @if (feedback()) {
+      <div class="booking-feedback" role="status">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <path d="m8 12 2.5 2.5L16 9" />
+        </svg>
+        <span>{{feedback()}}</span>
+      </div>
+    }
+    @if (items().length && change()?.action !== 'cancel') {
+      <p class="booking-policy">Podés cancelar <strong>antes de la hora de inicio</strong>. Si no podés asistir, avisá lo antes posible.</p>
+    }
+    @if (!items().length && !busy() && !error()) { <p>No encontramos turnos asociados a esos datos.</p> }
+    @for (booking of items(); track booking.reference) {
+      <article class="constancia">
+        <p class="status" [class.status-cancelled]="booking.status === 'CANCELLED'">{{statusLabel(booking.status)}}</p>
+        <h2>{{booking.doctorName}}</h2>
+        <p class="when">{{slotLabel(booking.start, booking.timezone)}} · {{localTime(booking.end, booking.timezone)}}</p>
+        <p>{{booking.clinicName}} · {{booking.modality === 'TELECONSULTATION' ? 'Teleconsulta' : 'Presencial'}}</p>
+        @if (booking.address) { <p>{{booking.address}}</p> }
+        @if (booking.canChange && !change()) {
+          <div class="portal-actions">
+            @if (booking.publicDoctorId && booking.publicClinicId) {
+              <button type="button" class="dc-button" [disabled]="busy()" (click)="chooseChange(booking, 'reschedule')">Reprogramar</button>
+            }
+            <button type="button" class="dc-button" [disabled]="busy()" (click)="chooseChange(booking, 'cancel')">Cancelar turno</button>
+          </div>
+        }
+        @if (change(); as selected) {
+          @if (selected.booking.reference === booking.reference) {
+            <section class="change-panel" [class.cancel-panel]="selected.action === 'cancel'" aria-labelledby="booking-change-heading">
+              <h3 #changeHeading id="booking-change-heading" tabindex="-1">{{selected.action === 'cancel' ? '¿Cancelar este turno?' : 'Elegí otro horario en este consultorio'}}</h3>
+              @if (selected.action === 'cancel') {
+                <p>Podés cancelar antes de que empiece el turno del <strong>{{slotLabel(booking.start, booking.timezone)}}</strong>. Al confirmar, se libera el horario.</p>
+              } @else {
+                <div class="slot-toolbar">
+                  <p>Seleccioná un horario disponible. Las horas son del consultorio.</p>
+                  <app-date-picker inputId="portal-date" inputLabel="Buscar desde" [value]="date" (valueChange)="findSlots($event)" />
+                </div>
+                @if (loadingSlots()) {
+                  <p class="slot-empty" role="status">Buscando horarios disponibles…</p>
+                } @else if (slotDays().length) {
+                  <div class="slot-days">
+                    @for (day of slotDays(); track day.date) {
+                      <section class="slot-day" [attr.aria-labelledby]="'slot-day-' + day.date">
+                        <h4 [id]="'slot-day-' + day.date">
+                          <span>{{weekdayLabel(day.date)}}</span>
+                          <time [attr.datetime]="day.date">{{displayDay(day.date)}}</time>
+                        </h4>
+                        <div class="slot-times">
+                          @for (slot of day.slots; track slot.start) {
+                            <button type="button" class="slot-time" [attr.aria-pressed]="start === slot.start"
+                              [disabled]="busy()" (click)="start = slot.start">
+                              <span>{{localTime(slot.start, booking.timezone)}}</span>
+                              @if (slotOffsetLabel(slot.start, booking.timezone); as offset) { <small>{{offset}}</small> }
+                            </button>
+                          }
+                        </div>
+                      </section>
+                    }
+                  </div>
+                } @else if (!busy() && !error()) {
+                  <p class="slot-empty">No hay horarios disponibles para esa semana. Probá con otra fecha.</p>
+                }
+                @if (start) {
+                  <p class="slot-summary" role="status"><strong>Nuevo horario</strong> {{slotLabel(start, booking.timezone)}}</p>
+                }
+              }
+              <div class="portal-actions">
+                <button type="button" [class.danger-button]="selected.action === 'cancel'" (click)="confirmChange()" [disabled]="busy() || (selected.action === 'reschedule' && !start)">
+                  {{selected.action === 'cancel' ? 'Confirmar cancelación' : 'Confirmar horario'}}
+                </button>
+                <button type="button" class="quiet-button" (click)="closeChange()" [disabled]="busy()">Volver</button>
+              </div>
+            </section>
+          }
+        }
+      </article>
+    }
+    @if (hasMore() && !change()) { <button type="button" class="dc-button more" (click)="loadBookings(true)" [disabled]="busy()">Ver más turnos</button> }
+    @if (busy() && !loadingSlots()) { <p role="status">Procesando…</p> }
+    @if (error() && !busy() && !change()) { <button type="button" class="dc-button" (click)="loadBookings()">Actualizar lista</button> }
+  }
+
+  @if (error()) { <p class="error" role="alert">{{error()}}</p> }
+</div>
+  }
+</app-public-booking-shell>

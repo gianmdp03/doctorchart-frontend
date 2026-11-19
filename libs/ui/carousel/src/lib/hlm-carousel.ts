@@ -21,7 +21,7 @@ import { EmblaCarouselDirective } from 'embla-carousel-angular';
   host: {
     'data-slot': 'carousel',
     role: 'region',
-    'aria-roledescription': 'carousel',
+    'aria-roledescription': 'carrusel',
     '(keydown)': 'onKeydown($event)',
   },
   template: `
@@ -86,12 +86,18 @@ export class HlmCarousel {
   }
 
   protected onKeydown(event: KeyboardEvent) {
-    if (event.key === 'ArrowLeft') {
+    const target = event.target as HTMLElement | null;
+    if (event.defaultPrevented || target?.closest('input, select, textarea, [contenteditable="true"]')) return;
+    const vertical = this.orientation() === 'vertical';
+    const rtl = this._emblaOptions().direction === 'rtl';
+    const previousKey = vertical ? 'ArrowUp' : rtl ? 'ArrowRight' : 'ArrowLeft';
+    const nextKey = vertical ? 'ArrowDown' : rtl ? 'ArrowLeft' : 'ArrowRight';
+    if (event.key === previousKey) {
       event.preventDefault();
-      this._emblaCarousel().scrollPrev();
-    } else if (event.key === 'ArrowRight') {
+      this.scrollPrev();
+    } else if (event.key === nextKey) {
       event.preventDefault();
-      this._emblaCarousel().scrollNext();
+      this.scrollNext();
     }
   }
 

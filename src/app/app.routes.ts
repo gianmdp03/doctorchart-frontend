@@ -31,10 +31,16 @@ const preventCompletedOnboardingGuard = lazyGuard(() => import('./core/guards/do
 const superAdminGuard = lazyGuard(() => import('./core/guards/super-admin.guard').then(m => m.superAdminGuard));
 const clinicsGuard = lazyGuard(() => import('./core/guards/clinics.guard').then(m => m.clinicsGuard));
 
+const loadHelp = () => import('./features/help/help-page.component').then(m => m.HelpPageComponent);
+
 const baseRoutes: Routes = [
+  { path: 'help', canActivate: [doctorchartPlanGuard], loadComponent: loadHelp },
+  { path: 'help/appointments', canActivate: [doctorchartPlanGuard], loadComponent: loadHelp, data: { helpGuide: 'appointments' } },
+  { path: 'help/secretaries', canActivate: [doctorchartPlanGuard], loadComponent: loadHelp, data: { helpGuide: 'secretaries' } },
+  { path: 'help/clinical', canActivate: [doctorchartPlanGuard], loadComponent: loadHelp, data: { helpGuide: 'clinical' } },
  {path:'specialties',canActivate:[doctorchartPlanGuard],loadComponent:()=>import('./features/specialties/my-specialties.component').then(m=>m.MySpecialtiesComponent)},
  ...(['login','activate','recover'] as const).map(mode=>({path:'staff/'+mode,data:{mode},canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffFeatureGuard))],loadComponent:()=>import('./features/staff/staff-auth.component').then(m=>m.StaffAuthComponent)})),
- {path:'staff/calendar',canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffSessionGuard))],loadComponent:()=>import('./features/staff/staff-calendar.component').then(m=>m.StaffCalendarComponent)},
+ {path:'staff/calendar',data:{staffAgenda:true},canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffSessionGuard))],loadComponent:()=>import('./features/calendar/calendar-page.component').then(m=>m.CalendarPageComponent)},
  {path:'secretaries',canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffFeatureGuard))],loadComponent:()=>import('./features/staff/secretaries.component').then(m=>m.SecretariesComponent)},
   { path: 'sin-plan', redirectTo: 'plan-required', pathMatch: 'full' },
   { path: 'admin/especialidades', redirectTo: 'admin/specialties', pathMatch: 'full' },
@@ -117,6 +123,19 @@ const baseRoutes: Routes = [
       import('./features/patient-form/patient-form-page.component').then(
         (m) => m.PatientFormPageComponent
       ),
+  },
+  {
+    path: 'patients/access-audit',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    data: { audit: true },
+    loadComponent: () => import('./features/patient-list/patient-administration-page.component')
+      .then(m => m.PatientAdministrationPageComponent),
+  },
+  {
+    path: 'patients/archived',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () => import('./features/patient-list/patient-administration-page.component')
+      .then(m => m.PatientAdministrationPageComponent),
   },
   {
     path: 'patients/:id/edit',
@@ -276,8 +295,54 @@ const baseRoutes: Routes = [
   },
 ];
 
-const clinicalPaths=new Set(['dashboard','patients','patients/new','patients/:id/edit','patients/:id','records','records/:id/edit','records/:id','encounters','encounters/:id','assistant','calculators','vaccination-calendar','onboarding/setup']);
+const pageTitles: Record<string, string> = {
+  login: 'Iniciar sesión',
+  register: 'Crear cuenta',
+  'register/confirmed': 'Confirmación de cuenta',
+  dashboard: 'Panel clínico',
+  specialties: 'Mis especialidades',
+  help: 'Ayuda',
+  'help/appointments': 'Guía de turnos',
+  'help/secretaries': 'Guía de secretaría',
+  'help/clinical': 'Guía de clínica',
+  patients: 'Directorio de pacientes',
+  'patients/new': 'Nuevo paciente',
+  'patients/access-audit': 'Auditoría de accesos',
+  'patients/archived': 'Fichas anuladas',
+  'patients/:id/edit': 'Editar paciente',
+  'patients/:id': 'Ficha clínica',
+  records: 'Ficha clínica',
+  'records/:id': 'Ficha clínica',
+  'records/:id/edit': 'Editar ficha clínica',
+  encounters: 'Historial de consultas',
+  'encounters/:id': 'Detalle de la consulta',
+  'vaccination-calendar': 'Calendario de vacunación',
+  calculators: 'Calculadoras médicas',
+  assistant: 'Asistente clínico',
+  profile: 'Perfil profesional',
+  'admin/specialties': 'Administración de especialidades',
+  'onboarding/select-specialty': 'Selección de especialidad',
+  'onboarding/setup': 'Configuración de fichas y consultas',
+  'plan-required': 'Plan requerido',
+  'booking-publication': 'Reservas online',
+  calendar: 'Agenda de turnos',
+  clinics: 'Consultorios y teleconsulta',
+  'clinics/new': 'Nuevo consultorio',
+  'clinics/:id/edit': 'Editar consultorio',
+  'clinics/:id/schedule': 'Horarios del consultorio',
+  schedules: 'Mis horarios',
+  secretaries: 'Secretaría',
+  'staff/login': 'Acceso de secretaría',
+  'staff/activate': 'Aceptar invitación',
+  'staff/recover': 'Recuperar acceso',
+  'staff/calendar': 'Agenda de secretaría',
+  '**': 'Página no encontrada',
+};
+
+const clinicalPaths=new Set(['dashboard','patients','patients/new','patients/access-audit','patients/archived','patients/:id/edit','patients/:id','records','records/:id/edit','records/:id','encounters','encounters/:id','assistant','calculators','vaccination-calendar','onboarding/setup']);
 export const routes:Routes=baseRoutes.map(route=>{
+  const pageTitle = pageTitles[route.path ?? ''];
+  if (pageTitle) route.title ??= pageTitle + ' | DoctorChart';
   const clinical=clinicalPaths.has(route.path??'');
   if(clinical){route.data={...route.data,clinicalContext:true,allowPending:route.path==='onboarding/setup'};route.canDeactivate=[clinicalLeaveGuard];}
   if(clinical||route.canActivate?.includes(doctorOnboardingGuard)){

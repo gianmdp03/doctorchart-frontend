@@ -2,7 +2,7 @@
   <header class="page-heading">
     <h1 id="specialties-title">Mis especialidades</h1>
     @if (available().length) {
-      <button type="button" class="dc-button dc-button--primary action primary" [disabled]="loading() || store.isMutating()"
+      <button #addSpecialty type="button" class="dc-button dc-button--primary action primary" [disabled]="loading() || store.isMutating()"
         [attr.aria-expanded]="adding()" [attr.aria-controls]="adding() ? 'specialty-picker' : null"
         (click)="adding.set(!adding())">
         <ng-icon name="lucidePlus" aria-hidden="true" />
@@ -25,7 +25,7 @@
     <section id="specialty-picker" class="picker" aria-labelledby="specialty-picker-title">
       <div class="picker-heading">
         <h2 id="specialty-picker-title">Elegí una especialidad</h2>
-        <button type="button" class="action text-action" (click)="adding.set(false)">Cancelar</button>
+        <button type="button" class="action text-action" (click)="cancelAdding()">Cancelar</button>
       </div>
       <div class="picker-options">
         @for (specialty of available(); track specialty.id) {

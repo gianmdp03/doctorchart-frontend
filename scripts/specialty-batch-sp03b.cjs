@@ -55,7 +55,7 @@ module.exports = async function batch(args, milestone = 'sp03b') {
       await api(page, 'GET', '/specialties/' + record.specialtyId + '/wizard', null, null, 404);
       assert.equal((await api(page, 'GET', '/patients/' + record.patient, null, record.contextId)).id, record.patient);
       assert.equal((await api(page, 'GET', '/encounters/' + record.first, null, record.contextId)).id, record.first);
-      assert.equal((await api(page, 'GET', '/bookings/' + record.booking)).patientId, String(record.patient));
+      assert.equal('patientId' in await api(page, 'GET', '/bookings/' + record.booking), false);
       assert.deepEqual((await api(page, 'GET', '/workspace', null, record.contextId)).definition, record.definition);
       add(record.code + ': deactivation hides the catalog entry and preserves the clinical file, original encounter snapshot, personal configuration and linked booking');
     }

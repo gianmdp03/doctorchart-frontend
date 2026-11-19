@@ -21,6 +21,13 @@ import { ActivePatientService } from '../../../core/services/active-patient.serv
 import { AuthService } from '../../../core/services/auth.service';
 import { UserClockService } from '../../../core/services/user-clock.service';
 import { PatientRecordActionsService } from '../../../core/experience/patient-record-actions.service';
+import { ClinicalContextService } from '../../../core/services/clinical-context.service';
+import { WorkspaceStore } from '../../../core/services/workspace.store';
+import { CLINICAL_HISTORY_GROUPS } from '../../../core/models/wizard-definition.model';
+import {
+  isWizardFieldVisible,
+  wizardRecordEntries,
+} from '../../../core/models/wizard-record-display';
 import { formatInstant } from '../../../core/date/user-time-zone';
 interface OverviewItem {
   key: string;
@@ -53,7 +60,12 @@ interface OverviewItem {
 export class ClinicalOverviewComponent {
   private readonly api = inject(ClinicalSummaryService);
   readonly active = inject(ActivePatientService);
-  readonly actions = inject(PatientRecordActionsService);
+  private readonly actions = inject(PatientRecordActionsService);
+  private readonly scope = inject(ClinicalContextService);
+  private readonly workspace = inject(WorkspaceStore);
+  readonly contextParams = computed(() => ({ specialtyContextId: this.scope.id() }));
+  readonly tabs = this.workspace.patientRecordTabs;
+  readonly specialtyName = this.workspace.specialtyDisplayName;
   private readonly auth = inject(AuthService);
   private readonly clock = inject(UserClockService);
   private readonly destroy = inject(DestroyRef);
@@ -65,44 +77,80 @@ export class ClinicalOverviewComponent {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly legacyOpen = signal(false);
-  readonly categories = [
-    {
-      kind: 'ALLERGY' as const,
-      title: 'Alergias',
-      icon: 'lucideShieldAlert',
-      empty: 'Sin alergias relevadas',
-      none: 'No refiere alergias conocidas',
-    },
-    {
-      kind: 'PROBLEM' as const,
-      title: 'Problemas de salud',
-      icon: 'lucideHeartPulse',
-      empty: 'Sin problemas de salud relevados',
-      none: 'No refiere enfermedades actuales',
-    },
-    {
-      kind: 'MEDICATION' as const,
-      title: 'Medicación habitual',
-      icon: 'lucidePill',
-      empty: 'Sin tratamiento habitual relevado',
-      none: 'No utiliza medicación habitual',
-    },
-  ];
+  private readonly negativeHistory = {
+    ALLERGY: 'No refiere alergias conocidas',
+    PROBLEM: 'No refiere enfermedades actuales',
+    MEDICATION: 'No utiliza medicación habitual',
+  };
+  readonly categories = computed(() =>
+    CLINICAL_HISTORY_GROUPS.map((category) => ({
+      ...category,
+      none: this.negativeHistory[category.kind],
+      items: this.items(category.kind),
+    })).filter(
+      (category) =>
+        category.items.length ||
+        this.data()?.history?.[category.kind] ||
+        (category.kind === 'ALLERGY' && this.data()?.profile.noKnownAllergiesAt),
+    ),
+  );
+  readonly canEditHistory = computed(() => {
+    const patient = this.active.activePatient();
+    return (
+      this.actions.has('EDIT_PATIENT') &&
+      !!patient &&
+      CLINICAL_HISTORY_GROUPS.some(
+        (group) =>
+          isWizardFieldVisible(patient.formDefinitionSnapshot, patient.formValues, group.status) ||
+          isWizardFieldVisible(patient.formDefinitionSnapshot, patient.formValues, group.details),
+      )
+    );
+  });
+  readonly specialtySections = computed(() => {
+    const patient = this.active.activePatient();
+    const form = this.workspace.definition()?.patientForm;
+    if (!patient || !form || !this.data()) return [];
+
+    return form.categories.flatMap((category) => {
+      if (
+        !category.enabled ||
+        category.system ||
+        category.key === 'sys_clinical_history' ||
+        category.key === 'sys_patient_profile'
+      )
+        return [];
+      const entries = wizardRecordEntries(
+        patient,
+        (savedCategory, field) =>
+          savedCategory.key === category.key &&
+          isWizardFieldVisible(form, patient.formValues, field.key),
+      ).filter((entry) => entry.value.trim());
+      return entries.length ? [{ key: category.key, title: category.title, entries }] : [];
+    });
+  });
+  readonly lastEncounter = computed(() =>
+    this.tabs().includes('ENCOUNTERS') ? this.data()?.lastEncounter : null,
+  );
+  readonly pendingItems = computed(() => this.items('PENDING').slice(0, 2));
+  readonly vaccinationSchedule = computed(() =>
+    this.tabs().includes('VACCINATION') ? this.data()?.vaccinations : null,
+  );
   readonly pendingVaccines = computed(
     () =>
-      this.data()?.vaccinations?.doses.filter(
+      this.vaccinationSchedule()?.doses.filter(
         (d) => d.status === 'PENDIENTE' || d.status === 'ACTUAL',
       ) ?? [],
   );
   readonly latestVaccine = computed(
     () =>
-      [...(this.data()?.vaccinations?.doses ?? [])]
+      [...(this.vaccinationSchedule()?.doses ?? [])]
         .filter((d) => d.appliedAt)
         .sort((a, b) => (b.appliedAt ?? '').localeCompare(a.appliedAt ?? ''))[0],
   );
   constructor() {
     effect(() => {
       this.active.activePatient();
+      this.scope.id();
       this.auth.currentUser();
       this.clock.day();
       untracked(() => {
@@ -110,6 +158,7 @@ export class ClinicalOverviewComponent {
         this.revision++;
         this.data.set(null);
         this.loading.set(false);
+        this.error.set('');
         this.legacyOpen.set(false);
         this.reload();
       });
@@ -122,13 +171,14 @@ export class ClinicalOverviewComponent {
   private context() {
     return JSON.stringify([
       this.auth.currentUser()?.id,
+      this.scope.id(),
       this.active.patientId(),
       this.active.activePatient()?.version,
     ]);
   }
   reload(): void {
     const id = this.active.patientId();
-    if (!id || !this.auth.currentUser()?.id) return;
+    if (!id || !this.scope.id() || !this.auth.currentUser()?.id) return;
     this.changed.next();
     const revision = ++this.revision,
       context = this.context();
@@ -188,9 +238,6 @@ export class ClinicalOverviewComponent {
       sourceId: 0,
     }));
   }
-  reviewed(kind: ClinicalEntryKind): boolean {
-    return !!this.data()?.history?.[kind];
-  }
   date(value: string | null | undefined): string {
     if (!value) return 'Fecha no registrada';
     if (value.includes('T')) return formatInstant(value, false);
@@ -202,7 +249,9 @@ export class ClinicalOverviewComponent {
   }
   openItem(item: OverviewItem): void {
     if (item.source === 'ENCOUNTER') {
-      void this.router.navigate(['/encounters', item.sourceId]);
+      void this.router.navigate(['/encounters', item.sourceId], {
+        queryParams: this.contextParams(),
+      });
     } else if (item.source === 'PATIENT') {
       this.patientSource();
     } else {
@@ -215,14 +264,11 @@ export class ClinicalOverviewComponent {
     }
   }
   patientSource(): void {
-    void this.router.navigate(['/patients', this.active.patientId()], {
-      queryParams: { tab: 'summary' },
-      fragment: 'clinical-history',
-    });
+    this.recordLink('summary', 'clinical-history');
   }
   recordLink(tab: string, fragment?: string): void {
     void this.router.navigate(['/patients', this.active.patientId()], {
-      queryParams: { tab },
+      queryParams: { ...this.contextParams(), tab },
       fragment,
     });
   }

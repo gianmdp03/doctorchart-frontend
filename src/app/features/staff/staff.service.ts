@@ -2,18 +2,19 @@ import {inject, Injectable, signal} from '@angular/core';
 import {HttpClient, HttpErrorResponse, HttpHeaders} from '@angular/common/http';
 import {firstValueFrom} from 'rxjs';
 import {environment} from '../../../environments/environment';
-import type {Booking, BookingStatus} from '../calendar/bookings.models';
+import type {Booking, BookingCreate, BookingStatus} from '../calendar/bookings.models';
+import type {PublicBookingForm} from '../appointments/appointments.models';
 
 export type StaffPermission='view'|'create'|'cancel'|'reschedule'|'status';
 import type {AppointmentModality} from '../clinics/clinics.models';
 
-export type AdministrativeBooking=Omit<Booking,'patientId'|'provenance'|'clinicSnapshot'>&{clinicSnapshot?:{name:string;timezone:string;modality?:AppointmentModality}};
+export type AdministrativeBooking=Omit<Booking,'provenance'|'clinicSnapshot'>&{clinicSnapshot?:{name:string;timezone:string;modality?:AppointmentModality}};
 export interface StaffSession {email:string;name:string;csrfToken:string;expiresAt:string;recoveryCode?:string;}
 export interface Assignment {modality?:AppointmentModality;doctorName?:string;ownerId:string;accessId:string;clinicId:string;clinicName:string;timezone:string;permissions:StaffPermission[];validUntil:string;}
 export interface StaffAccess {phone?:string;id:string;email:string;name:string;version:string;active:boolean;activated:boolean;permissions:StaffPermission[];clinicIds:string[];}
 export interface SlotDay {
  date:string;
- slots:{start:string;end:string}[];
+ slots:{start:string;end:string;specialtyContextId?:string}[];
  hours?:{start:string;end:string}[];
  closed?:boolean;
 }
@@ -34,7 +35,7 @@ export class StaffService {
  readonly activationRecovery=signal('');
  private readonly base=environment.apiUrl.replace(/\/$/,'')+'/staff';
  private options(write=false,key?:string){let headers=new HttpHeaders();if(write&&this.session())headers=headers.set('X-CSRF-Token',this.session()!.csrfToken);if(key)headers=headers.set('Idempotency-Key',key);return {withCredentials:true,transferCache:false,headers};}
- inspectInvitation(invitationCode:string){return firstValueFrom(this.http.post<{email:string;name:string;expiresAt:string;existingAccount:boolean}>(this.base+'/invitation',{invitationCode},this.options()));}
+ inspectInvitation(invitationCode:string){return firstValueFrom(this.http.post<{email:string;name:string;expiresAt:string;existingAccount:boolean;doctorName?:string;agendas?:string[]}>(this.base+'/invitation',{invitationCode},this.options()));}
  async loadSession(){const s=await firstValueFrom(this.http.get<StaffSession>(this.base+'/session',this.options()));this.session.set(s);return s;}
  async authenticate(action:'login'|'activate',body:Record<string,string>){const s=await firstValueFrom(this.http.post<StaffSession>(this.base+'/'+action,body,this.options()));this.activationRecovery.set(s.recoveryCode??'');this.session.set(s);return s;}
  requestRecoveryEmail(email:string){return firstValueFrom(this.http.post<{message:string}>(this.base+'/recovery-email',{email},this.options()));}
@@ -45,7 +46,8 @@ export class StaffService {
  assignments(){return firstValueFrom(this.http.get<{items:Assignment[]}>(this.base+'/assignments',this.options()));}
  availability(a:Assignment,from:string,days:number){return firstValueFrom(this.http.get<{days:SlotDay[]}>(`${this.base}/owners/${encodeURIComponent(a.ownerId)}/clinics/${a.clinicId}/availability`,{...this.options(),params:{from,days}}));}
  bookings(a:Assignment,from:string,to:string,page=0){return firstValueFrom(this.http.get<{items:AdministrativeBooking[];hasMore:boolean}>(`${this.base}/owners/${encodeURIComponent(a.ownerId)}/clinics/${a.clinicId}/bookings`,{...this.options(),params:{from,to,page,size:100}}));}
- create(a:Assignment,body:{clinicId:string;start:string;contactName:string;contactPhone:string;attendeeName:string},key:string){return firstValueFrom(this.http.post<AdministrativeBooking>(`${this.base}/owners/${encodeURIComponent(a.ownerId)}/bookings`,body,this.options(true,key)));}
+ bookingForm(a:Assignment){return firstValueFrom(this.http.get<PublicBookingForm>(`${this.base}/owners/${encodeURIComponent(a.ownerId)}/clinics/${a.clinicId}/booking-form`,this.options()));}
+ create(a:Assignment,body:BookingCreate,key:string){return firstValueFrom(this.http.post<AdministrativeBooking>(`${this.base}/owners/${encodeURIComponent(a.ownerId)}/bookings`,body,this.options(true,key)));}
  status(a:Assignment,b:AdministrativeBooking,status:BookingStatus,key:string){return firstValueFrom(this.http.patch<AdministrativeBooking>(`${this.base}/owners/${encodeURIComponent(a.ownerId)}/bookings/${b.id}/status`,{expectedVersion:b.version,status},this.options(true,key)));}
  reschedule(a:Assignment,b:AdministrativeBooking,clinicId:string,start:string,key:string){return firstValueFrom(this.http.post<AdministrativeBooking>(`${this.base}/owners/${encodeURIComponent(a.ownerId)}/bookings/${b.id}/reschedule`,{expectedVersion:b.version,clinicId,start},this.options(true,key)));}
 }

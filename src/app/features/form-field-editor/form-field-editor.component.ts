@@ -56,6 +56,7 @@ export class FormFieldEditorComponent {
   private readonly fieldPageHeading = viewChild<ElementRef<HTMLElement>>('fieldPageHeading');
   private lastRequestedCategory: string | null | undefined;
   readonly definition = input<WizardFormDefinition>({ categories: [] });
+  readonly standaloneHeading = input(false);
   readonly section = input<'patientForm' | 'encounterForm'>('patientForm');
   readonly selectedCategoryKey = input<string | null>(null);
   readonly readonly = input(false);

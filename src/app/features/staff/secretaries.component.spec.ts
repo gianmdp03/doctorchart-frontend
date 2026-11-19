@@ -16,12 +16,14 @@ describe('Simplified secretary creation',()=>{
  }
  it('selects the only clinic and groups booking permissions by default',async()=>{
   const {fixture,c}=await make();expect(c.clinicIds).toEqual(['1']);expect(c.permissionPreset()).toBe('manage');
+  const dialog=fixture.nativeElement.querySelector('dialog') as HTMLDialogElement;
+  expect(dialog.open).toBe(false);
   expect(fixture.nativeElement.querySelectorAll('input[type=checkbox]').length).toBe(1);
   c.setPermissionPreset('view');expect(c.permissions).toEqual(['view']);c.setPermissionPreset('custom');fixture.detectChanges();expect(fixture.nativeElement.querySelectorAll('input[type=checkbox]').length).toBe(5);
  });
- it('keeps email required and telephone optional with a valid international pattern',async()=>{
-  const {fixture}=await make();const email=fixture.nativeElement.querySelector('input[name=email]') as HTMLInputElement;const phone=fixture.nativeElement.querySelector('input[name=phone]') as HTMLInputElement;
-  expect(email.required).toBe(true);expect(phone.required).toBe(false);phone.value='+5491123456789';expect(phone.checkValidity()).toBe(true);phone.value='not-a-phone';expect(phone.checkValidity()).toBe(false);phone.value='';expect(phone.checkValidity()).toBe(true);
+ it('keeps email required and uses the optional shared international phone field',async()=>{
+  const {fixture}=await make();const email=fixture.nativeElement.querySelector('input[name=email]') as HTMLInputElement;const phone=fixture.nativeElement.querySelector('app-phone-input[name=phone]') as HTMLElement;
+  expect(email.required).toBe(true);expect(phone).not.toBeNull();expect(phone.hasAttribute('required')).toBe(false);
  });
  it('creates a private link with the token in the fragment and WhatsApp only for a phone',async()=>{
   const {fixture,c,http}=await make();c.name='Ana';c.email='ana@example.invalid';c.phone='+5491123456789';const pending=c.save();
@@ -30,7 +32,7 @@ describe('Simplified secretary creation',()=>{
   http.expectOne(r=>r.url.endsWith('/secretaries')).flush({items:[],capabilities:{manage:true,validUntil:'2099-01-01T00:00:00Z'}});await pending;fixture.detectChanges();
   const invite=c.invitation()!;const url=new URL(invite.url);expect(url.pathname).toBe('/staff/activate');expect(url.search).toBe('');expect(url.hash).toBe('#invite='+'a'.repeat(43));
   const whatsapp=new URL(c.whatsappUrl(invite));expect(whatsapp.pathname).toBe('/5491123456789');expect(whatsapp.searchParams.get('text')).toContain(invite.url);expect(fixture.nativeElement.querySelector('a[href^="https://wa.me/"]')).not.toBeNull();
-  expect(fixture.nativeElement.textContent).toContain('El envío quedó en cola para ana@example.invalid.');
+  expect(fixture.nativeElement.textContent).toContain('El correo quedó en cola para ana@example.invalid.');
   c.invitation.set({...invite,phone:'',emailQueued:false});fixture.detectChanges();expect(fixture.nativeElement.querySelector('a[href^="https://wa.me/"]')).toBeNull();expect(fixture.nativeElement.textContent).not.toContain('quedó en cola');
  });
 });

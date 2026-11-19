@@ -19,6 +19,7 @@ export interface Availability {
 }
 
 export interface AgendaWindow {
+  specialtyContextId?: string;
   clinicId: string;
   name: string;
   modality: AppointmentModality;

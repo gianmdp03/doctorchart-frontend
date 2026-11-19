@@ -8,11 +8,17 @@
         [readonly]="readonly()"
         [showErrors]="showErrors()"
         [encounter]="encounter()"
+        [headingLevel]="headingLevel()"
         (valuesChange)="setHistoryValues($event)"
       />
     } @else {
-      <section class="form-category" [attr.data-category-key]="category.key">
-        <h3>{{ category.title }}</h3>
+      <section
+        class="form-category"
+        [attr.data-category-key]="category.key"
+        [attr.id]="category.key === 'sys_clinical_history' ? 'clinical-history' : null"
+        [attr.tabindex]="category.key === 'sys_clinical_history' ? -1 : null"
+      >
+        @if (headingLevel() === 2) { <h2>{{ category.title }}</h2> } @else { <h3>{{ category.title }}</h3> }
         <div class="fields-grid">
           @for (field of category.fields; track field.key) {
             @if (isFieldVisible(field.key)) {
@@ -22,12 +28,16 @@
                 [class.has-error]="!readonly() && !!visibleFieldError(field)"
                 [attr.data-field-key]="field.key"
               >
+                @if (readonly() && field.type !== 'FORMULA') {
+                  <span class="saved-label">{{ field.label }}</span>
+                } @else {
                 <label [attr.for]="'field-' + field.key"
                   >{{ field.label }}
                   @if (field.required && field.type !== 'FORMULA' && !readonly()) {
-                    <span aria-label="Obligatorio">*</span>
+                    <span aria-hidden="true">*</span>
                   }
                 </label>
+                }
                 @if (field.type === 'FORMULA') {
                   <output class="formula-result" [id]="'field-' + field.key">{{ formulaText(field) }}</output>
                 } @else if (readonly()) {
@@ -37,14 +47,29 @@
                       currentValues()[field.key] == null || currentValues()[field.key] === ''
                     "
                   >
-                    {{ displayValue(field)
-                    }}{{ field.unit && currentValues()[field.key] != null ? ' ' + field.unit : '' }}
+                    @if (isPhoneField(field) && phoneValue(field)) {
+                      {{ (phoneValue(field) | phoneDisplay | async) || phoneValue(field) }}
+                    } @else {
+                      {{ displayValue(field) }}
+                    }{{ field.unit && currentValues()[field.key] != null ? ' ' + field.unit : '' }}
                   </p>
+                } @else if (isPhoneField(field)) {
+                  <app-phone-input
+                    [inputId]="'field-' + field.key"
+                    [required]="field.required"
+                    [showErrors]="showErrors()"
+                    [preserveExisting]="preserveExistingPhones()"
+                    [ngModel]="phoneValue(field)"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="setValue(field, $event)"
+                  />
                 } @else {
                   @switch (field.type) {
                     @case ('TEXT') {
                       <input
                         [id]="'field-' + field.key"
+                        [attr.name]="field.key"
+                        [attr.aria-required]="field.required || null"
                         [attr.aria-invalid]="!!visibleFieldError(field)"
                         [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null"
                         [ngModel]="currentValues()[field.key] ?? ''"
@@ -55,6 +80,8 @@
                     @case ('TEXTAREA') {
                       <textarea
                         [id]="'field-' + field.key"
+                        [attr.name]="field.key"
+                        [attr.aria-required]="field.required || null"
                         rows="3"
                         [attr.aria-invalid]="!!visibleFieldError(field)"
                         [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null"
@@ -69,21 +96,28 @@
                           type="text"
                           inputmode="decimal"
                           [id]="'field-' + field.key"
+                        [attr.name]="field.key"
+                        [attr.aria-required]="field.required || null"
                           [ngModel]="numberInput(field)"
                           (ngModelChange)="setNumberValue(field, $event)"
                           [attr.aria-invalid]="!!visibleFieldError(field)"
-                          [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null"
+                          [attr.aria-describedby]="(field.unit ? 'unit-' + field.key : '') + (visibleFieldError(field) ? ' error-' + field.key : '') || null"
                           [placeholder]="field.placeholder ?? ''"
                         />
                         @if (field.unit) {
-                          <span>{{ field.unit }}</span>
+                          <span [id]="'unit-' + field.key">{{ field.unit }}</span>
                         }
                       </div>
                     }
                     @case ('DATE') {
                       <app-date-picker
                         [class.input-error]="!!visibleFieldError(field)"
+                        [invalid]="!!visibleFieldError(field)"
+                        [describedBy]="visibleFieldError(field) ? 'error-' + field.key : null"
+                        [required]="field.required"
+                        [autocomplete]="isBirthDateField(field.key) ? 'bday' : 'off'"
                         [inputId]="'field-' + field.key"
+                        [inputLabel]="field.label"
                         [showError]="false"
                         [ngModel]="$any(currentValues()[field.key] ?? '')"
                         (ngModelChange)="setValue(field, $event)"
@@ -93,6 +127,8 @@
                     @case ('SELECT') {
                       <select
                         [id]="'field-' + field.key"
+                        [attr.name]="field.key"
+                        [attr.aria-required]="field.required || null"
                         [attr.aria-invalid]="!!visibleFieldError(field)"
                         [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null"
                         [ngModel]="currentValues()[field.key] ?? null"
@@ -107,6 +143,8 @@
                     @case ('BOOLEAN') {
                       <select
                         [id]="'field-' + field.key"
+                        [attr.name]="field.key"
+                        [attr.aria-required]="field.required || null"
                         [attr.aria-invalid]="!!visibleFieldError(field)"
                         [attr.aria-describedby]="visibleFieldError(field) ? 'error-' + field.key : null"
                         [ngModel]="currentValues()[field.key] ?? null"
@@ -118,10 +156,10 @@
                       </select>
                     }
                   }
-                  @if (visibleFieldError(field); as error) {
-                    <span class="field-error" [id]="'error-' + field.key" role="alert">{{
-                      error
-                    }}</span>
+                  @if (!isPhoneField(field)) {
+                    @if (visibleFieldError(field); as error) {
+                      <span class="field-error" [id]="'error-' + field.key" role="alert">{{ error }}</span>
+                    }
                   }
                 }
               </div>

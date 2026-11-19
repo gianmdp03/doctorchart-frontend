@@ -7,7 +7,8 @@ const path = require('node:path');
 const fixtures = require('./testing/ui-redesign-fixtures.cjs');
 const checkAccessibility = require('./testing/ui-accessibility-check.cjs');
 
-const out = path.resolve('.impeccable/review');
+const out = path.resolve(process.env.UI_REVIEW_OUTPUT || '.impeccable/review');
+const axeScript = process.env.UI_AXE_SCRIPT && path.resolve(process.env.UI_AXE_SCRIPT);
 fs.mkdirSync(out, { recursive: true });
 const base = 'http://127.0.0.1:4202';
 const selected = new Set((process.env.UI_CASES || '').split(',').filter(Boolean));
@@ -34,10 +35,34 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
     const newDoctor = await context({ initialSetup: true });
 
     async function capture(p, name) {
+      if (axeScript) {
+        if (!/(?:desktop-(?:light|dark)|mobile-dark|login-validation)$/.test(name)) return;
+        if (!await p.evaluate(() => !!window.axe)) await p.addScriptTag({ path: axeScript });
+        // Wait for the theme and viewport changes to reach a painted frame.
+        await p.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        const result = await p.evaluate(async () => {
+          const { violations, incomplete } = await window.axe.run(document, {
+            runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'] },
+            resultTypes: ['violations', 'incomplete'],
+          });
+          const width = document.documentElement.scrollWidth;
+          return {
+            viewport: innerWidth, width,
+            violations: violations.map(({ id, nodes }) => ({
+              id, nodes: nodes.map(({ target, failureSummary }) => ({ target, failureSummary })),
+            })),
+            incomplete: incomplete.map(rule => rule.id),
+          };
+        });
+        report.captures.push({ file: name, ...result });
+        if (result.width > result.viewport + 1) report.cases.push({ name: name + '-overflow', status: 'FAIL' });
+        persist();
+        return;
+      }
       await p.evaluate(() => { scrollTo(0, 0); });
       const overflow = await p.evaluate(() => ({ width: innerWidth, document: document.documentElement.scrollWidth, offenders: [...document.querySelectorAll('body *')].filter(e => {
         const r = e.getBoundingClientRect(), s = getComputedStyle(e);
-        return r.width > 0 && r.right > innerWidth + 2 && s.position !== 'fixed' && !e.closest('.week-strip, .flattened-tabs-nav, .step-navigation, [class*="table-responsive"], [class*="table-wrap"]');
+        return r.width > 0 && r.right > innerWidth + 2 && s.position !== 'fixed' && !e.closest('.calendar-board, .flattened-tabs-nav, .step-navigation, [class*="table-responsive"], [class*="table-wrap"]');
       }).slice(0, 8).map(e => e.tagName + '.' + String(e.className).slice(0, 100)) }));
       const file = name + '.png';
       await p.screenshot({ path: path.join(out, file), fullPage: true, animations: 'disabled' });
@@ -55,7 +80,7 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
     }
 
     async function variants(p, name) {
-      for (const [viewport, size] of [['desktop', { width: 1440, height: 1000 }], ['tablet', { width: 834, height: 1112 }], ['mobile', { width: 390, height: 844 }]]) {
+      for (const [viewport, size] of [['desktop', { width: 1440, height: 1000 }], ['tablet', { width: 834, height: 1112 }], ['mobile', { width: axeScript ? 320 : 390, height: 844 }]]) {
         await p.setViewportSize(size);
         for (const theme of ['light', 'dark']) {
           await setTheme(p, theme);
@@ -84,13 +109,17 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       persist();
     }
 
-    await run('public-directory', anonymous, '/appointments', '.clinic-card');
+    await run('public-directory', anonymous, '/appointments', '.search-form', async p => {
+      assert.equal(await p.locator('.search-results').count(), 0);
+      await p.getByRole('button', { name: 'Buscar turnos', exact: true }).click();
+      await p.locator('.clinic-card').first().waitFor();
+    });
     await run('login', anonymous, '/login', '#login-email', async p => {
       await p.locator('#login-email').fill('correo-invalido');
       await p.locator('#login-password').focus();
       await p.locator('#login-password').fill('123');
       await p.getByRole('button', { name: 'Ingresar a DoctorChart', exact: true }).click();
-      assert.equal(await p.locator('#login-email').getAttribute('aria-invalid'), 'true');
+      await p.locator('#login-email[aria-invalid=true]:focus').waitFor();
       await capture(p, 'login-validation');
       await p.locator('#login-email').fill('');
       await p.locator('#login-password').fill('');
@@ -104,16 +133,16 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.locator('[data-public-slot]').first().click();
       await p.locator('#public-contact').fill('Solicitante de prueba');
       await p.locator('#public-document').fill('12345678');
-      await p.locator('#public-phone').fill('2231234567');
+      await p.locator('#public-phone').fill('2234951234');
       await p.locator('#public-email').fill('prueba@example.test');
       await p.locator('#public-consent').check();
-      assert.equal(await p.locator('#public-confirm').isEnabled(), true);
+      await p.locator('#public-confirm:enabled').waitFor();
     });
     await run('public-conflict', anonymous, '/appointments/' + fixtures.publicId + '?specialtyContextId=101', '[data-public-slot]', async (p, boundary) => {
       await p.locator('[data-public-slot]').first().click();
       await p.locator('#public-contact').fill('Solicitante de prueba');
       await p.locator('#public-document').fill('12345678');
-      await p.locator('#public-phone').fill('2231234567');
+      await p.locator('#public-phone').fill('2234951234');
       await p.locator('#public-email').fill('prueba@example.test');
       await p.locator('#public-consent').check();
       boundary.state.failBooking = true;
@@ -127,16 +156,25 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.locator('[data-public-slot]').first().click();
       await p.locator('#public-contact').fill('Solicitante de prueba');
       await p.locator('#public-document').fill('12345678');
-      await p.locator('#public-phone').fill('2231234567');
+      await p.locator('#public-phone').fill('2234951234');
       await p.locator('#public-email').fill('prueba@example.test');
       await p.locator('#public-consent').check();
       await p.locator('#public-confirm').click();
       await p.getByText('reserva-sintetica', { exact: true }).waitFor();
       assert.ok(boundary.writes.some(w => w.path.endsWith('/bookings') && w.body.specialtyContextId === '101' && !w.body.patientId));
     });
-    await run('confirmation', anonymous, '/appointments/confirmation', '#confirmation-code', async p => {
-      await p.locator('#confirmation-code').fill('a'.repeat(43));
-      await p.getByRole('button', { name: 'Consultar turno', exact: true }).click();
+    await run('confirmation', anonymous, '/appointments', '#lookup-dni', async p => {
+      await p.locator('#lookup-dni').fill('12345678');
+      await p.getByRole('button', { name: 'Ver mis turnos', exact: true }).click();
+      await p.waitForURL('**/appointments/confirmation');
+      assert.equal(await p.locator('#portal-document').inputValue(), '12345678');
+      assert.ok(!p.url().includes('12345678'));
+      await p.locator('#portal-email').fill('consulta@example.test');
+      await p.getByRole('button', { name: 'Pedir código por correo', exact: true }).click();
+      await p.locator('#confirmation-code').fill('123456');
+      await p.getByRole('button', { name: 'Ver mis turnos', exact: true }).click();
+      await p.locator('.constancia').waitFor();
+      await p.reload();
       await p.locator('.constancia').waitFor();
     });
     await run('dashboard', doctor, '/dashboard?specialtyContextId=101', '.notes-textarea', async p => {
@@ -148,7 +186,7 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.locator('.profile-avatar-btn').click();
       await p.locator('#account-options').waitFor();
       assert.equal(await p.locator('.profile-avatar-btn').getAttribute('aria-expanded'), 'true');
-      await p.getByRole('button', { name: 'Perfil Profesional', exact: true }).waitFor();
+      await p.getByRole('link', { name: 'Perfil Profesional', exact: true }).waitFor();
     });
     await run('mobile-navigation', doctor, '/dashboard?specialtyContextId=101', '.notes-textarea', async p => {
       await p.setViewportSize({ width: 390, height: 844 });
@@ -162,6 +200,19 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       assert.equal(await p.locator('.mobile-nav-toggle').getAttribute('aria-expanded'), 'false');
     });
     await run('patients', doctor, '/patients?specialtyContextId=101', '.patient-row');
+    await run('patients-administration', doctor, '/patients?specialtyContextId=101', '.patient-row', async p => {
+      const audit = p.getByRole('link', { name: 'Auditoría de accesos', exact: true });
+      assert.equal(await audit.isVisible(), false);
+      await p.getByText('Más opciones', { exact: true }).click();
+      await audit.click();
+      await p.getByRole('heading', { name: 'Auditoría de accesos', exact: true }).waitFor();
+      assert.equal(await p.locator('.patient-row').count(), 0);
+      await p.getByRole('link', { name: 'Volver a pacientes', exact: true }).click();
+      await p.locator('.patient-row').first().waitFor();
+      await p.getByText('Más opciones', { exact: true }).click();
+      await p.getByRole('link', { name: 'Fichas anuladas', exact: true }).click();
+      await p.getByRole('heading', { name: 'Fichas anuladas', exact: true }).waitFor();
+    });
     await run('patients-empty', doctor, '/patients?specialtyContextId=101', '.patient-row', async (p, boundary) => {
       boundary.state.emptyPatients = true;
       await p.reload();
@@ -222,32 +273,58 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.locator('article[data-field-key="chiefComplaint"]').getByRole('button', { name: 'Editar', exact: true }).click();
       await p.getByLabel('Etiqueta', { exact: true }).waitFor();
     });
-    await run('clinics', doctor, '/clinics?specialtyContextId=101', '.clinics-page');
+    await run('clinics', doctor, '/clinics?specialtyContextId=101', '.clinics-page', async p => {
+      await p.getByRole('switch', { name: 'Teleconsulta de Medicina General' }).waitFor();
+      await p.getByRole('combobox', { name: 'Especialidad actual' }).click();
+      await p.getByRole('option', { name: 'Pediatría', exact: true }).click();
+      await p.getByRole('switch', { name: 'Teleconsulta de Pediatría' }).waitFor();
+      await p.getByText('Todavía no hay consultorios para esta especialidad').waitFor();
+      await p.getByRole('combobox', { name: 'Especialidad actual' }).click();
+      await p.getByRole('option', { name: 'Medicina General', exact: true }).click();
+      await p.getByText('Consultorio de prueba Centro', { exact: true }).waitFor();
+    });
     await run('clinic-form', doctor, '/clinics/new?specialtyContextId=101', '.clinic-form-page');
     await run('clinic-edit', doctor, '/clinics/103/edit?specialtyContextId=101', '.clinic-form-page');
     await run('teleconsultation', doctor, '/clinics/new?specialtyContextId=101&modality=teleconsultation', '.clinic-form-page');
-    await run('schedules', doctor, '/clinics/103/schedule?specialtyContextId=101', '#schedule-notice');
-    await run('calendar', doctor, '/calendar?specialtyContextId=101', '.week-day', async p => {
-      const day = p.locator('.week-day').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) });
+    await run('schedules', doctor, '/clinics/103/schedule?specialtyContextId=101', '#schedule-notice', async p => {
+      const specialty = p.getByLabel('Especialidad del bloque');
+      await specialty.getByRole('option', { name: 'Medicina General · Con horarios', exact: true }).waitFor({state:'attached'});
+      await specialty.selectOption('202');
+      await p.getByText('Dermatología todavía no tiene horarios habituales guardados en esta sede.').waitFor();
+    });
+    await run('schedules-teleconsultation', doctor, '/clinics/104/schedule?specialtyContextId=303', '#add-block-heading', async p => {
+      const days = p.getByRole('group', { name: 'Día para consultar horarios ocupados' }).getByRole('button');
+      await days.first().click();
+      await p.getByText('09:00–14:00', { exact: true }).waitFor();
+      await days.nth(2).click();
+      await p.getByText('No hay horarios ocupados por otras agendas este día.', { exact: true }).waitFor();
+      await days.first().click();
+    });
+    await run('calendar', doctor, '/calendar?specialtyContextId=101', '.day-header button', async p => {
+      const day = p.locator('.day-header button').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) });
       if (await day.count() === 1) await day.click();
     });
-    await run('booking-detail', doctor, '/calendar?specialtyContextId=101', '.week-day', async p => {
-      const day = p.locator('.week-day').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) });
+    await run('booking-detail', doctor, '/calendar?specialtyContextId=101', '.day-header button', async p => {
+      const day = p.locator('.day-header button').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) });
       if (await day.count() === 1) await day.click();
       await p.locator('[data-booking-id="1"]').click();
       await p.locator('#booking-detail-heading').waitFor();
     });
-    await run('booking-reschedule', doctor, '/calendar?specialtyContextId=101', '.week-day', async p => {
-      await p.locator('.week-day').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) }).click();
+    await run('booking-reschedule', doctor, '/calendar?specialtyContextId=101', '.day-header button', async p => {
+      await p.locator('.day-header button').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) }).click();
       await p.locator('[data-booking-id="1"]').click();
       await p.locator('#booking-move').click();
       await p.locator('#move-slot').selectOption({ index: 1 });
       assert.equal(await p.locator('#move-confirm').isEnabled(), true);
     });
-    await run('manual-booking', doctor, '/calendar?specialtyContextId=101', '.week-day', async p => {
-      await p.locator('.week-day').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) }).click();
+    await run('manual-booking', doctor, '/calendar?specialtyContextId=101', '.day-header button', async p => {
+      await p.locator('.day-header button').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) }).click();
       await p.locator('.slot').first().click();
       await p.locator('#booking-contact').fill('Solicitante de prueba');
+      assert.equal(await p.locator('#booking-create').isEnabled(), false);
+      await p.locator('#booking-document').fill('12345678');
+      await p.locator('#booking-email').fill('reserva@example.test');
+      await p.locator('#booking-phone').fill('0223 495-1234');
       assert.equal(await p.locator('#booking-create').isEnabled(), true);
     });
     await run('profile', doctor, '/profile?specialtyContextId=101', '.profile-identity');
@@ -256,8 +333,8 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
     await run('staff-login', staff, '/staff/login', '.auth-page');
     await run('staff-activation', staff, '/staff/activate', '.auth-page');
     await run('staff-recovery', staff, '/staff/recover', '.auth-page');
-    await run('staff-calendar', staff, '/staff/calendar', '[aria-label="Consultorio asignado"]', async p => {
-      await p.getByLabel('Consultorio asignado', { exact: true }).selectOption({ index: 1 });
+    await run('staff-calendar', staff, '/staff/calendar', '.staff-agenda', async p => {
+      await p.locator('.day-header button').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) }).click();
       await p.locator('.booking').first().waitFor();
     });
     await run('admin', admin, '/admin/specialties', '.admin-specialties', async p => {

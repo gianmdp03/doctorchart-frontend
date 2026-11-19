@@ -171,6 +171,7 @@ describe('PatientRecordComponent', () => {
     })) as any;
 
     patientServiceSpy = {
+      listClinicalAccess: vi.fn().mockReturnValue(of({ items: [], nextBefore: null })),
       getPatientById: vi.fn().mockReturnValue(of(mockPatient)),
     };
     encounterServiceSpy = {
@@ -202,6 +203,8 @@ describe('PatientRecordComponent', () => {
           provide: WorkspaceStore,
           useValue: {
             patientRecordTabs: configuredTabs,
+            definition: signal(null),
+            specialtyDisplayName: signal(null),
             patientRecordActions: configuredActions,
             hasRecordAction: (id: PatientRecordActionId) => configuredActions().includes(id),
             hasRecordTab: (id: PatientRecordModuleId) => configuredTabs().includes(id),
@@ -238,6 +241,31 @@ describe('PatientRecordComponent', () => {
     growth = fixture.debugElement.injector.get(PatientGrowthStore);
     history = fixture.debugElement.injector.get(PatientEncountersStore);
     fixture.detectChanges();
+  });
+
+  it('keeps management actions in a separate dialog and resets the annulment prompt when switching tools', () => {
+    const record = fixture.nativeElement as HTMLElement;
+    const dialog = record.querySelector('dialog')!;
+    expect(record.querySelector('app-patient-banner [aria-haspopup="dialog"]')?.textContent).toContain('Más opciones');
+    expect(dialog.open).toBe(false);
+    expect(dialog.querySelector('app-clinical-access, app-clinical-revisions, app-clinical-document-tools')).toBeNull();
+    const annul = dialog.querySelector<HTMLButtonElement>('.management-danger')!;
+    annul.click();
+    fixture.detectChanges();
+    expect(dialog.querySelector('app-annulment-prompt')).not.toBeNull();
+    dialog.querySelector<HTMLButtonElement>('.management-back')!.click();
+    fixture.detectChanges();
+    const accessAction = Array.from(dialog.querySelectorAll<HTMLButtonElement>('.management-option'))
+      .find(button => button.textContent.includes('Accesos a la ficha'));
+    expect(accessAction).toBeDefined();
+    accessAction!.click();
+    fixture.detectChanges();
+    expect(dialog.querySelector('app-annulment-prompt')).toBeNull();
+    expect(dialog.querySelector('app-clinical-access')).not.toBeNull();
+    configuredActions.set([]);
+    dialog.querySelector<HTMLButtonElement>('.management-back')!.click();
+    fixture.detectChanges();
+    expect(dialog.querySelector('.management-danger')).toBeNull();
   });
 
   it('shows a retryable load error instead of an empty patient selection', () => {
@@ -281,16 +309,9 @@ describe('PatientRecordComponent', () => {
     expect(component.isEncounterFormOpen()).toBe(false);
     component.setTab('historia');
     fixture.detectChanges();
-    const timeline = fixture.debugElement.query(
-      By.directive(ClinicalTimelineComponent),
-    ).componentInstance;
-    expect(fixture.nativeElement.querySelector('.btn-new-encounter-cta')).toBeNull();
-    timeline.newEncounter.emit();
-    timeline.createEncounter();
-    expect(component.isEncounterFormOpen()).toBe(false);
     history.encounters.set([]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.btn-new-encounter-cta')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.btn-primary-soap')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Sin historias clínicas registradas');
   });
   it('closes edit and new consultation dialogs if their actions are removed', () => {
@@ -1138,8 +1159,7 @@ describe('PatientRecordComponent', () => {
     fixture.detectChanges();
     const timeline = fixture.debugElement.query(By.directive(ClinicalTimelineComponent))
       .componentInstance as ClinicalTimelineComponent;
-    timeline.newEncounter.emit();
-    expect(component.isEncounterFormOpen()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('.btn-primary-soap')).toHaveLength(1);
     const dispatch = vi.spyOn(window, 'dispatchEvent').mockClear();
     timeline.viewDetail.emit(1);
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/encounters', 1]);

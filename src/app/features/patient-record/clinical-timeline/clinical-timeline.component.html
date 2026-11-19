@@ -1,153 +1,175 @@
-<div class="clinical-timeline-container" role="feed" aria-label="Línea de tiempo de consultas médicas">
-  <div class="timeline-toolbar">
-    <div class="toolbar-left">
-      <div class="accordion-quick-toggles">
-        <button type="button" class="btn-toggle-subtle" (click)="expandAll()">Expandir todo</button>
-        <span class="toggle-sep" aria-hidden="true">|</span>
-        <button type="button" class="btn-toggle-subtle" (click)="collapseAll()">Colapsar todo</button>
+<section
+  class="clinical-timeline-container"
+  aria-labelledby="timeline-heading"
+  [attr.aria-busy]="isLoading"
+>
+  <header class="timeline-heading">
+    <div>
+      <h2 id="timeline-heading">Consultas registradas</h2>
+      @if (!isLoading) {
+        <p aria-live="polite">
+          {{ filteredEncounters().length }}
+          {{ filteredEncounters().length === 1 ? 'consulta' : 'consultas' }}
+          @if (hasActiveDateFilter()) {
+            de {{ encounters.length }}
+          }
+        </p>
+      }
+    </div>
+    @if (filteredEncounters().length > 1 && !isLoading) {
+      <button
+        type="button"
+        class="dc-button dc-button--quiet"
+        (click)="allVisibleExpanded() ? collapseAll() : expandAll()"
+      >
+        {{ allVisibleExpanded() ? 'Cerrar vistas rápidas' : 'Expandir visibles' }}
+      </button>
+    }
+  </header>
+
+  @if (encounters.length) {
+    <div class="timeline-filters">
+      <div class="date-preset-chips" role="group" aria-label="Período de las consultas">
+        @for (preset of presets; track preset.id) {
+          <button
+            type="button"
+            class="preset-chip"
+            [attr.aria-pressed]="datePreset() === preset.id"
+            (click)="setPreset(preset.id)"
+          >
+            {{ preset.label }}
+          </button>
+        }
       </div>
-
-      <!-- Date Filter Controls -->
-      <div class="timeline-date-filter-group">
-        <div class="date-preset-chips">
-          <button
-            type="button"
-            class="preset-chip"
-            [class.active]="datePreset() === 'ALL'"
-            (click)="setPreset('ALL')"
-          >
-            Todas
-          </button>
-          <button
-            type="button"
-            class="preset-chip"
-            [class.active]="datePreset() === 'LAST_30'"
-            (click)="setPreset('LAST_30')"
-          >
-            30 días
-          </button>
-          <button
-            type="button"
-            class="preset-chip"
-            [class.active]="datePreset() === 'LAST_90'"
-            (click)="setPreset('LAST_90')"
-          >
-            90 días
-          </button>
-          <button
-            type="button"
-            class="preset-chip"
-            [class.active]="datePreset() === 'THIS_YEAR'"
-            (click)="setPreset('THIS_YEAR')"
-          >
-            Este año
-          </button>
-        </div>
-
+      <details class="date-range">
+        <summary [class.active-range]="datePreset() === 'CUSTOM'">Rango personalizado</summary>
         <div class="date-inputs-range">
-          @if (dateRangeError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
-          <label class="date-input-label">
-            <span>Desde</span>
+          <div class="date-field">
+            <label for="timeline-from">Desde</label>
             <app-date-picker
-              class="timeline-date-input"
+              inputId="timeline-from" inputLabel="Desde"
               [value]="fromDate()"
               (valueChange)="onFromDateValueChange($event)"
-              aria-label="Filtrar consultas desde fecha"
             />
-          </label>
-          <label class="date-input-label">
-            <span>Hasta</span>
+          </div>
+          <div class="date-field">
+            <label for="timeline-to">Hasta</label>
             <app-date-picker
-              class="timeline-date-input"
+              inputId="timeline-to" inputLabel="Hasta"
               [value]="toDate()"
               (valueChange)="onToDateValueChange($event)"
-              aria-label="Filtrar consultas hasta fecha"
             />
-          </label>
-          @if (hasActiveDateFilter()) {
-            <button
-              type="button"
-              class="btn-clear-date-filter"
-              (click)="clearDateFilter()"
-              title="Quitar filtro de fechas"
-            >
-              ✕ Limpiar
-            </button>
+          </div>
+          @if (dateRangeError(); as error) {
+            <p class="field-error" role="alert">{{ error }}</p>
           }
         </div>
-      </div>
-    </div>
-
-    <div class="toolbar-right">
-      <span class="timeline-count-badge">
-        {{ filteredEncounters().length }} {{ filteredEncounters().length === 1 ? 'registro' : 'registros' }}
-        @if (hasActiveDateFilter()) {
-          <span class="text-xs text-slate-500">(de {{ encounters.length }})</span>
-        }
-      </span>
-      @if (canCreateEncounter()) {
-      <button type="button" class="dc-button dc-button--primary btn-new-encounter-cta" (click)="createEncounter()">
-        <ng-icon name="lucidePlus" /><span>+ Nueva historia clínica</span>
-      </button>
-      }
-    </div>
-  </div>
-
-  @if (isLoading) {
-    <div class="timeline-loading-card"><div class="timeline-spinner"></div><span>Cargando historia clínica...</span></div>
-  } @else if (filteredEncounters().length === 0) {
-    @if (encounters.length > 0 && hasActiveDateFilter()) {
-      <div class="timeline-empty-card">
-        <div class="empty-icon-circle"><ng-icon name="lucideCalendar" /></div>
-        <h3>No hay registros en el rango de fechas</h3>
-        <p>No se encontraron registros en la historia clínica entre las fechas seleccionadas.</p>
-        <button type="button" class="btn-toggle-subtle mt-2" (click)="clearDateFilter()">Quitar filtro de fechas</button>
-      </div>
-    } @else {
-      <div class="timeline-empty-card">
-        <div class="empty-icon-circle"><ng-icon name="lucideStethoscope" /></div>
-        <h3>Sin historias clínicas registradas</h3>
-        <p>No se encontraron registros previos en la historia clínica.</p>
-      @if (canCreateEncounter()) {
-        <button type="button" class="dc-button dc-button--primary btn-new-encounter-cta mt-3" (click)="createEncounter()"><ng-icon name="lucidePlus" /><span>+ Nueva historia clínica</span></button>
-      }
-      </div>
-    }
-  } @else {
-    <div class="vertical-timeline-feed">
-      @for (encounter of filteredEncounters(); track encounter.id) {
-        <article class="timeline-entry" [class.is-expanded]="isCardExpanded(encounter.id)">
-          <div class="timeline-node-marker"><div class="node-icon-circle"><ng-icon name="lucideStethoscope" /></div></div>
-          <div class="timeline-card">
-            <div class="entry-heading">
-              <button type="button" class="card-header entry-toggle" (click)="toggleCard(encounter.id)" [attr.aria-expanded]="isCardExpanded(encounter.id)" [attr.aria-controls]="isCardExpanded(encounter.id) ? 'encounter-body-' + encounter.id : null">
-                <span class="entry-identity"><strong class="entry-patient">{{ encounterPatientName(encounter) }}</strong><span class="encounter-datetime"><ng-icon name="lucideCalendar" /><span>{{ formatDate(encounter.encounterDate) }}@if (formatTime(encounter.encounterDate); as time) { · {{ time }} }</span></span></span>
-                <ng-icon class="entry-chevron" [name]="isCardExpanded(encounter.id) ? 'lucideChevronUp' : 'lucideChevronDown'" />
-              </button>
-              <button type="button" class="btn-action-view compact-detail" (click)="onViewCard(encounter.id, $event)"><ng-icon name="lucideEye" /><span>Ver detalle</span></button>
-            </div>
-            @if (isCardExpanded(encounter.id)) {
-              <div class="card-soap-body animate-fade-in" [id]="'encounter-body-' + encounter.id">
-                @if (getDynamicEntries(encounter).length > 0) {
-                  <div class="soap-block block-s"><div class="block-content"><h4 class="block-title">Datos registrados</h4>
-                    @for (item of getDynamicEntries(encounter); track item.label) { <p class="chief-complaint-full"><strong>{{ item.label }}:</strong> {{ item.value }}</p> }
-                  </div></div>
-                } @else {
-                  <div class="soap-block block-s"><div class="block-content"><h4 class="block-title">Registro histórico</h4>
-                    @if (encounter.chiefComplaint) { <p class="chief-complaint-full"><strong>Motivo:</strong> {{ encounter.chiefComplaint }}</p> }
-                    @if (encounter.primaryDiagnosisDescription) { <p class="chief-complaint-full"><strong>Diagnóstico:</strong> {{ encounter.primaryDiagnosisDescription }}</p> }
-                    @if (encounter.treatmentPlan) { <p class="chief-complaint-full"><strong>Plan:</strong> {{ encounter.treatmentPlan }}</p> }
-                  </div></div>
-                }
-              </div>
-            }
-            @if (isCardExpanded(encounter.id)) { <div class="card-footer-actions"><div></div><div class="actions-right">
-              <button type="button" class="btn-action-view" (click)="onViewCard(encounter.id, $event)"><ng-icon name="lucideEye" /><span>Ver detalle</span></button>
-              <button type="button" class="btn-action-delete" (click)="onDeleteCard(encounter.id, $event)" title="Anular consulta"><ng-icon name="lucideTrash2" /></button>
-            </div></div> }
-          </div>
-        </article>
-      }
+      </details>
     </div>
   }
-</div>
+
+  @if (isLoading) {
+    <p class="timeline-state" role="status">Cargando consultas…</p>
+  } @else if (filteredEncounters().length === 0) {
+    <div class="timeline-state">
+      @if (encounters.length && hasActiveDateFilter()) {
+        <h3>No hay consultas en ese período</h3>
+        <button type="button" class="dc-button dc-button--quiet" (click)="clearDateFilter()">
+          Ver todas las consultas
+        </button>
+      } @else {
+        <h3>Sin historias clínicas registradas</h3>
+        <p>Las consultas de este paciente aparecerán acá.</p>
+      }
+    </div>
+  } @else {
+    <ol class="consultation-list">
+      @for (encounter of filteredEncounters(); track encounter.id) {
+        <li class="consultation">
+          <div class="entry-heading">
+            <div class="entry-meta">
+              <time [attr.datetime]="encounter.encounterDate">
+                <strong>{{ formatDate(encounter.encounterDate) }}</strong>
+                @if (formatTime(encounter.encounterDate); as time) {
+                  <span>{{ time }}</span>
+                }
+              </time>
+              <span
+                class="consultation-type"
+                [class.urgent]="encounter.consultationType === 'EMERGENCY'"
+              >
+                {{ getConsultationTypeLabel(encounter.consultationType) }}
+              </span>
+            </div>
+            <div class="entry-summary">
+              <h3 [id]="'consultation-title-' + encounter.id">
+                {{ getEncounterSummary(encounter) }}
+              </h3>
+              @if (
+                encounter.chiefComplaint?.trim() &&
+                encounter.primaryDiagnosisDescription?.trim() &&
+                encounter.chiefComplaint?.trim() !== encounter.primaryDiagnosisDescription?.trim()
+              ) {
+                <p>{{ encounter.primaryDiagnosisDescription }}</p>
+              }
+            </div>
+            <div class="entry-actions">
+              <button
+                type="button"
+                class="dc-button dc-button--quiet entry-toggle"
+                (click)="toggleCard(encounter.id)"
+                [attr.aria-expanded]="isCardExpanded(encounter.id)"
+                [attr.aria-controls]="'encounter-body-' + encounter.id"
+                [attr.aria-describedby]="'consultation-title-' + encounter.id"
+              >
+                {{ isCardExpanded(encounter.id) ? 'Ocultar vista rápida' : 'Vista rápida' }}
+                <ng-icon
+                  aria-hidden="true"
+                  [name]="isCardExpanded(encounter.id) ? 'lucideChevronUp' : 'lucideChevronDown'"
+                />
+              </button>
+              <button
+                type="button"
+                class="dc-button btn-action-view"
+                [attr.aria-describedby]="'consultation-title-' + encounter.id"
+                (click)="onViewCard(encounter.id)"
+              >
+                Ver consulta
+              </button>
+            </div>
+          </div>
+          <div [id]="'encounter-body-' + encounter.id" [hidden]="!isCardExpanded(encounter.id)">
+            @if (isCardExpanded(encounter.id)) {
+              <div class="card-soap-body">
+                @let entries = getPreviewEntries(encounter);
+                @if (entries.length) {
+                  <h4>Otros datos registrados</h4>
+                  <dl class="consultation-fields">
+                    @for (item of entries; track $index) {
+                      <div>
+                        <dt>{{ item.label }}</dt>
+                        <dd>{{ item.value }}</dd>
+                      </div>
+                    }
+                  </dl>
+                } @else {
+                  <p class="preview-empty">No hay otros datos para mostrar en la vista rápida.</p>
+                }
+                <div class="card-footer-actions">
+                  <button
+                    type="button"
+                    class="dc-button dc-button--quiet annul-consultation"
+                    (click)="onDeleteCard(encounter.id)"
+                    [attr.aria-describedby]="'consultation-title-' + encounter.id"
+                  >
+                    Anular consulta
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </li>
+      }
+    </ol>
+  }
+</section>

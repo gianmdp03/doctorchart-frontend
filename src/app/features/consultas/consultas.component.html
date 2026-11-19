@@ -25,22 +25,22 @@
   <!-- Consultations Table -->
   <div class="consultas-table-card">
     @if (isLoading()) {
-      <div class="consultas-loading">
+      <div class="consultas-loading" role="status">
         <div class="consultas-spinner"></div>
         <span>Cargando consultas clínicas...</span>
       </div>
     } @else if (consultations().length > 0) {
       <div class="table-container">
-        <table class="clinical-table">
+        <table aria-label="Consultas clínicas" class="clinical-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Fecha</th>
-              <th>Paciente</th>
-              <th>Tipo</th>
-              <th>Motivo de Consulta (S)</th>
-              <th>Diagnóstico (A)</th>
-              <th>Acciones</th>
+              <th scope="col">ID</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Paciente</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Motivo de Consulta (S)</th>
+              <th scope="col">Diagnóstico (A)</th>
+              <th scope="col">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -91,7 +91,7 @@
     } @else {
       <div class="consultas-empty">
         <ng-icon name="lucideStethoscope" class="empty-icon" />
-        <h3>No se encontraron consultas clínicas</h3>
+        <h2>No se encontraron consultas clínicas</h2>
         <p>Intente modificar el filtro de búsqueda o registre una nueva consulta clínica SOAP.</p>
       </div>
     }

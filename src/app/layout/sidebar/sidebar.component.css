@@ -15,9 +15,15 @@
 .nav-item.active { background: var(--dc-brand-soft); color: var(--dc-brand-ink); font-weight: 650; }
 .nav-icon { font-size: 1.2rem; flex-shrink: 0; }
 .nav-label { min-width: 0; overflow-wrap: anywhere; }
-.sidebar-container.is-collapsed .brand-text-wrap, .sidebar-container.is-collapsed .nav-label { display: none; }
+.sidebar-container.is-collapsed .brand-text-wrap { display: none; }
+@media (min-width: 769px) {
+  .sidebar-container.is-collapsed .nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
 .sidebar-container.is-collapsed .nav-item { justify-content: center; }
-.sidebar-footer { display: flex; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--dc-line); }
+.sidebar-footer { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--dc-line); }
+.sidebar-footer nav { margin-inline-end: auto; }
+.sidebar-container.is-collapsed .sidebar-footer { flex-direction: column; }
+.sidebar-container.is-collapsed .sidebar-footer nav { margin-inline-end: 0; }
 .collapse-toggle-btn { display: grid; place-items: center; min-width: 40px; min-height: 40px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-control); color: var(--dc-text-secondary); background: transparent; cursor: pointer; }
 .collapse-toggle-btn:hover { background: var(--dc-subtle); }
 .specialty-switch { display: grid; gap: 6px; margin: 8px 16px; padding: 12px; border: 1px solid var(--dc-line); border-radius: 12px; background: var(--dc-subtle); }
@@ -45,7 +51,8 @@
  .nav-item { gap: 7px; padding: 8px; font-size: .75rem; min-height: 44px; }
  .nav-icon { font-size: 1rem; }
  .nav-group-label { grid-column: 1 / -1; padding: 8px 8px 2px; font-size: .6875rem; }
- .sidebar-footer { display: none; }
+ .sidebar-footer { justify-content: flex-start; padding: 6px 10px; }
+ .sidebar-footer:not(:has(nav)), .sidebar-container.is-collapsed .sidebar-footer, .collapse-toggle-btn { display: none; }
 }
 @media (max-width: 360px) { .sidebar-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (prefers-reduced-motion: reduce) { .sidebar-container, .nav-item { transition: none; } }

@@ -7,7 +7,7 @@ import { HlmCarousel } from './hlm-carousel';
   host: {
     'data-slot': 'carousel-item',
     role: 'group',
-    'aria-roledescription': 'slide',
+    'aria-roledescription': 'diapositiva',
   },
 })
 export class HlmCarouselItem {

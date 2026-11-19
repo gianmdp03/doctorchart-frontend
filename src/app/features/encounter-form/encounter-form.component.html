@@ -1,7 +1,7 @@
-<div class="encounter-form-card animate-fade-in" aria-label="Formulario de nueva historia clínica">
+<section class="encounter-form-card animate-fade-in" aria-labelledby="encounter-form-title">
   <div class="encounter-form-header">
     <div class="header-text">
-      <h3 class="encounter-form-title">Nueva Historia Clínica</h3>
+      <h2 class="encounter-form-title" id="encounter-form-title" tabindex="-1">Nueva Historia Clínica</h2>
       <div class="header-badge-row">
         @if (patientName()) {
           <span class="patient-name-tag">{{ patientName() }}</span>
@@ -69,8 +69,8 @@
 
       <div class="metadata-grid">
         <div class="metadata-field">
-          <label class="field-label">Fecha y hora de atención</label>
-          <div class="readonly-datetime-box" aria-label="Fecha y hora de atención">
+          <span class="field-label">Fecha y hora de atención</span>
+          <div class="readonly-datetime-box">
             <svg
               class="clock-icon"
               width="18"
@@ -93,20 +93,10 @@
         </div>
 
         <div class="metadata-field consultation-type-container">
-          <label class="field-label" id="consultation-type-group-label">Tipo de atención</label>
+          <span class="field-label" id="consultation-type-group-label">Tipo de atención</span>
           @if (isFirstVisitLocked()) {
-            <div
-              class="consultation-chips-row"
-              role="radiogroup"
-              aria-labelledby="consultation-type-group-label"
-            >
-              <div
-                class="consultation-chip locked active"
-                role="radio"
-                aria-checked="true"
-                tabindex="0"
-                title="Primera consulta obligatoria para pacientes sin antecedentes previos"
-              >
+            <div class="consultation-chips-row">
+              <div class="consultation-chip locked active">
                 <svg
                   class="chip-icon"
                   width="16"
@@ -135,17 +125,14 @@
               class="consultation-chips-row"
               role="radiogroup"
               aria-labelledby="consultation-type-group-label"
+              aria-describedby="consultation-type-hint"
             >
               @for (type of availableConsultationTypes(); track type.value) {
-                <button
-                  type="button"
-                  class="consultation-chip"
-                  [class.active]="consultationType() === type.value"
-                  [disabled]="readonly()"
-                  role="radio"
-                  [attr.aria-checked]="consultationType() === type.value"
-                  (click)="selectConsultationType(type.value)"
-                >
+                <label class="consultation-choice">
+                  <input class="sr-only" type="radio" [name]="consultationTypeName" [value]="type.value"
+                    [checked]="consultationType() === type.value" [disabled]="readonly()"
+                    (change)="selectConsultationType(type.value)" />
+                  <span class="consultation-chip" [class.active]="consultationType() === type.value">
                   @if (consultationType() === type.value) {
                     <svg
                       class="chip-icon checkmark"
@@ -162,12 +149,13 @@
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   }
-                  <span>{{ type.label }}</span>
-                </button>
+                    <span>{{ type.label }}</span>
+                  </span>
+                </label>
               }
             </div>
-            <span class="field-hint"
-              >Seleccioná una sola opción horizontal para clasificar esta atención.</span
+            <span class="field-hint" id="consultation-type-hint"
+              >Seleccioná una sola opción para clasificar esta atención.</span
             >
           }
         </div>
@@ -213,4 +201,4 @@
       {{ isSubmitting() ? 'Guardando...' : 'Guardar historia clínica' }}
     </button>
   </div>
-</div>
+</section>

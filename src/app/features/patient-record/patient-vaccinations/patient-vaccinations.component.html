@@ -6,7 +6,7 @@
   }
   <header class="vaccines-header">
     <div>
-      <h3>Vacunas de {{ patient().fullName }}</h3>
+      <h2>Vacunas de {{ patient().fullName }}</h2>
       <p class="calendar-source">Calendario Nacional de Vacunación</p>
       <p>Edad al día de hoy: <strong>{{ ageLabel() }}</strong>. El estado se calcula a partir del calendario oficial.</p>
     </div>
@@ -28,37 +28,43 @@
     </div>
 
     <section class="dose-group" aria-labelledby="pending-title">
-      <h4 id="pending-title">Pendientes</h4>
+      <h3 id="pending-title">Pendientes</h3>
       @if (overdueDoses().length) {
         @for (dose of overdueDoses(); track dose.id) {
           <article class="dose-card pending-card" [id]="'vaccine-' + dose.id" tabindex="-1">
             <div class="dose-copy"><strong>{{ dose.vaccineName }}</strong><span>{{ dose.doseLabel }} · correspondía a los {{ dose.dueAgeLabel }}</span></div>
-            <label class="apply-control"><input type="checkbox" [checked]="false" [disabled]="!canSave()" (change)="toggleApplied(dose, $event)" /> Aplicada</label>
+            <label class="apply-control"><input type="checkbox" [checked]="false" [disabled]="!canSave()" (change)="toggleApplied(dose, $event)" /> Aplicada<span class="sr-only">: {{ dose.vaccineName }} ({{ dose.doseLabel }})</span></label>
           </article>
         }
       } @else { <p class="empty-state">No hay dosis vencidas sin registrar.</p> }
     </section>
 
     <section class="dose-group" aria-labelledby="current-title">
-      <h4 id="current-title">Corresponden ahora</h4>
+      <h3 id="current-title">Corresponden ahora</h3>
       @if (currentDoses().length) {
         @for (dose of currentDoses(); track dose.id) {
           <article class="dose-card current-card" [id]="'vaccine-' + dose.id" tabindex="-1">
             <div class="dose-copy"><strong>{{ dose.vaccineName }}</strong><span>{{ dose.doseLabel }}</span></div>
-            <label class="apply-control"><input type="checkbox" [checked]="false" [disabled]="!canSave()" (change)="toggleApplied(dose, $event)" /> Aplicada</label>
+            <label class="apply-control"><input type="checkbox" [checked]="false" [disabled]="!canSave()" (change)="toggleApplied(dose, $event)" /> Aplicada<span class="sr-only">: {{ dose.vaccineName }} ({{ dose.doseLabel }})</span></label>
           </article>
         }
       } @else { <p class="empty-state">No hay dosis previstas para este momento.</p> }
     </section>
 
     <section class="dose-group" aria-labelledby="applied-title">
-      <h4 id="applied-title">Registradas como aplicadas</h4>
+      <h3 id="applied-title">Registradas como aplicadas</h3>
       @if (appliedDoses().length) {
         @for (dose of appliedDoses(); track dose.id) {
           <article class="dose-card applied-card" [id]="'vaccine-' + dose.id" tabindex="-1">
             <div class="dose-copy"><strong>{{ dose.vaccineName }}</strong><span>{{ dose.doseLabel }}</span></div>
-            <label class="date-control">Fecha <app-date-picker [showError]="false" #datePicker [ngModel]="dose.appliedAt" (ngModelChange)="updateDate(dose, $event, datePicker)" [disabled]="!canSave()" [max]="schedule()?.asOfDate" />@if (dateErrors()[dose.id]; as error) { <span class="field-error" role="alert">{{ error }}</span> }</label>
-            <label class="apply-control"><input type="checkbox" [checked]="true" [disabled]="!canSave()" (change)="toggleApplied(dose, $event)" /> Aplicada</label>
+            <div class="date-control">
+              <label [for]="'vaccine-date-' + dose.id">Fecha <span class="sr-only">de {{ dose.vaccineName }} ({{ dose.doseLabel }})</span></label>
+              <app-date-picker [inputId]="'vaccine-date-' + dose.id" [inputLabel]="'Fecha de ' + dose.vaccineName + ' (' + dose.doseLabel + ')'" [showError]="false" #datePicker
+                [invalid]="!!dateErrors()[dose.id]" [describedBy]="dateErrors()[dose.id] ? 'vaccine-date-error-' + dose.id : null"
+                [ngModel]="dose.appliedAt" (ngModelChange)="updateDate(dose, $event, datePicker)" [disabled]="!canSave()" [max]="schedule()?.asOfDate" />
+              @if (dateErrors()[dose.id]; as error) { <span class="field-error" role="alert" [id]="'vaccine-date-error-' + dose.id">{{ error }}</span> }
+            </div>
+            <label class="apply-control"><input type="checkbox" [checked]="true" [disabled]="!canSave()" (change)="toggleApplied(dose, $event)" /> Aplicada<span class="sr-only">: {{ dose.vaccineName }} ({{ dose.doseLabel }})</span></label>
           </article>
         }
       } @else { <p class="empty-state">Todavía no se registraron aplicaciones detalladas.</p> }

@@ -19,42 +19,47 @@ interface IssuedDocument {
 }
 
 @Component({
+  styleUrl: './clinical-document-tools.component.css',
   selector: 'app-clinical-document-tools',
   imports: [DatePipe, FormsModule],
   template: `
     @if (!shown()) {
       <button type="button" class="dc-button" (click)="load()">Documentos emitidos y exportación</button>
     } @else {
-      <section aria-label="Documentos emitidos y exportación">
+      <section class="document-tools" aria-label="Documentos emitidos y exportación">
         <h3>Documentos emitidos</h3>
-        <button type="button" class="dc-button" (click)="clear()">Cerrar documentos</button>
-        <p>El PDF de cada emisión conserva su contenido original. Para emitir datos actualizados, usá el botón de emisión en la receta o consulta.</p>
+        @if (!embedded()) { <button type="button" class="dc-button" (click)="clear()">Cerrar documentos</button> }
+        <p>El PDF original conserva los datos del momento de emisión. Si necesitás un documento actualizado, emitilo desde la receta o la consulta.</p>
         @for (item of items(); track item.id) {
-          <div>
-            <p>{{ item.type === 'PRESCRIPTION' ? 'Receta' : 'Orden de estudios' }} · {{ item.issuedAt | date:'dd/MM/yyyy HH:mm' }}
+          <article class="issued-document">
+            <h4>{{ item.type === 'PRESCRIPTION' ? 'Receta' : 'Orden de estudios' }}</h4>
+            <p>{{ item.issuedAt | date:'dd/MM/yyyy HH:mm' }}
               · {{ item.code }} · Versión clínica {{ item.sourceVersion }}
               @if (item.status === 'ANNULLED') { · Emisión anulada. {{ item.reason }} }
               @if (item.sourceStatus === 'ANNULLED') { · Origen anulado }
               @if (item.sourceStatus === 'CHANGED') { · Origen actualizado }
             </p>
-            <button type="button" [disabled]="busy()" (click)="downloadOriginal(item)">Descargar PDF original</button>
-            @if (annulling() === item.id) {
-              <label>Motivo de anulación <input maxlength="500" [ngModel]="reason()" (ngModelChange)="reason.set($event)" /></label>
-              <button type="button" [disabled]="busy() || !reason().trim()" (click)="annul(item)">Confirmar anulación</button>
-              <button type="button" [disabled]="busy()" (click)="stopAnnul()">Cancelar</button>
-            } @else if (item.status !== 'ANNULLED') {
-              <button type="button" [disabled]="busy()" (click)="annulling.set(item.id)">Anular emisión</button>
-            }
-          </div>
+            <div class="document-actions">
+              <button class="dc-button" type="button" [disabled]="busy()" (click)="downloadOriginal(item)">Descargar PDF original</button>
+              @if (annulling() === item.id) {
+                <p>La emisión quedará registrada como anulada y su PDF original se conservará.</p>
+                <label>Motivo de anulación <input maxlength="500" [ngModel]="reason()" (ngModelChange)="reason.set($event)" /></label>
+                <button class="dc-button dc-button--quiet" type="button" [disabled]="busy() || !reason().trim()" (click)="annul(item)">Confirmar anulación</button>
+                <button class="dc-button dc-button--quiet" type="button" [disabled]="busy()" (click)="stopAnnul()">Cancelar</button>
+              } @else if (item.status !== 'ANNULLED') {
+                <button class="dc-button dc-button--quiet" type="button" [disabled]="busy()" (click)="annulling.set(item.id)">Anular emisión</button>
+              }
+            </div>
+          </article>
         } @empty {
           @if (!busy()) { <p>Todavía no hay documentos emitidos.</p> }
         }
         @if (next(); as before) {
-          <button type="button" [disabled]="busy()" (click)="load(before)">Ver emisiones anteriores</button>
+          <button class="dc-button dc-button--quiet" type="button" [disabled]="busy()" (click)="load(before)">Ver emisiones anteriores</button>
         }
-        <h3>Exportar ficha contextual</h3>
-        <p>El ZIP incluye datos de esta ficha, revisiones, emisiones y adjuntos conservados. El alcance se limita al contexto actual. Es una copia técnica sin autenticación institucional.</p>
-        <button type="button" class="dc-button" [disabled]="busy()" (click)="downloadChart()">Preparar y descargar ZIP</button>
+        <h3 class="export-title">{{ embedded() ? 'Descargar una copia de la ficha' : 'Exportar ficha contextual' }}</h3>
+        <p>El archivo ZIP incluye los datos clínicos de esta especialidad, sus revisiones, documentos emitidos y adjuntos conservados. Contiene información sensible del paciente y es una copia sin autenticación institucional.</p>
+        <button type="button" class="dc-button" [disabled]="busy()" (click)="downloadChart()">Descargar copia en ZIP</button>
         @if (error()) { <p role="alert">{{ error() }}</p> }
         @if (busy()) { <p role="status">Procesando solicitud…</p> }
       </section>
@@ -62,6 +67,7 @@ interface IssuedDocument {
   `,
 })
 export class ClinicalDocumentToolsComponent {
+  readonly embedded = input(false);
   readonly patientId = input.required<number>();
   readonly shown = signal(false);
   readonly busy = signal(false);
@@ -77,7 +83,11 @@ export class ClinicalDocumentToolsComponent {
   constructor() {
     effect(() => {
       this.patientId();
-      untracked(() => this.clear());
+      const embedded = this.embedded();
+      untracked(() => {
+        this.clear();
+        if (embedded) this.load();
+      });
     });
   }
 

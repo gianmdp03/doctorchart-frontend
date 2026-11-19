@@ -399,16 +399,16 @@ module.exports = async function provisionalSpecialty({
     }, null, 201);
     await scheduleUI(page, virtual.id, contextId, [scheduleDay], hour(slotStart + 1), hour(slotStart + 2), 20);
     const bookingDay = db('SELECT (current_date+(' + (scheduleDay === 'Domingo' ? 13 : 12) + '-extract(isodow FROM current_date)::integer)%7+1)::text');
-    async function book(clinicId, patientId) {
+    async function book(clinicId) {
       const availability = await api(page, 'GET', '/clinics/' + clinicId + '/availability?from=' + bookingDay + '&days=1');
       const slot = availability.days.flatMap(day => day.slots).find(item => item.specialtyContextId === String(contextId));
       assert.ok(slot);
       return api(page, 'POST', '/bookings', {
         clinicId, start: slot.start, contactName: 'Reserva ' + name,
-        specialtyContextId: String(contextId), ...(patientId ? { patientId: String(patientId) } : {}),
+        specialtyContextId: String(contextId),
       }, null, 201, randomUUID());
     }
-    const inPerson = await book(clinic, patient);
+    const inPerson = await book(clinic);
     const remote = await book(virtual.id);
     assert.equal(inPerson.clinicSnapshot.modality, 'IN_PERSON');
     assert.equal(remote.clinicSnapshot.modality, 'TELECONSULTATION');
@@ -422,12 +422,9 @@ module.exports = async function provisionalSpecialty({
     await page.getByRole('heading', { name: 'Reserva ' + name }).waitFor();
     assert.equal(await page.getByRole('link', { name: /Abrir ficha/ }).count(), 0);
     await page.locator('[data-booking-id="' + inPerson.id + '"]').click();
-    const link = page.getByRole('link', { name: 'Abrir ficha de ' + name, exact: true });
-    assert.equal(await link.getAttribute('href'), '/records/' + patient + '?specialtyContextId=' + contextId);
-    await link.click();
-    await page.waitForURL('**/records/' + patient + '?specialtyContextId=' + contextId);
-    await page.getByText('Prueba ' + name + ' Pérez', { exact: true }).first().waitFor();
-    report('Both calendar modalities book the right context; the linked detail opens the record from another active specialty, and the unlinked detail has no link');
+    await page.getByRole('button', { name: 'Reprogramar', exact: true }).waitFor();
+    assert.equal(await page.getByRole('link', { name: /Abrir ficha/ }).count(), 0);
+    report('Both calendar modalities book the right context and provide administrative actions without linking to clinical records');
 
     const invitation = await api(page, 'POST', '/secretaries/invitations', {
       email: 'staff-' + templateCode + '@local.test', name: 'Secretaría SP-02B', clinicIds: [clinic], permissions: ['view'],
@@ -465,7 +462,7 @@ module.exports = async function provisionalSpecialty({
     await api(other, 'GET', '/specialties/' + created.id + '/wizard', null, null, 404);
     assert.equal((await api(page, 'GET', '/patients/' + patient, null, contextId)).id, patient);
     assert.equal((await api(page, 'GET', '/encounters/' + first.id, null, contextId)).id, first.id);
-    assert.equal((await api(page, 'GET', '/bookings/' + inPerson.id)).patientId, String(patient));
+    assert.equal('patientId' in await api(page, 'GET', '/bookings/' + inPerson.id), false);
     report('Deactivation removes the specialty from the available catalog while its clinical history and linked bookings remain readable');
     return result;
   } catch (error) {

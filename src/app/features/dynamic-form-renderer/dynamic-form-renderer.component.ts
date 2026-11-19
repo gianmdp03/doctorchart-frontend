@@ -1,16 +1,22 @@
+import { PhoneDisplayPipe } from '../../shared/phone-input/phone-display.pipe';
+import { AsyncPipe } from '@angular/common';
 import { todayDate } from '../../core/date/user-time-zone';
 import {
+  afterNextRender,
   Component,
   computed,
   effect,
   ElementRef,
   inject,
   input,
+  Injector,
   output,
   signal,
   untracked,
+  viewChildren,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { PhoneInputComponent } from '../../shared/phone-input/phone-input.component';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 import {
   WizardFieldDefinition,
@@ -27,6 +33,7 @@ import {
   parseNumberInput,
   validIsoDate,
   wizardFieldError,
+  isPhoneField,
 } from '../../core/models/form-validation';
 export { validIsoDate } from '../../core/models/form-validation';
 
@@ -46,11 +53,12 @@ export const inputValues = (
 
 @Component({
   selector: 'app-dynamic-form-renderer',
-  imports: [FormsModule, DatePickerComponent, ClinicalHistoryFieldsComponent],
+  imports: [FormsModule,PhoneDisplayPipe,AsyncPipe, DatePickerComponent, ClinicalHistoryFieldsComponent, PhoneInputComponent],
   templateUrl: './dynamic-form-renderer.component.html',
   styleUrl: './dynamic-form-renderer.component.css',
 })
 export class DynamicFormRendererComponent {
+  private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   focusFirstInvalidField(): void {
     const field = this.fields().find(
@@ -59,14 +67,22 @@ export class DynamicFormRendererComponent {
     const row = Array.from(
       this.host.nativeElement.querySelectorAll<HTMLElement>('[data-field-key]'),
     ).find((row) => row.dataset['fieldKey'] === field?.key);
-    row?.querySelector<HTMLElement>('input, select, textarea')?.focus();
+    afterNextRender(() => row?.querySelector<HTMLElement>('input, select, textarea')?.focus(), { injector: this.injector });
   }
   readonly definition = input<WizardFormDefinition>({ categories: [] });
   readonly values = input<WizardFormValues>({});
   readonly formulaResults = input<WizardFormulaResults>({});
   readonly readonly = input(false);
   readonly showErrors = input(false);
+  readonly preserveExistingPhones = input(false);
+  private readonly phones = viewChildren(PhoneInputComponent);
+  readonly isPhoneField = isPhoneField;
+  phoneValue(field: WizardFieldDefinition): string | null {
+    const value = this.currentValues()[field.key];
+    return typeof value === 'string' ? value : null;
+  }
   readonly encounter = input(false);
+  readonly headingLevel = input<2 | 3>(3);
   visibleFieldError(field: WizardFieldDefinition): string | null {
     return this.showErrors() && !this.readonly() ? this.fieldError(field) : null;
   }
@@ -148,6 +164,10 @@ export class DynamicFormRendererComponent {
     );
   }
   fieldError(field: WizardFieldDefinition): string | null {
+    if (isPhoneField(field)) {
+      const control = this.phones().find(phone => phone.inputId() === 'field-' + field.key);
+      if (control) return control.validationMessage();
+    }
     const group = CLINICAL_HISTORY_GROUPS.find((g) => g.details === field.key);
     if (group && this.fields().some(item => item.key === group.status && this.isFieldVisible(item.key))) {
       const details = String(this.currentValues()[field.key] ?? '').trim();

@@ -22,7 +22,6 @@ export class PatientRecordModuleDirective implements OnChanges {
   readonly patient = input.required<PatientDetailDTO>();
   readonly latestEncounter = input<ClinicalEncounterList>();
   readonly editPatient = output<void>();
-  readonly newEncounter = output<void>();
   readonly patientUpdated = output<PatientDetailDTO>();
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -36,8 +35,6 @@ export class PatientRecordModuleDirective implements OnChanges {
       bindings.push(inputBinding(module.encounterInput, this.latestEncounter));
     if (module.editOutput)
       bindings.push(outputBinding(module.editOutput, () => this.editPatient.emit()));
-    if (module.encounterOutput)
-      bindings.push(outputBinding(module.encounterOutput, () => this.newEncounter.emit()));
     if (module.patientUpdatedOutput)
       bindings.push(
         outputBinding<PatientDetailDTO>(module.patientUpdatedOutput, (patient) =>

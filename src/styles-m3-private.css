@@ -89,7 +89,6 @@
   font-family: var(--md-ref-typeface-plain);
   font-size: 0.95rem;
   color: var(--md-sys-color-on-surface);
-  outline: none;
   min-width: 140px;
 }
 
@@ -347,7 +346,6 @@
   cursor: pointer;
   text-decoration: none;
   border: none;
-  outline: none;
   user-select: none;
   border-radius: var(--dc-radius-control);
   min-height: 44px;
@@ -500,7 +498,6 @@
   font-family: var(--md-ref-typeface-plain);
   font-size: 0.95rem;
   color: var(--md-sys-color-on-surface);
-  outline: none;
   transition: border-color var(--md-sys-motion-standard), box-shadow var(--md-sys-motion-standard);
 }
 

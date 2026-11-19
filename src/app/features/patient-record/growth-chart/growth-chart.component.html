@@ -91,7 +91,7 @@
       </div>
     }
     <div
-      class="chart-scroll"
+      class="chart-scroll" role="region"
       cdkScrollable
       tabindex="0"
       [attr.aria-label]="definition().title + ': gráfico desplazable'"
@@ -99,7 +99,7 @@
       <svg
         class="growth-svg"
         [attr.viewBox]="viewBox()"
-        role="img"
+        role="group"
         [attr.aria-labelledby]="clipId() + '-title ' + clipId() + '-desc'"
       >
         <title [attr.id]="clipId() + '-title'">
@@ -356,7 +356,7 @@
       </ng-template>
     }
     @if (!usesStandardDeviations() || visiblePoints().length > 0) {
-      <div class="point-tooltip" role="status">
+      <div class="point-tooltip">
         {{
           focusedPoint()
             ? tooltip(focusedPoint()!)
@@ -407,7 +407,7 @@
       <details class="measurement-details">
         <summary>Detalle de {{ chart().points.length }} mediciones</summary>
         <div class="table-scroll">
-          <table>
+          <table [attr.aria-label]="'Mediciones: ' + definition().title">
             <thead>
               <tr>
                 <th>Fecha</th>

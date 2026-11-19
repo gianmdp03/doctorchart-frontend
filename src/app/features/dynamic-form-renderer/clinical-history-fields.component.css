@@ -259,7 +259,7 @@ select {
 .health-details {
   overflow-wrap: anywhere;
 }
-.health-header h3 {
+.health-header :is(h2, h3) {
   font-size: 1rem;
   font-weight: 650;
 }

@@ -147,7 +147,7 @@
       </div>
       <div class="recent-consultation-list" role="list" aria-label="Consultas recientes">
         @for (encounter of recentPageItems(); track encounter.id) {
-          <article
+          <div
             class="recent-consultation"
             [class.consultation-today]="encounter.isToday"
             role="listitem"
@@ -205,7 +205,7 @@
                 </button>
               </div>
             </div>
-          </article>
+          </div>
         }
       </div>
       <footer class="recent-pagination">
@@ -310,24 +310,24 @@
           </div>
         } @else if (directoryPatients().length > 0) {
           <div class="encounters-table-wrap">
-            <table class="clinical-table" role="table">
-              <thead role="rowgroup">
-                <tr role="row">
-                  <th>Paciente</th>
-                  <th>Fecha de nacimiento</th>
-                  <th>Acción</th>
+            <table class="clinical-table" aria-label="Acceso rápido a pacientes">
+              <thead>
+                <tr>
+                  <th scope="col">Paciente</th>
+                  <th scope="col">Fecha de nacimiento</th>
+                  <th scope="col">Acción</th>
                 </tr>
               </thead>
-              <tbody role="rowgroup">
+              <tbody>
                 @for (patient of directoryPatients(); track patient.id) {
-                  <tr role="row">
-                    <td role="cell">
+                  <tr>
+                    <td>
                       <span class="patient-cell-name">{{ patient.fullName }}</span>
                     </td>
-                    <td role="cell" data-label="Nacimiento">
+                    <td data-label="Nacimiento">
                       <span class="cell-datetime">{{ displayDate(patient.birthDate) }}</span>
                     </td>
-                    <td role="cell">
+                    <td>
                       <button
                         type="button"
                         class="btn-open-record"

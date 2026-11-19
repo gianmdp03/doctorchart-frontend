@@ -1,4 +1,4 @@
-@if (!encounterId()) {
+@if (!embedded() && !standalonePage() && !encounterId()) {
   <app-clinical-access [patientId]="patientId()" />
 }
 @if (!opened()) {
@@ -8,9 +8,9 @@
   @if (version() !== undefined) { <span> · Versión {{ version() }} </span> }
 } @else {
   <section [attr.aria-label]="patientId() ? 'Historial de revisiones' : 'Fichas anuladas'">
-    <button type="button" class="dc-button" (click)="close()">Cerrar historial</button>
+    @if (!embedded() && !standalonePage()) { <button type="button" class="dc-button" (click)="close()">Cerrar historial</button> }
     @if (selected(); as patient) {
-      <h3>Historial de revisiones de {{ patient.fullName }}</h3>
+      @if (!embedded()) { <h3>Historial de revisiones de {{ patient.fullName }}</h3> }
       @if (patient.annulledAt) {
         <p><strong>Ficha anulada</strong> el {{ patient.annulledAt | date:'dd/MM/yyyy HH:mm' }}</p>
       }
@@ -19,24 +19,29 @@
         <app-clinical-document-tools [patientId]="patient.id" />
       }
       @for (revision of revisions(); track revision.id) {
-        <details>
+        <details class="revision-entry">
           <summary>
-            {{ revision.operation === 'ANNUL' ? 'Anulación' : 'Corrección' }} ·
-            {{ entityLabels[revision.entity] }} #{{ revision.entityId }} ·
-            {{ revision.occurredAt | date:'dd/MM/yyyy HH:mm:ss' }}
+            <span class="revision-type" [class.annulled]="revision.operation === 'ANNUL'">{{ revision.operation === 'ANNUL' ? 'Anulación' : 'Corrección' }}</span>
+            {{ entityLabels[revision.entity] }} #{{ revision.entityId }}
+            <time class="revision-date" [attr.datetime]="revision.occurredAt">{{ revision.occurredAt | date:'dd/MM/yyyy HH:mm:ss' }}</time>
           </summary>
-          <p>Usuario responsable {{ revision.actorUserId }} · Versión {{ revision.previousVersion }} → {{ revision.newVersion }}</p>
-          @if (revision.reason) { <p><strong>Motivo</strong> {{ revision.reason }}</p> }
-          <h4>Interpretación de la versión anterior</h4>
-          @if (revision.firstRecorded) { <p>Estado anterior a la primera revisión registrada.</p> }
-          <dl>
-            @for (field of fields(revision); track $index) {
-              <dt>{{ field.label }}</dt>
-              <dd>{{ isText(field.value) ? field.value : (field.value | json) }}</dd>
+          @if (revision.reason) { <p><strong>Motivo</strong> · {{ revision.reason }}</p> }
+          <h4>Datos antes de la revisión</h4>
+          @if (revision.firstRecorded) { <p class="revision-note">Estado anterior a la primera revisión registrada.</p> }
+          @let previousFields = fields(revision);
+          <dl class="revision-fields" [hidden]="!previousFields.length">
+            @for (field of previousFields; track $index) {
+              <div class="revision-field">
+                <dt>{{ field.label }}</dt>
+                <dd>{{ isText(field.value) ? field.value : (field.value | json) }}</dd>
+              </div>
             }
           </dl>
-          <details>
-            <summary>Ver todos los datos guardados de esta versión</summary>
+          @if (!previousFields.length) { <p class="revision-note">Esta versión no tiene campos disponibles para mostrar en la vista clínica.</p> }
+          <details class="revision-technical">
+            <summary>Ver detalle técnico</summary>
+            <p>Identificador del usuario responsable · {{ revision.actorUserId }}</p>
+            <p>Versión {{ revision.previousVersion }} → {{ revision.newVersion }}</p>
             <pre>{{ revision.previous | json }}</pre>
           </details>
           @if (revision.entity === 'STUDY' && revision.operation === 'ANNUL') {
@@ -69,7 +74,7 @@
         }
       }
     } @else if (!patientId()) {
-      <h3>Fichas anuladas</h3>
+      @if (!standalonePage()) { <h3>Fichas anuladas</h3> }
       <ul>
         @for (patient of archived(); track patient.id) {
           <li>

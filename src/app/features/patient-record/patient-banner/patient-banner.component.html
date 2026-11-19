@@ -1,4 +1,4 @@
-<header class="patient-clinical-banner" role="banner" aria-label="Cabecera clínica del paciente">
+<header class="patient-clinical-banner">
   <!-- Left: Navigation & Core Demographics -->
   <div class="banner-left-block">
     <button
@@ -11,7 +11,7 @@
       <span>Directorio</span>
     </button>
 
-    <div class="patient-avatar-circle">
+    <div class="patient-avatar-circle" aria-hidden="true">
       {{ initials() }}
     </div>
 
@@ -104,5 +104,6 @@
         </button>
       }
     }
+    <ng-content select="[patient-management-trigger]" />
   </div>
 </header>

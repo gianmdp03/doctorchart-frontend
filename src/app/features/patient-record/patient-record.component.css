@@ -230,3 +230,59 @@
 }
 
 @media (max-width: 600px) { .patient-record-page { gap: 10px; } .flattened-tabs-nav { padding: 5px; gap: 3px; grid-template-columns: repeat(3,minmax(0,1fr)); } .flat-tab-btn { min-height: 38px; padding: 6px 4px; font-size: 10px; gap: 3px; } .tab-counter-badge { font-size: 9px; padding: 1px 4px; } }
+
+.management-trigger { display: inline-flex; align-items: center; gap: .45rem; }
+.management-dialog {
+  inset: 0;
+  margin: auto;
+  width: min(44rem, calc(100% - 2rem));
+  max-height: min(46rem, calc(100dvh - 2rem));
+  padding: 0;
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-radius-card);
+  background: var(--dc-paper);
+  color: var(--dc-text);
+}
+.management-dialog[open] { display: flex; flex-direction: column; overflow: hidden; }
+.management-dialog-content { display: flex; flex-direction: column; min-height: 0; }
+.management-dialog::backdrop { background: var(--dc-scrim); }
+.management-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--dc-line);
+}
+.management-header h2 { margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: -.02em; }
+.management-header p { margin: .25rem 0 0; color: var(--dc-text-secondary); font-size: .8125rem; overflow-wrap: anywhere; }
+.management-body { display: grid; gap: 1rem; padding: 1rem 1.25rem; overflow: auto; scrollbar-color: var(--dc-control-line) var(--dc-paper); }
+.management-lead { margin: 0; color: var(--dc-text-secondary); }
+.management-options { border-block: 1px solid var(--dc-line); }
+.management-option {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .8rem;
+  padding: .9rem .7rem;
+  text-align: start;
+  color: var(--dc-text);
+}
+.management-option + .management-option { border-top: 1px solid var(--dc-line); }
+.management-option:hover { background: var(--dc-subtle); }
+.management-option:focus-visible, .management-intro h3:focus-visible { outline: 2px solid var(--dc-focus); outline-offset: -2px; }
+.management-option strong { display: block; font-weight: 650; }
+.management-option span span { display: block; margin-top: .15rem; color: var(--dc-text-secondary); font-size: .875rem; line-height: 1.45; }
+.management-option-icon { color: var(--dc-brand-ink); font-size: 1.05rem; }
+.management-danger { grid-template-columns: minmax(0, 1fr) auto; color: var(--dc-danger); border-radius: var(--dc-radius-control); }
+.management-danger:hover, .annulment-notice { background: var(--dc-danger-soft); }
+.management-back { justify-self: start; gap: .45rem; }
+.management-intro h3 { margin: 0 0 .3rem; font-size: 1.125rem; font-weight: 650; }
+.management-intro p { margin: .3rem 0 0; color: var(--dc-text-secondary); }
+.annulment-notice { padding: .85rem 1rem; border-radius: var(--dc-radius-control); }
+.annulment-notice h3 { color: var(--dc-danger); }
+@media (max-width: 550px) {
+  .management-header, .management-body { padding-inline: .85rem; }
+  .management-option { padding-inline: .4rem; gap: .55rem; }
+}

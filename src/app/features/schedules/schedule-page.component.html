@@ -1,98 +1,175 @@
 <div class="schedule-page">
- <a routerLink="/clinics" class="back-link">← Consultorios</a>
- <header class="page-heading"><h1>Mis horarios</h1><p class="muted">Configurá cuándo atendés y revisá qué turnos pueden reservarse.</p></header>
+ <a routerLink="/clinics" class="dc-button"><ng-icon name="lucideArrowLeft" aria-hidden="true" /> Volver a consultorios</a>
+ <header class="page-heading">
+  @if (teleconsultationScope(); as scope) {
+   <h1>Teleconsulta de {{ scope.name }}</h1>
+   <p class="muted">Elegí en qué días y horarios atendés por teleconsulta.</p>
+  } @else {
+   <h1>Mis horarios</h1><p class="muted">Configurá cuándo atendés y revisá qué turnos pueden reservarse.</p>
+  }
+ </header>
  @if (busy()) { <p role="status">Cargando agenda…</p> }
  @if (error() && !clinic()) { <div role="alert" class="notice error" data-testid="schedule-error">{{ error() }}</div> }
  @if (!clinic() && !busy() && choices().length) {<section class="panel"><label>Consultorio<select (change)="selectClinic($any($event.target).value)"><option value="">Elegí dónde atendés</option>@for(item of choices();track item.id){<option [value]="item.id">{{item.name}}</option>}</select></label></section>}
  @if (!clinic() && !busy()) { <button type="button" (click)="load()">Reintentar carga</button> }
  @if (clinic(); as selected) {
-  <section class="selected-clinic" aria-label="Consultorio seleccionado">
-   <div><p class="eyebrow">{{ modalityLabel(selected.modality) }}</p><h2>{{ selected.name }}</h2>@if(selected.modality!=='TELECONSULTATION'){<p>{{ selected.address }} · {{ selected.city }}</p>}<p>{{ selected.status === 'ACTIVE' ? 'Activo' : 'Desactivado' }}</p></div>
+  @if (!teleconsultationScope()) {
+  <section class="selected-clinic" aria-label="Lugar de atención seleccionado">
+   <div><h2>{{ selected.modality === 'TELECONSULTATION' ? 'Teleconsulta' : selected.name }}</h2>@if(selected.modality!=='TELECONSULTATION'){<p>{{ selected.address }} · {{ selected.city }}</p>}<p>{{ selected.status === 'ACTIVE' ? 'Activo' : 'Desactivado' }}</p></div>
    @if(choiceTotal()>1){<label>Cambiar consultorio<select [ngModel]="selected.id" (ngModelChange)="selectClinic($event)" [disabled]="saving()"><option [value]="selected.id">{{ selected.name }}</option>@for (item of choices(); track item.id) {@if(item.id !== selected.id){<option [value]="item.id">{{ item.name }}</option>}}</select></label>}
  @if(choiceTotal()>100){<div class="actions"><button type="button" (click)="nextChoices(-1)" [disabled]="choicePage()===0||choicesBusy()">Anteriores</button><span>Página {{ choicePage()+1 }}</span><button type="button" (click)="nextChoices(1)" [disabled]="(choicePage()+1)*100>=choiceTotal()||choicesBusy()">Siguientes</button></div>}
   </section>
+  }
   @if (selected.status !== 'ACTIVE') {<p class="notice">La configuración se conserva. Este consultorio no ofrece horarios disponibles mientras esté inactivo o archivado.</p>}
-  @if (!canEdit() && !busy() && !saving() && !validatingBlocks()) {<div class="notice" role="status">La agenda está en modo lectura: comprobá el estado del consultorio y tus permisos comerciales. <button type="button" (click)="retryCapabilities()">Reintentar permisos</button></div>}
+  @if (isTeleconsultation() && !teleconsultationScope()) {
+   <p class="notice">Elegí una especialidad configurada en el menú lateral para gestionar su teleconsulta.</p>
+  } @else if (!canEdit() && !busy() && !saving() && !validatingBlocks()) {<div class="notice" role="status">La agenda está en modo lectura: comprobá el estado del consultorio y tus permisos comerciales. <button type="button" (click)="retryCapabilities()">Reintentar permisos</button></div>}
   @if (conflict()) {<div class="notice" data-testid="schedule-version-conflict">La agenda guardada cambió en otra sesión. Podés revisar o copiar tus cambios antes de descartarlos. <button type="button" (click)="discardDraft()">Descartar borrador y cargar agenda guardada</button></div>}
 
   <div class="save-bar">
    <div aria-live="polite">
     @if (draftStatus() === 'stored') {<strong>Borrador en esta pestaña</strong><span>Guardá la agenda para aplicar los cambios.</span>}
     @else if (draftStatus() === 'unavailable') {<strong>No se pudo guardar el borrador</strong><span>Guardá la agenda antes de recargar.</span>}
-    @else {<strong>Agenda del consultorio</strong><span>Podés guardar la configuración por etapas.</span>}
+    @else {<strong>Horarios de atención</strong>}
    </div>
    <button type="button" class="dc-button dc-button--primary primary" data-testid="save-schedule" [disabled]="!canSave()" (click)="save()">{{ saving() ? 'Guardando…' : 'Guardar agenda' }}</button>
-   @if (error()) {<p class="date-error" role="alert" data-testid="schedule-error">{{ error() }}</p>}
-   @if(scheduleConflict();as conflict){
-    <p class="muted">{{weekdays[conflict.weekday-1]}} {{dateLabel(conflict.date)}} · {{modalityLabel(conflict.requested.modality)}} / {{modalityLabel(conflict.existing.modality)}}</p>
-   }
   </div>
-  @if(choiceTotal()>1){
-   <section class="occupied-preview" aria-labelledby="occupied-title">
-    <header><h3 id="occupied-title">Franjas ocupadas por otras agendas</h3>
-     <label>Semana desde <app-date-picker inputId="occupied-date" [value]="occupiedDate" (valueChange)="loadOccupied($event)" /></label>
+  @if (error() || scheduleConflict()) {
+   <div class="save-feedback" data-testid="schedule-error">
+    <ng-container *ngTemplateOutlet="scheduleError; context: {
+     $implicit: scheduleConflict(), message: error(), title: 'No se guardó la agenda', savingAgenda: true
+    }" />
+   </div>
+  }
+  <div class="schedule-workspace" [class.has-occupied]="showOccupied()">
+   <fieldset [disabled]="!canEdit()" class="editor add-editor">
+    <legend class="sr-only">Agregar horarios</legend>
+   <section class="panel add-block-panel" aria-labelledby="add-block-heading">
+    <h2 id="add-block-heading">Agregar un horario</h2>
+    @if (!isTeleconsultation()) {
+     <label>Especialidad del nuevo bloque
+      <select aria-label="Especialidad del bloque" [ngModel]="specialty()?.id??''" (ngModelChange)="chooseSpecialty($event)">
+       <option value="" disabled>Elegí una especialidad</option>
+       @for (context of readySpecialties(); track context.id) {
+        <option [value]="context.id">{{ context.name }} · {{ configuredSpecialties().has(context.id) ? 'Con horarios' : 'Sin horarios' }}</option>
+       }
+      </select>
+     </label>
+     @if (!readySpecialties().length) { <p>Asigná una especialidad configurada desde Editar consultorio.</p> }
+     @else if (specialty(); as context) {
+      @if (!configuredSpecialties().has(context.id)) {
+       <p class="notice">{{ context.name }} todavía no tiene horarios habituales guardados en esta sede.</p>
+      }
+     }
+    }
+    <p class="muted">Elegí los días, el horario y cuánto dura cada turno.</p>
+    <fieldset class="day-options"><legend>Días de atención</legend>@for(label of weekdays;track $index;let i=$index){<label><input type="checkbox" [checked]="selectedDays.includes(i+1)" (change)="toggleDay(i+1)">{{label}}</label>}</fieldset>
+    <div class="settings"><div class="picker-field"><span aria-hidden="true">Desde</span><app-time-picker [(ngModel)]="blockStart" label="Inicio del nuevo bloque" /></div><div class="picker-field"><span aria-hidden="true">Hasta</span><app-time-picker [(ngModel)]="blockEnd" label="Final del nuevo bloque" [allowEndOfDay]="true" /></div><label>Minutos por turno<input id="schedule-duration" type="number" min="5" max="480" step="1" [(ngModel)]="blockMinutes"></label></div>
+    <div class="actions"><button type="button" (click)="addBlocks()">{{validatingBlocks() ? 'Comprobando horarios…' : 'Agregar a los días seleccionados'}}</button></div>
+    @if (blockError() || blockConflict()) {
+     <ng-container *ngTemplateOutlet="scheduleError; context: {
+      $implicit: blockConflict(), message: blockError(), title: 'No se agregó el horario', savingAgenda: false
+     }" />
+    }
+   </section>
+   </fieldset>
+  @if (showOccupied()) {
+   <section class="occupied-preview panel" aria-labelledby="occupied-title">
+    <header class="occupied-heading">
+     <div>
+      <h2 id="occupied-title">Otras agendas</h2>
+      <p class="muted">Horarios ocupados de todas tus especialidades, en consultorios y teleconsultas.</p>
+     </div>
+     <div class="picker-field">
+      <label for="occupied-date">Semana desde</label>
+      <app-date-picker inputId="occupied-date" inputLabel="Semana desde" [value]="occupiedDate" (valueChange)="loadOccupied($event)" />
+     </div>
     </header>
-    @if(occupiedBusy()){<p role="status">Consultando franjas ocupadas…</p>}
-    @if(occupiedError()){<p class="date-error" role="status">{{occupiedError()}}</p>}
-    @if(occupied();as result){
-     @if(result.items.length){
-      <p class="muted">Horarios de la agenda</p>
-      <ul>@for(interval of result.items;track interval.clinicId+'|'+interval.start+'|'+interval.end){
-       <li><strong>{{occupiedDay(interval.start,result.timezone)}}</strong>
-        <span>{{occupiedTime(interval.start,result.timezone)}} – {{occupiedTime(interval.end,result.timezone)}}</span>
-        <span>{{interval.name}} · {{modalityLabel(interval.modality)}}</span>
-       </li>
-      }</ul>
-     }@else{<p class="muted">No hay otras franjas ocupadas en esta semana.</p>}
+    @if (occupiedBusy()) { <p class="occupied-state" role="status">Cargando horarios ocupados…</p> }
+    @if (occupiedError()) {
+     <p class="occupied-state date-error" role="alert">{{ occupiedError() }}</p>
+     <button type="button" class="dc-button" (click)="loadOccupied()">Reintentar</button>
+    }
+    @if (occupied(); as result) {
+     <div class="occupied-days" role="group" aria-label="Día para consultar horarios ocupados">
+      @for (day of occupiedDays(); track day.date) {
+       <button type="button" [attr.aria-pressed]="selectedOccupiedDate() === day.date"
+         [attr.aria-label]="day.day + ' ' + dateLabel(day.date) + (day.items.length ? ', con horarios ocupados' : ', sin horarios ocupados')"
+         (click)="selectedOccupiedDate.set(day.date)">
+        <span>{{ day.day.slice(0, 3) }}</span>
+        <strong>{{ day.date.slice(8) }}</strong>
+        @if (day.items.length) { <span class="occupied-dot" aria-hidden="true"></span> }
+       </button>
+      }
+     </div>
+     @if (occupiedDay(); as day) {
+      <h3 class="occupied-day-label">{{ day.day }} {{ dateLabel(day.date).slice(0, 5) }}</h3>
+      @if (day.items.length) {
+       <ul class="occupied-list" role="list">
+        @for (interval of day.items; track $index) {
+         <li>
+          <div class="occupied-icon"><ng-icon [name]="interval.modality === 'TELECONSULTATION' ? 'lucideVideo' : 'lucideBuilding2'" aria-hidden="true" /></div>
+          <div class="occupied-detail">
+           <strong>{{ occupiedRange(interval, day.date, result.timezone) }}</strong>
+           <span>{{ interval.name }}</span>
+           <small>{{ modalityLabel(interval.modality) }}@if (occupiedSpecialty(interval); as name) { · {{ name }} }</small>
+          </div>
+         </li>
+        }
+       </ul>
+      } @else {
+       <p class="occupied-state">No hay horarios ocupados por otras agendas este día.</p>
+      }
+     }
     }
    </section>
   }
-  <fieldset [disabled]="!canEdit()" class="editor">
-   <legend class="sr-only">Editar agenda</legend>
-   <section class="panel" aria-labelledby="rules-heading"><h2 id="rules-heading">Reglas de los turnos</h2><p class="muted">Definí con cuánta anticipación pueden reservarse tus turnos. Cada bloque tiene su propia duración.</p><div class="settings">
-    <label>Anticipación mínima (minutos)<input id="schedule-notice" type="number" min="0" max="525600" step="1" [ngModel]="draft.minNoticeMinutes" (ngModelChange)="draft.minNoticeMinutes=$event; keepDraft()" placeholder="0 permite disponibilidad inmediata"></label>
-    <label>Horizonte máximo (días)<input id="schedule-horizon" type="number" min="1" max="366" step="1" [ngModel]="draft.maxAdvanceDays" (ngModelChange)="draft.maxAdvanceDays=$event; keepDraft()" placeholder="Ingresá el horizonte"></label>
-   </div></section>
-   <section class="panel" aria-labelledby="add-block-heading">
-    <h2 id="add-block-heading">Agregar un horario</h2>
-    <p>{{clinic()?.name}}</p><label>Especialidad del nuevo bloque<select aria-label="Especialidad del bloque" [ngModel]="specialty()?.id??''" (ngModelChange)="chooseSpecialty($event)"><option value="" disabled>Elegí una especialidad</option>@for(context of readySpecialties();track context.id){<option [value]="context.id">{{context.name}}</option>}</select></label>@if(!readySpecialties().length){<p>Completá la configuración de una especialidad para agregar horarios.</p>}
-    <p class="muted">Elegí los días y la duración del turno. Las pausas son los espacios entre bloques.</p>
-    <fieldset class="day-options"><legend>Días de atención</legend>@for(label of weekdays;track $index;let i=$index){<label><input type="checkbox" [checked]="selectedDays.includes(i+1)" (change)="toggleDay(i+1)">{{label}}</label>}</fieldset>
-    <div class="settings"><label>Desde<app-time-picker [(ngModel)]="blockStart" label="Inicio del nuevo bloque" /></label><label>Hasta<app-time-picker [(ngModel)]="blockEnd" label="Final del nuevo bloque" [allowEndOfDay]="true" /></label><label>Minutos por turno<input id="schedule-duration" type="number" min="5" max="480" step="1" [(ngModel)]="blockMinutes"></label></div>
-    <div class="actions"><button type="button" (click)="addBlocks()">{{validatingBlocks() ? 'Comprobando horarios…' : 'Agregar a los días seleccionados'}}</button></div>
-    @if(blockError()){<p role="alert" class="date-error">{{blockError()}}</p>}
-   </section>
+   <fieldset [disabled]="!canEdit()" class="editor week-editor">
+    <legend class="sr-only">Editar horarios y reglas</legend>
    <section class="panel" aria-labelledby="weekly-heading"><h2 id="weekly-heading">Semana habitual</h2><p class="muted">Editá los bloques y guardá la agenda para aplicar los cambios.</p>
     @for (day of draft.weekly; track day.weekday) {
      <div class="day-row"><h3>{{ weekdays[day.weekday-1] }}</h3><div class="ranges">
-      @if (!day.ranges.length) {<span class="muted">Sin atención</span>}
+      @if (!day.ranges.length) {<span class="muted">Sin horarios</span>}
       @for (range of day.ranges; track range.id ?? $index; let i=$index) {
-       <div class="block-card"><p><strong>{{range.start}}–{{range.end}} · {{specialtyName(range.specialtyContextId)}}</strong><br><span class="muted">{{selected.name}} · {{range.slotMinutes}} min por turno</span></p>
-        <div class="range"><label>Desde<app-time-picker [ngModel]="range.start" (ngModelChange)="range.start=$event; keepDraft()" [label]="weekdays[day.weekday-1] + ' inicio ' + (i+1)" /></label><label>Hasta<app-time-picker [ngModel]="range.end" (ngModelChange)="range.end=$event; keepDraft()" [label]="weekdays[day.weekday-1] + ' fin ' + (i+1)" [allowEndOfDay]="true" /></label><label>Minutos por turno<input type="number" min="5" max="480" [ngModel]="range.slotMinutes" (ngModelChange)="range.slotMinutes=$event; keepDraft()"></label><button type="button" class="remove" (click)="removeRange(day,i)" [attr.aria-label]="'Quitar bloque '+(i+1)+' de '+weekdays[day.weekday-1]">Quitar</button></div></div>
+       @if (teleconsultationScope() && range.specialtyContextId !== teleconsultationScope()?.id) {
+        <div class="other-specialty"><span>Ocupado</span><strong>{{ range.start }}–{{ range.end }}</strong><span>{{ specialtyName(range.specialtyContextId) }}</span></div>
+       } @else {
+       <div class="block-card"><p><strong>{{range.start}}–{{range.end}} · {{specialtyName(range.specialtyContextId)}}</strong><br><span class="muted">{{range.slotMinutes}} min por turno</span></p>
+        <div class="range"><div class="picker-field"><span aria-hidden="true">Desde</span><app-time-picker [ngModel]="range.start" (ngModelChange)="range.start=$event; keepDraft()" [label]="weekdays[day.weekday-1] + ' inicio ' + (i+1)" /></div><div class="picker-field"><span aria-hidden="true">Hasta</span><app-time-picker [ngModel]="range.end" (ngModelChange)="range.end=$event; keepDraft()" [label]="weekdays[day.weekday-1] + ' fin ' + (i+1)" [allowEndOfDay]="true" /></div><label>Minutos por turno<input type="number" min="5" max="480" [ngModel]="range.slotMinutes" (ngModelChange)="range.slotMinutes=$event; keepDraft()"></label><button type="button" class="remove" (click)="removeRange(day,i)" [attr.aria-label]="'Quitar bloque '+(i+1)+' de '+weekdays[day.weekday-1]">Quitar</button></div></div>
+       }
       }
       @if(rangesError(day.ranges);as message){<p class="date-error" role="alert">{{message}}</p>}
      </div></div>
     }
    </section>
+   @if (!teleconsultationScope()) {
+   <section class="panel" aria-labelledby="rules-heading"><h2 id="rules-heading">Reglas de los turnos</h2><p class="muted">Definí con cuánta anticipación pueden reservarse tus turnos. Cada bloque tiene su propia duración.</p><div class="settings">
+    <label>Anticipación mínima (minutos)<input id="schedule-notice" type="number" min="0" max="525600" step="1" [ngModel]="draft.minNoticeMinutes" (ngModelChange)="draft.minNoticeMinutes=$event; keepDraft()" placeholder="0 permite disponibilidad inmediata"></label>
+    <label>Horizonte máximo (días)<input id="schedule-horizon" type="number" min="1" max="366" step="1" [ngModel]="draft.maxAdvanceDays" (ngModelChange)="draft.maxAdvanceDays=$event; keepDraft()" placeholder="Ingresá el horizonte"></label>
+   </div></section>
+   }
+   @if (!teleconsultationScope()) {
    <section class="panel" aria-labelledby="exceptions-heading"><h2 id="exceptions-heading">Excepciones</h2><p class="muted">Cerrá un día por feriado o cargá horarios especiales. La excepción reemplaza el horario habitual en esas fechas.</p>
     @if (!draft.exceptions.length) {<p class="muted">No hay excepciones configuradas.</p>}
     @for (exception of draft.exceptions; track $index; let e=$index) {
      <div class="exception"><div class="settings">
       <label>Motivo<input [ngModel]="exception.label" (ngModelChange)="exception.label=$event; keepDraft()" maxlength="160" placeholder="Ej.: vacaciones"></label>
-      <label>Fecha inicial<app-date-picker [ngModel]="exception.from" (ngModelChange)="exception.from=$event; keepDraft()" [inputId]="'exception-from-'+e" /></label>
-      <label>Fecha final (opcional)<app-date-picker [ngModel]="exception.through" (ngModelChange)="exception.through=$event; keepDraft()" [inputId]="'exception-through-'+e" /><small class="muted">Dejala vacía para un solo día.</small></label>
+      <div class="picker-field"><label [attr.for]="'exception-from-'+e">Fecha inicial</label><app-date-picker [ngModel]="exception.from" (ngModelChange)="exception.from=$event; keepDraft()" [inputId]="'exception-from-'+e" [inputLabel]="'Fecha inicial de la excepción ' + (e+1)" /></div>
+      <div class="picker-field"><label [attr.for]="'exception-through-'+e">Fecha final (opcional)</label><app-date-picker [ngModel]="exception.through" (ngModelChange)="exception.through=$event; keepDraft()" [inputId]="'exception-through-'+e" [inputLabel]="'Fecha final (opcional) de la excepción ' + (e+1)" /><small class="muted">Dejala vacía para un solo día.</small></div>
      </div>
      @if (exceptionDateError(exception); as message) {<p class="date-error">{{ message }}</p>}<div class="ranges">@if (!exception.ranges.length) {<span class="closed-badge">Sin atención en esas fechas</span>}
-      @for (range of exception.ranges; track $index; let r=$index) {<div class="block-card"><p><strong>{{specialtyName(range.specialtyContextId)}}</strong> · {{selected.name}} · {{range.slotMinutes}} min por turno</p><div class="range"><label>Minutos por turno<input type="number" min="5" max="480" [ngModel]="range.slotMinutes" (ngModelChange)="range.slotMinutes=$event; keepDraft()"></label><label>Desde<app-time-picker [ngModel]="range.start" (ngModelChange)="range.start=$event; keepDraft()" label="Hora de la excepción" /></label><label>Hasta<app-time-picker [ngModel]="range.end" (ngModelChange)="range.end=$event; keepDraft()" label="Hora de la excepción" [allowEndOfDay]="true" /></label><button type="button" (click)="removeRange(exception,r)">Quitar bloque</button></div></div>}
+      @for (range of exception.ranges; track $index; let r=$index) {<div class="block-card"><p><strong>{{specialtyName(range.specialtyContextId)}}</strong> · {{selected.name}} · {{range.slotMinutes}} min por turno</p><div class="range"><label>Minutos por turno<input type="number" min="5" max="480" [ngModel]="range.slotMinutes" (ngModelChange)="range.slotMinutes=$event; keepDraft()"></label><div class="picker-field"><span aria-hidden="true">Desde</span><app-time-picker [ngModel]="range.start" (ngModelChange)="range.start=$event; keepDraft()" [label]="'Inicio del bloque de excepción ' + (r+1) + ' del período ' + (e+1)" /></div><div class="picker-field"><span aria-hidden="true">Hasta</span><app-time-picker [ngModel]="range.end" (ngModelChange)="range.end=$event; keepDraft()" [label]="'Fin del bloque de excepción ' + (r+1) + ' del período ' + (e+1)" [allowEndOfDay]="true" /></div><button type="button" (click)="removeRange(exception,r)">Quitar bloque</button></div></div>}
      </div>
      @if(rangesError(exception.ranges);as message){<p class="date-error" role="alert">{{message}}</p>}
      <div class="actions"><button type="button" (click)="addRange(exception)" [disabled]="exception.ranges.length>=16">Añadir horario especial</button><button type="button" class="remove" (click)="removeException(e)">Quitar excepción</button></div></div>
     }
     <button type="button" (click)="addException()" [disabled]="draft.exceptions.length>=100">Añadir excepción</button>
    </section>
-  </fieldset>
+   }
+   </fieldset>
+  </div>
   <section class="panel preview" aria-labelledby="preview-heading"><h2 id="preview-heading">Disponibilidad calculada</h2><p class="muted">Consultá los horarios de la agenda guardada en la zona horaria del consultorio.</p>
-   <div class="actions preview-controls"><label>Fecha inicial<app-date-picker [(ngModel)]="previewDate" inputId="availability-date" #previewPicker /></label><label>Vista<select [(ngModel)]="previewDays"><option [ngValue]="1">Día</option><option [ngValue]="7">Semana</option></select></label><button type="button" (click)="preview()" [disabled]="previewBusy() || !!previewPicker.error()">{{ previewBusy() ? 'Calculando…' : 'Ver disponibilidad' }}</button></div>
+   <div class="actions preview-controls"><div class="picker-field"><label for="availability-date">Fecha inicial</label><app-date-picker [(ngModel)]="previewDate" inputId="availability-date" inputLabel="Fecha inicial" #previewPicker /></div><label>Vista<select [(ngModel)]="previewDays"><option [ngValue]="1">Día</option><option [ngValue]="7">Semana</option></select></label><button type="button" (click)="preview()" [disabled]="previewBusy() || !!previewPicker.error()">{{ previewBusy() ? 'Calculando…' : 'Ver disponibilidad' }}</button></div>
    @if (previewError()) {<p role="alert" class="notice error">{{ previewError() }}</p>}
    @if (previewDaysWithSlots(); as days) {
     <div class="availability-days">
@@ -123,3 +200,30 @@
   </section>
  }
 </div>
+
+<ng-template #scheduleError let-overlap let-message="message" let-title="title" let-savingAgenda="savingAgenda">
+ <div class="schedule-alert" role="alert">
+  <div class="schedule-alert-heading">
+   <ng-icon name="lucideCircleAlert" aria-hidden="true" />
+   <div>
+    <strong>{{ overlap ? 'Ese horario ya está ocupado' : title }}</strong>
+    @if (overlap?.when) { <span>{{ overlap.when }}</span> }
+   </div>
+  </div>
+  @if (overlap) {
+   <dl class="schedule-alert-times">
+    <div><dt>Horario elegido</dt><dd>{{ overlap.requested }}</dd></div>
+    <div>
+     <dt>{{ overlap.booked ? 'Turno ya reservado' : 'Ya ocupado en' }}</dt>
+     <dd><span>{{ overlap.agenda }}</span> · {{ overlap.existing }}</dd>
+    </div>
+    @if (overlap.overlap !== overlap.requested) {
+     <div><dt>Parte que coincide</dt><dd>{{ overlap.overlap }}</dd></div>
+    }
+   </dl>
+   <p>{{ savingAgenda ? 'Ajustá el horario en tu borrador o elegí otro día. Tus cambios todavía no se guardaron.' : 'Cambiá la hora de inicio o de fin, o elegí otro día. Podés corregir los datos que ya ingresaste.' }}</p>
+  } @else {
+   <p>{{ message }}</p>
+  }
+ </div>
+</ng-template>

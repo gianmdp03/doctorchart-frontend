@@ -143,6 +143,21 @@ describe('WorkspaceStore canonical lifecycle', () => {
       expect(store.currentSetup()).toEqual(setup);
     }
   });
+  it('opens a ready specialty by default when several belong to the doctor', async () => {
+    store.clearSetup();
+    const workspaceId = 500;
+    const ready = { id: 101, workspaceId, version: 3, specialty: setup.specialty, onboardingCompleted: true, ready: true, hasDraft: false };
+    service.getContexts.mockReturnValue(of([
+      { ...ready, id: 202, ready: false, onboardingCompleted: false },
+      ready,
+      { ...ready, id: 303 },
+    ]));
+    service.getCurrentSetup.mockReturnValue(of({ ...setup, id: workspaceId }));
+    expect((await store.loadSetup())?.specialtyContextId).toBe(101);
+    expect(store.specialtyContextId()).toBe(101);
+    expect(service.getCurrentSetup).toHaveBeenCalledWith(101);
+  });
+
   it('keeps null workspace distinct from failed loads and allows retry', async () => {
     service.getCurrentSetup.mockReturnValueOnce(throwError(() => new Error('Offline')));
     await expect(store.loadSetup()).rejects.toThrow('Offline');

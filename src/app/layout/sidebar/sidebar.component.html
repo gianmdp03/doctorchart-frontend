@@ -2,23 +2,23 @@
   <!-- Sidebar Header: Brand Logo & Title -->
   <div class="sidebar-brand">
     <div class="brand-logo-icon" title="DoctorChart">
-      <img class="doctorchart-logo" src="/doctorchart-logo.svg" width="38" height="38" alt="DoctorChart" />
+      <img class="doctorchart-logo" src="/doctorchart-logo.svg" width="38" height="38" alt="" />
     </div>
     <div class="brand-text-wrap">
       <span class="brand-title">DoctorChart</span>
       @if (authService.isSuperAdmin()) { <span class="brand-specialty-pill">Administración</span> }
     </div>
     <button type="button" class="mobile-nav-toggle" (click)="toggleCollapse()"
-      [attr.aria-expanded]="!isCollapsed()" aria-controls="workspace-navigation">
+      [attr.aria-expanded]="!isCollapsed()" aria-controls="workspace-navigation workspace-footer">
       <ng-icon [name]="isCollapsed() ? 'lucideChevronRight' : 'lucideChevronLeft'" aria-hidden="true" />
       {{ isCollapsed() ? 'Menú' : 'Cerrar menú' }}
     </button>
   </div>
 
-  @if (!authService.isSuperAdmin() && (!isCollapsed() || narrowViewport) && workspace.contexts().length) {
+  @if (!authService.isSuperAdmin() && (!isCollapsed() || narrowViewport) && workspace.contexts().length && workspace.specialtyContextId()) {
     <div class="specialty-switch">
       <span id="sidebar-specialty-label">Especialidad actual</span>
-      <mat-select aria-labelledby="sidebar-specialty-label" placeholder="Elegí una especialidad"
+      <mat-select aria-labelledby="sidebar-specialty-label"
         panelClass="sidebar-specialty-panel" [value]="workspace.specialtyContextId()"
         [disabled]="workspace.isMutating()" (selectionChange)="changeSpecialty($event)">
         @for (context of workspace.contexts(); track context.id) {
@@ -32,12 +32,12 @@
   <nav id="workspace-navigation" class="sidebar-nav" aria-label="Navegación principal" (click)="collapseAfterNavigation()">
     @if (authService.isSuperAdmin()) {
       <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">Administración</div>
-      <a routerLink="/admin/specialties" routerLinkActive="active" class="nav-item" title="Especialidades y wizards">
+      <a routerLink="/admin/specialties" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Especialidades y wizards">
         <ng-icon name="lucideSliders" class="nav-icon" />
         <span class="nav-label">Especialidades y wizards</span>
       </a>
     } @else {
-    <a routerLink="/specialties" routerLinkActive="active" class="nav-item" title="Mis especialidades"><ng-icon name="lucideStethoscope" class="nav-icon"/><span class="nav-label">Mis especialidades</span></a>
+    <a routerLink="/specialties" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Mis especialidades"><ng-icon name="lucideStethoscope" class="nav-icon"/><span class="nav-label">Mis especialidades</span></a>
     <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">
       @if (!isCollapsed() || narrowViewport) {
         <span>Clínica</span>
@@ -45,7 +45,7 @@
     </div>
 
     @for (item of workspace.navigation(); track item.id) {
-      <a [routerLink]="item.path" routerLinkActive="active" class="nav-item" [title]="item.title" [attr.aria-label]="item.title">
+      <a [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" [title]="item.title">
         <ng-icon [name]="item.icon" class="nav-icon" />
         <span class="nav-label">{{ item.label }}</span>
       </a>
@@ -54,27 +54,35 @@
     @if (clinicsEnabled() && workspace.hasReadyContext()) {
       <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">Turnos</div>
     }
-    @if(staffEnabled && clinicsEnabled() && workspace.hasReadyContext()){<a routerLink="/secretaries" routerLinkActive="active" class="nav-item" title="Secretarias y permisos"><ng-icon name="lucideContact" class="nav-icon"/><span class="nav-label">Secretarias</span></a>}
- @if (publicAppointmentsEnabled && clinicsEnabled() && workspace.hasReadyContext()) {<a routerLink="/booking-publication" routerLinkActive="active" class="nav-item" title="Publicación de reservas online"><ng-icon name="lucideGlobe" class="nav-icon" /><span class="nav-label">Reservas online</span></a>}
- @if (calendarEnabled() && workspace.hasReadyContext()) {<a routerLink="/calendar" routerLinkActive="active" class="nav-item" title="Agenda de turnos" data-testid="sidebar-calendar-link"><ng-icon name="lucideCalendarClock" class="nav-icon" /><span class="nav-label">Agenda de turnos</span></a>}
+    @if(staffEnabled && clinicsEnabled() && workspace.hasReadyContext()){<a routerLink="/secretaries" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Secretaría"><ng-icon name="lucideContact" class="nav-icon"/><span class="nav-label">Secretaría</span></a>}
+ @if (publicAppointmentsEnabled && clinicsEnabled() && workspace.hasReadyContext()) {<a routerLink="/booking-publication" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Publicación de reservas online"><ng-icon name="lucideGlobe" class="nav-icon" /><span class="nav-label">Reservas online</span></a>}
+ @if (calendarEnabled() && workspace.hasReadyContext()) {<a routerLink="/calendar" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Agenda de turnos" data-testid="sidebar-calendar-link"><ng-icon name="lucideCalendarClock" class="nav-icon" /><span class="nav-label">Agenda de turnos</span></a>}
     @if (clinicsEnabled() && workspace.hasReadyContext()) {
       <a
         routerLink="/clinics"
-        routerLinkActive="active"
+        routerLinkActive="active" ariaCurrentWhenActive="page"
         class="nav-item"
-        title="Administración de consultorios"
-        aria-label="Administración de consultorios"
+        title="Consultorios y teleconsulta"
+        aria-label="Consultorios y teleconsulta"
         data-testid="sidebar-clinics-link"
       >
         <ng-icon name="lucideBuilding2" class="nav-icon" />
-        <span class="nav-label">Consultorios</span>
+        <span class="nav-label">Consultorios y teleconsulta</span>
       </a>
     }
     }
   </nav>
 
-  <!-- Sidebar Footer: Collapse Toggle -->
-  <div class="sidebar-footer">
+  <div id="workspace-footer" class="sidebar-footer">
+    @if (!authService.isSuperAdmin()) {
+      <nav aria-label="Ayuda">
+        <a routerLink="/help" routerLinkActive="active" ariaCurrentWhenActive="page"
+          class="nav-item" aria-label="Ayuda" title="Ayuda" (click)="collapseAfterNavigation()">
+          <ng-icon name="lucideBookOpen" class="nav-icon" aria-hidden="true" />
+          <span class="nav-label">Ayuda</span>
+        </a>
+      </nav>
+    }
     <button
       type="button"
       class="collapse-toggle-btn"

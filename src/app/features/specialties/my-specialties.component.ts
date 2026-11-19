@@ -1,5 +1,5 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Component, ElementRef, viewChild, computed, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideArrowRight, lucideBaby, lucidePlus, lucideScanFace, lucideStethoscope } from '@ng-icons/lucide';
 import { firstValueFrom } from 'rxjs';
@@ -21,7 +21,14 @@ export class MySpecialtiesComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly error = signal('');
-  readonly adding = signal(false);
+  private readonly addSpecialty = viewChild<ElementRef<HTMLButtonElement>>('addSpecialty');
+
+  cancelAdding(): void {
+    this.adding.set(false);
+    this.addSpecialty()?.nativeElement.focus();
+  }
+
+  readonly adding = signal(inject(ActivatedRoute).snapshot.queryParamMap.get('add') === '1');
   readonly specialties = signal<SpecialtySummary[]>([]);
   readonly available = computed(() =>
     this.specialties().filter((specialty) =>

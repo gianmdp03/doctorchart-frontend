@@ -1,0 +1,62 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.document-tools {
+  display: grid;
+  gap: 0.75rem;
+  color: var(--dc-text-secondary);
+}
+h3,
+h4,
+p {
+  margin: 0;
+}
+h3,
+h4 {
+  color: var(--dc-text);
+  font-weight: 650;
+}
+h3 {
+  font-size: 1rem;
+}
+.document-tools > button {
+  justify-self: start;
+}
+.issued-document {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.85rem;
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-subtle);
+  overflow-wrap: anywhere;
+}
+.issued-document p {
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.document-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.document-actions label {
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+}
+.document-actions input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--dc-control-line);
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-paper);
+  color: var(--dc-text);
+}
+.export-title {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--dc-line);
+}

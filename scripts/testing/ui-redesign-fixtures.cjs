@@ -22,6 +22,7 @@ const publicId = '22222222-2222-4222-8222-222222222222';
 const userId = '11111111-1111-4111-8111-111111111111';
 const clinic = { id: '103', name: 'Consultorio de prueba Centro', modality: 'IN_PERSON', country: 'Argentina', province: 'Buenos Aires', city: 'Mar del Plata', address: 'Dirección sintética de ensayo', timezone: zone, status: 'ACTIVE', version: '1', createdAt: today, updatedAt: today, futureBookings: 3 };
 const virtual = { ...clinic, id: '104', name: 'Agenda virtual de prueba', modality: 'TELECONSULTATION', address: '', city: '' };
+const assignedClinic = { ...clinic, specialtyContextIds: ['101', '202'] };
 const specialties = defaults.map(({ id, code, name }) => ({ id, code, name }));
 specialties.push({ id: 1, code: 'pediatrics', name: 'Pediatría' });
 const definition = structuredClone(defaults[0].definition);
@@ -46,6 +47,11 @@ const page = (content, size = 20) => ({ content, totalElements: content.length, 
 
 async function install(context, { role = 'COMPANY', authenticated = true, hasPlan = true, initialSetup = false, state = {} } = {}) {
   const requests = [], writes = [], unexpected = [];
+  const teleconsultations = contexts.map(context => ({
+    specialtyContextId: String(context.id), specialty: context.specialty.name,
+    clinicId: virtual.id, enabled: context.id === 101,
+  }));
+  let portalVerified = false;
   const user = { id: userId, aud: 'authenticated', email: 'profesional@example.test', role: 'authenticated', app_metadata: { role, app_modules: { doctorchart: { active: true, tier: 'PRO', expires_at: '2099-01-01T00:00:00Z' } } }, user_metadata: { full_name: 'Profesional de prueba' } };
   if (!hasPlan) user.app_metadata.app_modules = {};
   const token = 'eyJhbGciOiJIUzI1NiJ9.' + Buffer.from(JSON.stringify({ sub: userId, exp: 4070908800, role: 'authenticated' })).toString('base64url') + '.synthetic';
@@ -91,21 +97,52 @@ async function install(context, { role = 'COMPANY', authenticated = true, hasPla
     if (p.endsWith('/vaccinations')) return fulfill({ patientId: 1, patientVersion: 1, calendarId: '2026', asOfDate: today, ageInMonths: 439, ageLabel: '36 años', doses: [] });
     if (p.endsWith('/follow-ups')) return fulfill({ items: [] });
     if (p.endsWith('/clinics/capabilities')) return fulfill({ entitlements: { status: 'VERIFIED', revision: 'fixture', validUntil: '2099-01-01T00:00:00Z', clinicManagement: true, max_clinics: 3 }, usage: { counted: 1 }, actions: { create: true, edit: true, activate: true, deactivate: true, archive: true, restore: true }, reason: null });
-    if (/\/clinics\/(103|104)$/.test(p)) return fulfill(p.endsWith('104') ? virtual : clinic);
-    if (p.endsWith('/clinics')) return fulfill({ items: [clinic, virtual], page: 0, size: 20, totalElements: 2 });
-    if (p.endsWith('/schedule/occupied')) return fulfill({ timezone: zone, items: [] });
+    if (/\/clinics\/(103|104)$/.test(p)) return fulfill(p.endsWith('104') ? virtual : assignedClinic);
+    if (p.endsWith('/teleconsultations')) return fulfill(teleconsultations);
+    if (/\/teleconsultations\/\d+$/.test(p) && method === 'PUT') {
+      const setting = teleconsultations.find(item => item.specialtyContextId === p.split('/').at(-1));
+      if (!setting) return fulfill({ code: 'SPECIALTY_CONTEXT_NOT_FOUND' }, 404);
+      setting.enabled = request.postDataJSON().enabled;
+      return fulfill(setting);
+    }
+    if (p.endsWith('/clinics')) return fulfill({ items: [assignedClinic, virtual], page: 0, size: 20, totalElements: 2 });
+    if (p.endsWith('/schedule/occupied')) {
+      const date = url.searchParams.get('from') || today;
+      const next = addDays(date, 1);
+      const other = { ...clinic, id: '105', name: 'Consultorio de prueba Norte' };
+      const [first, second] = p.endsWith('/104/schedule/occupied') ? [clinic, other] : [other, virtual];
+      return fulfill({ timezone: zone, items: [
+        { ...first, clinicId: first.id, start: date + 'T12:00:00Z', end: date + 'T14:00:00Z' },
+        { ...first, clinicId: first.id, start: date + 'T14:00:00Z', end: date + 'T17:00:00Z' },
+        { ...second, clinicId: second.id, start: next + 'T19:00:00Z', end: next + 'T21:00:00Z' },
+      ] });
+    }
     if (p.endsWith('/schedule')) return fulfill({ clinicId: '103', version: '1', configured: true, minNoticeMinutes: 0, maxAdvanceDays: 30, weekly: Array.from({ length: 7 }, (_, i) => ({ weekday: i + 1, ranges: i < 5 ? [{ id: String(i + 1), specialtyContextId: '101', start: '09:00', end: '12:00', slotMinutes: 20 }] : [] })), exceptions: [] });
     if (p.endsWith('/public/appointments/challenge')) return fulfill({ token: 'm6-fixture-355947', difficulty: 18 });
-    if (p.endsWith('/public/appointments/confirmation')) return fulfill({ reference: 'confirmacion-sintetica', status: 'CONFIRMED', start: tomorrow + 'T15:00:00Z', end: tomorrow + 'T15:20:00Z', doctorName: profile.name, clinicName: clinic.name, specialtyName: 'Medicina General', address: clinic.address, timezone: zone, accessExpiresAt: '2099-01-01T00:00:00Z' });
+    if (p.endsWith('/public/appointments/access/request')) return fulfill({ requestId: 'solicitud-sintetica' }, 202);
+    if (p.endsWith('/public/appointments/access/verify')) {
+      portalVerified = true;
+      return route.fulfill({ status: 204 });
+    }
+    if (p.endsWith('/public/appointments/my-bookings')) {
+      if (!portalVerified) return fulfill({code: 'BOOKING_ACCESS_DENIED'}, 403);
+      return fulfill({ hasMore: false, items: [{ reference: 'confirmacion-sintetica', status: 'CONFIRMED', start: tomorrow + 'T15:00:00Z', end: tomorrow + 'T15:20:00Z', doctorName: profile.name, clinicName: clinic.name, address: clinic.address, timezone: zone, version: '1', canChange: false }] });
+    }
     if (p.endsWith('/public/appointments/doctors')) return fulfill({ items: [profile, { ...profile, id: '44444444-4444-4444-8444-444444444444', name: 'Profesional de prueba García' }, { ...profile, id: '55555555-5555-4555-8555-555555555555', name: 'Profesional de prueba López' }], specialties: specialties.map(s => ({ code: s.code, name: s.name })), hasMore: false });
     if (p.includes('/public/appointments/doctors/') && !/availability|bookings/.test(p)) return fulfill(profile);
     if (p.endsWith('/availability')) { const from = url.searchParams.get('from') || today; const count = Number(url.searchParams.get('days')) || 7; return fulfill({ clinicId: '103', timezone: zone, days: Array.from({ length: count }, (_, i) => ({ date: addDays(from, i), slots: slots(addDays(from, i)) })) }); }
     if (p.endsWith('/bookings') && method === 'POST' && p.includes('/public/')) return fulfill({ reference: 'reserva-sintetica', status: 'CONFIRMED', start: request.postDataJSON().start, end: tomorrow + 'T15:20:00Z', doctorName: profile.name, clinicName: clinic.name, specialtyName: 'Medicina General', address: clinic.address, timezone: zone, contactName: request.postDataJSON().contactName, attendeeName: request.postDataJSON().attendeeName || request.postDataJSON().contactName }, 201);
     if (p.endsWith('/public-details')) return fulfill(null);
+    if (p.endsWith('/bookings/form') || p.endsWith('/booking-form')) {
+      return fulfill({version: '1', questions: [{key: 'insurance', label: 'Obra social', required: false}]});
+    }
+    if (p.endsWith('/workspace/clinical-access') || p.endsWith('/patients/archived')) {
+      return fulfill({items: []});
+    }
     if (p.endsWith('/events')) return fulfill({ items: [] });
     if (/\/bookings\/[123]$/.test(p)) return fulfill(bookings().find(b => b.id === p.split('/').at(-1)));
     if (p.endsWith('/bookings')) return fulfill({ items: bookings(), totalElements: 3, hasMore: false });
-    if (p.endsWith('/booking-publication')) return fulfill({ version: '1', name: profile.name, description: profile.description, published: true, publicId, specialtyContextIds: ['101', '202'], clinics: [clinic.id], questions: [] });
+    if (p.endsWith('/booking-publication')) return fulfill({ version: '1', name: profile.name, description: profile.description, published: true, publicId, specialtyContextIds: ['101', '202'], clinics: [{ clinicId: clinic.id, enabled: true, address: clinic.address }], questions: [] });
     if (p.endsWith('/staff/session')) return fulfill({ email: 'secretaria@example.test', name: 'Secretaría de prueba', csrfToken: 'synthetic', expiresAt: '2099-01-01T00:00:00Z' });
     if (p.endsWith('/staff/assignments')) return fulfill({ items: [{ ownerId: userId, accessId: '10', clinicId: clinic.id, clinicName: clinic.name, doctorName: profile.name, modality: 'IN_PERSON', timezone: zone, permissions: ['view', 'create', 'cancel', 'reschedule', 'status'], validUntil: '2099-01-01T00:00:00Z' }] });
     if (p.endsWith('/secretaries')) return fulfill({ items: [{ id: '10', email: 'secretaria@example.test', name: 'Secretaría de prueba', version: '1', active: true, activated: true, permissions: ['view', 'create', 'cancel', 'reschedule', 'status'], clinicIds: [clinic.id] }], capabilities: { manage: true, reason: null, validUntil: '2099-01-01T00:00:00Z' } });

@@ -165,18 +165,13 @@
   border: 1.5px solid var(--dc-outline, #cbd5e1);
   cursor: pointer;
   transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
-  outline: none;
   user-select: none;
   white-space: nowrap;
 
-  &:hover:not(:disabled):not(.locked) {
+  .consultation-choice:hover > &:not(.locked) {
     background-color: var(--dc-surface-low, #f8fafc);
     border-color: var(--dc-brand);
     color: var(--dc-ink, #0f172a);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
   }
 
   &.active {
@@ -216,7 +211,7 @@
     }
   }
 
-  &:disabled:not(.locked) {
+  input:disabled + & {
     opacity: 0.5;
     cursor: not-allowed;
   }
@@ -246,7 +241,6 @@
   background: var(--dc-surface, #ffffff);
   color: var(--dc-ink, #0f172a);
   font-size: 0.9rem;
-  outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:focus {
@@ -462,3 +456,6 @@
  .encounter-form-footer { padding: 20px 16px; flex-wrap: wrap; }
  .encounter-form-footer button { flex: 1; }
 }
+
+.consultation-choice { position: relative; }
+.consultation-choice input:focus-visible + .consultation-chip { outline: 2px solid var(--dc-focus); outline-offset: 3px; }

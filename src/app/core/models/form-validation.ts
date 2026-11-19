@@ -37,7 +37,6 @@ export function wizardFieldError(field: WizardFieldDefinition, value: unknown, t
       if (typeof value !== 'string') return 'Ingresá un texto válido.';
       if (['sys_email', 'email', 'patient.email'].includes(field.key) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Ingresá un correo electrónico válido.';
       if (['sys_dni', 'nationalId', 'patient.nationalId'].includes(field.key) && !/^\d{6,8}$/.test(value.trim())) return 'Ingresá un DNI de 6 a 8 dígitos, sin puntos.';
-      if (['sys_phone', 'phone', 'patient.phone', 'primaryContactPhone', 'patient.guardianInfo.primaryContactPhone'].includes(field.key) && (!/^[+\d\s().-]+$/.test(value.trim()) || value.replace(/\D/g, '').length < 6 || value.replace(/\D/g, '').length > 15)) return 'Ingresá un teléfono de 6 a 15 dígitos.';
       return null;
     case 'NUMBER':
       if (typeof value !== 'number' || !Number.isFinite(value)) return 'Ingresá un número válido.';
@@ -54,6 +53,12 @@ export function wizardFieldError(field: WizardFieldDefinition, value: unknown, t
     case 'BOOLEAN': return typeof value === 'boolean' ? null : 'Elegí Sí o No.';
     case 'SELECT': return typeof value === 'string' && field.options?.some(option => option.value === value) ? null : 'Elegí una de las opciones disponibles.';
   }
+}
+
+const phoneKeys = new Set(['sys_phone', 'phone', 'patient.phone', 'primaryContactPhone', 'patient.guardianInfo.primaryContactPhone']);
+
+export function isPhoneField(field: WizardFieldDefinition): boolean {
+  return (field.type === 'TEXT' || field.type === 'TEXTAREA') && phoneKeys.has(field.key);
 }
 
 export const isBirthDateField = (key: string): boolean => ['sys_dob', 'birthDate', 'birth', 'born', 'patient.birthDate'].includes(key);

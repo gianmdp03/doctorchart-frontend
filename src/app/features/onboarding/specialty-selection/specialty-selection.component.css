@@ -286,7 +286,7 @@
 
 
 .specialty-card:disabled { cursor: not-allowed; opacity: .65; }
-button:focus-visible { outline: 3px solid var(--dc-blue-soft); outline-offset: 3px; }
+button:focus-visible { outline: 3px solid var(--dc-focus); outline-offset: 3px; }
 @media (max-width: 640px) { .onboarding-footer { align-items: stretch; flex-direction: column; } }
 
 @media (max-width: 640px) {

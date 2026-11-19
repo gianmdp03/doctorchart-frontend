@@ -10,7 +10,7 @@ describe('Secretaria invitation links',()=>{
  let router:{navigateByUrl:ReturnType<typeof vi.fn>};
  let history:{replaceState:ReturnType<typeof vi.fn>;state:object};
  beforeEach(()=>{
-  api={inspectInvitation:vi.fn().mockResolvedValue({email:'ana@example.invalid',name:'Ana',existingAccount:false}),authenticate:vi.fn().mockResolvedValue({recoveryCode:'personal-backup'})};
+  api={inspectInvitation:vi.fn().mockResolvedValue({email:'ana@example.invalid',name:'Ana',existingAccount:false,doctorName:'Profesional de prueba',agendas:['Consultorio de prueba']}),authenticate:vi.fn().mockResolvedValue({recoveryCode:'personal-backup'})};
   router={navigateByUrl:vi.fn().mockResolvedValue(true)};
   history={replaceState:vi.fn(),state:{navigationId:1}};
   TestBed.configureTestingModule({providers:[{provide:StaffService,useValue:api},{provide:Router,useValue:router},{provide:ActivatedRoute,useValue:{snapshot:{data:{mode:'activate'}}}},{provide:DOCUMENT,useValue:{defaultView:{location:{hash:'#invite='+code,pathname:'/staff/activate',search:''},history}}}]});
@@ -20,6 +20,7 @@ describe('Secretaria invitation links',()=>{
  it('removes the secret from browser history and prefills email without consuming the link',async()=>{
   const c=make();expect(c.loadingInvitation()).toBe(true);expect(history.replaceState).toHaveBeenCalledWith(history.state,'','/staff/activate');
   await Promise.resolve();expect(api.inspectInvitation).toHaveBeenCalledWith(code);expect(c.email).toBe('ana@example.invalid');expect(c.fromLink).toBe(true);expect(c.invitationName()).toBe('Ana');expect(c.existingAccount()).toBe(false);
+  expect(c.invitingDoctor()).toBe('Profesional de prueba');expect(c.invitedAgendas()).toEqual(['Consultorio de prueba']);
  });
  it('enters the calendar immediately after activation, without a recovery-code gate',async()=>{
   const c=make();await Promise.resolve();c.password='a-password-long-enough';await c.submit();

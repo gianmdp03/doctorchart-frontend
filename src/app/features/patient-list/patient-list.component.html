@@ -1,16 +1,20 @@
 <div id="view-patient-list" class="app-view">
   <!-- Controls: Title, Search, Filters & New Patient CTA -->
   <div class="patient-directory-controls">
-    <div>
-      <h1 class="dc-page-title">Directorio de Pacientes</h1>
-      <p class="directory-subtitle">
-        {{ totalElements() }} pacientes en seguimiento clínico
-        @if (searchQuery()) {
-          <span class="filter-count-note"> (búsqueda: "{{ searchQuery() }}")</span>
-        }
-      </p>
-    </div>
-
+    <header class="directory-heading">
+      <div>
+        <h1 class="dc-page-title">Directorio de Pacientes</h1>
+        <p class="directory-subtitle" role="status">
+          {{ totalElements() }} pacientes en seguimiento clínico
+          @if (searchQuery()) {
+            <span class="filter-count-note"> (búsqueda: "{{ searchQuery() }}")</span>
+          }
+        </p>
+      </div>
+      <button type="button" class="dc-button dc-button--primary" (click)="createPatient()">
+        + Nuevo paciente
+      </button>
+    </header>
     <div class="directory-actions-group">
       <!-- Search Input Filter -->
       <div class="directory-search-wrapper" role="search">
@@ -18,6 +22,7 @@
           <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
         </svg>
         <input
+          #directorySearch
           type="search"
           class="directory-search-input"
           placeholder="Buscar por DNI, nombre o teléfono..."
@@ -31,18 +36,21 @@
             type="button"
             class="clear-search-btn"
             aria-label="Limpiar búsqueda"
-            (click)="clearSearch()"
+            (click)="clearSearch(); directorySearch.focus()"
           >
             ✕
           </button>
         }
       </div>
 
-      <button type="button" class="dc-button dc-button--primary" (click)="createPatient()">
-        + Nuevo paciente
-      </button>
+      <details class="directory-more">
+        <summary>Más opciones</summary>
+        <nav aria-label="Opciones administrativas">
+          <a routerLink="/patients/access-audit">Auditoría de accesos</a>
+          <a routerLink="/patients/archived">Fichas anuladas</a>
+        </nav>
+      </details>
     </div>
-    <app-clinical-revisions />
 
     <section class="directory-filters" aria-label="Categorías de pacientes">
       <div class="directory-filters-heading">
@@ -140,14 +148,19 @@
   </div>
 
   @if (loadError(); as error) { <p role="alert">{{ error }} <button type="button" class="m3-chip" (click)="loadInitial()">Reintentar</button></p> }
-  <div class="mobile-patient-list" aria-label="Pacientes">
+  <div class="mobile-patient-list">
     @for (patient of patients(); track patient.id) {
       <article class="mobile-patient-row">
         <button type="button" class="mobile-patient-main" (click)="selectPatient(patient)">
-          <span class="mobile-avatar">{{ patient.initials }}</span><span class="mobile-patient-copy"><strong>{{ patient.fullName }}</strong><span>{{ patient.ageDisplay }} · {{ patient.dni }}</span></span><span aria-hidden="true">›</span>
+          <span class="mobile-avatar" aria-hidden="true">{{ patient.initials }}</span><span class="mobile-patient-copy"><strong>{{ patient.fullName }}</strong><span>{{ patient.ageDisplay }} · {{ patient.dni }}</span></span><span aria-hidden="true">›</span>
         </button>
-        <details><summary>Más datos</summary><div class="mobile-patient-extra"><span>Contacto: {{ patient.rawPhone || 'Sin registrar' }}</span><span>{{ patient.lastCheckup }}</span>@if (doctorSpecialtyService.supportsGrowthCharts()) { <span>Vacunación: {{ patient.hasPendingVaccine ? 'Pendiente' : 'Al día' }}</span> }<button type="button" (click)="selectPatient(patient)">Abrir ficha →</button></div></details>
+        <details><summary>Más datos<span class="sr-only"> de {{ patient.fullName }}</span></summary><div class="mobile-patient-extra"><span>Contacto: {{ (patient.rawPhone | phoneDisplay | async) || patient.rawPhone || 'Sin registrar' }}</span><span>{{ patient.lastCheckup }}</span>@if (doctorSpecialtyService.supportsGrowthCharts()) { <span>Vacunación: {{ patient.hasPendingVaccine ? 'Pendiente' : 'Al día' }}</span> }<button type="button" (click)="selectPatient(patient)">Abrir ficha →</button></div></details>
       </article>
+    } @empty {
+      @if (!isLoading() && !loadError()) {
+        <p>No se encontraron pacientes con los filtros actuales.</p>
+        <button type="button" class="dc-button" (click)="resetFilters()">Restablecer filtros</button>
+      }
     }
   </div>
   <!-- Cards Grid -->
@@ -220,7 +233,7 @@
                     <svg class="contact-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
                     </svg>
-                    <span>{{ patient.rawPhone }}</span>
+                    <span>{{ (patient.rawPhone | phoneDisplay | async) || patient.rawPhone }}</span>
                   </div>
                 } @else {
                   <span class="cell-muted">—</span>
@@ -273,6 +286,7 @@
                 <button
                   type="button"
                   class="btn-table-action"
+                  [attr.aria-label]="'Ver ficha de ' + patient.fullName"
                   (click)="selectPatient(patient)"
                   [title]="'Abrir ficha clínica de ' + patient.fullName"
                 >
@@ -287,7 +301,7 @@
             <tr>
               <td [attr.colspan]="visibleColumnsCount()" class="empty-table-cell">
                 @if (isLoading()) {
-                  <div class="loading-state">
+                  <div class="loading-state" role="status">
                     <div class="loading-spinner"></div>
                     <p>Cargando directorio de pacientes...</p>
                   </div>
@@ -298,7 +312,7 @@
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                       </svg>
                     </div>
-                    <h3>No se encontraron pacientes</h3>
+                    <h2>No se encontraron pacientes</h2>
                     <p>
                       No existen pacientes que coincidan con el filtro actual o la búsqueda ingresada.
                     </p>
@@ -321,6 +335,9 @@
   @if (patients().length > 0) {
     <div class="infinite-scroll-footer">
       <div #scrollSentinel class="scroll-sentinel" aria-hidden="true"></div>
+      @if (hasMore()) {
+        <button type="button" class="dc-button" [attr.aria-disabled]="isLoadingMore()" (click)="loadMore()">Cargar más pacientes</button>
+      }
       @if (isLoadingMore()) {
         <div class="loading-more-box" role="status">
           <div class="loading-spinner mini-spinner" aria-hidden="true"></div>

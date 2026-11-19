@@ -7,6 +7,7 @@ import {
   ClinicCapabilities,
   ClinicListResponse,
   CreateClinicRequest,
+  TeleconsultationSetting,
   UpdateClinicRequest,
   UpdateClinicStatusRequest,
 } from './clinics.models';
@@ -21,6 +22,18 @@ export class ClinicsService implements ClinicsTransport {
   private readonly http = inject(HttpClient, { optional: true });
   private readonly customTransport = inject(CLINICS_TRANSPORT, { optional: true });
   private readonly baseUrl = `${environment.apiUrl}/clinics`;
+
+  listTeleconsultations(): Observable<TeleconsultationSetting[]> {
+    if (this.customTransport) return this.customTransport.listTeleconsultations();
+    return this.requireHttp().get<TeleconsultationSetting[]>(`${environment.apiUrl}/teleconsultations`);
+  }
+
+  setTeleconsultation(contextId: string, enabled: boolean): Observable<TeleconsultationSetting> {
+    if (this.customTransport) return this.customTransport.setTeleconsultation(contextId, enabled);
+    return this.requireHttp().put<TeleconsultationSetting>(
+      `${environment.apiUrl}/teleconsultations/${encodeURIComponent(contextId)}`, { enabled },
+    );
+  }
 
   listClinics(query?: ClinicsListQuery): Observable<ClinicListResponse> {
     if (this.customTransport) {
@@ -70,6 +83,7 @@ export class ClinicsService implements ClinicsTransport {
         province: payload.province.trim(),
         city: payload.city.trim(),
         address: payload.address.trim(),
+        ...(payload.specialtyContextIds ? { specialtyContextIds: payload.specialtyContextIds } : {}),
       };
     if (this.customTransport) {
       return this.customTransport.createClinic(body).pipe(map((res) => structuredClone(res)));
@@ -89,6 +103,7 @@ export class ClinicsService implements ClinicsTransport {
     if (payload.city !== undefined) body.city = payload.city.trim();
     if (payload.address !== undefined) body.address = payload.address.trim();
     if (payload.timezone !== undefined) body.timezone = payload.timezone.trim();
+    if (payload.specialtyContextIds !== undefined) body.specialtyContextIds = [...payload.specialtyContextIds];
 
     if (this.customTransport) {
       return this.customTransport.updateClinic(id, body).pipe(map((res) => structuredClone(res)));

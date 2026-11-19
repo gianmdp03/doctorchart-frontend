@@ -102,7 +102,6 @@
   border-radius: 8px;
   font-size: 0.85rem;
   background-color: var(--dc-surface-low, #f8fafc);
-  outline: none;
   min-height: 44px;
   border-color: var(--dc-control-line);
   background: var(--dc-paper);

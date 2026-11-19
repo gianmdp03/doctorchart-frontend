@@ -35,7 +35,7 @@ describe('ThemeService', () => {
     expect(service.theme()).toBe('dark');
     expect(document.documentElement.classList.contains('dark')).toBe(true);
     expect(document.documentElement.classList.contains('font-size-large')).toBe(true);
-    expect(fixture.nativeElement.querySelector('button').getAttribute('aria-pressed')).toBe('true');
+    expect(fixture.nativeElement.querySelector('button').getAttribute('aria-label')).toBe('Activar modo claro');
   });
 
   it('switches both ways from the accessible button and persists the chosen theme', async () => {

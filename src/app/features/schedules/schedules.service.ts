@@ -9,12 +9,15 @@ export class SchedulesService {
  get(id:string){return this.http.get<ClinicSchedule>(this.base+'/'+encodeURIComponent(id)+'/schedule');}
  save(id:string,body:ScheduleUpdate){return this.http.put<ClinicSchedule>(this.base+'/'+encodeURIComponent(id)+'/schedule',body);}
  validateDraft(id:string,body:ScheduleUpdate){return this.http.post<void>(this.base+'/'+encodeURIComponent(id)+'/schedule/validate',body);}
- occupied(id:string,from:string){
-  return this.http.get<OccupiedSchedule>(this.base+'/'+encodeURIComponent(id)+'/schedule/occupied',{params:{from}});
+ occupied(id:string,from:string,specialtyContextId?:string){
+  let params = new HttpParams().set('from',from);
+  if(specialtyContextId)params=params.set('specialtyContextId',specialtyContextId);
+  return this.http.get<OccupiedSchedule>(this.base+'/'+encodeURIComponent(id)+'/schedule/occupied',{params});
  }
- availability(id:string,from:string,days:1|7,includeHours=false){
+ availability(id:string,from:string,days:1|7,includeHours=false,specialtyContextId?:string){
   let params=new HttpParams().set('from',from).set('days',days);
   if(includeHours)params=params.set('includeHours',true);
+  if(specialtyContextId)params=params.set('specialtyContextId',specialtyContextId);
   return this.http.get<Availability>(this.base+'/'+encodeURIComponent(id)+'/availability',{params});
  }
 }

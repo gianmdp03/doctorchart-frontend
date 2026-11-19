@@ -41,7 +41,7 @@ type HlmDialogContentContext = {
 
     @if (showCloseButton()) {
       <button hlmBtn variant="ghost" size="icon-sm" class="absolute end-4 top-4" hlmDialogClose>
-        <span class="sr-only">close</span>
+        <span class="sr-only">Cerrar</span>
         <ng-icon name="lucideX" />
       </button>
     }

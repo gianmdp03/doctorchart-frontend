@@ -29,12 +29,18 @@
 /calculators /index.csr 200
 /patients /index.csr 200
 /patients/new /index.csr 200
+/patients/access-audit /index.csr 200
+/patients/archived /index.csr 200
 /patients/:id/edit /index.csr 200
 /patients/:id /index.csr 200
 /records /index.csr 200
 /records/:id/edit /index.csr 200
 /records/:id /index.csr 200
 /admin/specialties /index.csr 200
+/help /index.csr 200
+/help/appointments /index.csr 200
+/help/secretaries /index.csr 200
+/help/clinical /index.csr 200
 
 /calendar /index.csr 200
 /clinics/:id/schedule /index.csr 200

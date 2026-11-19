@@ -30,7 +30,7 @@ import { HlmCarousel } from './hlm-carousel';
   },
   template: `
     <ng-icon name="lucideArrowLeft" class="rtl:rotate-180" />
-    <span class="sr-only">Previous slide</span>
+    <span class="sr-only">Diapositiva anterior</span>
   `,
 })
 export class HlmCarouselPrevious {

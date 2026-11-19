@@ -33,7 +33,6 @@ import { PatientService } from '../../core/services/patient.service';
 import { DoctorProfileService } from '../../core/services/doctor-profile.service';
 import { AccessibilityService } from '../../core/services/accessibility.service';
 import { PatientListDTO } from '../../core/models/patient.model';
-import { environment } from '../../../environments/environment';
 import { BycodeAvatarComponent } from '../../shared/components/bycode-avatar/bycode-avatar';
 import { BycodeAccountService } from '../../core/services/bycode-account.service';
 import { FEATURE_FLAGS } from '../../core/config/feature-flags';
@@ -81,7 +80,6 @@ export class HeaderComponent implements OnDestroy {
   readonly isSearchOpen = signal(false);
   readonly isProfileMenuOpen = signal(false);
 
-  readonly bycodeUrl = new URL('/', environment.bycodePlansUrl).href;
 
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly searchReads = new AccountReadScope(() => this.clearSearch());
@@ -117,16 +115,12 @@ export class HeaderComponent implements OnDestroy {
   @HostListener('window:keydown', ['$event'])
   handleGlobalShortcut(event: KeyboardEvent): void {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-      event.preventDefault();
       const input = this.searchInputRef()?.nativeElement;
-      if (input) {
+      if (input && !event.defaultPrevented) {
+        event.preventDefault();
         input.focus();
         input.select();
       }
-    } else if (event.key === 'Escape') {
-      if (this.isProfileMenuOpen()) this.profileTrigger()?.nativeElement.focus();
-      this.isSearchOpen.set(false);
-      this.isProfileMenuOpen.set(false);
     }
   }
 
@@ -195,6 +189,21 @@ export class HeaderComponent implements OnDestroy {
     this.isSearchOpen.set(false);
   }
 
+  closeProfileOnFocusExit(event: FocusEvent): void {
+    const container = event.currentTarget as HTMLElement;
+    if (event.relatedTarget instanceof Node && !container.contains(event.relatedTarget)) {
+      this.isProfileMenuOpen.set(false);
+    }
+  }
+
+  closeProfileOnEscape(event: Event): void {
+    if (!this.isProfileMenuOpen()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.isProfileMenuOpen.set(false);
+    this.profileTrigger()?.nativeElement.focus();
+  }
+
   toggleProfileMenu(event: Event): void {
     event.stopPropagation();
     this.isProfileMenuOpen.update((v) => !v);
@@ -207,16 +216,6 @@ export class HeaderComponent implements OnDestroy {
       this.isSearchOpen.set(false);
       this.isProfileMenuOpen.set(false);
     }
-  }
-
-  handleProfileClick(): void {
-    this.isProfileMenuOpen.set(false);
-    void this.router.navigate(['/profile']);
-  }
-
-  openWizardConfig(): void {
-    this.isProfileMenuOpen.set(false);
-    this.router.navigate([this.authService.isSuperAdmin() ? '/admin/specialties' : '/onboarding/setup']);
   }
 
   ngOnDestroy(): void {

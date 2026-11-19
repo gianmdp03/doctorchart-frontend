@@ -242,7 +242,6 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   border-radius: 8px;
   font-size: 0.85rem;
   color: var(--dc-ink, #0f172a);
-  outline: none;
   transition: border-color 0.15s ease;
 }
 

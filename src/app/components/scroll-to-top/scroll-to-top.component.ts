@@ -42,6 +42,12 @@ export class ScrollToTopComponent {
   }
 
   scrollToTop(): void {
+    const main = document.querySelector<HTMLElement>('main');
+    const heading = main?.querySelector<HTMLElement>('h1') ?? main;
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
     window.scrollTo({
       top: 0,
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',

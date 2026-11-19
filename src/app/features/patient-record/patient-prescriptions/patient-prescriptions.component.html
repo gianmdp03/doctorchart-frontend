@@ -10,7 +10,7 @@
             />
           </div>
           <div>
-            <h3 class="sec-card-title">Confeccionar Receta u Orden de Estudios</h3>
+            <h2 class="sec-card-title">Confeccionar Receta u Orden de Estudios</h2>
             <p class="rx-header-subtitle">
               Paciente: <strong>{{ patient.fullName }}</strong> (DNI
               {{ editor.patientNationalId() }}) · Profesional:
@@ -42,13 +42,12 @@
 
       <div class="sec-card-body rx-builder-body">
         <!-- Selector de modo: Medicación vs Estudios Diagnósticos -->
-        <div class="rx-mode-selector" role="tablist" aria-label="Tipo de indicación médica">
+        <div class="rx-mode-selector" role="group" aria-label="Tipo de indicación médica">
           <button
             type="button"
-            role="tab"
             class="rx-mode-tab"
             [class.active]="editor.rxFormMode() === 'MEDICATION'"
-            [attr.aria-selected]="editor.rxFormMode() === 'MEDICATION'"
+            [attr.aria-pressed]="editor.rxFormMode() === 'MEDICATION'"
             (click)="editor.setRxFormMode('MEDICATION')"
           >
             <ng-icon name="lucidePill" />
@@ -59,10 +58,9 @@
           </button>
           <button
             type="button"
-            role="tab"
             class="rx-mode-tab"
             [class.active]="editor.rxFormMode() === 'STUDY'"
-            [attr.aria-selected]="editor.rxFormMode() === 'STUDY'"
+            [attr.aria-pressed]="editor.rxFormMode() === 'STUDY'"
             (click)="editor.setRxFormMode('STUDY')"
           >
             <ng-icon name="lucideFileText" />
@@ -86,10 +84,12 @@
             <div class="rx-form-grid-med">
               <div class="rx-field rx-field-wide">
                 <label class="rx-label" for="rx-med-name"
-                  >Medicamento / Principio Activo y Concentración *</label
+                  >Medicamento / Principio Activo y Concentración <span aria-hidden="true">*</span></label
                 >
                 <input
-                  id="rx-med-name"
+                  id="rx-med-name" aria-required="true"
+                  [attr.aria-invalid]="editor.medicationAttempted() && !!editor.medicationErrors().name"
+                  [attr.aria-describedby]="editor.medicationAttempted() && !!editor.medicationErrors().name ? 'rx-med-name-error' : null"
                   type="text"
                   class="rx-input"
                   placeholder="Ej: Amoxicilina 500 mg, Ibuprofeno 600 mg, Losartán 50 mg..."
@@ -97,13 +97,15 @@
                   (ngModelChange)="editor.rxMedicationName.set($event)"
                   (keydown.enter)="editor.addMedicationToDraft()"
                 />
-                @if (editor.medicationAttempted() && editor.medicationErrors().name; as error) { <span class="field-error" role="alert">{{ error }}</span> }
+                @if (editor.medicationAttempted() && editor.medicationErrors().name; as error) { <span class="field-error" id="rx-med-name-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field">
                 <label class="rx-label" for="rx-med-dosage">Dosis / Presentación</label>
                 <input
                   id="rx-med-dosage"
+                  [attr.aria-invalid]="editor.medicationAttempted() && !!editor.medicationErrors().dosage"
+                  [attr.aria-describedby]="editor.medicationAttempted() && !!editor.medicationErrors().dosage ? 'rx-med-dosage-error' : null"
                   type="text"
                   class="rx-input"
                   placeholder="Ej: 1 comprimido, 5 ml, 20 gotas..."
@@ -111,13 +113,15 @@
                   (ngModelChange)="editor.rxDosage.set($event)"
                   (keydown.enter)="editor.addMedicationToDraft()"
                 />
-                @if (editor.medicationAttempted() && editor.medicationErrors().dosage; as error) { <span class="field-error" role="alert">{{ error }}</span> }
+                @if (editor.medicationAttempted() && editor.medicationErrors().dosage; as error) { <span class="field-error" id="rx-med-dosage-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field">
                 <label class="rx-label" for="rx-med-freq">Frecuencia</label>
                 <select
                   id="rx-med-freq"
+                  [attr.aria-invalid]="editor.medicationAttempted() && !!editor.medicationErrors().frequency"
+                  [attr.aria-describedby]="editor.medicationAttempted() && !!editor.medicationErrors().frequency ? 'rx-med-freq-error' : null"
                   class="rx-input"
                   [ngModel]="editor.rxFrequency()"
                   (ngModelChange)="editor.rxFrequency.set($event)"
@@ -126,13 +130,15 @@
                     <option [value]="freq">{{ freq }}</option>
                   }
                 </select>
-                @if (editor.medicationAttempted() && editor.medicationErrors().frequency; as error) { <span class="field-error" role="alert">{{ error }}</span> }
+                @if (editor.medicationAttempted() && editor.medicationErrors().frequency; as error) { <span class="field-error" id="rx-med-freq-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field">
                 <label class="rx-label" for="rx-med-route">Vía de administración</label>
                 <select
                   id="rx-med-route"
+                  [attr.aria-invalid]="editor.medicationAttempted() && !!editor.medicationErrors().route"
+                  [attr.aria-describedby]="editor.medicationAttempted() && !!editor.medicationErrors().route ? 'rx-med-route-error' : null"
                   class="rx-input"
                   [ngModel]="editor.rxAdministrationRoute()"
                   (ngModelChange)="editor.rxAdministrationRoute.set($event)"
@@ -141,13 +147,15 @@
                     <option [value]="route">{{ route }}</option>
                   }
                 </select>
-                @if (editor.medicationAttempted() && editor.medicationErrors().route; as error) { <span class="field-error" role="alert">{{ error }}</span> }
+                @if (editor.medicationAttempted() && editor.medicationErrors().route; as error) { <span class="field-error" id="rx-med-route-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field">
                 <label class="rx-label" for="rx-med-days">Duración en días (opcional)</label>
                 <input
                   id="rx-med-days"
+                  [attr.aria-invalid]="editor.medicationAttempted() && !!editor.medicationErrors().duration"
+                  [attr.aria-describedby]="editor.medicationAttempted() && !!editor.medicationErrors().duration ? 'rx-med-days-error' : null"
                   type="text"
                   inputmode="numeric"
                   class="rx-input"
@@ -155,13 +163,15 @@
                   [ngModel]="editor.rxDurationDays()"
                   (ngModelChange)="editor.setDuration($event)"
                 />
-                @if (editor.medicationAttempted() && editor.medicationErrors().duration; as error) { <span class="field-error" role="alert">{{ error }}</span> }
+                @if (editor.medicationAttempted() && editor.medicationErrors().duration; as error) { <span class="field-error" id="rx-med-days-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field rx-field-wide">
                 <label class="rx-label" for="rx-med-notes">Indicaciones de toma (opcional)</label>
                 <input
                   id="rx-med-notes"
+                  [attr.aria-invalid]="editor.medicationAttempted() && !!editor.medicationErrors().instructions"
+                  [attr.aria-describedby]="editor.medicationAttempted() && !!editor.medicationErrors().instructions ? 'rx-med-notes-error' : null"
                   type="text"
                   class="rx-input"
                   placeholder="Ej: Tomar después de las comidas, no suspender antes de finalizar..."
@@ -169,7 +179,7 @@
                   (ngModelChange)="editor.rxMedInstructions.set($event)"
                   (keydown.enter)="editor.addMedicationToDraft()"
                 />
-                @if (editor.medicationAttempted() && editor.medicationErrors().instructions; as error) { <span class="field-error" role="alert">{{ error }}</span> }
+                @if (editor.medicationAttempted() && editor.medicationErrors().instructions; as error) { <span class="field-error" id="rx-med-notes-error" role="alert">{{ error }}</span> }
               </div>
             </div>
 
@@ -255,10 +265,12 @@
             <div class="rx-form-grid-study">
               <div class="rx-field">
                 <label class="rx-label" for="rx-study-name"
-                  >Estudio o Práctica Médica a Solicitar *</label
+                  >Estudio o Práctica Médica a Solicitar <span aria-hidden="true">*</span></label
                 >
                 <input
-                  id="rx-study-name"
+                  id="rx-study-name" aria-required="true"
+                  [attr.aria-invalid]="editor.studyAttempted() && !!editor.studyErrors().name"
+                  [attr.aria-describedby]="editor.studyAttempted() && !!editor.studyErrors().name ? 'rx-study-name-error' : null"
                   type="text"
                   class="rx-input"
                   placeholder="Ej: Tomografía Axial Computada de Cerebro, Resonancia Magnética, Ecografía..."
@@ -266,7 +278,7 @@
                   (ngModelChange)="editor.rxStudyName.set($event)"
                   (keydown.enter)="editor.addStudyToDraft()"
                 />
-                @if (editor.studyAttempted() && editor.studyErrors().name; as error) { <span class="field-error" role="alert">{{ error }}</span> }
+                @if (editor.studyAttempted() && editor.studyErrors().name; as error) { <span class="field-error" id="rx-study-name-error" role="alert">{{ error }}</span> }
               </div>
 
               <div class="rx-field">
@@ -275,6 +287,8 @@
                 >
                 <input
                   id="rx-study-spec"
+                  [attr.aria-invalid]="editor.studyAttempted() && !!editor.studyErrors().specification"
+                  [attr.aria-describedby]="editor.studyAttempted() && !!editor.studyErrors().specification ? 'rx-study-spec-error' : null"
                   type="text"
                   class="rx-input"
                   placeholder="Ej: Sin contraste, Con contraste endovenoso, Ayuno de 8 horas..."
@@ -282,7 +296,7 @@
                   (ngModelChange)="editor.rxStudySpecification.set($event)"
                   (keydown.enter)="editor.addStudyToDraft()"
                 />
-                @if (editor.studyAttempted() && editor.studyErrors().specification; as error) { <span class="field-error" role="alert">{{ error }}</span> }
+                @if (editor.studyAttempted() && editor.studyErrors().specification; as error) { <span class="field-error" id="rx-study-spec-error" role="alert">{{ error }}</span> }
               </div>
             </div>
 
@@ -335,13 +349,15 @@
             >
             <input
               id="rx-diagnosis"
+                  [attr.aria-invalid]="editor.documentAttempted() && !!editor.diagnosisError()"
+                  [attr.aria-describedby]="editor.documentAttempted() && !!editor.diagnosisError() ? 'rx-diagnosis-error' : null"
               type="text"
               class="rx-input"
               placeholder="Ej: Cefalea en estudio, Control clínico, Cuadro respiratorio agudo..."
               [ngModel]="editor.rxDiagnosis()"
               (ngModelChange)="editor.rxDiagnosis.set($event)"
             />
-            @if (editor.documentAttempted() && editor.diagnosisError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
+            @if (editor.documentAttempted() && editor.diagnosisError(); as error) { <span class="field-error" id="rx-diagnosis-error" role="alert">{{ error }}</span> }
           </div>
 
           <div class="rx-field">
@@ -350,13 +366,15 @@
             >
             <input
               id="rx-general-notes"
+                  [attr.aria-invalid]="editor.documentAttempted() && !!editor.generalInstructionsError()"
+                  [attr.aria-describedby]="editor.documentAttempted() && !!editor.generalInstructionsError() ? 'rx-general-notes-error' : null"
               type="text"
               class="rx-input"
               placeholder="Ej: Concurrir con estudios anteriores, reposo por 48 hs..."
               [ngModel]="editor.rxGeneralInstructions()"
               (ngModelChange)="editor.rxGeneralInstructions.set($event)"
             />
-            @if (editor.documentAttempted() && editor.generalInstructionsError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
+            @if (editor.documentAttempted() && editor.generalInstructionsError(); as error) { <span class="field-error" id="rx-general-notes-error" role="alert">{{ error }}</span> }
           </div>
         </div>
 
@@ -405,9 +423,9 @@
         <div class="sec-card-header">
           <div class="flex items-center gap-2">
             <ng-icon name="lucideClock" class="text-teal-600" />
-            <h3 class="sec-card-title">
+            <h2 class="sec-card-title">
               Recetas y Estudios Emitidos ({{ editor.savedPrescriptionRecords().length }})
-            </h3>
+            </h2>
           </div>
         </div>
         <div class="sec-card-body">

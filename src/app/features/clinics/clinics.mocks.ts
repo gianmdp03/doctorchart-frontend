@@ -12,6 +12,7 @@ import {
   ClinicListResponse,
   ClinicStatus,
   CreateClinicRequest,
+  TeleconsultationSetting,
   UpdateClinicRequest,
   UpdateClinicStatusRequest,
   isValidCanonicalBigInt,
@@ -26,6 +27,8 @@ export interface ClinicsListQuery {
 }
 
 export interface ClinicsTransport {
+  listTeleconsultations(): Observable<TeleconsultationSetting[]>;
+  setTeleconsultation(contextId: string, enabled: boolean): Observable<TeleconsultationSetting>;
   listClinics(query?: ClinicsListQuery): Observable<ClinicListResponse>;
   getCapabilities(): Observable<ClinicCapabilities>;
   getClinic(id: string): Observable<Clinic>;
@@ -305,6 +308,18 @@ export class MockClinicsBackend implements ClinicsTransport {
   private nextId = 200n;
   private readonly extraServerTimezones = new Set<string>();
   private readonly rejectedServerTimezones = new Set<string>();
+  private teleconsultations: TeleconsultationSetting[] = [];
+
+  listTeleconsultations(): Observable<TeleconsultationSetting[]> {
+    return of(structuredClone(this.teleconsultations));
+  }
+
+  setTeleconsultation(contextId: string, enabled: boolean): Observable<TeleconsultationSetting> {
+    const setting = this.teleconsultations.find(item => item.specialtyContextId === contextId);
+    if (!setting) return throwError(() => MOCK_CLINIC_ERRORS.invalidRequest([]));
+    setting.enabled = enabled;
+    return of(structuredClone(setting));
+  }
 
   constructor(scenario: MockClinicsScenarioKey = 'VERIFIED', initialClinics?: readonly Clinic[]) {
     this.entitlements = structuredClone(MOCK_CAPABILITIES_BY_SCENARIO[scenario].entitlements);
@@ -521,6 +536,7 @@ export class MockClinicsBackend implements ClinicsTransport {
       city: payload.city?.trim() ?? '',
       address: payload.address?.trim() ?? '',
       timezone: payload.timezone.trim(),
+      ...('specialtyContextIds' in payload ? { specialtyContextIds: payload.specialtyContextIds } : {}),
       status: 'ACTIVE',
       version: '0',
       createdAt: now,
@@ -559,7 +575,7 @@ export class MockClinicsBackend implements ClinicsTransport {
       'timezone',
     ];
     const providedKeys = editableKeys.filter((k) => payload[k] !== undefined);
-    if (providedKeys.length === 0) {
+    if (providedKeys.length === 0 && payload.specialtyContextIds === undefined) {
       return throwError(() =>
         MOCK_CLINIC_ERRORS.invalidRequest([{ path: '', code: 'EMPTY_PATCH' }]),
       );
@@ -606,6 +622,7 @@ export class MockClinicsBackend implements ClinicsTransport {
       city: payload.city !== undefined ? payload.city.trim() : current.city,
       address: payload.address !== undefined ? payload.address.trim() : current.address,
       timezone: payload.timezone !== undefined ? payload.timezone.trim() : current.timezone,
+      specialtyContextIds: payload.specialtyContextIds ?? current.specialtyContextIds,
       version: (BigInt(current.version) + 1n).toString(),
       updatedAt: '2026-04-18T18:30:00Z',
     };

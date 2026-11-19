@@ -47,7 +47,6 @@ describe('ClinicalTimelineComponent', () => {
 
     fixture = TestBed.createComponent(ClinicalTimelineComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput('canCreateEncounter', true);
   });
 
   it('starts with every encounter collapsed', () => {
@@ -125,13 +124,27 @@ describe('ClinicalTimelineComponent', () => {
     component.fromDate.set('2026-10-08'); component.toDate.set('2026-10-08');
     expect(component.filteredEncounters()).toEqual([]);
   });
-  it('keeps collapsed cards closed on refresh and summarizes patient and date without an empty body', () => {
-    fixture.componentRef.setInput('patientName', 'Ana García');
+  it('keeps quick preview focused on additional visible fields', () => {
+    const encounter = mockEncounters[0];
+    const fields = [
+      { key: 'chiefComplaint', label: 'Motivo', type: 'TEXT' as const, required: false },
+      { key: 'diagnosis', label: 'Diagnóstico', type: 'TEXT' as const, required: false },
+      { key: 'followUpDate', label: 'Fecha de control', type: 'DATE' as const, required: false },
+      { key: 'weightKg', label: 'Peso', type: 'NUMBER' as const, required: false, unit: 'kg' },
+    ];
+    const record = { ...encounter, formDefinitionSnapshot: { categories: [{ key: 'visit', title: 'Consulta', enabled: true, fields }] },
+      formValues: { chiefComplaint: encounter.chiefComplaint!, diagnosis: encounter.primaryDiagnosisDescription!, followUpDate: '2026-12-01', weightKg: 22 } };
+    expect(component.getPreviewEntries(record)).toEqual([{ label: 'Peso', value: '22 kg' }]);
+  });
+
+  it('keeps collapsed cards closed on refresh and summarizes the consultation and date without an empty body', () => {
     fixture.componentRef.setInput('encounters', mockEncounters); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.entry-patient').textContent).toBe('Ana García');
-    expect(fixture.nativeElement.querySelector('.encounter-datetime').textContent).toContain('15/03/2026');
+    expect(fixture.nativeElement.querySelector('.entry-summary h3').textContent.trim()).toBe('Control del mes');
+    expect(fixture.nativeElement.querySelector('.entry-meta time').textContent).toContain('15/03/2026');
     expect(fixture.nativeElement.querySelector('.card-soap-body')).toBeNull();
     expect(fixture.nativeElement.querySelector('.card-footer-actions')).toBeNull();
+    expect(fixture.nativeElement.querySelector('details.date-range').open).toBe(false);
+    expect(fixture.nativeElement.querySelectorAll('.btn-action-view')).toHaveLength(3);
     component.expandAll(); fixture.detectChanges(); expect(fixture.nativeElement.querySelectorAll('.card-soap-body').length).toBe(3);
     component.collapseAll(); fixture.componentRef.setInput('encounters', [...mockEncounters]); fixture.detectChanges();
     expect(component.expandedCardIds().size).toBe(0);

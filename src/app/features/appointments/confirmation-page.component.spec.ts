@@ -1,22 +1,98 @@
-import {TestBed} from '@angular/core/testing';
-import {provideHttpClient,withInterceptors} from '@angular/common/http';
-import {provideHttpClientTesting,HttpTestingController} from '@angular/common/http/testing';
-import {provideRouter} from '@angular/router';
-import {ConfirmationPageComponent} from './confirmation-page.component';
-import {authInterceptor} from '../../core/interceptors/auth.interceptor';
-import {timeZoneInterceptor} from '../../core/interceptors/time-zone.interceptor';
-import {AuthService} from '../../core/services/auth.service';
+import { TestBed } from '@angular/core/testing';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
+import { ConfirmationPageComponent } from './confirmation-page.component';
+import { AppointmentsService } from './appointments.service';
+import { authInterceptor } from '../../core/interceptors/auth.interceptor';
+import { timeZoneInterceptor } from '../../core/interceptors/time-zone.interceptor';
+import { AuthService } from '../../core/services/auth.service';
 
-describe('M8 private confirmation recovery',()=>{
- beforeEach(()=>TestBed.configureTestingModule({imports:[ConfirmationPageComponent],providers:[provideRouter([]),provideHttpClient(withInterceptors([authInterceptor,timeZoneInterceptor])),provideHttpClientTesting(),{provide:AuthService,useValue:{getAccessToken:()=>{throw Error('Public recovery must not read medical identity');}}}]}));
- afterEach(()=>TestBed.inject(HttpTestingController).verify());
- it('uses a body-only code with real interceptors and blocks double submission',async()=>{
-  const fixture=TestBed.createComponent(ConfirmationPageComponent),c=fixture.componentInstance,http=TestBed.inject(HttpTestingController);c.accessCode='a'.repeat(43);const pending=c.consult();void c.consult();const req=http.expectOne(r=>r.url.endsWith('/public/appointments/confirmation'));expect(req.request.method).toBe('POST');expect(req.request.body).toEqual({accessCode:'a'.repeat(43)});expect(req.request.url).not.toContain(c.accessCode);expect(req.request.params.keys()).toEqual([]);expect(req.request.headers.has('Authorization')).toBe(false);expect(req.request.transferCache).toBe(false);req.flush({reference:'ref',status:'CANCELLED',start:'2030-01-01T10:00:00Z',end:'2030-01-01T10:30:00Z',doctorName:'Profesional',specialtyName:'Especialidad conservada',clinicName:'Consultorio',address:'Pública',timezone:'UTC',accessExpiresAt:'2030-01-08T10:30:00Z'});await pending;fixture.detectChanges();expect(fixture.nativeElement.textContent).toContain('Turno cancelado');expect(fixture.nativeElement.textContent).toContain('Especialidad conservada');expect(fixture.nativeElement.textContent).not.toContain('DNI del paciente');
- });
- it('retains the code after invalid/expired lookup and rate errors without fallback',async()=>{
-  const c=TestBed.createComponent(ConfirmationPageComponent).componentInstance,http=TestBed.inject(HttpTestingController);c.accessCode='b'.repeat(43);for(const status of [404,429,503]){const pending=c.consult();http.expectOne(r=>r.url.endsWith('/confirmation')).flush({code:'DENIED'},{status,statusText:'Denied'});await pending;expect(c.accessCode).toBe('b'.repeat(43));expect(c.confirmation()).toBeNull();expect(c.error()).not.toBe('');}expect(c.busy()).toBe(false);
- });
- it('ignores late HTTP after navigation and removes the in-memory code',async()=>{
-  const f=TestBed.createComponent(ConfirmationPageComponent),c=f.componentInstance,http=TestBed.inject(HttpTestingController);c.accessCode='c'.repeat(43);const pending=c.consult(),req=http.expectOne(r=>r.url.endsWith('/confirmation'));f.destroy();req.flush({reference:'late'});await pending;expect(c.accessCode).toBe('');expect(c.confirmation()).toBeNull();
- });
+const draft = {document:'12345678', reference:'ref', maskedEmail:'tes***@example.invalid', requestId:'request-id'};
+const booking = {reference:'ref', status:'CONFIRMED', start:'2030-01-01T10:00:00Z', end:'2030-01-01T10:30:00Z', doctorName:'Profesional', clinicName:'Consultorio', timezone:'UTC', version:'1', canChange:true};
+
+describe('Mis turnos', () => {
+  beforeEach(() => TestBed.configureTestingModule({
+    imports:[ConfirmationPageComponent],
+    providers:[provideRouter([]), provideHttpClient(withInterceptors([authInterceptor,timeZoneInterceptor])),
+      provideHttpClientTesting(), {provide:AuthService,useValue:{getAccessToken:() => {throw Error('Unexpected medical identity');}}}],
+  }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('lists reservations and submits a versioned cancellation only after verifying the email code', async () => {
+    TestBed.inject(AppointmentsService).setPortalDraft(draft);
+    const fixture = TestBed.createComponent(ConfirmationPageComponent);
+    const page = fixture.componentInstance;
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Ingresá el código');
+    const input = fixture.nativeElement.querySelector('#confirmation-code') as HTMLInputElement;
+    expect(input.autocomplete).toBe('one-time-code');
+    expect(input.maxLength).toBe(6);
+    expect(fixture.nativeElement.querySelectorAll('.code-cells span').length).toBe(6);
+    expect(fixture.nativeElement.textContent).toContain(draft.maskedEmail);
+    expect(page.items()).toEqual([]);
+    page.code = '012345';
+    const pending = page.verifyCode();
+    void page.verifyCode();
+    const proof = http.expectOne(req => req.url.endsWith('/access/verify'));
+    expect(proof.request.body).toEqual({document:draft.document, reference:draft.reference, requestId:draft.requestId, code:'012345'});
+    expect(proof.request.params.keys()).toEqual([]);
+    expect(proof.request.headers.has('Authorization')).toBe(false);
+    expect(proof.request.transferCache).toBe(false);
+    expect(proof.request.withCredentials).toBe(true);
+    proof.flush(null, {status:204,statusText:'No Content'});
+    await Promise.resolve();
+    http.expectOne(req => req.url.endsWith('/my-bookings')).flush({items:[booking], hasMore:false});
+    await pending;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Profesional');
+    expect(page.code).toBe('');
+    page.chooseChange(page.items()[0], 'cancel');
+    const change = page.confirmChange();
+    const update = http.expectOne(req => req.url.endsWith('/my-bookings/change'));
+    expect(update.request.body).toEqual({reference:'ref', action:'cancel', expectedVersion:'1'});
+    expect(update.request.withCredentials).toBe(true);
+    expect(update.request.headers.get('Idempotency-Key')).toBeTruthy();
+    update.flush({});
+    await Promise.resolve();
+    http.expectOne(req => req.url.endsWith('/my-bookings')).flush({items:[{...booking, status:'CANCELLED', canChange:false}], hasMore:false});
+    await change;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('El turno se canceló.');
+    const closed = page.endSession();
+    http.expectOne(req => req.url.endsWith('/my-bookings/logout')).flush(null,{status:204,statusText:'No Content'});
+    await closed;
+    expect(page.items()).toEqual([]);
+    expect(page.document).toBe('');
+  });
+
+  it('restores the browser session without collecting identity again', async () => {
+    const fixture = TestBed.createComponent(ConfirmationPageComponent);
+    const page = fixture.componentInstance;
+    const http = TestBed.inject(HttpTestingController);
+    const list = http.expectOne(req => req.url.endsWith('/my-bookings'));
+    expect(list.request.withCredentials).toBe(true);
+    expect(list.request.body).toEqual({offset:0});
+    list.flush({items:[booking],hasMore:false});
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(page.step()).toBe('list');
+    expect(fixture.nativeElement.textContent).toContain('Profesional');
+  });
+
+  it('keeps the list private when the email code is rejected', async () => {
+    TestBed.inject(AppointmentsService).setPortalDraft(draft);
+    const page = TestBed.createComponent(ConfirmationPageComponent).componentInstance;
+    const http = TestBed.inject(HttpTestingController);
+    page.code = '123456';
+    const pending = page.verifyCode();
+    http.expectOne(req => req.url.endsWith('/access/verify')).flush(
+      {code:'BOOKING_ACCESS_DENIED', message:'El código no es válido o venció.'}, {status:403, statusText:'Forbidden'});
+    await pending;
+    http.expectNone(req => req.url.endsWith('/my-bookings'));
+    expect(page.step()).toBe('code');
+    expect(page.items()).toEqual([]);
+    expect(page.error()).toContain('venció');
+  });
 });

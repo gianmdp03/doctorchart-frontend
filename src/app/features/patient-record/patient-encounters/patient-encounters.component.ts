@@ -1,5 +1,4 @@
-import { Component, computed, inject, output } from '@angular/core';
-import { PatientRecordActionsService } from '../../../core/experience/patient-record-actions.service';
+import { Component, computed, inject } from '@angular/core';
 import { ActivePatientService } from '../../../core/services/active-patient.service';
 import { ClinicalEncounterDetail } from '../../../core/models/clinical-encounter.model';
 import { ClinicalTimelineComponent } from '../clinical-timeline/clinical-timeline.component';
@@ -14,18 +13,11 @@ import { AnnulmentPromptComponent } from '../annulment-prompt.component';
   styleUrl: './patient-encounters.component.css',
 })
 export class PatientEncountersComponent {
-  readonly recordActions = inject(PatientRecordActionsService);
   readonly history = inject(PatientEncountersStore);
   readonly activePatientService = inject(ActivePatientService);
-  readonly newEncounter = output<void>();
 
   readonly patientId = computed(() => this.activePatientService.patientId() ?? 0);
   readonly patientName = computed(() => this.activePatientService.activePatient()?.fullName ?? '');
-
-  onNewEncounterTriggered(): void {
-    this.history.startCreatingEncounter();
-    this.newEncounter.emit();
-  }
 
   onEncounterCreated(encounter: ClinicalEncounterDetail): void {
     this.history.cancelCreatingEncounter();

@@ -149,28 +149,6 @@ tbody td { border-bottom: 1px solid var(--row-divider); border-right: 1px solid 
   text-decoration: none;
   vertical-align: super;
 }
-.reference-tooltip {
-  background: var(--surface-container-high);
-  border: 1px solid var(--outline);
-  border-radius: 10px;
-  box-sizing: border-box;
-  box-shadow: var(--dc-shadow-sm);
-  color: var(--on-surface);
-  font-size: .78rem;
-  font-weight: 400;
-  line-height: 1.4;
-  pointer-events: none;
-  padding: 10px 12px;
-  position: fixed;
-  text-align: left;
-  transform: translate(-50%, -100%);
-  width: min(300px, calc(100vw - 32px));
-  overflow-wrap: anywhere;
-  z-index: 100;
-}
-.reference-tooltip.is-below { transform: translate(-50%, 0); }
-.reference-tooltip strong { display: block; font-size: .7rem; letter-spacing: .02em; margin-bottom: 3px; }
-
 .notes-container { padding: 28px 32px; }
 .notes-container h2 { border-bottom: 1px solid var(--outline-variant); color: var(--on-surface); font-size: 1.15rem; font-weight: 700; margin-bottom: 20px; padding-bottom: 10px; }
 .notes-grid { display: grid; gap: 32px; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
@@ -200,7 +178,7 @@ tbody td { border-bottom: 1px solid var(--row-divider); border-right: 1px solid 
   .notes-grid { grid-template-columns: 1fr; gap: 24px; }
 }
 
-.mobile-vaccine-calendar { display: none; } .notes-grid summary { cursor: pointer; font-weight: 600; }
+.mobile-vaccine-calendar { display: none; }
 @media (max-width: 768px) {
  .vaccination-calendar { padding: 0; } .header-card { padding: 14px; border-radius: 12px; } .header-copy h1 { font-size: 17px; } .header-copy p { font-size: 11px; } .header-meta { gap: 5px; } .header-meta > span { font-size: 9px; padding: 4px 6px; }
  .table-scrollbar-container, .table-wrapper { display: none; } .mobile-vaccine-calendar { display: grid; gap: 8px; margin: 12px 0; }
@@ -210,13 +188,13 @@ tbody td { border-bottom: 1px solid var(--row-divider); border-right: 1px solid 
  .mobile-vaccine-row { padding: 12px; border: 1px solid var(--outline-variant); border-radius: 10px; background: var(--surface-container); }
  .mobile-vaccine-heading { display: flex; justify-content: space-between; align-items: start; gap: 8px; font-size: 13px; } .mobile-dose { font-size: 12px; margin: 6px 0; color: var(--on-surface-variant); }
  .mobile-risk { font-size: 9px; color: var(--risk-text); } .mobile-vaccine-row details { font-size: 11px; line-height: 1.5; } .mobile-vaccine-row summary { cursor: pointer; color: var(--on-surface-variant); } .mobile-vaccine-row details p { margin: 7px 0 0; }
- .notes-container { padding: 14px; } .notes-container h2 { font-size: 14px; margin-bottom: 12px; padding-bottom: 8px; } .notes-grid { grid-template-columns: minmax(0,1fr); gap: 12px; } .notes-grid summary { font-size: 12px; } .notes-list li { font-size: 11px; }
+ .notes-container { padding: 14px; } .notes-container h2 { font-size: 14px; margin-bottom: 12px; padding-bottom: 8px; } .notes-grid { grid-template-columns: minmax(0,1fr); gap: 12px; } .notes-grid h3 { font-size: 12px; margin-bottom: 8px; } .notes-list li { font-size: 11px; }
 }
 h1 {
   font-size: 1.75rem;
   letter-spacing: -.03em;
   line-height: 1.25;
 }
-.status-error h2 { margin: 0 0 12px; font-size: 1.25rem; font-weight: 650; color: inherit; }
+.status-error h1 { margin: 0 0 12px; font-size: 1.25rem; font-weight: 650; color: inherit; }
 .status-error p { margin: 0 0 20px; font-size: .875rem; line-height: 1.6; }
 .status-error .dc-button { border-color: currentColor; color: inherit; background: transparent; }

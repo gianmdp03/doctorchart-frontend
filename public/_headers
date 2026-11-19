@@ -125,7 +125,13 @@
   X-Robots-Tag: noindex, follow
   Cache-Control: no-cache
 
-/admin/specialties
+/admin/help
+  X-Robots-Tag: noindex, nofollow
+
+/help/*
+  X-Robots-Tag: noindex, nofollow
+
+/specialties
   X-Robots-Tag: noindex, follow
   Cache-Control: no-cache
 

@@ -2,7 +2,7 @@ import { GOOGLE_AUTH_ENABLED } from '../../auth-policy';
 import { environment } from '../../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
-import { Component, inject, PLATFORM_ID, signal } from '@angular/core';
+import { afterNextRender, Component, ElementRef, Injector, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -18,6 +18,8 @@ export class LoginPageComponent {
   readonly bycodeLoginUrl = environment.bycodePlansUrl.replace(/\/(?:panel|dashboard)\/?$/, '') + '/login';
 
   private readonly fb = inject(FormBuilder);
+  private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly authService = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
@@ -47,7 +49,9 @@ export class LoginPageComponent {
     this.loginAttempted.set(true);
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
-      this.errorMessage.set('Por favor ingrese un correo válido y su contraseña.');
+      this.errorMessage.set('Revisá los campos marcados para iniciar sesión.');
+      const id = this.loginForm.controls.email.invalid ? 'login-email' : 'login-password';
+      afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('#' + id)?.focus(), { injector: this.injector });
       return;
     }
 
@@ -57,6 +61,7 @@ export class LoginPageComponent {
 
     const { email, password } = this.loginForm.getRawValue();
 
+    let authenticated = false;
     try {
       const response = await this.authService.signInWithPassword({
         email: (email ?? '').trim(),
@@ -64,13 +69,12 @@ export class LoginPageComponent {
       });
 
       if (response.error) {
-        this.errorMessage.set(this.translateAuthError(response.error.message));
+        this.errorMessage.set(this.translateAuthError(response.error.message, response.error.code));
         this.isSubmitting.set(false);
         return;
       }
 
-      this.successMessage.set('¡Inicio de sesión exitoso!');
-      this.isSubmitting.set(false);
+      authenticated = true;
 
       if (isPlatformBrowser(this.platformId)) {
         window.dispatchEvent(
@@ -79,11 +83,16 @@ export class LoginPageComponent {
       }
 
       const targetUrl = this.loginDestination();
-      await this.router.navigateByUrl(targetUrl, { onSameUrlNavigation: 'reload' });
+      if (await this.router.navigateByUrl(targetUrl, { onSameUrlNavigation: 'reload' })) {
+        this.successMessage.set('¡Inicio de sesión exitoso!');
+      }
     } catch (err: unknown) {
-      this.isSubmitting.set(false);
       const msg = err instanceof Error ? err.message : 'Error inesperado al iniciar sesión.';
-      this.errorMessage.set(this.translateAuthError(msg));
+      this.errorMessage.set(authenticated
+        ? 'Tu sesión se inició. Recargá esta página para continuar.'
+        : this.translateAuthError(msg));
+    } finally {
+      this.isSubmitting.set(false);
     }
   }
 
@@ -113,9 +122,12 @@ export class LoginPageComponent {
     return !this.router.url || ['/', '/login'].includes(this.router.url.split(/[?#]/)[0]) ? '/dashboard' : this.router.url;
   }
 
-  private translateAuthError(message: string): string {
+  private translateAuthError(message: string, code?: string): string {
     if (!message) return 'Error de autenticación';
     const lower = message.toLowerCase();
+    if (code === 'email_not_confirmed' || lower.includes('email not confirmed')) {
+      return 'Primero confirmá tu correo desde el enlace de activación. Si no lo encontrás, revisá el correo no deseado.';
+    }
     if (lower.includes('invalid login credentials') || lower.includes('invalid credentials')) {
       return 'Credenciales inválidas. Verifique su correo y contraseña.';
     }

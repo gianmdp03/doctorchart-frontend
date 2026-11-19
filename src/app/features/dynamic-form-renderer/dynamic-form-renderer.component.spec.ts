@@ -17,6 +17,7 @@ describe('DynamicFormRendererComponent canonical fields', () => {
     expect(fixture.nativeElement.querySelector('#error-sys_allergies').textContent).toContain('Indicá');
     document.body.appendChild(fixture.nativeElement);
     component.focusFirstInvalidField();
+    fixture.detectChanges();
     expect(document.activeElement?.id).toBe('field-sys_allergies');
     component.setValue(component.fields().find(field => field.key === 'sys_allergyStatus')!, 'PRESENT');
     fixture.detectChanges();

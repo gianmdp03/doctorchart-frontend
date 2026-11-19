@@ -1,8 +1,23 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, ValidationErrors, Validator } from '@angular/forms';
-import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatDatepickerIntl, MatDatepickerModule } from '@angular/material/datepicker';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { ArgentinaDateAdapter, ARGENTINA_DATE_FORMATS } from '../../core/date/argentina-date-adapter';
+
+const datepickerIntl = Object.assign(new MatDatepickerIntl(), {
+  calendarLabel: 'Calendario',
+  openCalendarLabel: 'Abrir calendario',
+  closeCalendarLabel: 'Cerrar calendario',
+  prevMonthLabel: 'Mes anterior',
+  nextMonthLabel: 'Mes siguiente',
+  prevYearLabel: 'Año anterior',
+  nextYearLabel: 'Año siguiente',
+  prevMultiYearLabel: 'Período anterior',
+  nextMultiYearLabel: 'Período siguiente',
+  switchToMonthViewLabel: 'Elegir fecha',
+  switchToMultiYearViewLabel: 'Elegir mes y año',
+});
+let nextDatePickerId = 0;
 
 type CalendarStartView = 'month' | 'year' | 'multi-year';
 
@@ -13,6 +28,7 @@ type CalendarStartView = 'month' | 'year' | 'multi-year';
     { provide: NG_VALUE_ACCESSOR, useExisting: DatePickerComponent, multi: true },
     { provide: NG_VALIDATORS, useExisting: DatePickerComponent, multi: true },
     { provide: DateAdapter, useClass: ArgentinaDateAdapter },
+    { provide: MatDatepickerIntl, useValue: datepickerIntl },
     { provide: MAT_DATE_LOCALE, useValue: 'es-AR' },
     { provide: MAT_DATE_FORMATS, useValue: ARGENTINA_DATE_FORMATS },
   ],
@@ -23,6 +39,18 @@ export class DatePickerComponent implements ControlValueAccessor, Validator {
   private readonly adapter = inject<DateAdapter<Date>>(DateAdapter);
   readonly value = input<string | null | undefined>('');
   readonly inputId = input<string | null>(null);
+  readonly inputLabel = input('Fecha');
+  readonly required = input(false);
+  readonly autocomplete = input('off');
+  readonly invalid = input(false);
+  readonly describedBy = input<string | null>(null);
+  private readonly generatedId = 'dc-date-' + nextDatePickerId++;
+  readonly fieldId = computed(() => this.inputId() || this.generatedId);
+  readonly fieldDescription = computed(() => [
+    this.fieldId() + '-format',
+    this.describedBy(),
+    this.showError() && this.error() && !this.isDisabled() ? this.fieldId() + '-error' : null,
+  ].filter(Boolean).join(' '));
   readonly valueChange = output<string>();
   readonly startView = input<CalendarStartView>('month');
   readonly max = input<string | null | undefined>(null);

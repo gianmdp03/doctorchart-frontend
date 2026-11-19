@@ -141,23 +141,30 @@ async function login(page, account, specialties) {
   return ids;
 }
 
-async function createClinic(page, name, virtual = false) {
+async function enableTeleconsultation(page, specialty, contextId) {
+  await page.goto(origin + '/clinics?specialtyContextId=' + contextId);
+  const section = page.getByRole('region', { name: 'Teleconsulta', exact: true });
+  const setting = await action(page, 'PUT', '/teleconsultations/' + contextId,
+    () => section.getByRole('switch', { name: 'Teleconsulta de ' + specialty }).click(), 200);
+  assert.equal(setting.enabled, true);
+  return {id: setting.clinicId, name: 'Teleconsulta', modality: 'TELECONSULTATION', address: ''};
+}
+
+async function createClinic(page, name) {
   await page.goto(origin + '/clinics');
-  if (virtual) await page.getByRole('link', { name: 'Crear agenda virtual' }).click();
-  else await page.getByTestId('create-clinic-btn').click();
+  await page.getByTestId('create-clinic-btn').click();
   await page.locator('#clinic-name').fill(name);
-  if (virtual) assert.equal(await page.locator('#clinic-address').count(), 0);
-  else {
-    const country = page.locator('#clinic-country');
-    if (await country.inputValue() !== 'Argentina') await country.selectOption('Argentina');
-    await page.locator('#clinic-province').selectOption('Buenos Aires');
-    await page.locator('#clinic-city').selectOption('Mar del Plata');
-    await page.locator('#clinic-address').fill(`Dirección de ensayo ${name}`);
-  }
+  const country = page.locator('#clinic-country');
+  if (await country.inputValue() !== 'Argentina') await country.selectOption('Argentina');
+  await page.locator('#clinic-province').selectOption('Buenos Aires');
+  await page.locator('#clinic-city').selectOption('Mar del Plata');
+  await page.locator('#clinic-address').fill(`Dirección de ensayo ${name}`);
+  const specialties = page.getByRole('group', { name: 'Especialidades que atendés acá' }).getByRole('checkbox');
+  await specialties.first().waitFor();
+  for (const specialty of await specialties.all()) await specialty.check();
   const clinic = await action(page, 'POST', '/clinics', () => page.getByTestId('submit-clinic-btn').click(), 201);
-  assert.equal(clinic.modality, virtual ? 'TELECONSULTATION' : 'IN_PERSON');
+  assert.equal(clinic.modality, 'IN_PERSON');
   assert.equal(clinic.timezone, zone);
-  if (virtual) assert.equal(clinic.address, '');
   return clinic;
 }
 
@@ -179,7 +186,7 @@ async function time(input, value) {
 }
 
 async function addBlock(page, contextId, weekday, from, to, minutes) {
-  await page.getByLabel('Especialidad del bloque').selectOption(contextId);
+  if (contextId) await page.getByLabel('Especialidad del bloque').selectOption(contextId);
   await page.locator('.day-options').getByLabel(weekday, { exact: true }).check();
   await time(page.getByRole('textbox', { name: 'Inicio del nuevo bloque', exact: true }), from);
   await time(page.getByRole('textbox', { name: 'Final del nuevo bloque', exact: true }), to);
@@ -201,16 +208,19 @@ async function schedule(page, clinic, context, weekday, from, to, minutes) {
 
 async function publish(page, name, specialties, clinics) {
   await page.goto(origin + '/booking-publication');
-  await page.locator('#publication-name').fill(name);
+  await page.getByRole('button', { name: 'Editar qué se puede reservar', exact: true }).click();
   for (const specialty of specialties) await page.getByRole('checkbox', { name: specialty, exact: true }).check();
   for (const clinic of clinics) {
     const checkbox = page.getByRole('checkbox', { name: new RegExp(clinic.name) });
     await checkbox.check();
-    if (clinic.modality === 'IN_PERSON') {
-      await page.locator('.publication-clinic').filter({ has: checkbox }).getByLabel('Dirección que verá el paciente').fill(clinic.address);
-    }
   }
-  await page.locator('#publication-enabled').check();
+  await page.getByRole('button', { name: 'Revisar', exact: true }).click();
+  await page.getByRole('button', { name: 'Editar página pública', exact: true }).click();
+  await page.locator('#publication-name').fill(name);
+  for (const clinic of clinics.filter(item => item.modality === 'IN_PERSON')) {
+    await page.getByLabel('Dirección pública de ' + clinic.name, { exact: true }).fill(clinic.address);
+  }
+  await page.getByRole('button', { name: 'Revisar', exact: true }).click();
   return action(page, 'PUT', '/booking-publication', () => page.locator('#publication-save').click(), 200);
 }
 
@@ -218,6 +228,7 @@ async function publicProfile(page, modality, doctor, clinic, specialty, value = 
   await page.goto(origin + '/appointments');
   const directory = page.locator('.search-results');
   await page.getByRole('combobox', { name: 'Modalidad', exact: true }).selectOption(modality);
+  await page.getByRole('button', { name: 'Buscar turnos', exact: true }).click();
   await directory.locator(`article`).filter({ hasText: doctor }).filter({ hasText: clinic }).getByRole('link', { name: /Ver horarios/ }).click();
   await page.getByRole('heading', { name: doctor, exact: true }).waitFor();
   const filter = page.getByLabel('Especialidad de la reserva');
@@ -229,7 +240,7 @@ async function publicForm(page, start, name, email) {
   await page.locator(slotSelector('data-public-slot', start)).click();
   await page.locator('#public-contact').fill(name);
   await page.locator('#public-document').fill('22345678');
-  await page.locator('#public-phone').fill('2231234567');
+  await page.locator('#public-phone').fill('2234951234');
   await page.locator('#public-email').fill(email);
   await page.locator('#public-consent').check();
 }
@@ -261,23 +272,25 @@ async function layout(page, label) {
 
 async function invite(doctor, staff, name, email, clinicNames, permission, password) {
   await doctor.goto(origin + '/secretaries');
+  await doctor.getByRole('button', { name: 'Invitar a Secretaría', exact: true }).click();
   await doctor.getByRole('textbox', { name: 'Nombre', exact: true }).fill(name);
   await doctor.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(email);
   for (const clinicName of clinicNames) await doctor.getByRole('checkbox', { name: new RegExp(clinicName) }).check();
-  await doctor.locator('select[name=permissionPreset]').selectOption(permission);
+  await doctor.locator('input[name=permissionPreset][value=' + permission + ']').check();
   await action(doctor, 'POST', '/secretaries/invitations', () => doctor.getByRole('button', { name: 'Crear invitación' }).click(), 201);
   const link = await doctor.getByLabel('Enlace de invitación').inputValue();
   assert.equal(new URL(link).origin, origin);
   await staff.goto(link);
   await staff.getByLabel('Contraseña nueva', { exact: true }).fill(password);
   await staff.getByRole('button', { name: 'Entrar a la agenda', exact: true }).click();
-  await staff.getByRole('heading', { name: 'Agenda de consultorios' }).waitFor();
-  await staff.getByRole('button', { name: 'Cerrar sesión' }).click();
+  await staff.getByRole('heading', { name: 'Agenda de turnos' }).waitFor();
+  await staff.getByRole('button', { name: 'Mi cuenta' }).click();
+  await staff.getByRole('menuitem', { name: 'Cerrar sesión' }).click();
   await staff.waitForURL('**/staff/login');
   await staff.getByLabel('Correo electrónico', { exact: true }).fill(email);
   await staff.getByLabel('Contraseña', { exact: true }).fill(password);
   await staff.getByRole('button', { name: 'Ingresar', exact: true }).click();
-  await staff.getByRole('heading', { name: 'Agenda de consultorios' }).waitFor();
+  await staff.getByRole('heading', { name: 'Agenda de turnos' }).waitFor();
 }
 
 async function staffAgenda(page, clinicName) {
@@ -286,7 +299,7 @@ async function staffAgenda(page, clinicName) {
   await option.waitFor({ state: 'attached' });
   const key = await option.getAttribute('value');
   await selector.selectOption(key);
-  await date(page, '#staff-date', monday);
+  await date(page, '#calendar-date', monday);
   return key.split('|');
 }
 
@@ -383,8 +396,8 @@ async function main() {
       return [a.id, b.id, c.id];
     });
 
-    await check('A03', 'Crear agenda virtual sin domicilio', ['A01'], doctor, async () => {
-      tele = await createClinic(doctor, 'Agenda virtual mixta del centro médico de especialidades', true);
+    await check('A03', 'Activar teleconsulta para Dermatología', ['A01'], doctor, async () => {
+      tele = await enableTeleconsultation(doctor, dermatology, ids[dermatology]);
       return { id: tele.id, modality: tele.modality, address: tele.address };
     });
 
@@ -400,10 +413,10 @@ async function main() {
     });
 
     await check('B01', 'Rechazar 12:00–15:00 sobre 09:00–13:00 y explicar la intersección', ['A03', 'A04'], doctor, async () => {
-      await doctor.goto(`${origin}/clinics/${tele.id}/schedule`);
-      await addBlock(doctor, ids[dermatology], 'Lunes', '12:00', '15:00', 30);
-      const reply = await saveSchedule(doctor, 409);
-      const message = await doctor.getByTestId('schedule-error').innerText();
+      await doctor.goto(`${origin}/clinics/${tele.id}/schedule?specialtyContextId=${ids[dermatology]}`);
+      const reply = await action(doctor, 'POST', '/clinics/' + tele.id + '/schedule/validate',
+        () => addBlock(doctor, null, 'Lunes', '12:00', '15:00', 30), 409);
+      const message = await doctor.locator('.add-block-panel').getByRole('alert').innerText();
       assert.equal(reply.code, 'SCHEDULE_CONFLICT');
       assert.equal(reply.details.existing.name, a.name);
       assert.equal(reply.details.existing.modality, 'IN_PERSON');
@@ -414,7 +427,9 @@ async function main() {
     });
 
     await check('B02', 'Aceptar límites contiguos y persistir la teleconsulta', ['B01'], doctor, async () => {
-      await time(doctor.getByRole('textbox', { name: 'Lunes inicio 1' }), '13:00');
+      await time(doctor.getByRole('textbox', { name: 'Inicio del nuevo bloque' }), '13:00');
+      await doctor.getByRole('button', { name: 'Agregar a los días seleccionados' }).click();
+      await doctor.getByRole('textbox', { name: 'Lunes inicio 1' }).waitFor();
       const saved = await saveSchedule(doctor);
       await doctor.getByText('La agenda se guardó correctamente.', { exact: true }).waitFor();
       await doctor.reload();
@@ -486,8 +501,11 @@ async function main() {
 
     await check('D02', 'Publicar un segundo médico exclusivamente virtual', [], virtualDoctor, async () => {
       secondSpecialty = (await login(virtualDoctor, secondAccount, [general]))[general];
-      secondTele = await createClinic(virtualDoctor, 'Agenda exclusivamente virtual', true);
-      await schedule(virtualDoctor, secondTele, secondSpecialty, 'Lunes', '09:00', '11:00', 30);
+      secondTele = await enableTeleconsultation(virtualDoctor, general, secondSpecialty);
+      await virtualDoctor.goto(`${origin}/clinics/${secondTele.id}/schedule?specialtyContextId=${secondSpecialty}`);
+      await addBlock(virtualDoctor, null, 'Lunes', '09:00', '11:00', 30);
+      await virtualDoctor.getByRole('textbox', { name: 'Lunes inicio 1' }).waitFor();
+      await saveSchedule(virtualDoctor);
       const publication = await publish(virtualDoctor, virtualName, [general], [secondTele]);
       assert.ok(publication.publicId);
       return { publicId: publication.publicId, clinic: secondTele.id };
@@ -516,7 +534,7 @@ async function main() {
       const loser = 1 - winner;
       const receipt = await replies[winner].json();
       const rejected = await replies[loser].json();
-      virtualWinner = { name: virtualNames[winner], receipt, page: pages[winner], loser: pages[loser] };
+      virtualWinner = { name: virtualNames[winner], email: `agenda-concurrente-${winner}@local.test`, receipt, page: pages[winner], loser: pages[loser] };
       await confirmed(pages[winner], receipt, 'TELECONSULTATION', virtualStart);
       assert.equal(receipt.address, '');
       assert.equal(await pages[winner].locator('.confirmation-card').getByText(/Dirección de ensayo/).count(), 0);
@@ -528,9 +546,10 @@ async function main() {
 
     await check('D04', 'Reservar con médico exclusivamente virtual y excluirlo del buscador presencial', ['D02'], secondPatient, async () => {
       await secondPatient.goto(origin + '/appointments');
+      await secondPatient.getByRole('combobox', { name: 'Modalidad', exact: true }).selectOption('IN_PERSON');
       const [directory] = await Promise.all([
-        secondPatient.waitForResponse(reply => reply.request().method() === 'GET' && new URL(reply.url()).searchParams.get('modality') === 'IN_PERSON'),
-        secondPatient.getByRole('combobox', { name: 'Modalidad', exact: true }).selectOption('IN_PERSON'),
+        secondPatient.waitForResponse(reply => reply.request().method() === 'GET' && new URL(reply.url()).searchParams.get('modality') === 'IN_PERSON' && new URL(reply.url()).searchParams.get('size') === '12'),
+        secondPatient.getByRole('button', { name: 'Buscar turnos', exact: true }).click(),
       ]);
       assert.equal(directory.status(), 200);
       assert.ok(!(await directory.json()).items.some(item => item.name === virtualName));
@@ -548,6 +567,9 @@ async function main() {
       const start = timestamp(monday, '16:00');
       await doctor.locator(slotSelector('data-slot-start', start)).click();
       await doctor.locator('#booking-contact').fill('Paciente pediátrico interno');
+      await doctor.locator('#booking-document').fill('12345678');
+      await doctor.locator('#booking-email').fill('agenda-manual@local.test');
+      await doctor.locator('#booking-phone').fill('0223 495-1234');
       thirdBooking = await action(doctor, 'POST', '/bookings', () => doctor.locator('#booking-create').click(), 201);
       assert.equal(thirdBooking.specialtyContextId, ids[pediatrics]);
       await booking(doctor, 'Paciente pediátrico interno').waitFor();
@@ -560,7 +582,7 @@ async function main() {
       const virtual = booking(doctor, virtualWinner.name);
       const pediatric = booking(doctor, 'Paciente pediátrico interno');
       await physical.filter({ hasText: /09:00.*Medicina General.*Consultorio A.*Presencial/s }).waitFor();
-      await virtual.filter({ hasText: /13:00.*Dermatología.*Agenda virtual mixta.*Teleconsulta/s }).waitFor();
+      await virtual.filter({ hasText: /13:00.*Dermatología.*Teleconsulta/s }).waitFor();
       await pediatric.filter({ hasText: /16:00.*Pediatría.*Consultorio B/s }).waitFor();
       await doctor.getByRole('button', { name: /^Filtros/ }).click();
       const modality = doctor.getByLabel('Filtrar agenda por modalidad');
@@ -653,19 +675,36 @@ async function main() {
     });
 
     await check('D05', 'Consultar una constancia privada después de recargar y verificar la cancelación', ['F02', 'B06'], physicalPatient, async () => {
-      for (const [page, receipt, status, modality] of [
-        [physicalPatient, physicalReceipt, 'CANCELLED', 'IN_PERSON'],
-        [virtualWinner.page, virtualWinner.receipt, 'CONFIRMED', 'TELECONSULTATION'],
+      owned('mailpit', '18029');
+      for (const [page, receipt, email, status, modality] of [
+        [physicalPatient, physicalReceipt, 'agenda-presencial@local.test', 'CANCELLED', 'IN_PERSON'],
+        [virtualWinner.page, virtualWinner.receipt, virtualWinner.email, 'CONFIRMED', 'TELECONSULTATION'],
       ]) {
-        assert.equal(receipt.accessCode?.length, 43);
+        assert.ok(receipt.verificationRequestId);
         await page.goto(origin + '/appointments/confirmation');
         await page.reload();
-        await page.locator('#confirmation-code').fill(receipt.accessCode);
-        const details = await action(page, 'POST', '/public/appointments/confirmation', () => page.getByRole('button', { name: 'Consultar turno' }).click(), 200);
+        await page.getByRole('button', { name: 'Pedir código por correo' }).waitFor();
+        const deadline = Date.now() + 30_000;
+        let code;
+        while (!code && Date.now() < deadline) {
+          const inbox = await (await fetch('http://127.0.0.1:18029/api/v1/messages')).json();
+          const message = inbox.messages.find(item => item.Subject === 'Tu código de DoctorChart' && item.To?.some(to => to.Address === email));
+          if (message) {
+            const content = await (await fetch('http://127.0.0.1:18029/api/v1/message/' + message.ID)).json();
+            code = content.Text.match(/^\s*(\d{6})\s*$/m)?.[1];
+          }
+          if (!code) await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        assert.ok(code, 'Mailpit did not deliver the verification code');
+        const access = { documentCountry: 'AR', documentType: 'DNI', document: '22345678', email, requestId: receipt.verificationRequestId };
+        const proof = await page.request.post(origin + apiPrefix + '/public/appointments/access/verify', { headers: { Origin: origin }, data: { ...access, code } });
+        assert.equal(proof.status(), 204);
+        const list = await page.request.post(origin + apiPrefix + '/public/appointments/my-bookings', { headers: { Origin: origin }, data: {} });
+        assert.equal(list.status(), 200);
+        const details = (await list.json()).items.find(item => item.reference === receipt.reference);
         assert.equal(details.reference, receipt.reference);
         assert.equal(details.status, status);
         assert.equal(details.modality, modality);
-        await page.getByRole('region', { name: 'Constancia del turno' }).getByText(receipt.reference, { exact: true }).waitFor();
         if (modality === 'TELECONSULTATION') assert.equal(details.address, '');
       }
       return { physical: 'CANCELLED', virtual: 'CONFIRMED' };
@@ -685,24 +724,28 @@ async function main() {
     await check('E02', 'Secretaría crea, reprograma y cancela un turno virtual desde la interfaz', ['E01', 'B02', 'B06'], manager, async () => {
       await staffAgenda(manager, tele.name);
       await booking(manager, virtualWinner.name).waitFor();
-      await manager.getByRole('button', { name: /13:30 · Disponible/ }).click();
-      await manager.getByLabel('Nombre del solicitante').fill('Contacto de ensayo');
+      await manager.locator('.slot').filter({ hasText: '13:30' }).click();
+      await manager.getByLabel('Nombre y apellido', { exact: true }).fill('Contacto de ensayo');
+      await manager.locator('#booking-phone').fill('+5491123456789');
+      await manager.locator('#booking-document').fill('90000001');
+      await manager.locator('#booking-email').fill('secretaria-prueba@local.test');
+      await manager.getByLabel('El turno es para otra persona').check();
       await manager.getByLabel('Nombre de quien será atendido').fill(staffName);
       const created = await action(manager, 'POST', /\/staff\/owners\/[^/]+\/bookings$/, () => manager.getByRole('button', { name: 'Confirmar turno' }).click(), 201);
       const row = booking(manager, staffName);
       await row.click();
       await manager.getByRole('button', { name: 'Reprogramar', exact: true }).click();
-      await manager.getByRole('button', { name: /14:00 · Disponible/ }).click();
+      await manager.locator('#move-slot').selectOption({label: '14:00'});
       const moved = await action(manager, 'POST', /\/staff\/owners\/[^/]+\/bookings\/[^/]+\/reschedule$/, () => manager.getByRole('button', { name: 'Confirmar reprogramación' }).click(), 200);
       assert.equal(Date.parse(moved.start), Date.parse(timestamp(monday, '14:00')));
       await row.filter({ hasText: '14:00' }).waitFor();
-      const cancel = manager.getByRole('button', { name: /^Cancelad[oa]$/ });
+      const cancel = manager.getByRole('button', { name: 'Cancelar turno', exact: true });
       if (!(await cancel.isVisible())) await row.click();
       const cancelled = await action(manager, 'PATCH', /\/staff\/owners\/[^/]+\/bookings\/[^/]+\/status$/, () => cancel.click(), 200);
       assert.equal(cancelled.status, 'CANCELLED');
       for (const item of [created, moved, cancelled]) assertPrivateProjection(item);
       assert.equal(created.clinicSnapshot.modality, 'TELECONSULTATION');
-      await manager.getByRole('button', { name: /14:00 · Disponible/ }).waitFor();
+      await manager.locator('.slot').filter({ hasText: '14:00' }).waitFor();
       return { id: created.id, start: moved.start, status: cancelled.status };
     });
 
@@ -710,8 +753,8 @@ async function main() {
       const [owner, clinic] = await staffAgenda(restricted, tele.name);
       const row = booking(restricted, virtualWinner.name);
       await row.click();
-      for (const name of ['Reprogramar', 'Cancelado']) assert.ok(await restricted.getByRole('button', { name, exact: true }).isDisabled());
-      assert.ok(await restricted.locator('.slot-list button').first().isDisabled());
+      for (const name of ['Reprogramar', 'Cancelar turno']) assert.equal(await restricted.getByRole('button', { name, exact: true }).count(), 0);
+      assert.equal(await restricted.locator('.manual-booking').count(), 0);
       assert.equal(await restricted.getByRole('link', { name: /ficha|historia clínica/i }).count(), 0);
       const range = `?from=${monday}T00:00:00Z&to=${day(1)}T00:00:00Z`;
       const assignedPath = `${apiPrefix}/staff/owners/${owner}/clinics/${clinic}/bookings${range}`;
@@ -744,6 +787,7 @@ async function main() {
 
     await check('F04', 'Verificar estado de carga de Angular y resultado del gateway real', ['D01'], competitor, async () => {
       await competitor.goto(origin + '/appointments');
+      await competitor.getByRole('button', { name: 'Buscar turnos', exact: true }).click();
       await competitor.locator('.clinic-card').first().waitFor();
       let release;
       const gate = new Promise(resolve => { release = resolve; });

@@ -43,12 +43,13 @@
 </div>
 
 <div class="form-field-group">
-  <label class="form-label">Sexo Biológico</label>
-  <div class="radio-pill-group">
+  <span class="form-label">Sexo Biológico</span>
+    <div class="radio-pill-group" role="group" aria-label="Sexo Biológico">
     <button
       type="button"
       class="radio-pill-btn"
       [class.active]="form().gender() === 'MALE'"
+        [attr.aria-pressed]="form().gender() === 'MALE'"
       (click)="form().gender.set('MALE')"
     >
       Masculino
@@ -57,6 +58,7 @@
       type="button"
       class="radio-pill-btn"
       [class.active]="form().gender() === 'FEMALE'"
+        [attr.aria-pressed]="form().gender() === 'FEMALE'"
       (click)="form().gender.set('FEMALE')"
     >
       Femenino

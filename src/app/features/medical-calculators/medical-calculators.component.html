@@ -143,7 +143,7 @@
           <button
             type="button"
             class="fav-pill-btn"
-            [class.active]="selectedId() === fav.id"
+            [class.active]="selectedId() === fav.id" [attr.aria-pressed]="selectedId() === fav.id"
             (click)="selectCalculator(fav.id)"
           >
             <span>{{ fav.shortName }}</span>
@@ -170,7 +170,7 @@
           <input
             type="search"
             class="sidebar-search-input"
-            placeholder="Buscar calculadora..."
+            aria-label="Buscar calculadora" placeholder="Buscar calculadora…"
             [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
           />
@@ -234,7 +234,7 @@
             <button
               type="button"
               class="calc-nav-card"
-              [class.active]="selectedId() === item.id"
+              [class.active]="selectedId() === item.id" [attr.aria-pressed]="selectedId() === item.id"
               (click)="selectCalculator(item.id)"
             >
               <div class="calc-card-main">
@@ -447,8 +447,9 @@
       @if (activePatient()) {
         <div class="history-filter-bar">
           <div class="filter-group">
-            <label class="filter-label">Fórmula / Cálculo:</label>
+            <label class="filter-label" for="calculator-history-type">Fórmula / Cálculo:</label>
             <select
+              id="calculator-history-type"
               class="filter-select"
               [ngModel]="historyFilterCode()"
               (ngModelChange)="historyFilterCode.set($event); loadPatientHistory()"
@@ -461,18 +462,18 @@
           </div>
 
           <div class="filter-group">
-            <label class="filter-label">Desde:</label>
+            <label class="filter-label" for="calculator-history-from">Desde:</label>
             <app-date-picker
-              class="filter-date-input"
+              class="filter-date-input" inputId="calculator-history-from" inputLabel="Desde"
               [value]="historyDateFrom()"
               (valueChange)="historyDateFrom.set($event); loadPatientHistory()"
             />
           </div>
 
           <div class="filter-group">
-            <label class="filter-label">Hasta:</label>
+            <label class="filter-label" for="calculator-history-to">Hasta:</label>
             <app-date-picker
-              class="filter-date-input"
+              class="filter-date-input" inputId="calculator-history-to" inputLabel="Hasta"
               [value]="historyDateTo()"
               (valueChange)="historyDateTo.set($event); loadPatientHistory()"
             />
@@ -496,11 +497,9 @@
         <div class="history-list-wrap">
           @for (log of patientBackendHistory(); track log.id) {
             <article class="history-item-card">
-              <div
-                class="history-item-top cursor-pointer select-none"
-                (click)="toggleExpandLog(log.id)"
-              >
-                <div class="flex items-center gap-2">
+              <button type="button" class="history-item-top" (click)="toggleExpandLog(log.id)"
+                [attr.aria-expanded]="expandedHistoryLogId() === log.id">
+                <span class="flex items-center gap-2">
                   <span class="history-calc-badge">{{ log.calculationName }}</span>
                   <span class="history-result-badge">{{ log.formattedResult }}</span>
                   @if (log.severity) {
@@ -513,21 +512,21 @@
                       {{ log.severity | uppercase }}
                     </span>
                   }
-                </div>
+                </span>
 
-                <div class="flex items-center gap-3">
+                <span class="flex items-center gap-3">
                   <span class="history-date">
                     {{ log.createdAt | date: 'dd/MM/yyyy HH:mm' }}
                   </span>
-                  <button type="button" class="expand-chevron-btn" aria-label="Expandir detalles">
+                  <span aria-hidden="true" class="expand-chevron-btn">
                     @if (expandedHistoryLogId() === log.id) {
                       <ng-icon name="lucideChevronUp" />
                     } @else {
                       <ng-icon name="lucideChevronDown" />
                     }
-                  </button>
-                </div>
-              </div>
+                  </span>
+                </span>
+              </button>
 
               <!-- Collapsed Summary Row -->
               <div class="history-item-content">
@@ -668,7 +667,7 @@
           <input
             type="search"
             class="catalog-search-input"
-            placeholder="Buscar por nombre o fórmula..."
+            aria-label="Buscar por nombre o fórmula" placeholder="Buscar por nombre o fórmula…"
             [ngModel]="catalogSearchQuery()"
             (ngModelChange)="catalogSearchQuery.set($event)"
           />

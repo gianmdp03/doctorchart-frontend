@@ -1,51 +1,13 @@
 <div class="clinics-page">
   <header class="page-header">
-    <div class="page-header-copy">
-      <h1 id="clinics-table-heading">Administración de Consultorios</h1>
-      <p class="subtitle">
-        Gestioná tus consultorios y la agenda de teleconsultas.
-      </p>
+    <div class="section-copy">
+      <h1>Consultorios y teleconsulta</h1>
+      @if (activeSpecialty(); as specialty) { <p class="section-detail">{{ specialty }}</p> }
     </div>
-
-    <div class="header-actions">
+    @if (schedulesEnabled) {
       <a class="dc-button btn-secondary" routerLink="/schedules">Mis horarios</a>
-      <button
-        type="button"
-        class="dc-button btn-secondary"
-        (click)="reloadAll()"
-        [disabled]="isLoading()"
-        aria-label="Actualizar consultorios y cupo"
-      >
-        <ng-icon name="lucideRefreshCw" size="16" aria-hidden="true"></ng-icon>
-        <span>Actualizar</span>
-      </button>
-
-      @if (canCreateVirtual()) {
-        <a class="dc-button btn-secondary" routerLink="/clinics/new" [queryParams]="{modality: 'teleconsultation'}">Crear agenda virtual</a>
-      }
-      <button
-        type="button"
-        class="dc-button dc-button--primary btn-primary"
-        data-testid="create-clinic-btn"
-        (click)="navigateToCreate()"
-        [disabled]="!canCreate() || isLoading()"
-      >
-        <ng-icon name="lucidePlus" size="18" aria-hidden="true"></ng-icon>
-        <span>Nuevo Consultorio</span>
-      </button>
-    </div>
+    }
   </header>
-
-  <section class="quota-summary-bar" aria-label="Resumen de cupo de consultorios">
-    <div class="quota-summary-main">
-      <span class="quota-badge" [class.quota-badge-verified]="capabilities()?.entitlements?.status === 'VERIFIED'">
-        {{ quotaSummary() }}
-      </span>
-      <span class="quota-hint">
-        La agenda virtual y los consultorios retirados quedan fuera del cupo físico.
-      </span>
-    </div>
-  </section>
 
   @if (capabilityBanner(); as banner) {
     <section
@@ -91,6 +53,7 @@
     <div class="alert-box alert-danger" role="alert" data-testid="load-error-alert">
       <ng-icon name="lucideShieldAlert" size="18" aria-hidden="true"></ng-icon>
       <span>{{ loadError() }}</span>
+      <button type="button" class="btn-banner" (click)="reloadAll()" [disabled]="isLoading()">Reintentar</button>
     </div>
   }
 
@@ -101,207 +64,252 @@
     </div>
   }
 
-  <div class="toolbar-card">
-    <div class="filter-tabs" role="group" aria-label="Filtrar consultorios por estado">
-      @for (opt of statusFilters; track opt.value) {
-        <button
-          type="button"
-          class="filter-tab"
-          [class.active]="statusFilter() === opt.value"
-          [attr.aria-pressed]="statusFilter() === opt.value"
-          (click)="selectStatusFilter(opt.value)"
-        >
-          {{ opt.label }}
-        </button>
-      }
-    </div>
-
-    <div class="results-meta" aria-live="polite">
-      @if (totalElements() > 0) {
-        <span>Mostrando {{ rangeStart() }}–{{ rangeEnd() }} de {{ totalElements() }}</span>
-      } @else if (!isLoading()) {
-        <span>Sin resultados</span>
-      }
-    </div>
-  </div>
-
-  <div
-    class="table-wrapper"
-    role="region"
-    aria-labelledby="clinics-table-heading"
-    tabindex="0"
-  >
-    @if (isLoading() && clinics().length === 0) {
-      <div class="empty-state" role="status" aria-live="polite">
-        <p class="empty-title">Cargando consultorios…</p>
-        <p class="empty-subtitle">Consultando el estado actualizado de tus sedes de atención.</p>
+  @if (schedulesEnabled) {
+    <section class="teleconsultation" aria-labelledby="teleconsultation-heading">
+      <div class="section-copy">
+        <h2 id="teleconsultation-heading"><ng-icon name="lucideVideo" aria-hidden="true" /> Teleconsulta</h2>
+        @if (activeSpecialty(); as specialty) {
+          <p class="section-detail">Teleconsulta de {{ specialty }}. Podés desactivarla y conservar los horarios y turnos reservados.</p>
+        }
       </div>
-    } @else if (clinics().length === 0) {
-      <div class="empty-state" data-testid="empty-clinics-state">
-        <div class="empty-icon">
-          <ng-icon name="lucideBuilding2" size="28" aria-hidden="true"></ng-icon>
+      @if (teleconsultationError(); as message) {
+        <div class="alert-box alert-danger" role="alert">
+          <span>{{ message }}</span>
+          <button type="button" class="btn-banner" (click)="reloadAll()" [disabled]="isLoading()">Reintentar carga</button>
         </div>
-        <p class="empty-title">
-          @if (statusFilter() === 'ALL') {
-            Todavía no registraste consultorios
-          } @else {
-            No hay consultorios con el filtro seleccionado
-          }
-        </p>
-        <p class="empty-subtitle">
-          @if (statusFilter() === 'ALL') {
-            Podés operar tus historias clínicas y pacientes con normalidad, o dar de alta tus consultorios físicos cuando los necesites.
-          } @else {
-            Probá cambiando el filtro de estado a «Todos» para revisar tus demás sedes.
-          }
-        </p>
-        @if (statusFilter() === 'ALL' && canCreate()) {
-          <button type="button" class="dc-button dc-button--primary btn-primary" (click)="navigateToCreate()">
-            <ng-icon name="lucidePlus" size="16" aria-hidden="true"></ng-icon>
-            <span>Crear primer consultorio</span>
+      }
+      @if (isLoading() && !teleconsultations().length) {
+        <p role="status" class="section-detail">Cargando especialidades…</p>
+      } @else if (selectedTeleconsultation(); as item) {
+            <div class="teleconsultation-row">
+              <div class="row-actions">
+                <button type="button" class="btn-row teleconsultation-switch" role="switch"
+                  [attr.aria-label]="'Teleconsulta de ' + item.specialty"
+                  [attr.aria-checked]="item.enabled"
+                  [disabled]="!canManageTeleconsultation()"
+                  (click)="toggleTeleconsultation(item)">
+                  <span class="switch-track" aria-hidden="true"></span>
+                  {{ pendingTeleconsultation() === item.specialtyContextId ? 'Guardando…' : item.enabled ? 'Activada' : 'Desactivada' }}
+                </button>
+                @if (item.clinicId) {
+                  <a class="btn-row" [routerLink]="['/clinics', item.clinicId, 'schedule']"
+                    [queryParams]="{ specialtyContextId: item.specialtyContextId }"
+                    [attr.aria-label]="'Horarios de teleconsulta de ' + item.specialty">
+                    <ng-icon name="lucideClock" size="14" aria-hidden="true" />
+                    Horarios
+                  </a>
+                }
+              </div>
+            </div>
+      } @else if (!teleconsultationError()) {
+        <p class="section-detail">{{ activeContextId() ? 'Completá la configuración de esta especialidad para habilitar su teleconsulta.' : 'Elegí una especialidad en el menú lateral para gestionar su teleconsulta.' }}</p>
+      }
+    </section>
+  }
+
+  <section class="in-person" aria-labelledby="clinics-table-heading">
+    <div class="in-person-heading">
+      <div class="section-copy">
+        <h2 id="clinics-table-heading">Consultorios presenciales</h2>
+        <p class="section-detail">Cupo total · {{ quotaSummary() }}</p>
+      </div>
+      <button
+        type="button"
+        class="dc-button dc-button--primary btn-primary"
+        data-testid="create-clinic-btn"
+        (click)="navigateToCreate()"
+        [disabled]="!canCreate() || isLoading()"
+      >
+        <ng-icon name="lucidePlus" size="18" aria-hidden="true" />
+        Nuevo consultorio
+      </button>
+    </div>
+
+    <div class="toolbar-card">
+      <div class="filter-tabs" role="group" aria-label="Filtrar consultorios presenciales por estado">
+        @for (opt of statusFilters; track opt.value) {
+          <button
+            type="button"
+            class="filter-tab"
+            [class.active]="statusFilter() === opt.value"
+            [attr.aria-pressed]="statusFilter() === opt.value"
+            (click)="selectStatusFilter(opt.value)"
+          >
+            {{ opt.label }}
           </button>
         }
       </div>
-    } @else {
-      <table class="clinics-table" data-testid="clinics-table">
-        <thead>
-          <tr>
-            <th scope="col">Consultorio</th>
-            <th scope="col">Ubicación</th>
-            <th scope="col">Estado</th>
-            <th scope="col">Actualizado</th>
-            <th scope="col" class="col-actions">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (clinic of clinics(); track clinic.id) {
-            <tr [attr.data-testid]="'clinic-row-' + clinic.id">
-              <td data-label="Consultorio" class="cell-name">
-                <div class="clinic-name">{{ clinic.name }}</div>
-                <div class="clinic-meta">Versión {{ clinic.version }}</div>
-                @if (schedulesEnabled) {
-                  <a class="clinic-schedule-link" [routerLink]="['/clinics', clinic.id, 'schedule']">
-                    <ng-icon name="lucideClock" size="15" aria-hidden="true" />
-                    <span>Ver horarios y agenda</span>
-                  </a>
-                }
-              </td>
-              <td data-label="Ubicación" class="cell-location">
-                @if (clinic.modality === 'TELECONSULTATION') {
-                  <div class="location-address">Teleconsulta</div>
-                } @else {
-                <div class="location-address">{{ clinic.address }}</div>
-                <div class="location-region">
-                  {{ clinic.city }}, {{ clinic.province }} · {{ clinic.country }}
-                </div>
-                }
-              </td>
-              <td data-label="Estado" class="cell-status">
-                <span
-                  class="status-badge"
-                  [class.status-active]="clinic.status === 'ACTIVE'"
-                  [class.status-inactive]="clinic.status === 'INACTIVE'"
-                  [class.status-archived]="clinic.status === 'ARCHIVED'"
-                >
-                  {{ statusLabel(clinic.status) }}
-                </span>
-              </td>
-              <td data-label="Actualizado" class="cell-date">
-                {{ formatDate(clinic.updatedAt) }}
-              </td>
-              <td data-label="Acciones" class="cell-actions">
-                <div class="row-actions">
-                  <a
-                    class="btn-row"
-                    [routerLink]="['/clinics', clinic.id, 'edit']"
-                    [attr.data-testid]="'edit-link-' + clinic.id"
-                  >
-                    <ng-icon name="lucidePencil" size="14" aria-hidden="true"></ng-icon>
-                    <span>{{ canEdit(clinic) ? 'Editar' : 'Ver detalle' }}</span>
-                  </a>
 
-                  @if (clinic.status === 'ACTIVE') {
-                    <button
-                      type="button"
-                      class="btn-row"
-                      [attr.data-testid]="'deactivate-btn-' + clinic.id"
-                      [disabled]="!canTransition(clinic, 'INACTIVE')"
-                      (click)="changeStatus(clinic, 'INACTIVE')"
-                    >
-                      <ng-icon name="lucidePauseCircle" size="14" aria-hidden="true"></ng-icon>
-                      <span>Desactivar</span>
-                    </button>
-                  }
+      <div class="results-meta" aria-live="polite">
+        @if (totalPages() > 1) {
+          <span>Mostrando {{ rangeStart() }}–{{ rangeEnd() }} de {{ totalElements() }}</span>
+        }
+      </div>
+    </div>
 
-                  @if (clinic.status === 'INACTIVE') {
-                    <button
-                      type="button"
-                      class="btn-row btn-row-primary"
-                      [attr.data-testid]="'activate-btn-' + clinic.id"
-                      [disabled]="!canTransition(clinic, 'ACTIVE')"
-                      (click)="changeStatus(clinic, 'ACTIVE')"
-                    >
-                      <ng-icon name="lucidePlayCircle" size="14" aria-hidden="true"></ng-icon>
-                      <span>Activar</span>
-                    </button>
-                    @if (clinic.modality !== 'TELECONSULTATION') {
-                    <button
-                      type="button"
-                      class="btn-row btn-row-danger"
-                      [attr.data-testid]="'archive-btn-' + clinic.id"
-                      [disabled]="!canTransition(clinic, 'ARCHIVED')"
-                      (click)="changeStatus(clinic, 'ARCHIVED')"
-                    >
-                      <ng-icon name="lucideArchive" size="14" aria-hidden="true"></ng-icon>
-                      <span>Retirar del cupo</span>
-                    </button>
-                    }
-                  }
-
-                  @if (clinic.status === 'ARCHIVED') {
-                    <button
-                      type="button"
-                      class="btn-row btn-row-primary"
-                      [attr.data-testid]="'restore-btn-' + clinic.id"
-                      [disabled]="!canTransition(clinic, 'INACTIVE')"
-                      (click)="changeStatus(clinic, 'INACTIVE')"
-                    >
-                      <ng-icon name="lucideArchiveRestore" size="14" aria-hidden="true"></ng-icon>
-                      <span>Incorporar al cupo</span>
-                    </button>
-                  }
-                </div>
-              </td>
+    <div
+      class="table-wrapper"
+      role="region"
+      aria-labelledby="clinics-table-heading"
+      tabindex="0"
+    >
+      @if (isLoading() && clinics().length === 0) {
+        <div class="empty-state" role="status" aria-live="polite">
+          <p class="empty-title">Cargando consultorios…</p>
+        </div>
+      } @else if (hasLoadedClinics() && clinics().length === 0) {
+        <div class="empty-state" data-testid="empty-clinics-state">
+          <div class="empty-icon">
+            <ng-icon name="lucideBuilding2" size="28" aria-hidden="true"></ng-icon>
+          </div>
+          <p class="empty-title">
+            @if (statusFilter() === 'ALL') {
+              {{ activeContextId() ? 'Todavía no hay consultorios para esta especialidad' : 'Todavía no registraste consultorios' }}
+            } @else {
+              No hay consultorios con el filtro seleccionado
+            }
+          </p>
+        </div>
+      } @else if (clinics().length) {
+        <table class="clinics-table" data-testid="clinics-table">
+          <thead>
+            <tr>
+              <th scope="col">Consultorio</th>
+              <th scope="col">Ubicación</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Actualizado</th>
+              <th scope="col" class="col-actions">Acciones</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (clinic of clinics(); track clinic.id) {
+              <tr [attr.data-testid]="'clinic-row-' + clinic.id">
+                <td data-label="Consultorio" class="cell-name">
+                  <div class="clinic-name">{{ clinic.name }}</div>
+                </td>
+                <td data-label="Ubicación" class="cell-location">
+                  <div class="location-address">{{ clinic.address }}</div>
+                  <div class="location-region">
+                    {{ clinic.city }}, {{ clinic.province }} · {{ clinic.country }}
+                  </div>
+                </td>
+                <td data-label="Estado" class="cell-status">
+                  <span
+                    class="status-badge"
+                    [class.status-active]="clinic.status === 'ACTIVE'"
+                    [class.status-inactive]="clinic.status === 'INACTIVE'"
+                    [class.status-archived]="clinic.status === 'ARCHIVED'"
+                  >
+                    {{ statusLabel(clinic.status) }}
+                  </span>
+                </td>
+                <td data-label="Actualizado" class="cell-date">
+                  {{ formatDate(clinic.updatedAt) }}
+                </td>
+                <td data-label="Acciones" class="cell-actions">
+                  <ng-container *ngTemplateOutlet="clinicActions; context: { $implicit: clinic }" />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    @if (totalPages() > 1) {
+      <nav class="pagination-bar" aria-label="Paginación de consultorios">
+        <button
+          type="button"
+          class="dc-button btn-secondary"
+          [disabled]="currentPage() <= 0 || isLoading()"
+          (click)="goToPage(currentPage() - 1)"
+        >
+          <ng-icon name="lucideChevronLeft" size="16" aria-hidden="true"></ng-icon>
+          <span>Anterior</span>
+        </button>
+        <span class="pagination-status">
+          Página {{ currentPage() + 1 }} de {{ totalPages() }}
+        </span>
+        <button
+          type="button"
+          class="dc-button btn-secondary"
+          [disabled]="currentPage() + 1 >= totalPages() || isLoading()"
+          (click)="goToPage(currentPage() + 1)"
+        >
+          <span>Siguiente</span>
+          <ng-icon name="lucideChevronRight" size="16" aria-hidden="true"></ng-icon>
+        </button>
+      </nav>
+    }
+  </section>
+</div>
+
+<ng-template #clinicActions let-clinic>
+  <div class="row-actions">
+    @if (schedulesEnabled) {
+      <a class="btn-row" [routerLink]="['/clinics', clinic.id, 'schedule']">
+        <ng-icon name="lucideClock" size="14" aria-hidden="true" />
+        <span>Ver horarios y agenda</span>
+      </a>
+    }
+    <a
+      class="btn-row"
+      [routerLink]="['/clinics', clinic.id, 'edit']"
+      [attr.data-testid]="'edit-link-' + clinic.id"
+    >
+      <ng-icon name="lucidePencil" size="14" aria-hidden="true"></ng-icon>
+      <span>{{ canEdit(clinic) ? 'Editar' : 'Ver detalle' }}</span>
+    </a>
+
+    @if (clinic.status === 'ACTIVE') {
+      <button
+        type="button"
+        class="btn-row"
+        [attr.data-testid]="'deactivate-btn-' + clinic.id"
+        [disabled]="!canTransition(clinic, 'INACTIVE')"
+        (click)="changeStatus(clinic, 'INACTIVE')"
+      >
+        <ng-icon name="lucidePauseCircle" size="14" aria-hidden="true"></ng-icon>
+        <span>Desactivar</span>
+      </button>
+    }
+
+    @if (clinic.status === 'INACTIVE') {
+      <button
+        type="button"
+        class="btn-row btn-row-primary"
+        [attr.data-testid]="'activate-btn-' + clinic.id"
+        [disabled]="!canTransition(clinic, 'ACTIVE')"
+        (click)="changeStatus(clinic, 'ACTIVE')"
+      >
+        <ng-icon name="lucidePlayCircle" size="14" aria-hidden="true"></ng-icon>
+        <span>Activar</span>
+      </button>
+      @if (clinic.modality !== 'TELECONSULTATION') {
+      <button
+        type="button"
+        class="btn-row btn-row-danger"
+        [attr.data-testid]="'archive-btn-' + clinic.id"
+        [disabled]="!canTransition(clinic, 'ARCHIVED')"
+        (click)="changeStatus(clinic, 'ARCHIVED')"
+      >
+        <ng-icon name="lucideArchive" size="14" aria-hidden="true"></ng-icon>
+        <span>Retirar del cupo</span>
+      </button>
+      }
+    }
+
+    @if (clinic.status === 'ARCHIVED') {
+      <button
+        type="button"
+        class="btn-row btn-row-primary"
+        [attr.data-testid]="'restore-btn-' + clinic.id"
+        [disabled]="!canTransition(clinic, 'INACTIVE')"
+        (click)="changeStatus(clinic, 'INACTIVE')"
+      >
+        <ng-icon name="lucideArchiveRestore" size="14" aria-hidden="true"></ng-icon>
+        <span>Incorporar al cupo</span>
+      </button>
     }
   </div>
-
-  @if (totalPages() > 1) {
-    <nav class="pagination-bar" aria-label="Paginación de consultorios">
-      <button
-        type="button"
-        class="dc-button btn-secondary"
-        [disabled]="currentPage() <= 0 || isLoading()"
-        (click)="goToPage(currentPage() - 1)"
-      >
-        <ng-icon name="lucideChevronLeft" size="16" aria-hidden="true"></ng-icon>
-        <span>Anterior</span>
-      </button>
-      <span class="pagination-status">
-        Página {{ currentPage() + 1 }} de {{ totalPages() }}
-      </span>
-      <button
-        type="button"
-        class="dc-button btn-secondary"
-        [disabled]="currentPage() + 1 >= totalPages() || isLoading()"
-        (click)="goToPage(currentPage() + 1)"
-      >
-        <span>Siguiente</span>
-        <ng-icon name="lucideChevronRight" size="16" aria-hidden="true"></ng-icon>
-      </button>
-    </nav>
-  }
-</div>
+</ng-template>

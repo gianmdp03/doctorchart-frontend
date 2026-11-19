@@ -1,0 +1,41 @@
+<button #accountTrigger type="button" class="dc-button dc-button--secondary account-trigger"
+  [cdkMenuTriggerFor]="accountMenu" [disabled]="busy() || locked()">
+  <span class="account-icon"><ng-icon name="lucideUserRound" aria-hidden="true" /></span>
+  Mi cuenta
+</button>
+<ng-template #accountMenu>
+  <div cdkMenu class="account-menu" aria-label="Mi cuenta">
+    @if (session(); as staff) {
+      <div class="account-identity"><strong>{{staff.name}}</strong><span>{{staff.email}}</span></div>
+    }
+    <button type="button" cdkMenuItem (cdkMenuItemTriggered)="resetPassword(); notice.set(''); passwordDialog.showModal()">
+      <ng-icon name="lucideKeyRound" aria-hidden="true" /> Cambiar contraseña
+    </button>
+    <button type="button" cdkMenuItem (cdkMenuItemTriggered)="logout()">
+      <ng-icon name="lucideLogOut" aria-hidden="true" /> Cerrar sesión
+    </button>
+  </div>
+</ng-template>
+@if (notice()) { <p class="account-feedback success" role="status">{{notice()}}</p> }
+@if (logoutError()) { <p class="account-feedback error" role="alert">{{logoutError()}}</p> }
+
+<dialog #passwordDialog class="password-dialog" aria-labelledby="staff-password-title"
+  (cancel)="busy() ? $event.preventDefault() : undefined" (close)="resetPassword(); accountTrigger.focus()">
+  <form ngNativeValidate (ngSubmit)="passwordForm.valid && updatePassword(passwordDialog)" #passwordForm="ngForm">
+    <h2 id="staff-password-title">Cambiar contraseña</h2>
+    <fieldset [disabled]="busy() || locked()">
+      <label for="staff-current-password">Contraseña actual</label>
+      <input id="staff-current-password" type="password" name="currentPassword" [(ngModel)]="currentPassword"
+        autocomplete="current-password" required autofocus />
+      <label for="staff-new-password">Contraseña nueva</label>
+      <input id="staff-new-password" type="password" name="newPassword" [(ngModel)]="newPassword"
+        autocomplete="new-password" minlength="12" maxlength="72" aria-describedby="staff-password-help" required />
+      <p id="staff-password-help">Usá al menos 12 caracteres.</p>
+    </fieldset>
+    @if (passwordError()) { <p class="account-feedback error" role="alert">{{passwordError()}}</p> }
+    <footer>
+      <button type="button" class="dc-button dc-button--secondary" [disabled]="busy()" (click)="passwordDialog.close()">Cancelar</button>
+      <button type="submit" class="dc-button dc-button--primary" [disabled]="busy() || locked()">{{busy() ? 'Guardando…' : 'Guardar contraseña'}}</button>
+    </footer>
+  </form>
+</dialog>

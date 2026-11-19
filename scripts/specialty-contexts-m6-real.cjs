@@ -44,8 +44,9 @@ async function patientUI(page,id,first,extraValues={}){
  await page.getByRole('button',{name:'Crear Paciente',exact:true}).click();
  await page.waitForURL(/\/(?:patients|records)\/[0-9]+/);const match=new URL(page.url()).pathname.match(/\/(\d+)/);assert.ok(match);return Number(match[1]);
 }
-async function draftScheduleBlock(page,clinic,context,days,start,end,minutes){
- await page.goto(origin+'/clinics/'+clinic+'/schedule');await page.getByLabel('Especialidad del bloque').selectOption(String(context));
+async function draftScheduleBlock(page,clinic,context,days,start,end,minutes,virtual=false){
+ await page.goto(origin+'/clinics/'+clinic+'/schedule'+(virtual?'?specialtyContextId='+context:''));
+ if(!virtual)await page.getByLabel('Especialidad del bloque').selectOption(String(context));
  for(const day of days)await page.locator('.day-options').getByLabel(day,{exact:true}).check();
  await page.getByRole('textbox',{name:'Inicio del nuevo bloque',exact:true}).fill(start);await page.getByRole('textbox',{name:'Final del nuevo bloque',exact:true}).fill(end);await page.locator('#schedule-duration').fill(String(minutes));await page.getByRole('button',{name:'Agregar a los días seleccionados',exact:true}).click();
 }
@@ -126,6 +127,9 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
   await page.locator('#calendar-date').press('Tab');
   await page.locator('[data-slot-start="'+slot.start+'"]').click();
   await page.locator('#booking-contact').fill('Reserva de prueba SP-01');
+  await page.locator('#booking-document').fill('12345678');
+  await page.locator('#booking-email').fill('reserva-manual@local.test');
+  await page.locator('#booking-phone').fill('0223 495-1234');
   const bookingResponse=page.waitForResponse(r=>new URL(r.url()).pathname===base+'/bookings'&&r.request().method()==='POST');
   await page.getByRole('button',{name:'Confirmar turno',exact:true}).click();
   const savedBooking=await bookingResponse;
@@ -302,17 +306,17 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
   const northAgenda=await api(page,'GET','/clinics/'+clinics[1].id+'/schedule');const conflict={expectedVersion:northAgenda.version,minNoticeMinutes:0,maxAdvanceDays:30,weekly:northAgenda.weekly.map(d=>d.weekday===1?{...d,ranges:[...d.ranges,{start:'08:00',end:'09:00',slotMinutes:20,specialtyContextId:String(derm)}]}:d),exceptions:northAgenda.exceptions};
   await api(page,'PUT','/clinics/'+clinics[1].id+'/schedule',conflict,null,409);assert.equal((await api(page,'GET','/clinics/'+clinics[1].id+'/schedule')).version,northAgenda.version);add('cross-clinic/specialty overlap is rejected atomically without changing the saved schedule');
   const genSlot=slots.find(s=>s.specialtyContextId===String(general)),dermSlots=slots.filter(s=>s.specialtyContextId===String(derm));
-  const one=await api(page,'POST','/bookings',{clinicId:clinics[0].id,start:genSlot.start,contactName:'Juan General',contactPhone:'2231234567',patientId:String(patients.general_medicine)},null,201,crypto.randomUUID());
-  const two=await api(page,'POST','/bookings',{clinicId:clinics[0].id,start:dermSlots[0].start,contactName:'Juan Dermatología',contactPhone:'2231234567'},null,201,crypto.randomUUID());
+  const one=await api(page,'POST','/bookings',{clinicId:clinics[0].id,start:genSlot.start,contactName:'Juan General',contactPhone:'2234951234'},null,201,crypto.randomUUID());
+  const two=await api(page,'POST','/bookings',{clinicId:clinics[0].id,start:dermSlots[0].start,contactName:'Juan Dermatología',contactPhone:'2234951234'},null,201,crypto.randomUUID());
   assert.equal(one.specialtyContextId,String(general));assert.equal(two.specialtyContextId,String(derm));assert.equal(one.provenance.slotMinutes,20);assert.equal(two.provenance.slotMinutes,30);
   await api(page,'POST','/bookings/'+one.id+'/reschedule',{expectedVersion:one.version,clinicId:clinics[0].id,start:dermSlots[1].start},null,409,crypto.randomUUID());
-  let moved=await api(page,'POST','/bookings/'+two.id+'/reschedule',{expectedVersion:two.version,clinicId:clinics[0].id,start:dermSlots[1].start},null,200,crypto.randomUUID());assert.deepEqual(moved.specialty,two.specialty);
-  await api(page,'PUT','/bookings/'+moved.id+'/patient',{expectedVersion:moved.version,patientId:String(patients.general_medicine)},null,404,crypto.randomUUID());moved=await api(page,'PUT','/bookings/'+moved.id+'/patient',{expectedVersion:moved.version,patientId:String(patients.dermatology)},null,200,crypto.randomUUID());
+  const moved=await api(page,'POST','/bookings/'+two.id+'/reschedule',{expectedVersion:two.version,clinicId:clinics[0].id,start:dermSlots[1].start},null,200,crypto.randomUUID());assert.deepEqual(moved.specialty,two.specialty);
+  await api(page,'PUT','/bookings/'+moved.id+'/patient',{expectedVersion:moved.version,patientId:String(patients.general_medicine)},null,404,crypto.randomUUID());
   await page.goto(origin+'/calendar?specialtyContextId='+general);await page.locator('#calendar-date').fill(monday.split('-').reverse().join('/'));await page.locator('#calendar-date').press('Tab');await page.locator('[data-booking-id="'+one.id+'"]').waitFor();await page.locator('[data-booking-id="'+two.id+'"]').waitFor();
   if(!await page.getByLabel('Filtrar agenda por especialidad').isVisible())await page.getByRole('button',{name:/^Filtros/}).click();
-  await page.getByLabel('Filtrar agenda por especialidad').selectOption(String(derm));await page.locator('[data-booking-id="'+two.id+'"]').click();const link=page.getByRole('link',{name:/Abrir ficha de Dermatología/});assert.ok((await link.getAttribute('href')).includes('specialtyContextId='+derm));
+  await page.getByLabel('Filtrar agenda por especialidad').selectOption(String(derm));await page.locator('[data-booking-id="'+two.id+'"]').click();await page.getByRole('button',{name:'Reprogramar',exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:/Abrir ficha/}).count(),0);
   await chooseClinicalContext(page,'Dermatología');assert.equal(await page.getByLabel('Filtrar agenda por especialidad').inputValue(),String(derm));await page.getByLabel('Filtrar agenda por especialidad').selectOption('');await page.locator('[data-booking-id="'+one.id+'"]').waitFor();
-  add('global calendar keeps all specialties and independent filters; reprogramming, clinical link and historical snapshots use persisted context');
+  add('global calendar keeps all specialties and independent filters; reprogramming and historical snapshots use persisted context without clinical record links');
   const a=page,b=await context.newPage();await Promise.all([a.goto(origin+'/patients/'+patients.general_medicine+'?specialtyContextId='+general),b.goto(origin+'/patients/'+patients.dermatology+'?specialtyContextId='+derm)]);
   for(const tab of [a,b]){await tab.bringToFront();await tab.getByRole('button',{name:'Nueva historia clínica',exact:true}).first().click();await tab.locator('#field-chiefComplaint').waitFor();}
   await a.bringToFront();await a.locator('#field-chiefComplaint').fill('Borrador exclusivo General M6');await b.bringToFront();await b.locator('#field-chiefComplaint').fill('Borrador exclusivo Dermatología M6');
@@ -328,13 +332,17 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
   const drafted=await api(page,'PUT','/workspace/wizard/draft',{specialtyContextId:general,expectedVersion:originalGeneral.version,definition:personalized,currentStepKey:'encounter'});
   assert.equal(drafted.onboardingCompleted,true);assert.deepEqual(drafted.definition,originalGeneral.definition);assert.notDeepEqual(drafted.draftDefinition,drafted.definition);assert.equal(JSON.stringify((await api(page,'GET','/workspace',null,pediatric.id)).definition),untouchedPediatrics);
   add('personalization draft preserves the effective wizard and readiness; another specialty remains unchanged');
-  await page.goto(origin+'/booking-publication');await page.locator('#publication-name').fill('Profesional M6');await page.getByRole('checkbox',{name:'Medicina General',exact:true}).check();await page.getByRole('checkbox',{name:'Dermatología',exact:true}).check();
-  await page.getByRole('checkbox',{name:/Consultorio Centro/}).check();await page.getByLabel('Dirección que verá el paciente',{exact:true}).first().fill('Dirección pública sintética');await page.locator('#publication-enabled').check();const publishResponse=page.waitForResponse(r=>new URL(r.url()).pathname===base+'/booking-publication'&&r.request().method()==='PUT');await page.locator('#publication-save').click();const publication=await (await publishResponse).json();assert.ok(publication.publicId);
+  await page.goto(origin+'/booking-publication');await page.getByRole('button',{name:'Editar qué se puede reservar',exact:true}).click();
+  await page.getByRole('checkbox',{name:'Medicina General',exact:true}).check();await page.getByRole('checkbox',{name:'Dermatología',exact:true}).check();
+  await page.getByRole('checkbox',{name:/Consultorio Centro/}).check();await page.getByRole('button',{name:'Revisar',exact:true}).click();
+  await page.getByRole('button',{name:'Editar página pública',exact:true}).click();await page.locator('#publication-name').fill('Profesional M6');
+  await page.getByLabel(/Dirección pública de Consultorio Centro/).first().fill('Dirección pública sintética');await page.getByRole('button',{name:'Revisar',exact:true}).click();
+  const publishResponse=page.waitForResponse(r=>new URL(r.url()).pathname===base+'/booking-publication'&&r.request().method()==='PUT');await page.locator('#publication-save').click();const publication=await (await publishResponse).json();assert.ok(publication.publicId);
   const visitor=await browser.newContext({viewport:{width:390,height:844}});const pub=await visitor.newPage();pub.setDefaultTimeout(20000);pub.on('pageerror',e=>errors.push(e.message));
   await pub.goto(origin+'/appointments/'+publication.publicId+'?specialtyContextId='+derm);await pub.getByLabel('Especialidad de la reserva').waitFor();assert.equal(await pub.getByLabel('Especialidad de la reserva').inputValue(),String(derm));await pub.locator('#public-date').fill(monday.split('-').reverse().join('/'));await pub.locator('#public-date').press('Tab');await pub.locator('[data-public-slot]').first().waitFor();
   let releaseOld;const oldGate=new Promise(r=>releaseOld=r);await pub.route('**/availability?**',async route=>{if(new URL(route.request().url()).searchParams.get('specialtyContextId')===String(general))await oldGate;await route.continue();});
   await pub.getByLabel('Especialidad de la reserva').selectOption(String(general));await pub.getByLabel('Especialidad de la reserva').selectOption(String(derm));releaseOld();await pub.locator('[data-public-slot]').first().waitFor();assert.equal(await pub.getByLabel('Especialidad de la reserva').inputValue(),String(derm));await pub.unroute('**/availability?**');
-  await pub.locator('[data-public-slot]').first().click();await pub.locator('#public-contact').fill('Visitante sintético');await pub.locator('#public-document').fill('12345678');await pub.locator('#public-phone').fill('2231234567');await pub.locator('#public-email').fill('visitor-m6@local.test');await pub.locator('#public-consent').check();
+  await pub.locator('[data-public-slot]').first().click();await pub.locator('#public-contact').fill('Visitante sintético');await pub.locator('#public-document').fill('12345678');await pub.locator('#public-phone').fill('2234951234');await pub.locator('#public-email').fill('visitor-m6@local.test');await pub.locator('#public-consent').check();
   const publicResponse=pub.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/bookings')&&r.request().method()==='POST',{timeout:60000});
   await pub.locator('#public-confirm').click();
   const publicReply=await publicResponse.catch(async error=>{
@@ -358,24 +366,24 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
   const staffPrefix='/staff/owners/'+assignment.ownerId;const administrative=await api(staff,'GET',staffPrefix+'/clinics/'+clinics[0].id+'/bookings?from='+monday+'T00:00:00Z&to='+closedDate+'T00:00:00Z');assert.ok(administrative.items.length>=3);for(const item of administrative.items){assert.equal('patientId'in item,false);assert.equal('provenance'in item,false);assert.equal('address'in(item.clinicSnapshot??{}),false);assert.ok(item.specialty.name);}
   await api(staff,'GET','/patients',null,derm,401);await api(staff,'GET',staffPrefix+'/clinics/'+clinics[1].id+'/availability?from='+monday+'&days=1',null,null,404);
   const session=await api(staff,'GET','/staff/session');const staffSlots=await api(staff,'GET',staffPrefix+'/clinics/'+clinics[0].id+'/availability?from='+monday+'&days=1');const free=staffSlots.days[0].slots[0];assert.ok(free);
-  const delegated=await api(staff,'POST',staffPrefix+'/bookings',{clinicId:clinics[0].id,start:free.start,contactName:'Turno de secretaría',attendeeName:'Persona administrativa',contactPhone:'2231234567'},null,201,crypto.randomUUID(),{'X-CSRF-Token':session.csrfToken});
+  const delegated=await api(staff,'POST',staffPrefix+'/bookings',{clinicId:clinics[0].id,start:free.start,contactName:'Turno de secretaría',attendeeName:'Persona administrativa',contactPhone:'2234951234'},null,201,crypto.randomUUID(),{'X-CSRF-Token':session.csrfToken});
   const staffMove=await api(staff,'POST',staffPrefix+'/bookings/'+delegated.id+'/reschedule',{expectedVersion:delegated.version,clinicId:clinics[0].id,start:staffSlots.days[0].slots.find(s=>s.specialtyContextId===free.specialtyContextId&&s.start!==free.start).start},null,200,crypto.randomUUID(),{'X-CSRF-Token':session.csrfToken});assert.deepEqual(staffMove.specialty,delegated.specialty);await api(staff,'PATCH',staffPrefix+'/bookings/'+delegated.id+'/status',{expectedVersion:staffMove.version,status:'CANCELLED'},null,200,crypto.randomUUID(),{'X-CSRF-Token':session.csrfToken});assert.equal(await staff.getByText('Vincular ficha clínica',{exact:true}).count(),0);await staff.locator('.booking').first().waitFor();const staffName=await staff.locator('.booking > strong').first().boundingBox(),staffSpecialty=await staff.locator('.booking > span').first().boundingBox();assert.ok(staffSpecialty.y>=staffName.y+staffName.height,'Staff specialty must be readable on its own line');assert.equal(await staff.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await staff.screenshot({path:path.join(out,'staff-mobile.png')});
   add('real staff activation/session/CSRF restricts one assigned clinic, manages bookings, and exposes no clinical IDs, files or search');
-  await page.goto(origin+'/clinics');
-  await page.getByRole('link',{name:'Crear agenda virtual'}).click();
-  await page.getByRole('heading',{name:'Nueva agenda de teleconsultas'}).waitFor();
-  assert.equal(await page.locator('#clinic-address').count(),0);
-  const createVirtual=page.waitForResponse(r=>new URL(r.url()).pathname===base+'/clinics'&&r.request().method()==='POST');
-  await page.getByRole('button',{name:'Crear agenda virtual',exact:true}).click();
+  await page.goto(origin+'/clinics?specialtyContextId='+general);
+  const teleconsultation=page.getByRole('region',{name:'Teleconsulta',exact:true});
+  const createVirtual=page.waitForResponse(r=>new URL(r.url()).pathname===base+'/teleconsultations/'+general&&r.request().method()==='PUT');
+  await teleconsultation.getByRole('switch',{name:'Teleconsulta de Medicina General'}).click();
   const createdVirtual=await createVirtual;
-  assert.equal(createdVirtual.status(),201);
-  const virtual=await createdVirtual.json();
+  assert.equal(createdVirtual.status(),200);
+  const virtualSetting=await createdVirtual.json();
+  assert.equal(virtualSetting.enabled,true);
+  const virtual=await api(page,'GET','/clinics/'+virtualSetting.clinicId);
   assert.equal(virtual.modality,'TELECONSULTATION');
   assert.equal(virtual.address,'');
   assert.equal((await api(page,'GET','/clinics/capabilities')).usage.counted,clinics.length);
 
   const rejected=page.waitForResponse(r=>new URL(r.url()).pathname===base+'/clinics/'+virtual.id+'/schedule/validate'&&r.request().method()==='POST');
-  await draftScheduleBlock(page,virtual.id,general,['Lunes'],'11:30','14:00',30);
+  await draftScheduleBlock(page,virtual.id,general,['Lunes'],'11:30','14:00',30,true);
   await page.locator('#occupied-date').fill(monday.split('-').reverse().join('/'));
   await page.locator('#occupied-date').press('Tab');
   await page.locator('.occupied-preview li').filter({hasText:'Consultorio Centro'}).first().waitFor();
@@ -390,10 +398,11 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
   await page.getByText('La agenda se guardó correctamente.',{exact:true}).waitFor();
 
   await page.goto(origin+'/booking-publication');
+  await page.getByRole('button',{name:'Editar qué se puede reservar',exact:true}).click();
   await page.getByRole('checkbox',{name:'Medicina General',exact:true}).check();
   await page.getByRole('checkbox',{name:/Consultorio Centro/}).uncheck();
   await page.getByRole('checkbox',{name:/Teleconsulta/}).check();
-  await page.locator('#publication-enabled').check();
+  await page.getByRole('button',{name:'Revisar',exact:true}).click();
   const virtualPublication=page.waitForResponse(r=>new URL(r.url()).pathname===base+'/booking-publication'&&r.request().method()==='PUT');
   await page.locator('#publication-save').click();
   const virtualProfile=await (await virtualPublication).json();
@@ -409,7 +418,7 @@ async function fourthSpecialty(page,browser,clinic,originalContext){
   await pub.locator('.selected-summary').filter({hasText:'Teleconsulta'}).waitFor();
   await pub.locator('#public-contact').fill('Visitante virtual');
   await pub.locator('#public-document').fill('12345678');
-  await pub.locator('#public-phone').fill('2231234567');
+  await pub.locator('#public-phone').fill('2234951234');
   await pub.locator('#public-email').fill('virtual-m6@local.test');
   await pub.locator('#public-consent').check();
   const virtualResponse=pub.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/bookings')&&r.request().method()==='POST');

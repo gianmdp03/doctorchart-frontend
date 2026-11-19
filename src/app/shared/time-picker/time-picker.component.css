@@ -4,20 +4,23 @@
 .time-field input { width: 100%; min-width: 0; padding: 13px 14px; border: 0; outline: 0; color: var(--md-sys-color-on-surface, #172338); background: transparent; font: inherit; font-variant-numeric: tabular-nums; }
 .time-field button { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--md-sys-color-primary, #006874); cursor: pointer; }
 .time-field svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
-.time-panel { width: min(304px, calc(100vw - 24px)); margin-block: 6px; border: 1px solid var(--md-sys-color-outline-variant, #dce4e9); border-radius: var(--dc-radius-card); background: var(--md-surface-container-lowest, #fff); color: var(--md-sys-color-on-surface, #172338); box-shadow: var(--dc-shadow-overlay); overflow: hidden; }
-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--md-sys-color-outline-variant, #dce4e9); }
-header span, .column-label { font-size: .8rem; color: var(--md-sys-color-on-surface-variant, #526570); }
-header strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; color: var(--md-sys-color-primary, #006874); }
+.time-panel { width: min(304px, calc(100vw - 24px)); margin-block: 6px; border: 1px solid var(--md-sys-color-outline-variant, #dce4e9); border-radius: var(--dc-radius-card); background: var(--md-surface-container-lowest, #fff); color: var(--md-sys-color-on-surface, #172338); box-shadow: var(--dc-shadow-overlay); max-height: calc(100dvh - 36px); overflow: auto; overscroll-behavior: contain; }
+.time-panel-heading { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--md-sys-color-outline-variant, #dce4e9); }
+.time-panel-heading span, .column-label { font-size: .8rem; color: var(--md-sys-color-on-surface-variant, #526570); }
+.time-panel-heading strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; color: var(--md-sys-color-primary, #006874); }
 .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 16px; }
 .column-label { display: block; text-align: center; font-weight: 600; margin-bottom: 8px; }
 .options { overflow-y: auto; max-height: min(220px, 34dvh); scrollbar-width: thin; overscroll-behavior: contain; }
 button { font: inherit; cursor: pointer; border: 0; border-radius: 8px; color: inherit; background: transparent; }
-.options button { display: block; width: 100%; min-height: 42px; font-variant-numeric: tabular-nums; }
+.options label { position: relative; display: block; cursor: pointer; }
+.options label > span { display: grid; place-items: center; min-height: 42px; border-radius: 8px; font-variant-numeric: tabular-nums; }
+.options label:hover > span { background: var(--md-surface-container-low, #eef5f6); }
+.options input:focus-visible + span { outline: 2px solid currentColor; outline-offset: -4px; }
 button:hover { background: var(--md-surface-container-low, #eef5f6); }
-.options button.selected, .confirm { background: var(--md-sys-color-primary, #006874); color: var(--md-sys-color-on-primary, #fff); font-weight: 600; }
+.options input:checked + span, .confirm { background: var(--md-sys-color-primary, #006874); color: var(--md-sys-color-on-primary, #fff); font-weight: 600; }
 button:focus-visible { outline: 2px solid var(--md-sys-color-primary, #006874); outline-offset: -3px; }
-footer { padding: 10px 16px 14px; border-top: 1px solid var(--md-sys-color-outline-variant, #dce4e9); }
-.actions { display: flex; justify-content: flex-end; gap: 8px; }
+.time-panel-actions { padding: 10px 16px 14px; border-top: 1px solid var(--md-sys-color-outline-variant, #dce4e9); }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .actions button, .end-day { padding: 10px 12px; min-height: 42px; }
 .end-day { width: 100%; margin-bottom: 6px; text-align: left; color: var(--md-sys-color-primary, #006874); font-size: .85rem; }
 @media(max-width: 600px) { .time-panel { width: min(340px, calc(100vw - 24px)); } }

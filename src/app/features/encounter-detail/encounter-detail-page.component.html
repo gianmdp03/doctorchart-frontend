@@ -1,34 +1,25 @@
 <section class="encounter-page" aria-labelledby="encounter-title">
-  <nav class="breadcrumbs" aria-label="Ubicación">
-    @if (encounter(); as record) {
-      <a [routerLink]="['/patients', record.patientId]" [queryParams]="{ tab: 'history' }">{{
-        record.patientFullName || 'Ficha del paciente'
-      }}</a>
-    } @else {
-      <span>Historia clínica</span>
-    }
-    <span aria-hidden="true">/</span><span>Detalle de consulta</span>
-  </nav>
   <header class="page-heading">
-    <div>
-
-      <h1 id="encounter-title">{{ isEditing() ? 'Editar consulta' : 'Detalle de la consulta' }}</h1>
-      <p>La atención y su evolución, en un solo lugar.</p>
-    </div>
     @if (encounter(); as record) {
       <a
-        class="dc-button page-button secondary"
+        class="dc-button page-button back-link"
         [routerLink]="['/patients', record.patientId]"
-        [queryParams]="{ tab: 'history' }"
-        >← Volver a la historia del paciente</a
+        [queryParams]="{ tab: 'history', specialtyContextId: record.specialtyContextId }"
       >
+        <ng-icon name="lucideArrowLeft" aria-hidden="true" /> Volver a Historia Clínica
+      </a>
     }
+    <h1 id="encounter-title">{{ isEditing() ? 'Editar consulta' : 'Detalle de la consulta' }}</h1>
   </header>
   @if (errorMessage(); as message) {
     <div class="feedback" role="alert">
       <span>{{ message }}</span>
       @if (!encounter() && requestedId()) {
-        <button class="dc-button page-button secondary" type="button" (click)="loadEncounter(requestedId()!)">
+        <button
+          class="dc-button page-button secondary"
+          type="button"
+          (click)="loadEncounter(requestedId()!)"
+        >
           Reintentar
         </button>
       }
@@ -47,9 +38,16 @@
       <div class="recorded-at">
         <span>Fecha de atención</span><strong>{{ formatDate(record.encounterDate) }}</strong>
       </div>
-      <a class="dc-button page-button secondary" [routerLink]="['/patients', record.patientId]"
-        >Ver ficha del paciente →</a
-      >
+      @if (!isEditing()) {
+        <button
+          type="button"
+          class="dc-button dc-button--quiet revision-trigger"
+          aria-haspopup="dialog"
+          (click)="revisionDialog.showModal(); showRevisions.set(true)"
+        >
+          <ng-icon name="lucideHistory" aria-hidden="true" /> Ver revisiones
+        </button>
+      }
     </div>
     @if (hasConflict()) {
       <section class="feedback" aria-label="Revisar cambios">
@@ -75,20 +73,56 @@
         }
       </section>
     }
-    @if (!isEditing()) {
-      <app-clinical-revisions [patientId]="record.patientId" [encounterId]="record.id" [version]="record.version" />
-    }
+    <dialog
+      #revisionDialog
+      class="revision-dialog"
+      aria-labelledby="consultation-revisions-title"
+      (close)="showRevisions.set(false)"
+    >
+      <div class="revision-dialog-content" cdkTrapFocus>
+        <header class="revision-dialog-header">
+          <div>
+            <h2 id="consultation-revisions-title">Revisiones de la consulta</h2>
+            <p>
+              {{ record.patientFullName || 'Paciente #' + record.patientId }} ·
+              {{ formatDate(record.encounterDate) }}
+            </p>
+          </div>
+          <button type="button" class="dc-button dc-button--quiet" autofocus (click)="revisionDialog.close()">
+            Cerrar
+          </button>
+        </header>
+        <div class="revision-dialog-body">
+          <p>
+            Abrí una revisión para ver qué se había registrado antes de la corrección y el motivo,
+            si se informó.
+          </p>
+          @if (showRevisions()) {
+            <app-clinical-revisions
+              [patientId]="record.patientId"
+              [encounterId]="record.id"
+              [version]="record.version"
+              [embedded]="true"
+            />
+          }
+        </div>
+      </div>
+    </dialog>
     @if (isEditing()) {
       <label>
         Motivo de corrección (opcional)
-        <textarea #reason rows="2" maxlength="1000" [value]="correctionReason()" [disabled]="readonly()"
-          (input)="correctionReason.set(reason.value)"></textarea>
+        <textarea
+          #reason
+          rows="2"
+          maxlength="1000"
+          [value]="correctionReason()"
+          [disabled]="readonly()"
+          (input)="correctionReason.set(reason.value)"
+        ></textarea>
       </label>
       <fieldset class="consultation-metadata" [disabled]="readonly()">
         <legend>Datos de la consulta</legend>
-        <p>
-          Fecha registrada por el servidor: {{ formatDate(record.encounterDate) }}.
-        </p>
+        <p>Fecha registrada por el servidor: {{ formatDate(record.encounterDate) }}.</p>
         <label
           >Tipo de atención<select
             [ngModel]="consultationType()"
@@ -106,13 +140,17 @@
         <legend>Corregir la postura registrada</legend>
         <p>Esta talla quedó registrada como medida acostado.</p>
         <label class="height-position-confirmation">
-          <input type="checkbox" [ngModel]="correctHeightPosition()" (ngModelChange)="correctHeightPosition.set($event)" />
+          <input
+            type="checkbox"
+            [ngModel]="correctHeightPosition()"
+            (ngModelChange)="correctHeightPosition.set($event)"
+          />
           Confirmo que la talla se midió de pie
         </label>
       </fieldset>
     }
     <div class="encounter-content" [class.is-editing]="isEditing()">
-      <app-dynamic-form-renderer
+      <app-dynamic-form-renderer [preserveExistingPhones]="true"
         [showErrors]="submissionAttempted()"
         [definition]="effectiveForm()"
         [values]="values()"
@@ -137,11 +175,20 @@
         >
           Cancelar edición
         </button>
-        <button type="button" class="dc-button dc-button--primary page-button primary" [disabled]="readonly()" (click)="save()">
+        <button
+          type="button"
+          class="dc-button dc-button--primary page-button primary"
+          [disabled]="readonly()"
+          (click)="save()"
+        >
           {{ isSubmitting() ? 'Guardando...' : 'Guardar cambios' }}
         </button>
       } @else {
-        <button type="button" class="dc-button dc-button--primary page-button primary" (click)="startEditing()">
+        <button
+          type="button"
+          class="dc-button dc-button--primary page-button primary"
+          (click)="startEditing()"
+        >
           Editar consulta
         </button>
       }

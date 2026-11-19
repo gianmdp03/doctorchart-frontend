@@ -210,11 +210,11 @@ describe('EncounterFormComponent inline clinical creation', () => {
     // No select dropdown
     expect(fixture.nativeElement.querySelector('select')).toBeNull();
 
-    // Check DOM buttons
-    const buttons = fixture.nativeElement.querySelectorAll(
-      '.consultation-chips-row button',
-    ) as NodeListOf<HTMLButtonElement>;
-    expect(buttons.length).toBe(4);
+    const radios = fixture.nativeElement.querySelectorAll(
+      '.consultation-chips-row input[type="radio"]',
+    ) as NodeListOf<HTMLInputElement>;
+    expect(radios).toHaveLength(4);
+    expect([...radios].filter(radio => radio.checked).map(radio => radio.value)).toEqual(['FOLLOW_UP']);
 
     // Initial selected is FOLLOW_UP
     const activeButtonsBefore = fixture.nativeElement.querySelectorAll('.consultation-chip.active');
@@ -222,12 +222,13 @@ describe('EncounterFormComponent inline clinical creation', () => {
     expect(activeButtonsBefore[0].textContent).toContain('Control / seguimiento');
 
     // Select Urgencia (EMERGENCY)
-    const emergencyBtn = Array.from(buttons).find((b) => b.textContent?.includes('Urgencia'));
-    expect(emergencyBtn).toBeDefined();
-    emergencyBtn?.click();
+    const emergencyRadio = [...radios].find(radio => radio.value === 'EMERGENCY');
+    expect(emergencyRadio).toBeDefined();
+    emergencyRadio?.click();
     fixture.detectChanges();
 
     expect(component.consultationType()).toBe('EMERGENCY');
+    expect([...radios].filter(radio => radio.checked).map(radio => radio.value)).toEqual(['EMERGENCY']);
     const activeButtonsAfter = fixture.nativeElement.querySelectorAll('.consultation-chip.active');
     expect(activeButtonsAfter.length).toBe(1);
     expect(activeButtonsAfter[0].textContent).toContain('Urgencia');

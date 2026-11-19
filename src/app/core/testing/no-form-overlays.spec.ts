@@ -17,7 +17,8 @@ describe('Forms stay in the routed page', () => {
           if (file.endsWith('time-picker.component.ts')) {
             const picker = source.split('<ng-template cdkConnectedOverlay')[1]?.split('</ng-template>')[0];
             expect(picker).toContain('class="time-panel"');
-            expect(picker).not.toMatch(/<form|<input|<textarea|type="submit"/);
+            expect(picker).not.toMatch(/<form|<textarea|type="submit"/);
+            for (const input of picker.matchAll(/<input\b[^>]*>/g)) expect(input[0]).toContain('type="radio"');
             continue;
           }
           if (/aria-modal\s*=|role\s*=\s*["'](?:alertdialog|dialog)["']|class\s*=\s*["'][^"']*(?:modal-backdrop|dialog-backdrop)|\b(?:window\.)?(?:confirm|alert|prompt)\s*\(|open-[\w-]*modal/.test(source)) violations.push(file);

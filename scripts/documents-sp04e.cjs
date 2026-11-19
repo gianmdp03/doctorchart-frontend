@@ -32,7 +32,7 @@ module.exports = async function runDocumentEvidence({ page, browser, state, orig
     await api(page, 'GET', '/clinics/' + physical.id + '/schedule');
     const booking = await api(page, 'POST', '/bookings', {
       clinicId: physical.id, specialtyContextId: String(previous.scope), start: slot.start,
-      contactName: 'Restauración sintética', contactPhone: '2231234567',
+      contactName: 'Restauración sintética', contactPhone: '2234951234',
     }, null, 201, require('node:crypto').randomUUID());
     assert.equal(booking.specialtyContextId, String(previous.scope));
     if (previous.booking) assert.equal((await api(page, 'GET', '/bookings/' + previous.booking)).id, previous.booking);

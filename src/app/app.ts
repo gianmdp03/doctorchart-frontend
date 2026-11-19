@@ -1,6 +1,6 @@
-import { Component, computed, DestroyRef, effect, EnvironmentInjector, inject, PendingTasks, untracked } from '@angular/core';
+import { afterNextRender, Component, computed, DestroyRef, effect, ElementRef, EnvironmentInjector, inject, PendingTasks, untracked } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
 import { ThemeService } from './core/services/theme.service';
@@ -26,7 +26,7 @@ export class App {
   readonly sessionViews = computed(() => [{
     key: JSON.stringify([this.authService.currentUser()?.id ?? null, this.authService.isSuperAdmin()]),
   }]);
-  private readonly pageUrl = toSignal(this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map(event => event.urlAfterRedirects)), { initialValue: this.entryPath });
+  private readonly pageUrl = toSignal(this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map(event => event.urlAfterRedirects)), { initialValue: this.entryPath, equal: () => false });
   readonly isStaffPage=computed(()=>/^\/staff\/(login|activate|recover|calendar)$/.test(this.pageUrl().split(/[?#]/)[0]));
  readonly isPublicAppointmentsPage=computed(()=>{
    const path=this.pageUrl().split(/[?#]/)[0];
@@ -34,6 +34,25 @@ export class App {
  });
  readonly isPublicPage = computed(() => this.isPublicAppointmentsPage() || ['/', '/professionals', '/login', '/register', '/register/confirmed', '/pricing', '/404'].includes(this.pageUrl().split(/[?#]/)[0]) || this.router.routerState.snapshot.root.firstChild?.routeConfig?.path === '**');
   constructor() {
+    const host = inject<ElementRef<HTMLElement>>(ElementRef);
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(event => {
+      const previous = this.router.lastSuccessfulNavigation()?.previousNavigation?.finalUrl;
+      const next = this.router.parseUrl(event.urlAfterRedirects);
+      if (!previous || next.fragment) return;
+      const previousPath = previous.toString().split(/[?#]/)[0];
+      const nextPath = event.urlAfterRedirects.split(/[?#]/)[0];
+      if (previousPath === nextPath && previous.queryParams['specialtyContextId'] === next.queryParams['specialtyContextId']) return;
+      afterNextRender(() => {
+        const main = host.nativeElement.querySelector<HTMLElement>('main');
+        if (!main) return;
+        const target = main.querySelector<HTMLElement>('h1') ?? main;
+        target.tabIndex = -1;
+        target.focus();
+      }, { injector: this.injector });
+    });
     effect(() => {
       if (this.isStaffPage() || this.isPublicAppointmentsPage() || !this.authService.currentUser() || this.coordinatorLoading) return;
       this.coordinatorLoading = true;

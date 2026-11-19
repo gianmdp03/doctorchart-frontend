@@ -1,74 +1,245 @@
-<main class="publication-page">
-  <a class="back-link" routerLink="/calendar">← Agenda de turnos</a>
-  <header>
-
-    <h1>Tu perfil público</h1>
-    <p class="muted">Publicá los horarios que querés ofrecer para que tus pacientes puedan reservar desde un enlace.</p>
+<div class="publication-page">
+  <header class="page-heading">
+    <h1 #pageTitle tabindex="-1">Reservas online</h1>
+    <p class="muted">Elegí qué pueden reservar tus pacientes y compartí tu página de turnos.</p>
   </header>
+  @if (feedback()) { <p class="dc-feedback dc-feedback--success" role="status">{{ feedback() }}</p> }
+  @if (error()) {
+    <p class="dc-feedback dc-feedback--error" role="alert">{{ error() }}</p>
+    @if (!loaded() || conflict()) { <button class="dc-button dc-button--secondary" type="button" (click)="load()">{{ conflict() ? 'Cargar configuración guardada' : 'Reintentar' }}</button> }
+  }
+  @if (busy()) {
+    <p role="status">Cargando reservas online…</p>
+  } @else if (loaded()) {
+    @if (stage() === 'overview') {
+      <section class="publication-overview" aria-labelledby="publication-share">
+        <div>
+          <span class="state" [class.active]="published()">{{ published() ? 'Reservas activas' : hasPublication() ? 'Reservas pausadas' : 'Sin publicar' }}</span>
+          <h2 id="publication-share">Tu página de turnos</h2>
+          <p class="muted">{{ published() ? 'Compartí el enlace para que tus pacientes puedan reservar.' : 'Revisá qué querés ofrecer antes de publicar tu página.' }}</p>
+        </div>
+        <div class="actions">
+          @if (publicLinkId(); as publicId) {
+            <button type="button" class="dc-button dc-button--primary" (click)="copyLink(publicId)">Copiar enlace</button>
+            <a id="publication-link" class="dc-button dc-button--secondary" [routerLink]="['/appointments', publicId]" target="_blank" rel="noopener">Ver como paciente</a>
+            <button type="button" class="dc-button dc-button--quiet" (click)="setStage('pause')">Pausar reservas</button>
+          } @else {
+            <button type="button" class="dc-button dc-button--primary" (click)="setStage('offer')">Preparar publicación</button>
+          }
+        </div>
+        @if (publicLinkId(); as publicId) {
+          <details class="specialty-links">
+            <summary>Compartir por especialidad</summary>
+            @for (row of offer(); track row.id) {
+              @if (row.ready.length) {
+                <div><span>{{ row.name }}</span><button class="dc-button dc-button--quiet" type="button" [attr.aria-label]="'Copiar enlace de ' + row.name" (click)="copyLink(publicId, row.id)">Copiar enlace</button></div>
+              }
+            } @empty { <p class="muted">Todavía no hay especialidades seleccionadas.</p> }
+          </details>
+        }
+      </section>
 
-  <ol class="setup-steps" aria-label="Pasos para habilitar reservas">
-    <li><strong>1. Creá una agenda</strong><a routerLink="/clinics">Ir a Consultorios →</a></li>
-    <li><strong>2. Cargá horarios</strong><span>Guardá las franjas de atención para cada modalidad.</span></li>
-    <li><strong>3. Publicá y compartí</strong><span>Elegí las agendas, guardá la publicación y compartí el enlace.</span></li>
-  </ol>
+      <section class="publication-panel" aria-labelledby="offer-title">
+        <div class="panel-header">
+          <div><h2 id="offer-title">Qué pueden reservar</h2><p class="muted">La disponibilidad se toma de los horarios que ya configuraste.</p></div>
+          <button type="button" class="dc-button dc-button--secondary" (click)="setStage('offer')">Editar qué se puede reservar</button>
+        </div>
+        <ng-container [ngTemplateOutlet]="offerSummary" [ngTemplateOutletContext]="{rows: offer()}" />
+      </section>
 
-  @if(error()){<p class="notice error" role="alert">{{error()}}</p>}
-  @if(feedback()){<p class="notice" role="status">{{feedback()}}</p>}
-  @if(busy()){
-    <p role="status">Cargando publicación…</p>
-  }@else{
-    @if(publicLinkId(); as publicId){
-      <section class="share" aria-labelledby="publication-share">
-        <h2 id="publication-share">Enlace para pacientes</h2>
-        <p class="muted">Copiá la dirección del enlace para compartirla. Las reservas aparecen en tu agenda.</p>
-        <a id="publication-link" [routerLink]="['/appointments',publicId]">Abrir página de reservas ↗</a>
+      <section class="publication-panel" aria-labelledby="patient-questions-title">
+        <div class="panel-header">
+          <div><h2 id="patient-questions-title">Preguntas al paciente</h2><p class="muted">Lo que se pide al reservar un turno online.</p></div>
+          <button type="button" class="dc-button dc-button--secondary" (click)="setStage('questions')">{{ draft.questions.length ? 'Editar preguntas adicionales' : 'Agregar preguntas' }}</button>
+        </div>
+        <ng-container [ngTemplateOutlet]="standardFields" />
+        @if (draft.questions.length) {
+          <div class="question-summary">
+            <h3>Preguntas adicionales</h3>
+            <ul>
+              @for (question of draft.questions; track question.key) {
+                <li>{{ question.label }} <span class="muted">· {{ question.required ? 'Obligatoria' : 'Opcional' }}</span></li>
+              }
+            </ul>
+          </div>
+        }
+      </section>
+
+      <section class="publication-panel panel-header" aria-labelledby="public-profile-title">
+        <div><h2 id="public-profile-title">Página pública</h2><p class="muted">Nombre visible, dirección y presentación.</p></div>
+        <button type="button" class="dc-button dc-button--secondary" (click)="setStage('profile')">Editar página pública</button>
+      </section>
+    } @else if (stage() === 'pause') {
+      <section class="publication-panel editor" aria-labelledby="pause-title">
+        <h2 #editorTitle id="pause-title" tabindex="-1">¿Pausar las reservas online?</h2>
+        <p class="muted">Los pacientes dejarán de poder reservar por la web. Los turnos ya tomados se conservan.</p>
+        <div class="actions editor-actions">
+          <button type="button" class="dc-button dc-button--secondary" (click)="cancelEdit()" [disabled]="saving()">Volver</button>
+          <button type="button" class="dc-button dc-button--primary" (click)="save(false)" [disabled]="saving() || conflict()">Pausar reservas</button>
+        </div>
+      </section>
+    } @else if (stage() === 'offer') {
+      <section class="publication-panel editor" aria-labelledby="publication-clinics">
+        <h2 #editorTitle id="publication-clinics" tabindex="-1">Qué se puede reservar</h2>
+        <p class="muted">Elegí las agendas y especialidades. Se ofrecen las combinaciones que tengan horarios configurados.</p>
+        <fieldset [disabled]="saving()">
+          <legend>Agendas activas</legend>
+          <div class="choice-grid">
+            @for (entry of activeClinics(); track entry.clinicId) {
+              @if (clinic(entry.clinicId); as item) {
+                <label class="choice"><input type="checkbox" [(ngModel)]="entry.enabled" />
+                  <span><strong>{{ clinicName(item.id) }}</strong>@if (!isVirtual(item.id)) { <small>{{ modalityLabel(item.modality) }} · {{ item.city }}</small> }</span>
+                </label>
+              }
+            } @empty { <p class="muted">Todavía no hay agendas configuradas.</p> }
+          </div>
+          <a class="inline-link" routerLink="/clinics">Gestionar consultorios y teleconsulta</a>
+        </fieldset>
+        <fieldset [disabled]="saving()">
+          <legend>Especialidades</legend>
+          <div class="choice-grid">
+            @for (context of workspace.contexts(); track context.id) {
+              @if (context.ready) {
+                <label class="choice"><input type="checkbox"
+                  [ngModel]="draft.specialtyContextIds?.includes('' + context.id) ?? false"
+                  (ngModelChange)="toggleContext('' + context.id, $event)" /> <span>{{ context.specialty.name }}</span></label>
+              }
+            }
+          </div>
+        </fieldset>
+        <div class="actions editor-actions">
+          <button type="button" class="dc-button dc-button--secondary" (click)="cancelEdit()" [disabled]="saving()">Cancelar</button>
+          <button type="button" class="dc-button dc-button--primary" (click)="setStage('review')" [disabled]="saving()">Revisar</button>
+        </div>
+      </section>
+    } @else if (stage() === 'profile') {
+      <form class="publication-panel editor" (ngSubmit)="setStage('review')" #profileForm="ngForm">
+        <h2 #editorTitle tabindex="-1">Editar página pública</h2>
+        <fieldset [disabled]="saving()">
+          <label class="field">Nombre que verán tus pacientes
+            <input id="publication-name" name="name" [(ngModel)]="draft.name" required maxlength="160" />
+          </label>
+          <label class="field">Presentación breve (opcional)
+            <textarea id="publication-description" name="description" [(ngModel)]="draft.description" maxlength="1200" rows="3"></textarea>
+          </label>
+          @for (entry of draft.clinics; track entry.clinicId) {
+            @if (entry.enabled && !isVirtual(entry.clinicId)) {
+              <label class="field">Dirección pública de {{ clinicName(entry.clinicId) }}
+                <input [name]="'address-' + entry.clinicId" [(ngModel)]="entry.address" required maxlength="255" />
+              </label>
+            }
+          }
+        </fieldset>
+        <div class="actions editor-actions">
+          <button type="button" class="dc-button dc-button--secondary" (click)="cancelEdit()">Cancelar</button>
+          <button type="submit" class="dc-button dc-button--primary" [disabled]="profileForm.invalid">Revisar</button>
+        </div>
+      </form>
+    } @else if (stage() === 'questions') {
+      <form class="publication-panel editor" (ngSubmit)="setStage('review')" #questionsForm="ngForm">
+        <h2 #editorTitle tabindex="-1">Preguntas al paciente</h2>
+        <ng-container [ngTemplateOutlet]="standardFields" />
+        <fieldset [disabled]="saving()">
+          <legend>Preguntas adicionales</legend>
+          <p class="muted">Agregá preguntas administrativas, por ejemplo, sobre la obra social. Evitá pedir síntomas o información de salud.</p>
+          @for (question of draft.questions; track question.key; let i = $index) {
+            <div class="question">
+              <label class="field">Pregunta {{ i + 1 }}
+                <input [id]="'publication-question-' + i" [name]="question.key" [(ngModel)]="question.label" required maxlength="120" />
+              </label>
+              <label class="choice"><input type="checkbox" [name]="question.key + '-required'" [(ngModel)]="question.required" /> Respuesta obligatoria</label>
+              <button type="button" class="dc-button dc-button--quiet" (click)="draft.questions.splice(i, 1)">Quitar pregunta</button>
+            </div>
+          }
+          <button type="button" id="publication-add-question" class="dc-button dc-button--secondary" (click)="addQuestion()" [disabled]="draft.questions.length >= 8">Agregar pregunta</button>
+        </fieldset>
+        <div class="actions editor-actions">
+          <button type="button" class="dc-button dc-button--secondary" (click)="cancelEdit()">Cancelar</button>
+          <button type="submit" class="dc-button dc-button--primary" [disabled]="questionsForm.invalid">Revisar</button>
+        </div>
+      </form>
+    } @else {
+      <section class="publication-panel editor" aria-labelledby="review-title">
+        <h2 #editorTitle id="review-title" tabindex="-1">Revisá tu página de turnos</h2>
+        <div class="review-profile">
+          <div><strong>{{ draft.name || 'Falta el nombre público' }}</strong>@if (draft.description) { <p class="muted">{{ draft.description }}</p> }</div>
+          <button type="button" class="dc-button dc-button--secondary" (click)="setStage('profile')" [disabled]="saving()">Editar página pública</button>
+        </div>
+        <ng-container [ngTemplateOutlet]="offerSummary" [ngTemplateOutletContext]="{rows: offer(draft)}" />
+        <div class="review-profile">
+          <div class="question-summary">
+            <h3>Preguntas adicionales</h3>
+            @if (draft.questions.length) {
+              <ul>
+                @for (question of draft.questions; track question.key) {
+                  <li>{{ question.label }} <span class="muted">· {{ question.required ? 'Obligatoria' : 'Opcional' }}</span></li>
+                }
+              </ul>
+            } @else {
+              <p class="muted">Sin preguntas adicionales.</p>
+            }
+          </div>
+          <button type="button" class="dc-button dc-button--secondary" (click)="setStage('questions')" [disabled]="saving()">Editar preguntas adicionales</button>
+        </div>
+        <div class="actions editor-actions">
+          <button type="button" class="dc-button dc-button--quiet" (click)="cancelEdit()" [disabled]="saving()">Cancelar</button>
+          <button type="button" class="dc-button dc-button--secondary" (click)="setStage('offer')" [disabled]="saving()">Editar agendas</button>
+          @if (!published()) {
+            <button type="button" class="dc-button dc-button--secondary" (click)="save(false)" [disabled]="saving() || conflict()">Guardar sin publicar</button>
+          }
+          <button type="button" id="publication-save" class="dc-button dc-button--primary" (click)="save(true)" [disabled]="saving() || conflict()">
+            {{ saving() ? 'Guardando…' : published() ? 'Guardar cambios' : 'Publicar reservas' }}
+          </button>
+        </div>
       </section>
     }
-    <form (ngSubmit)="save()" #publicationForm="ngForm">
-      <fieldset [disabled]="saving()">
-        <legend class="sr-only">Datos de publicación</legend>
-        <section class="publication-panel" aria-labelledby="publication-profile">
-          <h2 id="publication-profile">Presentación profesional</h2>
-          <label>Nombre profesional público<input id="publication-name" name="name" [(ngModel)]="draft.name" required maxlength="160" /></label>
-          <label><span>Presentación breve <span class="muted">(opcional)</span></span><textarea id="publication-description" name="description" [(ngModel)]="draft.description" maxlength="1200" rows="3"></textarea></label>
-          <p class="muted">Elegí las especialidades que querés ofrecer. Los datos de pacientes y las historias clínicas son privados.</p>
-        </section>
-        <section class="publication-panel" aria-labelledby="publication-specialties"><h2 id="publication-specialties">Especialidades públicas</h2>@for(context of workspace.contexts();track context.id){@if(context.ready){<label class="checkbox"><input type="checkbox" [name]="'context-'+context.id" [ngModel]="draft.specialtyContextIds?.includes(''+context.id)??false" (ngModelChange)="toggleContext(''+context.id,$event)"/>{{context.specialty.name}}</label>@if(publicLinkId() && draft.specialtyContextIds?.includes(''+context.id)){<a [routerLink]="['/appointments',publicLinkId()]" [queryParams]="{specialtyContextId:context.id}">Enlace de {{context.specialty.name}}</a>}}@else{<p>{{context.specialty.name}} · Configuración pendiente</p>}}<p class="muted">Se ofrecen horarios de especialidades con bloques en agendas activas publicadas.</p></section><section class="publication-panel" aria-labelledby="publication-clinics">
-          <h2 id="publication-clinics">Agendas visibles</h2>
-          @for(c of draft.clinics;track c.clinicId){
-            <div class="publication-clinic">
-              <label class="checkbox"><input type="checkbox" [name]="'enabled-'+c.clinicId" [(ngModel)]="c.enabled" />{{clinicName(c.clinicId)}}</label>
-              @if(!isVirtual(c.clinicId)){
-                <label>Dirección que verá el paciente<input [name]="'address-'+c.clinicId" [(ngModel)]="c.address" [required]="c.enabled" maxlength="255" /></label>
-              }
-            </div>
-          }@empty{
-            <p class="notice">Primero agregá un consultorio o una agenda virtual y configurá sus horarios. <a routerLink="/clinics">Ir a Consultorios →</a></p>
-          }
-          @if(draft.clinics.length){<p class="muted">Indicá una dirección pública para cada consultorio presencial que elijas.</p>}
-        </section>
-        <section class="publication-panel" aria-labelledby="publication-questions">
-          <h2 id="publication-questions">Preguntas administrativas <span class="muted">(opcional)</span></h2>
-          <p class="muted">Podés pedir datos como la obra social. Evitá solicitar síntomas, diagnósticos o información de salud.</p>
-          @for(q of draft.questions;track q.key;let i=$index){
-            <div class="question">
-              <label>Pregunta {{i+1}}<input [id]="'publication-question-'+i" [name]="q.key" [(ngModel)]="q.label" required maxlength="120" /></label>
-              <label class="checkbox"><input type="checkbox" [name]="q.key+'-required'" [(ngModel)]="q.required" />Respuesta obligatoria</label>
-              <button type="button" (click)="draft.questions.splice(i,1)">Quitar pregunta</button>
-            </div>
-          }
-          <button type="button" id="publication-add-question" (click)="addQuestion()" [disabled]="draft.questions.length>=8">+ Agregar pregunta</button>
-        </section>
-        <section class="publication-panel publication-status" aria-labelledby="publication-enable">
-          <h2 id="publication-enable">Publicación</h2>
-          <label class="checkbox"><input id="publication-enabled" type="checkbox" name="published" [(ngModel)]="draft.published" />Publicar este perfil y habilitar reservas online</label>
-          <p class="muted">Tu plan debe tener habilitadas las reservas online. Si despublicás, se conservan los turnos ya reservados.</p>
-        </section>
-      </fieldset>
-      <div class="save-actions">
-        <button id="publication-save" class="dc-button dc-button--primary primary" [disabled]="publicationForm.invalid||saving()||conflict()">{{saving()?'Guardando…':'Guardar publicación'}}</button>
-        <button type="button" (click)="load()" [disabled]="saving()">Recargar versión guardada</button>
-      </div>
-    </form>
   }
-</main>
+</div>
+
+<ng-template #offerSummary let-rows="rows">
+  <ul class="offer-list">
+    @for (row of rows; track row.id) {
+      <li>
+        <strong>{{ row.name }}</strong>
+        @if (!row.configured) {
+          <span class="muted">Configuración pendiente</span> <a routerLink="/specialties">Mis especialidades</a>
+        }
+        @for (item of row.ready; track item.id) {
+          <span class="offer-chip">{{ clinicName(item.id) }}
+            @if (stage() === 'review' && !isVirtual(item.id)) { <small>{{ publicAddress(item.id) }}</small> }
+          </span>
+        }
+        @for (item of row.missing; track item.id) {
+          <span class="muted">{{ clinicName(item.id) }} · Faltan horarios</span>
+          <a [routerLink]="['/clinics', item.id, 'schedule']" [queryParams]="isVirtual(item.id) ? {specialtyContextId: row.id, teleconsultationContextId: row.id} : null">Configurar horarios de {{ clinicName(item.id) }}</a>
+        }
+        @if (row.unverified) { <span class="muted">Hay horarios que no pudimos verificar.</span> }
+        @if (row.configured && !row.ready.length && !row.missing.length && !row.unverified) {
+          <span class="muted">Sin agendas activas seleccionadas para esta especialidad.</span>
+        }
+      </li>
+    } @empty { <li class="muted">Todavía no elegiste qué turnos ofrecer.</li> }
+  </ul>
+</ng-template>
+
+<ng-template #standardFields>
+  <div class="standard-fields">
+    <div class="standard-heading">
+      <span class="standard-lock" aria-hidden="true"><ng-icon name="lucideLockKeyhole" /></span>
+      <div>
+        <h3>Campos fijos</h3>
+        <p class="muted">DoctorChart pide estos datos en cada reserva.</p>
+      </div>
+    </div>
+    <ul class="standard-grid" role="list" aria-label="Datos obligatorios">
+      <li><ng-icon name="lucideUserRound" aria-hidden="true" /><span>Nombre y apellido del solicitante</span></li>
+      <li><ng-icon name="lucideIdCard" aria-hidden="true" /><span>DNI del solicitante</span></li>
+      <li><ng-icon name="lucidePhone" aria-hidden="true" /><span>Teléfono</span></li>
+      <li><ng-icon name="lucideMail" aria-hidden="true" /><span>Correo electrónico</span></li>
+    </ul>
+    <div class="standard-notes">
+      <p><strong>Si reserva para otra persona</strong>, se pide también el nombre y apellido de quien se va a atender.</p>
+      <p><strong>Al confirmar</strong>, el solicitante acepta enviar los datos al profesional.</p>
+    </div>
+  </div>
+</ng-template>

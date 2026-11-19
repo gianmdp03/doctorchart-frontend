@@ -1,3 +1,4 @@
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { ClinicalContextService } from '../../core/services/clinical-context.service';
 import {
   Component,
@@ -11,16 +12,21 @@ import {
   signal,
   untracked,
   afterEveryRender,
+  afterNextRender,
+  Injector,
+  ElementRef,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PatientService } from '../../core/services/patient.service';
+import { ClinicalAccessComponent } from './clinical-access.component';
 import { ClinicalRevisionsComponent } from './clinical-revisions.component';
 import { ClinicalDocumentToolsComponent } from './clinical-document-tools.component';
 import { AnnulmentPromptComponent } from './annulment-prompt.component';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideUser, lucideUsers, lucidePlus } from '@ng-icons/lucide';
+import { lucideUser, lucideUsers, lucidePlus, lucideEllipsis, lucideChevronRight, lucideArrowLeft, lucideHistory, lucideShieldCheck, lucideFiles } from '@ng-icons/lucide';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { PatientDetailDTO } from '../../core/models/patient.model';
@@ -38,6 +44,8 @@ import {
   PatientRecordTab,
   PatientRecordModule,
 } from './patient-record-modules';
+type ManagementSection = 'access' | 'revisions' | 'documents' | 'annul';
+
 export interface RecordTabItem {
   id: PatientRecordTab;
   label: string;
@@ -48,10 +56,11 @@ export interface RecordTabItem {
 /** Composes the record; each clinical module owns its state and operations. */
 @Component({
   selector: 'app-patient-record',
-  imports: [
+  imports: [CdkTrapFocus,
     NgIcon,
     PatientBannerComponent,
     PatientRecordModuleDirective,
+    ClinicalAccessComponent,
     ClinicalRevisionsComponent,
     ClinicalDocumentToolsComponent,
     AnnulmentPromptComponent,
@@ -62,7 +71,7 @@ export interface RecordTabItem {
     PatientPrescriptionStore,
     PatientPrescriptionEditorStore,
     PatientStudiesStore,
-    provideIcons({ lucideUser, lucideUsers, lucidePlus }),
+    provideIcons({ lucideUser, lucideUsers, lucidePlus, lucideEllipsis, lucideChevronRight, lucideArrowLeft, lucideHistory, lucideShieldCheck, lucideFiles }),
   ],
   templateUrl: './patient-record.component.html',
   styleUrl: './patient-record.component.css',
@@ -94,7 +103,17 @@ export class PatientRecordComponent implements OnInit {
   readonly isEncounterFormOpen = signal<boolean>(false);
 
   readonly isPatientEditorOpen = signal<boolean>(false);
-  readonly confirmingAnnulment = signal(false);
+  private readonly injector = inject(Injector);
+  private readonly managementDialog = viewChild<ElementRef<HTMLDialogElement>>('managementDialog');
+  readonly managementSection = signal<ManagementSection | null>(null);
+  readonly managementTools = [
+    { id: 'revisions', title: 'Revisiones de la ficha', icon: 'lucideHistory',
+      description: 'Consultá cuándo se corrigió o anuló un registro, el motivo si se informó y cómo estaba antes.' },
+    { id: 'documents', title: 'Documentos y exportación', icon: 'lucideFiles',
+      description: 'Recuperá el PDF original de una receta u orden, o descargá una copia de la ficha de esta especialidad.' },
+    { id: 'access', title: 'Accesos a la ficha', icon: 'lucideShieldCheck',
+      description: 'Revisá cuándo se consultaron datos de esta ficha, qué se abrió y si el acceso fue autorizado.' },
+  ] as const;
   readonly annulling = signal(false);
   readonly annulmentError = signal('');
   readonly tabs = computed<RecordTabItem[]>(() =>
@@ -140,6 +159,7 @@ export class PatientRecordComponent implements OnInit {
         this.activePatientService.patientId(),
       ]);
       const tabs = this.tabs();
+      const managementSection = this.managementSection();
       const canEdit = this.recordActions.has('EDIT_PATIENT');
       const canCreate = this.recordActions.has('NEW_ENCOUNTER');
       untracked(() => {
@@ -147,12 +167,16 @@ export class PatientRecordComponent implements OnInit {
           this.recordContext = context;
           this.isEncounterFormOpen.set(false);
           this.isPatientEditorOpen.set(false);
-          this.confirmingAnnulment.set(false);
+          const dialog = this.managementDialog()?.nativeElement;
+          if (dialog?.open) dialog.close();
+          this.resetManagement();
           this.annulling.set(false);
-          this.annulmentError.set('');
           this.history.cancelCreatingEncounter();
         }
-        if (!canEdit) this.isPatientEditorOpen.set(false);
+        if (!canEdit) {
+          this.isPatientEditorOpen.set(false);
+          if (managementSection === 'annul') this.resetManagement();
+        }
         if (!canCreate) {
           this.isEncounterFormOpen.set(false);
           this.history.cancelCreatingEncounter();
@@ -211,6 +235,28 @@ export class PatientRecordComponent implements OnInit {
 
   navigateToPatients(): void {
     this.router.navigate(['/patients']);
+  }
+
+  selectManagement(section: ManagementSection | null): void {
+    this.managementSection.set(section);
+    this.annulmentError.set('');
+    afterNextRender(() => {
+      const dialog = this.managementDialog()?.nativeElement;
+      if (!dialog?.open) return;
+      const body = dialog.querySelector<HTMLElement>('.management-body');
+      if (!body) return;
+      body.scrollTop = 0;
+      body.querySelector<HTMLElement>(section ? '[data-tool-heading]' : '.management-option')?.focus({ preventScroll: true });
+    }, { injector: this.injector });
+  }
+
+  cancelManagement(event: Event): void {
+    if (this.annulling()) event.preventDefault();
+  }
+
+  resetManagement(): void {
+    this.managementSection.set(null);
+    this.annulmentError.set('');
   }
 
   annulPatient(patient: PatientDetailDTO, reason: string): void {

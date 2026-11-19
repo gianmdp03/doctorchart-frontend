@@ -30,6 +30,7 @@
     "@angular/platform-server": "22.2.2",
     "@angular/router": "22.2.2",
     "@angular/ssr": "22.2.2",
+    "@intl-tel-input/angular": "^29.5.11",
     "@ng-icons/core": "^36.0.0",
     "@ng-icons/lucide": "^36.0.0",
     "@spartan-ng/brain": "^1.4.1",
@@ -41,6 +42,7 @@
     "d3-shape": "^3.2.0",
     "embla-carousel": "^8.6.0",
     "embla-carousel-angular": "^22.0.0",
+    "intl-tel-input": "^29.5.11",
     "rxjs": "~7.8.0",
     "tailwind-merge": "^3.5.0",
     "tslib": "^2.3.0"

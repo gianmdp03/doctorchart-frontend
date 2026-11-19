@@ -1,0 +1,72 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+section {
+  display: grid;
+  gap: 0.75rem;
+}
+section > button {
+  justify-self: start;
+}
+h3,
+p {
+  margin: 0;
+}
+h3 {
+  color: var(--dc-text);
+  font-size: 1rem;
+  font-weight: 650;
+}
+.access-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.access-list li {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--dc-line);
+}
+.access-event {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+}
+.access-event strong {
+  flex: 1 0 13rem;
+  font-weight: 600;
+  color: var(--dc-text);
+}
+time {
+  font-variant-numeric: tabular-nums;
+  color: var(--dc-text-secondary);
+  font-size: 0.8125rem;
+}
+.access-result {
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--dc-radius-pill);
+  background: var(--dc-positive-soft);
+  color: var(--dc-positive);
+  font-size: 0.75rem;
+}
+.access-result.attention {
+  background: var(--dc-caution-soft);
+  color: var(--dc-caution);
+}
+details {
+  width: fit-content;
+  max-width: 100%;
+  color: var(--dc-text-secondary);
+  font-size: 0.8125rem;
+}
+summary {
+  cursor: pointer;
+  color: var(--dc-brand-ink);
+  min-height: 28px;
+}
+details p {
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,92 @@
+app-phone-input,
+app-phone-input intl-tel-input,
+app-phone-input .iti {
+  display: block;
+  min-inline-size: 0;
+  inline-size: 100%;
+}
+
+app-phone-input .iti input.iti__tel-input[type='tel'],
+app-phone-input input.dc-phone-placeholder {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: var(--dc-control-height);
+  padding-block: 9px;
+  padding-inline-end: 12px;
+  border: 1px solid var(--dc-control-line);
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-paper);
+  color: var(--dc-text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+app-phone-input .iti input.iti__tel-input[aria-invalid='true'] {
+  border-color: var(--dc-error-ink);
+}
+
+app-phone-input .iti input::placeholder {
+  color: var(--dc-text-muted);
+  opacity: 1;
+}
+
+app-phone-input :is(input, .iti__selected-country):focus-visible,
+.dc-phone-selector :is(input, button, [role='listbox']):focus-visible {
+  outline: 2px solid var(--dc-focus);
+  outline-offset: 2px;
+}
+
+app-phone-input .iti__selected-country:focus-visible {
+  outline-offset: -2px;
+}
+
+app-phone-input .iti input:disabled,
+app-phone-input .iti__selected-country:disabled {
+  opacity: .65;
+}
+
+app-phone-input .dc-phone-error,
+app-phone-input .dc-phone-hint {
+  display: block;
+  margin-block-start: 5px;
+  font-size: .8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+app-phone-input .dc-phone-error {
+  color: var(--dc-error-ink);
+}
+
+app-phone-input .dc-phone-hint {
+  color: var(--dc-text-muted);
+}
+
+app-phone-input .iti,
+.dc-phone-selector {
+  --iti-country-selector-bg: var(--dc-paper);
+  --iti-hover-color: var(--dc-brand-soft);
+  --iti-border-color: var(--dc-control-line);
+  --iti-icon-color: var(--dc-text-muted);
+}
+
+.dc-phone-selector {
+  color: var(--dc-text);
+  border-radius: var(--dc-radius-control);
+  box-shadow: var(--dc-shadow-overlay);
+}
+
+.dc-phone-selector .iti__search-input {
+  font: inherit;
+  font-size: 1rem;
+  color: var(--dc-text);
+  background: var(--dc-paper);
+}
+
+.dc-phone-selector .iti__country-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+

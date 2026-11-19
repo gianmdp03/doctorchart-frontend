@@ -79,6 +79,7 @@ summary:focus-visible {
 }
 nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 28px;
   font-size: 13px;
   color: var(--muted);
@@ -92,6 +93,7 @@ nav a:hover,
   align-items: center;
   gap: 15px;
 }
+.patient-entry { color: var(--dc-brand-ink); }
 .button {
   display: inline-flex;
   align-items: center;
@@ -120,6 +122,42 @@ nav a:hover,
   font-size: 13px;
   padding: 11px 19px;
 }
+.login-trigger {
+  font-family: inherit;
+  cursor: pointer;
+}
+.login-trigger:hover {
+  transform: none;
+}
+.login-menu {
+  display: grid;
+  min-width: 220px;
+  max-width: calc(100vw - 32px);
+  padding: 5px;
+  background: var(--md-sys-color-surface, white);
+  color: var(--md-sys-color-on-surface, #172b2e);
+  border: 1px solid var(--md-sys-color-outline-variant, #d8e4e5);
+  border-radius: var(--dc-radius-control);
+  box-shadow: var(--dc-shadow-sm);
+}
+.login-menu a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: calc(var(--dc-radius-control) - 4px);
+  font-size: 13px;
+  font-weight: 600;
+}
+.login-menu a:hover,
+.login-menu a:focus-visible {
+  background: var(--dc-brand-soft);
+}
+.login-menu a:focus-visible {
+  outline: 2px solid var(--dc-focus);
+  outline-offset: -2px;
+}
+.register-entry,
 .logout-button {
   font-family: inherit;
   background: var(--surface);
@@ -946,6 +984,32 @@ details[open] .faq-plus {
   .header-inner { width: calc(100% - 24px); }
   .landing-header .brand { font-size: 16px; gap: 5px; }
   .landing-header .brand-mark { width: 26px; height: 26px; }
+}
+@media (max-width: 620px) {
+  .header-inner.has-patient-entry {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding-block: 10px;
+  }
+  .has-patient-entry .header-actions { display: contents; }
+  .has-patient-entry .brand { grid-column: 1 / 3; grid-row: 1; }
+  .has-patient-entry .patient-entry { grid-column: 3; grid-row: 1; justify-self: end; }
+  .has-patient-entry app-theme-toggle { grid-column: 1; grid-row: 2; justify-self: start; }
+  .has-patient-entry .app-entry { grid-column: 3; grid-row: 2; justify-self: end; }
+  .has-patient-entry.has-session .app-entry { grid-column: 2; justify-self: start; }
+  .has-patient-entry .logout-button { grid-column: 3; grid-row: 2; justify-self: end; }
+  .header-inner:not(.has-session) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding-block: 10px;
+  }
+  .header-inner:not(.has-session) .header-actions { display: contents; }
+  .header-inner:not(.has-session) .brand { grid-column: 1 / 3; grid-row: 1; }
+  .header-inner:not(.has-session) app-theme-toggle { grid-column: 1; grid-row: 2; justify-self: start; }
+  .header-inner:not(.has-session) .app-entry { grid-column: 2; grid-row: 2; justify-self: end; }
+  .register-entry { grid-column: 3; grid-row: 2; justify-self: end; }
 }
 .hero h1 {
   font-size: 3rem;

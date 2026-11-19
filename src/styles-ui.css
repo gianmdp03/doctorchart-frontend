@@ -75,6 +75,25 @@ body {
 .dc-button--quiet { border-color: transparent; background: transparent; color: var(--dc-brand-ink); }
 .dc-button:disabled { opacity: .55; cursor: not-allowed; }
 .dc-button ng-icon { flex-shrink: 0; font-size: 1.125rem; }
+.dc-audience-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-brand-soft);
+  color: var(--dc-brand-ink);
+  font-size: .8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.dc-audience-link:hover { text-decoration: underline; }
+@media (max-width: 760px) {
+  .dc-audience-link { padding: 10px; font-size: .75rem; }
+}
 
 .dc-panel { padding: var(--dc-space-6); border: 1px solid var(--dc-line); border-radius: var(--dc-radius-card); background: var(--dc-paper); }
 .dc-feedback { padding: var(--dc-space-4); border: 1px solid var(--dc-line); border-radius: var(--dc-radius-control); background: var(--dc-subtle); }
@@ -116,7 +135,20 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .animate-fade-in { animation: none; }
-  .dc-button { transition: none; }
-  :where(.spinner, .spinner-small, .splash-spinner, .mini-spinner, .record-spinner) { animation-duration: 2s; }
+  :where(app-root *, .cdk-overlay-container *) {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(button, input, textarea, select, a, summary, [tabindex]):focus-visible {
+    outline-color: Highlight;
+  }
+  :where([aria-pressed='true'], [aria-current='page'], [aria-current='step']) {
+    outline: 1px solid Highlight;
+    outline-offset: -1px;
+  }
 }

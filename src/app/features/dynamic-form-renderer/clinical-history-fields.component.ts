@@ -23,6 +23,7 @@ import {
 export class ClinicalHistoryFieldsComponent {
   readonly values = input<WizardFormValues>({});
   readonly readonly = input(false);
+  readonly headingLevel = input<2 | 3>(3);
   readonly showErrors = input(false);
   readonly encounter = input(false);
   readonly valuesChange = output<WizardFormValues>();

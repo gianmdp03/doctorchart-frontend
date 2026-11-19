@@ -1,4 +1,4 @@
-<div class="patient-form-page animate-fade-in" aria-label="Formulario de paciente">
+<section class="patient-form-page animate-fade-in" aria-labelledby="patient-form-title">
   <div class="patient-form-container">
     <!-- Header with Back Button, Title and Subtitle -->
     <header class="patient-form-header">
@@ -20,7 +20,7 @@
             {{ isEditMode() ? 'Edición de Paciente' : 'Nuevo Registro' }}
           </span>
         </div>
-        <h1 class="page-title">{{ pageTitle() }}</h1>
+        <h1 class="page-title" id="patient-form-title">{{ pageTitle() }}</h1>
         <p class="page-subtitle">{{ pageSubtitle() }}</p>
       </div>
     </header>
@@ -84,8 +84,8 @@
 
     <!-- Main Clinical Form Card -->
     @if (definition(); as form) {
-      <main class="form-card">
-        <app-dynamic-form-renderer
+      <div class="form-card">
+        <app-dynamic-form-renderer [headingLevel]="2" [preserveExistingPhones]="isEditMode()"
           [showErrors]="submissionAttempted()" [definition]="form"
           [values]="values()"
           [formulaResults]="formulaResults()"
@@ -100,7 +100,7 @@
               (input)="correctionReason.set(reason.value)"></textarea>
           </label>
         }
-      </main>
+      </div>
 
       <!-- Bottom Sticky Action Bar -->
       <footer class="form-actions-bar">
@@ -128,4 +128,4 @@
       </div>
     }
   </div>
-</div>
+</section>

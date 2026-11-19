@@ -1,4 +1,5 @@
-<section class="tab-panel animate-fade-in" aria-label="Evolución y curvas de crecimiento">
+<section class="tab-panel animate-fade-in" aria-labelledby="patient-growth-title">
+  <h2 id="patient-growth-title" class="sr-only">Evolución y curvas de crecimiento</h2>
   @if (growth.isLoadingGrowthCurves()) {
     <p role="status">Cargando referencias y mediciones de crecimiento…</p>
   } @else if (growth.growthError()) {

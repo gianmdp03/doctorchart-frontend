@@ -1,5 +1,5 @@
 import { InteractionStatusService } from '../../../core/services/interaction-status.service';
-import { Component, computed, inject, OnInit, signal, viewChildren } from '@angular/core';
+import { afterNextRender, Component, ElementRef, Injector, computed, inject, OnInit, signal, viewChild, viewChildren } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { DoctorProfileService } from '../../../core/services/doctor-profile.service';
@@ -102,10 +102,13 @@ export class OnboardingWizardComponent implements OnInit {
     this.definition.update(current => current ? { ...current, encounterForm: this.copy(form) } : current);
   }
 
+  private readonly stepHeading = viewChild<ElementRef<HTMLHeadingElement>>('stepHeading');
+  private readonly injector = inject(Injector);
+
   async goToStep(index: number): Promise<void> {
     const step = this.steps()[index];
     if (!step || this.editorReadonly() || step.key === this.activeStepKey()) return;
-    await this.saveDraft(step.key);
+    if (await this.saveDraft(step.key)) afterNextRender(() => this.stepHeading()?.nativeElement.focus(), { injector: this.injector });
   }
 
   async goNext(): Promise<void> {
@@ -139,6 +142,13 @@ export class OnboardingWizardComponent implements OnInit {
       this.handleWriteError(error, 'El borrador está guardado, pero no pudimos aplicar los cambios. Revisá los campos e intentá nuevamente.');
     } finally {
       this.isSaving.set(false);
+    }
+  }
+
+  async backToSpecialties(): Promise<void> {
+    if (this.isEditMode() || this.editorReadonly()) return;
+    if (await this.saveDraft(this.activeStepKey())) {
+      await this.router.navigate(['/specialties'], { queryParams: { add: '1' } });
     }
   }
 

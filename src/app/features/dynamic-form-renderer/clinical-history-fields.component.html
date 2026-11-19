@@ -2,7 +2,7 @@
   <header class="health-header">
     <div>
 
-      <h3>Antecedentes clínicos</h3>
+      @if (headingLevel() === 2) { <h2>Antecedentes clínicos</h2> } @else { <h3>Antecedentes clínicos</h3> }
       <p>
         {{
           encounter()
@@ -19,7 +19,7 @@
         <div class="group-heading">
           <span class="group-icon"><ng-icon [name]="group.icon" /></span>
           <div>
-            <h4>{{ group.title }}</h4>
+            @if (headingLevel() === 2) { <h3>{{ group.title }}</h3> } @else { <h4>{{ group.title }}</h4> }
             <p>{{ group.hint }}</p>
           </div>
         </div>
@@ -55,7 +55,7 @@
                   : group.kind === 'PROBLEM'
                     ? 'Problemas actuales'
                     : 'Medicamentos, dosis y frecuencia'
-              }}<span aria-label="Obligatorio"> *</span></label
+              }}<span aria-hidden="true"> *</span></label
             >
             <textarea
               [id]="'field-' + group.details"
@@ -64,14 +64,15 @@
               [placeholder]="placeholder(group.details)"
               [ngModel]="values()[group.details] ?? ''"
               (ngModelChange)="update(group.details, $event)"
-              [attr.aria-invalid]="showErrors() && !values()[group.details]"
-              [attr.aria-describedby]="'hint-' + group.details"
+              aria-required="true"
+              [attr.aria-invalid]="showErrors() && !$any(values()[group.details])?.trim()"
+              [attr.aria-describedby]="'hint-' + group.details + (showErrors() && !$any(values()[group.details])?.trim() ? ' error-' + group.details : '')"
             ></textarea>
             <small [id]="'hint-' + group.details"
               >Un registro por línea. Se mostrará automáticamente en el resumen.</small
             >
             @if (showErrors() && !$any(values()[group.details])?.trim()) {
-              <p class="error" role="alert">Detallá la información que seleccionaste.</p>
+              <p class="error" role="alert" [id]="'error-' + group.details">Detallá la información que seleccionaste.</p>
             }
           }
         }

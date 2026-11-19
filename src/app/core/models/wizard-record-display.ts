@@ -1,4 +1,4 @@
-import { ClinicalFormRecord, WizardFieldDefinition, WizardFormDefinition, WizardFormValues } from './wizard-definition.model';
+import { ClinicalFormRecord, WizardCategoryDefinition, WizardFieldDefinition, WizardFormDefinition, WizardFormValues } from './wizard-definition.model';
 
 /** Visibility follows stable keys, including the visibility of the controller itself. */
 export function isWizardFieldVisible(definition: WizardFormDefinition, values: WizardFormValues, key: string): boolean {
@@ -14,9 +14,13 @@ export function isWizardFieldVisible(definition: WizardFormDefinition, values: W
   return visit(key, new Set());
 }
 
-export function wizardRecordEntries(record: ClinicalFormRecord): { label: string; value: string }[] {
+export function wizardRecordEntries(
+  record: ClinicalFormRecord,
+  include?: (category: WizardCategoryDefinition, field: WizardFieldDefinition) => boolean,
+): { label: string; value: string }[] {
   const display = wizardRecordForm(record.formDefinitionSnapshot);
   return display.categories.flatMap(category => category.fields.flatMap(field => {
+    if (include && !include(category, field)) return [];
     if (!isWizardFieldVisible(record.formDefinitionSnapshot, record.formValues, field.key)) return [];
     const result = record.formulaResults[field.key];
     const value = field.type === 'FORMULA' ? (result?.status === 'READY' ? result.value : null) : record.formValues[field.key];

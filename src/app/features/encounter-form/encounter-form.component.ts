@@ -43,6 +43,8 @@ import {
   retainCompatibleValues,
 } from '../dynamic-form-renderer/clinical-form-ui';
 
+let nextEncounterFormId = 0;
+
 @Component({
   selector: 'app-encounter-form',
   imports: [FormsModule, DynamicFormRendererComponent, ClinicalHistoryReferenceComponent],
@@ -50,6 +52,7 @@ import {
   styleUrl: './encounter-form.component.css',
 })
 export class EncounterFormComponent implements OnInit, OnDestroy {
+  readonly consultationTypeName = 'consultation-type-' + nextEncounterFormId++;
   private readonly interaction = inject(InteractionStatusService);
   private readonly clinicalScope = inject(ClinicalContextService);
   private readonly encounterService = inject(ClinicalEncounterService);

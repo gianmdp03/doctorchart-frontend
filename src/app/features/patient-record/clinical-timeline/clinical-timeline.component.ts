@@ -1,35 +1,23 @@
-import { todayDate, shiftCalendarDate, instantParts, formatInstant } from '../../../core/date/user-time-zone';
+import {
+  todayDate,
+  shiftCalendarDate,
+  instantParts,
+  formatInstant,
+} from '../../../core/date/user-time-zone';
+import { hiddenEncounterFieldKeys } from '../../../core/models/wizard-definition.model';
 import { wizardRecordEntries } from '../../../core/models/wizard-record-display';
 import {
   Component,
   computed,
   EventEmitter,
-  inject,
-  input,
   Input,
   OnChanges,
   SimpleChanges,
   Output,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import {
-  lucideCalendar,
-  lucideClock,
-  lucideChevronDown,
-  lucideChevronUp,
-  lucideStethoscope,
-  lucideActivity,
-  lucidePill,
-  lucideFileText,
-  lucidePrinter,
-  lucideEye,
-  lucideTrash2,
-  lucidePlus,
-  lucideAlertCircle,
-} from '@ng-icons/lucide';
+import { lucideChevronDown, lucideChevronUp } from '@ng-icons/lucide';
 import { ClinicalEncounterList } from '../../../core/models/clinical-encounter.model';
 import { DatePickerComponent } from '../../../shared/date-picker/date-picker.component';
 import { validIsoDate } from '../../../core/models/form-validation';
@@ -37,48 +25,40 @@ import { validIsoDate } from '../../../core/models/form-validation';
 @Component({
   selector: 'app-clinical-timeline',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon, DatePickerComponent],
-  providers: [
-    provideIcons({
-      lucideCalendar,
-      lucideClock,
-      lucideChevronDown,
-      lucideChevronUp,
-      lucideStethoscope,
-      lucideActivity,
-      lucidePill,
-      lucideFileText,
-      lucidePrinter,
-      lucideEye,
-      lucideTrash2,
-      lucidePlus,
-      lucideAlertCircle,
-    }),
-  ],
+  imports: [NgIcon, DatePickerComponent],
+  providers: [provideIcons({ lucideChevronDown, lucideChevronUp })],
   templateUrl: './clinical-timeline.component.html',
   styleUrl: './clinical-timeline.component.css',
 })
 export class ClinicalTimelineComponent implements OnChanges {
-  readonly canCreateEncounter = input.required<boolean>();
   private readonly encounterRows = signal<ClinicalEncounterList[]>([]);
-  @Input() set encounters(value: ClinicalEncounterList[]) { this.encounterRows.set(value); }
-  get encounters(): ClinicalEncounterList[] { return this.encounterRows(); }
+  @Input() set encounters(value: ClinicalEncounterList[]) {
+    this.encounterRows.set(value);
+  }
+  get encounters(): ClinicalEncounterList[] {
+    return this.encounterRows();
+  }
   @Input() isLoading = false;
-  @Input() patientName = '';
-  encounterPatientName(encounter: ClinicalEncounterList): string { return this.patientName || encounter.patientFullName || 'Paciente #' + encounter.patientId; }
-  @Output() newEncounter = new EventEmitter<void>();
   @Output() viewDetail = new EventEmitter<number>();
   @Output() deleteEncounter = new EventEmitter<number>();
-  @Output() printPrescription = new EventEmitter<ClinicalEncounterList>();
 
   // Cards start closed; retain explicit expansion while the same records refresh.
   readonly expandedCardIds = signal<Set<number>>(new Set());
 
-
+  readonly presets = [
+    { id: 'ALL', label: 'Todas' },
+    { id: 'LAST_30', label: '30 días' },
+    { id: 'LAST_90', label: '90 días' },
+    { id: 'THIS_YEAR', label: 'Este año' },
+  ] as const;
   readonly fromDate = signal<string>('');
   readonly toDate = signal<string>('');
   readonly datePreset = signal<'ALL' | 'LAST_30' | 'LAST_90' | 'THIS_YEAR' | 'CUSTOM'>('ALL');
-  readonly dateRangeError = computed(() => validIsoDate(this.fromDate()) && validIsoDate(this.toDate()) && this.fromDate() > this.toDate() ? 'La fecha Desde no puede ser posterior a Hasta.' : null);
+  readonly dateRangeError = computed(() =>
+    validIsoDate(this.fromDate()) && validIsoDate(this.toDate()) && this.fromDate() > this.toDate()
+      ? 'La fecha Desde no puede ser posterior a Hasta.'
+      : null,
+  );
 
   readonly hasActiveDateFilter = computed(() => {
     return !!this.fromDate() || !!this.toDate() || this.datePreset() !== 'ALL';
@@ -88,7 +68,8 @@ export class ClinicalTimelineComponent implements OnChanges {
     const list = this.encounters || [];
     const from = this.fromDate();
     const to = this.toDate();
-    if (this.dateRangeError() || (from && !validIsoDate(from)) || (to && !validIsoDate(to))) return list;
+    if (this.dateRangeError() || (from && !validIsoDate(from)) || (to && !validIsoDate(to)))
+      return list;
 
     if (!from && !to) {
       return list;
@@ -103,7 +84,9 @@ export class ClinicalTimelineComponent implements OnChanges {
     });
   });
 
-  createEncounter(): void { if (this.canCreateEncounter()) this.newEncounter.emit(); }
+  readonly allVisibleExpanded = computed(() =>
+    this.filteredEncounters().every((encounter) => this.expandedCardIds().has(encounter.id)),
+  );
 
   setPreset(preset: 'ALL' | 'LAST_30' | 'LAST_90' | 'THIS_YEAR'): void {
     this.datePreset.set(preset);
@@ -154,8 +137,10 @@ export class ClinicalTimelineComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['encounters']) {
-      const available = new Set(this.encounters.map(row => row.id));
-      this.expandedCardIds.update(current => new Set([...current].filter(id => available.has(id))));
+      const available = new Set(this.encounters.map((row) => row.id));
+      this.expandedCardIds.update(
+        (current) => new Set([...current].filter((id) => available.has(id))),
+      );
     }
   }
 
@@ -176,26 +161,32 @@ export class ClinicalTimelineComponent implements OnChanges {
   }
 
   expandAll(): void {
-    const allIds = new Set((this.encounters || []).map((e) => e.id));
-    this.expandedCardIds.set(allIds);
+    this.expandedCardIds.update(
+      (ids) => new Set([...ids, ...this.filteredEncounters().map((encounter) => encounter.id)]),
+    );
   }
 
   collapseAll(): void {
     this.expandedCardIds.set(new Set());
   }
 
-  formatDate(dateStr: string): string { return dateStr ? formatInstant(dateStr, false) : '—'; }
+  formatDate(dateStr: string): string {
+    return dateStr ? formatInstant(dateStr, false) : '—';
+  }
 
-  formatTime(dateStr: string): string { const time = instantParts(dateStr).time; return time ? time + ' hs' : ''; }
+  formatTime(dateStr: string): string {
+    const time = instantParts(dateStr).time;
+    return time ? time + ' hs' : '';
+  }
 
   getConsultationTypeLabel(type: string): string {
     switch (type) {
       case 'FIRST_VISIT':
-        return 'Primera Vez';
+        return 'Primera consulta';
       case 'FOLLOW_UP':
         return 'Control';
       case 'ROUTINE_CHECKUP':
-        return 'Chequeo General';
+        return 'Chequeo general';
       case 'EMERGENCY':
         return 'Urgencia';
       case 'INTERCONSULTATION':
@@ -205,45 +196,39 @@ export class ClinicalTimelineComponent implements OnChanges {
     }
   }
 
-  getConsultationTypeClass(type: string): string {
-    switch (type) {
-      case 'EMERGENCY':
-        return 'chip-emergency';
-      case 'FIRST_VISIT':
-        return 'chip-first-visit';
-      default:
-        return 'chip-routine';
-    }
-  }
-
-
   getEncounterSummary(encounter: ClinicalEncounterList): string {
-    return encounter.chiefComplaint || encounter.primaryDiagnosisDescription || wizardRecordEntries(encounter)[0]?.value || 'Consulta registrada';
+    return (
+      encounter.chiefComplaint?.trim() ||
+      encounter.primaryDiagnosisDescription?.trim() ||
+      'Consulta #' + encounter.id
+    );
   }
 
-  getDynamicEntries(encounter: ClinicalEncounterList): { label: string; value: string }[] {
-    return wizardRecordEntries(encounter);
+  getPreviewEntries(encounter: ClinicalEncounterList): { label: string; value: string }[] {
+    const hasSavedFields = encounter.formDefinitionSnapshot.categories.some(
+      (category) => category.fields.length > 0,
+    );
+    if (!hasSavedFields) {
+      const plan = encounter.treatmentPlan?.trim();
+      return plan ? [{ label: 'Plan de tratamiento', value: plan }] : [];
+    }
+    const complaint = encounter.chiefComplaint?.trim();
+    const diagnosis = encounter.primaryDiagnosisDescription?.trim();
+    return wizardRecordEntries(encounter, (_category, field) => {
+      if (hiddenEncounterFieldKeys.includes(field.key)) return false;
+      const value = encounter.formValues[field.key];
+      if (typeof value !== 'string') return true;
+      if (['chiefComplaint', 'complaint'].includes(field.key)) return value.trim() !== complaint;
+      if (['diagnosis', 'primaryDiagnosisDescription'].includes(field.key))
+        return value.trim() !== diagnosis;
+      return true;
+    });
   }
-  getBmiStatus(bmi?: number | null): { label: string; badgeClass: string } {
-    if (!bmi) return { label: 'Sin IMC', badgeClass: 'bmi-neutral' };
-    if (bmi < 18.5) return { label: `${bmi.toFixed(1)} (Bajo peso)`, badgeClass: 'bmi-warning' };
-    if (bmi < 25.0) return { label: `${bmi.toFixed(1)} (Normal)`, badgeClass: 'bmi-success' };
-    if (bmi < 30.0) return { label: `${bmi.toFixed(1)} (Sobrepeso)`, badgeClass: 'bmi-warning' };
-    return { label: `${bmi.toFixed(1)} (Obesidad)`, badgeClass: 'bmi-danger' };
-  }
-
-  onPrintCard(encounter: ClinicalEncounterList, event?: Event): void {
-    if (event) event.stopPropagation();
-    this.printPrescription.emit(encounter);
-  }
-
-  onViewCard(id: number, event?: Event): void {
-    if (event) event.stopPropagation();
+  onViewCard(id: number): void {
     this.viewDetail.emit(id);
   }
 
-  onDeleteCard(id: number, event?: Event): void {
-    if (event) event.stopPropagation();
+  onDeleteCard(id: number): void {
     this.deleteEncounter.emit(id);
   }
 }

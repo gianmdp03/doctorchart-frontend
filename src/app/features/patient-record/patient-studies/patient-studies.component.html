@@ -4,7 +4,7 @@
     <div>
       <div class="flex items-center gap-2">
         <ng-icon name="lucideFolderOpen" class="text-teal-600 text-xl" />
-        <h3 class="section-title">Estudios realizados</h3>
+        <h2 class="section-title">Estudios realizados</h2>
         <span class="count-badge">{{ studies().length }}</span>
       </div>
       <p class="section-subtitle">
@@ -31,7 +31,7 @@
   <section class="upload-card" aria-label="Subir nuevo estudio médico">
     <div class="upload-card-header">
       <ng-icon name="lucideUpload" class="text-teal-600" />
-      <h4>Adjuntar nuevo estudio médico</h4>
+      <h3>Adjuntar nuevo estudio médico</h3>
     </div>
 
     <form (ngSubmit)="submitUpload()" class="upload-form">
@@ -39,7 +39,7 @@
         <!-- Selector de Archivo -->
         <div class="form-group file-picker-group">
           <label for="studyFileInput" class="form-label">
-            Archivo o Imagen <span class="required-star">*</span>
+            Archivo o Imagen <span class="required-star" aria-hidden="true">*</span>
           </label>
           <div class="file-input-wrapper">
             <input
@@ -67,7 +67,7 @@
                   type="button"
                   class="clear-file-btn"
                   (click)="clearSelectedFile()"
-                  title="Quitar archivo"
+                  aria-label="Quitar archivo"
                   [disabled]="isUploading()"
                 >
                   ✕
@@ -85,9 +85,9 @@
           <input id="studyName" type="text" name="studyName" required maxlength="240"
             [ngModel]="studyName()" (ngModelChange)="onNameChange($event)"
             placeholder="Ej: Tomografía cerebral" class="form-input text-input"
-            [disabled]="isUploading()" aria-describedby="studyNameHint" />
+            [disabled]="isUploading()" [attr.aria-describedby]="'studyNameHint' + (studyName() && nameError() ? ' studyNameError' : '')" [attr.aria-invalid]="!!studyName() && !!nameError()" />
           <span id="studyNameHint" class="file-hint">Nombre para identificar el estudio en la historia clínica.</span>
-          @if (studyName() && nameError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
+          @if (studyName() && nameError(); as error) { <span class="field-error" id="studyNameError" role="alert">{{ error }}</span> }
         </div>
 
         <!-- Descripción o Especificación -->
@@ -97,6 +97,8 @@
           </label>
           <textarea
             id="studyDescription"
+            [attr.aria-invalid]="!!descriptionError()"
+            [attr.aria-describedby]="descriptionError() ? 'studyDescriptionError' : null"
             rows="3"
             [ngModel]="description()"
             (ngModelChange)="onDescriptionChange($event)"
@@ -106,7 +108,7 @@
             class="form-input text-input"
             [disabled]="isUploading()"
           ></textarea>
-          @if (descriptionError(); as error) { <span class="field-error" role="alert">{{ error }}</span> }
+          @if (descriptionError(); as error) { <span class="field-error" id="studyDescriptionError" role="alert">{{ error }}</span> }
         </div>
       </div>
 
@@ -171,7 +173,7 @@
   <!-- Listado de Estudios Realizados -->
   <section class="studies-list-section" aria-label="Historial de estudios médicos">
     <div class="list-section-header">
-      <h4>Estudios registrados en la ficha</h4>
+      <h3>Estudios registrados en la ficha</h3>
       @if (isLoading()) {
         <span class="loading-label">Cargando estudios…</span>
       }
@@ -185,7 +187,7 @@
     } @else if (!hasStudies()) {
       <div class="empty-studies-state">
         <ng-icon name="lucideFileText" class="empty-icon" />
-        <h5>No hay estudios médicos registrados</h5>
+        <h4>No hay estudios médicos registrados</h4>
         <p>
           Utilizá el formulario superior para subir los informes diagnósticos, imágenes o fotos de estudios realizados al paciente.
         </p>
@@ -207,9 +209,9 @@
 
               <div class="study-details">
                 <div class="study-title-row">
-                  <h5 class="study-filename" [title]="studyTitle(study)">
+                  <h4 class="study-filename" [title]="studyTitle(study)">
                     {{ studyTitle(study) }}
-                  </h5>
+                  </h4>
                   <span class="study-format-badge">
                     {{ isPdf(study.contentType) ? 'PDF' : isImage(study.contentType) ? 'IMAGEN' : 'ARCHIVO' }}
                   </span>

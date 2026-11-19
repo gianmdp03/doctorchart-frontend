@@ -6,6 +6,8 @@
 @import '@spartan-ng/brain/hlm-tailwind-preset.css';
 @import '@angular/material/prebuilt-themes/azure-blue.css';
 @import './design-tokens.css';
+@import 'intl-tel-input/styles';
+@import './app/shared/phone-input/phone-input.css';
 @import './styles-ui.css';
 @custom-variant dark (&:where(.dark, .dark *));
 @layer base {

@@ -19,7 +19,6 @@ export interface PatientRecordModule {
   patientIdInput?: string;
   encounterInput?: string;
   editOutput?: string;
-  encounterOutput?: string;
   patientUpdatedOutput?: string;
 }
 
@@ -37,7 +36,6 @@ export const PATIENT_RECORD_MODULES: Record<PatientRecordModuleId, PatientRecord
     tab: 'historia',
     label: 'Historia Clínica',
     component: PatientEncountersComponent,
-    encounterOutput: 'newEncounter',
   },
   VACCINATION: {
     id: 'VACCINATION',

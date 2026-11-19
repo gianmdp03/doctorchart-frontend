@@ -5,9 +5,6 @@
 .workspace-label { font-size: .875rem; font-weight: 600; color: var(--dc-text-secondary); }
 .header-center { flex: 1; min-width: 0; font-size: .875rem; color: var(--dc-text-secondary); }
 .header-right { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-shrink: 0; }
-.bycode-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-control); font-size: .8125rem; font-weight: 600; color: var(--dc-text-secondary); text-decoration: none; }
-.bycode-link img { width: 22px; height: 22px; object-fit: contain; }
-.bycode-link:hover { background: var(--dc-subtle); }
 .accessibility-ctrl { display: flex; }
 .accessibility-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 10px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-control); background: var(--dc-paper); color: var(--dc-text-secondary); cursor: pointer; font: inherit; font-size: .8125rem; }
 .accessibility-btn:hover { background: var(--dc-subtle); }
@@ -30,5 +27,5 @@
 .logout-item { color: var(--dc-danger); }
 :where(button, a):focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }
 @media (max-width: 1000px) { .top-app-header { padding-inline: 20px; } .accessibility-badge { display: none; } }
-@media (max-width: 768px) { .top-app-header { min-height: 60px; padding: 8px 16px; gap: 8px; } .header-center { display: none; } .header-right { gap: 6px; } .accessibility-icon { display: none; } .bycode-link { min-width: 44px; padding: 8px; } .bycode-link span { display: none; } .workspace-label { font-size: .75rem; } .profile-dropdown-menu { position: fixed; top: auto; right: 12px; margin-top: 54px; } }
+@media (max-width: 768px) { .top-app-header { min-height: 60px; padding: 8px 16px; gap: 8px; } .header-center { display: none; } .header-right { gap: 6px; } .accessibility-icon { display: none; } .workspace-label { font-size: .75rem; } .profile-dropdown-menu { position: fixed; top: auto; right: 12px; margin-top: 54px; } }
 @media (max-width: 360px) { .workspace-label { display: none; } .header-right { width: 100%; justify-content: space-between; } }

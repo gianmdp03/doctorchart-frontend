@@ -1,4 +1,5 @@
 import { InteractionStatusService } from '../../core/services/interaction-status.service';
+import { NgTemplateOutlet } from '@angular/common';
 import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 import {
   ChangeDetectionStrategy,
@@ -24,18 +25,21 @@ import {
   lucidePencil,
   lucidePlayCircle,
   lucidePlus,
-  lucideRefreshCw,
   lucideShieldAlert,
+  lucideVideo,
 } from '@ng-icons/lucide';
-import { firstValueFrom, takeUntil } from 'rxjs';
+import { firstValueFrom, of, takeUntil } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { AccountReadScope } from '../../core/services/account-read-scope';
+import { ClinicalContextService } from '../../core/services/clinical-context.service';
+import { WorkspaceStore } from '../../core/services/workspace.store';
 import {
   CapabilityBannerDescriptor,
   Clinic,
   ClinicCapabilities,
   ClinicStatus,
   ClinicStatusFilter,
+  TeleconsultationSetting,
   canCreateClinic,
   canEditClinic,
   isCapabilityVerified,
@@ -60,12 +64,11 @@ interface StatusFilterOption {
 
 @Component({
   selector: 'app-clinics-page',
-  imports: [RouterLink, NgIconComponent],
+  imports: [RouterLink, NgIconComponent, NgTemplateOutlet],
   providers: [
     provideIcons({
       lucideBuilding2,
       lucidePlus,
-      lucideRefreshCw,
       lucideMapPin,
       lucideClock,
       lucidePencil,
@@ -74,6 +77,7 @@ interface StatusFilterOption {
       lucideArchive,
       lucideArchiveRestore,
       lucideShieldAlert,
+      lucideVideo,
       lucideChevronLeft,
       lucideChevronRight,
       lucideExternalLink,
@@ -90,7 +94,16 @@ export class ClinicsPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly readScope = new AccountReadScope(() => this.resetState());
+  private readonly context = inject(ClinicalContextService);
+  private readonly workspace = inject(WorkspaceStore);
+  private readonly readScope = new AccountReadScope(() => {
+    this.resetState();
+    if (this.readScope.authenticated()) void this.reloadAll();
+  });
+  readonly activeContextId = this.context.id;
+  readonly activeSpecialty = computed(() => this.workspace.contexts().find(
+    item => item.id === this.activeContextId(),
+  )?.specialty.name ?? null);
 
   private accountGeneration = 0;
   private mutationOperationId = 0;
@@ -105,12 +118,28 @@ export class ClinicsPageComponent implements OnInit {
     { value: 'ARCHIVED', label: 'Fuera del cupo' },
   ];
 
-  readonly clinics = signal<Clinic[]>([]);
+  private readonly allClinics = signal<Clinic[]>([]);
+  readonly teleconsultations = signal<TeleconsultationSetting[]>([]);
+  readonly selectedTeleconsultation = computed(() =>
+    this.teleconsultations().find(item => item.specialtyContextId === String(this.activeContextId())),
+  );
+  readonly teleconsultationError = signal<string | null>(null);
+  readonly pendingTeleconsultation = signal<string | null>(null);
+  private readonly filteredClinics = computed(() => this.allClinics().filter(clinic =>
+    clinic.modality !== 'TELECONSULTATION' &&
+    (!this.activeContextId() || !clinic.specialtyContextIds?.length || clinic.specialtyContextIds.includes(String(this.activeContextId()))) &&
+    (this.statusFilter() === 'ALL' || clinic.status === this.statusFilter()),
+  ));
+  readonly clinics = computed(() => {
+    const start = this.currentPage() * this.pageSize();
+    return this.filteredClinics().slice(start, start + this.pageSize());
+  });
+  readonly hasLoadedClinics = signal(false);
   readonly capabilities = signal<ClinicCapabilities | null>(null);
   readonly statusFilter = signal<ClinicStatusFilter>('ALL');
   readonly currentPage = signal(0);
   readonly pageSize = signal(20);
-  readonly totalElements = signal(0);
+  readonly totalElements = computed(() => this.filteredClinics().length);
 
   readonly isLoading = signal(false);
   readonly loadError = signal<string | null>(null);
@@ -199,9 +228,12 @@ export class ClinicsPageComponent implements OnInit {
     this.accountGeneration += 1;
     this.mutationOperationId += 1;
     this.clearCapabilityExpiryTimer();
-    this.clinics.set([]);
+    this.allClinics.set([]);
+    this.teleconsultations.set([]);
+    this.teleconsultationError.set(null);
+    this.pendingTeleconsultation.set(null);
+    this.hasLoadedClinics.set(false);
     this.capabilities.set(null);
-    this.totalElements.set(0);
     this.currentPage.set(0);
     this.isLoading.set(false);
     this.loadError.set(null);
@@ -217,23 +249,26 @@ export class ClinicsPageComponent implements OnInit {
     const active = this.readScope.begin();
     this.isLoading.set(true);
     this.loadError.set(null);
-
-    const filter = this.statusFilter();
-    const query = {
-      page: this.currentPage(),
-      size: this.pageSize(),
-      ...(filter !== 'ALL' ? { status: filter } : {}),
-    };
+    this.teleconsultationError.set(null);
 
     try {
-      const [capsResult, listResult] = await Promise.allSettled([
+      const [capsResult, listResult, virtualResult] = await Promise.allSettled([
         firstValueFrom(this.clinicsService.getCapabilities().pipe(takeUntil(this.readScope.canceled))),
-        firstValueFrom(
-          this.clinicsService.listClinics(query).pipe(takeUntil(this.readScope.canceled)),
-        ),
+        this.loadClinics(active),
+        firstValueFrom((this.schedulesEnabled ? this.clinicsService.listTeleconsultations() : of([]))
+          .pipe(takeUntil(this.readScope.canceled))),
       ]);
 
       if (!active() || this.destroyed) return;
+
+      if (virtualResult.status === 'fulfilled') {
+        this.teleconsultations.set(virtualResult.value);
+      } else {
+        this.teleconsultations.set([]);
+        this.teleconsultationError.set(parseClinicHttpError(
+          virtualResult.reason, 'No pudimos cargar las teleconsultas.',
+        ).userMessage);
+      }
 
       if (capsResult.status === 'fulfilled') {
         this.setCapabilities(capsResult.value);
@@ -247,13 +282,12 @@ export class ClinicsPageComponent implements OnInit {
       }
 
       if (listResult.status === 'fulfilled') {
-        this.clinics.set(listResult.value.items);
-        this.currentPage.set(listResult.value.page);
-        this.pageSize.set(listResult.value.size);
-        this.totalElements.set(listResult.value.totalElements);
+        this.allClinics.set(listResult.value);
+        this.currentPage.update(page => Math.min(page, this.totalPages() - 1));
+        this.hasLoadedClinics.set(true);
       } else {
-        this.clinics.set([]);
-        this.totalElements.set(0);
+        this.allClinics.set([]);
+        this.hasLoadedClinics.set(false);
         const parsed = parseClinicHttpError(
           listResult.reason,
           'No pudimos cargar el listado de consultorios.',
@@ -267,6 +301,19 @@ export class ClinicsPageComponent implements OnInit {
     }
   }
 
+  private async loadClinics(active: () => boolean): Promise<Clinic[]> {
+    const clinics: Clinic[] = [];
+    const size = 100;
+    for (let page = 0; active(); page++) {
+      const result = await firstValueFrom(
+        this.clinicsService.listClinics({ page, size }).pipe(takeUntil(this.readScope.canceled)),
+      );
+      clinics.push(...result.items);
+      if (clinics.length >= result.totalElements || result.items.length === 0) break;
+    }
+    return clinics;
+  }
+
   selectStatusFilter(filter: ClinicStatusFilter): void {
     if (this.statusFilter() === filter && this.currentPage() === 0) {
       return;
@@ -274,7 +321,6 @@ export class ClinicsPageComponent implements OnInit {
     this.statusFilter.set(filter);
     this.currentPage.set(0);
     this.actionError.set(null);
-    void this.reloadAll();
   }
 
   goToPage(page: number): void {
@@ -282,13 +328,40 @@ export class ClinicsPageComponent implements OnInit {
       return;
     }
     this.currentPage.set(page);
-    void this.reloadAll();
   }
 
-  canCreateVirtual(): boolean {
+  canManageTeleconsultation(): boolean {
     this.capabilityExpiryTick();
-    return this.schedulesEnabled && isCapabilityVerified(this.capabilities())
-      && !this.clinics().some(clinic => clinic.modality === 'TELECONSULTATION');
+    return !this.isLoading() && this.pendingTeleconsultation() === null
+      && isCapabilityVerified(this.capabilities()) && this.capabilities()?.entitlements.clinicManagement === true;
+  }
+
+  async toggleTeleconsultation(setting: TeleconsultationSetting): Promise<void> {
+    if (!this.canManageTeleconsultation()) return;
+    const generation = this.accountGeneration;
+    const owner = this.currentOwnerId();
+    const current = () => !this.destroyed && generation === this.accountGeneration
+      && owner === this.currentOwnerId();
+    this.pendingTeleconsultation.set(setting.specialtyContextId);
+    this.teleconsultationError.set(null);
+    try {
+      const updated = await firstValueFrom(this.clinicsService.setTeleconsultation(
+        setting.specialtyContextId, !setting.enabled,
+      ));
+      if (current()) {
+        this.teleconsultations.update(items => items.map(item =>
+          item.specialtyContextId === updated.specialtyContextId
+            ? updated
+            : { ...item, clinicId: updated.clinicId ?? item.clinicId },
+        ));
+      }
+    } catch (error) {
+      if (current()) this.teleconsultationError.set(parseClinicHttpError(
+        error, 'No pudimos cambiar el estado de la teleconsulta.',
+      ).userMessage);
+    } finally {
+      if (current()) this.pendingTeleconsultation.set(null);
+    }
   }
 
   navigateToCreate(): void {

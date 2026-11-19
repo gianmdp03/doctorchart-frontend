@@ -8,6 +8,10 @@
   padding: 0;
 }
 
+:host-context(.onboarding-content) .specialties-page {
+  padding: clamp(24px, 4vw, 48px) clamp(16px, 4vw, 32px);
+}
+
 .page-heading,
 .picker-heading {
   display: flex;

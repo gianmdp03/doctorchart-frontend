@@ -1,35 +1,44 @@
 import { DatePipe } from '@angular/common';
-import { Component, effect, inject, input, signal, untracked } from '@angular/core';
+import { afterNextRender, Component, effect, ElementRef, Injector, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { takeUntil } from 'rxjs';
 import { ClinicalAccessEvent } from '../../core/models/clinical-revision.model';
 import { AccountReadScope } from '../../core/services/account-read-scope';
 import { PatientService } from '../../core/services/patient.service';
 
 @Component({
+  styleUrl: './clinical-access.component.css',
   selector: 'app-clinical-access',
   imports: [DatePipe],
   template: `
     @if (!open()) {
-      <button type="button" class="dc-button" (click)="load()">
+      <button #openButton type="button" class="dc-button" aria-expanded="false" (click)="load(); focusPanel(true)">
         {{ patientId() ? 'Accesos a la ficha' : 'Auditoría de accesos' }}
       </button>
     } @else {
-      <section aria-label="Auditoría de accesos">
-        <h3>Auditoría de accesos</h3>
-        <button type="button" class="dc-button" (click)="close()">Cerrar auditoría</button>
+      <section #panel tabindex="-1" aria-label="Auditoría de accesos">
+        @if (!embedded()) { <h3>Auditoría de accesos</h3> }
+        @if (!embedded()) { <button type="button" class="dc-button" (click)="close(); focusPanel(false)">Cerrar auditoría</button> }
         @if (error()) {
           <p role="alert">{{ error() }}</p>
-          <button type="button" [disabled]="loading()" (click)="load()">Reintentar</button>
+          <button type="button" class="dc-button" [disabled]="loading()" (click)="load()">Reintentar</button>
         }
         @if (loading()) { <p role="status">Cargando accesos…</p> }
-        <ul>
+        <ul class="access-list">
           @for (event of items(); track event.id) {
             <li>
-              {{ event.occurredAt | date:'dd/MM/yyyy HH:mm:ss' }} ·
-              {{ operations[event.operation] ?? event.operation }} ·
-              {{ event.actor }} · {{ outcomes[event.outcome] }}
-              @if (event.entityId ?? event.patientId; as recordId) { · Registro #{{ recordId }} }
-              @if (event.recordVersion !== null) { · Versión {{ event.recordVersion }} }
+              <div class="access-event">
+                <strong>{{ operations[event.operation] ?? event.operation }}</strong>
+                <time [attr.datetime]="event.occurredAt">{{ event.occurredAt | date:'dd/MM/yyyy HH:mm:ss' }}</time>
+                <span class="access-result" [class.attention]="event.outcome === 'REJECTED' || event.outcome === 'FAILED'">
+                  {{ outcomes[event.outcome] }}
+                </span>
+              </div>
+              <details>
+                <summary>Ver usuario y registro</summary>
+                <p>{{ event.actorKind === 'DOCTOR' ? 'Profesional' : 'Administrador del catálogo' }} · ID {{ event.actor }}</p>
+                @if (event.entityId ?? event.patientId; as recordId) { <p>Registro #{{ recordId }}</p> }
+                @if (event.recordVersion !== null) { <p>Versión {{ event.recordVersion }}</p> }
+              </details>
             </li>
           } @empty {
             @if (!loading() && !error()) { <li>Sin accesos registrados para esta selección.</li> }
@@ -43,6 +52,15 @@ import { PatientService } from '../../core/services/patient.service';
   `,
 })
 export class ClinicalAccessComponent {
+  private readonly injector = inject(Injector);
+  private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
+  private readonly openButton = viewChild<ElementRef<HTMLButtonElement>>('openButton');
+
+  focusPanel(open: boolean): void {
+    afterNextRender(() => (open ? this.panel() : this.openButton())?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  readonly embedded = input(false);
   readonly patientId = input<number>();
   readonly open = signal(false);
   readonly loading = signal(false);
@@ -64,6 +82,9 @@ export class ClinicalAccessComponent {
     ENCOUNTER_PRINT_DATA: 'Preparación de documento de consulta', ENCOUNTER_PDF: 'PDF de consulta',
     STUDIES_READ: 'Listado de estudios', STUDY_READ: 'Detalle del estudio', STUDY_DOWNLOAD: 'Descarga de estudio',
     ARCHIVED_STUDY_DOWNLOAD: 'Descarga histórica', CALCULATION_HISTORY: 'Historial de cálculos',
+    DOCUMENT_LIST: 'Listado de documentos emitidos', DOCUMENT_ISSUE: 'Emisión de documento',
+    DOCUMENT_REPRINT: 'Descarga de PDF original', DOCUMENT_ANNUL: 'Anulación de documento',
+    CHART_EXPORT_DOWNLOAD: 'Exportación de ficha',
     CALCULATION_AUTOFILL: 'Datos para cálculo', CALCULATION_EXECUTE: 'Cálculo guardado', AUDIT_READ: 'Lectura de auditoría',
   };
   private readonly service = inject(PatientService);
@@ -72,7 +93,11 @@ export class ClinicalAccessComponent {
   constructor() {
     effect(() => {
       this.patientId();
-      untracked(() => this.close());
+      const embedded = this.embedded();
+      untracked(() => {
+        this.close();
+        if (embedded) this.load();
+      });
     });
   }
 

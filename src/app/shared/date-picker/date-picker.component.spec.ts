@@ -43,6 +43,24 @@ describe('DatePickerComponent', () => {
     expect(inputEl.nativeElement.getAttribute('type')).toBe('text');
   });
 
+  it('uses unique field and description IDs and links errors to the input', () => {
+    const another = TestBed.createComponent(DatePickerComponent);
+    another.detectChanges();
+    fixture.componentRef.setInput('inputLabel', 'Fecha');
+    component.onTextInput('31/02/2026');
+    fixture.detectChanges();
+
+    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+    const otherInput = another.nativeElement.querySelector('input') as HTMLInputElement;
+    expect(input.id).not.toBe(otherInput.id);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(fixture.nativeElement.querySelector('#' + input.getAttribute('aria-labelledby'))?.textContent).toBe('Fecha');
+    for (const id of input.getAttribute('aria-describedby')!.split(' ')) {
+      expect(fixture.nativeElement.querySelector('#' + id)?.textContent).toBeTruthy();
+    }
+    expect(fixture.nativeElement.querySelector('[role="alert"]').id).toBe(input.id + '-error');
+  });
+
   it('should parse ISO date on writeValue and format for Angular Material', () => {
     component.writeValue('2020-05-15');
     fixture.detectChanges();

@@ -1,11 +1,10 @@
 <section class="overview" aria-label="Resumen clínico" [attr.aria-busy]="loading()">
   <header class="overview-header">
     <div>
-
       <h2>Resumen clínico</h2>
-      <p class="intro">
-        La información relevante de su ficha y sus consultas, siempre con su origen.
-      </p>
+      @if (specialtyName(); as specialty) {
+        <p class="intro">{{ specialty }}</p>
+      }
     </div>
     <div class="header-actions">
       <button
@@ -17,10 +16,11 @@
       >
         <ng-icon name="lucideRefreshCw" />
       </button>
-      @if (actions.has('EDIT_PATIENT')) {
+      @if (canEditHistory()) {
         <a
           class="edit-link"
           [routerLink]="['/patients', active.patientId(), 'edit']"
+          [queryParams]="contextParams()"
           fragment="clinical-history"
           ><ng-icon name="lucideFilePenLine" />Editar antecedentes</a
         >
@@ -42,18 +42,18 @@
   }
   @if (data(); as summary) {
     <div class="overview-grid">
-      @for (category of categories; track category.kind) {
+      @for (category of categories(); track category.kind) {
         <article class="overview-card" [class.allergy-card]="category.kind === 'ALLERGY'">
           <header class="card-header">
             <div class="card-title">
               <span class="card-icon"><ng-icon [name]="category.icon" /></span>
               <h3>{{ category.title }}</h3>
             </div>
-            @if (items(category.kind).length) {
-              <span class="count">{{ items(category.kind).length }}</span>
+            @if (category.items.length) {
+              <span class="count">{{ category.items.length }}</span>
             }
           </header>
-          @for (item of items(category.kind).slice(0, 3); track item.key) {
+          @for (item of category.items.slice(0, 3); track item.key) {
             <div class="summary-item">
               <strong>{{ item.text }}</strong>
               @if (item.details) {
@@ -95,144 +95,127 @@
             } @else if (category.kind === 'ALLERGY' && summary.profile.noKnownAllergiesAt) {
               <p>No se registraron alergias conocidas</p>
               <small>{{ date(summary.profile.noKnownAllergiesAt) }}</small>
-            } @else {
-              <div class="empty-copy">
-                <strong>{{ category.empty }}</strong>
-                <p>
-                  Podés completar esta información en los datos del paciente o durante la consulta.
-                </p>
-              </div>
             }
           }
-          @if (items(category.kind).length > 3) {
-            <button type="button" class="source-link" (click)="openItem(items(category.kind)[0])">
-              Ver todos los registros ({{ items(category.kind).length }})<ng-icon
+          @if (category.items.length > 3) {
+            <button type="button" class="source-link" (click)="openItem(category.items[0])">
+              Ver todos los registros ({{ category.items.length }})<ng-icon
                 name="lucideArrowUpRight"
               />
             </button>
           }
-          @if (category.kind === 'PROBLEM' && summary.recordedDiagnoses?.length) {
-            <details class="diagnosis-history">
-              <summary>Diagnósticos registrados <span>Vigencia a revisar</span></summary>
-              @for (diagnosis of summary.recordedDiagnoses; track diagnosis.id) {
-                <div class="summary-item">
-                  <strong>{{ diagnosis.diagnosis }}</strong
-                  ><small>{{ date(diagnosis.date) }}</small
-                  ><a class="source-link" [routerLink]="['/encounters', diagnosis.id]"
-                    >Ver consulta original<ng-icon name="lucideArrowUpRight"
-                  /></a>
-                </div>
-              }
-            </details>
-          }
         </article>
       }
-      <article class="overview-card">
-        <header class="card-header">
-          <div class="card-title">
-            <span class="card-icon"><ng-icon name="lucideCalendarCheck" /></span>
-            <h3>Última consulta</h3>
-          </div>
-        </header>
-        @if (summary.lastEncounter; as last) {
+      @for (section of specialtySections(); track section.key) {
+        <article class="overview-card">
+          <header class="card-header">
+            <div class="card-title">
+              <h3>{{ section.title }}</h3>
+            </div>
+          </header>
+          @for (entry of section.entries.slice(0, 3); track $index) {
+            <div class="summary-item">
+              <strong>{{ entry.label }}</strong>
+              <span class="summary-details">{{ entry.value }}</span>
+            </div>
+          }
+          <footer class="card-footer">
+            <button
+              class="source-link"
+              type="button"
+              (click)="recordLink('summary', 'patient-details')"
+            >
+              Ver datos del paciente<ng-icon name="lucideArrowUpRight" />
+            </button>
+          </footer>
+        </article>
+      }
+      @if (lastEncounter(); as last) {
+        <article class="overview-card">
+          <header class="card-header">
+            <div class="card-title">
+              <span class="card-icon"><ng-icon name="lucideCalendarCheck" /></span>
+              <h3>Última consulta</h3>
+            </div>
+          </header>
           <div class="summary-item">
-            <span class="date-tag">{{ date(last.date) }}</span
-            ><strong>{{ last.complaint || 'Consulta registrada' }}</strong>
+            <span class="date-tag">{{ date(last.date) }}</span>
+            <strong>{{ last.complaint || 'Consulta registrada' }}</strong>
             @if (last.diagnosis) {
               <span class="summary-details">{{ last.diagnosis }}</span>
             }
-            <a class="source-link" [routerLink]="['/encounters', last.id]"
-              >Ver consulta original<ng-icon name="lucideArrowUpRight"
-            /></a>
           </div>
-        } @else {
-          <div class="empty-copy">
-            <strong>Todavía sin consultas</strong>
-            <p>Acá vas a encontrar el último control registrado.</p>
-          </div>
-        }
-      </article>
-      <article class="overview-card">
-        <header class="card-header">
-          <div class="card-title">
-            <span class="card-icon"><ng-icon name="lucideClipboardList" /></span>
-            <h3>Próximos pasos</h3>
-          </div>
-        </header>
-        @if (summary.lastEncounter; as last) {
-          @if (last.followUp) {
-            <div class="summary-item">
-              <strong>Seguimiento indicado</strong>
-              @if (last.followUp) {
-                <span class="summary-details">{{ last.followUp }}</span>
-              }
-              <small>Indicado el {{ date(last.date) }}</small
-              ><a class="source-link" [routerLink]="['/encounters', last.id]"
-                >Ver indicación original<ng-icon name="lucideArrowUpRight"
-              /></a>
+          <footer class="card-footer">
+            <a
+              class="source-link"
+              [routerLink]="['/encounters', last.id]"
+              [queryParams]="contextParams()"
+            >
+              Ver consulta original<ng-icon name="lucideArrowUpRight" />
+            </a>
+          </footer>
+        </article>
+      }
+      @if (lastEncounter()?.followUp || pendingItems().length) {
+        <article class="overview-card">
+          <header class="card-header">
+            <div class="card-title">
+              <span class="card-icon"><ng-icon name="lucideClipboardList" /></span>
+              <h3>Próximos pasos</h3>
             </div>
-          } @else {
-            <div class="empty-copy">
-              <strong>Sin seguimientos indicados</strong>
-              <p>La última consulta no tiene indicaciones de seguimiento.</p>
-            </div>
-          }
-        } @else {
-          <div class="empty-copy">
-            <strong>Sin pendientes registrados</strong>
-            <p>Los seguimientos aparecerán al registrar las consultas.</p>
-          </div>
-        }
-        @for (item of items('PENDING').slice(0, 2); track item.key) {
-          <div class="summary-item">
-            <strong>{{ item.text }}</strong
-            ><small>{{ provenance(item) }}</small
-            ><button type="button" class="source-link" (click)="openItem(item)">
-              Ver antecedente original<ng-icon name="lucideArrowUpRight" />
-            </button>
-          </div>
-        }
-      </article>
-      <article class="overview-card vaccine-card">
-        <header class="card-header">
-          <div class="card-title">
-            <span class="card-icon"><ng-icon name="lucideSyringe" /></span>
-            <h3>Vacunación</h3>
-          </div>
-          @if (pendingVaccines().length) {
-            <span class="count attention">{{ pendingVaccines().length }} a revisar</span>
-          }
-        </header>
-        @if (summary.vaccinations; as schedule) {
-          @for (dose of pendingVaccines().slice(0, 3); track dose.id) {
-            <div class="vaccine-item">
-              <div>
-                <strong>{{ dose.vaccineName }}</strong
-                ><span
-                  >{{ dose.doseLabel }} ·
-                  {{
-                    dose.status === 'PENDIENTE' ? 'sin aplicación registrada' : 'corresponde ahora'
-                  }}</span
-                ><small>Edad prevista: {{ dose.dueAgeLabel }}</small>
+          </header>
+          @if (lastEncounter(); as last) {
+            @if (last.followUp) {
+              <div class="summary-item">
+                <strong>{{ last.followUp }}</strong>
+                <small>Indicado el {{ date(last.date) }}</small>
+                <a
+                  class="source-link"
+                  [routerLink]="['/encounters', last.id]"
+                  [queryParams]="contextParams()"
+                >
+                  Ver indicación original<ng-icon name="lucideArrowUpRight" />
+                </a>
               </div>
-              <button
-                class="dose-link"
-                type="button"
-                (click)="recordLink('vaccinations', 'vaccine-' + dose.id)"
-                [attr.aria-label]="'Ver dosis ' + dose.vaccineName + ' ' + dose.doseLabel"
-              >
-                <ng-icon name="lucideArrowUpRight" />
+            }
+          }
+          @for (item of pendingItems(); track item.key) {
+            <div class="summary-item">
+              <strong>{{ item.text }}</strong>
+              <small>{{ provenance(item) }}</small>
+              <button type="button" class="source-link" (click)="openItem(item)">
+                Ver antecedente original<ng-icon name="lucideArrowUpRight" />
               </button>
             </div>
-          } @empty {
+          }
+        </article>
+      }
+      @if (vaccinationSchedule(); as schedule) {
+        <article class="overview-card">
+          <header class="card-header">
+            <div class="card-title">
+              <span class="card-icon"><ng-icon name="lucideSyringe" /></span>
+              <h3>Vacunación</h3>
+            </div>
+            @if (pendingVaccines().length) {
+              <span class="count attention">{{ pendingVaccines().length }} a revisar</span>
+            }
+          </header>
+          @if (pendingVaccines().length) {
+            <small
+              >Dosis previstas sin aplicación registrada al {{ date(schedule.asOfDate) }}. Revisá el
+              carnet.</small
+            >
+          } @else {
             <div class="absence">
               <span class="status-dot"></span>Sin dosis pendientes para su edad
             </div>
           }
           @if (latestVaccine(); as dose) {
             <p class="latest-vaccine">
-              Última aplicación: <strong>{{ dose.vaccineName }}</strong> · {{ date(dose.appliedAt)
-              }}<button
+              Última aplicación: <strong>{{ dose.vaccineName }}</strong> ·
+              {{ date(dose.appliedAt) }}
+              <button
                 class="source-link"
                 type="button"
                 (click)="recordLink('vaccinations', 'vaccine-' + dose.id)"
@@ -241,46 +224,24 @@
               </button>
             </p>
           }
-          <footer class="vaccine-footer">
-            <small
-              >Según registros al {{ date(schedule.asOfDate) }}. Revisar carnet ante aplicaciones
-              faltantes.</small
-            ><button type="button" class="source-link" (click)="recordLink('vaccinations')">
+          <footer class="card-footer">
+            <button type="button" class="source-link" (click)="recordLink('vaccinations')">
               Ver calendario completo<ng-icon name="lucideArrowUpRight" />
             </button>
           </footer>
-        } @else {
-          <div class="empty-copy">
-            <strong>Calendario no habilitado</strong>
-            <p>La vacunación no forma parte de esta configuración clínica.</p>
-          </div>
-        }
-      </article>
+        </article>
+      }
     </div>
-    <div class="summary-footnote">
-      <span class="status-dot"></span>Se actualiza desde los datos del paciente y sus historias
-      clínicas. Una receta previa no confirma un tratamiento vigente.
-    </div>
-    @if (summary.recentMedications.length) {
-      <details class="source-panel">
-        <summary>Recetas recientes <span>Uso actual a confirmar</span></summary>
-        <div class="prescription-grid">
-          @for (med of summary.recentMedications; track $index) {
-            <div class="summary-item">
-              <strong>{{ med.name }}</strong
-              ><span class="summary-details">{{ med.dosage }} · {{ med.frequency }}</span
-              ><small>Prescripto el {{ date(med.date) }}</small
-              ><button
-                type="button"
-                class="source-link"
-                (click)="recordLink('prescriptions', 'prescription-' + med.recordId)"
-              >
-                Ver receta original<ng-icon name="lucideArrowUpRight" />
-              </button>
-            </div>
-          }
-        </div>
-      </details>
+    @if (
+      !categories().length &&
+      !specialtySections().length &&
+      !lastEncounter() &&
+      !pendingItems().length &&
+      !vaccinationSchedule() &&
+      !summary.profile.entries.length &&
+      !summary.historical.length
+    ) {
+      <p class="absence">Todavía no hay datos para el resumen clínico.</p>
     }
     @if (summary.profile.entries.length || summary.historical.length) {
       <details class="source-panel" id="legacy-clinical-history" [open]="legacyOpen()">

@@ -32,12 +32,39 @@ describe('Schedule editor interaction and concurrency',()=>{
  async function create(){const fixture=TestBed.createComponent(SchedulePageComponent);await fixture.whenStable();fixture.detectChanges();return fixture;}
  it('renders the selected clinic, multiple ranges and shared date pickers',async()=>{
   const fixture=await create(),c=fixture.componentInstance;
+  await c.loadOccupied('2026-11-02');
   c.selectedDays=[2,3];await c.addBlocks();c.addException();fixture.detectChanges();
   expect(c.draft.weekly[1].ranges).toHaveLength(1);expect(c.draft.weekly[2].ranges).toHaveLength(1);
   expect(fixture.nativeElement.querySelectorAll('app-date-picker').length).toBe(4);
   expect(fixture.nativeElement.textContent).toContain('Agenda virtual de prueba');
   expect(fixture.nativeElement.querySelector('input[type=date]')).toBeNull();
   expect(fixture.nativeElement.textContent).toContain(MOCK_CLINICS_FIXTURES[0].name);
+ });
+ it('groups adjacent intervals by agenda and keeps gaps and other days visible',async()=>{
+  const fixture=await create(),c=fixture.componentInstance;
+  const first={clinicId:'20',name:'Consultorio Centro',modality:'IN_PERSON',timezone:'America/Argentina/Buenos_Aires'};
+  api.occupied.mockReturnValueOnce(of({
+   timezone:first.timezone,
+   items:[
+    {...first,start:'2026-11-02T12:00:00Z',end:'2026-11-02T13:00:00Z'},
+    {...first,start:'2026-11-02T13:00:00Z',end:'2026-11-02T14:00:00Z'},
+    {...first,start:'2026-11-02T15:00:00Z',end:'2026-11-02T16:00:00Z'},
+    {...first,clinicId:'21',name:'Consultorio Norte',start:'2026-11-02T16:00:00Z',end:'2026-11-02T17:00:00Z'},
+    {...first,start:'2026-11-04T02:30:00Z',end:'2026-11-04T03:30:00Z'},
+   ],
+  }));
+  await c.loadOccupied('2026-11-02');
+  fixture.detectChanges();
+  const list=fixture.nativeElement.querySelector('.occupied-list') as HTMLElement;
+  expect(list.querySelectorAll('li')).toHaveLength(3);
+  expect(list.textContent).toContain('09:00–11:00');
+  expect(list.textContent).toContain('12:00–13:00');
+  expect(list.textContent).not.toContain('GMT');
+  expect(c.occupiedDays()[1].items).toHaveLength(1);
+  expect(c.occupiedDays()[2].items).toHaveLength(1);
+  c.selectedOccupiedDate.set('2026-11-05');
+  fixture.detectChanges();
+  expect(fixture.nativeElement.textContent).toContain('No hay horarios ocupados por otras agendas este día.');
  });
  it('preserves the entire draft after a version conflict and prevents blind retries',async()=>{
   const fixture=await create(),c=fixture.componentInstance;
@@ -125,7 +152,7 @@ describe('Schedule editor interaction and concurrency',()=>{
  it('rejects overlapping, invalid and incomplete composer entries without partial insertion',async()=>{
   const fixture=await create(),c=fixture.componentInstance;
   c.selectedDays=[1,2];c.blockStart='10:00';c.blockEnd='11:00';await c.addBlocks();
-  expect(c.draft.weekly[1].ranges).toEqual([]);expect(c.blockError()).toContain('superponen');
+  expect(c.draft.weekly[1].ranges).toEqual([]);expect(c.blockConflict()?.overlap).toBe('10:00–11:00');
   c.selectedDays=[2];c.blockEnd='09:00';await c.addBlocks();expect(c.draft.weekly[1].ranges).toEqual([]);
   c.blockEnd='12:00';c.blockMinutes=0;await c.addBlocks();expect(c.blockError()).toContain('duración');
   c.draft.weekly[0].ranges[0].slotMinutes=0;expect(c.canSave()).toBe(false);
@@ -143,6 +170,26 @@ describe('Schedule editor interaction and concurrency',()=>{
   expect(c.selectedDays).toEqual([1,3,5]);
   expect(fixture.nativeElement.textContent).toContain('El horario se superpone con Consultorio A.');
   expect(api.save).not.toHaveBeenCalled();
+ });
+ it('explains the occupied agenda and precise intersection without repeating technical timezone names',async()=>{
+  const fixture=await create(),c=fixture.componentInstance;
+  c.selectedDays=[2];c.blockStart='09:00';c.blockEnd='12:00';
+  const zone='America/Argentina/Buenos_Aires';
+  const requested={clinicId:'103',name:'Teleconsulta',modality:'TELECONSULTATION',timezone:zone,start:'2026-11-24T12:00:00Z',end:'2026-11-24T15:00:00Z'};
+  const existing={...requested,clinicId:'20',name:'Consultorio Centro Ficticio',modality:'IN_PERSON',start:'2026-11-24T13:00:00Z',end:'2026-11-24T14:00:00Z'};
+  api.validateDraft.mockReturnValueOnce(throwError(()=>({status:409,error:{
+   code:'SCHEDULE_CONFLICT',message:'Mensaje con America/Argentina/Buenos_Aires',
+   details:{requested,existing,date:'2026-11-24',weekday:2,overlapStart:existing.start,overlapEnd:existing.end},
+  }})));
+  await c.addBlocks();fixture.detectChanges();
+  const alert=fixture.nativeElement.querySelector('.add-block-panel [role="alert"]') as HTMLElement;
+  expect(alert.textContent).toContain('Ese horario ya está ocupado');
+  expect(alert.textContent).toContain('Martes 24/11/2026');
+  expect(alert.textContent).toContain('Consultorio Centro Ficticio');
+  expect(alert.textContent).toContain('09:00–12:00');
+  expect(alert.textContent).toContain('10:00–11:00');
+  expect(alert.textContent).not.toContain('America/Argentina');
+  expect(c.selectedDays).toEqual([2]);
  });
  it('autoselects a single clinic and specialty without redundant choices',async()=>{
   params.next(convertToParamMap({}));

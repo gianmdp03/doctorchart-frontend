@@ -35,6 +35,10 @@ const labels: Record<string, string> = {
   applied_at: 'Fecha de aplicación',
 };
 
+const sexLabels: Readonly<Record<string, string>> = {
+  FEMALE: 'Femenino', MALE: 'Masculino', OTHER: 'Otro', UNKNOWN: 'Sin información',
+};
+
 const projectionLabels: Record<string, string> = {
   'patient.fullName': 'Nombre completo',
   'patient.firstName': 'Nombre',
@@ -74,18 +78,38 @@ const projectionLabels: Record<string, string> = {
 
 @Component({
   selector: 'app-clinical-revisions',
+  host: { '[attr.data-embedded]': 'embedded() ? "" : null' },
   imports: [DatePipe, JsonPipe, ClinicalAccessComponent, ClinicalDocumentToolsComponent],
   templateUrl: './clinical-revisions.component.html',
   styles: [`
-    :host { display: block; margin-block: .75rem; }
-    section { margin-block-start: .75rem; padding: 1rem; border: 1px solid var(--border-color, currentColor); border-radius: .5rem; }
-    details { margin-block: .65rem; }
-    summary { cursor: pointer; }
-    dd { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 .5rem; }
-    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    :host { display: block; }
+    :host:not([data-embedded]) { margin-block: .75rem; }
+    section { display: grid; gap: .75rem; }
+    h3, h4, p { margin: 0; }
+    h3 { color: var(--dc-text); font-size: 1rem; font-weight: 650; }
+    section > button { justify-self: start; }
+    details { padding: .75rem; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-control); background: var(--dc-subtle); }
+    summary { cursor: pointer; color: var(--dc-text); font-weight: 600; }
+    details[open] > summary { margin-bottom: .65rem; }
+    details > * + * { margin-block-start: .5rem; }
+    .revision-entry { background: var(--dc-paper); padding: .85rem; }
+    .revision-entry > summary { line-height: 1.5; }
+    .revision-type { font-size: .75rem; color: var(--dc-brand-ink); margin-right: .35rem; }
+    .revision-type.annulled { color: var(--dc-danger); }
+    .revision-date, .revision-note { display: block; color: var(--dc-text-secondary); font-size: .8125rem; font-weight: 400; }
+    .revision-date { margin-left: 1rem; font-variant-numeric: tabular-nums; }
+    .revision-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: .65rem 1rem; padding: .8rem; margin-bottom: .75rem; border-radius: var(--dc-radius-control); background: var(--dc-subtle); }
+    .revision-field { min-width: 0; }
+    .revision-field dd { margin: .15rem 0 0; }
+    .revision-technical { font-size: .8125rem; color: var(--dc-text-secondary); overflow-wrap: anywhere; }
+    .revision-technical pre { max-height: 14rem; overflow: auto; }
+    dt { color: var(--dc-text-secondary); font-weight: 600; }
+    dd, pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 .5rem; }
   `],
 })
 export class ClinicalRevisionsComponent {
+  readonly embedded = input(false);
+  readonly standalonePage = input(false);
   readonly patientId = input<number>();
   readonly encounterId = input<number>();
   readonly version = input<number>();
@@ -112,7 +136,11 @@ export class ClinicalRevisionsComponent {
       this.patientId();
       this.encounterId();
       this.version();
-      untracked(() => this.close());
+      const openOnLoad = this.embedded() || this.standalonePage();
+      untracked(() => {
+        this.close();
+        if (openOnLoad) this.show();
+      });
     });
   }
 
@@ -209,7 +237,13 @@ export class ClinicalRevisionsComponent {
         return Object.entries(revision.derivedProjections)
           .sort(([left], [right]) => left.localeCompare(right))
           .filter(([, value]) => value !== null && value !== undefined && value !== '')
-          .map(([key, value]) => ({ label: projectionLabels[key] ?? key, value }));
+          .filter(([key]) => !this.embedded() || Object.hasOwn(projectionLabels, key))
+          .filter(([key]) => !this.embedded() ||
+            (key !== 'patient.firstName' && key !== 'patient.lastName') || !revision.derivedProjections?.['patient.fullName'])
+          .map(([key, value]) => ({
+            label: projectionLabels[key] ?? key,
+            value: this.formatField(key, value),
+          }));
       }
       const snapshot = previous['form_definition_snapshot'] as WizardFormDefinition | undefined;
       if (!snapshot?.categories) return [];
@@ -232,6 +266,17 @@ export class ClinicalRevisionsComponent {
       rows.push({ label: fieldLabels.get(key) ?? key, value });
     }
     return rows.filter(({ value }) => value !== null && value !== undefined && value !== '');
+  }
+
+  private formatField(key: string, value: unknown): unknown {
+    if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+    if (typeof value !== 'string') return value;
+    if (key === 'patient.gender') return Object.hasOwn(sexLabels, value) ? sexLabels[value] : value;
+    if ((key === 'patient.birthDate' || key === 'encounter.followUpDate') && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split('-');
+      return day + '/' + month + '/' + year;
+    }
+    return value;
   }
 
   isText(value: unknown): boolean {

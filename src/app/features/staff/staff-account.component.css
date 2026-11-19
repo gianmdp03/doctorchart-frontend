@@ -1,0 +1,20 @@
+:host { display: block; }
+.account-trigger { gap: 8px; }
+.account-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--dc-brand-soft); color: var(--dc-brand-ink); }
+.account-menu { display: grid; min-width: min(15rem, calc(100vw - 24px)); max-width: min(20rem, calc(100vw - 24px)); margin-top: 4px; padding: 6px; border: 1px solid var(--dc-line); border-radius: 12px; background: var(--dc-paper); color: var(--dc-text); box-shadow: var(--dc-shadow-overlay); }
+.account-identity { display: grid; gap: 4px; padding: 10px 12px; margin-bottom: 4px; border-bottom: 1px solid var(--dc-line); overflow-wrap: anywhere; }
+.account-identity span, #staff-password-help { color: var(--dc-text-secondary); font-size: .8125rem; }
+.account-menu button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding-inline: 12px; border: 0; border-radius: var(--dc-radius-control); background: transparent; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.account-menu button:hover, .account-menu button:focus-visible { background: var(--dc-subtle); }
+.account-menu button:focus-visible { outline-offset: -2px; }
+.password-dialog { margin: auto; width: min(28rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); padding: 20px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-card); background: var(--dc-paper); color: var(--dc-text); }
+.password-dialog::backdrop { background: var(--dc-scrim); }
+.password-dialog h2 { margin: 0 0 18px; font-size: 1.2rem; }
+.password-dialog fieldset { display: grid; gap: 7px; margin: 0; padding: 0; min-width: 0; border: 0; }
+.password-dialog label { font-weight: 600; font-size: .875rem; }
+.password-dialog input { width: 100%; min-height: 44px; margin-bottom: 9px; padding: 8px 12px; border-radius: var(--dc-radius-control); border: 1px solid var(--dc-control-line); background: var(--dc-paper); color: inherit; font: inherit; }
+#staff-password-help { margin: 0 0 4px; }
+.password-dialog footer { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; margin-top: 18px; }
+.account-feedback { margin: 8px 0 0; font-size: .875rem; }
+.success { color: var(--dc-positive); }
+.error { color: var(--dc-danger); }

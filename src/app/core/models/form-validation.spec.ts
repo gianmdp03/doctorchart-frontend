@@ -7,7 +7,6 @@ describe('Clinical field validation', () => {
   it.each([
     ['sys_email', 'correo-invalido', 'correo electrónico'],
     ['sys_dni', '12.345.678', 'sin puntos'],
-    ['sys_phone', 'abc', 'teléfono'],
   ])('validates the personal field %s', (key, value, message) => {
     const field: WizardFieldDefinition = { key, label: key, type: 'TEXT', required: false };
     expect(wizardFieldError(field, value, today)).toContain(message);
@@ -16,7 +15,6 @@ describe('Clinical field validation', () => {
   it.each([
     ['sys_email', 'paciente@example.com'],
     ['sys_dni', '12345678'],
-    ['sys_phone', '+54 (11) 1234-5678'],
   ])('accepts a valid personal field %s', (key, value) => {
     expect(wizardFieldError({ key, label: key, type: 'TEXT', required: false }, value, today)).toBeNull();
   });

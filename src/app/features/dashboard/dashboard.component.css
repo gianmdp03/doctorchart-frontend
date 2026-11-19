@@ -69,11 +69,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 :where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }
 .recent-loading, .recent-empty, .empty-state-wrap, .card-loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px 24px; text-align: center; }
 .recent-empty > ng-icon { font-size: 1.75rem; color: var(--dc-text-muted); }
-.recent-empty h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+.recent-empty :is(h2, h3) { margin: 0; font-size: 1rem; font-weight: 600; }
 .recent-empty p, .empty-desc { margin: 0; max-width: 60ch; color: var(--dc-text-secondary); font-size: .875rem; line-height: 1.6; }
 .mini-spinner { width: 22px; height: 22px; border: 2px solid var(--dc-line); border-top-color: var(--dc-brand); border-radius: 50%; animation: spin .9s linear infinite; }
-.dashboard-main-split { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: 24px; }
+.dashboard-main-split { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: stretch; gap: 24px; }
 .dashboard-primary-col, .dashboard-side-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.patients-directory-card { flex: 1; display: flex; flex-direction: column; }
+.patients-directory-card .table-pagination-row { margin-top: auto; }
 .card-header-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 20px 24px; }
 .header-title-wrap { min-width: 0; }
 .card-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1rem; font-weight: 650; }

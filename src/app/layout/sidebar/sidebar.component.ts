@@ -6,6 +6,7 @@ import { ClinicalNavigationService } from '../../core/services/clinical-navigati
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideBuilding2,
+  lucideBookOpen,
   lucideCalendarDays,
   lucideLayoutDashboard,
   lucideUsers,
@@ -28,6 +29,7 @@ import { AuthService } from '../../core/services/auth.service';
   providers: [
     provideIcons({
       lucideBuilding2,
+      lucideBookOpen,
       lucideCalendarDays,
       lucideLayoutDashboard,
       lucideUsers,

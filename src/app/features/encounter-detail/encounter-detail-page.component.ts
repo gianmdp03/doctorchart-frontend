@@ -1,3 +1,4 @@
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { InteractionStatusService } from '../../core/services/interaction-status.service';
 import { UserClockService } from '../../core/services/user-clock.service';
 import {
@@ -12,6 +13,8 @@ import {
   viewChild,
   untracked,
 } from '@angular/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideArrowLeft, lucideHistory } from '@ng-icons/lucide';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -45,7 +48,8 @@ import {
 
 @Component({
   selector: 'app-encounter-detail-page',
-  imports: [FormsModule, RouterLink, DynamicFormRendererComponent, ClinicalRevisionsComponent],
+  imports: [CdkTrapFocus,FormsModule, RouterLink, NgIcon, DynamicFormRendererComponent, ClinicalRevisionsComponent],
+  providers: [provideIcons({ lucideArrowLeft, lucideHistory })],
   templateUrl: './encounter-detail-page.component.html',
   styleUrl: './encounter-detail-page.component.css',
 })
@@ -64,6 +68,7 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   readonly isLoading = signal(false);
   readonly isSubmitting = signal(false);
   readonly isEditing = signal(false);
+  readonly showRevisions = signal(false);
   readonly encounter = signal<ClinicalEncounterDetail | null>(null);
   readonly effectiveForm = computed(() => {
     const form = this.encounter()?.formDefinitionSnapshot ?? { categories: [] };
@@ -132,6 +137,7 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   private reset(): void {
     this.epoch++;
     this.submissionAttempted.set(false);
+    this.showRevisions.set(false);
     this.encounter.set(null);
     this.correctHeightPosition.set(false);
     this.values.set({});
@@ -148,6 +154,7 @@ export class EncounterDetailPageComponent implements OnInit, OnDestroy {
     const epoch = ++this.epoch;
     this.isLoading.set(true);
     this.errorMessage.set(null);
+    this.showRevisions.set(false);
     this.encounter.set(null);
     try {
       const record = await firstValueFrom(

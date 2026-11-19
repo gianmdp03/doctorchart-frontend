@@ -91,15 +91,26 @@ export class WorkspaceStore {
     if (this.setupPromise) return this.setupPromise;
     if (!force && this.loaded()) return this.clone(this.currentSetup());
     if (this.isMutating()) throw new Error('Esperá a que termine el guardado antes de recargar.');
-    const startingEpoch=this.epoch;
-    if(this.requestedContext===null){
-      const contexts=await this.loadContexts();
-      if(startingEpoch!==this.epoch)throw Error('La sesión cambió durante la carga.');
-      const url=new URL(globalThis.location?.href??'http://localhost');const explicit=url.searchParams.get('specialtyContextId');
-      let preferred:number|null=null;try{preferred=Number(sessionStorage.getItem('doctorchart_context:'+contexts[0]?.workspaceId))||null;}catch{}
-      const target=explicit?Number(explicit):contexts.some(c=>c.id===preferred)?preferred:contexts.length===1?contexts[0].id:null;
-      if(target!==null){if(!contexts.some(c=>c.id===target))throw Error('Esta especialidad no está disponible.');this.requestedContext=target;}
-      else {this.applySetup(null);return null;}
+    const startingEpoch = this.epoch;
+    if (this.requestedContext === null) {
+      const contexts = await this.loadContexts();
+      if (startingEpoch !== this.epoch) throw Error('La sesión cambió durante la carga.');
+      if (!contexts.length) {
+        this.applySetup(null);
+        return null;
+      }
+      const url = new URL(globalThis.location?.href ?? 'http://localhost');
+      const [explicit, duplicate] = url.searchParams.getAll('specialtyContextId');
+      const linkedId = duplicate === undefined && /^[1-9]\d*$/.test(explicit ?? '') ? Number(explicit) : null;
+      let preferredId: number | null = null;
+      try {
+        preferredId = Number(sessionStorage.getItem('doctorchart_context:' + contexts[0].workspaceId)) || null;
+      } catch { /* The default also works without browser storage. */ }
+      const target = contexts.find(context => context.id === linkedId)
+        ?? contexts.find(context => context.id === preferredId)
+        ?? contexts.find(context => context.ready)
+        ?? contexts[0];
+      this.requestedContext = target.id;
     }
     if(this.setupPromise)return this.setupPromise;
     const epoch = this.epoch;

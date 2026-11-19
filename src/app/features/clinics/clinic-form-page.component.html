@@ -2,7 +2,7 @@
   <nav class="breadcrumb-nav" aria-label="Navegación de retorno">
     <a routerLink="/clinics" class="back-link">
       <ng-icon name="lucideArrowLeft" size="16" aria-hidden="true"></ng-icon>
-      <span>Volver a Consultorios</span>
+      <span>Consultorios y teleconsulta</span>
     </a>
   </nav>
 
@@ -31,7 +31,6 @@
           >
             {{ statusLabel(current.status) }}
           </span>
-          <span class="meta-item">Versión {{ current.version }}</span>
           <span class="meta-item">Actualizado {{ formatDate(current.updatedAt) }}</span>
         </div>
 
@@ -223,12 +222,12 @@
           <input
             id="clinic-name"
             type="text"
-            formControlName="name"
+            formControlName="name" aria-required="true"
             [readonly]="isReadOnly()"
             [attr.maxlength]="limits.name"
             [class.field-invalid]="isFieldInvalid('name')"
             [attr.aria-invalid]="isFieldInvalid('name') ? 'true' : null"
-            [attr.aria-describedby]="isFieldInvalid('name') ? 'clinic-name-error' : 'clinic-name-hint'"
+            [attr.aria-describedby]="isFieldInvalid('name') ? 'clinic-name-hint clinic-name-error' : 'clinic-name-hint'"
             [placeholder]="isVirtual() ? 'Teleconsulta' : 'Ej.: Consultorio Belgrano'"
           />
           <span id="clinic-name-hint" class="field-hint">
@@ -245,7 +244,7 @@
             País <span class="required-mark" aria-hidden="true">*</span>
           </label>
           @if (locationCountries.length > 1 && locationCountry() && !isReadOnly()) {
-            <select id="clinic-country" formControlName="country" (change)="changeLocationCountry()">
+            <select id="clinic-country" formControlName="country" aria-required="true" (change)="changeLocationCountry()" [attr.aria-invalid]="isFieldInvalid('country')" [attr.aria-describedby]="isFieldInvalid('country') ? 'clinic-country-error' : null">
               @for (country of locationCountries; track country.code) {
                 <option [value]="country.name">{{ country.name }}</option>
               }
@@ -254,7 +253,7 @@
           <input
             id="clinic-country"
             type="text"
-            formControlName="country"
+            formControlName="country" aria-required="true"
             [readonly]="isReadOnly() || !!locationCountry()"
             [attr.maxlength]="limits.country"
             [class.field-invalid]="isFieldInvalid('country')"
@@ -273,7 +272,7 @@
             Provincia <span class="required-mark" aria-hidden="true">*</span>
           </label>
           @if (locationCountry(); as country) {
-            <select id="clinic-province" formControlName="province" (change)="clearLocality()"
+            <select id="clinic-province" formControlName="province" aria-required="true" (change)="clearLocality()"
               [attr.disabled]="isReadOnly() ? '' : null"
               [class.field-invalid]="isFieldInvalid('province')"
               [attr.aria-invalid]="isFieldInvalid('province') ? 'true' : null"
@@ -290,7 +289,7 @@
           <input
             id="clinic-province"
             type="text"
-            formControlName="province"
+            formControlName="province" aria-required="true"
             [readonly]="isReadOnly()"
             [attr.maxlength]="limits.province"
             [class.field-invalid]="isFieldInvalid('province')"
@@ -310,7 +309,7 @@
           </label>
           @if (locationCountry()) {
             @let options = localities();
-            <select id="clinic-city" formControlName="city"
+            <select id="clinic-city" formControlName="city" aria-required="true"
               [attr.disabled]="isReadOnly() || !form.controls.province.value ? '' : null"
               [class.field-invalid]="isFieldInvalid('city')"
               [attr.aria-invalid]="isFieldInvalid('city') ? 'true' : null"
@@ -325,7 +324,7 @@
           <input
             id="clinic-city"
             type="text"
-            formControlName="city"
+            formControlName="city" aria-required="true"
             [readonly]="isReadOnly()"
             [attr.maxlength]="limits.city"
             [class.field-invalid]="isFieldInvalid('city')"
@@ -369,12 +368,12 @@
           <input
             id="clinic-address"
             type="text"
-            formControlName="address"
+            formControlName="address" aria-required="true"
             [readonly]="isReadOnly()"
             [attr.maxlength]="limits.address"
             [class.field-invalid]="isFieldInvalid('address')"
             [attr.aria-invalid]="isFieldInvalid('address') ? 'true' : null"
-            [attr.aria-describedby]="isFieldInvalid('address') ? 'clinic-address-error' : 'clinic-address-hint'"
+            [attr.aria-describedby]="isFieldInvalid('address') ? 'clinic-address-hint clinic-address-error' : 'clinic-address-hint'"
             placeholder="Ej.: Av. Cabildo 2150 Piso 4 Dto B"
           />
           <span id="clinic-address-hint" class="field-hint">
@@ -386,6 +385,21 @@
         </div>
         }
       </div>
+
+      @if (!isVirtual()) {
+        <fieldset class="clinic-specialties" [disabled]="isReadOnly()">
+          <legend>Especialidades que atendés acá</legend>
+          @for (specialty of specialtyOptions(); track specialty.id) {
+            <label>
+              <input type="checkbox" [checked]="selectedSpecialtyIds().includes(specialty.id)"
+                (change)="toggleSpecialty(specialty.id)" />
+              {{ specialty.name }}
+            </label>
+          } @empty {
+            <p>Completá la configuración de una especialidad para asignarla al consultorio.</p>
+          }
+        </fieldset>
+      }
 
       <footer class="form-footer">
         <a routerLink="/clinics" class="dc-button btn-secondary">Cancelar</a>
@@ -402,7 +416,7 @@
             } @else if (isEditMode()) {
               Guardar cambios
             } @else {
-              {{ isVirtual() ? "Crear agenda virtual" : "Crear consultorio" }}
+              {{ isVirtual() ? "Crear teleconsulta" : "Crear consultorio" }}
             }
           </span>
         </button>

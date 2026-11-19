@@ -16,6 +16,7 @@ import { customSpecialtyFixture } from '../testing/custom-specialty.fixture';
   template: '<div class="test-editor">{{ section() }}: {{ definition()?.categories?.length }}</div>',
 })
 class TestFieldEditor {
+  readonly standaloneHeading = input(false);
   readonly definition = input<WizardFormDefinition | null>(null);
   readonly section = input<WizardSection>('patientForm');
   readonly selectedCategoryKey = input<string | null>(null);
@@ -101,6 +102,32 @@ describe('OnboardingWizardComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
   });
+  it('saves the current specialty draft before returning to the specialty selector', async () => {
+    const customized = clone(component.definition()!);
+    customized.patientForm.categories[0].title = 'Mi ficha personalizada';
+    component.onPatientDefinitionChange(customized.patientForm);
+    fixture.detectChanges();
+
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    buttons.find(button => button.textContent?.includes('Guardar y volver a especialidades'))!.click();
+    await fixture.whenStable();
+
+    expect(store.saveOnboardingDraft).toHaveBeenCalledWith({
+      expectedVersion: base.version, definition: customized, currentStepKey: 'patient:new_patient_category',
+    });
+    expect(remote.draftDefinition).toEqual(customized);
+    expect(navigate).toHaveBeenCalledWith(['/specialties'], { queryParams: { add: '1' } });
+    expect(store.finishOnboarding).not.toHaveBeenCalled();
+  });
+
+  it('stays in the wizard if the draft cannot be saved before returning', async () => {
+    vi.mocked(store.saveOnboardingDraft).mockRejectedValueOnce(new Error('offline'));
+    await component.backToSpecialties();
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(component.errorMessage()).toContain('No pudimos guardar el avance');
+  });
+
   it('keeps the saved draft and clinical setup if logout returns an error', async () => {
     vi.mocked(TestBed.inject(AuthService).signOut).mockResolvedValue({error:new Error('offline')});
     fixture.nativeElement.querySelector('.signout-button').click(); await fixture.whenStable(); fixture.detectChanges();

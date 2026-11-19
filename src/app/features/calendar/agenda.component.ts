@@ -32,7 +32,7 @@ export const AGENDA_STATUS_ICONS = {
     lucideMaximize2, lucideMinimize2, lucidePlus, lucideX,
   })],
   templateUrl: './agenda.component.html',
-  styleUrls: ['../staff/staff.css', './agenda.component.css'],
+  styleUrls: ['../staff/staff.css', './agenda-page.css', './agenda.component.css'],
 })
 export class AgendaComponent<B extends AgendaBooking, S extends AgendaSlot> {
   readonly dateInputId = input.required<string>();
@@ -48,6 +48,7 @@ export class AgendaComponent<B extends AgendaBooking, S extends AgendaSlot> {
   readonly writing = input(false);
   readonly editor = input<'create' | 'detail' | 'move' | null>(null);
   readonly selected = input<B | null>(null);
+  readonly slotKey = input<(slot: S) => string>(slot => slot.start);
   readonly allowSlot = input.required<(slot: S) => boolean>();
   readonly slotSelected = input<(slot: S) => boolean | null>(() => null);
   readonly slotContext = input<(slot: S) => string>(() => '');
@@ -113,7 +114,7 @@ export class AgendaComponent<B extends AgendaBooking, S extends AgendaSlot> {
   focusBoard(): void { this.board()?.nativeElement.focus(); }
 
   shiftDate(direction: number) {
-    this.dateChange.emit(addDays(this.date(), direction * Number(this.view())));
+    this.dateChange.emit(addDays(this.rangeStart(), direction * Number(this.view())));
   }
   weekday(date: string) {
     return this.weekdays.format(new Date(date + 'T12:00:00Z'));

@@ -369,3 +369,7 @@ th {
   .year-label { display: none; }
   .long-age-chart .year-label { display: initial; }
 }
+
+.chart-card-content a { text-decoration: underline; }
+
+@media (forced-colors: active) { .patient-point:focus { outline: 2px solid Highlight; } }

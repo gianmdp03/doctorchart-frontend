@@ -1,0 +1,122 @@
+<div class="help-page">
+  @if (guide(); as guide) {
+    <header class="guide-header">
+      <a class="dc-button dc-button--secondary return-link" routerLink="/help">
+        <ng-icon name="lucideArrowLeft" aria-hidden="true" /> Todas las guías
+      </a>
+      <div class="guide-title">
+        <span class="topic-icon" [attr.data-topic]="guide.id"><ng-icon [name]="guide.icon" aria-hidden="true" /></span>
+        <div>
+          <h1>{{ guide.title }}</h1>
+          <p>{{ guide.description }}</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="guide-layout">
+      <nav class="step-index" aria-label="Pasos de la guía">
+        <h2>En esta guía</h2>
+        <ol>
+          @for (step of guide.steps; track step.id) {
+            <li>
+              <a [routerLink]="[]" [fragment]="step.id" queryParamsHandling="preserve" (click)="onStepClick($event, step.id)"
+                [attr.aria-current]="activeStep() === step.id ? 'location' : null">{{ step.title }}</a>
+            </li>
+          }
+        </ol>
+      </nav>
+
+      <ol class="steps">
+        @for (step of guide.steps; track step.id; let i = $index) {
+          <li class="step" [class.is-current]="activeStep() === step.id">
+            <h2 #stepHeading [id]="step.id" tabindex="-1"><span class="step-number" aria-hidden="true">{{ i + 1 }}</span>{{ step.title }}</h2>
+            <ul class="instructions">
+              @for (instruction of step.instructions; track instruction) {
+                <li>{{ instruction }}</li>
+              }
+            </ul>
+            @if (step.tip; as tip) {
+              <p class="tip"><ng-icon name="lucideInfo" aria-hidden="true" /><span>{{ tip }}</span></p>
+            }
+            @if (step.figure; as figure) {
+              <figure>
+                <img [src]="'/help/' + figure.file + '.jpg'" [alt]="figure.description" [width]="figure.width" [height]="figure.height" loading="lazy" decoding="async" />
+                <figcaption>
+                  <span>Captura con datos de ejemplo</span>
+                  <button type="button" class="dc-button dc-button--quiet" aria-haspopup="dialog"
+                    (click)="expandedCapture.set(figure); captureDialog.showModal()">
+                    <ng-icon name="lucideMaximize2" aria-hidden="true" /> Ampliar captura<span class="visually-hidden"> de {{ step.title }}</span>
+                  </button>
+                </figcaption>
+              </figure>
+            }
+            @if (step.action; as action) {
+              @if (action.external) {
+                <a class="dc-button dc-button--secondary action" [href]="action.path" target="_blank" rel="noopener">
+                  {{ action.label }} <ng-icon name="lucideArrowRight" aria-hidden="true" /><span class="visually-hidden"> (abre en otra pestaña)</span>
+                </a>
+              } @else {
+                <a class="dc-button dc-button--secondary action" [routerLink]="action.path">
+                  {{ action.label }} <ng-icon name="lucideArrowRight" aria-hidden="true" />
+                </a>
+              }
+            }
+          </li>
+        }
+      </ol>
+    </div>
+
+    <dialog #captureDialog class="capture-dialog" closedby="any" aria-labelledby="capture-title" (close)="expandedCapture.set(undefined)">
+      <header class="capture-header">
+        <h2 id="capture-title">Captura ampliada</h2>
+        <button type="button" class="dc-button dc-button--secondary" autofocus (click)="captureDialog.close()">Cerrar</button>
+      </header>
+      @if (expandedCapture(); as figure) {
+        <div class="capture-content" tabindex="0" role="region" aria-label="Imagen ampliada">
+          <img [src]="'/help/' + figure.file + '.jpg'" [alt]="figure.description"
+            [width]="figure.width" [height]="figure.height" [style.max-width.px]="figure.width * 1.4" />
+        </div>
+      }
+    </dialog>
+
+    <nav class="other-guides" aria-label="Otras guías">
+      <h2>Otras guías</h2>
+      @for (item of otherGuides(); track item.id) {
+        <a class="dc-button dc-button--secondary" [routerLink]="['/help', item.id]">
+          <ng-icon [name]="item.icon" aria-hidden="true" /> {{ item.title }}
+        </a>
+      }
+    </nav>
+  } @else {
+    <header class="help-hero">
+      <div class="hero-copy">
+        <span class="hero-icon"><ng-icon name="lucideBookOpen" aria-hidden="true" /></span>
+        <h1>Ayuda de DoctorChart</h1>
+        <p>Elegí qué querés hacer y seguí los pasos con ejemplos de la aplicación.</p>
+      </div>
+    </header>
+
+    <section class="guide-catalog" aria-labelledby="guide-catalog-title">
+      <h2 id="guide-catalog-title">Guías paso a paso</h2>
+      <ul class="guide-grid">
+        @for (guide of guides; track guide.id) {
+          <li>
+            <a class="guide-card" [routerLink]="['/help', guide.id]" [attr.data-topic]="guide.id" [attr.aria-labelledby]="'guide-' + guide.id" [attr.aria-describedby]="'description-' + guide.id">
+              <div class="card-visual">
+                <img [src]="'/help/' + guide.cover + '.jpg'" alt="" decoding="async" />
+              </div>
+              <div class="card-content">
+                <span class="topic-icon" [attr.data-topic]="guide.id"><ng-icon [name]="guide.icon" aria-hidden="true" /></span>
+                <div class="card-copy">
+                  <h3 [id]="'guide-' + guide.id">{{ guide.title }}</h3>
+                  <p [id]="'description-' + guide.id">{{ guide.description }}</p>
+                </div>
+                <ng-icon class="card-arrow" name="lucideArrowRight" aria-hidden="true" />
+              </div>
+            </a>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</div>

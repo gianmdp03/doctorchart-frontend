@@ -1,15 +1,19 @@
 <div class="patient-record-page">
   @if (activePatientService.error(); as error) {
     <div class="no-patient-card" role="alert">
-      <h2 class="no-patient-title">No pudimos {{ activePatientService.activePatient() ? 'actualizar' : 'cargar' }} la ficha del paciente</h2>
+      @if (activePatientService.activePatient()) {
+        <h2 class="no-patient-title">No pudimos actualizar la ficha del paciente</h2>
+      } @else {
+        <h1 class="no-patient-title">No pudimos cargar la ficha del paciente</h1>
+      }
       <p class="no-patient-desc">{{ error }}</p>
       <button type="button" class="dc-button dc-button--primary cta-primary-btn" (click)="retryPatientLoad()">Reintentar</button>
     </div>
   }
   @if (activePatientService.isLoading() && !activePatientService.activePatient()) {
-    <div class="record-loading-card">
+    <div class="record-loading-card" role="status">
       <div class="record-spinner"></div>
-      <h3>Cargando Ficha Clínica...</h3>
+      <p class="record-loading-title">Cargando ficha clínica…</p>
       <p>Sincronizando información del paciente con el servidor clínico.</p>
     </div>
   } @else if (activePatientService.activePatient(); as patient) {
@@ -20,19 +24,12 @@
       (editPatient)="editPatient()"
       (printSummary)="printDocument()"
       (viewCurves)="navigateToGrowthCurves()"
-    />
-    <app-clinical-revisions [patientId]="patient.id" [version]="patient.version" />
-    <app-clinical-document-tools [patientId]="patient.id" />
-    @if (recordActions.has('EDIT_PATIENT')) {
-      @if (confirmingAnnulment()) {
-        <p>La ficha y sus registros dejarán de aparecer como vigentes. Podrás consultarlos desde Fichas anuladas.</p>
-        <app-annulment-prompt [target]="patient.id" [busy]="annulling()"
-          (cancel)="confirmingAnnulment.set(false)" (confirm)="annulPatient(patient, $event)" />
-      } @else {
-        <button type="button" class="dc-button" (click)="confirmingAnnulment.set(true)">Anular ficha</button>
-      }
-      @if (annulmentError()) { <p role="alert">{{ annulmentError() }}</p> }
-    }
+    >
+      <button patient-management-trigger type="button" class="dc-button dc-button--quiet management-trigger"
+        aria-haspopup="dialog" aria-label="Más opciones de la ficha" (click)="managementDialog.showModal()">
+        <ng-icon name="lucideEllipsis" aria-hidden="true" /> Más opciones
+      </button>
+    </app-patient-banner>
 
     <!-- 2. FLATTENED HORIZONTAL TABS -->
     <nav class="flattened-tabs-nav" aria-label="Secciones de la ficha clínica">
@@ -64,19 +61,96 @@
             [patient]="patient"
             [latestEncounter]="history.encounters()[0]"
             (editPatient)="editPatient()"
-            (newEncounter)="createEncounter()"
             (patientUpdated)="activePatientService.setActivePatient($event)"
           />
         </section>
       }
     </div>
+    <dialog #managementDialog class="management-dialog" aria-labelledby="management-title" (close)="resetManagement()" (cancel)="cancelManagement($event)">
+      <div class="management-dialog-content" cdkTrapFocus>
+        <header class="management-header">
+          <div>
+            <h2 id="management-title">Gestión de la ficha</h2>
+            <p>{{ patient.fullName }}</p>
+          </div>
+          <button type="button" class="dc-button dc-button--quiet" autofocus [disabled]="annulling()" (click)="managementDialog.close()">Cerrar</button>
+        </header>
+        <div class="management-body">
+          @if (managementSection(); as section) {
+            <button type="button" class="dc-button dc-button--quiet management-back" [disabled]="annulling()"
+              (click)="selectManagement(null)">
+              <ng-icon name="lucideArrowLeft" aria-hidden="true" /> Volver a las opciones
+            </button>
+            @switch (section) {
+              @case ('access') {
+                <div class="management-intro">
+                  <h3 tabindex="-1" data-tool-heading>Accesos a la ficha</h3>
+                  <p>Cada fila registra una operación. Si se abrió la ficha una sola vez, pueden figurar varias consultas a sus secciones.</p>
+                </div>
+                <app-clinical-access [patientId]="patient.id" [embedded]="true" />
+              }
+              @case ('revisions') {
+                <div class="management-intro">
+                  <h3 tabindex="-1" data-tool-heading>Revisiones de la ficha</h3>
+                  <p>Abrí una revisión para ver cómo estaba el registro justo antes de una corrección o anulación.</p>
+                </div>
+                <app-clinical-revisions [patientId]="patient.id" [version]="patient.version" [embedded]="true" />
+              }
+              @case ('documents') {
+                <div class="management-intro">
+                  <h3 tabindex="-1" data-tool-heading>Documentos y exportación</h3>
+                  <p>Descargá un documento tal como se emitió o exportá una copia de esta ficha.</p>
+                </div>
+                <app-clinical-document-tools [patientId]="patient.id" [embedded]="true" />
+              }
+              @case ('annul') {
+                @if (recordActions.has('EDIT_PATIENT')) {
+                  <div class="management-intro annulment-notice">
+                    <h3 tabindex="-1" data-tool-heading>Anular ficha</h3>
+                    <p>Usá esta acción si la ficha está duplicada o se creó por error.</p>
+                    <p>Al confirmar, la ficha y sus consultas, recetas, estudios y vacunas dejarán de aparecer como vigentes. Los registros se conservan en <strong>Fichas anuladas</strong>.</p>
+                    <p>El motivo que ingreses quedará en el historial.</p>
+                  </div>
+                  <app-annulment-prompt [target]="patient.id" [busy]="annulling()"
+                    (cancel)="selectManagement(null)" (confirm)="annulPatient(patient, $event)" />
+                  @if (annulmentError()) { <p role="alert">{{ annulmentError() }}</p> }
+                }
+              }
+            }
+          } @else {
+            <p class="management-lead">Herramientas para revisar el historial, recuperar documentos y gestionar esta ficha.</p>
+            <div class="management-options" role="group" aria-label="Herramientas de la ficha">
+              @for (tool of managementTools; track tool.id) {
+                <button type="button" class="management-option" (click)="selectManagement(tool.id)">
+                  <ng-icon [name]="tool.icon" class="management-option-icon" aria-hidden="true" />
+                  <span>
+                    <strong>{{ tool.title }}</strong>
+                    <span>{{ tool.description }}</span>
+                  </span>
+                  <ng-icon name="lucideChevronRight" aria-hidden="true" />
+                </button>
+              }
+            </div>
+            @if (recordActions.has('EDIT_PATIENT')) {
+              <button type="button" class="management-option management-danger" (click)="selectManagement('annul')">
+                <span>
+                  <strong>Anular ficha</strong>
+                  <span>Dejá fuera de vigencia una ficha duplicada o creada por error. Requiere motivo y confirmación.</span>
+                </span>
+                <ng-icon name="lucideChevronRight" aria-hidden="true" />
+              </button>
+            }
+          }
+        </div>
+      </div>
+    </dialog>
   } @else if (!activePatientService.error()) {
     <!-- Empty State when no patient is active -->
     <div class="no-patient-card">
       <div class="no-patient-circle">
         <ng-icon name="lucideUser" />
       </div>
-      <h2 class="no-patient-title">No hay un paciente seleccionado</h2>
+      <h1 class="no-patient-title">No hay un paciente seleccionado</h1>
       <p class="no-patient-desc">
         Para visualizar o editar la Ficha Clínica Integral, seleccione un paciente del Directorio
         unificado o registre uno nuevo en el sistema.

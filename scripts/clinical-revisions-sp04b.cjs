@@ -58,7 +58,8 @@ module.exports = async function clinicalRevisions({ page, staff, origin, base, c
   await page.waitForURL(/\/patients(?:\?|$)/);
   await api(page, 'GET', patientPath, null, context, 404);
   await api(page, 'GET', encounterPath, null, context, 404);
-  await page.getByRole('button', { name: 'Fichas anuladas', exact: true }).click();
+  await page.getByText('Más opciones', { exact: true }).click();
+  await page.getByRole('link', { name: 'Fichas anuladas', exact: true }).click();
   await page.getByRole('button', { name: correctedName + ' Pérez', exact: true }).click();
   const archive = page.locator('app-clinical-revisions section');
   await archive.getByText('Ficha anulada', { exact: true }).waitFor();

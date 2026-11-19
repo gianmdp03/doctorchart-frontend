@@ -33,7 +33,7 @@
       <div class="date-jump">
         <label class="sr-only" [attr.for]="dateInputId()">Ir a fecha</label>
         <app-date-picker
-          [inputId]="dateInputId()"
+          [inputId]="dateInputId()" inputLabel="Ir a fecha"
           [ngModel]="date()"
           (ngModelChange)="dateChange.emit($event)"
           [disabled]="writing()"
@@ -139,6 +139,7 @@
                   type="button"
                   (click)="dayRequested.emit(day.date)"
                   [disabled]="writing()"
+                  [attr.aria-pressed]="day.date === date()"
                   [attr.aria-current]="day.date === today() ? 'date' : null"
                   [attr.aria-label]="'Ver ' + weekday(day.date) + ' ' + displayDay(day.date)"
                 >
@@ -187,12 +188,12 @@
                     ? 'Consultorio cerrado'
                     : day.hours.length
                       ? 'Sin horarios reservables'
-                      : 'Sin atención programada'
+                      : 'Sin horarios libres'
                 }}</span>
               }
               @for (
                 entry of day.entries;
-                track entry.booking ? 'booking-' + entry.booking.id : entry.slot?.start
+                track entry.booking ? 'booking-' + entry.booking.id : 'slot-' + slotKey()(entry.slot!)
               ) {
                 @if (entry.booking; as booking) {
                   @let name = booking.attendeeName || booking.contactName;

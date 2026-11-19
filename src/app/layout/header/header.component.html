@@ -12,18 +12,13 @@
   <!-- Right: Actions & Profile -->
   <div class="header-right">
     <app-theme-toggle />
-    <a [href]="bycodeUrl" class="bycode-link" aria-label="Ir a ByCode" title="Ir a ByCode">
-      <img src="/bycode-logo.svg" alt="" aria-hidden="true" />
-      <span>ByCode</span>
-    </a>
     <!-- Visual Accessibility Font Switcher -->
     <div class="accessibility-ctrl">
       <button
         type="button"
         class="accessibility-btn"
         (click)="accessibilityService.toggleFontSize()"
-        [title]="'Accesibilidad visual: Fuente ' + accessibilityService.fontSizeLabel() + ' (Clic para cambiar tamaño)'"
-        aria-label="Ajustar tamaño de letra de la plataforma"
+        [attr.aria-label]="'A+ ' + accessibilityService.fontSizeLabel() + ': ajustar tamaño de letra'"
       >
         <ng-icon name="lucideType" class="accessibility-icon" />
         <span class="accessibility-text">A+</span>
@@ -32,22 +27,22 @@
     </div>
 
     <!-- User Profile Dropdown Button -->
-    <div class="profile-menu-container">
+    <div class="profile-menu-container" (focusout)="closeProfileOnFocusExit($event)" (keydown.escape)="closeProfileOnEscape($event)">
       <button
         #profileTrigger
         type="button"
         class="profile-avatar-btn"
         [attr.aria-expanded]="isProfileMenuOpen()"
         [attr.aria-controls]="isProfileMenuOpen() ? 'account-options' : null"
-        [attr.aria-label]="'Opciones de cuenta: ' + (bycodeAccount.name() || 'Mi cuenta')"
+        [attr.aria-label]="bycodeAccount.initials() + ' · Opciones de cuenta: ' + (bycodeAccount.name() || 'Mi cuenta')"
         (click)="toggleProfileMenu($event)"
         [title]="bycodeAccount.name() || 'Mi cuenta'"
       >
-        <app-bycode-avatar />
+        <app-bycode-avatar aria-hidden="true" />
       </button>
 
       @if (isProfileMenuOpen()) {
-        <div id="account-options" class="profile-dropdown-menu" (click)="$event.stopPropagation()">
+        <div id="account-options" class="profile-dropdown-menu">
           <div class="profile-dropdown-header">
             <span class="user-fullname">{{ bycodeAccount.name() || 'Mi cuenta' }}</span>
             <span class="user-email">{{ authService.userEmail() }}</span>
@@ -69,25 +64,18 @@
             <span>Planes y suscripción</span>
           </a>
 
-          <button
-            type="button"
-            class="dropdown-action-item"
-            (click)="handleProfileClick()"
-          >
+          <a routerLink="/profile" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">
             <ng-icon name="lucideUser" class="menu-action-icon" />
             <span>Perfil Profesional</span>
-          </button>
+          </a>
 
           }
 
-          <button
-            type="button"
-            class="dropdown-action-item"
-            (click)="openWizardConfig()"
-          >
+          <a [routerLink]="authService.isSuperAdmin() ? '/admin/specialties' : '/onboarding/setup'"
+            class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">
             <ng-icon name="lucideSliders" class="menu-action-icon" />
             <span>{{ authService.isSuperAdmin() ? 'Especialidades y wizards' : 'Personalizar Fichas y Consultas' }}</span>
-          </button>
+          </a>
 
           @if (staffEnabled && !authService.isSuperAdmin()) {
             <a routerLink="/staff/calendar" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">

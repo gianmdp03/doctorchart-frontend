@@ -5,6 +5,7 @@ import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } fr
 import { BehaviorSubject, Subject, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../../core/services/auth.service';
+import { WorkspaceStore } from '../../core/services/workspace.store';
 import { MOCK_CAPABILITIES_BY_SCENARIO, MOCK_CLINIC_ERRORS, MockClinicsBackend } from './clinics.mocks';
 import { Clinic } from './clinics.models';
 import { CLINICS_TRANSPORT, ClinicsService } from './clinics.service';
@@ -27,6 +28,7 @@ describe('ClinicFormPageComponent', () => {
       providers: [
         provideRouter([]),
         ClinicsService,
+        { provide: WorkspaceStore, useValue: { loadContexts: async () => [{id: 101, ready: true, specialty: {name: 'Medicina General'}}] } },
         { provide: CLINICS_TRANSPORT, useValue: mockBackend },
         {
           provide: ActivatedRoute,
@@ -154,6 +156,7 @@ describe('ClinicFormPageComponent', () => {
       city: 'Buenos Aires',
       address: 'Av. Santa Fe 3200',
       timezone: 'Asia/KOLKata',
+      specialtyContextIds: ['101'],
     });
 
     // Authoritative backend rejection is displayed on the timezone field and all inputs are preserved

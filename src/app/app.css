@@ -15,3 +15,9 @@
 @media (max-width: 768px) { .app-layout-shell { flex-direction: column; } .app-main-viewport { min-height: 0; } .app-main-content { padding: 20px 16px; } }
 @media (prefers-reduced-motion: reduce) { .splash-spinner { animation-duration: 2s; } }
 @media print { .app-layout-shell, .app-splash-screen { display: none !important; } }
+
+/* Keep native focus scrolling clear of the sticky workspace header. */
+.app-main-content :where(h1, h2, h3, [id], button, a, input, select, textarea, summary, [tabindex]) {
+  scroll-margin-block-start: calc(var(--app-header-height) + 12px);
+  scroll-margin-block-end: 12px;
+}

@@ -1,9 +1,14 @@
 <app-clinical-overview />
 @if (patientFormDefinition(); as definition) {
-  <section class="tab-panel animate-fade-in" aria-label="Datos del paciente">
+  <section
+    class="tab-panel animate-fade-in"
+    id="patient-details"
+    tabindex="-1"
+    aria-label="Datos del paciente"
+  >
     <div class="tab-panel-toolbar">
       <div class="tab-panel-toolbar-text">
-        <h3 class="panel-section-title">Datos Filiatorios y Clínicos</h3>
+        <h2 class="panel-section-title">Datos Filiatorios y Clínicos</h2>
         <p class="panel-section-subtitle">
           Información general, tutores y antecedentes registrados del paciente.
         </p>

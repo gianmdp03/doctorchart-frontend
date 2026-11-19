@@ -2,12 +2,12 @@
 :host { display: block; min-width: 0; }
 .dynamic-form { display: grid; gap: 28px; }
 .form-category { min-width: 0; margin: 0; }
-.form-category h3 { margin: 0 0 20px; padding-bottom: 12px; border-bottom: 1px solid var(--dc-line); color: var(--dc-text); font-size: 1rem; font-weight: 650; line-height: 1.5; }
+.form-category :is(h2, h3) { margin: 0 0 20px; padding-bottom: 12px; border-bottom: 1px solid var(--dc-line); color: var(--dc-text); font-size: 1rem; font-weight: 650; line-height: 1.5; }
 .fields-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; }
 .field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .field.wide { grid-column: 1 / -1; }
-.field label { color: var(--dc-text-secondary); font-size: .8125rem; font-weight: 600; line-height: 1.5; }
-.field label > span { color: var(--dc-danger); }
+.field :is(label, .saved-label) { color: var(--dc-text-secondary); font-size: .8125rem; font-weight: 600; line-height: 1.5; }
+.field :is(label, .saved-label) > span { color: var(--dc-danger); }
 .field input, .field textarea, .field select { width: 100%; min-height: var(--dc-control-height); padding: 11px 12px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); background: var(--dc-paper); color: var(--dc-text); font: inherit; font-size: .9375rem; line-height: 1.5; box-sizing: border-box; }
 .field textarea { resize: vertical; min-height: 108px; }
 .field input:hover, .field textarea:hover, .field select:hover { border-color: var(--dc-brand); }
@@ -24,7 +24,7 @@
 .is-readonly .form-category { padding: 24px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-card); background: var(--dc-paper); }
 .is-readonly .fields-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 20px 28px; }
 .is-readonly .field { padding: 0; gap: 6px; }
-.is-readonly .field label { color: var(--dc-text-secondary); font-size: .75rem; font-weight: 500; }
+.is-readonly .field :is(label, .saved-label) { color: var(--dc-text-secondary); font-size: .75rem; font-weight: 500; }
 .is-readonly .saved-value.is-empty { color: var(--dc-text-muted); font-size: .875rem; }
 .is-readonly .formula-result { min-height: 0; padding: 8px 12px; }
 @media (max-width: 600px) { .fields-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } .is-readonly .form-category { padding: 20px 16px; } .is-readonly .fields-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; } }

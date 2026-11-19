@@ -6,6 +6,13 @@ export function modalityLabel(modality?: AppointmentModality): string {
   return modality === 'TELECONSULTATION' ? 'Teleconsulta' : 'Presencial';
 }
 
+export interface TeleconsultationSetting {
+  specialtyContextId: string;
+  specialty: string;
+  clinicId?: string;
+  enabled: boolean;
+}
+
 export function preservedBookingsNotice(clinic: Clinic): string {
   const count = clinic.futureBookings ?? 0;
   return clinic.status !== 'ACTIVE' && count > 0
@@ -18,6 +25,7 @@ export type ClinicStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 export type ClinicStatusFilter = 'ALL' | ClinicStatus;
 
 export interface Clinic {
+  specialtyContextIds?: string[];
   modality?: AppointmentModality;
   futureBookings?: number;
   id: string;
@@ -77,12 +85,13 @@ export interface ClinicCapabilities {
 }
 
 export type CreateClinicRequest = { name: string; timezone: string } & (
-  | { modality?: 'IN_PERSON'; country: string; province: string; city: string; address: string }
+  | { modality?: 'IN_PERSON'; country: string; province: string; city: string; address: string; specialtyContextIds?: string[] }
   | { modality: 'TELECONSULTATION'; country?: never; province?: never; city?: never; address?: never }
 );
 
 export interface UpdateClinicRequest {
   expectedVersion: string;
+  specialtyContextIds?: string[];
   name?: string;
   country?: string;
   province?: string;

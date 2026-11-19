@@ -1,8 +1,8 @@
-<section class="editor" aria-label="Editor de categorías y campos">
+<section class="editor" [attr.aria-label]="section() === 'patientForm' ? 'Editor de la ficha del paciente' : 'Editor del formulario de consulta'">
   @if (!fieldDraft()) {
     <div class="editor-layout">
-      <aside class="category-manager" aria-label="Categorías del formulario">
-        <h3>Categorías</h3>
+      <aside class="category-manager" [attr.aria-label]="section() === 'patientForm' ? 'Categorías de la ficha' : 'Categorías de la consulta'">
+        @if (standaloneHeading()) { <h2>Categorías</h2> } @else { <h4>Categorías</h4> }
         <p class="hint">Podés cambiar su nombre, orden y contenido.</p>
         @for (category of categories(); track category.key; let i = $index) {
           <div
@@ -39,7 +39,7 @@
                 type="button"
                 (click)="toggleCategory(category.key)"
                 [disabled]="readonly() || category.system"
-                [attr.aria-pressed]="category.enabled"
+                [attr.aria-label]="(category.enabled ? 'Activa' : 'Inactiva') + ': ' + category.title + (category.enabled ? '. Desactivar categoría' : '. Activar categoría')"
               >
                 {{ category.enabled ? 'Activa' : 'Inactiva' }}
               </button>
@@ -67,7 +67,7 @@
         </button>
       </aside>
 
-      <main class="fields-panel">
+      <div class="fields-panel">
         @if (selectedCategory(); as category) {
           <header class="panel-header">
             <label class="control category-title"
@@ -180,18 +180,21 @@
         } @else {
           <p class="empty-fields">Agregá una categoría para empezar a configurar los campos.</p>
         }
-      </main>
+      </div>
     </div>
     @if (error() && !fieldDraft()) {
       <p class="error" role="alert">{{ error() }}</p>
     }
   }
   @if (fieldDraft(); as field) {
-    <section class="field-editor-page" aria-labelledby="field-editor-title">
+    <section class="field-editor-page" [attr.aria-labelledby]="'field-editor-title-' + section()">
       <header class="panel-header">
-        <h1 #fieldPageHeading tabindex="-1" id="field-editor-title">
-          {{ editTarget()?.fieldKey ? 'Editar campo' : 'Agregar campo' }}
-        </h1>
+        @let title = editTarget()?.fieldKey ? 'Editar campo' : 'Agregar campo';
+        @if (standaloneHeading()) {
+          <h1 #fieldPageHeading class="field-editor-title" tabindex="-1" [id]="'field-editor-title-' + section()">{{ title }}</h1>
+        } @else {
+          <h4 #fieldPageHeading class="field-editor-title" tabindex="-1" [id]="'field-editor-title-' + section()">{{ title }}</h4>
+        }
         <button type="button" (click)="closeField()" aria-label="Volver a los campos">
           ← Volver a los campos
         </button>
@@ -281,7 +284,7 @@
           </p>
         }
         @if (field.type === 'SELECT') {
-          <h4>Opciones</h4>
+          @if (standaloneHeading()) { <h2>Opciones</h2> } @else { <h5>Opciones</h5> }
           @for (option of field.options ?? []; track $index; let oi = $index) {
             <div class="option-row">
               @for (property of ['label', 'value']; track property) {
@@ -310,7 +313,7 @@
           <button type="button" (click)="addOption()">Agregar opción</button>
         }
         @if (field.type === 'FORMULA') {
-          <h4>Cálculo automático</h4>
+          @if (standaloneHeading()) { <h2>Cálculo automático</h2> } @else { <h5>Cálculo automático</h5> }
           <label class="control"
             >Fórmula
             <select
@@ -366,7 +369,7 @@
             paciente que corresponden.
           </p>
         }
-        <h4>Cuándo mostrar el campo</h4>
+        @if (standaloneHeading()) { <h2>Cuándo mostrar el campo</h2> } @else { <h5>Cuándo mostrar el campo</h5> }
         <label class="control"
           >Respuesta que controla la visibilidad
           <select

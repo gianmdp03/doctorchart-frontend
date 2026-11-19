@@ -128,3 +128,5 @@ a:focus-visible, button:focus-visible { outline:2px solid var(--md-sys-color-pri
   .login-card-body,.login-introduction { padding:20px; }
 }
 @media (prefers-reduced-motion:reduce) { .spinner-small { animation:none; } }
+
+.login-secondary-links p a { text-decoration: underline; }

@@ -9,7 +9,6 @@ import { ThemeService } from '../../../core/services/theme.service';
   providers: [provideIcons({ lucideMoon, lucideSun })],
   template: `
     <button type="button" (click)="themeService.toggle()"
-      [attr.aria-pressed]="themeService.theme() === 'dark'"
       [attr.aria-label]="themeService.theme() === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'"
       [title]="themeService.theme() === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'">
       <ng-icon [name]="themeService.theme() === 'dark' ? 'lucideSun' : 'lucideMoon'" aria-hidden="true" />

@@ -37,7 +37,7 @@
             }
             <div class="login-textfield" [class.has-error]="isLoginInvalid('email')">
               <label for="login-email">Correo electrónico</label>
-              <input type="email" id="login-email" formControlName="email" placeholder="nombre@ejemplo.com" autocomplete="email" required [attr.aria-invalid]="isLoginInvalid('email')" [attr.aria-describedby]="isLoginInvalid('email') ? 'login-email-error' : null" />
+              <input type="email" id="login-email" formControlName="email" placeholder="nombre@ejemplo.com" autocomplete="username" name="email" spellcheck="false" required [attr.aria-invalid]="isLoginInvalid('email')" [attr.aria-describedby]="isLoginInvalid('email') ? 'login-email-error' : null" />
               @if (isLoginInvalid('email')) {
                 <span class="error-helper-text" id="login-email-error">Ingresá un correo electrónico válido.</span>
               }
@@ -45,8 +45,8 @@
             <div class="login-textfield" [class.has-error]="isLoginInvalid('password')">
               <label for="login-password">Contraseña</label>
               <div class="password-field">
-                <input [type]="showPassword() ? 'text' : 'password'" id="login-password" formControlName="password" placeholder="Tu contraseña" autocomplete="current-password" required [attr.aria-invalid]="isLoginInvalid('password')" [attr.aria-describedby]="isLoginInvalid('password') ? 'login-password-error' : null" />
-                <button type="button" class="pwd-toggle-btn" (click)="togglePasswordVisibility()" [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'" [attr.aria-pressed]="showPassword()">
+                <input [type]="showPassword() ? 'text' : 'password'" id="login-password" formControlName="password" placeholder="Tu contraseña" autocomplete="current-password" name="password" required [attr.aria-invalid]="isLoginInvalid('password')" [attr.aria-describedby]="isLoginInvalid('password') ? 'login-password-error' : null" />
+                <button type="button" class="pwd-toggle-btn" (click)="togglePasswordVisibility()" [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>@if (showPassword()) { <path d="m3 3 18 18"/> }</svg>
                 </button>
               </div>
