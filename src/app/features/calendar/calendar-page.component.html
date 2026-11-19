@@ -56,7 +56,7 @@
   </div>
  </header>
  @if(!staff && filtersOpen()){
-  <div id="calendar-filters" class="calendar-filters"><label>Modalidad<select aria-label="Filtrar agenda por modalidad" [(ngModel)]="modalityFilter" (ngModelChange)="changeFilters()"><option value="">Todas</option><option value="IN_PERSON">Presencial</option><option value="TELECONSULTATION">Teleconsulta</option></select></label><label>Especialidad<select aria-label="Filtrar agenda por especialidad" [(ngModel)]="contextFilter" (ngModelChange)="changeFilters()"><option value="">Todas las especialidades</option>@for(context of workspace.contexts();track context.id){<option [value]="''+context.id">{{context.specialty.name}}</option>}</select></label><label>Estado<select aria-label="Filtrar agenda por estado" [(ngModel)]="statusFilter" (ngModelChange)="changeFilters()"><option value="">Todos los estados</option>@for(status of statuses;track status){<option [value]="status">{{labels[status]}}</option>}</select></label></div>
+  <div id="calendar-filters" class="calendar-filters"><label>Modalidad<select aria-label="Filtrar agenda por modalidad" [(ngModel)]="modalityFilter" (ngModelChange)="changeFilters()"><option value="">Todas</option><option value="IN_PERSON">Presencial</option><option value="TELECONSULTATION">Teleconsulta</option></select></label><label>Especialidad<select aria-label="Filtrar agenda por especialidad" [(ngModel)]="contextFilter" (ngModelChange)="changeFilters()"><option value="">Todas las especialidades</option>@for(context of workspace.contexts();track context.id){<option [value]="''+context.id">{{context.specialty.name}}</option>}</select></label><label>Estado<select aria-label="Filtrar agenda por estado" [(ngModel)]="statusFilter" (ngModelChange)="changeFilters()"><option value="">Todos los estados</option>@for(status of statuses;track status){<option [value]="status">{{statusLabel(status, modalityFilter || clinic(clinicId)?.modality)}}</option>}</select></label></div>
  }
  @if(error()){<div class="notice error" role="alert">{{error()}} <button (click)="load()">Reintentar</button></div>}
  @if(feedback()){<p class="notice success" role="status">{{feedback()}}</p>}
@@ -81,6 +81,7 @@
    [slotSelected]="agendaSlotSelected"
    [slotContext]="agendaSlotContext"
    [bookingContext]="agendaBookingContext"
+   [bookingLabel]="agendaBookingStatus"
    (dateChange)="changeDate($event)"
    (dayRequested)="selectDay($event)"
    (viewChange)="setAgendaView($event)"
@@ -101,7 +102,7 @@
  @else if(!staff && !clinics().length&&!error()){<div class="empty"><h2>Configurá tu primera agenda</h2><p>Creá un consultorio o una agenda virtual y cargá sus horarios.</p><a routerLink="/clinics">Ir a consultorios</a></div>}
  @else if(!staff || allowed()){ @for(day of visibleDays();track day.date){
   <article class="day"><header class="section-heading"><div><span class="section-date">{{displayDay(day.date)}}</span><h2>Reservas del día</h2></div><span class="section-count">{{day.bookings.length}} {{day.bookings.length === 1 ? 'reserva' : 'reservas'}}</span></header>
-   <div class="reservations">@for(b of day.bookings;track b.id){<button class="booking" [class.cancelled]="b.status==='CANCELLED'" [attr.data-status]="b.status" (click)="openBooking(b)" [disabled]="writing()"><span class="booking-time">{{localTime(b.start,calendarZone)}} @if(slotOffsetLabel(b.start,calendarZone); as offset){<small>{{offset}}</small>}</span><strong>{{b.attendeeName||b.contactName}}</strong><span class="status">{{labels[b.status]}}</span><span class="specialty">{{specialtyName(b)}}</span><span class="location">{{bookingClinic(b)}} · {{modalityLabel(bookingModality(b))}}</span></button>}
+   <div class="reservations">@for(b of day.bookings;track b.id){<button class="booking" [class.cancelled]="b.status==='CANCELLED'" [attr.data-status]="b.status" (click)="openBooking(b)" [disabled]="writing()"><span class="booking-time">{{localTime(b.start,calendarZone)}} @if(slotOffsetLabel(b.start,calendarZone); as offset){<small>{{offset}}</small>}</span><strong>{{b.attendeeName||b.contactName}}</strong><span class="status">{{agendaBookingStatus(b)}}</span><span class="specialty">{{specialtyName(b)}}</span><span class="location">{{bookingClinic(b)}} · {{modalityLabel(bookingModality(b))}}</span></button>}
    @if(!day.bookings.length){<p class="muted no-bookings">No hay reservas para este día.</p>}</div>
   </article>
  } }
@@ -110,11 +111,11 @@
    <header class="section-heading"><div><span class="section-date">Detalle de la reserva</span><h2 #detailHeading id="booking-detail-heading" tabindex="-1">{{b.attendeeName||b.contactName}}</h2></div><button type="button" (click)="close()" [disabled]="writing()">Cerrar detalle</button></header>
    @if(editorError()){<p class="notice error" role="alert">{{editorError()}}</p>}
    @if(detailBusy()){<p role="status">Consultando la versión vigente…</p>}
-   <div class="slot-summary"><strong>{{displayDay(civilDay(b.start,bookingZone(b)))}} · {{time(b)}} – {{localTime(b.end,bookingZone(b))}}</strong><span>{{bookingClinic(b)}} · {{modalityLabel(bookingModality(b))}}</span><strong>{{specialtyName(b)}}</strong><span class="status">{{labels[b.status]}}</span></div>
+   <div class="slot-summary"><strong>{{displayDay(civilDay(b.start,bookingZone(b)))}} · {{time(b)}} – {{localTime(b.end,bookingZone(b))}}</strong><span>{{bookingClinic(b)}} · {{modalityLabel(bookingModality(b))}}</span><strong>{{specialtyName(b)}}</strong><span class="status">{{agendaBookingStatus(b)}}</span></div>
    <dl><dt>Solicitante</dt><dd>{{b.contactName}}</dd><dt>Teléfono</dt><dd>{{(b.contactPhone | phoneDisplay | async) || b.contactPhone || 'Sin registrar'}}</dd></dl>
    @if(editor()==='detail'){
     <div class="state-actions">
-    @for(target of transitions(b.status);track target){@if(!staff || canSetStatus(target)){<button [class.danger]="target==='CANCELLED'" [disabled]="!canSetStatus(target)||writing()||conflict()||detailBusy()" (click)="status(target)">{{target==='CANCELLED'?'Cancelar turno':'Marcar: '+labels[target]}}</button>}}
+    @for(target of transitions(b.status);track target){@if(!staff || canSetStatus(target)){<button [class.danger]="target==='CANCELLED'" [disabled]="!canSetStatus(target)||writing()||conflict()||detailBusy()" (click)="status(target)">{{statusAction(target, bookingModality(b))}}</button>}}
     @if(b.status==='CONFIRMED' && (!staff || canReschedule())){<button id="booking-move" class="dc-button dc-button--primary primary" [disabled]="!canReschedule()||writing()||conflict()||detailBusy()" (click)="beginMove()">Reprogramar</button>}</div>
    }
    @if(editor()==='move' && (!staff || canReschedule())){

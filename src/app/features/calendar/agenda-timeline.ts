@@ -100,6 +100,7 @@ export function makeTimeline<B extends AgendaBooking, S extends AgendaSlot>(
   bookings: B[],
   zone: string,
   fullDay: boolean,
+  current?: { date: string; hour: number },
 ) {
   const slotsByDate = new Map(availability.map((day) => [day.date, day]));
   const days = Array.from({ length }, (_, index) => {
@@ -118,16 +119,15 @@ export function makeTimeline<B extends AgendaBooking, S extends AgendaSlot>(
     day?.entries.push(entryFor(booking, zone, { booking }));
   }
   const spans = days.flatMap((day) => [...day.hours, ...day.entries]);
-  const from = fullDay
-    ? 0
-    : spans.length
-      ? Math.max(0, Math.floor((Math.min(...spans.map((span) => span.from)) - 30) / 30) * 30)
-      : 9 * 60;
-  const to = fullDay
-    ? DAY_MINUTES
-    : spans.length
-      ? Math.min(DAY_MINUTES, Math.ceil((Math.max(...spans.map((span) => span.to)) + 30) / 30) * 30)
-      : 12 * 60;
+  const starts = spans.map(span => Math.floor((span.from - 30) / 30) * 30);
+  const ends = spans.map(span => Math.ceil((span.to + 30) / 30) * 30);
+  if (current && byDate.has(current.date)) {
+    starts.push(current.hour - 60);
+    // Leave enough space after the next hour to show its tick.
+    ends.push(current.hour + 90);
+  }
+  const from = fullDay ? 0 : Math.max(0, starts.length ? Math.min(...starts) : 9 * 60);
+  const to = fullDay ? DAY_MINUTES : Math.min(DAY_MINUTES, ends.length ? Math.max(...ends) : 12 * 60);
   for (const day of days) {
     day.entries.sort((a, b) => a.from - b.from || Number(!!b.booking) - Number(!!a.booking));
     placeEntries(day.entries, to);

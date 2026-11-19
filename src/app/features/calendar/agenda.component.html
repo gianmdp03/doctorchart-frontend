@@ -25,7 +25,7 @@
     </nav>
     <h2 class="date-range">
       {{ displayDay(rangeStart()) }}
-      @if (view() === '7') {
+      @if (rangeStart() !== rangeEnd()) {
         <span>– {{ displayDay(rangeEnd()) }}</span>
       }
     </h2>
@@ -79,7 +79,8 @@
           {{ stats.confirmed === 1 ? 'confirmado' : 'confirmados' }}</span
         >
         <span class="stat" data-status="CHECKED_IN"
-          ><ng-icon name="lucideLogIn" /><b>{{ stats.checkedIn }}</b> en consultorio</span
+          ><ng-icon name="lucideLogIn" /><b>{{ stats.checkedIn }}</b>
+          {{ stats.checkedIn === 1 ? 'presente' : 'presentes' }}</span
         >
         @if (stats.cancelled) {
           <span class="stat" data-status="CANCELLED"
@@ -122,7 +123,8 @@
       >
         <div
           class="timeline-grid"
-          [class.single-day]="view() === '1'"
+          [class.single-day]="dayCount() === 1"
+          [style.--visible-days]="dayCount()"
           [style.--track-height.px]="pixels(calendar.to - calendar.from)"
         >
           <div class="timeline-corner">
@@ -197,6 +199,7 @@
               ) {
                 @if (entry.booking; as booking) {
                   @let name = booking.attendeeName || booking.contactName;
+                  @let status = bookingLabel()(booking);
                   <button
                     type="button"
                     class="event"
@@ -214,7 +217,7 @@
                       ', ' +
                       name +
                       ', ' +
-                      labels[booking.status] +
+                      status +
                       bookingHint(booking, ', ')
                     "
                     [title]="
@@ -222,7 +225,7 @@
                       ' · ' +
                       name +
                       ' · ' +
-                      labels[booking.status] +
+                      status +
                       bookingHint(booking, ' · ')
                     "
                     (click)="bookingSelected.emit({ booking, trigger: $event.currentTarget })"
@@ -234,7 +237,7 @@
                     >
                     <span class="event-meta"
                       ><ng-icon [name]="statusIcons[booking.status]" /><span
-                        >{{ labels[booking.status] }}
+                        >{{ status }}
                         @if (booking.specialty && pixels(entry.height) >= 52) {
                           · {{ booking.specialty.name }}
                         }
@@ -271,12 +274,12 @@
               }
               @if (
                 day.date === today() &&
-                minute(clock()) >= calendar.from &&
-                minute(clock()) < calendar.to
+                currentMinute() >= calendar.from &&
+                currentMinute() < calendar.to
               ) {
                 <div
                   class="now-line"
-                  [style.top.px]="pixels(minute(clock()) - calendar.from)"
+                  [style.top.px]="pixels(currentMinute() - calendar.from)"
                 >
                   <time [attr.aria-label]="'Hora actual del consultorio, ' + clock()">{{
                     clock()

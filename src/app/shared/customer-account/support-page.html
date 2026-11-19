@@ -1,0 +1,73 @@
+<section class="account-page" aria-labelledby="support-title">
+  <div class="page-top">
+    <header><h1 id="support-title">{{ mode === 'new' ? 'Enviar ticket' : mode === 'detail' ? 'Detalle del ticket' : 'Soporte' }}</h1>
+      @if (mode !== 'detail') { <p class="muted">Consultas sobre {{ product }}.</p> }
+    </header>
+    <div class="actions">
+      <a class="button quiet" [routerLink]="mode === 'list' ? '/account' : '/support'">{{ mode === 'list' ? 'Volver a mi cuenta' : 'Volver a mis tickets' }}</a>
+      @if (mode === 'list') { <a class="button primary" routerLink="/support/new">Nuevo ticket</a> }
+    </div>
+  </div>
+  @if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
+  @switch (mode) {
+    @case ('list') {
+      <section class="panel"><h2>Mis tickets</h2>
+        <form class="filters" (ngSubmit)="loadList()">
+          <label>Buscar ticket<input name="search" [(ngModel)]="search" type="search" placeholder="Asunto o referencia" maxlength="160"></label>
+          <label>Estado<select name="status" [(ngModel)]="statusFilter"><option value="">Todos</option>
+            <option value="open">Abierto</option><option value="in_review">En revisión</option><option value="resolved">Resuelto</option><option value="closed">Cerrado</option>
+          </select></label>
+          <button class="button" type="submit" [disabled]="busy()">Buscar</button>
+        </form>
+        @if (list(); as tickets) {
+          @for (ticket of tickets; track ticket.id) {
+            <article class="case ticket-row">
+              <div class="summary"><h3>{{ ticket.subject }}</h3><p class="muted">{{ ticket.reference }} · {{ ticket.createdAt | date:'dd/MM/yyyy' }}</p></div>
+              <div class="actions"><span class="ticket-status">{{ status(ticket.status) }}</span><a class="button" [routerLink]="['/support/tickets', ticket.id]">Ver ticket <span class="sr-only">{{ ticket.reference }}</span></a></div>
+            </article>
+          } @empty { <p class="empty">{{ filtered ? 'No encontramos tickets con esos filtros.' : 'Todavía no tenés tickets de ' + product + '.' }}</p> }
+          @if (next(); as nextPage) { <button class="button" type="button" (click)="loadList(nextPage)" [disabled]="busy()">Cargar más</button> }
+        } @else if (busy()) { <p role="status">Cargando tus tickets…</p> }
+        @else { <button class="button" type="button" (click)="loadList()">Reintentar</button> }
+      </section>
+    }
+    @case ('new') {
+      <section class="panel ticket-form">
+        @if (pending()) { <p class="notice" role="status">Hay un envío pendiente en esta pestaña. Podés reintentar el mismo ticket.</p> }
+        <form (ngSubmit)="send()" #ticketForm="ngForm">
+          <label>Asunto<input name="subject" [(ngModel)]="subject" minlength="5" maxlength="160" required [readOnly]="!!pending()"></label>
+          <label>Descripción<textarea name="description" [(ngModel)]="description" rows="6" minlength="20" maxlength="20000" required [readOnly]="!!pending()"></textarea></label>
+          <p class="muted">Contanos qué intentaste hacer y qué pasó. Omití contraseñas y datos personales o clínicos.</p>
+          <div class="actions attachment-zone"><input #file type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="upload(file)">
+            <button class="button" type="button" [disabled]="busy() || !!pending() || attachments().length >= 3" (click)="file.click()">Adjuntar captura</button><small>Hasta 3 capturas</small>
+          </div>
+          @for (attachment of attachments(); track attachment.id) {
+            <div class="actions"><span>{{ attachment.name }}</span><button class="button" type="button" [disabled]="busy() || !!pending()" (click)="remove(attachment.id)">Quitar</button></div>
+          }
+          <div class="actions form-submit"><button class="button primary" type="submit" [disabled]="busy() || ticketForm.invalid">{{ pending() ? 'Reintentar envío' : 'Enviar ticket' }}</button></div>
+        </form>
+      </section>
+    }
+    @case ('detail') {
+      @if (detail(); as record) {
+        <section class="panel"><header class="ticket-row"><div class="summary"><h2>{{ record.ticket.subject }}</h2><p class="muted">{{ record.ticket.reference }}</p></div><span class="ticket-status">{{ status(record.ticket.status) }}</span></header>
+          <p class="multiline">{{ record.ticket.description }}</p>
+          <div class="response"><h2>Respuesta de soporte</h2><p class="multiline">{{ record.ticket.resolution || 'Todavía no hay respuesta.' }}</p></div>
+          @if (record.events.length > 1) {
+            <h2>Historial del ticket</h2>
+            @for (event of record.events; track event.id) {
+              <div class="case"><p class="muted">{{ status(event.status) }} · {{ event.createdAt | date:'dd/MM/yyyy HH:mm' }}</p>
+                @if (event.resolution) { <p class="multiline">{{ event.resolution }}</p> }
+              </div>
+            }
+          }
+          @for (attachment of record.attachments; track attachment.id) {
+            <div class="actions"><span>{{ attachment.name }}</span>@if (attachment.state === 'ready') { <button class="button" type="button" [disabled]="busy()" (click)="openAttachment(attachment)">Ver captura</button> }</div>
+          }
+          @if (selectedImage(); as image) { <figure><img [src]="image" [alt]="selectedImageName()"><figcaption>{{ selectedImageName() }}</figcaption></figure> }
+        </section>
+      } @else if (busy()) { <p role="status">Abriendo el ticket…</p> }
+      @else { <button class="button" type="button" (click)="loadDetail()">Reintentar</button> }
+    }
+  }
+</section>

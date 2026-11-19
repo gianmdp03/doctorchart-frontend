@@ -1,6 +1,12 @@
 <app-interaction-status />
 @for (session of sessionViews(); track session.key) {
-  @if (isPublicPage() || isStaffPage()) {
+  @if (isCustomerAccount()) {
+    <header class="customer-top">
+      <a routerLink="/professionals"><img src="/doctorchart-logo.svg" width="35" height="35" alt="">DoctorChart</a>
+      <app-theme-toggle />
+    </header>
+    <main><router-outlet /></main>
+  } @else if (isPublicPage() || isStaffPage()) {
     <router-outlet />
   } @else {
     @defer (on immediate) {

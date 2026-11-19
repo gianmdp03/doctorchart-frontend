@@ -53,7 +53,8 @@
 
           <div class="profile-menu-divider"></div>
 
-          <a [href]="bycodeAccount.editUrl" class="dropdown-action-item" target="_blank" rel="noopener noreferrer"><ng-icon name="lucideUser" class="menu-action-icon"/><span>Editar perfil en Bycode</span></a>
+          <a routerLink="/account" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)"><ng-icon name="lucideUser" class="menu-action-icon"/><span>Ver mi perfil</span></a>
+          <a routerLink="/support" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">Soporte</a>
 
           @if (!authService.isSuperAdmin()) {
           <a

@@ -13,7 +13,7 @@ type Plan = {
 };
 type Quote = { canUpgrade: boolean; proratedUpgradeAmount: number; remainingDays: number; currency: string; message: string };
 type Purchase = {
-  userId: string; userEmail: string; provider: 'MERCADO_PAGO'; returnApp: 'doctorchart';
+  userId: string; userEmail: string; provider?: string; returnApp: 'doctorchart';
 } & ({ planIds: [number] } | { targetPlanId: number });
 type Pending = { key: string; body: Purchase; retried: boolean };
 
@@ -21,7 +21,7 @@ type Pending = { key: string; body: Purchase; retried: boolean };
   selector: 'app-product-pricing',
   imports: [ThemeToggleComponent, RouterLink],
   templateUrl: './pricing.component.html',
-  styleUrl: './pricing.component.css',
+  styleUrl: '../../shared/customer-account/pricing.css',
 })
 export class PricingComponent {
   private readonly auth = inject(AuthService);
@@ -143,7 +143,7 @@ export class PricingComponent {
           key: window.crypto.randomUUID(),
           retried: false,
           body: {
-            userId: owner, userEmail: email, provider: 'MERCADO_PAGO', returnApp: this.product,
+            userId: owner, userEmail: email, returnApp: this.product,
             ...(plan.action === 'UPGRADE' ? { targetPlanId: plan.id } : { planIds: [plan.id] as [number] }),
           },
         };
@@ -192,7 +192,7 @@ export class PricingComponent {
     const pending = JSON.parse(raw) as Pending;
     if (!pending || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(pending.key) ||
         typeof pending.retried !== 'boolean' || pending.body?.userId !== owner || pending.body?.returnApp !== this.product ||
-        pending.body.provider !== 'MERCADO_PAGO' || typeof pending.body.userEmail !== 'string' ||
+        (pending.body.provider !== undefined && typeof pending.body.provider !== 'string') || typeof pending.body.userEmail !== 'string' ||
         !('targetPlanId' in pending.body ? Number.isSafeInteger(pending.body.targetPlanId)
           : pending.body.planIds?.length === 1 && Number.isSafeInteger(pending.body.planIds[0]))) {
       throw new Error('No pudimos recuperar el pago pendiente. Contactá a soporte antes de iniciar otro.');

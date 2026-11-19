@@ -73,7 +73,6 @@ export class LandingComponent {
   readonly bycodeUrl = site.applicationUrls.bycode;
   readonly publicAppointmentsEnabled = FEATURE_FLAGS.PUBLIC_APPOINTMENTS_ENABLED;
   readonly contactUrl = new URL('/#bc-contact', this.bycodeUrl).href;
-  readonly supportUrl = new URL('/support', this.bycodeUrl).href;
   readonly productViews = [
     {
       key: 'growth',

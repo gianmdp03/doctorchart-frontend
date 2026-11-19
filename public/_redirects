@@ -9,6 +9,14 @@
 /consultas /encounters 301
 /calculadoras /calculators 301
 /login /index.csr 200
+/account /index.csr 200
+/account/security /index.csr 200
+/support /index.csr 200
+/support/new /index.csr 200
+/support/tickets/:id /index.csr 200
+/forgot-password /index.csr 200
+/reset-password /index.csr 200
+/email-change-success /index.csr 200
 /register /index.csr 200
 /register/confirmed /index.csr 200
 /pricing /index.csr 200
@@ -43,7 +51,11 @@
 /help/clinical /index.csr 200
 
 /calendar /index.csr 200
+/clinics /index.csr 200
+/clinics/new /index.csr 200
+/clinics/:id/edit /index.csr 200
 /clinics/:id/schedule /index.csr 200
+/schedules /index.csr 200
 
 /appointments /index.csr 200
 /appointments/confirmation /index.csr 200

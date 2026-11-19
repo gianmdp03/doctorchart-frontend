@@ -1,5 +1,4 @@
 import { GOOGLE_AUTH_ENABLED } from '../../auth-policy';
-import { environment } from '../../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { afterNextRender, Component, ElementRef, Injector, inject, PLATFORM_ID, signal } from '@angular/core';
@@ -15,7 +14,6 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class LoginPageComponent {
   readonly googleAuthEnabled = GOOGLE_AUTH_ENABLED;
-  readonly bycodeLoginUrl = environment.bycodePlansUrl.replace(/\/(?:panel|dashboard)\/?$/, '') + '/login';
 
   private readonly fb = inject(FormBuilder);
   private readonly injector = inject(Injector);

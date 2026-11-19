@@ -137,7 +137,13 @@
 
 /calendar
   X-Robots-Tag: noindex, nofollow
-/clinics/*/schedule
+/clinics
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+/schedules
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache
+/clinics/*
   X-Robots-Tag: noindex, nofollow
 
 /appointments
@@ -173,3 +179,19 @@
 /pricing
   X-Robots-Tag: noindex, follow
   Cache-Control: no-cache
+/account*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+/support*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+/forgot-password
+  X-Robots-Tag: noindex, nofollow
+/reset-password
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer
+/email-change-success
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer

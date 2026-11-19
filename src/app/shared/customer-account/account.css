@@ -1,0 +1,47 @@
+:host { display: block; min-width: 0; color: var(--foreground, #172437); }
+.account-page {
+  --account-card: var(--card, #fff);
+  --account-edge: var(--border, #d9e1ec);
+  --account-muted: var(--dc-text-secondary, var(--muted-foreground, #465970));
+  --account-accent: var(--primary, #1859bd);
+  --account-fill: color-mix(in srgb, var(--account-accent) 85%, var(--foreground, #172437));
+  --account-on-accent: var(--dc-on-brand, var(--primary-foreground, #fff));
+  --account-soft: color-mix(in srgb, var(--account-accent) 9%, var(--account-card));
+  width: min(100%, 72rem);
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: clamp(18px, 5vw, 48px);
+}
+.account-page > * + * { margin-top: 24px; }
+h1 { margin: 0; font-size: clamp(1.9rem, 5vw, 2.85rem); line-height: 1.1; letter-spacing: -.035em; font-weight: 750; text-wrap: balance; }
+h2 { margin: 0; font-size: 1.2rem; line-height: 1.35; letter-spacing: -.018em; font-weight: 700; }
+h3 { margin: 0; font-weight: 680; }
+p { margin: 0; overflow-wrap: anywhere; }
+.muted, small, .field-help { color: var(--account-muted); }
+.field-help, small { font-size: .875rem; font-weight: 450; }
+.page-top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 24px; }
+.page-top p { margin-top: 8px; max-width: 55ch; }
+.account-nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 7px; border: 1px solid var(--account-edge); border-radius: 12px; background: var(--account-card); }
+.account-nav .button { border-color: transparent; }
+.account-nav button { margin-inline-start: auto; }
+.panel { display: grid; gap: 18px; min-width: 0; background: var(--account-card); border: 1px solid var(--account-edge); border-radius: 16px; padding: clamp(16px, 4vw, 28px); }
+form { min-width: 0; display: grid; gap: 15px; }
+label { display: grid; gap: 6px; min-width: 0; font-size: .925rem; font-weight: 650; }
+label small { margin-inline-start: 4px; }
+input, textarea, select { box-sizing: border-box; width: 100%; padding: 10px 12px; min-height: 46px; border: 1px solid color-mix(in srgb, var(--foreground, #172437) 28%, var(--account-edge)); border-radius: 10px; color: inherit; background: var(--account-card); font: inherit; font-weight: 400; }
+textarea { resize: vertical; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; border: 1px solid var(--account-edge); border-radius: 10px; background: var(--account-card); padding: 8px 13px; color: inherit; font: inherit; font-size: .92rem; font-weight: 650; text-align: center; text-decoration: none; cursor: pointer; }
+.quiet { background: transparent; border-color: transparent; color: var(--account-muted); }
+.button:hover:not(:disabled) { border-color: var(--account-edge); background: var(--account-soft); }
+.primary, .primary:hover:not(:disabled) { border-color: var(--account-fill); background: var(--account-fill); color: var(--account-on-accent); }
+.primary:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--account-on-accent); }
+.button:disabled { background: var(--account-soft); border-color: var(--account-edge); color: var(--account-muted); cursor: default; }
+:is(input, textarea, select, .button):focus-visible { outline: 3px solid var(--account-accent); outline-offset: 2px; }
+.notice { border: 1px solid var(--account-edge); border-radius: 10px; padding: 14px; background: var(--account-soft); }
+.error { border-color: var(--destructive, #ad2525); color: var(--destructive, #ad2525); }
+.form-submit { border-top: 1px solid var(--account-edge); padding-top: 14px; }
+@media (max-width: 560px) {
+  .account-nav button { margin-inline-start: 0; }
+  .account-page > * + * { margin-top: 18px; }
+}

@@ -1,0 +1,40 @@
+<section class="account-page recovery-page" aria-labelledby="recovery-title">
+  <div class="panel recovery-panel">
+    @switch (mode) {
+      @case ('request') {
+        <h1 id="recovery-title">Recuperar contraseña</h1>
+        @if (done()) {
+          <p class="notice" role="status">Si el correo está asociado a una cuenta, vas a recibir un enlace para elegir una contraseña nueva.</p>
+          <button class="button" type="button" (click)="email = ''; done.set(false)">Usar otro correo</button>
+        } @else {
+          <p class="muted">Ingresá el correo de tu cuenta.</p>
+          <form (ngSubmit)="request()" #requestForm="ngForm">
+            <label>Correo electrónico<input name="email" type="email" [(ngModel)]="email" autocomplete="email" maxlength="254" email required></label>
+            <button type="submit" class="button primary" [disabled]="busy() || requestForm.invalid">{{ busy() ? 'Enviando…' : 'Enviar enlace de recuperación' }}</button>
+          </form>
+        }
+      }
+      @case ('reset') {
+        <h1 id="recovery-title">Elegí tu contraseña nueva</h1>
+        @if (checking()) { <p role="status">Comprobando el enlace…</p> }
+        @else if (done()) { <p class="notice" role="status">Tu contraseña se actualizó. Volvé a iniciar sesión con la nueva.</p> }
+        @else if (ready()) {
+          <form (ngSubmit)="reset()" #resetForm="ngForm">
+            <label>Contraseña nueva<input name="password" type="password" [(ngModel)]="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
+            <label>Repetir contraseña<input name="confirmation" type="password" [(ngModel)]="confirmation" autocomplete="new-password" maxlength="128" required></label>
+            <div class="actions"><button type="submit" class="button primary" [disabled]="busy() || resetForm.invalid">Guardar contraseña</button></div>
+          </form>
+        } @else { <a class="button" routerLink="/forgot-password">Pedir un enlace nuevo</a> }
+      }
+      @case ('email') {
+        <h1 id="recovery-title">Confirmación de correo</h1>
+        @if (checking()) { <p role="status">Comprobando el enlace…</p> }
+        @else if (done()) { <p role="status">El enlace se confirmó. Si recibiste un correo en la otra dirección, confirmá ese enlace también.</p> }
+        @else if (!error()) { <p>Si recibiste otro correo de confirmación, abrí ese enlace para completar el cambio.</p> }
+        <div class="actions"><a class="button" routerLink="/account/security">Volver a Seguridad</a></div>
+      }
+    }
+    @if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
+  </div>
+  <a class="button quiet recovery-back" routerLink="/login">Volver a iniciar sesión</a>
+</section>

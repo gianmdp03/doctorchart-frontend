@@ -5,6 +5,7 @@
     "/professionals"
   ],
   "clientPatterns": [
+    "^/(account(/security)?|support(/new|/tickets/[^/]+)?|forgot-password|reset-password|email-change-success)$",
     "^/(pricing|register|register/confirmed)$",
     "^/(login|sin-plan|perfil|asistente|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",
     "^/(pacientes|ficha|consultas)/[^/]+(/editar)?$",

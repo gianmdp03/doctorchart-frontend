@@ -1,0 +1,14 @@
+.summary { display: grid; gap: 4px; overflow-wrap: anywhere; }
+.case { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--account-edge); }
+.ticket-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 18px; }
+.ticket-status { padding: 4px 10px; border-radius: 999px; background: var(--account-soft); color: var(--foreground); font-size: .83rem; font-weight: 650; }
+.ticket-form { max-width: 48rem; }
+.attachment-zone { padding: 12px; border: 1px dashed var(--account-edge); border-radius: 10px; }
+.response p { margin-top: 6px; }
+.empty { padding: 20px 4px 6px; border-top: 1px solid var(--account-edge); color: var(--account-muted); }
+.multiline { white-space: pre-wrap; }
+figure { margin: 0; }
+figure img { max-width: 100%; height: auto; }
+.filters { grid-template-columns: minmax(0, 1fr) minmax(8rem, .4fr) auto; align-items: end; }
+.response { border: 1px solid var(--account-edge); border-radius: 10px; padding: 14px; background: var(--account-soft); }
+@media (max-width: 560px) { .filters { grid-template-columns: 1fr; } }

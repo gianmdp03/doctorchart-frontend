@@ -22,6 +22,9 @@ export const BOOKING_SUCCESS_MESSAGES = {
 } as const;
 
 export const STATUS_LABELS:Record<BookingStatus,string>={CONFIRMED:'Confirmado',CHECKED_IN:'En consultorio',COMPLETED:'Atendido',NO_SHOW:'Ausente',CANCELLED:'Cancelado'};
+export function bookingStatusLabel(status: BookingStatus, modality?: AppointmentModality | ''): string {
+  return status === 'CHECKED_IN' && modality !== 'IN_PERSON' ? 'Presente' : STATUS_LABELS[status];
+}
 export function transitions(status:BookingStatus):BookingStatus[]{return status==='CONFIRMED'?['CHECKED_IN','NO_SHOW','CANCELLED']:status==='CHECKED_IN'?['COMPLETED','CANCELLED']:[];}
 export function addDays(date:string,delta:number):string {const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+delta);return d.toISOString().slice(0,10);}
 export function civilDate(instant:string,zone:string):string {

@@ -188,8 +188,9 @@ describe('App administrative entry', () => {
     expect(auth.signOut).toHaveBeenCalledOnce();
     expect(router.url).toBe('/');
     expect(fixture.nativeElement.querySelector('.logout-button')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.app-entry').getAttribute('href')).toBe('/login');
-    expect(fixture.nativeElement.querySelector('.app-entry').textContent).toContain('Iniciar sesión');
+    const login = fixture.nativeElement.querySelector('button.login-trigger') as HTMLButtonElement;
+    expect(login.textContent).toContain('Iniciar sesión');
+    expect(fixture.nativeElement.querySelector('.register-entry').getAttribute('href')).toBe('/register');
   });
 
   it('keeps the signed-in home and offers a retry when sign-out fails', async () => {

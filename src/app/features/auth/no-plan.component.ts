@@ -1,9 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-no-plan',
+  imports: [RouterLink],
   template: `
     <main class="plan-page">
       <section class="plan-card" aria-labelledby="plan-title">
@@ -20,6 +21,7 @@ import { AuthService } from '../../core/services/auth.service';
           {{ busy() ? 'Verificando plan…' : hasPlan() ? 'Continuar a DoctorChart' : 'Ya contraté un plan: verificar acceso' }}
         </button>
         @if (message()) { <p class="feedback" role="status">{{ message() }}</p> }
+        <a class="dc-button secondary" routerLink="/account">Mi cuenta</a>
         <button class="logout" type="button" (click)="signOut()" [disabled]="busy()">Cerrar sesión</button>
       </section>
     </main>

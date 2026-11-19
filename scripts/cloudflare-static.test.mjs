@@ -16,7 +16,7 @@ test('Workers publishes only the Angular browser output with real 404s', () => {
 });
 test('every Angular application route has an explicit rewrite or canonical redirect', () => {
  const routes = [...read('src/app/app.routes.ts').matchAll(/path:\s*['"]([^'"]*)['"]/g)].map(match => '/' + match[1]);
- for (const route of routes.filter(route => route !== '/' && route !== '/**')) {
+ for (const route of routes.filter(route => !site.publicPaths.includes(route) && route !== '/**')) {
   assert.deepEqual(rules.find(rule => rule[0] === route), site.redirects[route] ? [route, site.redirects[route], '301'] : [route, '/index.csr', '200'], route);
  }
  for (const route of site.publicPaths) assert.equal(rules.find(rule => rule[0] === route), undefined);

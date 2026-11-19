@@ -25,6 +25,7 @@ export function forwardDoctorchartMailCallback(
   location: Pick<Location, 'hash' | 'pathname' | 'search' | 'replace'>,
   history: Pick<History, 'replaceState'>,
 ): boolean {
+  if (['/reset-password', '/email-change-success'].includes(location.pathname)) return true;
   if (location.pathname === '/register/confirmed') {
     if (location.hash || location.search) history.replaceState(null, '', location.pathname);
     return true;
@@ -90,6 +91,10 @@ export class AuthService {
     else clearTimeout(this.planTimer);
   };
   private supabaseClient: SupabaseClient | null = inject(SUPABASE_CLIENT, { optional: true }) ?? null;
+  sharedAccountClient(): SupabaseClient {
+    if (!this.supabaseClient) throw new Error('No hay una sesión activa.');
+    return this.supabaseClient;
+  }
 
   readonly currentUser = signal<User | null>(null);
   readonly session = signal<Session | null>(null);

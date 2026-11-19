@@ -1,5 +1,5 @@
 import { afterNextRender, Component, computed, DestroyRef, effect, ElementRef, EnvironmentInjector, inject, PendingTasks, untracked } from '@angular/core';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
@@ -8,11 +8,12 @@ import { ScrollToTopComponent } from './components/scroll-to-top/scroll-to-top.c
 import { PrivateShellComponent } from './layout/private-shell/private-shell.component';
 import { InteractionStatusComponent } from './components/interaction-status.component';
 import { FEATURE_FLAGS } from './core/config/feature-flags';
+import { ThemeToggleComponent } from './shared/components/theme-toggle/theme-toggle.component';
 
 // The prerendered root is anonymous; a restored browser session can select a
 // different layout before hydration claims its views. Recreate this boundary
 // instead of leaving unclaimed public DOM alongside the private workspace.
-@Component({ selector: 'app-root', host: { ngSkipHydration: 'true' }, imports: [RouterOutlet, ScrollToTopComponent, PrivateShellComponent, InteractionStatusComponent], templateUrl: './app.html', styleUrl: './app.css' })
+@Component({ selector: 'app-root', host: { ngSkipHydration: 'true' }, imports: [RouterLink, RouterOutlet, ScrollToTopComponent, PrivateShellComponent, InteractionStatusComponent, ThemeToggleComponent], templateUrl: './app.html', styleUrl: './app.css' })
 export class App {
   private readonly theme = inject(ThemeService);
   readonly authService = inject(AuthService);
@@ -28,6 +29,7 @@ export class App {
   }]);
   private readonly pageUrl = toSignal(this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map(event => event.urlAfterRedirects)), { initialValue: this.entryPath, equal: () => false });
   readonly isStaffPage=computed(()=>/^\/staff\/(login|activate|recover|calendar)$/.test(this.pageUrl().split(/[?#]/)[0]));
+  readonly isCustomerAccount = computed(() => /^\/(?:account|support|forgot-password|reset-password|email-change-success)(?:[/?#]|$)/.test(this.pageUrl()));
  readonly isPublicAppointmentsPage=computed(()=>{
    const path=this.pageUrl().split(/[?#]/)[0];
    return (FEATURE_FLAGS.PUBLIC_APPOINTMENTS_ENABLED && path==='/') || /^\/appointments(?:\/[^/]+)?$/.test(path);
@@ -54,7 +56,7 @@ export class App {
       }, { injector: this.injector });
     });
     effect(() => {
-      if (this.isStaffPage() || this.isPublicAppointmentsPage() || !this.authService.currentUser() || this.coordinatorLoading) return;
+      if (this.isCustomerAccount() || this.isStaffPage() || this.isPublicAppointmentsPage() || !this.authService.currentUser() || this.coordinatorLoading) return;
       this.coordinatorLoading = true;
       untracked(() => this.pendingTasks.run(async () => {
         try {

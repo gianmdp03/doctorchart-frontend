@@ -1,0 +1,62 @@
+<section class="account-page" aria-labelledby="account-title">
+  <div class="page-top">
+    <header><h1 id="account-title">Mi cuenta</h1><p class="muted">Tu cuenta es la misma en Bycode, Pointly y DoctorChart.</p></header>
+    <a class="button quiet" routerLink="/">Volver al inicio</a>
+  </div>
+  <nav class="account-nav" aria-label="Opciones de cuenta">
+    <a class="button" routerLink="/account/security">Seguridad</a>
+    <a class="button" routerLink="/pricing">Planes y suscripción</a>
+    <a class="button" routerLink="/support">Soporte</a>
+    <button class="button quiet" type="button" [disabled]="busy()" (click)="signOut()">Cerrar sesión</button>
+  </nav>
+  @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
+  @if (error()) {
+    <div class="notice error" role="alert">{{ error() }} <button type="button" class="button" [disabled]="busy()" (click)="load()">Recargar perfil</button></div>
+  }
+  @if (profile(); as account) {
+    <div class="profile-grid">
+    <section class="panel" aria-labelledby="personal-title">
+      <h2 id="personal-title">Datos personales</h2>
+      <form (ngSubmit)="save()" #profileForm="ngForm">
+        <label>Nombre completo<input name="fullName" maxlength="160" [(ngModel)]="fullName" autocomplete="name" required></label>
+        <label><span>Teléfono <small>Opcional</small></span><input name="phone" type="tel" maxlength="60" [(ngModel)]="phone" autocomplete="tel"></label>
+        <dl class="profile-facts">
+          <div><dt>Correo electrónico</dt><dd>{{ account.email }}</dd></div>
+          <div><dt>DNI</dt><dd>{{ account.dni || 'No informado' }}</dd></div>
+        </dl>
+        <p class="muted">Podés cambiar el correo en Seguridad. Si necesitás corregir el DNI, contactá a soporte.</p>
+        <div class="actions"><button type="submit" class="button primary" [disabled]="busy() || profileForm.invalid">Guardar cambios</button></div>
+      </form>
+    </section>
+    <section class="panel photo-panel" aria-labelledby="photo-title" [class.editing-photo]="photo()">
+      <h2 id="photo-title">Foto de perfil</h2>
+      <div class="person">
+        <span class="avatar">@if (avatar(); as photoUrl) { <img [src]="photoUrl" alt="Foto de perfil"> } @else { {{ account.fullName.slice(0, 1).toUpperCase() }} }</span>
+        <p class="person-name">{{ account.fullName }}</p>
+        <p class="muted">Esta foto se muestra en tus aplicaciones de Bycode.</p>
+        <div class="actions"><input #file type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="choosePhoto(file)"><button class="button" type="button" [disabled]="busy()" (click)="file.click()">Elegir foto</button>
+          @if (account.hasAvatar) { <button class="button" type="button" [disabled]="busy()" (click)="removePhoto.set(true)">Quitar foto</button> }
+        </div>
+      </div>
+      @if (photo()) {
+        <h2>Recortar foto</h2>
+        <div class="photo-editor">
+          <canvas #cropPreview width="256" height="256" aria-label="Vista previa del recorte"></canvas>
+          <fieldset [disabled]="busy()">
+            <label>Zoom<input type="range" min="1" max="3" step="0.05" [value]="zoom()" (input)="zoom.set($any($event.target).valueAsNumber)"></label>
+            <label>Posición horizontal<input type="range" min="0" max="100" [value]="horizontal()" (input)="horizontal.set($any($event.target).valueAsNumber)"></label>
+            <label>Posición vertical<input type="range" min="0" max="100" [value]="vertical()" (input)="vertical.set($any($event.target).valueAsNumber)"></label>
+          </fieldset>
+        </div>
+        <div class="actions"><button class="button primary" type="button" [disabled]="busy()" (click)="savePhoto()">Guardar foto</button><button class="button" type="button" [disabled]="busy()" (click)="cancelCrop()">Cancelar</button></div>
+      }
+      @if (removePhoto()) {
+        <p>¿Quitar la foto de tu cuenta?</p>
+        <div class="actions"><button type="button" class="button" [disabled]="busy()" (click)="deletePhoto()">Confirmar</button><button type="button" class="button" (click)="removePhoto.set(false)">Conservar foto</button></div>
+      }
+    </section>
+    </div>
+  } @else if (busy()) {
+    <p role="status">Cargando tu cuenta…</p>
+  }
+</section>

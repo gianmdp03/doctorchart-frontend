@@ -4,6 +4,11 @@ import { firstValueFrom, isObservable } from 'rxjs';
 import { publicEntryGuard } from './core/guards/public-entry.guard';
 import { FEATURE_FLAGS } from './core/config/feature-flags';
 import { clinicalContextGuard, clinicalLeaveGuard } from './core/guards/clinical-context.guard';
+import { customerAccountProvider } from './core/config/customer-account-provider';
+import { customerAccountGuard } from './shared/customer-account/account-context';
+
+const customerRecovery = () => import('./shared/customer-account/recovery-page').then(m => m.CustomerRecoveryPage);
+const customerSupport = () => import('./shared/customer-account/support-page').then(m => m.CustomerSupportPage);
 
 
 function lazyGuard(load: () => Promise<CanActivateFn>): CanActivateFn {
@@ -30,16 +35,28 @@ const doctorWizardGuard = lazyGuard(() => import('./core/guards/doctor-onboardin
 const preventCompletedOnboardingGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.preventCompletedOnboardingGuard));
 const superAdminGuard = lazyGuard(() => import('./core/guards/super-admin.guard').then(m => m.superAdminGuard));
 const clinicsGuard = lazyGuard(() => import('./core/guards/clinics.guard').then(m => m.clinicsGuard));
+const staffFeatureGuard = lazyGuard(() => import('./core/guards/staff.guard').then(m => m.staffFeatureGuard));
+const loadStaffAuth = () => import('./features/staff/staff-auth.component').then(m => m.StaffAuthComponent);
 
 const loadHelp = () => import('./features/help/help-page.component').then(m => m.HelpPageComponent);
 
 const baseRoutes: Routes = [
+  { path: 'forgot-password', title: 'Recuperar contraseña', providers: [customerAccountProvider], data: { customerMode: 'request' }, loadComponent: customerRecovery },
+  { path: 'reset-password', title: 'Restablecer contraseña', providers: [customerAccountProvider], data: { customerMode: 'reset' }, loadComponent: customerRecovery },
+  { path: 'email-change-success', title: 'Confirmación de correo', providers: [customerAccountProvider], data: { customerMode: 'email' }, loadComponent: customerRecovery },
+  { path: 'account', title: 'Mi cuenta', providers: [customerAccountProvider], canActivate: [customerAccountGuard], loadComponent: () => import('./shared/customer-account/profile-page').then(m => m.CustomerProfilePage) },
+  { path: 'account/security', title: 'Seguridad de tu cuenta', providers: [customerAccountProvider], canActivate: [customerAccountGuard], loadComponent: () => import('./shared/customer-account/security-page').then(m => m.CustomerSecurityPage) },
+  { path: 'support', title: 'Soporte', providers: [customerAccountProvider], canActivate: [customerAccountGuard], data: { customerMode: 'list' }, loadComponent: customerSupport },
+  { path: 'support/new', title: 'Enviar ticket', providers: [customerAccountProvider], canActivate: [customerAccountGuard], data: { customerMode: 'new' }, loadComponent: customerSupport },
+  { path: 'support/tickets/:id', title: 'Detalle del ticket', providers: [customerAccountProvider], canActivate: [customerAccountGuard], data: { customerMode: 'detail' }, loadComponent: customerSupport },
   { path: 'help', canActivate: [doctorchartPlanGuard], loadComponent: loadHelp },
   { path: 'help/appointments', canActivate: [doctorchartPlanGuard], loadComponent: loadHelp, data: { helpGuide: 'appointments' } },
   { path: 'help/secretaries', canActivate: [doctorchartPlanGuard], loadComponent: loadHelp, data: { helpGuide: 'secretaries' } },
   { path: 'help/clinical', canActivate: [doctorchartPlanGuard], loadComponent: loadHelp, data: { helpGuide: 'clinical' } },
  {path:'specialties',canActivate:[doctorchartPlanGuard],loadComponent:()=>import('./features/specialties/my-specialties.component').then(m=>m.MySpecialtiesComponent)},
- ...(['login','activate','recover'] as const).map(mode=>({path:'staff/'+mode,data:{mode},canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffFeatureGuard))],loadComponent:()=>import('./features/staff/staff-auth.component').then(m=>m.StaffAuthComponent)})),
+ { path: 'staff/login', data: { mode: 'login' }, canActivate: [staffFeatureGuard], loadComponent: loadStaffAuth },
+ { path: 'staff/activate', data: { mode: 'activate' }, canActivate: [staffFeatureGuard], loadComponent: loadStaffAuth },
+ { path: 'staff/recover', data: { mode: 'recover' }, canActivate: [staffFeatureGuard], loadComponent: loadStaffAuth },
  {path:'staff/calendar',data:{staffAgenda:true},canActivate:[lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffSessionGuard))],loadComponent:()=>import('./features/calendar/calendar-page.component').then(m=>m.CalendarPageComponent)},
  {path:'secretaries',canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/staff.guard').then(m=>m.staffFeatureGuard))],loadComponent:()=>import('./features/staff/secretaries.component').then(m=>m.SecretariesComponent)},
   { path: 'sin-plan', redirectTo: 'plan-required', pathMatch: 'full' },

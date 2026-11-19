@@ -60,6 +60,27 @@ describe('shared agenda timeline', () => {
     expect(available.height).toBe(20);
   });
 
+  it('shows the current hour between neighboring ticks on an empty agenda', () => {
+    const timeline = makeTimeline(date, 1, [], [], zone, false, { date, hour: 720 });
+    expect(timeline.ticks).toEqual([660, 720, 780]);
+  });
+
+  it('includes a later appointment and the current hour in the same range', () => {
+    const later = { ...booking, ...period('16:00', '16:20') };
+    const timeline = makeTimeline(date, 1, [], [later], zone, false, { date, hour: 720 });
+    expect(timeline.ticks[0]).toBe(660);
+    expect(timeline.ticks).toContain(960);
+    expect(timeline.days[0].entries[0].time).toBe('16:00');
+  });
+
+  it('stays inside midnight and leaves other dates independent of the clock', () => {
+    const late = makeTimeline(date, 1, [], [], zone, false, { date, hour: 1380 });
+    expect(late.ticks).toEqual([1320, 1380]);
+    expect(late.to).toBe(1440);
+    const historical = makeTimeline(date, 1, [], [], zone, false, { date: '2026-11-19', hour: 720 });
+    expect(historical.ticks).toEqual([540, 600, 660]);
+  });
+
   it('keeps closure distinct from an empty day and expands through midnight', () => {
     const timeline = makeTimeline(date, 2, [{ date, slots: [], closed: true }], [], zone, true);
     expect(timeline.days.map((day) => day.closed)).toEqual([true, false]);

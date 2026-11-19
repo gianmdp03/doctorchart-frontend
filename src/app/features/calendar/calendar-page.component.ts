@@ -15,7 +15,7 @@ import {BookingsService} from './bookings.service';
 import {FEATURE_FLAGS} from '../../core/config/feature-flags';
 import {PublicBookingDetails,PublicBookingForm} from '../appointments/appointments.models';
 import {BookingPortalFieldsComponent,bookingPortalIntake} from './booking-portal-fields.component';
-import {Booking,BookingEvent,BookingStatus,STATUS_LABELS,transitions,addDays,civilDate,localTime,displayDay,slotOffsetLabel} from './bookings.models';
+import {Booking,BookingEvent,BookingStatus,STATUS_LABELS,bookingStatusLabel,transitions,addDays,civilDate,localTime,displayDay,slotOffsetLabel} from './bookings.models';
 import {CalendarClinic,StaffAgenda} from '../staff/staff-agenda';
 import {StaffAccountComponent} from '../staff/staff-account.component';
 import { AgendaComponent, type AgendaView } from './agenda.component';
@@ -52,6 +52,7 @@ export class CalendarPageComponent {
  readonly agendaSlotSelected = (slot: Slot) => this.isSelectedSlot(slot);
  readonly agendaSlotContext = (slot: Slot) => this.clinicId || this.staff ? this.slotSpecialty(slot) : slot.clinic.name;
  readonly agendaBookingContext = (booking: Booking) => this.bookingClinic(booking);
+ readonly agendaBookingStatus = (booking: Booking) => bookingStatusLabel(booking.status, this.bookingModality(booking));
 
  setAgendaView(view: AgendaView): void {
   if (!this.writing()) this.agendaView.set(view);
@@ -83,7 +84,7 @@ export class CalendarPageComponent {
  readonly bookingForm=signal<PublicBookingForm|null>(null);
  readonly formError=signal('');
  readonly statuses:BookingStatus[]=Object.keys(STATUS_LABELS) as BookingStatus[];
- readonly labels=STATUS_LABELS;readonly displayDay=displayDay;readonly localTime=localTime;readonly slotOffsetLabel=slotOffsetLabel;readonly transitions=transitions;
+ readonly statusLabel=bookingStatusLabel;readonly displayDay=displayDay;readonly localTime=localTime;readonly slotOffsetLabel=slotOffsetLabel;readonly transitions=transitions;
  readonly civilDay=civilDate;readonly modalityLabel=modalityLabel;
  private readonly browserZone=Intl.DateTimeFormat().resolvedOptions().timeZone;
  get calendarZone(){return this.staff ? this.staff.assignment()?.timezone || 'America/Argentina/Buenos_Aires' : this.browserZone;}
@@ -111,6 +112,11 @@ export class CalendarPageComponent {
  bookingZone(b:Booking){return b.clinicSnapshot?.timezone||this.clinic(b.clinicId)?.timezone||'UTC';}
  bookingClinic(b:Booking){return b.clinicSnapshot?.name||this.clinic(b.clinicId)?.name||'Consultorio';}
  bookingModality(b:Booking){return b.clinicSnapshot?.modality??this.clinic(b.clinicId)?.modality??'IN_PERSON';}
+ statusAction(status: BookingStatus, modality: AppointmentModality): string {
+  if (status === 'CANCELLED') return 'Cancelar turno';
+  if (status === 'CHECKED_IN' && modality === 'TELECONSULTATION') return 'Marcar presente';
+  return 'Marcar: ' + bookingStatusLabel(status, modality);
+ }
  specialtyName(b:Booking){return b.specialty?.name||'Especialidad sin registro histórico';}
  time(b:Booking){return localTime(b.start,this.bookingZone(b));}
  private validDate(date:string){return /^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(Date.parse(date+'T12:00:00Z'))&&new Date(date+'T12:00:00Z').toISOString().slice(0,10)===date;}

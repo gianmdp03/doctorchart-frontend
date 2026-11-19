@@ -1,0 +1,28 @@
+<section class="account-page" aria-labelledby="security-title">
+  <div class="page-top">
+    <header><h1 id="security-title">Seguridad de tu cuenta</h1><p class="muted">Los cambios se aplican a tu cuenta de todo el ecosistema Bycode.</p></header>
+    <a class="button quiet" routerLink="/account">Volver a mi cuenta</a>
+  </div>
+  @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
+  @if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
+  <div class="security-grid">
+  <section class="panel" aria-labelledby="email-title">
+    <h2 id="email-title">Cambiar correo electrónico</h2>
+    <form (ngSubmit)="changeEmail()" #emailForm="ngForm">
+      <label>Correo nuevo<input name="email" type="email" [(ngModel)]="email" autocomplete="email" email required maxlength="254"></label>
+      <label>Contraseña actual<input name="currentPassword" type="password" [(ngModel)]="currentPassword" autocomplete="current-password" required maxlength="128"></label>
+      <p class="field-help">Puede ser necesario confirmar el cambio desde ambas direcciones.</p>
+      <div class="actions form-submit"><button class="button primary" type="submit" [disabled]="busy() || emailForm.invalid">Solicitar cambio de correo</button></div>
+    </form>
+  </section>
+  <section class="panel" aria-labelledby="password-title">
+    <h2 id="password-title">Cambiar contraseña</h2>
+    <form (ngSubmit)="changePassword()" #passwordForm="ngForm">
+      <label>Contraseña nueva<input name="password" type="password" [(ngModel)]="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
+      <label>Repetir contraseña<input name="confirmation" type="password" [(ngModel)]="confirmation" autocomplete="new-password" maxlength="128" required></label>
+      <p class="field-help">Usá entre 8 y 128 caracteres.</p>
+      <div class="actions form-submit"><button class="button primary" type="submit" [disabled]="busy() || passwordForm.invalid">Actualizar contraseña</button></div>
+    </form>
+  </section>
+  </div>
+</section>

@@ -21,3 +21,6 @@
   scroll-margin-block-start: calc(var(--app-header-height) + 12px);
   scroll-margin-block-end: 12px;
 }
+.customer-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px clamp(16px, 4vw, 32px); border-bottom: 1px solid var(--border); background: var(--card); }
+.customer-top a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 750; color: var(--foreground); text-decoration: none; }
+.customer-top a:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }

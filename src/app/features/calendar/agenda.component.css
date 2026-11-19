@@ -49,9 +49,9 @@ button:focus-visible, select:focus-visible, .calendar-board:focus-visible { outl
 }
 .calendar-board:focus-visible { outline-offset: -2px; }
 .timeline-grid {
-  position: relative; display: grid; grid-template-columns: var(--axis-width) repeat(7, minmax(112px, 1fr));
+  position: relative; display: grid; grid-template-columns: var(--axis-width) repeat(var(--visible-days), minmax(112px, 1fr));
   grid-template-rows: 66px minmax(160px, var(--track-height));
-  min-width: calc(var(--axis-width) + 7 * 112px);
+  min-width: calc(var(--axis-width) + var(--visible-days) * 112px);
 }
 .timeline-grid.single-day { grid-template-columns: var(--axis-width) minmax(0, 1fr); min-width: 0; }
 .timeline-corner, .day-header {
@@ -188,8 +188,8 @@ button:focus-visible, select:focus-visible, .calendar-board:focus-visible { outl
 @media (max-width: 1040px) {
   .calendar-workspace.has-editor { grid-template-columns: minmax(0, 1fr) 258px; }
   .timeline-grid:not(.single-day) {
-    grid-template-columns: var(--axis-width) repeat(7, minmax(96px, 1fr));
-    min-width: calc(var(--axis-width) + 7 * 96px);
+    grid-template-columns: var(--axis-width) repeat(var(--visible-days), minmax(96px, 1fr));
+    min-width: calc(var(--axis-width) + var(--visible-days) * 96px);
   }
 }
 @media (max-width: 800px) {

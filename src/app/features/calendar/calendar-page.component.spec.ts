@@ -27,6 +27,30 @@ describe('M5 calendar',()=>{
  });
  afterEach(()=>{fixture.destroy();vi.useRealTimers();});
  it('loads multiple clinics and renders bookings separately from available slots',()=>{expect(c.days().length).toBe(7);expect(c.days()[0].bookings[0].id).toBe('1');expect(c.days()[0].slots.length).toBe(2);expect(fixture.nativeElement.textContent).toContain('Persona atendida');});
+ it.each([
+  { modality: 'TELECONSULTATION', action: 'Marcar presente', label: 'Presente' },
+  { modality: 'IN_PERSON', action: 'Marcar: En consultorio', label: 'En consultorio' },
+ ] as const)('shows the check-in action and status for $modality', async ({ modality, action, label }) => {
+  const confirmed: Booking = { ...b, clinicSnapshot: { ...b.clinicSnapshot!, modality } };
+  const checkedIn: Booking = { ...confirmed, status: 'CHECKED_IN', version: '2' };
+  api.get.mockReturnValue(of(confirmed));
+  api.status.mockReturnValue(of(checkedIn));
+  api.list.mockReturnValue(of({ items: [checkedIn], totalElements: 1 }));
+  c.selectDay(civilDate(b.start, c.calendarZone));
+  await c.openBooking(confirmed);
+  fixture.detectChanges();
+  const page = fixture.nativeElement as HTMLElement;
+  const checkIn = [...page.querySelectorAll<HTMLButtonElement>('.state-actions button')]
+    .find(button => button.textContent.trim() === action);
+  expect(checkIn).toBeDefined();
+  checkIn!.click();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(api.status).toHaveBeenCalledWith(b.id, b.version, 'CHECKED_IN', expect.any(String));
+  expect(page.querySelector('.slot-summary .status')?.textContent?.trim()).toBe(label);
+  expect(page.querySelector('.reservations .status')?.textContent?.trim()).toBe(label);
+  expect(page.querySelector('.event[data-booking-id="1"]')?.getAttribute('aria-label')).toContain(label);
+ });
  it('opens the manual form below the available times and keeps input when choosing another time',async()=>{
   const page=fixture.nativeElement as HTMLElement;
   const reservations=page.querySelector('.day')!;
@@ -77,6 +101,56 @@ describe('M5 calendar',()=>{
   expect(c.days()[0].bookings[0].id).toBe('1');
   c.writing.set(true);c.selectDay(c.days()[2].date);
   expect(c.visibleDays()[0].date).toBe(c.days()[1].date);
+ });
+ it('starts the current week today and keeps past bookings available by date',async()=>{
+  vi.setSystemTime(new Date('2030-01-10T12:00:00Z'));
+  c.changeDate(c.dateToday());
+  await fixture.whenStable();
+  fixture.detectChanges();
+  const page=fixture.nativeElement as HTMLElement;
+  const columns=()=>[...page.querySelectorAll('.day-header')].map(day=>day.getAttribute('data-date'));
+  expect(columns()).toEqual(['2030-01-10','2030-01-11','2030-01-12','2030-01-13']);
+  expect(page.querySelector('[data-booking-id="1"]')).toBeNull();
+
+  page.querySelector<HTMLButtonElement>('[aria-label="Semana anterior"]')!.click();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(columns()[0]).toBe('2029-12-31');
+  page.querySelector<HTMLButtonElement>('[aria-label="Semana siguiente"]')!.click();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(columns()[0]).toBe('2030-01-10');
+
+  c.changeDate('2030-01-07');
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(columns()[0]).toBe('2030-01-07');
+  expect(page.querySelector('[data-booking-id="1"]')).not.toBeNull();
+
+  vi.setSystemTime(new Date('2030-01-13T12:00:00Z'));
+  c.changeDate(c.dateToday());
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(columns()).toEqual(['2030-01-13']);
+  expect(page.querySelector('.timeline-grid')?.classList.contains('single-day')).toBe(true);
+ });
+ it('keeps the current-time line visible as the clock advances on an empty agenda',()=>{
+  c.days.set([]);
+  c.date='2030-01-07';
+  c.selectedDay.set('2030-01-07');
+  const page=fixture.nativeElement as HTMLElement;
+  const ticks=()=>[...page.querySelectorAll('.hour-axis span')].map(tick=>tick.textContent?.trim());
+  const showHour=(hour:number)=>c.clock.set(new Date(2030,0,7,hour).getTime());
+
+  showHour(12);
+  fixture.detectChanges();
+  expect(page.querySelector('.now-line time')?.textContent?.trim()).toBe('12:00');
+  expect(ticks()).toEqual(['11:00','12:00','13:00']);
+
+  showHour(13);
+  fixture.detectChanges();
+  expect(page.querySelector('.now-line time')?.textContent?.trim()).toBe('13:00');
+  expect(ticks()).toEqual(['12:00','13:00','14:00']);
  });
  it('filters teleconsultations using the booking snapshot and the active agenda modality',async()=>{
   const virtual={...clinic('2'),modality:'TELECONSULTATION'};
