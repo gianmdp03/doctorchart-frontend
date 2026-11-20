@@ -7,7 +7,6 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { environment } from '../../../environments/environment';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 import { TimePickerComponent } from '../../shared/time-picker/time-picker.component';
 import { AuthService } from '../../core/services/auth.service';
@@ -77,7 +76,6 @@ export class SchedulePageComponent {
  private id='';
  private owner:string|null=null;
  private expiryTimer:ReturnType<typeof setTimeout>|null=null;
- private readonly renewLocalPermissions = !environment.production && environment.appUrl === 'https://localhost:4302';
  readonly clinic=signal<Clinic|null>(null);
  readonly choices=signal<Clinic[]>([]);
  readonly choicePage=signal(0);readonly choiceTotal=signal(0);readonly choicesBusy=signal(false);
@@ -209,7 +207,7 @@ export class SchedulePageComponent {
   if(Number.isFinite(expiry)&&expiry>Date.now()){
    this.expiryTimer=setTimeout(()=>{
     this.permissionClock.set(Date.now());
-    if(this.renewLocalPermissions)void this.retryCapabilities();
+    void this.retryCapabilities();
    },Math.min(expiry-Date.now()+10,2147483647));
   }
  }
