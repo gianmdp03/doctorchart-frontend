@@ -312,11 +312,16 @@ export class ClinicFormPageComponent implements OnInit {
     this.capabilities.set(normalized);
     const delayMs = getCapabilityExpiryDelayMs(normalized, Date.now());
     if (delayMs !== null && normalized.entitlements.status === 'VERIFIED') {
+      const expectedGen = this.contextGeneration;
+      const expectedOwner = this.currentOwnerId();
+      const expectedEditMode = this.isEditMode();
+      const expectedClinicId = this.clinicId();
       this.capabilityExpiryTimer = setTimeout(() => {
         this.capabilityExpiryTimer = null;
-        if (this.destroyed) return;
+        if (!this.isContextCurrent(expectedGen, expectedOwner, expectedEditMode, expectedClinicId)) return;
         this.capabilityExpiryTick.update((v) => v + 1);
         this.capabilities.set(createUnavailableCapabilities(this.capabilities()));
+        void this.refreshCapabilitiesSilently(expectedGen, expectedOwner, expectedEditMode, expectedClinicId);
       }, delayMs);
     }
   }

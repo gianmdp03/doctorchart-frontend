@@ -2,8 +2,8 @@ import { InteractionStatusService } from '../../core/services/interaction-status
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { BehaviorSubject, Subject, throwError } from 'rxjs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../../core/services/auth.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { MOCK_CAPABILITIES_BY_SCENARIO, MOCK_CLINIC_ERRORS, MockClinicsBackend } from './clinics.mocks';
@@ -49,6 +49,61 @@ describe('ClinicFormPageComponent', () => {
     component = fixture.componentInstance;
     await fixture.whenStable();
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    fixture.destroy();
+    vi.useRealTimers();
+  });
+
+  it.each([false, true])('automatically renews permissions without losing form data (edit: %s)', async (edit) => {
+    if (edit) {
+      paramMap$.next(convertToParamMap({ id: '103' }));
+      await fixture.whenStable();
+    }
+    vi.useFakeTimers();
+    const expiring = structuredClone(MOCK_CAPABILITIES_BY_SCENARIO.VERIFIED);
+    expiring.entitlements.validUntil = new Date(Date.now() + 1000).toISOString();
+    const capsSpy = vi.spyOn(mockBackend, 'getCapabilities').mockReturnValueOnce(of(expiring));
+    await component.retryCapabilities();
+    component.form.patchValue({ name: 'Consultorio en borrador', address: 'Calle 200' });
+    const before = component.form.getRawValue();
+    const specialties = [...component.selectedSpecialtyIds()];
+    const renewal = new Subject<typeof expiring>();
+    capsSpy.mockReturnValueOnce(renewal);
+    const calls = capsSpy.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(1005);
+    expect(capsSpy).toHaveBeenCalledTimes(calls + 1);
+    expect(component.isReadOnly()).toBe(true);
+    const renewed = structuredClone(expiring);
+    renewed.entitlements.validUntil = new Date(Date.now() + 1000).toISOString();
+    renewal.next(renewed);renewal.complete();
+    await Promise.resolve();
+    expect(component.isReadOnly()).toBe(false);
+    expect(component.form.getRawValue()).toEqual(before);
+    expect(component.selectedSpecialtyIds()).toEqual(specialties);
+    await vi.advanceTimersByTimeAsync(1005);
+    expect(capsSpy).toHaveBeenCalledTimes(calls + 2);
+    expect(component.isReadOnly()).toBe(false);
+    expect(component.form.getRawValue()).toEqual(before);
+  });
+
+  it('preserves form data and blocks writes if automatic renewal fails', async () => {
+    vi.useFakeTimers();
+    const expiring = structuredClone(MOCK_CAPABILITIES_BY_SCENARIO.VERIFIED);
+    expiring.entitlements.validUntil = new Date(Date.now() + 1000).toISOString();
+    const capsSpy = vi.spyOn(mockBackend, 'getCapabilities').mockReturnValueOnce(of(expiring));
+    await component.retryCapabilities();
+    component.form.patchValue({ name: 'Borrador conservado' });
+    const before = component.form.getRawValue();
+    capsSpy.mockReturnValueOnce(throwError(() => MOCK_CLINIC_ERRORS.entitlementsUnavailable()));
+    const createSpy = vi.spyOn(mockBackend, 'createClinic');
+    await vi.advanceTimersByTimeAsync(1005);
+    expect(capsSpy).toHaveBeenCalledTimes(2);
+    expect(component.isReadOnly()).toBe(true);
+    expect(component.form.getRawValue()).toEqual(before);
+    await component.submit();
+    expect(createSpy).not.toHaveBeenCalled();
   });
 
   it('validates required fields and IANA timezone in create mode before calling backend', async () => {
