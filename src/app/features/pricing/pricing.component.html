@@ -6,30 +6,81 @@
     </div>
     <div class="intro">
       <h1>Planes de DoctorChart</h1>
-      <p>Elegí un plan y pagá por adelantado. Los planes no se renuevan automáticamente.</p>
+      <p>Elegí cómo pagar, el período y el plan que necesitás.</p>
+      @if (isLoggedIn() && cardMethods().mobbexManage) {
+        <a class="dc-button button secondary" [href]="cardCheckout()">Gestionar renovación en Bycode</a>
+      }
     </div>
   </header>
-  @if (returned) {
-    <section class="notice" aria-label="Regreso del pago">
-      <p>Volviste de la pasarela de pago. Si pagaste, la activación puede demorar mientras se verifica el pago. Revisá tu plan antes de intentar otro cobro.</p>
-      <button class="dc-button button secondary" type="button" (click)="load(true)" [disabled]="loading() || checking()">Actualizar planes</button>
-      <a class="dc-button button secondary" routerLink="/dashboard">Ir a mi panel</a>
+  @if (transferReturn && !isLoggedIn() && !loading()) {
+    <section class="notice" aria-label="Consulta de transferencia">
+      <p>Iniciá sesión con la cuenta que generó la transferencia para consultar su estado.</p>
+      <div class="actions">
+        <a class="button" routerLink="/login" [queryParams]="{ returnUrl: '/pricing?rayaOrder=' + transferReturn }">Consultar mi transferencia</a>
+      </div>
+    </section>
+  }
+  @if (transfer(); as order) {
+    <section class="notice" aria-labelledby="transfer-title" [attr.aria-busy]="transferLoading()">
+      <h2 id="transfer-title" tabindex="-1">Transferencia bancaria</h2>
+      <p role="status"><strong>{{ transferStatus(order) }}</strong></p>
+      @for (item of order.items; track item.module) {
+        @if (item.module.toLowerCase() === 'doctorchart') {
+          <p>DoctorChart {{ tierName(item.tier) }} · {{ item.days }} días</p>
+        }
+      }
+      @if (order.items.length > 1) { <p>Esta orden incluye otros productos de Bycode.</p> }
+      <p>Total @if (order.originalAmount != null) { <del>{{ money(order.originalAmount, order.currency) }}</del>&ngsp; } <strong>{{ money(order.amount, order.currency) }}</strong></p>
+      @if (order.discountPercent) { <p>{{ order.discountPercent }}% de descuento por pagar con transferencia.</p> }
+      <p>Referencia {{ order.externalReference }}</p>
+      @if (transferExpiry(order.expiresAt); as expiry) { <p>Vencimiento {{ expiry }} (hora argentina)</p> }
+      @if (transferLink()) {
+        <p>En Raya Cash vas a encontrar los datos para transferir el importe exacto. Si ya transferiste, actualizá el estado antes de volver a pagar.</p>
+      } @else if (order.status === 'pending') {
+        <p>Actualizá el estado para saber si los datos de transferencia siguen disponibles.</p>
+      } @else if (order.status === 'verifying') {
+        <p>Estamos consultando la operación. Actualizá el estado antes de iniciar otra transferencia.</p>
+      }
+      <div class="actions">
+        @if (transferLink(); as checkoutUrl) {
+          <a class="button" [href]="checkoutUrl" rel="noreferrer">Ver datos en Raya Cash</a>
+        }
+        <button class="dc-button button secondary" type="button" (click)="refreshTransfer(order.externalReference)"
+          [disabled]="transferLoading() || checking()">Actualizar estado</button>
+        @if (order.status === 'credited') {
+          <a class="dc-button button secondary" routerLink="/dashboard">Ir a mi panel</a>
+        }
+      </div>
+    </section>
+  } @else if (transferReturn && transferLoading()) {
+    <p role="status">Consultando la transferencia…</p>
+  }
+  @if (transferError()) {
+    <section class="notice">
+      <p role="alert">{{ transferError() }}</p>
+      <div class="actions">
+        <button class="dc-button button secondary" type="button" (click)="loadTransfers()"
+          [disabled]="transferLoading() || checking()">Consultar transferencias</button>
+      </div>
+    </section>
+  }
+  @if (transferRequestSaved() && isLoggedIn()) {
+    <section class="notice" aria-label="Transferencia por recuperar">
+      <p>Quedó una solicitud de transferencia guardada en esta pestaña. Recuperala antes de iniciar otro pago.</p>
+      <div class="actions">
+        @if (rayaAvailable()) {
+          <button class="button" type="button" (click)="startTransfer(true)"
+            [disabled]="checking() || transferLoading()">Recuperar transferencia</button>
+        } @else {
+          <button class="dc-button button secondary" type="button" (click)="loadTransfers()"
+            [disabled]="checking() || transferLoading()">Consultar transferencias</button>
+        }
+      </div>
     </section>
   }
   @if (error()) {
     <p class="notice" role="alert">{{ error() }}</p>
     @if (loadingError()) { <button class="dc-button button secondary" type="button" (click)="load()">Reintentar</button> }
-  }
-  @if (checkoutError()) {
-    <p class="notice" role="alert">{{ checkoutError() }}
-      @if (pendingReference()) { Referencia: {{ pendingReference() }} }
-    </p>
-  }
-  @if (hasPending()) {
-    <section class="notice" aria-label="Pago pendiente de inicio">
-      <p>Hay una solicitud de pago guardada en esta pestaña. Podés reintentarla con la misma referencia.</p>
-      <button class="button" type="button" (click)="checkout(true)" [disabled]="checking() || loading()">Reintentar el mismo pago</button>
-    </section>
   }
   @if (loading()) {
     <p role="status">Cargando planes…</p>
@@ -40,6 +91,25 @@
         <a class="dc-button button secondary" routerLink="/register">Crear cuenta</a>
       </nav>
     }
+    <fieldset class="payment-choice">
+      <legend>Medio de pago</legend>
+      <div class="payment-options">
+        @if (cardMethods().mobbexCard) {
+          <label class="payment-option">
+            <input type="radio" name="billing-payment" value="card" [checked]="paymentMethod() === 'card'"
+              [disabled]="checking() || transferLoading()" (change)="chosenPayment.set('card')" />
+            <span><strong>Débito automático</strong><small>Con tarjeta, al inicio de cada período</small></span>
+          </label>
+        }
+        <label class="payment-option">
+          <input type="radio" name="billing-payment" value="raya" [checked]="paymentMethod() === 'raya'"
+            [disabled]="!rayaAvailable() || checking() || transferLoading()" (change)="chosenPayment.set('raya')" />
+          <span><strong>Transferencia bancaria @if (rayaAvailable() && rayaDiscountPercent() > 0) { <span class="saving" aria-hidden="true">−{{ rayaDiscountPercent() }}%</span><span class="payment-visually-hidden">{{ rayaDiscountPercent() }}% de descuento</span> }</strong>
+            <small>{{ rayaAvailable() ? 'Pago único por el período elegido' : 'No disponible por ahora' }}</small>
+          </span>
+        </label>
+      </div>
+    </fieldset>
     <section class="period" aria-labelledby="plan-period">
       <h2 id="plan-period">Elegí el período</h2>
       <div class="actions" role="group" aria-labelledby="plan-period">
@@ -48,37 +118,103 @@
         }
       </div>
     </section>
-    <div class="selection" [class.with-summary]="selected()">
+    @if (limitsStatus() === 'unavailable') {
+      <p class="benefits-notice" role="status">Los límites de los planes no están disponibles por ahora.
+        <button class="button secondary" type="button" (click)="loadPlanLimits()">Reintentar</button>
+      </p>
+    }
+    <div class="selection">
       <div class="plans">
         @for (plan of visible(); track plan.id) {
           <article class="plan" [class.selected]="selected()?.id === plan.id">
             <h2>{{ tierName(plan.tier) }}</h2>
-            <p class="price">{{ money(plan.price, plan.currency) }} <small>por {{ duration(plan.days) }}</small></p>
+            <div class="plan-price">
+              @if (plan.price != null && discounted(plan.currency)) { <del class="was-price">{{ money(plan.price, plan.currency) }}</del> }
+              <p class="price">{{ money(plan.price != null && discounted(plan.currency) ? rayaPrice(plan.price) : plan.price, plan.currency) }}
+                <small>{{ paymentMethod() === 'card' ? 'cada' : 'por' }} {{ duration(plan.days) }}</small>
+              </p>
+            </div>
+            <div class="plan-benefits">
+              <h3>Qué incluye</h3>
+              <p>Fichas clínicas, estudios adjuntos y recetas en PDF.</p>
+              @if (planLimits()[plan.tier]; as limits) {
+                <dl>
+                  @if (formatQuota(limits['max_patients']); as quota) { <div><dt>Pacientes</dt><dd>{{ quota }}</dd></div> }
+                  @if (formatQuota(limits['max_records_per_patient']); as quota) { <div><dt>Consultas por paciente</dt><dd>{{ quota }}</dd></div> }
+                </dl>
+              } @else if (limitsStatus() === 'loading') {
+                <p class="limits-status" role="status">Cargando límites…</p>
+              } @else if (limitsStatus() === 'ready') {
+                <p class="limits-status">Todavía no hay información de límites para este plan.</p>
+              }
+            </div>
             @if (plan.description) { <p>{{ plan.description }}</p> }
             @if (plan.lockReason) { <p>{{ plan.lockReason }}</p> }
             @if (isLoggedIn() && plan.action && plan.action !== 'LOCKED') {
-              <button class="button" type="button" (click)="select(plan)" [disabled]="checking() || hasPending()" [attr.aria-pressed]="selected()?.id === plan.id">{{ actionLabel(plan) }} {{ tierName(plan.tier) }}</button>
+              <button class="button secondary" type="button" (click)="select(plan)" [disabled]="checking()" [attr.aria-pressed]="selected()?.id === plan.id">{{ selected()?.id === plan.id ? 'Plan seleccionado' : actionLabel(plan) + ' ' + tierName(plan.tier) }}</button>
             }
           </article>
         }
       </div>
       @if (selected(); as plan) {
         <section class="notice payment-summary" aria-labelledby="checkout-title">
-          <h2 id="checkout-title">{{ actionLabel(plan) }} {{ tierName(plan.tier) }}</h2>
+          <h2 id="checkout-title">{{ plan.action === 'UPGRADE' ? 'Mejora a' : 'Plan' }} {{ tierName(plan.tier) }}</h2>
+          @let currency = quote()?.currency ?? plan.currency;
+          @let amount = plan.action === 'UPGRADE' ? quote()?.proratedUpgradeAmount : plan.price;
           @if (plan.action === 'UPGRADE') {
             @if (quote(); as preview) {
               @if (preview.canUpgrade) {
-                <p>Quedan {{ preview.remainingDays }} días en tu plan. Pagás <strong>{{ money(preview.proratedUpgradeAmount, preview.currency) }}</strong> por la mejora.</p>
+                <p>Mejora por los {{ preview.remainingDays }} días restantes de tu plan.</p>
               } @else { <p>{{ preview.message }}</p> }
             } @else if (checking()) { <p role="status">Calculando el importe…</p> }
-          } @else {
-            <p>Total por {{ duration(plan.days) }}: <strong>{{ money(plan.price, plan.currency) }}</strong>.</p>
           }
-          <button class="button" type="button" (click)="checkout()" [disabled]="checking() || hasPending() || (plan.action === 'UPGRADE' && !quote()?.canUpgrade)">Continuar al pago</button>
+          @if (amount != null && (plan.action !== 'UPGRADE' || quote()?.canUpgrade)) {
+            <p class="payment-total">
+              @if (discounted(currency)) { <del>{{ money(amount, currency) }}</del> }
+              <strong>{{ money(discounted(currency) ? rayaPrice(amount) : amount, currency) }}</strong>
+              @if (paymentMethod() === 'card' && plan.action !== 'UPGRADE') { <small>Cada {{ duration(plan.days) }} · débito automático</small> }
+              @if (paymentMethod() === 'raya') { <small>Pago único @if (discounted(currency)) { · {{ rayaDiscountPercent() }}% de descuento }</small> }
+            </p>
+          }
+          @if (paymentMethod() && currency !== 'ARS') {
+            <p>Este medio de pago está disponible para planes en pesos.</p>
+          } @else if (paymentMethod() === 'card' && plan.action === 'UPGRADE' && !cardMethods().mobbexUpgrade) {
+            <p>La mejora con tarjeta no está disponible por ahora.</p>
+          }
+          @if (paymentMethod() === 'card' && currency === 'ARS' && !transferRequestSaved() &&
+              (plan.action === 'UPGRADE' ? cardMethods().mobbexUpgrade && quote()?.canUpgrade : cardMethods().mobbexCard)) {
+            <a class="button" [href]="cardCheckout(plan.id)">{{ plan.action === 'UPGRADE' ? 'Continuar a la mejora' : 'Continuar con débito automático' }}</a>
+          }
+          @if (paymentMethod() === 'raya' && currency === 'ARS') {
+            @if (previousTransfer(); as reference) {
+              <button class="button" type="button" (click)="startTransfer(false, reference)"
+                [disabled]="checking() || transferLoading() || transferRequestSaved() || (plan.action === 'UPGRADE' && !quote()?.canUpgrade)">
+                Iniciar otra transferencia
+              </button>
+            } @else {
+              <button class="button" type="button" (click)="startTransfer()"
+                [disabled]="checking() || transferLoading() || transferRequestSaved() || (plan.action === 'UPGRADE' && !quote()?.canUpgrade)">
+                Pagar por transferencia
+              </button>
+            }
+          }
         </section>
       }
     </div>
   } @else if (!loadingError()) {
     <p class="notice">No hay planes publicados en este momento.</p>
+  }
+  @if (transfers().length) {
+    <details class="notice">
+      <summary>Historial de transferencias</summary>
+      @for (order of transfers(); track order.externalReference) {
+        <div class="actions">
+          <p>{{ transferStatus(order) }} · {{ money(order.amount, order.currency) }} · {{ order.externalReference }}</p>
+          <button class="dc-button button secondary" type="button"
+            (click)="refreshTransfer(order.externalReference, true)" [disabled]="transferLoading() || checking()"
+            [attr.aria-label]="'Consultar transferencia ' + order.externalReference">Consultar</button>
+        </div>
+      }
+    </details>
   }
 </main>

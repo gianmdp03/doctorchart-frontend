@@ -9,24 +9,25 @@
   --plan-soft: color-mix(in srgb, var(--plan-accent) 8%, var(--plan-card));
   box-sizing: border-box;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   width: min(100%, 75rem);
   margin-inline: auto;
   padding: clamp(16px, 4.5vw, 54px);
   gap: 24px;
   color: var(--plan-text);
 }
-header { display: grid; justify-items: start; gap: 14px; }
-header .intro { display: grid; gap: 9px; width: 100%; padding-block: 11px 20px; border-bottom: 1px solid var(--plan-edge); }
+header { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: start; gap: 14px; }
+header .intro { display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; width: 100%; padding-block: 11px 20px; border-bottom: 1px solid var(--plan-edge); }
 h1 { margin: 0; font-size: clamp(2.15rem, 5.5vw, 3.75rem); font-weight: 740; line-height: 1.08; letter-spacing: -.035em; text-wrap: balance; }
 h2 { margin: 0; font-size: clamp(1.15rem, 2vw, 1.4rem); font-weight: 700; letter-spacing: -.02em; }
 p { margin: 0; line-height: 1.55; overflow-wrap: anywhere; }
 .intro p { color: var(--plan-muted); max-width: 62ch; }
+.intro .button { justify-self: start; }
 .period { display: grid; gap: 8px; justify-items: start; }
 .period h2 { font-size: .94rem; }
 .period .actions { padding: 4px; border: 1px solid var(--plan-edge); border-radius: 12px; background: var(--plan-card); gap: 4px; }
 .period .button { border-color: transparent; }
 .selection { display: grid; gap: 18px; min-width: 0; align-items: start; }
-.selection.with-summary { grid-template-columns: minmax(0, 1fr) minmax(15rem, .33fr); }
 .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 14px; min-width: 0; }
 .plan, .notice { color: var(--plan-text); background: var(--plan-card); border: 1px solid var(--plan-edge); border-radius: 16px; padding: clamp(16px, 3vw, 24px); min-width: 0; overflow-wrap: anywhere; }
 .plan { display: flex; flex-direction: column; gap: 12px; }
@@ -63,6 +64,39 @@ p { margin: 0; line-height: 1.55; overflow-wrap: anywhere; }
 .button:not(:disabled):hover { box-shadow: inset 0 0 0 1px currentColor; }
 .button:disabled { background: var(--plan-soft); color: var(--plan-muted); border-color: var(--plan-edge); cursor: default; }
 :focus-visible { outline: 3px solid var(--plan-accent); outline-offset: 3px; }
-@media (max-width: 900px) {
-  .selection.with-summary { grid-template-columns: minmax(0, 1fr); }
+.payment-choice { min-inline-size: 0; padding: 0; margin: 0; border: 0; }
+.payment-choice legend { padding: 0; margin-bottom: .75rem; font-size: 1.14rem; font-weight: 720; letter-spacing: -.02em; }
+.payment-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: .75rem; }
+.payment-option { display: grid; grid-template-columns: 1rem minmax(0, 1fr); align-items: start; gap: .75rem; min-height: 44px; padding: .9rem 1rem; border: 1px solid var(--plan-edge); border-radius: 12px; background: var(--plan-card); cursor: pointer; }
+.payment-option input { inline-size: 1rem; block-size: 1rem; margin: .23rem 0 0; accent-color: var(--plan-accent); }
+.payment-option:has(input:checked) { border-color: var(--plan-accent); background: var(--plan-soft); }
+.payment-option:has(input:focus-visible) { outline: 2px solid var(--plan-accent); outline-offset: 2px; }
+.payment-option:has(input:disabled) { cursor: default; }
+.payment-option strong, .payment-option small { display: block; }
+.payment-option strong { font-size: .98rem; line-height: 1.4; }
+.payment-option small { margin-top: .22rem; font-size: .82rem; color: var(--plan-muted); }
+.payment-option .saving { display: inline-block; margin-inline-start: .35em; font-weight: 700; color: var(--plan-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.period .actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: min(100%, 27rem); box-sizing: border-box; }
+.period .button { padding-inline: .3rem; }
+.plan-price .was-price { display: block; margin-bottom: .18rem; color: var(--plan-muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.plan-benefits { display: grid; gap: .45rem; padding-block: .8rem .25rem; border-top: 1px solid var(--plan-edge); }
+.plan-benefits h3 { margin: 0; font-size: .875rem; font-weight: 730; }
+.plan-benefits p { font-size: .835rem; }
+.plan-benefits dl { margin: .1rem 0 0; font-size: .85rem; }
+.plan-benefits dl div { display: flex; justify-content: space-between; gap: .55rem; padding-block: .42rem; border-bottom: 1px solid var(--plan-edge); }
+.plan-benefits dt { color: var(--plan-muted); }
+.plan-benefits dd { margin: 0; text-align: end; font-weight: 700; font-variant-numeric: tabular-nums; }
+.plan-benefits .limits-status { font-size: .8rem; }
+.benefits-notice { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; color: var(--plan-muted); }
+.payment-summary { background: var(--plan-card); }
+.payment-total { display: grid; justify-items: start; gap: .2rem; }
+.payment-total del, .payment-total small { color: var(--plan-muted); }
+.payment-total strong { font-size: 1.3rem; letter-spacing: -.025em; }
+@media (min-width: 901px) {
+  .payment-summary { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); align-items: center; }
+  .payment-summary > h2 { grid-column: 1; }
+  .payment-summary > .payment-total { grid-column: 2; }
+  .payment-summary > .button { grid-column: 3; }
+  .payment-summary > p:not(.payment-total) { grid-column: 1 / -1; }
 }
+.payment-visually-hidden { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
