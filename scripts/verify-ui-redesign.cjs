@@ -167,15 +167,18 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.locator('#lookup-dni').fill('12345678');
       await p.getByRole('button', { name: 'Ver mis turnos', exact: true }).click();
       await p.waitForURL('**/appointments/confirmation');
-      assert.equal(await p.locator('#portal-document').inputValue(), '12345678');
       assert.ok(!p.url().includes('12345678'));
-      await p.locator('#portal-email').fill('consulta@example.test');
-      await p.getByRole('button', { name: 'Pedir código por correo', exact: true }).click();
+      await p.getByRole('button', { name: 'Reprogramar', exact: true }).click();
+      assert.equal(await p.getByRole('button', { name: 'Enviar código y continuar' }).isEnabled(), false);
+      await p.locator('#portal-change-reason').fill('Necesito elegir otro horario por un compromiso laboral.');
+      await p.getByRole('button', { name: 'Enviar código y continuar' }).click();
       await p.locator('#confirmation-code').fill('123456');
-      await p.getByRole('button', { name: 'Ver mis turnos', exact: true }).click();
-      await p.locator('.constancia').waitFor();
+      await p.getByRole('button', { name: 'Confirmar código' }).click();
+      assert.equal(await p.locator('#portal-change-reason').inputValue(), 'Necesito elegir otro horario por un compromiso laboral.');
       await p.reload();
       await p.locator('.constancia').waitFor();
+      await p.getByRole('button', { name: 'Cancelar turno', exact: true }).click();
+      await p.locator('#portal-change-reason').fill('No voy a poder asistir ese día.');
     });
     await run('dashboard', doctor, '/dashboard?specialtyContextId=101', '.notes-textarea', async p => {
       await p.locator('.notes-textarea').fill('Recordatorio de prueba para esta especialidad.');
@@ -315,7 +318,19 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.locator('[data-booking-id="1"]').click();
       await p.locator('#booking-move').click();
       await p.locator('#move-slot').selectOption({ index: 1 });
+      assert.equal(await p.locator('#move-confirm').isEnabled(), false);
+      await p.locator('#move-reason').fill('El profesional tendrá una reunión en el horario original.');
       assert.equal(await p.locator('#move-confirm').isEnabled(), true);
+    });
+    await run('booking-cancel', doctor, '/calendar?specialtyContextId=101', '.day-header button', async p => {
+      await p.locator('.day-header button').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) }).click();
+      await p.locator('[data-booking-id="1"]').click();
+      await p.getByRole('button', { name: 'Cancelar turno', exact: true }).click();
+      assert.equal(await p.locator('#cancel-reason').evaluate(field => field === document.activeElement), true);
+      const confirm = p.getByRole('button', { name: 'Confirmar cancelación' });
+      assert.equal(await confirm.isEnabled(), false);
+      await p.locator('#cancel-reason').fill('El consultorio permanecerá cerrado ese día.');
+      assert.equal(await confirm.isEnabled(), true);
     });
     await run('manual-booking', doctor, '/calendar?specialtyContextId=101', '.day-header button', async p => {
       await p.locator('.day-header button').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) }).click();

@@ -12,6 +12,6 @@ export class BookingsService {
  events(id:string){return this.http.get<{items:BookingEvent[]}>(`${this.base}/${encodeURIComponent(id)}/events`);}
  form(){return this.http.get<PublicBookingForm>(this.base+'/form',{transferCache:false});}
  create(body:BookingCreate,key:string){return this.http.post<Booking>(this.base,body,{headers:{'Idempotency-Key':key}});}
- status(id:string,expectedVersion:string,status:BookingStatus,key:string){return this.http.patch<Booking>(`${this.base}/${encodeURIComponent(id)}/status`,{expectedVersion,status},{headers:{'Idempotency-Key':key}});}
- reschedule(id:string,body:{expectedVersion:string;clinicId:string;start:string},key:string){return this.http.post<Booking>(`${this.base}/${encodeURIComponent(id)}/reschedule`,body,{headers:{'Idempotency-Key':key}});}
+ status(id:string,expectedVersion:string,status:BookingStatus,key:string,reason?:string){return this.http.patch<Booking>(`${this.base}/${encodeURIComponent(id)}/status`,{expectedVersion,status,reason},{headers:{'Idempotency-Key':key}});}
+ reschedule(id:string,body:{expectedVersion:string;clinicId:string;start:string;reason?:string},key:string){return this.http.post<Booking>(`${this.base}/${encodeURIComponent(id)}/reschedule`,body,{headers:{'Idempotency-Key':key}});}
 }

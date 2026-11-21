@@ -49,9 +49,14 @@ describe('Mis turnos', () => {
     expect(fixture.nativeElement.textContent).toContain('Profesional');
     expect(page.code).toBe('');
     page.chooseChange(page.items()[0], 'cancel');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#portal-change-reason')).toBeTruthy();
+    await page.confirmChange();
+    http.expectNone(req => req.url.endsWith('/my-bookings/change'));
+    page.changeReason = 'No voy a poder asistir.';
     const change = page.confirmChange();
     const update = http.expectOne(req => req.url.endsWith('/my-bookings/change'));
-    expect(update.request.body).toEqual({reference:'ref', action:'cancel', expectedVersion:'1'});
+    expect(update.request.body).toEqual({reference:'ref', action:'cancel', expectedVersion:'1', reason:'No voy a poder asistir.'});
     expect(update.request.withCredentials).toBe(true);
     expect(update.request.headers.get('Idempotency-Key')).toBeTruthy();
     update.flush({});
@@ -94,5 +99,19 @@ describe('Mis turnos', () => {
     expect(page.step()).toBe('code');
     expect(page.items()).toEqual([]);
     expect(page.error()).toContain('venció');
+  });
+
+  it('shows the reason immediately when the patient chooses a change before verifying access', async () => {
+    TestBed.inject(AppointmentsService).setPortalDraft(draft);
+    const fixture = TestBed.createComponent(ConfirmationPageComponent);
+    const page = fixture.componentInstance;
+    const preview = {reference:'ref',date:'2030-01-01',canAccess:false,canChange:true,canReschedule:true};
+    page.previews.set([preview]);
+    page.changeIdentity();
+    page.selectPreview(preview, 'reschedule');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('label[for="portal-change-reason"]').textContent).toContain('Motivo de la reprogramación');
+    expect(fixture.nativeElement.querySelector('.preview-change button').disabled).toBe(true);
+    TestBed.inject(HttpTestingController).expectNone(req => req.url.endsWith('/access/request'));
   });
 });

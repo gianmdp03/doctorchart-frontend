@@ -95,8 +95,31 @@ describe('Shared calendar for Secretaría', () => {
     component.moveStart = start;
     api.reschedule.mockResolvedValue(booking);
     await component.move();
-    expect(api.reschedule).toHaveBeenCalledOnce();
+    expect(api.reschedule).not.toHaveBeenCalled();
+    component.changeReason = '  Cambio de disponibilidad del profesional.  ';
+    await component.move();
+    expect(api.reschedule).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ownerId: assignment.ownerId}), expect.objectContaining({id: booking.id}),
+      assignment.clinicId, start, expect.any(String), 'Cambio de disponibilidad del profesional.',
+    );
     expect(api.status).not.toHaveBeenCalled();
+    expect(ownerCalls).not.toHaveBeenCalled();
+  });
+
+  it('sends the cancellation reason using the delegated staff endpoint', async () => {
+    const {component} = await open(['view', 'cancel']);
+    await component.openBooking(component.days()[0].bookings[0]);
+    api.status.mockResolvedValue({...booking, status:'CANCELLED', version:'2'});
+    await component.status('CANCELLED');
+    expect(component.editor()).toBe('cancel');
+    await component.status('CANCELLED');
+    expect(api.status).not.toHaveBeenCalled();
+    component.changeReason = 'El consultorio estará cerrado.';
+    await component.status('CANCELLED');
+    expect(api.status).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ownerId: assignment.ownerId}), expect.objectContaining({id: booking.id}),
+      'CANCELLED', expect.any(String), 'El consultorio estará cerrado.',
+    );
     expect(ownerCalls).not.toHaveBeenCalled();
   });
 

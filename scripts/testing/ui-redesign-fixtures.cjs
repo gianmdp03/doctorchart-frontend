@@ -119,14 +119,15 @@ async function install(context, { role = 'COMPANY', authenticated = true, hasPla
     }
     if (p.endsWith('/schedule')) return fulfill({ clinicId: '103', version: '1', configured: true, minNoticeMinutes: 0, maxAdvanceDays: 30, weekly: Array.from({ length: 7 }, (_, i) => ({ weekday: i + 1, ranges: i < 5 ? [{ id: String(i + 1), specialtyContextId: '101', start: '09:00', end: '12:00', slotMinutes: 20 }] : [] })), exceptions: [] });
     if (p.endsWith('/public/appointments/challenge')) return fulfill({ token: 'm6-fixture-355947', difficulty: 18 });
-    if (p.endsWith('/public/appointments/access/request')) return fulfill({ requestId: 'solicitud-sintetica' }, 202);
+    if (p.endsWith('/public/appointments/access/request')) return fulfill({ requestId: 'solicitud-sintetica', maskedEmail: 'con***@example.test' }, 202);
     if (p.endsWith('/public/appointments/access/verify')) {
       portalVerified = true;
       return route.fulfill({ status: 204 });
     }
     if (p.endsWith('/public/appointments/my-bookings')) {
+      if (request.postDataJSON()?.document) return fulfill({ hasMore: false, items: [{ reference: 'confirmacion-sintetica', date: tomorrow, canChange: true, canReschedule: true, canAccess: portalVerified }] });
       if (!portalVerified) return fulfill({code: 'BOOKING_ACCESS_DENIED'}, 403);
-      return fulfill({ hasMore: false, items: [{ reference: 'confirmacion-sintetica', status: 'CONFIRMED', start: tomorrow + 'T15:00:00Z', end: tomorrow + 'T15:20:00Z', doctorName: profile.name, clinicName: clinic.name, address: clinic.address, timezone: zone, version: '1', canChange: false }] });
+      return fulfill({ hasMore: false, items: [{ reference: 'confirmacion-sintetica', status: 'CONFIRMED', start: tomorrow + 'T15:00:00Z', end: tomorrow + 'T15:20:00Z', doctorName: profile.name, clinicName: clinic.name, address: clinic.address, timezone: zone, version: '1', canChange: true, publicDoctorId: profile.id, publicClinicId: clinic.id, specialtyContextId: '101' }] });
     }
     if (p.endsWith('/public/appointments/doctors')) return fulfill({ items: [profile, { ...profile, id: '44444444-4444-4444-8444-444444444444', name: 'Profesional de prueba García' }, { ...profile, id: '55555555-5555-4555-8555-555555555555', name: 'Profesional de prueba López' }], specialties: specialties.map(s => ({ code: s.code, name: s.name })), hasMore: false });
     if (p.includes('/public/appointments/doctors/') && !/availability|bookings/.test(p)) return fulfill(profile);

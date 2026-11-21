@@ -118,14 +118,35 @@
     @for(target of transitions(b.status);track target){@if(!staff || canSetStatus(target)){<button [class.danger]="target==='CANCELLED'" [disabled]="!canSetStatus(target)||writing()||conflict()||detailBusy()" (click)="status(target)">{{statusAction(target, bookingModality(b))}}</button>}}
     @if(b.status==='CONFIRMED' && (!staff || canReschedule())){<button id="booking-move" class="dc-button dc-button--primary primary" [disabled]="!canReschedule()||writing()||conflict()||detailBusy()" (click)="beginMove()">Reprogramar</button>}</div>
    }
-   @if(editor()==='move' && (!staff || canReschedule())){
-    <section class="move"><h3>Elegir nuevo horario</h3><label>Consultorio<select id="move-clinic" [(ngModel)]="moveClinic" (ngModelChange)="loadTargets()" [disabled]="writing()">@for(c of clinics();track c.id){@if(c.status==='ACTIVE'&&canMoveTo(c)){<option [value]="c.id">{{c.name}} · {{modalityLabel(c.modality)}}</option>}}</select></label><div class="picker-field"><label for="move-date">Fecha</label><app-date-picker inputId="move-date" inputLabel="Fecha" [value]="moveDate" (valueChange)="moveDate=$event;loadTargets()" /></div>
-    @if(targetBusy()){<p role="status">Buscando horarios…</p>}
-    <label>Horario<select id="move-slot" [(ngModel)]="moveStart" [disabled]="targetBusy()||writing()"><option value="">Seleccioná un horario</option>@for(s of targetSlots();track s.start){<option [value]="s.start">{{localTime(s.start,s.clinic.timezone)}}@if(slotOffsetLabel(s.start,s.clinic.timezone); as offset){ · {{offset}}}</option>}</select></label>
-    <p class="muted">El turno original se conserva hasta confirmar el cambio.</p><button id="move-confirm" class="dc-button dc-button--primary primary full" [disabled]="!moveStart||writing()||!canMoveTo(clinic(moveClinic))||conflict()||targetBusy()" (click)="move()">{{writing()?'Reprogramando…':'Confirmar reprogramación'}}</button>
+   @if(editor()==='cancel' && canSetStatus('CANCELLED')){
+    <section class="booking-change booking-change--cancel" aria-labelledby="cancel-heading">
+     <header><h3 id="cancel-heading">Cancelar turno</h3><p>El horario quedará libre. Si la reserva tiene un correo registrado, el paciente recibirá el motivo y un enlace para buscar un turno nuevo.</p></header>
+     <div class="change-reason">
+      <label for="cancel-reason">Motivo de la cancelación</label>
+      <textarea #cancellationReason id="cancel-reason" rows="4" [(ngModel)]="changeReason" [maxlength]="reasonLimit" required [disabled]="writing()" aria-describedby="cancel-reason-help"></textarea>
+      <div class="change-help"><span id="cancel-reason-help">Explicale al paciente el motivo de la cancelación. Evitá incluir información clínica.</span><span aria-hidden="true">{{changeReason.length}} / {{reasonLimit}}</span></div>
+     </div>
+     <footer class="change-actions"><button type="button" class="dc-button dc-button--secondary" (click)="backToBooking()" [disabled]="writing()">Volver al detalle</button><button type="button" class="dc-button confirm-cancellation" [disabled]="!validReason()||writing()||conflict()||detailBusy()" (click)="status('CANCELLED')">{{writing()?'Cancelando…':'Confirmar cancelación'}}</button></footer>
     </section>
    }
-   <button class="full" [disabled]="writing()||detailBusy()" (click)="reloadBooking(b)">Recargar detalle vigente</button>
+   @if(editor()==='move' && (!staff || canReschedule())){
+    <section class="move booking-change" aria-labelledby="move-heading">
+    <header><h3 #moveHeading id="move-heading" tabindex="-1">Reprogramar turno</h3><p>Elegí el nuevo horario e indicá el motivo. Si la reserva tiene un correo registrado, el paciente recibirá ambos datos.</p></header>
+    <div class="change-schedule"><label>Consultorio<select id="move-clinic" [(ngModel)]="moveClinic" (ngModelChange)="loadTargets()" [disabled]="writing()">@for(c of clinics();track c.id){@if(c.status==='ACTIVE'&&canMoveTo(c)){<option [value]="c.id">{{c.name}} · {{modalityLabel(c.modality)}}</option>}}</select></label><div class="picker-field"><label for="move-date">Fecha</label><app-date-picker inputId="move-date" inputLabel="Fecha" [value]="moveDate" (valueChange)="moveDate=$event;loadTargets()" /></div>
+    <label>Horario<select id="move-slot" [(ngModel)]="moveStart" [disabled]="targetBusy()||writing()"><option value="">Seleccioná un horario</option>@for(s of targetSlots();track s.start){<option [value]="s.start">{{localTime(s.start,s.clinic.timezone)}}@if(slotOffsetLabel(s.start,s.clinic.timezone); as offset){ · {{offset}}}</option>}</select></label></div>
+    @if(targetBusy()){<p role="status">Buscando horarios…</p>}
+    @else if(!targetSlots().length){<p role="status">No hay horarios disponibles para esta fecha.</p>}
+    <div class="change-reason">
+     <label for="move-reason">Motivo de la reprogramación</label>
+     <textarea id="move-reason" rows="4" [(ngModel)]="changeReason" [maxlength]="reasonLimit" required [disabled]="writing()" aria-describedby="move-reason-help"></textarea>
+     <div class="change-help"><span id="move-reason-help">Explicale al paciente el motivo de la reprogramación. Evitá incluir información clínica.</span><span aria-hidden="true">{{changeReason.length}} / {{reasonLimit}}</span></div>
+    </div>
+    <footer class="change-actions"><button type="button" class="dc-button dc-button--secondary" (click)="backToBooking()" [disabled]="writing()">Volver al detalle</button><button type="button" id="move-confirm" class="dc-button dc-button--primary primary" [disabled]="!moveStart||!validReason()||writing()||!canMoveTo(clinic(moveClinic))||conflict()||targetBusy()" (click)="move()">{{writing()?'Reprogramando…':'Confirmar reprogramación'}}</button></footer>
+    </section>
+   }
+   @if(editor()==='detail'||conflict()){
+    <button class="full" [disabled]="writing()||detailBusy()" (click)="reloadBooking(b)">Recargar detalle vigente</button>
+   }
    @if(!staff){
    @if(publicDetails();as details){<details class="history"><summary>Datos administrativos de la reserva</summary><dl><dt>Documento</dt><dd>{{details.documentCountry}} · {{details.documentType}} {{details.document}}</dd><dt>Email</dt><dd>{{details.email}}</dd></dl>@for(question of details.form.questions;track question.key){<p><strong>{{question.label}}</strong><br />{{details.answers[question.key]||'Sin respuesta'}}</p>}</details>}
    <details class="history"><summary>Historial de modificaciones · {{events().length}}</summary><ol>@for(event of events();track event.version){<li><strong>{{eventLabel(event.kind)}}</strong><br />{{eventDate(event.occurredAt)}} · versión {{event.version}}</li>}</ol></details>

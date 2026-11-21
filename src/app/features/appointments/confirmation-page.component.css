@@ -41,6 +41,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .portal-actions .dc-button:hover:not(:disabled), .more:hover:not(:disabled) { background: var(--dc-subtle); }
 .change-panel { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--dc-line); }
 .change-panel h3 { margin: 0; }
+.preview-change { flex-basis: 100%; margin-top: 4px; }
+.change-reason { display: grid; gap: 6px; min-width: 0; margin-block: 12px; }
+.change-reason label { font-size: .875rem; font-weight: 650; }
+.change-reason textarea { box-sizing: border-box; width: 100%; min-height: 92px; resize: vertical; padding: 10px 12px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); color: var(--dc-text); background: var(--dc-paper); font: inherit; font-size: .9375rem; line-height: 1.5; }
+.change-reason textarea:focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 2px; }
+.change-help { display: flex; justify-content: space-between; gap: 10px; color: var(--dc-text-secondary); font-size: .8125rem; line-height: 1.5; }
+.change-help > :last-child { flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .cancel-panel { padding: 18px; border: 1px solid var(--dc-line); border-radius: 12px; background: var(--dc-danger-soft); }
 .cancel-panel h3 { color: var(--dc-danger); font-size: 1.125rem; }
 .cancel-panel p { margin: 6px 0 0; font-size: .9375rem; }

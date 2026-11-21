@@ -33,6 +33,8 @@ export class CalendarPageComponent {
  private readonly contactInput=viewChild<ElementRef<HTMLInputElement>>('contactInput');
  private readonly manualHeading=viewChild<ElementRef<HTMLElement>>('manualHeading');
  private readonly detailHeading=viewChild<ElementRef<HTMLElement>>('detailHeading');
+ private readonly cancellationReason=viewChild<ElementRef<HTMLTextAreaElement>>('cancellationReason');
+ private readonly moveHeading=viewChild<ElementRef<HTMLElement>>('moveHeading');
  private readonly pickers=viewChildren(DatePickerComponent);private generation=0;private editorEpoch=0;private capEpoch=0;private owner:string|null=null;
  private receipt:{signature:string;key:string}|null=null;private expiry:ReturnType<typeof setTimeout>|null=null;
  readonly clinics=signal<CalendarClinic[]>([]);readonly days=signal<Day[]>([]);readonly loading=signal(false);readonly writing=signal(false);readonly detailBusy=signal(false);
@@ -75,7 +77,9 @@ export class CalendarPageComponent {
   return [...groups.values()];
  }
  readonly capabilities=signal<ClinicCapabilities|null>(null);readonly clock=signal(Date.now());readonly error=signal('');readonly feedback=signal('');readonly editorError=signal('');readonly conflict=signal(false);
- readonly selected=signal<Booking|null>(null);readonly slot=signal<Slot|null>(null);readonly publicDetails=signal<PublicBookingDetails|null>(null);readonly events=signal<BookingEvent[]>([]);readonly editor=signal<'create'|'detail'|'move'|null>(null);
+ readonly selected=signal<Booking|null>(null);readonly slot=signal<Slot|null>(null);readonly publicDetails=signal<PublicBookingDetails|null>(null);readonly events=signal<BookingEvent[]>([]);readonly editor=signal<'create'|'detail'|'move'|'cancel'|null>(null);
+ readonly reasonLimit=500;
+ changeReason='';
  readonly targetSlots=signal<Slot[]>([]);readonly targetBusy=signal(false);private targetEpoch=0;
  contextFilter='';statusFilter='';modalityFilter:AppointmentModality|''='';
  date=this.startOfWeek(this.dateToday());clinicId='';
@@ -235,7 +239,7 @@ export class CalendarPageComponent {
    }
   }finally{if(current())this.loading.set(false);}
  }
- close(){this.editorEpoch++;this.targetEpoch++;this.editor.set(null);this.selected.set(null);this.slot.set(null);this.events.set([]);this.publicDetails.set(null);this.targetSlots.set([]);this.editorError.set('');this.conflict.set(false);this.receipt=null;this.detailBusy.set(false);this.targetBusy.set(false);this.contactName='';this.contactPhone=null;this.attendeeName='';this.differentPerson=false;this.portalDraft={document:'',email:'',answers:{}};this.bookingForm.set(null);this.formError.set('');}
+ close(){this.editorEpoch++;this.targetEpoch++;this.editor.set(null);this.selected.set(null);this.slot.set(null);this.events.set([]);this.publicDetails.set(null);this.targetSlots.set([]);this.editorError.set('');this.conflict.set(false);this.receipt=null;this.detailBusy.set(false);this.targetBusy.set(false);this.contactName='';this.contactPhone=null;this.attendeeName='';this.differentPerson=false;this.changeReason='';this.portalDraft={document:'',email:'',answers:{}};this.bookingForm.set(null);this.formError.set('');}
  private focusAfterRender(target:()=>ElementRef<HTMLElement>|undefined){
   afterNextRender(()=>target()?.nativeElement.focus(),{injector:this.injector});
  }
@@ -278,19 +282,41 @@ export class CalendarPageComponent {
    if(assignment)await this.write('create',body,async key=>staff.booking(await staff.api.create(assignment,body,key)));
   }else await this.write('create',body,key=>firstValueFrom(this.api.create(body,key)));
  }
+ validReason(){
+  const reason=this.changeReason.trim();
+  return reason.length>0&&reason.length<=this.reasonLimit;
+ }
+ backToBooking(){
+  if(this.writing())return;
+  this.targetEpoch++;this.targetBusy.set(false);
+  this.changeReason='';this.editorError.set('');
+  this.editor.set('detail');this.focusAfterRender(this.detailHeading);
+ }
  async status(status:BookingStatus){
   const booking=this.selected();
   if(!booking||this.detailBusy()||!this.canSetStatus(status)||!transitions(booking.status).includes(status))return;
-  const body={id:booking.id,version:booking.version,status};
+  let reason:string|undefined;
+  if(status==='CANCELLED'){
+   if(this.editor()!=='cancel'){
+    this.changeReason='';this.editorError.set('');
+    this.editor.set('cancel');this.focusAfterRender(this.cancellationReason);
+    return;
+   }
+   if(!this.validReason())return;
+   reason=this.changeReason.trim();
+  }
+  const body={id:booking.id,version:booking.version,status,reason};
+  const reasonArgs:[]|[string]=reason?[reason]:[];
   const staff=this.staff, assignment=staff?.assignment();
   if(staff){
-   if(assignment)await this.write('status',body,async key=>staff.booking(await staff.api.status(assignment,booking,status,key)));
-  }else await this.write('status',body,key=>firstValueFrom(this.api.status(booking.id,booking.version,status,key)));
+   if(assignment)await this.write('status',body,async key=>staff.booking(await staff.api.status(assignment,booking,status,key,...reasonArgs)));
+  }else await this.write('status',body,key=>firstValueFrom(this.api.status(booking.id,booking.version,status,key,...reasonArgs)));
  }
  async beginMove(){
   const booking=this.selected();
   if(!booking||booking.status!=='CONFIRMED'||!this.canReschedule())return;
-  this.editor.set('move');
+  this.changeReason='';this.editorError.set('');
+  this.editor.set('move');this.focusAfterRender(this.moveHeading);
   const original=this.clinic(booking.clinicId);
   this.moveClinic=original?.status==='ACTIVE'&&this.canMoveTo(original)?original.id:this.clinics().find(c=>c.status==='ACTIVE'&&this.canMoveTo(c))?.id??'';
   this.moveDate=civilDate(booking.start,this.clinic(this.moveClinic)?.timezone??'UTC');
@@ -319,11 +345,11 @@ export class CalendarPageComponent {
  }
  async move(){
   const booking=this.selected();
-  if(!booking||!this.canMoveTo(this.clinic(this.moveClinic))||!this.targetSlots().some(s=>s.start===this.moveStart&&s.clinic.id===this.moveClinic))return;
-  const body={expectedVersion:booking.version,clinicId:this.moveClinic,start:this.moveStart};
+  if(!booking||!this.validReason()||!this.canMoveTo(this.clinic(this.moveClinic))||!this.targetSlots().some(s=>s.start===this.moveStart&&s.clinic.id===this.moveClinic))return;
+  const body={expectedVersion:booking.version,clinicId:this.moveClinic,start:this.moveStart,reason:this.changeReason.trim()};
   const staff=this.staff, assignment=staff?.assignment();
   if(staff){
-   if(assignment)await this.write('move',{id:booking.id,...body},async key=>staff.booking(await staff.api.reschedule(assignment,booking,body.clinicId,body.start,key)));
+   if(assignment)await this.write('move',{id:booking.id,...body},async key=>staff.booking(await staff.api.reschedule(assignment,booking,body.clinicId,body.start,key,body.reason)));
   }else await this.write('move',{id:booking.id,...body},key=>firstValueFrom(this.api.reschedule(booking.id,body,key)));
  }
  async reloadBooking(booking:Booking){

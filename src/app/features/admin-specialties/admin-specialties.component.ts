@@ -37,7 +37,7 @@ export class AdminSpecialtiesComponent implements OnInit, OnDestroy {
   readonly revoking = signal<number | null>(null);
   readonly revocationReason = signal('');
   readonly draftLabels = { PENDING: 'Pendiente de aprobación', APPROVED: 'Aprobada', PUBLISHED: 'Publicada', BLOCKED: 'Revisión bloqueada' };
-  readonly publicationLabels = { UNPUBLISHED: 'Sin publicar', LEGACY: 'Heredada, con altas bloqueadas', APPROVED: 'Aprobada', REVOKED: 'Revocada', BLOCKED: 'Bloqueada' };
+  readonly publicationLabels = { UNPUBLISHED: 'Sin publicar', LEGACY: 'Heredada, con altas bloqueadas', STARTER: 'Inicial editable, pendiente de revisión clínica', APPROVED: 'Aprobada', REVOKED: 'Revocada', BLOCKED: 'Bloqueada' };
   readonly definition = signal<WizardDefinition | null>(null);
   readonly creating = signal(false);
   readonly name = signal('');

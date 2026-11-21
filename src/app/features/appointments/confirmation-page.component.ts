@@ -1,5 +1,5 @@
 import { Component, DestroyRef, ElementRef, Injector, afterNextRender, inject, signal, viewChild } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -17,7 +17,7 @@ const slotWeekday = new Intl.DateTimeFormat('es-AR', {weekday:'long', timeZone:'
 
 @Component({
   selector: 'app-confirmation-page',
-  imports: [FormsModule, DatePickerComponent, PublicBookingShellComponent],
+  imports: [FormsModule, DatePickerComponent, NgTemplateOutlet, PublicBookingShellComponent],
   templateUrl: './confirmation-page.component.html',
   styleUrls: ['./confirmation-page.component.css', './patient-entry.css'],
 })
@@ -45,6 +45,8 @@ export class ConfirmationPageComponent {
   readonly hasMorePreviews = signal(false);
   readonly codeCells = [0, 1, 2, 3, 4, 5];
   readonly change = signal<{booking: PortalBooking; action: BookingAction} | null>(null);
+  readonly previewChange = signal<{reference: string; action: BookingAction} | null>(null);
+  readonly reasonLimit = 500;
   readonly slotDays = signal<AvailabilityDay[]>([]);
   readonly loadingSlots = signal(false);
   readonly displayDay = displayDay;
@@ -53,6 +55,7 @@ export class ConfirmationPageComponent {
   readonly slotOffsetLabel = slotOffsetLabel;
   date = '';
   start = '';
+  changeReason = '';
   code = '';
   private requestId = '';
   document = '';
@@ -174,10 +177,22 @@ export class ConfirmationPageComponent {
   }
 
   selectPreview(booking: PortalPreview, action: BookingAction | null = null) {
+    if (this.busy()) return;
+    this.closeChange();
     if (booking.canAccess) {
       return this.run(() => this.openVerified(booking.reference, action), 'No pudimos abrir el turno.');
     }
+    if (action) {
+      this.previewChange.set({reference: booking.reference, action});
+      afterNextRender(() => this.changeHeading()?.nativeElement.focus(), {injector:this.injector});
+      return;
+    }
     return this.requestCode(booking.reference, action);
+  }
+
+  continuePreviewChange() {
+    const change = this.previewChange();
+    if (change && this.validReason()) void this.requestCode(change.reference, change.action);
   }
 
   requestCode(reference = this.reference, action = this.pendingAction) {
@@ -216,12 +231,13 @@ export class ConfirmationPageComponent {
       ));
       const reference = this.reference;
       const action = this.pendingAction;
+      const reason = this.changeReason;
       this.clearCode();
-      await this.openVerified(reference, action);
+      await this.openVerified(reference, action, reason);
     }, 'No pudimos verificar el código. Volvé a intentarlo.');
   }
 
-  private async openVerified(reference: string, action: BookingAction | null) {
+  private async openVerified(reference: string, action: BookingAction | null, reason = '') {
     this.focusedReference = reference;
     this.step.set('list');
     await this.fetchBookings(false);
@@ -230,8 +246,10 @@ export class ConfirmationPageComponent {
     const selected = this.items().find(item => item.reference === reference);
     if (action && selected?.canChange) {
       this.prepareChange(selected, action);
+      this.changeReason = reason;
       if (action === 'reschedule') await this.fetchSlots(this.date, selected);
     } else {
+      this.closeChange();
       this.focusStep();
     }
   }
@@ -292,10 +310,17 @@ export class ConfirmationPageComponent {
   }
 
   closeChange() {
+    this.previewChange.set(null);
     this.change.set(null);
     this.slotDays.set([]);
     this.start = '';
+    this.changeReason = '';
     this.mutation = null;
+  }
+
+  validReason() {
+    const reason = this.changeReason.trim();
+    return reason.length > 0 && reason.length <= this.reasonLimit;
   }
 
   findSlots(date: string) {
@@ -323,13 +348,14 @@ export class ConfirmationPageComponent {
 
   confirmChange() {
     const selected = this.change();
-    if (!selected || (selected.action === 'reschedule' && !this.start)) return;
+    if (!selected || !this.validReason() || (selected.action === 'reschedule' && !this.start)) return;
     return this.run(async () => {
       const start = selected.action === 'reschedule' ? this.start : '';
-      const signature = JSON.stringify([selected.booking.reference, selected.booking.version, selected.action, start]);
+      const reason = this.changeReason.trim();
+      const signature = JSON.stringify([selected.booking.reference, selected.booking.version, selected.action, start, reason]);
       if (this.mutation?.signature !== signature) this.mutation = {signature, key:crypto.randomUUID()};
       try {
-        await this.request(this.api.changePortalBooking(selected.booking, selected.action, start, this.mutation.key));
+        await this.request(this.api.changePortalBooking(selected.booking, selected.action, start, this.mutation.key, reason));
       } catch (error) {
         if ((error as {status?: number}).status === 409) {
           this.closeChange();

@@ -1,4 +1,11 @@
 <app-public-booking-shell [inMyBookings]="true">
+ <ng-template #reasonField let-action>
+  <div class="change-reason">
+   <label for="portal-change-reason">{{action === 'cancel' ? 'Motivo de la cancelación' : 'Motivo de la reprogramación'}}</label>
+   <textarea id="portal-change-reason" rows="3" [(ngModel)]="changeReason" [maxlength]="reasonLimit" required [disabled]="busy()" aria-describedby="portal-reason-help"></textarea>
+   <div class="change-help"><span id="portal-reason-help">Indicá brevemente el motivo. Se incluirá en el correo de confirmación.</span><span aria-hidden="true">{{changeReason.length}} / {{reasonLimit}}</span></div>
+  </div>
+ </ng-template>
  @if (step() === 'identity' || step() === 'code') {
   <div class="recovery-entry">
    <section class="patient-entry" aria-labelledby="recovery-title">
@@ -76,6 +83,19 @@
                 <button type="button" class="quiet-button" (click)="selectPreview(booking, 'cancel')" [disabled]="busy()">Cancelar turno</button>
               }
             </div>
+            @if (previewChange(); as pending) {
+              @if (pending.reference === booking.reference) {
+                <section class="change-panel preview-change" [class.cancel-panel]="pending.action === 'cancel'" aria-labelledby="preview-change-heading">
+                  <h3 #changeHeading id="preview-change-heading" tabindex="-1">{{pending.action === 'cancel' ? 'Cancelar turno' : 'Reprogramar turno'}}</h3>
+                  <ng-container [ngTemplateOutlet]="reasonField" [ngTemplateOutletContext]="{$implicit: pending.action}" />
+                  <p class="session-note">Antes de confirmar el cambio, verificá el código que vamos a enviar al correo de la reserva.</p>
+                  <div class="portal-actions">
+                    <button type="button" (click)="continuePreviewChange()" [disabled]="busy() || !validReason()">Enviar código y continuar</button>
+                    <button type="button" class="quiet-button" (click)="closeChange()" [disabled]="busy()">Volver</button>
+                  </div>
+                </section>
+              }
+            }
           </li>
         }
       </ul>
@@ -124,7 +144,8 @@
         @if (change(); as selected) {
           @if (selected.booking.reference === booking.reference) {
             <section class="change-panel" [class.cancel-panel]="selected.action === 'cancel'" aria-labelledby="booking-change-heading">
-              <h3 #changeHeading id="booking-change-heading" tabindex="-1">{{selected.action === 'cancel' ? '¿Cancelar este turno?' : 'Elegí otro horario en este consultorio'}}</h3>
+              <h3 #changeHeading id="booking-change-heading" tabindex="-1">{{selected.action === 'cancel' ? 'Cancelar turno' : 'Reprogramar turno'}}</h3>
+              <ng-container [ngTemplateOutlet]="reasonField" [ngTemplateOutletContext]="{$implicit: selected.action}" />
               @if (selected.action === 'cancel') {
                 <p>Podés cancelar antes de que empiece el turno del <strong>{{slotLabel(booking.start, booking.timezone)}}</strong>. Al confirmar, se libera el horario.</p>
               } @else {
@@ -162,7 +183,7 @@
                 }
               }
               <div class="portal-actions">
-                <button type="button" [class.danger-button]="selected.action === 'cancel'" (click)="confirmChange()" [disabled]="busy() || (selected.action === 'reschedule' && !start)">
+                <button type="button" [class.danger-button]="selected.action === 'cancel'" (click)="confirmChange()" [disabled]="busy() || !validReason() || (selected.action === 'reschedule' && !start)">
                   {{selected.action === 'cancel' ? 'Confirmar cancelación' : 'Confirmar horario'}}
                 </button>
                 <button type="button" class="quiet-button" (click)="closeChange()" [disabled]="busy()">Volver</button>

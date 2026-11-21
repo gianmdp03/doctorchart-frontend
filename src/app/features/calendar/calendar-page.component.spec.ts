@@ -51,6 +51,24 @@ describe('M5 calendar',()=>{
   expect(page.querySelector('.reservations .status')?.textContent?.trim()).toBe(label);
   expect(page.querySelector('.event[data-booking-id="1"]')?.getAttribute('aria-label')).toContain(label);
  });
+ it('asks the doctor for a patient-facing reason before cancelling',async()=>{
+  await c.openBooking(b);
+  fixture.detectChanges();
+  const page=fixture.nativeElement as HTMLElement;
+  page.querySelector<HTMLButtonElement>('.state-actions .danger')!.click();
+  fixture.detectChanges();
+  const reason=page.querySelector<HTMLTextAreaElement>('#cancel-reason')!;
+  const confirm=page.querySelector<HTMLButtonElement>('.confirm-cancellation')!;
+  expect(confirm.disabled).toBe(true);
+  expect(api.status).not.toHaveBeenCalled();
+  reason.value='  El consultorio permanecerá cerrado.  ';
+  reason.dispatchEvent(new Event('input'));
+  fixture.detectChanges();
+  expect(confirm.disabled).toBe(false);
+  confirm.click();
+  await fixture.whenStable();
+  expect(api.status).toHaveBeenCalledExactlyOnceWith(b.id,b.version,'CANCELLED',expect.any(String),'El consultorio permanecerá cerrado.');
+ });
  it('opens the manual form below the available times and keeps input when choosing another time',async()=>{
   const page=fixture.nativeElement as HTMLElement;
   const reservations=page.querySelector('.day')!;

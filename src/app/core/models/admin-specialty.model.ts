@@ -46,7 +46,7 @@ export interface TemplateReviewStatus {
   revision: number;
   fingerprint: string;
   draftState: 'PENDING' | 'APPROVED' | 'PUBLISHED' | 'BLOCKED';
-  publicationState: 'UNPUBLISHED' | 'LEGACY' | 'APPROVED' | 'REVOKED' | 'BLOCKED';
+  publicationState: 'UNPUBLISHED' | 'LEGACY' | 'STARTER' | 'APPROVED' | 'REVOKED' | 'BLOCKED';
   canApprove: boolean;
   canPublish: boolean;
   canActivate: boolean;

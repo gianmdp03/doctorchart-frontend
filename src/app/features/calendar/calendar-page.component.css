@@ -200,8 +200,44 @@ input, select { width: 100%; font-weight: 400; }
 .history summary { cursor: pointer; font-size: .8125rem; font-weight: 600; }
 .history ol { padding-left: 20px; }
 .history li { padding: 8px 0; font-size: .8125rem; }
-.move { padding-block: 20px; }
-.move > :is(label, .picker-field) { margin-top: 16px; }
+.booking-change {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+  padding-block: 18px 4px;
+  border-top: 1px solid var(--dc-line);
+}
+.booking-change h3 { margin: 0 0 6px; font-size: 1.125rem; }
+.booking-change p { margin: 0; color: var(--dc-text-secondary); line-height: 1.5; }
+.booking-change--cancel h3 { color: var(--dc-danger); }
+.change-schedule { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.change-schedule > :last-child { grid-column: 1 / -1; }
+.change-reason { display: grid; min-width: 0; gap: 6px; }
+.change-reason textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 104px;
+  padding: 10px 12px;
+  resize: vertical;
+  border: 1px solid var(--dc-control-line);
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-paper);
+  color: var(--dc-text);
+  font: inherit;
+  line-height: 1.5;
+}
+.change-reason textarea:focus-visible { outline: 2px solid var(--dc-blue); outline-offset: 2px; }
+.change-help { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; color: var(--dc-text-secondary); font-size: .8125rem; }
+.change-help > :last-child { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.change-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: flex-end; }
+.change-actions .confirm-cancellation { border-color: var(--dc-danger); background: var(--dc-danger-soft); color: var(--dc-danger); font-weight: 700; }
+.change-actions .confirm-cancellation:hover:not(:disabled) { background: color-mix(in srgb, var(--dc-danger) 14%, var(--dc-paper)); border-color: var(--dc-danger); color: var(--dc-danger); }
+@media (max-width: 500px) {
+  .change-schedule { grid-template-columns: minmax(0, 1fr); }
+  .change-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .change-actions button { width: 100%; }
+}
 .notice { padding: 16px; margin: 16px 0; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-control); background: var(--dc-subtle); font-size: .875rem; }
 .notice.error { background: var(--dc-danger-soft); color: var(--dc-danger); border-color: currentColor; }
 .notice.success { background: var(--dc-positive-soft); color: var(--dc-positive); }
