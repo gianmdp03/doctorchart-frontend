@@ -1,4 +1,5 @@
-<main class="pricing">
+<main class="pricing" [class.pricing-checkout]="checkoutOpen()">
+  @if (!checkoutOpen()) {
   <header>
     <div class="actions">
       <a class="dc-button button secondary" routerLink="/professionals">Volver a DoctorChart</a>
@@ -12,6 +13,7 @@
       }
     </div>
   </header>
+  }
   @if (transferReturn && !isLoggedIn() && !loading()) {
     <section class="notice" aria-label="Consulta de transferencia">
       <p>Iniciá sesión con la cuenta que generó la transferencia para consultar su estado.</p>
@@ -20,11 +22,16 @@
       </div>
     </section>
   }
-  @if (transfer(); as order) {
-    <section class="notice transfer-sheet" aria-labelledby="transfer-title" [attr.aria-busy]="transferLoading()">
-      <div class="transfer-heading">
+  @if (checkoutClosed()) {
+    <div class="notice">
+      <p>Cerraste el pago. Podés retomar la orden mientras esté vigente.</p>
+      <button class="button secondary resume-transfer" type="button" (click)="reopenCheckout()" [disabled]="transferLoading() || checking()">Retomar transferencia</button>
+    </div>
+  } @else if (transfer(); as order) {
+    <section class="transfer-sheet transfer-page" aria-labelledby="transfer-title" [attr.aria-busy]="transferLoading()">
+      <div class="transfer-summary">
         <div>
-          <h2 id="transfer-title" tabindex="-1">Transferencia bancaria</h2>
+          <h1 class="transfer-title" id="transfer-title" tabindex="-1">Pagá por transferencia</h1>
           @for (item of order.items; track item.module) {
             @if (item.module.toLowerCase() === 'doctorchart') {
               <p class="transfer-muted">DoctorChart · {{ tierName(item.tier) }} · {{ item.days }} días</p>
@@ -34,13 +41,13 @@
         </div>
         <div>
           <p class="transfer-muted">Importe exacto</p>
-          <p class="transfer-amount">{{ money(order.amount, order.currency) }}</p>
+          <p class="transfer-amount transfer-total">{{ money(order.amount, order.currency) }}</p>
           @if (order.originalAmount != null) {
             <p class="transfer-muted"><del>{{ money(order.originalAmount, order.currency) }}</del> · {{ order.discountPercent }}% de descuento</p>
           }
         </div>
       </div>
-      <div class="transfer-instructions">
+      <div class="transfer-instructions transfer-bank-panel">
         <p role="status"><strong>{{ transferStatus(order) }}</strong></p>
         @if (bankTransfer() || transferLink()) {
           <p class="transfer-warning">Transferí el importe exacto en un solo envío. Si enviás otro monto, tu plan no se activa automáticamente.</p>
@@ -63,9 +70,9 @@
         } @else if (transferLink()) {
           <p class="transfer-muted">Abrí Raya Cash para consultar los datos de esta transferencia.</p>
         } @else if (order.preparing) {
-          <p class="transfer-muted">Raya Cash todavía no confirmó los datos bancarios. Consultá esta misma orden en unos segundos.</p>
+          <p class="transfer-muted">Los datos bancarios aparecerán acá cuando Raya Cash los confirme.</p>
         } @else if (order.status === 'pending' || order.status === 'verifying') {
-          <p class="transfer-muted">Consultá el estado antes de volver a transferir.</p>
+          <p class="transfer-muted">Si ya transferiste, esperá la confirmación en esta pantalla.</p>
         } @else if (order.status === 'credited') {
           <p class="transfer-muted">Tu licencia se actualizó con el plan contratado.</p>
         } @else if (order.status === 'expired') {
@@ -76,22 +83,31 @@
         @if (order.status === 'pending' && !expiredLink() && transferExpiry(order.expiresAt); as expiry) {
           <p class="transfer-muted">Disponible hasta el {{ expiry }} (hora argentina).</p>
         }
+        @if (pollReference()) {
+          <p class="transfer-live">
+            <span role="status">{{ liveConnected() ? 'Seguimiento en vivo' : 'Seguimiento en vivo no disponible' }}</span>
+          </p>
+        }
       </div>
-      <div class="actions">
+      <div class="actions transfer-actions">
         @if (!bankTransfer()) {
           @if (transferLink(); as checkoutUrl) {
           <a class="button" [href]="checkoutUrl" rel="noreferrer" (click)="checkTransferExpiry($event, order)">Abrir en Raya Cash</a>
           }
         }
-        @if (['pending', 'verifying', 'review'].includes(order.status)) {
-          <button type="button" [class]="bankTransfer() ? 'button' : 'button secondary'" (click)="refreshTransfer(order.externalReference)"
-            [disabled]="transferLoading() || checking()">{{ transferLoading() ? 'Consultando…' : 'Consultar estado' }}</button>
+        @if (pollReference()) {
+          <button class="button secondary" type="button" (click)="consultStatus()" [disabled]="manualWait() > 0 || transferLoading() || checking()">
+            {{ manualWait() > 0 ? 'Consultar en ' + manualWait() + ' s' : 'Consultar estado' }}
+          </button>
+          <button class="button secondary" type="button" (click)="cancelCheckout()">Cancelar</button>
+        } @else {
+          <button class="button secondary" type="button" (click)="cancelCheckout()">Volver a planes</button>
         }
         @if (order.status === 'credited') {
           <a class="button" routerLink="/dashboard">Ir a mi panel</a>
         }
       </div>
-      <details class="transfer-operation">
+      <details class="transfer-operation transfer-reference">
         <summary>Número de operación</summary>
         <p>{{ order.externalReference }}</p>
       </details>
@@ -122,6 +138,7 @@
       </div>
     </section>
   }
+  @if (!checkoutOpen()) {
   @if (error()) {
     <p class="notice" role="alert">{{ error() }}</p>
     @if (loadingError()) { <button class="dc-button button secondary" type="button" (click)="load()">Reintentar</button> }
@@ -260,5 +277,6 @@
         </div>
       }
     </details>
+  }
   }
 </main>

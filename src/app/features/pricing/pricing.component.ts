@@ -1,9 +1,11 @@
+import { readRayaEvents } from '../../shared/customer-account/raya-events';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
-import { Component, DestroyRef, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, PLATFORM_ID, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, fromEvent, NEVER, takeUntil } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -45,7 +47,7 @@ const referencePattern = /^[A-Za-z0-9_-]{1,128}$/;
   selector: 'app-product-pricing',
   imports: [ThemeToggleComponent, RouterLink],
   templateUrl: './pricing.component.html',
-  styleUrl: '../../shared/customer-account/pricing.css',
+  styleUrls: ['../../shared/customer-account/pricing.css', '../../shared/customer-account/transfer-checkout.css'],
 })
 export class PricingComponent {
   private readonly auth = inject(AuthService);
@@ -137,6 +139,133 @@ export class PricingComponent {
   protected readonly cycles = computed(() => [...new Set(this.plans().map(plan => plan.days))].sort((a, b) => a - b));
   protected readonly visible = computed(() => this.plans().filter(plan => plan.days === this.cycle()));
 
+  protected readonly checkoutOpen = computed(() => !!this.transfer() && !this.checkoutClosed());
+  private manualAvailableAt = 0;
+  protected readonly manualWait = signal(0);
+  protected readonly liveConnected = signal(false);
+  private checkoutConnection?: AbortController;
+  private readonly cancelledReference = signal<string | null>(null);
+  protected readonly checkoutClosed = computed(() => {
+    const reference = this.transfer()?.externalReference;
+    return !!reference && reference === this.cancelledReference();
+  });
+  protected readonly pollReference = computed(() => {
+    const transfer = this.transfer();
+    return !this.checkoutClosed() && transfer && (transfer.status === 'pending' || transfer.status === 'verifying')
+      ? transfer.externalReference : null;
+  });
+
+  protected cancelCheckout(): void {
+    this.checkoutConnection?.abort();
+    this.cancelledReference.set(this.transfer()?.externalReference ?? null);
+  }
+
+  protected async reopenCheckout(): Promise<void> {
+    const reference = this.cancelledReference();
+    if (!reference || this.transferLoading() || this.checking()) return;
+    await this.refreshTransfer(reference);
+    if (this.cancelledReference() === reference && !this.transferError()) {
+      this.cancelledReference.set(null);
+    }
+  }
+
+  protected async consultStatus(): Promise<void> {
+    const reference = this.pollReference();
+    const connection = this.checkoutConnection;
+    if (!reference || !connection || connection.signal.aborted || this.transferLoading() || this.checking() || Date.now() < this.manualAvailableAt) return;
+    this.manualAvailableAt = Date.now() + 15_000;
+    this.manualWait.set(15);
+    await this.refreshTransfer(reference, false, connection.signal);
+  }
+
+  private watchTransfer(): void {
+    effect(cleanup => {
+      const reference = this.pollReference();
+      const owner = this.auth.currentUser()?.id;
+      if (!this.browser || !reference || !owner) return;
+
+      const lifecycle = new AbortController();
+      this.checkoutConnection = lifecycle;
+      let stream: AbortController | undefined;
+      let retry: ReturnType<typeof setTimeout> | undefined;
+      lifecycle.signal.addEventListener('abort', () => stream?.abort(), { once: true });
+      const isCurrent = () => !lifecycle.signal.aborted && this.pollReference() === reference && this.auth.currentUser()?.id === owner;
+
+      const connect = async (): Promise<void> => {
+        if (document.hidden || stream || !isCurrent()) return;
+        const connectionSignal = new AbortController();
+        stream = connectionSignal;
+        let next = 5000;
+        try {
+          const headers = await this.authHeaders(owner);
+          const connection = { url: this.api + 'transfers/' + encodeURIComponent(reference) + '/events', authorization: headers.get('Authorization') ?? '' };
+          if (!isCurrent() || connectionSignal.signal.aborted) return;
+          next = await readRayaEvents(connection.url, connection.authorization, reference, connectionSignal.signal,
+            () => this.liveConnected.set(true),
+            async event => {
+              if (!isCurrent() || connectionSignal.signal.aborted) return;
+              const previous = this.transfer();
+              if (!previous) return;
+              if (event.status !== 'pending' && event.status !== 'verifying') {
+                const final = { ...previous, status: event.status, preparing: false, bankTransfer: undefined, checkoutUrl: undefined };
+                lifecycle.abort();
+                this.showTransfer(owner, final);
+                if (final.status === 'credited') await this.load(true);
+              } else if (previous.status !== event.status || !!previous.preparing !== event.preparing) {
+                await this.refreshTransfer(reference, false, connectionSignal.signal);
+              }
+            });
+        } catch {
+          // Manual status lookup remains available while a connection is retried.
+        } finally {
+          stream = undefined;
+          if (isCurrent()) {
+            this.liveConnected.set(false);
+            if (!document.hidden && next >= 0) retry = setTimeout(() => void connect(), next);
+          }
+        }
+      };
+
+      const updateManualWait = () => this.manualWait.set(Math.max(0, Math.ceil((this.manualAvailableAt - Date.now()) / 1000)));
+      updateManualWait();
+      const tick = setInterval(updateManualWait, 1000);
+      const onVisibilityChange = () => {
+        clearTimeout(retry);
+        if (document.hidden) stream?.abort();
+        else void connect();
+      };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+      void connect();
+      cleanup(() => {
+        lifecycle.abort();
+        stream?.abort();
+        clearTimeout(retry);
+        clearInterval(tick);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        this.liveConnected.set(false);
+        this.checkoutConnection = undefined;
+      });
+    });
+  }
+
+  constructor() {
+    this.watchTransfer();
+    effect(cleanup => {
+      if (!this.browser) return;
+      const open = this.checkoutOpen();
+      const closed = this.checkoutClosed();
+      if (!open && !closed) return;
+      const frame = requestAnimationFrame(() => {
+        const target = document.querySelector<HTMLElement>(
+          open ? '.transfer-page .transfer-title' : '.resume-transfer',
+        );
+        target?.focus({ preventScroll: true });
+        target?.scrollIntoView({ block: 'nearest' });
+      });
+      cleanup(() => cancelAnimationFrame(frame));
+    });
+  }
+
   ngOnInit(): void {
     if (!this.browser) return;
     this.destroyRef.onDestroy(() => clearTimeout(this.linkTimer));
@@ -171,7 +300,7 @@ export class PricingComponent {
 
   protected transferStatus(transfer: Transfer): string {
     if (transfer.preparing) return 'Preparando los datos bancarios';
-    if (transfer.status === 'pending' && this.transfer() === transfer && this.expiredLink()) return 'Consultá la vigencia de la orden';
+    if (transfer.status === 'pending' && this.transfer() === transfer && this.expiredLink()) return 'Verificando la vigencia de la orden';
     return transferStatus[transfer.status] ?? 'Operación bajo revisión';
   }
 
@@ -240,16 +369,18 @@ export class PricingComponent {
     return url.href;
   }
 
-  protected async refreshTransfer(reference: string, reveal = false): Promise<void> {
+  protected async refreshTransfer(reference: string, reveal = false, signal?: AbortSignal): Promise<void> {
     const owner = this.auth.currentUser()?.id;
     if (!owner || this.transferLoading() || this.checking() || !referencePattern.test(reference)) return;
     this.transferLoading.set(true);
     this.transferError.set('');
     try {
-      await this.fetchTransfer(owner, reference);
+      await this.fetchTransfer(owner, reference, signal);
+      if (signal?.aborted || this.destroyRef.destroyed) return;
       if (reveal) this.revealTransfer();
     } catch {
-      this.transferError.set('No pudimos verificar el estado de esta transferencia. Volvé a intentar.');
+      if (signal?.aborted || this.destroyRef.destroyed) return;
+      this.transferError.set(signal ? 'No pudimos actualizar el estado. Podés volver a consultarlo en unos segundos.' : 'No pudimos consultar la transferencia. Volvé a intentarlo.');
     } finally {
       this.transferLoading.set(false);
     }
@@ -324,11 +455,22 @@ export class PricingComponent {
     });
   }
 
-  private async fetchTransfer(owner: string, reference: string): Promise<void> {
+  private async fetchTransfer(owner: string, reference: string, signal?: AbortSignal): Promise<void> {
+    const previous = this.transfer();
+    const statusOnly = !!signal && !previous?.preparing;
     const headers = await this.authHeaders(owner);
+    if (signal?.aborted || this.destroyRef.destroyed) return;
+    const params: Record<string, string> = statusOnly ? { view: 'status' } : {};
     const transfer = await firstValueFrom(this.http.get<Transfer>(
-      this.api + 'transfers/' + encodeURIComponent(reference), { headers, transferCache: false },
+      this.api + 'transfers/' + encodeURIComponent(reference), { params, headers, transferCache: false, timeout: 10_000 },
+    ).pipe(
+      takeUntil(signal ? fromEvent(signal, 'abort') : NEVER),
+      takeUntilDestroyed(this.destroyRef),
     ));
+    if (signal?.aborted || this.destroyRef.destroyed) return;
+    if (statusOnly && transfer.status === 'pending' && transfer.expiresAt === previous?.expiresAt) {
+      transfer.bankTransfer ??= previous?.bankTransfer;
+    }
     if (this.auth.currentUser()?.id !== owner || transfer.externalReference !== reference) {
       throw new Error('La transferencia no coincide con esta consulta');
     }
@@ -359,7 +501,7 @@ export class PricingComponent {
         index === position ? transfer : previous);
     });
     clearTimeout(this.linkTimer);
-    this.copyFeedback.set('');
+    if (this.transfer()?.externalReference !== transfer.externalReference) this.copyFeedback.set('');
     const timeLeft = Date.parse(transfer.expiresAt ?? '') - Date.now();
     this.expiredLink.set(timeLeft <= 0);
     this.viewedTransfer.set(transfer);
