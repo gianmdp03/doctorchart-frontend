@@ -1,6 +1,6 @@
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, ValidationErrors, Validator } from '@angular/forms';
-import { MatDatepickerIntl, MatDatepickerModule } from '@angular/material/datepicker';
+import { MatCalendar, MatDatepickerIntl, MatDatepickerModule } from '@angular/material/datepicker';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { ArgentinaDateAdapter, ARGENTINA_DATE_FORMATS } from '../../core/date/argentina-date-adapter';
 
@@ -40,6 +40,8 @@ export class DatePickerComponent implements ControlValueAccessor, Validator {
   readonly value = input<string | null | undefined>('');
   readonly inputId = input<string | null>(null);
   readonly inputLabel = input('Fecha');
+  readonly inlineMonth = input(false);
+  private readonly month = viewChild<MatCalendar<Date>>('month');
   readonly required = input(false);
   readonly autocomplete = input('off');
   readonly invalid = input(false);
@@ -81,6 +83,11 @@ export class DatePickerComponent implements ControlValueAccessor, Validator {
 
   constructor() {
     effect(() => this.selectedDate.set(this.toDate(this.value())));
+    effect(() => {
+      const month = this.month();
+      const selected = this.selectedDate();
+      if (month && selected) month.activeDate = selected;
+    });
     effect(() => { this.error(); this.onValidatorChange(); });
   }
 

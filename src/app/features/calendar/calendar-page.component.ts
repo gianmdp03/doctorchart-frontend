@@ -1,3 +1,4 @@
+import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { PhoneDisplayPipe } from '../../shared/phone-input/phone-display.pipe';
 import { PhoneInputComponent } from '../../shared/phone-input/phone-input.component';
 import {afterNextRender,Component,DestroyRef,ElementRef,Injector,computed,effect,inject,signal,viewChild,viewChildren} from '@angular/core';
@@ -23,7 +24,7 @@ import type { AgendaDay } from './agenda-timeline';
 import {staffError} from '../staff/staff.service';
 interface Slot {clinic:CalendarClinic;start:string;end:string;specialtyContextId?:string;}
 interface Day extends AgendaDay<Slot> { bookings: Booking[]; }
-@Component({selector:'app-calendar-page',imports:[AgendaComponent,CommonModule,PhoneDisplayPipe,FormsModule,PhoneInputComponent,BookingPortalFieldsComponent,RouterLink,DatePickerComponent,StaffAccountComponent],providers:[StaffAgenda],host:{'[attr.role]':'staff ? "main" : null'},templateUrl:'./calendar-page.component.html',styleUrl:'./calendar-page.component.css'})
+@Component({selector:'app-calendar-page',imports:[AgendaComponent,ThemeToggleComponent,CommonModule,PhoneDisplayPipe,FormsModule,PhoneInputComponent,BookingPortalFieldsComponent,RouterLink,DatePickerComponent,StaffAccountComponent],providers:[StaffAgenda],host:{'[attr.role]':'staff ? "main" : null'},templateUrl:'./calendar-page.component.html',styleUrls:['./agenda-colors.css','./calendar-page.component.css']})
 export class CalendarPageComponent {
  readonly staff = inject(ActivatedRoute, {optional:true})?.snapshot.data['staffAgenda'] ? inject(StaffAgenda) : null;
  private staffLoaded = false;

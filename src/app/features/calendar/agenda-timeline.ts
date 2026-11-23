@@ -11,7 +11,7 @@ export interface AgendaDay<S extends AgendaSlot> {
 }
 
 const DAY_MINUTES = 1440;
-export const PIXELS_PER_MINUTE = 1.8;
+export const PIXELS_PER_MINUTE = 1.7;
 const MIN_TARGET_MINUTES = Math.ceil(24 / PIXELS_PER_MINUTE);
 
 interface Span {

@@ -9,3 +9,18 @@ mat-datepicker-toggle { margin-right: 2px; color: var(--dc-text-secondary); }
 :host(.input-error) .date-picker-shell { border-color: var(--dc-danger); }
 .field-error { display: block; margin-top: 6px; color: var(--dc-danger); font-size: .8125rem; line-height: 1.5; }
 .date-picker-input.has-error { color: var(--dc-danger); }
+
+mat-calendar {
+  display: block;
+  width: 100%;
+  color: var(--dc-text);
+  --mat-datepicker-calendar-date-text-color: var(--dc-text);
+  --mat-datepicker-calendar-header-text-color: var(--dc-text-secondary);
+  --mat-datepicker-calendar-period-button-text-color: var(--dc-text);
+  --mat-datepicker-calendar-navigation-button-icon-color: var(--dc-text-secondary);
+  --mat-datepicker-calendar-body-label-text-color: var(--dc-text-muted);
+  --mat-datepicker-calendar-date-selected-state-background-color: var(--dc-brand);
+  --mat-datepicker-calendar-date-selected-state-text-color: var(--dc-on-brand);
+  --mat-datepicker-calendar-date-hover-state-background-color: var(--dc-brand-soft);
+  --mat-datepicker-calendar-date-today-outline-color: var(--dc-brand);
+}

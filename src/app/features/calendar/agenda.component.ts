@@ -32,7 +32,7 @@ export const AGENDA_STATUS_ICONS = {
     lucideMaximize2, lucideMinimize2, lucidePlus, lucideX,
   })],
   templateUrl: './agenda.component.html',
-  styleUrls: ['../staff/staff.css', './agenda-page.css', './agenda.component.css'],
+  styleUrls: ['../staff/staff.css', './agenda-page.css', './agenda-colors.css', './agenda.component.css'],
 })
 export class AgendaComponent<B extends AgendaBooking, S extends AgendaSlot> {
   readonly dateInputId = input.required<string>();
@@ -71,6 +71,12 @@ export class AgendaComponent<B extends AgendaBooking, S extends AgendaSlot> {
     return date >= today && weekStart < today ? today : weekStart;
   });
   readonly rangeEnd = computed(() => this.view() === '7' ? addDays(this.weekStart(), 6) : this.date());
+  private readonly monthYear = new Intl.DateTimeFormat('es-AR', {
+    month: 'long', year: 'numeric', timeZone: 'UTC',
+  });
+  readonly periodTitle = computed(() => this.monthYear.formatRange(
+    new Date(this.rangeStart() + 'T12:00:00Z'), new Date(this.rangeEnd() + 'T12:00:00Z'),
+  ));
   readonly dayCount = computed(() =>
     (Date.parse(this.rangeEnd()) - Date.parse(this.rangeStart())) / 86_400_000 + 1,
   );

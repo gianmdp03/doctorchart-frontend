@@ -1,3 +1,8 @@
+@if (inlineMonth()) {
+  <mat-calendar #month [attr.aria-label]="inputLabel()" [attr.inert]="isDisabled() ? '' : null"
+    [startAt]="calendarStart()" [selected]="selectedDate()" [maxDate]="maxDate()"
+    (selectedChange)="selectDate($event); markTouched()" />
+} @else {
 <div class="date-picker-shell">
   <input
     type="text"
@@ -26,3 +31,4 @@
 <span class="sr-only" [id]="fieldId() + '-label'">{{ inputLabel() }}</span>
 <span class="sr-only" [id]="fieldId() + '-format'">Formato: día, mes y año (dd/MM/aaaa).</span>
 @if (showError() && error() && !isDisabled()) { <span class="field-error" [id]="fieldId() + '-error'" role="alert">{{ error() }}</span> }
+}

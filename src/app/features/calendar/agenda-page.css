@@ -1,15 +1,12 @@
 :host {
-  --agenda-base: var(--md-surface-container-lowest);
-  --agenda-page: var(--md-surface-container-low);
-  --agenda-muted: var(--md-sys-color-on-surface-variant);
-  --agenda-ink: var(--md-sys-color-on-surface);
-  --agenda-accent: var(--md-sys-color-primary);
-  --agenda-rule: color-mix(in srgb, var(--md-sys-color-outline-variant) 62%, var(--agenda-base));
+  --agenda-base: var(--dc-paper);
+  --agenda-page: var(--dc-subtle);
+  --agenda-muted: var(--dc-text-secondary);
+  --agenda-ink: var(--dc-text);
+  --agenda-accent: var(--dc-brand);
+  --agenda-rule: var(--dc-line);
   --agenda-today: color-mix(in srgb, var(--agenda-accent) 7%, var(--agenda-base));
-  --agenda-now: light-dark(#ae3a3b, #ff9b97);
-  --agenda-free: light-dark(#ebf1f2, #243439);
-  --agenda-free-edge: light-dark(#cedbdd, #3e5257);
-  background: var(--agenda-page);
+
 }
 
 ng-icon { flex: none; font-size: 1rem; }
@@ -30,11 +27,6 @@ button:focus-visible, select:focus-visible, .calendar-board:focus-visible { outl
 .assignment-picker > ng-icon { position: absolute; top: 50%; left: 13px; transform: translateY(-50%); color: var(--agenda-accent); pointer-events: none; }
 .assignment-picker select { display: block; padding-inline-start: 38px; font-size: .875rem; font-weight: 650; text-overflow: ellipsis; }
 
-[data-status='CONFIRMED'] { --status: light-dark(#244f9a, #adcaff); }
-[data-status='CHECKED_IN'] { --status: light-dark(#68459b, #d5bafb); }
-[data-status='COMPLETED'] { --status: light-dark(#25634d, #94d9bb); }
-[data-status='CANCELLED'] { --status: light-dark(#963d46, #f9a9af); }
-[data-status='NO_SHOW'] { --status: light-dark(#6c505b, #d6b4c3); }
 .status-label { display: inline-flex; align-items: center; gap: 4px; color: var(--status); }
 .status-label ng-icon { font-size: .875rem; }
 .editor-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }

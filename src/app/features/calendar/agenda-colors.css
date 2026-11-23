@@ -1,0 +1,12 @@
+/* Shared by the time grid, the daily roster and their visible key. */
+:host {
+  --agenda-free: color-mix(in srgb, var(--dc-brand) 8%, var(--dc-paper));
+  --agenda-free-edge: var(--dc-brand);
+  --agenda-now: var(--dc-danger);
+  --agenda-blocked: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--dc-control-line) 13%, transparent) 5px 6px) var(--dc-subtle);
+}
+[data-status='CONFIRMED'] { --status: var(--dc-blue); }
+[data-status='CHECKED_IN'] { --status: var(--dc-violet); }
+[data-status='COMPLETED'] { --status: var(--dc-positive); }
+[data-status='NO_SHOW'] { --status: var(--dc-caution); }
+[data-status='CANCELLED'] { --status: var(--dc-danger); }

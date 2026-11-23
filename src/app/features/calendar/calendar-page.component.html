@@ -1,7 +1,7 @@
 <div class="calendar-page" [class.staff-agenda]="staff">
  @if(staff; as delegated){
   <header class="staff-account-bar" aria-label="Cuenta de Secretaría">
-   <a class="staff-brand" routerLink="/"><img src="/doctorchart-logo.svg" width="27" height="30" alt="" /> DoctorChart</a>
+   <a class="staff-brand" routerLink="/"><img src="/doctorchart-logo.svg" width="27" height="30" alt="" /> <span>DoctorChart<small>Secretaría</small></span></a>
    <div class="staff-doctor" [class.has-doctor]="delegated.doctorId()">
     <label for="staff-doctor">Médico activo</label>
     <select id="staff-doctor" [ngModel]="delegated.doctorId()" (ngModelChange)="changeStaffDoctor($event)"
@@ -16,7 +16,7 @@
     </span>
     <svg class="staff-doctor-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
    </div>
-   <app-staff-account [locked]="writing()" />
+   <div class="account-actions"><app-theme-toggle /><app-staff-account [locked]="writing()" /></div>
   </header>
  }
  @if(staff; as delegated){
@@ -63,6 +63,49 @@
  @if(!staff && !allowed()){<div class="notice" role="status">Modo de consulta: los permisos comerciales no están vigentes o no pudieron verificarse. <button (click)="retryCapabilities()">Verificar permisos</button></div>}
  @else if(!staff && !canBook()){<p class="notice">Regularizá el cupo de consultorios para crear o reprogramar turnos presenciales. Podés gestionar los estados de los turnos existentes.</p>}
  @if(clinics().length && (!staff || allowed())){
+  <div class="schedule-layout">
+   <aside class="schedule-sidebar" aria-label="Navegación y referencias de la agenda">
+    <app-date-picker class="month-overview" [inlineMonth]="true" inputLabel="Elegir día de la agenda"
+      [ngModel]="visibleDays()[0]?.date ?? selectedDay()" (ngModelChange)="changeDate($event)" [disabled]="writing()" />
+    <section class="color-guide" aria-label="Colores de la agenda">
+     <h2>Referencias</h2>
+     <ul>
+      <li><i class="free-key"></i>Horario libre</li>
+      @for (status of statuses; track status) {
+       <li [attr.data-status]="status"><i></i>{{ status === 'CHECKED_IN' ? 'Presente / en consultorio' : statusLabel(status) }}</li>
+      }
+      <li><i class="blocked-key"></i>Fuera de horario o bloqueado</li>
+      <li><i class="clock-key"></i>Hora actual</li>
+     </ul>
+    </section>
+    @if (!loading()) {
+     @for (day of visibleDays(); track day.date) {
+      <article class="day">
+       <header class="section-heading">
+        <h2>Reservas del día</h2>
+        <time class="section-date" [attr.datetime]="day.date">{{displayDay(day.date)}}</time>
+       </header>
+       <div class="reservations">
+        @for (b of day.bookings; track b.id) {
+         <button type="button" class="booking" [attr.aria-pressed]="selected()?.id === b.id"
+           [class.cancelled]="b.status === 'CANCELLED'" [attr.data-status]="b.status"
+           (click)="openBooking(b)" [disabled]="writing()">
+          <span class="booking-time">{{localTime(b.start,calendarZone)}}
+           @if (slotOffsetLabel(b.start,calendarZone); as offset) { <small>{{offset}}</small> }
+          </span>
+          <strong>{{b.attendeeName || b.contactName}}</strong>
+          <span class="status">{{agendaBookingStatus(b)}}</span>
+          <span class="specialty">{{specialtyName(b)}}</span>
+          <span class="location">{{bookingClinic(b)}} · {{modalityLabel(bookingModality(b))}}</span>
+         </button>
+        } @empty {
+         <p class="muted no-bookings">No hay reservas para este día.</p>
+        }
+       </div>
+      </article>
+     }
+    }
+   </aside>
   <app-agenda
    [dateInputId]="staff ? 'staff-date' : 'calendar-date'"
    [date]="visibleDays()[0]?.date ?? selectedDay()"
@@ -88,6 +131,7 @@
    (bookingSelected)="openAgendaBooking($event.booking)"
    (slotChosen)="openAgendaSlot($event.slot)"
   />
+  </div>
  }
  <div class="workspace" [class.has-detail]="!!selected()" [class.staff-readonly]="staff && !canBook()" [attr.aria-busy]="loading()">
  @if(loading()){<div class="empty" role="status">Cargando tu agenda…</div>}
@@ -100,12 +144,6 @@
   </div>
  }
  @else if(!staff && !clinics().length&&!error()){<div class="empty"><h2>Configurá tu primera agenda</h2><p>Creá un consultorio o una agenda virtual y cargá sus horarios.</p><a routerLink="/clinics">Ir a consultorios</a></div>}
- @else if(!staff || allowed()){ @for(day of visibleDays();track day.date){
-  <article class="day"><header class="section-heading"><div><span class="section-date">{{displayDay(day.date)}}</span><h2>Reservas del día</h2></div><span class="section-count">{{day.bookings.length}} {{day.bookings.length === 1 ? 'reserva' : 'reservas'}}</span></header>
-   <div class="reservations">@for(b of day.bookings;track b.id){<button class="booking" [class.cancelled]="b.status==='CANCELLED'" [attr.data-status]="b.status" (click)="openBooking(b)" [disabled]="writing()"><span class="booking-time">{{localTime(b.start,calendarZone)}} @if(slotOffsetLabel(b.start,calendarZone); as offset){<small>{{offset}}</small>}</span><strong>{{b.attendeeName||b.contactName}}</strong><span class="status">{{agendaBookingStatus(b)}}</span><span class="specialty">{{specialtyName(b)}}</span><span class="location">{{bookingClinic(b)}} · {{modalityLabel(bookingModality(b))}}</span></button>}
-   @if(!day.bookings.length){<p class="muted no-bookings">No hay reservas para este día.</p>}</div>
-  </article>
- } }
   @if((!staff || allowed()) ? selected() : null;as b){
    <section class="editor" aria-labelledby="booking-detail-heading">
    <header class="section-heading"><div><span class="section-date">Detalle de la reserva</span><h2 #detailHeading id="booking-detail-heading" tabindex="-1">{{b.attendeeName||b.contactName}}</h2></div><button type="button" (click)="close()" [disabled]="writing()">Cerrar detalle</button></header>

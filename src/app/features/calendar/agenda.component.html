@@ -1,5 +1,11 @@
 <section class="agenda" aria-label="Agenda de turnos">
   <div class="calendar-toolbar">
+    <div class="period-heading min-w-0">
+      <h2 class="date-range">{{ periodTitle() }}</h2>
+      <p class="period-dates tabular-nums">
+        {{ displayDay(rangeStart()) }}@if (rangeStart() !== rangeEnd()) { – {{ displayDay(rangeEnd()) }} }
+      </p>
+    </div>
     <nav class="date-nav" aria-label="Navegar fechas">
       <button type="button" (click)="dateChange.emit(today())" [disabled]="writing()">Hoy</button>
       <div class="stepper">
@@ -23,12 +29,6 @@
         </button>
       </div>
     </nav>
-    <h2 class="date-range">
-      {{ displayDay(rangeStart()) }}
-      @if (rangeStart() !== rangeEnd()) {
-        <span>– {{ displayDay(rangeEnd()) }}</span>
-      }
-    </h2>
     <div class="toolbar-options">
       <div class="date-jump">
         <label class="sr-only" [attr.for]="dateInputId()">Ir a fecha</label>
@@ -134,6 +134,7 @@
             <header
               class="day-header"
               [class.today]="day.date === today()"
+              [class.selected-day]="day.date === date()"
               [attr.data-date]="day.date"
             >
               @if (view() === '7') {
@@ -145,13 +146,12 @@
                   [attr.aria-current]="day.date === today() ? 'date' : null"
                   [attr.aria-label]="'Ver ' + weekday(day.date) + ' ' + displayDay(day.date)"
                 >
-                  <span>{{ weekday(day.date) }}</span
-                  ><strong>{{ day.date.slice(8) }}</strong>
+                  <strong>{{ day.date.slice(8) }}</strong>
+                  <span>{{ dayCount() === 1 ? weekday(day.date) : weekday(day.date).slice(0, 3) }}</span>
                 </button>
               } @else {
                 <div [attr.aria-current]="day.date === today() ? 'date' : null">
-                  <span>{{ weekday(day.date) }}</span
-                  ><strong>{{ day.date.slice(8) }}</strong>
+                  <strong>{{ day.date.slice(8) }}</strong><span>{{ weekday(day.date) }}</span>
                 </div>
               }
             </header>
@@ -204,6 +204,7 @@
                     type="button"
                     class="event"
                     [class.short-event]="pixels(entry.height) < 34"
+                    [class.tall-event]="pixels(entry.height) >= 52"
                     [class.shared-cancellation]="entry.sharedCancellation"
                     [attr.data-status]="booking.status"
                     [attr.data-booking-id]="booking.id"
@@ -250,6 +251,7 @@
                   <button
                     type="button"
                     class="available-slot"
+                    [class.move-slot]="editor() === 'move'"
                     [class.shared-cancellation]="entry.sharedCancellation"
                     [style.top.px]="pixels(entry.from - calendar.from)"
                     [style.height.px]="pixels(entry.height)"
@@ -267,8 +269,7 @@
                     @if (slotLabel !== 'Disponible') {
                       <ng-icon name="lucidePlus" aria-hidden="true" />
                     }
-                    <span>{{ slotLabel }}</span
-                    ><time>{{ entry.time }}</time>
+                    <time>{{ entry.time }}</time><span>{{ slotLabel }}</span>
                   </button>
                 }
               }
@@ -298,10 +299,6 @@
       }
     </div>
     <footer class="agenda-footer">
-      <div class="calendar-key">
-        <span><i class="key-free"></i> Horario libre</span>
-        <span><i class="key-unavailable"></i> Fuera de horario o bloqueado</span>
-      </div>
       <button type="button" [attr.aria-pressed]="fullDay()" (click)="fullDay.set(!fullDay())">
         <ng-icon [name]="fullDay() ? 'lucideMinimize2' : 'lucideMaximize2'" />{{
           fullDay() ? 'Ver jornada' : 'Ver 24 horas'
