@@ -32,8 +32,8 @@ import {FEATURE_FLAGS} from '../../core/config/feature-flags';
 }
 @if(mode==='recover'&&recoveryMode==='email'){<button type="button" (click)="requestEmail()" [disabled]="busy()||!email.trim()">Enviar código por email</button>@if(emailNotice()){<p role="status">{{emailNotice()}}</p>}}
 @if(mode!=='login'&&!fromLink){<label>{{mode==='activate'?'Código de invitación':recoveryMode==='email'?'Código recibido por email':'Código de recuperación'}}<input name="code" [(ngModel)]="code" required autocomplete="off" spellcheck="false" maxlength="43" /></label>}
-<label>{{mode==='recover'||(mode==='activate'&&!existingAccount())?'Contraseña nueva':'Contraseña'}}<input type="password" name="password" [(ngModel)]="password" required [attr.autocomplete]="mode==='login'||existingAccount()?'current-password':'new-password'" minlength="12" maxlength="72" /></label>
-@if(mode==='activate'&&!existingAccount()){<p class="muted">Usá al menos 12 caracteres. Después ingresás con tu email y esta contraseña.</p>}
+<label>{{mode==='recover'||(mode==='activate'&&!existingAccount())?'Contraseña nueva':'Contraseña'}}<input type="password" name="password" [(ngModel)]="password" required [attr.autocomplete]="mode==='login'||existingAccount()?'current-password':'new-password'" minlength="6" maxlength="72" /></label>
+@if(mode==='activate'&&!existingAccount()){<p class="muted">Usá al menos 6 caracteres. Después ingresás con tu email y esta contraseña.</p>}
 <button type="submit" [disabled]="busy()||loadingInvitation()||invalidInvitation()">{{busy()?'Verificando…':mode==='activate'?'Entrar a la agenda':mode==='recover'?'Recuperar acceso':'Ingresar'}}</button>
 </fieldset></form>}
 @if(error()){<p role="alert" class="error">{{error()}}</p>}

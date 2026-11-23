@@ -6,7 +6,7 @@ import { growthReferenceFixture, patientGrowthFixture } from '../../../core/test
 import { PatientGrowthChart } from '../../../core/models/growth-chart.model';
 import { ClinicalEncounterList } from '../../../core/models/clinical-encounter.model';
 
-function saveVisual(element: HTMLElement, id: string): void {
+function saveVisual(element: HTMLElement, id: string, overlay?: Element): void {
   const output = process.env['GROWTH_VISUAL_DIR'];
   if (!output) return;
   mkdirSync(output, { recursive: true });
@@ -14,9 +14,10 @@ function saveVisual(element: HTMLElement, id: string): void {
     'src/app/features/patient-record/growth-chart/growth-chart.component.css',
     'utf8',
   );
+  const tokens = readFileSync('src/design-tokens.css', 'utf8');
   writeFileSync(
     join(output, id + '.html'),
-    `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Curvas OMS · verificación visual</title><style>body{margin:24px;background:#f5f8fc;font-family:Arial,sans-serif}${styles}</style>${element.outerHTML}</html>`,
+    `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Curvas OMS · verificación visual</title><style>${tokens}body{margin:24px;background:var(--dc-canvas);font-family:Arial,sans-serif}${styles}.visual-overlay{position:fixed;top:35%;left:50%;transform:translateX(-50%)}</style>${element.outerHTML}${overlay ? `<div class="visual-overlay">${overlay.outerHTML}</div>` : ''}</html>`,
   );
 }
 
@@ -68,6 +69,9 @@ describe('GrowthChartComponent — all twenty official references', () => {
         'curvas oficiales',
       );
       saveVisual(fixture.nativeElement, reference.definition.id);
+      component.compact.set(true);
+      fixture.detectChanges();
+      saveVisual(fixture.nativeElement, reference.definition.id + '-compact');
     });
   }
   it('positions real historical points and provides dates, units, precise percentiles and keyboard tooltips', () => {
@@ -136,6 +140,7 @@ describe('GrowthChartComponent — all twenty official references', () => {
       expect(summary.textContent).toContain('Control de alimentación');
       expect(summary.textContent).toContain('Evolución favorable');
       expect(summary.textContent).not.toContain('Otra consulta');
+      saveVisual(fixture.nativeElement, `consultation-${sex}`, summary);
       marker.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       fixture.detectChanges();
       expect(document.querySelector('.consultation-tooltip')).toBeNull();
@@ -271,6 +276,6 @@ describe('GrowthChartComponent — all twenty official references', () => {
  const component=fixture.componentInstance;const points=structuredClone(chart.points);component.compact.set(true);fixture.detectChanges();
  expect(fixture.nativeElement.querySelector('svg').getAttribute('viewBox')).toBe('0 0 350 315');expect(component.xLabels().length).toBeLessThanOrEqual(6);
  expect(component.xScale()(component.axes().x.max)).toBe(310);expect(component.yScale()(component.axes().y.min)).toBe(255);
- expect(fixture.nativeElement.querySelectorAll('.reference-curve').length).toBe(5);expect(component.chart().points).toEqual(points);fixture.destroy(); }
+ expect(fixture.nativeElement.querySelectorAll('.reference-curve').length).toBe(5);expect(component.chart().points).toEqual(points);saveVisual(fixture.nativeElement, chart.definition.id + '-compact');fixture.destroy(); }
  });
 });

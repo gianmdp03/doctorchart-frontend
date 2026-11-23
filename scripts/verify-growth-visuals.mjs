@@ -134,8 +134,8 @@ try {
     checks.push({ chart: id, ...state });
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const id of ['wfa06_girls', 'hfa07_boys', 'wfl06_boys', 'bmi-patient-boys']) {
-    await page.goto(pathToFileURL(path.join(output, id + '.html')).href);
+  for (const id of ['wfa06_girls', 'hfa07_boys', 'wfl06_boys', 'bfa06_boys']) {
+    await page.goto(pathToFileURL(path.join(output, id + '-compact.html')).href);
     const state = await page.evaluate(() => ({
       viewport: innerWidth,
       document: document.documentElement.scrollWidth,
@@ -143,10 +143,49 @@ try {
         document.querySelector('.chart-scroll').scrollWidth >
         document.querySelector('.chart-scroll').clientWidth,
     }));
-    if (state.document > state.viewport || !state.plotScrollable)
+    if (state.document > state.viewport || state.plotScrollable)
       throw new Error('Mobile: ' + JSON.stringify(state));
     await page.screenshot({ path: path.join(output, id + '-mobile.png'), fullPage: true });
     checks.push({ chart: id, mobile: state });
+  }
+  // Fractional chart sizes previously dropped subpixel grid lines with crispEdges.
+  for (const width of [1440, 834, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const theme of ['light', 'dark']) {
+      for (const { definition } of catalog) {
+        await page.goto(pathToFileURL(path.join(output, definition.id + '.html')).href);
+        await page.evaluate(theme => document.documentElement.classList.toggle('dark', theme === 'dark'), theme);
+        const grid = await page.locator('.grid-line').evaluateAll(lines => lines.map(line => {
+          const style = getComputedStyle(line);
+          return { width: style.strokeWidth, effect: style.vectorEffect, stroke: style.stroke };
+        }));
+        if (!grid.length || grid.some(line => line.width !== '1px' || line.effect !== 'non-scaling-stroke' || line.stroke === 'none'))
+          throw new Error(`Grid: ${definition.id}, ${width}, ${theme}`);
+        if (['hfa07_boys', 'bfa07_boys'].includes(definition.id))
+          await page.screenshot({ path: path.join(output, `${definition.id}-${theme}-${width}.png`), fullPage: true });
+      }
+      for (const sex of ['girls', 'boys']) {
+        await page.goto(pathToFileURL(path.join(output, `consultation-${sex}.html`)).href);
+        await page.evaluate(theme => document.documentElement.classList.toggle('dark', theme === 'dark'), theme);
+        const contrast = await page.locator('.consultation-tooltip').evaluate(tooltip => {
+          const luminance = color => {
+            const channels = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => {
+              const s = value / 255;
+              return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+            });
+            return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+          };
+          const background = luminance(getComputedStyle(tooltip).backgroundColor);
+          return [tooltip, ...tooltip.querySelectorAll('header strong, header span, p')].map(element => {
+            const foreground = luminance(getComputedStyle(element).color);
+            return (Math.max(background, foreground) + 0.05) / (Math.min(background, foreground) + 0.05);
+          });
+        });
+        if (contrast.some(ratio => ratio < 4.5))
+          throw new Error(`Tooltip contrast: ${sex}, ${theme}, ${contrast}`);
+        await page.screenshot({ path: path.join(output, `consultation-${sex}-${theme}-${width}.png`), fullPage: true });
+      }
+    }
   }
   fs.writeFileSync(
     path.join(output, 'checks.json'),
@@ -157,7 +196,7 @@ try {
     ) + '\n',
   );
   console.log(
-    `PASS: 20 reference charts, 3 patient views and 4 mobile layouts. Review images in ${output}`,
+    `PASS: 20 reference charts, 3 patient views, 4 mobile layouts; grid and tooltip contrast in both themes at 1440, 834 and 390px. Review images in ${output}`,
   );
 } finally {
   await browser.close();

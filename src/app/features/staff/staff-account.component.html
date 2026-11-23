@@ -29,8 +29,8 @@
         autocomplete="current-password" required autofocus />
       <label for="staff-new-password">Contraseña nueva</label>
       <input id="staff-new-password" type="password" name="newPassword" [(ngModel)]="newPassword"
-        autocomplete="new-password" minlength="12" maxlength="72" aria-describedby="staff-password-help" required />
-      <p id="staff-password-help">Usá al menos 12 caracteres.</p>
+        autocomplete="new-password" minlength="6" maxlength="72" aria-describedby="staff-password-help" required />
+      <p id="staff-password-help">Usá al menos 6 caracteres.</p>
     </fieldset>
     @if (passwordError()) { <p class="account-feedback error" role="alert">{{passwordError()}}</p> }
     <footer>

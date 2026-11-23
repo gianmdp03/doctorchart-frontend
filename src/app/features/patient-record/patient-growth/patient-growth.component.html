@@ -78,11 +78,16 @@
         <label class="historical-toggle"
           ><input
             type="checkbox"
+            aria-describedby="growth-historical-help"
             [checked]="growth.showHistorical()"
             (change)="growth.showHistorical.set($any($event.target).checked)"
-          />Consultar también períodos históricos</label
+          />Ver mediciones de etapas anteriores</label
         >
       </div>
+      <p id="growth-historical-help" class="growth-note">
+        Incluye gráficos de edades que el paciente ya superó, si tiene mediciones registradas en
+        esas etapas (por ejemplo, de 0 a 5 años). Las mediciones se muestran con la edad de cada consulta.
+      </p>
       @if (isDown()) {
         <h3 class="down-growth-title">Curvas de crecimiento para síndrome de Down</h3>
       }
