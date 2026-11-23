@@ -6,48 +6,19 @@ import {ActivatedRoute,Router,RouterLink} from '@angular/router';
 import {StaffService,staffError} from './staff.service';
 import {FEATURE_FLAGS} from '../../core/config/feature-flags';
 
-@Component({selector:'app-staff-auth',imports:[FormsModule,RouterLink],styleUrl:'./staff.css',template:`
-<main class="staff-page auth-page"><a routerLink="/">Doctor Chart</a><header class="page-heading">
-<h1>{{mode==='activate'?'Aceptar invitación':mode==='recover'?'Recuperar acceso':'Ingresar como secretaria'}}</h1>
-<p>Tu cuenta es independiente del acceso médico. Solo permite gestionar los consultorios asignados.</p></header>
-@if(recovery()){<section class="notice" role="status"><h2>Guardá tu código de recuperación</h2><p>Es personal y se muestra una sola vez. Guardalo en un lugar seguro; no lo compartas con los médicos.</p><code class="recovery">{{recovery()}}</code><button type="button" (click)="continue()">Ya lo guardé · Continuar</button></section>}
-@else{<form class="panel" ngNativeValidate (ngSubmit)="form.valid && submit()" #form="ngForm"><fieldset [disabled]="busy()||loadingInvitation()||invalidInvitation()||retryInvitation()"><legend class="sr-only">Datos de acceso</legend>
-@if(loadingInvitation()){<p role="status">Verificando invitación…</p>}
-@if(invitationName()){
-  <section class="invitation-context" aria-label="Datos de la invitación">
-    <h2>Hola, {{invitationName()}}</h2>
-    <p><strong>{{invitingDoctor() || 'Tu profesional'}}</strong> te invitó a acceder a sus agendas en DoctorChart.</p>
-    @if (invitedAgendas().length) {
-      <ul>@for (agenda of invitedAgendas(); track $index) { <li>{{agenda}}</li> }</ul>
-    }
-    <p class="muted">{{email}}</p>
-  </section>
-  <p>{{existingAccount() ? 'Ingresá tu contraseña habitual de Secretaría para sumar el acceso.' : 'Elegí una contraseña para empezar a trabajar.'}}</p>
-}
-@if(mode==='recover'&&emailRecoveryEnabled){<label>Método de recuperación<select name="recoveryMode" [(ngModel)]="recoveryMode"><option value="personal">Tengo mi código personal</option><option value="email">Recibir un código por email</option></select></label>}
-@if (fromLink) {
-  <input type="email" name="email" [value]="email" autocomplete="username" hidden readonly />
-} @else {
-  <label>Correo electrónico<input type="email" name="email" [(ngModel)]="email" required autocomplete="username" spellcheck="false" maxlength="254" /></label>
-}
-@if(mode==='recover'&&recoveryMode==='email'){<button type="button" (click)="requestEmail()" [disabled]="busy()||!email.trim()">Enviar código por email</button>@if(emailNotice()){<p role="status">{{emailNotice()}}</p>}}
-@if(mode!=='login'&&!fromLink){<label>{{mode==='activate'?'Código de invitación':recoveryMode==='email'?'Código recibido por email':'Código de recuperación'}}<input name="code" [(ngModel)]="code" required autocomplete="off" spellcheck="false" maxlength="43" /></label>}
-<label>{{mode==='recover'||(mode==='activate'&&!existingAccount())?'Contraseña nueva':'Contraseña'}}<input type="password" name="password" [(ngModel)]="password" required [attr.autocomplete]="mode==='login'||existingAccount()?'current-password':'new-password'" minlength="6" maxlength="72" /></label>
-@if(mode==='activate'&&!existingAccount()){<p class="muted">Usá al menos 6 caracteres. Después ingresás con tu email y esta contraseña.</p>}
-<button type="submit" [disabled]="busy()||loadingInvitation()||invalidInvitation()">{{busy()?'Verificando…':mode==='activate'?'Entrar a la agenda':mode==='recover'?'Recuperar acceso':'Ingresar'}}</button>
-</fieldset></form>}
-@if(error()){<p role="alert" class="error">{{error()}}</p>}
-@if(retryInvitation() && !loadingInvitation()){
-  <button type="button" (click)="inspectInvitation()">Volver a verificar la invitación</button>
-}
-<nav aria-label="Ayuda de acceso">
-  @if (mode !== 'login') { <a routerLink="/staff/login">Iniciar sesión como secretaria</a> }
-  <a routerLink="/staff/activate">Tengo una invitación</a>
-  <a routerLink="/staff/recover">Recuperar acceso</a>
-  <a routerLink="/login">Acceso médico</a>
-</nav>
-</main>`})
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideArrowRight, lucideCalendarDays, lucideEye, lucideEyeOff, lucideStethoscope } from '@ng-icons/lucide';
+import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
+
+@Component({
+  selector: 'app-staff-auth',
+  imports: [FormsModule, RouterLink, NgIcon, ThemeToggleComponent],
+  providers: [provideIcons({ lucideArrowRight, lucideCalendarDays, lucideEye, lucideEyeOff, lucideStethoscope })],
+  templateUrl: './staff-auth.component.html',
+  styleUrl: './staff-auth.component.css',
+})
 export class StaffAuthComponent {
+ readonly passwordVisible = signal(false);
   private readonly interaction = inject(InteractionStatusService);
  private readonly api=inject(StaffService);private readonly router=inject(Router);
  private readonly document=inject(DOCUMENT);
@@ -94,7 +65,7 @@ export class StaffAuthComponent {
  async submit(){if(this.busy()||this.loadingInvitation()||this.invalidInvitation()||this.retryInvitation())return;this.busy.set(true);this.error.set('');try{
   if(this.mode==='recover'){const result=this.recoveryMode==='email'?await this.api.recoverEmail({email:this.email,password:this.password,emailCode:this.code}):await this.api.recover({email:this.email,password:this.password,recoveryCode:this.code});this.api.session.set(null);this.recovery.set(result.recoveryCode);this.interaction.notifySuccess('Tu acceso se recuperó correctamente.');}
   else{await this.api.authenticate(this.mode,{email:this.email,password:this.password,...(this.mode==='activate'?{invitationCode:this.code}:{})});if(this.mode==='activate')this.interaction.notifySuccess('Tu acceso de secretaría se activó correctamente.');await this.router.navigateByUrl('/staff/calendar');}
-  this.password='';this.code='';
+  this.password='';this.passwordVisible.set(false);this.code='';
  }catch(e){this.error.set(staffError(e));}finally{this.busy.set(false);}}
  async requestEmail(){if(this.busy())return;this.busy.set(true);this.error.set('');try{const result=await this.api.requestRecoveryEmail(this.email);this.emailNotice.set(result.message);}catch(e){this.error.set(staffError(e));}finally{this.busy.set(false);}}
  async continue(){this.recovery.set('');await this.router.navigateByUrl(this.mode==='recover'?'/staff/login':'/staff/calendar');}

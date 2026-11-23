@@ -1,0 +1,123 @@
+<div class="auth-page">
+  <header class="access-header">
+    <a routerLink="/" class="brand">
+      <img src="/doctorchart-logo.svg" width="36" height="36" alt="" />
+      DoctorChart
+    </a>
+    <span class="workspace-name">Secretaría</span>
+    <app-theme-toggle />
+  </header>
+
+  <main class="access-main" aria-labelledby="access-title">
+    <div class="access-sheet">
+      <aside class="access-context" aria-label="Espacio de secretaría">
+        <div class="room-photo" aria-hidden="true"></div>
+        <div class="context-copy">
+          <ng-icon name="lucideCalendarDays" aria-hidden="true" />
+          <div>
+            <h2>Agenda de consultorios</h2>
+            <p>Gestioná los turnos de los consultorios que te asignaron.</p>
+          </div>
+        </div>
+      </aside>
+
+      <section class="access-body">
+        <h1 id="access-title">{{ recovery() ? 'Guardá tu código de recuperación' :
+          mode === 'activate' ? 'Aceptar invitación' : mode === 'recover' ? 'Recuperar acceso' : 'Ingresar a secretaría' }}</h1>
+
+        @if (recovery(); as personalCode) {
+          <div class="recovery-result" role="status">
+            <p>Este código personal se muestra una sola vez. Guardalo en un lugar seguro para recuperar tu cuenta. Evitá compartirlo, incluso con el médico.</p>
+            <code>{{ personalCode }}</code>
+            <button type="button" class="primary" (click)="continue()">Ya lo guardé · Continuar</button>
+          </div>
+        } @else {
+          @if (mode === 'activate' && !fromLink) {
+            <p class="intro">Ingresá el correo y el código de tu invitación.</p>
+          } @else if (mode === 'recover') {
+            <p class="intro">Verificá tu acceso para elegir una contraseña nueva.</p>
+          }
+          <form ngNativeValidate (ngSubmit)="form.valid && submit()" #form="ngForm">
+            <fieldset [disabled]="busy() || loadingInvitation() || invalidInvitation() || retryInvitation()">
+              <legend class="sr-only">Datos de acceso</legend>
+              @if (loadingInvitation()) { <p role="status">Verificando invitación…</p> }
+              @if (invitationName()) {
+                <section class="invitation-context" aria-label="Datos de la invitación">
+                  <h2>Hola, {{ invitationName() }}</h2>
+                  <p><strong>{{ invitingDoctor() || 'Tu profesional' }}</strong> te invitó a acceder a sus agendas en DoctorChart.</p>
+                  @if (invitedAgendas().length) {
+                    <ul>@for (agenda of invitedAgendas(); track $index) { <li>{{ agenda }}</li> }</ul>
+                  }
+                  <p>{{ email }}</p>
+                </section>
+                <p class="field-note">{{ existingAccount() ? 'Ingresá tu contraseña habitual de secretaría para sumar el acceso.' : 'Elegí una contraseña para empezar a trabajar.' }}</p>
+              }
+              @if (mode === 'recover' && emailRecoveryEnabled) {
+                <label class="field">Método de recuperación
+                  <select name="recoveryMode" [(ngModel)]="recoveryMode">
+                    <option value="personal">Tengo mi código personal</option>
+                    <option value="email">Recibir un código por email</option>
+                  </select>
+                </label>
+              }
+              @if (fromLink) {
+                <input type="email" name="email" [value]="email" autocomplete="username" hidden readonly />
+              } @else {
+                <label class="field">Correo electrónico
+                  <input type="email" name="email" [(ngModel)]="email" autocomplete="username"
+                    placeholder="nombre@ejemplo.com" spellcheck="false" maxlength="254" required />
+                </label>
+              }
+              @if (mode === 'recover' && recoveryMode === 'email') {
+                <button class="secondary" type="button" (click)="requestEmail()" [disabled]="busy() || !email.trim()">Enviar código por email</button>
+                @if (emailNotice()) { <p role="status">{{ emailNotice() }}</p> }
+              }
+              @if (mode !== 'login' && !fromLink) {
+                <label class="field">{{ mode === 'activate' ? 'Código de invitación' : recoveryMode === 'email' ? 'Código recibido por email' : 'Código de recuperación' }}
+                  <input name="code" [(ngModel)]="code" required autocomplete="off" spellcheck="false" maxlength="43" />
+                </label>
+              }
+              <div class="field">
+                <div class="password-label">
+                  <label for="staff-password">{{ mode === 'recover' || (mode === 'activate' && !existingAccount()) ? 'Contraseña nueva' : 'Contraseña' }}</label>
+                  @if (mode === 'login') { <a routerLink="/staff/recover">Recuperar acceso</a> }
+                </div>
+                <div class="password-control">
+                  <input id="staff-password" [type]="passwordVisible() ? 'text' : 'password'" name="password"
+                    [(ngModel)]="password" required minlength="6" maxlength="72"
+                    [attr.aria-describedby]="mode === 'recover' || (mode === 'activate' && !existingAccount()) ? 'password-policy' : null"
+                    [attr.autocomplete]="mode === 'login' || existingAccount() ? 'current-password' : 'new-password'" />
+                  <button type="button" class="visibility-button" (click)="passwordVisible.set(!passwordVisible())"
+                    [attr.aria-label]="passwordVisible() ? 'Ocultar contraseña' : 'Ver contraseña'">
+                    <ng-icon [name]="passwordVisible() ? 'lucideEyeOff' : 'lucideEye'" aria-hidden="true" />
+                  </button>
+                </div>
+                @if (mode === 'recover' || (mode === 'activate' && !existingAccount())) {
+                  <p id="password-policy" class="field-note">Usá al menos 6 caracteres.</p>
+                }
+              </div>
+              <button type="submit" class="primary" [disabled]="busy() || loadingInvitation() || invalidInvitation()">
+                {{ busy() ? 'Verificando…' : mode === 'activate' ? 'Entrar a la agenda' : mode === 'recover' ? 'Recuperar acceso' : 'Ingresar' }}
+                <ng-icon name="lucideArrowRight" aria-hidden="true" />
+              </button>
+            </fieldset>
+          </form>
+        }
+        @if (error()) { <p role="alert" class="error">{{ error() }}</p> }
+        @if (retryInvitation() && !loadingInvitation()) {
+          <button type="button" class="secondary" (click)="inspectInvitation()">Volver a verificar la invitación</button>
+        }
+        <nav class="access-links" aria-label="Ayuda de acceso">
+          @if (mode === 'login') {
+            <span>¿Es tu primer ingreso?</span><a routerLink="/staff/activate">Tengo una invitación</a>
+          } @else {
+            <a routerLink="/staff/login">Volver al ingreso</a>
+            @if (mode === 'activate') { <a routerLink="/staff/recover">Recuperar acceso</a> }
+            @else { <a routerLink="/staff/activate">Tengo una invitación</a> }
+          }
+        </nav>
+      </section>
+    </div>
+    <a class="medical-link" routerLink="/login"><ng-icon name="lucideStethoscope" aria-hidden="true" />Acceso médico</a>
+  </main>
+</div>

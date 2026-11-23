@@ -73,22 +73,17 @@
     border-radius: 16px;
   }
   .patient-story {
-    position: relative;
-    grid-template-rows: auto;
+    grid-template: auto / minmax(0, 1fr) 30%;
   }
   .patient-story-copy {
-    position: relative;
-    z-index: 1;
-    padding: 24px min(21%, 100px) 24px 20px;
-    background: linear-gradient(90deg, #143d39 47%, #143d39e8 70%, #143d3980);
+    padding: 20px;
   }
   .patient-story h1 {
     margin-bottom: 10px;
     font-size: clamp(2rem, 8vw, 3rem);
     text-wrap: unset;
   }
-  .patient-photo-frame { position: absolute; inset: 0; }
-  .patient-photo { object-position: 56% 56%; }
+  .patient-photo { object-position: 67% 55%; }
   .patient-panel { padding: 22px 20px; }
   .patient-panel-heading { margin-bottom: 18px; }
 }
