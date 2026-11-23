@@ -82,12 +82,32 @@ export class RegisterPageComponent {
         this.focusAfterRender('register-title');
       }
     } catch (err) {
-      const code = (err as { code?: string } | null)?.code;
-      this.error.set(code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit'
-        ? 'Esperá unos minutos antes de volver a intentar.'
-        : code === 'weak_password'
-          ? 'Elegí una contraseña más segura.'
-          : 'No pudimos completar el registro. Si ya tenés una cuenta, iniciá sesión. Si no, reintentá en unos momentos.');
+      const failure = err as { code?: string; status?: number; message?: string } | null;
+      switch (failure?.code) {
+        case 'over_email_send_rate_limit':
+        case 'over_request_rate_limit':
+          this.error.set('Esperá unos minutos antes de volver a intentar.');
+          break;
+        case 'weak_password':
+          this.error.set('Elegí una contraseña más segura.');
+          break;
+        case 'email_address_invalid':
+          this.error.set('Revisá la dirección de correo electrónico.');
+          break;
+        case 'signup_disabled':
+        case 'email_provider_disabled':
+          this.error.set('El registro por correo está temporalmente deshabilitado.');
+          break;
+        default:
+          if (failure?.code === 'hook_timeout' || failure?.code === 'hook_timeout_after_retry' ||
+              (failure?.status === 500 && ['Invalid payload sent to hook', 'Error sending confirmation email'].includes(failure.message ?? ''))) {
+            this.error.set('No pudimos enviar el correo de confirmación. Reintentá en unos minutos.');
+          } else if (failure?.status === 0 || failure?.code === 'request_timeout') {
+            this.error.set('No hubo respuesta del servicio de registro. Revisá tu conexión y el correo antes de reintentar.');
+          } else {
+            this.error.set('No pudimos completar el registro. Si ya tenés una cuenta, iniciá sesión. Si no, reintentá en unos momentos.');
+          }
+      }
     } finally {
       this.submitting.set(false);
     }

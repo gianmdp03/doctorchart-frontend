@@ -15,6 +15,8 @@ type Quote = { canUpgrade: boolean; proratedUpgradeAmount: number; remainingDays
 type TransferStatus = 'verifying' | 'pending' | 'credited' | 'expired' | 'rejected' | 'review' | 'refunded';
 type Transfer = {
   externalReference: string;
+  bankTransfer?: { cvu: string; alias?: string };
+  preparing?: boolean;
   checkoutUrl?: string;
   status: TransferStatus;
   amount: number;
@@ -95,8 +97,27 @@ export class PricingComponent {
   private readonly transferOwner = signal<string | null>(null);
   private readonly activity = signal<Transfer[]>([]);
   private readonly viewedTransfer = signal<Transfer | null>(null);
-  private readonly expiredLink = signal(false);
+  protected readonly expiredLink = signal(false);
   private linkTimer?: ReturnType<typeof setTimeout>;
+
+  protected readonly bankFields = [{ key: 'alias', label: 'alias' }, { key: 'cvu', label: 'CVU' }] as const;
+  protected readonly copyFeedback = signal('');
+  protected readonly bankTransfer = computed(() => {
+    const transfer = this.transfer();
+    return transfer?.status === 'pending' && !this.expiredLink() &&
+      Date.parse(transfer.expiresAt ?? '') > Date.now() ? transfer.bankTransfer : undefined;
+  });
+
+  protected async copyBankValue(value: string, label: string): Promise<void> {
+    const order = this.transfer();
+    if (!order?.expiresAt || Date.parse(order.expiresAt) <= Date.now()) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      if (this.transfer() === order) this.copyFeedback.set(label === 'CVU' ? 'CVU copiado.' : 'Alias copiado.');
+    } catch {
+      if (this.transfer() === order) this.copyFeedback.set('Seleccioná el dato para copiarlo manualmente.');
+    }
+  }
   protected readonly transfers = computed(() =>
     this.transferOwner() === this.auth.currentUser()?.id ? this.activity() : []);
   protected readonly transfer = computed(() =>
@@ -149,7 +170,15 @@ export class PricingComponent {
   }
 
   protected transferStatus(transfer: Transfer): string {
+    if (transfer.preparing) return 'Preparando los datos bancarios';
+    if (transfer.status === 'pending' && this.transfer() === transfer && this.expiredLink()) return 'Consultá la vigencia de la orden';
     return transferStatus[transfer.status] ?? 'Operación bajo revisión';
+  }
+
+  protected checkTransferExpiry(event: MouseEvent, transfer: Transfer): void {
+    if (this.hostedTransferURL(transfer)) return;
+    event.preventDefault();
+    void this.refreshTransfer(transfer.externalReference);
   }
 
   protected transferExpiry(expiresAt?: string): string {
@@ -194,7 +223,7 @@ export class PricingComponent {
         await this.fetchTransfer(owner, this.transferReturn);
       } else {
         const latest = this.activity().find(transfer => ['pending', 'verifying', 'review'].includes(transfer.status));
-        if (latest) this.showTransfer(owner, latest);
+        if (latest) await this.fetchTransfer(owner, latest.externalReference);
       }
     } catch {
       this.transferError.set('No pudimos recuperar la transferencia. Volvé a consultar su estado.');
@@ -218,13 +247,7 @@ export class PricingComponent {
     this.transferError.set('');
     try {
       await this.fetchTransfer(owner, reference);
-      if (reveal) {
-        window.requestAnimationFrame(() => {
-          const heading = document.getElementById('transfer-title');
-          heading?.focus({ preventScroll: true });
-          heading?.scrollIntoView({ block: 'start' });
-        });
-      }
+      if (reveal) this.revealTransfer();
     } catch {
       this.transferError.set('No pudimos verificar el estado de esta transferencia. Volvé a intentar.');
     } finally {
@@ -269,9 +292,8 @@ export class PricingComponent {
       if (this.auth.currentUser()?.id !== owner) return;
       this.showTransfer(owner, result);
       this.clearTransferRequest(owner, pending.key);
+      this.revealTransfer();
       if (result.status === 'credited') await this.load(true);
-      const target = this.hostedTransferURL(result);
-      if (target && this.auth.currentUser()?.id === owner) window.location.assign(target);
     } catch (err) {
       if (this.auth.currentUser()?.id !== owner) return;
       const attemptReference = err instanceof HttpErrorResponse ? err.error?.externalReference : undefined;
@@ -279,6 +301,7 @@ export class PricingComponent {
         try {
           await this.fetchTransfer(owner, attemptReference);
           if (this.auth.currentUser()?.id === owner) this.clearTransferRequest(owner, pending.key);
+          this.revealTransfer();
           return;
         } catch { /* Keep the same idempotency key until a read can identify the order. */ }
       }
@@ -291,6 +314,14 @@ export class PricingComponent {
     } finally {
       this.checking.set(false);
     }
+  }
+
+  private revealTransfer(): void {
+    window.requestAnimationFrame(() => {
+      const heading = document.getElementById('transfer-title');
+      heading?.focus({ preventScroll: true });
+      heading?.scrollIntoView({ block: 'start' });
+    });
   }
 
   private async fetchTransfer(owner: string, reference: string): Promise<void> {
@@ -328,9 +359,10 @@ export class PricingComponent {
         index === position ? transfer : previous);
     });
     clearTimeout(this.linkTimer);
-    this.expiredLink.set(false);
-    this.viewedTransfer.set(transfer);
+    this.copyFeedback.set('');
     const timeLeft = Date.parse(transfer.expiresAt ?? '') - Date.now();
+    this.expiredLink.set(timeLeft <= 0);
+    this.viewedTransfer.set(transfer);
     if (transfer.status === 'pending' && timeLeft > 0) {
       this.linkTimer = setTimeout(() => this.expiredLink.set(true), Math.min(timeLeft, 2_147_483_647));
     }

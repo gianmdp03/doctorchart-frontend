@@ -100,3 +100,20 @@ p { margin: 0; line-height: 1.55; overflow-wrap: anywhere; }
   .payment-summary > p:not(.payment-total) { grid-column: 1 / -1; }
 }
 .payment-visually-hidden { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.transfer-sheet { box-sizing: border-box; gap: 1.15rem; width: min(100%, 48rem); }
+.transfer-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: .65rem 2rem; }
+.transfer-heading > div { min-width: 0; }
+.transfer-muted { color: var(--plan-muted); font-size: .89rem; }
+.transfer-warning { color: var(--destructive); font-size: .89rem; font-weight: 700; }
+.transfer-amount { font-weight: 740; font-size: clamp(1.4rem, 3vw, 1.9rem); line-height: 1.25; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.transfer-instructions { display: grid; gap: .55rem; border-top: 1px solid var(--plan-edge); padding-top: 1rem; }
+.transfer-bank { display: grid; gap: .5rem; margin: .15rem 0 0; }
+.transfer-bank > div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .45rem .75rem; border-radius: 10px; padding: .55rem .75rem; background: var(--plan-soft); }
+.transfer-bank > div > div { min-width: 0; }
+.transfer-bank dt { color: var(--plan-muted); font-size: .8rem; font-weight: 650; }
+.transfer-bank dd { margin: 0; font-weight: 720; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.transfer-copy-feedback:empty { position: absolute; }
+.transfer-operation { color: var(--plan-muted); font-size: .85rem; }
+.transfer-operation summary { display: list-item; width: fit-content; cursor: pointer; padding-block: .45rem; }
+.transfer-operation p { user-select: all; }

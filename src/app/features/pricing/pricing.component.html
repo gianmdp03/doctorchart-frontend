@@ -21,36 +21,80 @@
     </section>
   }
   @if (transfer(); as order) {
-    <section class="notice" aria-labelledby="transfer-title" [attr.aria-busy]="transferLoading()">
-      <h2 id="transfer-title" tabindex="-1">Transferencia bancaria</h2>
-      <p role="status"><strong>{{ transferStatus(order) }}</strong></p>
-      @for (item of order.items; track item.module) {
-        @if (item.module.toLowerCase() === 'doctorchart') {
-          <p>DoctorChart {{ tierName(item.tier) }} · {{ item.days }} días</p>
+    <section class="notice transfer-sheet" aria-labelledby="transfer-title" [attr.aria-busy]="transferLoading()">
+      <div class="transfer-heading">
+        <div>
+          <h2 id="transfer-title" tabindex="-1">Transferencia bancaria</h2>
+          @for (item of order.items; track item.module) {
+            @if (item.module.toLowerCase() === 'doctorchart') {
+              <p class="transfer-muted">DoctorChart · {{ tierName(item.tier) }} · {{ item.days }} días</p>
+            }
+          }
+          @if (order.items.length > 1) { <p class="transfer-muted">Incluye otros productos de Bycode.</p> }
+        </div>
+        <div>
+          <p class="transfer-muted">Importe exacto</p>
+          <p class="transfer-amount">{{ money(order.amount, order.currency) }}</p>
+          @if (order.originalAmount != null) {
+            <p class="transfer-muted"><del>{{ money(order.originalAmount, order.currency) }}</del> · {{ order.discountPercent }}% de descuento</p>
+          }
+        </div>
+      </div>
+      <div class="transfer-instructions">
+        <p role="status"><strong>{{ transferStatus(order) }}</strong></p>
+        @if (bankTransfer() || transferLink()) {
+          <p class="transfer-warning">Transferí el importe exacto en un solo envío. Si enviás otro monto, tu plan no se activa automáticamente.</p>
         }
-      }
-      @if (order.items.length > 1) { <p>Esta orden incluye otros productos de Bycode.</p> }
-      <p>Total @if (order.originalAmount != null) { <del>{{ money(order.originalAmount, order.currency) }}</del>&ngsp; } <strong>{{ money(order.amount, order.currency) }}</strong></p>
-      @if (order.discountPercent) { <p>{{ order.discountPercent }}% de descuento por pagar con transferencia.</p> }
-      <p>Referencia {{ order.externalReference }}</p>
-      @if (transferExpiry(order.expiresAt); as expiry) { <p>Vencimiento {{ expiry }} (hora argentina)</p> }
-      @if (transferLink()) {
-        <p>En Raya Cash vas a encontrar los datos para transferir el importe exacto. Si ya transferiste, actualizá el estado antes de volver a pagar.</p>
-      } @else if (order.status === 'pending') {
-        <p>Actualizá el estado para saber si los datos de transferencia siguen disponibles.</p>
-      } @else if (order.status === 'verifying') {
-        <p>Estamos consultando la operación. Actualizá el estado antes de iniciar otra transferencia.</p>
-      }
-      <div class="actions">
-        @if (transferLink(); as checkoutUrl) {
-          <a class="button" [href]="checkoutUrl" rel="noreferrer">Ver datos en Raya Cash</a>
+        @if (bankTransfer(); as bank) {
+          <dl class="transfer-bank">
+            @for (field of bankFields; track field.key) {
+              @if (bank[field.key]; as value) {
+                <div>
+                  <div>
+                    <dt>{{ field.label === 'alias' ? 'Alias' : field.label }}</dt>
+                    <dd>{{ value }}</dd>
+                  </div>
+                  <button class="button secondary" type="button" (click)="copyBankValue(value, field.label)">Copiar {{ field.label }}</button>
+                </div>
+              }
+            }
+          </dl>
+          <p class="transfer-muted transfer-copy-feedback" role="status">{{ copyFeedback() }}</p>
+        } @else if (transferLink()) {
+          <p class="transfer-muted">Abrí Raya Cash para consultar los datos de esta transferencia.</p>
+        } @else if (order.preparing) {
+          <p class="transfer-muted">Raya Cash todavía no confirmó los datos bancarios. Consultá esta misma orden en unos segundos.</p>
+        } @else if (order.status === 'pending' || order.status === 'verifying') {
+          <p class="transfer-muted">Consultá el estado antes de volver a transferir.</p>
+        } @else if (order.status === 'credited') {
+          <p class="transfer-muted">Tu licencia se actualizó con el plan contratado.</p>
+        } @else if (order.status === 'expired') {
+          <p class="transfer-muted">Elegí un plan para generar otra orden de transferencia.</p>
+        } @else if (order.status === 'review') {
+          <p class="transfer-muted">Si contactás a soporte, compartí el número de operación.</p>
         }
-        <button class="dc-button button secondary" type="button" (click)="refreshTransfer(order.externalReference)"
-          [disabled]="transferLoading() || checking()">Actualizar estado</button>
-        @if (order.status === 'credited') {
-          <a class="dc-button button secondary" routerLink="/dashboard">Ir a mi panel</a>
+        @if (order.status === 'pending' && !expiredLink() && transferExpiry(order.expiresAt); as expiry) {
+          <p class="transfer-muted">Disponible hasta el {{ expiry }} (hora argentina).</p>
         }
       </div>
+      <div class="actions">
+        @if (!bankTransfer()) {
+          @if (transferLink(); as checkoutUrl) {
+          <a class="button" [href]="checkoutUrl" rel="noreferrer" (click)="checkTransferExpiry($event, order)">Abrir en Raya Cash</a>
+          }
+        }
+        @if (['pending', 'verifying', 'review'].includes(order.status)) {
+          <button type="button" [class]="bankTransfer() ? 'button' : 'button secondary'" (click)="refreshTransfer(order.externalReference)"
+            [disabled]="transferLoading() || checking()">{{ transferLoading() ? 'Consultando…' : 'Consultar estado' }}</button>
+        }
+        @if (order.status === 'credited') {
+          <a class="button" routerLink="/dashboard">Ir a mi panel</a>
+        }
+      </div>
+      <details class="transfer-operation">
+        <summary>Número de operación</summary>
+        <p>{{ order.externalReference }}</p>
+      </details>
     </section>
   } @else if (transferReturn && transferLoading()) {
     <p role="status">Consultando la transferencia…</p>

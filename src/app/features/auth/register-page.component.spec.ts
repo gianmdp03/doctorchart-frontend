@@ -32,6 +32,22 @@ describe('Product signup', () => {
     expect(fixture.nativeElement.querySelector('a[href^="/login"]')).not.toBeNull();
   });
 
+  it('reports a confirmation delivery failure and keeps the details available to retry', async () => {
+    const failure = { status: 500, message: 'Invalid payload sent to hook' };
+    auth.signUp.mockResolvedValue({ data: { user: null, session: null }, error: failure });
+    const fixture = TestBed.createComponent(RegisterPageComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.form.setValue({
+      fullName: 'Nombre Prueba', dni: '12345678', email: 'merchant@example.test',
+      password: 'test-password', confirmation: 'test-password',
+    });
+    await fixture.componentInstance.submit();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No pudimos enviar el correo de confirmación');
+    expect(fixture.componentInstance.form.controls.email.value).toBe('merchant@example.test');
+    expect(fixture.componentInstance.awaitingConfirmation()).toBe(false);
+  });
+
   it('keeps the confirmation landing local and does not submit another registration', async () => {
     TestBed.overrideProvider(ActivatedRoute, { useValue: { snapshot: { data: { confirmation: true } } } });
     const fixture = TestBed.createComponent(RegisterPageComponent);
