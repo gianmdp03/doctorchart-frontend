@@ -6,7 +6,7 @@
       <app-theme-toggle />
     </div>
     <div class="intro">
-      <h1>Planes de DoctorChart</h1>
+      <h1 tabindex="-1">Planes de DoctorChart</h1>
       <p>Elegí cómo pagar, el período y el plan que necesitás.</p>
       @if (isLoggedIn() && cardMethods().mobbexManage) {
         <a class="dc-button button secondary" [href]="cardCheckout()">Gestionar renovación en Bycode</a>
@@ -22,12 +22,33 @@
       </div>
     </section>
   }
-  @if (checkoutClosed()) {
+  @if (checkoutResumable()) {
     <div class="notice">
       <p>Cerraste el pago. Podés retomar la orden mientras esté vigente.</p>
       <button class="button secondary resume-transfer" type="button" (click)="reopenCheckout()" [disabled]="transferLoading() || checking()">Retomar transferencia</button>
     </div>
-  } @else if (transfer(); as order) {
+  } @else if (!checkoutClosed() && transfer()?.status === 'credited' && transfer(); as order) {
+    <section class="transfer-sheet transfer-page transfer-success" aria-label="Confirmación de pago">
+      <div class="transfer-success-card">
+        <span class="transfer-success-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m5 12 4.5 4.5L19 7" />
+          </svg>
+        </span>
+        <div>
+          <h1 class="transfer-title" id="transfer-title" tabindex="-1">Pago exitoso</h1>
+          <p class="transfer-success-copy">Tu suscripción se actualizó.</p>
+        </div>
+        <dl class="transfer-success-summary">
+          <div><dt>Importe pagado</dt><dd class="transfer-paid">{{ money(order.amount, order.currency) }}</dd></div>
+          @for (item of order.items; track item.module) {
+            <div><dt>Plan</dt><dd>{{ item.module.toLowerCase() === 'doctorchart' ? 'DoctorChart' : 'Pointly' }} · {{ tierName(item.tier) }} · {{ item.days }} días</dd></div>
+          }
+        </dl>
+        <button class="button transfer-success-action" type="button" (click)="finishCheckout()">Volver a planes</button>
+      </div>
+    </section>
+  } @else if (!checkoutClosed() && transfer(); as order) {
     <section class="transfer-sheet transfer-page" aria-labelledby="transfer-title" [attr.aria-busy]="transferLoading()">
       <div class="transfer-summary">
         <div>
@@ -73,8 +94,6 @@
           <p class="transfer-muted">Los datos bancarios aparecerán acá cuando Raya Cash los confirme.</p>
         } @else if (order.status === 'pending' || order.status === 'verifying') {
           <p class="transfer-muted">Si ya transferiste, esperá la confirmación en esta pantalla.</p>
-        } @else if (order.status === 'credited') {
-          <p class="transfer-muted">Tu licencia se actualizó con el plan contratado.</p>
         } @else if (order.status === 'expired') {
           <p class="transfer-muted">Elegí un plan para generar otra orden de transferencia.</p>
         } @else if (order.status === 'review') {
@@ -102,9 +121,6 @@
           <button class="button secondary" type="button" (click)="cancelCheckout()">Cancelar</button>
         } @else {
           <button class="button secondary" type="button" (click)="cancelCheckout()">Volver a planes</button>
-        }
-        @if (order.status === 'credited') {
-          <a class="button" routerLink="/dashboard">Ir a mi panel</a>
         }
       </div>
       <details class="transfer-operation transfer-reference">
@@ -250,7 +266,7 @@
             @if (previousTransfer(); as reference) {
               <button class="button" type="button" (click)="startTransfer(false, reference)"
                 [disabled]="checking() || transferLoading() || transferRequestSaved() || (plan.action === 'UPGRADE' && !quote()?.canUpgrade)">
-                Iniciar otra transferencia
+                {{ transfer()?.status === 'credited' ? 'Pagar por transferencia' : 'Iniciar otra transferencia' }}
               </button>
             } @else {
               <button class="button" type="button" (click)="startTransfer()"

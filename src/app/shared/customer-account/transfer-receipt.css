@@ -1,0 +1,61 @@
+.transfer-success {
+  --receipt-positive: var(--dc-positive, light-dark(#19704f, #8ed9ae));
+  --receipt-paper: var(--plan-card, var(--card));
+  --receipt-muted: var(--plan-muted, var(--muted-foreground));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  width: min(100%, 34rem);
+  margin-inline: auto;
+  gap: 0;
+}
+.transfer-page.transfer-success { min-height: min(42rem, calc(100svh - 3rem)); }
+.transfer-success-card {
+  display: grid;
+  justify-items: start;
+  gap: 1.5rem;
+  padding: clamp(1.25rem, 5vw, 2.75rem);
+  border-radius: 16px;
+  background: var(--receipt-paper);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 6%), 0 1px 1px -.5px rgb(0 0 0 / 6%),
+    0 3px 3px -1.5px rgb(0 0 0 / 6%), 0 6px 6px -3px rgb(0 0 0 / 6%),
+    0 12px 12px -6px rgb(0 0 0 / 6%), 0 24px 24px -12px rgb(0 0 0 / 6%);
+}
+.transfer-success-mark {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: var(--receipt-positive);
+  background: color-mix(in srgb, var(--receipt-positive) 12%, var(--receipt-paper));
+}
+.transfer-success-mark svg { width: 1.75rem; height: 1.75rem; }
+.transfer-success .transfer-title {
+  margin: 0 0 .45rem;
+  font-size: clamp(1.8rem, 5vw, 2.65rem);
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+.transfer-success .transfer-title:focus { outline: none; }
+.transfer-success-copy { color: var(--receipt-muted); }
+.transfer-success-summary {
+  display: grid;
+  width: 100%;
+  gap: .65rem;
+  padding-block: 1rem;
+  border-block: 1px solid var(--plan-edge, var(--border));
+}
+.transfer-success-summary > div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem .75rem; }
+.transfer-success-summary dt { color: var(--receipt-muted); font-size: .9rem; }
+.transfer-success-summary dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+.transfer-success-summary .transfer-paid { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.transfer-success-action { min-height: 48px; }
+@media (max-width: 30rem) {
+  .transfer-success-action { width: 100%; }
+}
+@media (max-width: 22.5rem) {
+  .transfer-success-summary > div { display: grid; }
+}

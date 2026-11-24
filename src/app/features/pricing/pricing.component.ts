@@ -2,8 +2,8 @@ import { readRayaEvents } from '../../shared/customer-account/raya-events';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
-import { Component, DestroyRef, PLATFORM_ID, computed, effect, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Component, DestroyRef, Injector, PLATFORM_ID, computed, effect, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom, fromEvent, NEVER, takeUntil } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { environment } from '../../../environments/environment';
@@ -47,12 +47,13 @@ const referencePattern = /^[A-Za-z0-9_-]{1,128}$/;
   selector: 'app-product-pricing',
   imports: [ThemeToggleComponent, RouterLink],
   templateUrl: './pricing.component.html',
-  styleUrls: ['../../shared/customer-account/pricing.css', '../../shared/customer-account/transfer-checkout.css'],
+  styleUrls: ['../../shared/customer-account/pricing.css', '../../shared/customer-account/transfer-checkout.css', '../../shared/customer-account/transfer-receipt.css'],
 })
 export class PricingComponent {
   private readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly injector = inject(Injector);
   private readonly destroyRef = inject(DestroyRef);
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly api = new URL('/api/billing/', environment.apiUrl).href;
@@ -144,11 +145,13 @@ export class PricingComponent {
   protected readonly manualWait = signal(0);
   protected readonly liveConnected = signal(false);
   private checkoutConnection?: AbortController;
-  private readonly cancelledReference = signal<string | null>(null);
+  private readonly dismissedReference = signal<string | null>(null);
   protected readonly checkoutClosed = computed(() => {
     const reference = this.transfer()?.externalReference;
-    return !!reference && reference === this.cancelledReference();
+    return !!reference && reference === this.dismissedReference();
   });
+  protected readonly checkoutResumable = computed(() => this.checkoutClosed() && this.transfer()?.status !== 'credited');
+
   protected readonly pollReference = computed(() => {
     const transfer = this.transfer();
     return !this.checkoutClosed() && transfer && (transfer.status === 'pending' || transfer.status === 'verifying')
@@ -157,15 +160,32 @@ export class PricingComponent {
 
   protected cancelCheckout(): void {
     this.checkoutConnection?.abort();
-    this.cancelledReference.set(this.transfer()?.externalReference ?? null);
+    this.dismissedReference.set(this.transfer()?.externalReference ?? null);
+  }
+
+  protected finishCheckout(): void {
+    const receipt = this.transfer();
+    if (receipt?.status !== 'credited') return;
+    this.dismissedReference.set(receipt.externalReference);
+    if (this.route.snapshot.queryParamMap.get('rayaOrder') === receipt.externalReference) {
+      void this.injector.get(Router).navigate([], {
+        relativeTo: this.route, queryParams: { rayaOrder: null },
+        queryParamsHandling: 'merge', preserveFragment: true, replaceUrl: true,
+      });
+    }
+    requestAnimationFrame(() => {
+      const heading = document.querySelector<HTMLElement>('.pricing .intro h1');
+      heading?.focus({ preventScroll: true });
+      heading?.scrollIntoView({ block: 'start' });
+    });
   }
 
   protected async reopenCheckout(): Promise<void> {
-    const reference = this.cancelledReference();
+    const reference = this.dismissedReference();
     if (!reference || this.transferLoading() || this.checking()) return;
     await this.refreshTransfer(reference);
-    if (this.cancelledReference() === reference && !this.transferError()) {
-      this.cancelledReference.set(null);
+    if (this.dismissedReference() === reference && !this.transferError()) {
+      this.dismissedReference.set(null);
     }
   }
 
@@ -253,11 +273,12 @@ export class PricingComponent {
     effect(cleanup => {
       if (!this.browser) return;
       const open = this.checkoutOpen();
-      const closed = this.checkoutClosed();
+      const closed = this.checkoutResumable();
+      const credited = this.transfer()?.status === 'credited';
       if (!open && !closed) return;
       const frame = requestAnimationFrame(() => {
         const target = document.querySelector<HTMLElement>(
-          open ? '.transfer-page .transfer-title' : '.resume-transfer',
+          credited && open ? '.transfer-success .transfer-title' : open ? '.transfer-page .transfer-title' : '.resume-transfer',
         );
         target?.focus({ preventScroll: true });
         target?.scrollIntoView({ block: 'nearest' });
@@ -348,9 +369,10 @@ export class PricingComponent {
       else if (this.rayaAvailable() || this.transferReturn) {
         this.transferError.set('No pudimos consultar tus transferencias. Volvé a intentar.');
       }
-      if (this.transferReturn) {
-        await this.fetchTransfer(owner, this.transferReturn);
-      } else {
+      const returnReference = this.readTransferReturn();
+      if (returnReference) {
+        await this.fetchTransfer(owner, returnReference);
+      } else if (!this.transfer()) {
         const latest = this.activity().find(transfer => ['pending', 'verifying', 'review'].includes(transfer.status));
         if (latest) await this.fetchTransfer(owner, latest.externalReference);
       }
@@ -377,7 +399,10 @@ export class PricingComponent {
     try {
       await this.fetchTransfer(owner, reference, signal);
       if (signal?.aborted || this.destroyRef.destroyed) return;
-      if (reveal) this.revealTransfer();
+      if (reveal) {
+        if (this.dismissedReference() === reference) this.dismissedReference.set(null);
+        this.revealTransfer();
+      }
     } catch {
       if (signal?.aborted || this.destroyRef.destroyed) return;
       this.transferError.set(signal ? 'No pudimos actualizar el estado. Podés volver a consultarlo en unos segundos.' : 'No pudimos consultar la transferencia. Volvé a intentarlo.');
