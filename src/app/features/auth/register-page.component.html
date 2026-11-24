@@ -16,8 +16,8 @@
           <h1 id="register-title">Ingresá a DoctorChart</h1>
           <p>Si confirmaste tu correo, ya podés ingresar con tu contraseña. Si el enlace venció, volvé a solicitar el registro.</p>
         } @else {
-          <h1 id="register-title" tabindex="-1">Revisá tu correo</h1>
-          <p>Si esta dirección puede registrarse, vas a recibir un enlace de activación. Abrilo antes de iniciar sesión.</p>
+          <h1 id="register-title" tabindex="-1">Solicitud recibida</h1>
+          <p>Si necesitás confirmar tu correo, vas a recibir un enlace. Si ya tenés cuenta en Bycode, Pointly o DoctorChart, ingresá con esa misma cuenta.</p>
           <p class="mail-help">Si el mensaje no aparece, revisá el correo no deseado.</p>
         }
         <nav class="status-actions" aria-label="Acceso">
@@ -25,7 +25,10 @@
             Iniciar sesión <ng-icon name="lucideArrowRight" aria-hidden="true" />
           </a>
           @if (fromConfirmationLink) { <a class="text-action" routerLink="/register">Volver al registro</a> }
-          @else { <a class="text-action" routerLink="/pricing">Ver planes</a> }
+          @else {
+            <a class="text-action" routerLink="/forgot-password">Recuperar contraseña</a>
+            <a class="text-action" routerLink="/pricing">Ver planes</a>
+          }
         </nav>
       </section>
     } @else {

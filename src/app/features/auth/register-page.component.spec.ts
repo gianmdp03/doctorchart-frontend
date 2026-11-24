@@ -7,14 +7,14 @@ describe('Product signup', () => {
   const auth = { signUp: vi.fn() };
 
   beforeEach(() => {
-    auth.signUp.mockReset().mockResolvedValue({ data: { user: { id: 'owner' }, session: null }, error: null });
+    auth.signUp.mockReset().mockResolvedValue({ data: { user: { id: 'opaque-user', identities: [] }, session: null }, error: null });
     TestBed.configureTestingModule({
       imports: [RegisterPageComponent],
       providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
     });
   });
 
-  it('submits the shared identity fields and shows confirmation within the app', async () => {
+  it('submits the shared identity fields and shows sign-in and recovery options', async () => {
     const fixture = TestBed.createComponent(RegisterPageComponent);
     fixture.detectChanges();
     fixture.componentInstance.form.setValue({
@@ -28,7 +28,9 @@ describe('Product signup', () => {
       email: 'merchant@example.test', password: 'test-password',
       options: { data: { full_name: 'Nombre Prueba', dni: '12345678' } },
     });
-    expect(fixture.nativeElement.textContent).toContain('Revisá tu correo');
+    expect(fixture.nativeElement.textContent).toContain('Solicitud recibida');
+    expect(fixture.nativeElement.textContent).toContain('Si necesitás confirmar tu correo');
+    expect(fixture.nativeElement.querySelector('a[href="/forgot-password"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('a[href^="/login"]')).not.toBeNull();
   });
 
