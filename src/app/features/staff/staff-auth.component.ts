@@ -1,5 +1,5 @@
 import { InteractionStatusService } from '../../core/services/interaction-status.service';
-import {Component,inject,signal} from '@angular/core';
+import {afterNextRender, Component, ElementRef, inject, Injector, signal, viewChild} from '@angular/core';
 import {DOCUMENT} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute,Router,RouterLink} from '@angular/router';
@@ -23,8 +23,18 @@ export class StaffAuthComponent {
  private readonly api=inject(StaffService);private readonly router=inject(Router);
  private readonly document=inject(DOCUMENT);
  readonly mode=(inject(ActivatedRoute).snapshot.data['mode']??'login') as 'login'|'activate'|'recover';
- readonly emailRecoveryEnabled=FEATURE_FLAGS.NOTIFICATIONS_ENABLED;recoveryMode:'personal'|'email'=this.emailRecoveryEnabled?'email':'personal';readonly emailNotice=signal('');
- email='';password='';code='';readonly busy=signal(false);readonly error=signal('');readonly recovery=signal('');
+ readonly emailRecoveryEnabled=FEATURE_FLAGS.NOTIFICATIONS_ENABLED;
+ readonly recoveryStep = signal<'email' | 'code' | 'password' | 'done'>('email');
+ readonly recoverySteps = ['Correo', 'Código', 'Contraseña'];
+ readonly busy = signal(false);
+ readonly error = signal('');
+ email = '';
+ password = '';
+ confirmPassword = '';
+ code = '';
+ private resetToken = '';
+ private readonly injector = inject(Injector);
+ private readonly recoveryHeading = viewChild<ElementRef<HTMLElement>>('recoveryHeading');
  readonly loadingInvitation=signal(false);readonly invalidInvitation=signal(false);readonly retryInvitation=signal(false);readonly invitationName=signal('');readonly existingAccount=signal(false);fromLink=false;
  readonly invitingDoctor = signal('');
  readonly invitedAgendas = signal<string[]>([]);
@@ -63,10 +73,76 @@ export class StaffAuthComponent {
    }
  }
  async submit(){if(this.busy()||this.loadingInvitation()||this.invalidInvitation()||this.retryInvitation())return;this.busy.set(true);this.error.set('');try{
-  if(this.mode==='recover'){const result=this.recoveryMode==='email'?await this.api.recoverEmail({email:this.email,password:this.password,emailCode:this.code}):await this.api.recover({email:this.email,password:this.password,recoveryCode:this.code});this.api.session.set(null);this.recovery.set(result.recoveryCode);this.interaction.notifySuccess('Tu acceso se recuperó correctamente.');}
-  else{await this.api.authenticate(this.mode,{email:this.email,password:this.password,...(this.mode==='activate'?{invitationCode:this.code}:{})});if(this.mode==='activate')this.interaction.notifySuccess('Tu acceso de secretaría se activó correctamente.');await this.router.navigateByUrl('/staff/calendar');}
+  if (this.mode === 'recover') return;
+  await this.api.authenticate(this.mode,{email:this.email,password:this.password,...(this.mode==='activate'?{invitationCode:this.code}:{})});if(this.mode==='activate')this.interaction.notifySuccess('Tu acceso de secretaría se activó correctamente.');await this.router.navigateByUrl('/staff/calendar');
   this.password='';this.passwordVisible.set(false);this.code='';
  }catch(e){this.error.set(staffError(e));}finally{this.busy.set(false);}}
- async requestEmail(){if(this.busy())return;this.busy.set(true);this.error.set('');try{const result=await this.api.requestRecoveryEmail(this.email);this.emailNotice.set(result.message);}catch(e){this.error.set(staffError(e));}finally{this.busy.set(false);}}
- async continue(){this.recovery.set('');await this.router.navigateByUrl(this.mode==='recover'?'/staff/login':'/staff/calendar');}
+ private showRecoveryStep(step: 'email' | 'code' | 'password' | 'done'): void {
+   this.recoveryStep.set(step);
+   afterNextRender(() => this.recoveryHeading()?.nativeElement.focus(), {injector:this.injector});
+ }
+
+ changeRecoveryEmail(): void {
+   if (this.busy()) return;
+   this.code = this.password = this.confirmPassword = this.resetToken = '';
+   this.passwordVisible.set(false);
+   this.error.set('');
+   this.showRecoveryStep('email');
+ }
+
+ async requestEmail(): Promise<void> {
+   if (!this.emailRecoveryEnabled || !this.email.trim() || this.busy()) return;
+   const resend = this.recoveryStep() === 'code';
+   await this.runRecovery(async () => {
+     this.email = this.email.trim();
+     await this.api.requestRecoveryEmail(this.email);
+     this.code = '';
+     this.showRecoveryStep('code');
+   }, resend ? 'No pudimos enviar otro código. Volvé a intentarlo.' : 'No pudimos solicitar el código. Volvé a intentarlo.');
+ }
+
+ updateRecoveryCode(input: HTMLInputElement): void {
+   this.code = input.value.replace(/[^0-9]/g, '').slice(0, 6);
+   input.value = this.code;
+ }
+
+ async verifyRecoveryCode(): Promise<void> {
+   if (this.recoveryStep() !== 'code' || !/^[0-9]{6}$/.test(this.code)) return;
+   await this.runRecovery(async () => {
+     const result = await this.api.verifyRecoveryEmail(this.email, this.code);
+     if (!result.resetToken) throw new Error('Missing reset token');
+     this.resetToken = result.resetToken;
+     this.code = '';
+     this.showRecoveryStep('password');
+   }, 'No pudimos verificar el código. Volvé a intentarlo.', 'El código es incorrecto o venció. Revisalo o pedí uno nuevo.');
+ }
+
+ async resetPassword(): Promise<void> {
+   if (this.recoveryStep() !== 'password' || !this.resetToken || this.busy()) return;
+   if (this.password !== this.confirmPassword) {
+     this.error.set('Las contraseñas no coinciden.');
+     return;
+   }
+   await this.runRecovery(async () => {
+     await this.api.recoverEmail(this.email, this.resetToken, this.password);
+     this.api.session.set(null);
+     this.resetToken = this.password = this.confirmPassword = '';
+     this.passwordVisible.set(false);
+     this.showRecoveryStep('done');
+   }, 'No pudimos guardar la contraseña. Volvé a intentarlo.', 'El acceso para cambiar la contraseña venció. Volvé al paso del correo y pedí un nuevo código.');
+ }
+
+ private async runRecovery(action: () => Promise<void>, fallback: string, invalid?: string): Promise<void> {
+   if (this.busy()) return;
+   this.busy.set(true);
+   this.error.set('');
+   try {
+     await action();
+   } catch (error) {
+     const status = (error as {status?:number})?.status;
+     this.error.set(status === 401 && invalid ? invalid : status === 400 || status === 429 ? staffError(error) : fallback);
+   } finally {
+     this.busy.set(false);
+   }
+ }
 }

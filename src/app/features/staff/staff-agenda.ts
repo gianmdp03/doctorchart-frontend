@@ -32,7 +32,6 @@ export class StaffAgenda {
   });
   readonly doctorAssignments = computed(() => this.assignments().filter(item => item.ownerId === this.doctorId()));
   readonly assignment = computed(() => this.doctorAssignments().find(item => this.key(item) === this.selectedKey()));
-  readonly activationRecovery = this.api.activationRecovery;
 
   key(item: Assignment): string {
     return item.ownerId + '|' + item.clinicId;

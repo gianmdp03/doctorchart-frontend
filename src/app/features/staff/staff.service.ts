@@ -9,7 +9,7 @@ export type StaffPermission='view'|'create'|'cancel'|'reschedule'|'status';
 import type {AppointmentModality} from '../clinics/clinics.models';
 
 export type AdministrativeBooking=Omit<Booking,'provenance'|'clinicSnapshot'>&{clinicSnapshot?:{name:string;timezone:string;modality?:AppointmentModality}};
-export interface StaffSession {email:string;name:string;csrfToken:string;expiresAt:string;recoveryCode?:string;}
+export interface StaffSession {email:string;name:string;csrfToken:string;expiresAt:string;}
 export interface Assignment {modality?:AppointmentModality;doctorName?:string;ownerId:string;accessId:string;clinicId:string;clinicName:string;timezone:string;permissions:StaffPermission[];validUntil:string;}
 export interface StaffAccess {phone?:string;id:string;email:string;name:string;version:string;active:boolean;activated:boolean;permissions:StaffPermission[];clinicIds:string[];}
 export interface SlotDay {
@@ -32,16 +32,15 @@ export function staffError(error:unknown):string {
 export class StaffService {
  private readonly http=inject(HttpClient);
  readonly session=signal<StaffSession|null>(null);
- readonly activationRecovery=signal('');
  private readonly base=environment.apiUrl.replace(/\/$/,'')+'/staff';
  private options(write=false,key?:string){let headers=new HttpHeaders();if(write&&this.session())headers=headers.set('X-CSRF-Token',this.session()!.csrfToken);if(key)headers=headers.set('Idempotency-Key',key);return {withCredentials:true,transferCache:false,headers};}
  inspectInvitation(invitationCode:string){return firstValueFrom(this.http.post<{email:string;name:string;expiresAt:string;existingAccount:boolean;doctorName?:string;agendas?:string[]}>(this.base+'/invitation',{invitationCode},this.options()));}
  async loadSession(){const s=await firstValueFrom(this.http.get<StaffSession>(this.base+'/session',this.options()));this.session.set(s);return s;}
- async authenticate(action:'login'|'activate',body:Record<string,string>){const s=await firstValueFrom(this.http.post<StaffSession>(this.base+'/'+action,body,this.options()));this.activationRecovery.set(s.recoveryCode??'');this.session.set(s);return s;}
+ async authenticate(action:'login'|'activate',body:Record<string,string>){const s=await firstValueFrom(this.http.post<StaffSession>(this.base+'/'+action,body,this.options()));this.session.set(s);return s;}
  requestRecoveryEmail(email:string){return firstValueFrom(this.http.post<{message:string}>(this.base+'/recovery-email',{email},this.options()));}
- recoverEmail(body:Record<string,string>){return firstValueFrom(this.http.post<{recoveryCode:string}>(this.base+'/recover-email',body,this.options()));}
- recover(body:Record<string,string>){return firstValueFrom(this.http.post<{recoveryCode:string}>(this.base+'/recover',body,this.options()));}
- async logout(){await firstValueFrom(this.http.post(this.base+'/logout',{},this.options(true)));this.session.set(null);this.activationRecovery.set('');}
+ verifyRecoveryEmail(email:string,emailCode:string){return firstValueFrom(this.http.post<{resetToken:string}>(this.base+'/recover-email',{email,emailCode},this.options()));}
+ recoverEmail(email:string,resetToken:string,password:string){return firstValueFrom(this.http.post<void>(this.base+'/recover-email',{email,resetToken,password},this.options()));}
+ async logout(){await firstValueFrom(this.http.post(this.base+'/logout',{},this.options(true)));this.session.set(null);}
  changePassword(currentPassword:string,password:string){return firstValueFrom(this.http.post(this.base+'/password',{currentPassword,password},this.options(true)));}
  assignments(){return firstValueFrom(this.http.get<{items:Assignment[]}>(this.base+'/assignments',this.options()));}
  availability(a:Assignment,from:string,days:number){return firstValueFrom(this.http.get<{days:SlotDay[]}>(`${this.base}/owners/${encodeURIComponent(a.ownerId)}/clinics/${a.clinicId}/availability`,{...this.options(),params:{from,days}}));}

@@ -20,9 +20,6 @@
   </header>
  }
  @if(staff; as delegated){
-  @if(delegated.activationRecovery(); as code){
-   <details class="notice staff-recovery"><summary>Guardar un código de recuperación (opcional)</summary><p>Guardalo en un lugar seguro para recuperar tu cuenta sin el correo.</p><code>{{code}}</code><button type="button" (click)="delegated.activationRecovery.set('')">Cerrar</button></details>
-  }
  }
  <header class="agenda-heading">
   <h1>Agenda de consultorios</h1>
