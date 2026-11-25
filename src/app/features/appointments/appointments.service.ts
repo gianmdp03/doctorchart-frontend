@@ -10,7 +10,7 @@ export class AppointmentsService{
  private portalDraft: {draft: PortalDraft; expires: number} | null = null;
  search(filters:Record<string,string>,page=0,size=12){let params=new HttpParams().set('page',page).set('size',size);for(const [k,v]of Object.entries(filters))if(v.trim())params=params.set(k,v.trim());return this.http.get<{items:PublicDoctor[];page:number;size:number;hasMore:boolean;specialties?:PublicSpecialty[]}>(this.base+'/doctors',{params,transferCache:false});}
  specialties(){
-  return this.http.get<{specialties:PublicSpecialty[]}>(this.base+'/doctors',{params:{includeSpecialties:'only'},transferCache:false}).pipe(map(result=>result.specialties));
+  return this.http.get<{specialties:PublicSpecialty[]}>(this.base+'/doctors',{params:{includeSpecialties:'1',size:1},transferCache:false}).pipe(map(result=>result.specialties));
  }
  profile(id:string){return this.http.get<PublicDoctor>(this.base+'/doctors/'+encodeURIComponent(id),{transferCache:false});}
  availability(id:string,clinicId:string,from:string,specialtyContextId?:string){return this.http.get<{timezone:string;days:AvailabilityDay[]}>(`${this.base}/doctors/${encodeURIComponent(id)}/clinics/${encodeURIComponent(clinicId)}/availability`,{params:{from,days:7,...(specialtyContextId?{specialtyContextId}:{})},transferCache:false});}
