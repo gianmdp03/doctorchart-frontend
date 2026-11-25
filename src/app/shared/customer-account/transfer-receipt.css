@@ -9,7 +9,6 @@
   margin-inline: auto;
   gap: 0;
 }
-.transfer-page.transfer-success { min-height: min(42rem, calc(100svh - 3rem)); }
 .transfer-success-card {
   display: grid;
   justify-items: start;
