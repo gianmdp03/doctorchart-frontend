@@ -1,7 +1,7 @@
 <app-public-booking-shell [showMyBookings]="confirmationEnabled">
  <div class="booking-content">
  @if(confirmation();as c){
-  <section class="confirmation" aria-labelledby="confirmation-title"><div class="confirmed-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div><p role="status">Turno confirmado</p><h1 id="confirmation-title" tabindex="-1">Tu próxima consulta, organizada.</h1><p>La reserva de <strong>{{c.attendeeName}}</strong> se confirmó con {{c.doctorName}}.</p><div class="confirmation-card"><strong>{{displayDay(civilDate(c.start,c.timezone))}}</strong><span>{{localTime(c.start,c.timezone)}} – {{localTime(c.end,c.timezone)}}</span>@if(c.specialtyName){<p>{{c.specialtyName}}</p>}<h2>{{c.clinicName}}</h2><p>{{modalityLabel(c.modality)}} @if(c.address){· {{c.address}}}</p><p class="muted">Hora de la agenda</p>@if(c.modality==='TELECONSULTATION'&&patientTime(c.start,c.timezone);as local){<p>Tu hora local · {{local}}</p>}</div>@if(confirmationEnabled){
+  <section class="confirmation" aria-labelledby="confirmation-title"><div class="confirmed-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div><h1 id="confirmation-title" tabindex="-1">Turno confirmado</h1><p>La reserva de <strong>{{c.attendeeName}}</strong> se confirmó con {{c.doctorName}}.</p><div class="confirmation-card"><strong>{{displayDay(civilDate(c.start,c.timezone))}}</strong><span>{{localTime(c.start,c.timezone)}} – {{localTime(c.end,c.timezone)}}</span>@if(c.specialtyName){<p>{{c.specialtyName}}</p>}<h2>{{c.clinicName}}</h2><p>{{modalityLabel(c.modality)}} @if(c.address){· {{c.address}}}</p><p class="muted">Hora de la agenda</p>@if(c.modality==='TELECONSULTATION'&&patientTime(c.start,c.timezone);as local){<p>Tu hora local · {{local}}</p>}</div>@if(confirmationEnabled){
     <div class="confirmation-card confirmation-manage">
       <h2>Gestioná tu turno</h2>
       <p>Podés cancelarlo <strong>antes de la hora de inicio</strong>. Si no podés asistir, avisá lo antes posible para liberar el horario.</p>
@@ -111,21 +111,45 @@
   @if(error()){<div class="empty"><h1>Reservas no disponibles</h1><p role="alert">{{error()}}</p><button (click)="loadProfile()">Reintentar</button></div>}
   @if(busy()&&!profile()){<p role="status" class="empty">Consultando el perfil…</p>}
   @if(profile();as d){
-   <section class="professional"><div class="professional-monogram" aria-hidden="true">{{d.name.slice(0,1)}}</div><div><h1>{{d.name}}</h1><p class="professional-specialty">{{specialtyNames(d)}}</p><p>{{d.description}}</p></div></section>
-   <ol class="booking-progress" aria-label="Pasos de la reserva"><li [attr.aria-current]="!formOpen() ? 'step' : null">Lugar y horario</li><li [attr.aria-current]="formOpen() ? 'step' : null">Tus datos</li><li>Confirmación</li></ol>
-   <div class="booking-layout"><section class="availability" aria-label="Seleccionar consultorio y horario"><div class="section-heading"><h2>1. Elegí dónde y cuándo</h2><span class="muted">Hora de la agenda</span></div>
+   <section class="professional booking-hero">
+    <div>
+     <p class="booking-context">Reserva online</p>
+     <h1>{{d.name}}</h1>
+     @if(specialtyNames(d); as specialty){<p class="professional-specialty">{{specialty}}</p>}
+     @if(d.description){<p class="professional-description">{{d.description}}</p>}
+    </div>
+    <ol class="booking-progress" aria-label="Pasos de la reserva">
+     <li [attr.aria-current]="!formOpen() ? 'step' : null">Lugar y horario</li>
+     <li [attr.aria-current]="formOpen() ? 'step' : null">Tus datos</li>
+     <li>Confirmación</li>
+    </ol>
+   </section>
+   <div class="booking-layout"><section class="availability" aria-label="Seleccionar consultorio y horario"><div class="section-heading"><h2>1. Elegí dónde y cuándo</h2><p class="muted">Seleccioná el lugar de atención y consultá los turnos por día.</p></div>
     @if(d.specialties && d.specialties.length>1){<label>Especialidad<select aria-label="Especialidad de la reserva" [ngModel]="specialtyContextId()" (ngModelChange)="changeSpecialty($event)" [disabled]="sending()"><option value="" disabled>Elegí una especialidad</option>@for(context of d.specialties;track context.id){<option [value]="context.id">{{context.name}}</option>}</select></label>}<div class="clinic-options">@for(c of contextClinics();track c.id){<button [class.selected]="clinicId()===c.id" [attr.aria-pressed]="clinicId()===c.id" [disabled]="sending()" (click)="changeClinic(c.id)"><strong>{{c.name}}</strong><span>@if(c.modality==='TELECONSULTATION'){Atención por videollamada}@else{Presencial · {{c.address}} · {{c.city}}, {{c.province}}, {{c.country}}}</span></button>}</div>
-    <div class="date-navigation"><button aria-label="Semana anterior" (click)="navigate(-1)" [disabled]="sending()">←</button><div class="picker-field"><label for="public-date">Desde</label><app-date-picker inputId="public-date" inputLabel="Desde" [value]="date" (valueChange)="changeDate($event)" /></div><button aria-label="Semana siguiente" (click)="navigate(1)" [disabled]="sending()">→</button></div>
+    <div class="date-navigation"><button aria-label="Semana anterior" (click)="navigate(-1)" [disabled]="sending()">←</button><div class="picker-field"><label for="public-date">Semana desde</label><app-date-picker inputId="public-date" inputLabel="Semana desde" [value]="date" (valueChange)="changeDate($event)" /></div><button aria-label="Semana siguiente" (click)="navigate(1)" [disabled]="sending()">→</button></div>
     @if(slotError()){<p role="alert" class="notice error">{{slotError()}} <button (click)="loadSlots()" [disabled]="sending()">Reintentar</button></p>}
     @if(slotsBusy()){<p role="status" class="empty">Consultando horarios disponibles…</p>}
     @if(clinic(); as c) {
       @if(hasLocalTimeDifference()) {
         <p class="timezone-note">Los turnos se muestran en la hora de la agenda. Si tu hora local es distinta, la vas a ver debajo.</p>
       }
-      <div class="availability-days">
-        @for(day of days(); track day.date) {
-          <section class="availability-day">
-            <h3>{{displayDay(day.date)}}</h3>
+      @if(activeDay(); as day) {
+        <div class="booking-week" role="group" aria-label="Días de la semana">
+          @for(option of days(); track option.date) {
+            <button type="button" [attr.aria-pressed]="day.date===option.date"
+              [attr.aria-label]="weekday(option.date) + ' ' + displayDay(option.date) + ': ' + option.slots.length + ' horarios'"
+              [disabled]="sending()" (click)="chosenDay.set(option.date)">
+              <span>{{weekday(option.date)}}</span>
+              <strong>{{option.date.slice(8)}}</strong>
+              <small>{{option.slots.length ? option.slots.length + (option.slots.length === 1 ? ' turno' : ' turnos') : 'Sin turnos'}}</small>
+            </button>
+          }
+        </div>
+        <section class="availability-day" aria-labelledby="booking-day-title">
+            <div class="booking-day-heading">
+              <h3 id="booking-day-title">{{weekday(day.date)}} {{displayDay(day.date)}}</h3>
+              <span class="muted">Hora de la agenda</span>
+            </div>
             <div class="slots">
               @for(slot of day.slots; track slot.start) {
                 <button type="button" [attr.data-public-slot]="slot.start" [class.selected]="selectedStart()===slot.start"
@@ -139,16 +163,17 @@
               }
               @if(!day.slots.length) { <p class="muted">Sin horarios disponibles</p> }
             </div>
-          </section>
-        }
-      </div>
+        </section>
+      }
     }
    </section>
    @if(formOpen()){
-    <section class="reservation-form" aria-labelledby="public-form-title"><h2 id="public-form-title" tabindex="-1">2. Completá la reserva</h2>
+    <section class="reservation-form" aria-labelledby="public-form-title">
+     <h2 id="public-form-title" tabindex="-1">2. Tus datos</h2>
      @if(clinic(); as c) {
        @if(selectedStart(); as start) {
          <p class="selected-summary" role="status">
+           <span class="summary-label">Horario seleccionado</span>
            <strong>{{displayDay(civilDate(start,c.timezone))}} · {{localTime(start,c.timezone)}} @if(slotOffsetLabel(start,c.timezone); as offset){ {{offset}} }</strong>
            <span>{{c.name}} @if(c.name !== modalityLabel(c.modality)){ · {{modalityLabel(c.modality)}} }</span>
            @if(c.modality==='TELECONSULTATION' && patientTime(start,c.timezone); as local) {
@@ -178,7 +203,7 @@
      <button id="public-confirm" [attr.aria-describedby]="confirmationEnabled ? 'public-cancellation-policy' : null" class="dc-button dc-button--primary primary full" [disabled]="!canReviewBooking()">{{sending()?status():'Confirmar turno'}}</button><p class="privacy-note">Verás la confirmación en esta pantalla. Tus datos se usan para gestionar la reserva.</p>
      </form>
     </section>
-   }@else{<aside class="steps"><h2>Tu reserva, paso a paso</h2><ol><li>Elegí el lugar y el horario.</li><li>Completá los datos administrativos.</li><li>Recibí la confirmación en pantalla.</li></ol><p>Los horarios se confirman en tiempo real. No necesitás una cuenta.</p></aside>}
+   }@else{<aside class="steps"><h2>Tu turno</h2><p>Cuando elijas un horario, vas a ver acá el resumen y el formulario para confirmar.</p><p>Tené a mano tu DNI y un correo al que puedas acceder.</p></aside>}
    </div>
   }
  }

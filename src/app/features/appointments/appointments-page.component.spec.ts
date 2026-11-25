@@ -8,6 +8,32 @@ describe('Anonymous public booking page',()=>{
  afterEach(()=>f.destroy());
  function fill(){c.selectSlot(slots.days[0].slots[0].start);c.contactName='Solicitante';c.different=true;c.attendeeName='Atendido';c.document='12345678';c.contactPhone='123456789';c.email='test@example.invalid';c.answers={insurance:'Cobertura'};c.consent=true;}
  it('loads a public profile without injecting any medical authentication service',()=>{expect(c.profile()?.name).toBe('Profesional publicado');expect(f.nativeElement.textContent).toContain('Elegí dónde y cuándo');});
+ it('hides expired slots using their absolute start and keeps the form when a selection expires',async()=>{
+  const clock=vi.spyOn(Date,'now').mockReturnValue(Date.parse('2026-11-26T12:05:00Z'));
+  try {
+   const expired={start:'2026-11-26T09:00:00-03:00',end:'2026-11-26T09:20:00-03:00'};
+   const upcoming={start:'2026-11-26T09:20:00-03:00',end:'2026-11-26T09:40:00-03:00'};
+   api.availability.mockReturnValue(of({timezone:'America/Argentina/Buenos_Aires',days:[{date:'2026-11-26',slots:[expired,upcoming]}]}));
+   await c.loadSlots();
+   f.detectChanges();
+   expect(f.nativeElement.querySelectorAll('[data-public-slot]')).toHaveLength(1);
+   c.selectSlot(expired.start);
+   expect(c.selectedStart()).toBe('');
+   c.selectSlot(upcoming.start);
+   c.contactName='Datos conservados';
+   c.consent=true;
+   clock.mockReturnValue(Date.parse(upcoming.start));
+   document.dispatchEvent(new Event('visibilitychange'));
+   f.detectChanges();
+   expect(f.nativeElement.querySelectorAll('[data-public-slot]')).toHaveLength(0);
+   expect(c.selectedStart()).toBe('');
+   expect(c.formOpen()).toBe(true);
+   expect(c.contactName).toBe('Datos conservados');
+   expect(c.canSubmit()).toBe(false);
+   await c.submit();
+   expect(api.book).not.toHaveBeenCalled();
+  } finally {clock.mockRestore();}
+ });
  it('limits the directory and direct profiles to enabled countries',async()=>{
   const foreignClinic={...profile.clinics[0],id:'foreign',country:'Uruguay'};
   const mixed={...profile,clinics:[foreignClinic,...profile.clinics]};

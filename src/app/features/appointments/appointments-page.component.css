@@ -177,3 +177,81 @@ legend { margin-bottom: 16px; font-size: .875rem; font-weight: 600; }
 @media (max-width: 360px) {
  .form-pair { grid-template-columns: minmax(0, 1fr); }
 }
+/* Public reservation: one week to browse, one day to act on. */
+.booking-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px 36px;
+  margin-bottom: 24px;
+  padding: clamp(20px, 3vw, 36px);
+  border: 1px solid var(--dc-line);
+  border-radius: 24px;
+  background: var(--dc-brand-soft);
+}
+.booking-hero .booking-context { margin-bottom: 6px; color: var(--dc-brand-ink); font-size: .8125rem; font-weight: 650; }
+.booking-hero h1 { font-size: clamp(1.8rem, 3.6vw, 3rem); overflow-wrap: anywhere; text-wrap: pretty; }
+.booking-hero .professional-specialty { color: var(--dc-text); font-size: 1rem; }
+.booking-hero .professional-description { margin-top: 10px; color: var(--dc-text-secondary); }
+.booking-hero .booking-progress { gap: 8px 16px; margin: 0; padding: 0; border: 0; }
+.booking-hero .booking-progress li::before { border-color: var(--dc-control-line); }
+.booking-hero .booking-progress li[aria-current='step']::before { border-color: transparent; }
+.booking-layout { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+.booking-layout > :is(.availability, .reservation-form, .steps) {
+  padding: clamp(16px, 2.5vw, 28px);
+  border: 1px solid var(--dc-line);
+  border-radius: 20px;
+  box-shadow: 0 2px 3px -1px rgb(0 0 0 / .1), 0 1px 0 rgb(25 28 33 / .02);
+}
+.availability .section-heading { display: grid; gap: 5px; }
+.availability .section-heading p { margin: 0; font-size: .875rem; }
+.clinic-options > button { overflow-wrap: anywhere; }
+.clinic-options strong { font-size: 1rem; }
+.date-navigation { gap: 8px; margin-bottom: 16px; }
+.date-navigation > button { min-width: 44px; padding-inline: 10px; }
+.date-navigation > .picker-field { flex: 1 1 10rem; }
+.booking-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.booking-week button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  min-width: 0;
+  min-height: 82px;
+  padding: 6px 2px;
+  border-color: var(--dc-line);
+  background: var(--dc-subtle);
+  font-variant-numeric: tabular-nums;
+}
+.booking-week button > span { font-size: .75rem; text-transform: capitalize; }
+.booking-week button > strong { font-size: 1.15rem; }
+.booking-week button > small { font-size: .6875rem; line-height: 1.2; overflow-wrap: anywhere; }
+.booking-week button[aria-pressed='true'] { border-color: var(--dc-brand); background: var(--dc-brand-soft); color: var(--dc-brand-ink); }
+.booking-day-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.booking-day-heading h3 { margin: 0; font-size: 1rem; text-transform: capitalize; }
+.booking-day-heading span { font-size: .75rem; }
+.availability-day { margin-top: 20px; }
+.slots > button:hover:not(:disabled):not(.selected) { background: var(--dc-brand-soft); }
+.slots > button.selected:hover:not(:disabled) { background: var(--dc-brand-hover); color: var(--dc-on-brand); }
+.slots .muted { background: var(--dc-subtle); border-radius: var(--dc-radius-control); padding: 14px; }
+.booking-layout > .steps { background: var(--dc-subtle); }
+.booking-layout > .steps p { margin: 10px 0 0; padding: 0; border: 0; font-size: .875rem; }
+.booking-layout > .steps p + p { border-top: 1px solid var(--dc-line); padding-top: 12px; margin-top: 16px; }
+.selected-summary { margin: 0 0 20px; }
+.selected-summary > strong { font-size: clamp(1rem, 2vw, 1.18rem); font-variant-numeric: tabular-nums; }
+.selected-summary > .summary-label { margin-bottom: 3px; font-size: .75rem; font-weight: 600; }
+.reservation-form legend { margin-bottom: 0; }
+.reservation-form .reservation-policy { background: var(--dc-subtle); }
+.reservation-form .privacy-note { margin-bottom: 0; }
+@media (min-width: 940px) { .booking-layout > .steps { position: sticky; top: 24px; } }
+@media (max-width: 900px) {
+  .booking-hero, .booking-layout { grid-template-columns: minmax(0, 1fr); }
+  .booking-hero { gap: 16px; }
+}
+@media (max-width: 420px) {
+  .booking-week { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .booking-week button { min-height: 64px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .booking-hero, .reservation-form { animation: booking-enter 240ms ease-out both; }
+  @keyframes booking-enter { from { opacity: .75; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+}
