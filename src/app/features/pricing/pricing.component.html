@@ -161,33 +161,35 @@
         <a class="dc-button button secondary" routerLink="/register">Crear cuenta</a>
       </nav>
     }
-    <fieldset class="payment-choice">
-      <legend>Medio de pago</legend>
-      <div class="payment-options">
-        @if (cardMethods().mobbexCard) {
+    <div class="plan-controls">
+      <fieldset class="payment-choice">
+        <legend>Medio de pago</legend>
+        <div class="payment-options">
+          @if (cardMethods().mobbexCard) {
+            <label class="payment-option">
+              <input type="radio" name="billing-payment" value="card" [checked]="paymentMethod() === 'card'"
+                [disabled]="checking() || transferLoading()" (change)="chosenPayment.set('card')" />
+              <span><strong>Débito automático</strong><small>Con tarjeta, al inicio de cada período</small></span>
+            </label>
+          }
           <label class="payment-option">
-            <input type="radio" name="billing-payment" value="card" [checked]="paymentMethod() === 'card'"
-              [disabled]="checking() || transferLoading()" (change)="chosenPayment.set('card')" />
-            <span><strong>Débito automático</strong><small>Con tarjeta, al inicio de cada período</small></span>
+            <input type="radio" name="billing-payment" value="raya" [checked]="paymentMethod() === 'raya'"
+              [disabled]="!rayaAvailable() || checking() || transferLoading()" (change)="chosenPayment.set('raya')" />
+            <span><strong>Transferencia bancaria @if (rayaAvailable() && rayaDiscountPercent() > 0) { <span class="saving" aria-hidden="true">−{{ rayaDiscountPercent() }}%</span><span class="payment-visually-hidden">{{ rayaDiscountPercent() }}% de descuento</span> }</strong>
+              <small>{{ rayaAvailable() ? 'Pago único por el período elegido' : 'No disponible por ahora' }}</small>
+            </span>
           </label>
-        }
-        <label class="payment-option">
-          <input type="radio" name="billing-payment" value="raya" [checked]="paymentMethod() === 'raya'"
-            [disabled]="!rayaAvailable() || checking() || transferLoading()" (change)="chosenPayment.set('raya')" />
-          <span><strong>Transferencia bancaria @if (rayaAvailable() && rayaDiscountPercent() > 0) { <span class="saving" aria-hidden="true">−{{ rayaDiscountPercent() }}%</span><span class="payment-visually-hidden">{{ rayaDiscountPercent() }}% de descuento</span> }</strong>
-            <small>{{ rayaAvailable() ? 'Pago único por el período elegido' : 'No disponible por ahora' }}</small>
-          </span>
-        </label>
-      </div>
-    </fieldset>
-    <section class="period" aria-labelledby="plan-period">
-      <h2 id="plan-period">Elegí el período</h2>
-      <div class="actions" role="group" aria-labelledby="plan-period">
-        @for (days of cycles(); track days) {
-          <button class="dc-button button secondary" type="button" (click)="setCycle(days)" [disabled]="checking()" [attr.aria-pressed]="cycle() === days">{{ duration(days) }}</button>
-        }
-      </div>
-    </section>
+        </div>
+      </fieldset>
+      <section class="period" aria-labelledby="plan-period">
+        <h2 id="plan-period">Elegí el período</h2>
+        <div class="actions" role="group" aria-labelledby="plan-period">
+          @for (days of cycles(); track days) {
+            <button class="dc-button button secondary" type="button" (click)="setCycle(days)" [disabled]="checking()" [attr.aria-pressed]="cycle() === days">{{ duration(days) }}</button>
+          }
+        </div>
+      </section>
+    </div>
     @if (limitsStatus() === 'unavailable') {
       <p class="benefits-notice" role="status">Los límites de los planes no están disponibles por ahora.
         <button class="button secondary" type="button" (click)="loadPlanLimits()">Reintentar</button>
@@ -195,20 +197,40 @@
     }
     <div class="selection">
       <div class="plans">
-        @for (plan of visible(); track plan.id) {
-          <article class="plan" [class.selected]="selected()?.id === plan.id">
-            <h2>{{ tierName(plan.tier) }}</h2>
+        @let availablePlans = visible();
+        @for (plan of availablePlans; track plan.id) {
+          @let featured = availablePlans.length === 3 && plan.tier === 'PRO' && plan.action !== 'LOCKED';
+          <article class="plan" [class.featured]="featured" [class.selected]="selected()?.id === plan.id">
+            <div class="plan-heading">
+              <h2>{{ tierName(plan.tier) }}</h2>
+              @if (featured) { <span class="plan-highlight">Opción intermedia</span> }
+              @if (plan.description) { <p>{{ plan.description }}</p> }
+            </div>
             <div class="plan-price">
               @if (plan.price != null && discounted(plan.currency)) { <del class="was-price">{{ money(plan.price, plan.currency) }}</del> }
               <p class="price">{{ money(plan.price != null && discounted(plan.currency) ? rayaPrice(plan.price) : plan.price, plan.currency) }}
                 <small>{{ paymentMethod() === 'card' ? 'cada' : 'por' }} {{ duration(plan.days) }}</small>
               </p>
             </div>
+            <div class="plan-action">
+              @if (plan.lockReason) { <p>{{ plan.lockReason }}</p> }
+              @if (isLoggedIn() && plan.action && plan.action !== 'LOCKED') {
+                <button class="button secondary" type="button" (click)="select(plan)" [disabled]="checking()" [attr.aria-pressed]="selected()?.id === plan.id">{{ selected()?.id === plan.id ? 'Plan seleccionado' : actionLabel(plan) + ' ' + tierName(plan.tier) }}</button>
+              } @else if (!isLoggedIn() && plan.action !== 'LOCKED') {
+                <a class="button secondary" routerLink="/login" [queryParams]="{ returnUrl: '/pricing' }">
+                  Iniciar sesión para elegir {{ tierName(plan.tier) }}
+                </a>
+              }
+            </div>
             <div class="plan-benefits">
               <h3>Qué incluye</h3>
-              <p>Fichas clínicas, estudios adjuntos y recetas en PDF.</p>
+              <ul class="plan-feature-list" role="list">
+                <li><span aria-hidden="true">✓</span>Fichas clínicas</li>
+                <li><span aria-hidden="true">✓</span>Estudios adjuntos</li>
+                <li><span aria-hidden="true">✓</span>Recetas en PDF</li>
+              </ul>
               @if (planLimits()[plan.tier]; as limits) {
-                <dl>
+                <dl aria-label="Límites y disponibilidad">
                   @if (formatQuota(limits['max_patients']); as quota) { <div><dt>Pacientes</dt><dd>{{ quota }}</dd></div> }
                   @if (formatQuota(limits['max_records_per_patient']); as quota) { <div><dt>Consultas por paciente</dt><dd>{{ quota }}</dd></div> }
                 </dl>
@@ -218,11 +240,6 @@
                 <p class="limits-status">Todavía no hay información de límites para este plan.</p>
               }
             </div>
-            @if (plan.description) { <p>{{ plan.description }}</p> }
-            @if (plan.lockReason) { <p>{{ plan.lockReason }}</p> }
-            @if (isLoggedIn() && plan.action && plan.action !== 'LOCKED') {
-              <button class="button secondary" type="button" (click)="select(plan)" [disabled]="checking()" [attr.aria-pressed]="selected()?.id === plan.id">{{ selected()?.id === plan.id ? 'Plan seleccionado' : actionLabel(plan) + ' ' + tierName(plan.tier) }}</button>
-            }
           </article>
         }
       </div>
