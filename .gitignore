@@ -36,6 +36,7 @@ yarn-error.log
 /coverage
 /test-results/growth
 /test-results/theme
+/test-results/my-bookings
 /libpeerconnection.log
 testem.log
 /typings

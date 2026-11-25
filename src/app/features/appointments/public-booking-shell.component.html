@@ -5,13 +5,12 @@
   </a>
   <nav class="public-header-actions" aria-label="Acceso y apariencia">
     <app-theme-toggle />
-    @if (inMyBookings()) {
+    @if (inMyBookings() || showMyBookings()) {
       <a routerLink="/appointments" class="portal-link">Buscar turnos</a>
-    } @else if (showMyBookings()) {
-      <a routerLink="/appointments/confirmation" class="portal-link">Mis turnos</a>
+      <a routerLink="/appointments/confirmation" class="portal-link" [class.current-page]="inMyBookings()" [attr.aria-current]="inMyBookings() ? 'page' : null">Mis turnos</a>
     }
-    <a class="dc-audience-link" routerLink="/professionals">Soy médico <span aria-hidden="true">↗</span></a>
   </nav>
+  <a class="dc-audience-link" routerLink="/professionals">Soy médico <span aria-hidden="true">↗</span></a>
 </header>
 <main #content id="appointment-content" tabindex="-1"><ng-content /></main>
 <footer class="public-footer">

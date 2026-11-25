@@ -7,6 +7,7 @@ import { AppointmentsService } from './appointments.service';
 import { authInterceptor } from '../../core/interceptors/auth.interceptor';
 import { timeZoneInterceptor } from '../../core/interceptors/time-zone.interceptor';
 import { AuthService } from '../../core/services/auth.service';
+import type { PortalBooking } from './appointments.models';
 
 const draft = {document:'12345678', reference:'ref', maskedEmail:'tes***@example.invalid', requestId:'request-id'};
 const booking = {reference:'ref', status:'CONFIRMED', start:'2030-01-01T10:00:00Z', end:'2030-01-01T10:30:00Z', doctorName:'Profesional', clinicName:'Consultorio', timezone:'UTC', version:'1', canChange:true};
@@ -113,5 +114,90 @@ describe('Mis turnos', () => {
     expect(fixture.nativeElement.querySelector('label[for="portal-change-reason"]').textContent).toContain('Motivo de la reprogramación');
     expect(fixture.nativeElement.querySelector('.preview-change button').disabled).toBe(true);
     TestBed.inject(HttpTestingController).expectNone(req => req.url.endsWith('/access/request'));
+  });
+
+  it('sorts and counts real reservations, preserving cancellation and actual attendance states', () => {
+    TestBed.inject(AppointmentsService).setPortalDraft(draft);
+    const fixture = TestBed.createComponent(ConfirmationPageComponent);
+    const page = fixture.componentInstance;
+    const items = [
+      {...booking, reference:'later', start:'2031-01-01T10:00:00Z'},
+      {...booking, reference:'cancelled', status:'CANCELLED'},
+      {...booking, reference:'past-old', start:'2020-01-01T10:00:00Z'},
+      {...booking, reference:'next'},
+      {...booking, reference:'past-recent', start:'2021-01-01T10:00:00Z'},
+    ] as PortalBooking[];
+    page.items.set(items);
+    page.step.set('list');
+    fixture.detectChanges();
+    expect(page.groups().map(group => group.items.map(item => item.reference)))
+      .toEqual([['next','later'],['past-recent','past-old'],['cancelled']]);
+    expect(page.nextBooking()?.reference).toBe('next');
+    const past = fixture.nativeElement.querySelector('#booking-past-old');
+    expect(past.textContent).toContain('Confirmado');
+    expect(past.textContent).not.toContain('Atendido');
+    expect(past.textContent).toContain(page.pastMessage);
+    expect(past.querySelector('button').disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('#booking-cancelled button').disabled).toBe(true);
+  });
+
+  it('blocks expired previews and programmatic detail and mutation actions', async () => {
+    TestBed.inject(AppointmentsService).setPortalDraft(draft);
+    const fixture = TestBed.createComponent(ConfirmationPageComponent);
+    const page = fixture.componentInstance;
+    const past = {...booking, start:'2020-01-01T10:00:00Z'} as PortalBooking;
+    const preview = {reference:'ref', date:'2020-01-01', canAccess:true, canChange:true, canReschedule:true};
+    page.previews.set([preview]);
+    page.step.set('preview');
+    await page.selectPreview(preview);
+    await page.selectPreview(preview, 'cancel');
+    await page.requestCode('ref');
+    page.toggleDetails(past);
+    page.chooseChange(past, 'cancel');
+    expect(page.expanded()).toBeNull();
+    expect(page.change()).toBeNull();
+    page.change.set({booking:past, action:'cancel'});
+    page.changeReason = 'Un motivo';
+    await page.confirmChange();
+    TestBed.inject(HttpTestingController).expectNone(() => true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.appointment-card button').disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('.booking-details')).toBeNull();
+  });
+
+  it('removes open details and cancellation controls when the start time passes', () => {
+    TestBed.inject(AppointmentsService).setPortalDraft(draft);
+    const fixture = TestBed.createComponent(ConfirmationPageComponent);
+    const page = fixture.componentInstance;
+    const current = {...booking, start:new Date(Date.now() + 60_000).toISOString()} as PortalBooking;
+    page.items.set([current, {...booking,reference:'another'} as PortalBooking]);
+    page.step.set('list');
+    page.toggleDetails(current);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.booking-details')).toBeTruthy();
+    page.chooseChange(current, 'cancel');
+    current.start = new Date(Date.now() - 1000).toISOString();
+    page.now.update(time => time + 60_000);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.booking-details')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.change-panel')).toBeNull();
+    expect(page.change()).toBeNull();
+    expect(page.expanded()).toBeNull();
+    expect(fixture.nativeElement.querySelector('#booking-ref button').disabled).toBe(true);
+    const otherButtons = Array.from(fixture.nativeElement.querySelectorAll('#booking-another button')) as HTMLButtonElement[];
+    expect(otherButtons.some(button => button.textContent?.includes('Cancelar turno') && !button.disabled)).toBe(true);
+  });
+
+  it('shows an empty state and handles missing dates without rendering exceptions', () => {
+    TestBed.inject(AppointmentsService).setPortalDraft(draft);
+    const fixture = TestBed.createComponent(ConfirmationPageComponent);
+    const page = fixture.componentInstance;
+    page.step.set('list');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.empty-state a').getAttribute('href')).toBe('/appointments');
+    page.items.set([{...booking, start:'', end:'', doctorName:'', clinicName:''} as PortalBooking]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Fecha no disponible');
+    expect(fixture.nativeElement.querySelector('.appointment-card button').disabled).toBe(true);
   });
 });

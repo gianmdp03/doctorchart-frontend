@@ -1,9 +1,9 @@
-import { Component, DestroyRef, ElementRef, Injector, afterNextRender, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
 import { civilDate, displayDay, localTime, slotOffsetLabel, STATUS_LABELS, type BookingStatus } from '../calendar/bookings.models';
@@ -11,13 +11,14 @@ import { AppointmentsService } from './appointments.service';
 import type { AvailabilityDay, PortalBooking, PortalPreview } from './appointments.models';
 import { solveProof } from './proof-of-work';
 import { PublicBookingShellComponent } from './public-booking-shell.component';
+import { PORTAL_TIMEZONE, portalDatePassed, portalInstant } from './portal-booking-time';
 
 type BookingAction = 'cancel' | 'reschedule';
 const slotWeekday = new Intl.DateTimeFormat('es-AR', {weekday:'long', timeZone:'UTC'});
 
 @Component({
   selector: 'app-confirmation-page',
-  imports: [FormsModule, DatePickerComponent, NgTemplateOutlet, PublicBookingShellComponent],
+  imports: [FormsModule, RouterLink, DatePickerComponent, NgTemplateOutlet, PublicBookingShellComponent],
   templateUrl: './confirmation-page.component.html',
   styleUrls: ['./confirmation-page.component.css', './patient-entry.css'],
 })
@@ -35,6 +36,19 @@ export class ConfirmationPageComponent {
   private alive = true;
 
   readonly step = signal<'identity' | 'preview' | 'code' | 'list'>('identity');
+  readonly now = signal(Date.now());
+  readonly expanded = signal<string | null>(null);
+  readonly pastMessage = 'Este turno corresponde a una fecha pasada y ya no se encuentra disponible para consultar sus detalles';
+  readonly groups = computed(() => {
+    this.now();
+    const source = this.step() === 'preview' ? this.previews() : this.items();
+    const upcoming = source.filter(item => this.category(item) === 'upcoming').sort((a, b) => this.sortTime(a) - this.sortTime(b));
+    const past = source.filter(item => this.category(item) === 'past').sort((a, b) => this.sortTime(b) - this.sortTime(a));
+    const cancelled = source.filter(item => this.category(item) === 'cancelled').sort((a, b) => this.sortTime(b) - this.sortTime(a));
+    return [{key:'upcoming', title:'Próximos turnos', items:upcoming}, {key:'past', title:'Turnos anteriores', items:past},
+      {key:'cancelled', title:'Turnos cancelados', items:cancelled}];
+  });
+  readonly nextBooking = computed(() => this.groups()[0].items.find(item => this.canOpen(item)));
   readonly busy = signal(false);
   readonly canResend = signal(true);
   readonly error = signal('');
@@ -66,6 +80,21 @@ export class ConfirmationPageComponent {
 
   constructor() {
     const browser = isPlatformBrowser(inject(PLATFORM_ID));
+    const clock = browser ? setInterval(() => this.now.set(Date.now()), 1000) : undefined;
+    effect(() => {
+      const selected = this.change();
+      if (selected && !this.canManage(selected.booking)) this.closeChange();
+      const pending = this.previewChange();
+      if (pending) {
+        const booking = this.previews().find(item => item.reference === pending.reference);
+        if (!booking || !this.canOpen(booking)) this.closeChange();
+      }
+      const reference = this.expanded();
+      if (reference) {
+        const booking = this.items().find(item => item.reference === reference);
+        if (!booking || !this.canOpen(booking)) this.expanded.set(null);
+      }
+    });
     const info = inject(Router).currentNavigation()?.extras.info as {bookingDni?: unknown} | undefined;
     const dni = typeof info?.bookingDni === 'string' && /^[0-9]{5,8}$/.test(info.bookingDni) ? info.bookingDni : '';
     const draft = this.api.takePortalDraft();
@@ -84,6 +113,7 @@ export class ConfirmationPageComponent {
     }
     this.destroy.onDestroy(() => {
       this.alive = false;
+      clearInterval(clock);
       this.proof.abort();
       this.clearSession();
     });
@@ -98,6 +128,7 @@ export class ConfirmationPageComponent {
   }
 
   private clearSession() {
+    this.expanded.set(null);
     clearTimeout(this.resendTimer);
     clearTimeout(this.expiryTimer);
     this.canResend.set(true);
@@ -131,8 +162,10 @@ export class ConfirmationPageComponent {
     try {
       await this.fetchBookings(false);
       if (this.alive) this.step.set('list');
-    } catch {
+    } catch (error) {
       // An unopened or expired browser session starts at the identity form.
+      const status = (error as {status?:number}).status;
+      if (status !== 401 && status !== 403) this.error.set('No pudimos recuperar tus turnos. Ingresá tu DNI para volver a intentar.');
     } finally {
       if (this.alive) this.busy.set(false);
     }
@@ -177,7 +210,7 @@ export class ConfirmationPageComponent {
   }
 
   selectPreview(booking: PortalPreview, action: BookingAction | null = null) {
-    if (this.busy()) return;
+    if (this.busy() || !this.canOpen(booking) || (action && !booking.canChange) || (action === 'reschedule' && !booking.canReschedule)) return;
     this.closeChange();
     if (booking.canAccess) {
       return this.run(() => this.openVerified(booking.reference, action), 'No pudimos abrir el turno.');
@@ -196,6 +229,8 @@ export class ConfirmationPageComponent {
   }
 
   requestCode(reference = this.reference, action = this.pendingAction) {
+    const booking = this.previews().find(item => item.reference === reference) ?? this.items().find(item => item.reference === reference);
+    if (booking && !this.canOpen(booking)) return;
     if (this.step() === 'code' && !this.canResend()) return;
     return this.run(async () => {
       const {token, solution} = await this.proofOfWork();
@@ -244,7 +279,8 @@ export class ConfirmationPageComponent {
     this.previews.set([]);
     this.hasMorePreviews.set(false);
     const selected = this.items().find(item => item.reference === reference);
-    if (action && selected?.canChange) {
+    this.expanded.set(selected && this.canOpen(selected) ? reference : null);
+    if (action && selected && this.canManage(selected)) {
       this.prepareChange(selected, action);
       this.changeReason = reason;
       if (action === 'reschedule') await this.fetchSlots(this.date, selected);
@@ -298,6 +334,7 @@ export class ConfirmationPageComponent {
   }
 
   chooseChange(booking: PortalBooking, action: BookingAction) {
+    if (this.busy() || !this.canManage(booking) || (action === 'reschedule' && (!booking.publicDoctorId || !booking.publicClinicId))) return;
     this.prepareChange(booking, action);
     if (action === 'reschedule') void this.findSlots(this.date);
   }
@@ -325,7 +362,7 @@ export class ConfirmationPageComponent {
 
   findSlots(date: string) {
     const selected = this.change();
-    if (!date || this.busy() || !selected) return;
+    if (!date || this.busy() || !selected || !this.canManage(selected.booking)) return;
     return this.run(() => this.fetchSlots(date, selected.booking), 'No pudimos consultar los horarios del consultorio.');
   }
 
@@ -348,7 +385,7 @@ export class ConfirmationPageComponent {
 
   confirmChange() {
     const selected = this.change();
-    if (!selected || !this.validReason() || (selected.action === 'reschedule' && !this.start)) return;
+    if (!selected || !this.canManage(selected.booking) || !this.validReason() || (selected.action === 'reschedule' && !this.start)) return;
     return this.run(async () => {
       const start = selected.action === 'reschedule' ? this.start : '';
       const reason = this.changeReason.trim();
@@ -373,6 +410,62 @@ export class ConfirmationPageComponent {
 
   weekdayLabel(date: string) {
     return slotWeekday.format(new Date(date + 'T12:00:00Z'));
+  }
+
+  private valueDate(booking: PortalBooking | PortalPreview) {
+    return 'start' in booking ? booking.start : booking.date;
+  }
+
+  private sortTime(booking: PortalBooking | PortalPreview) {
+    return portalInstant(this.valueDate(booking)) || 0;
+  }
+
+  isPast(booking: PortalBooking | PortalPreview) {
+    this.now();
+    return portalDatePassed(this.valueDate(booking), Date.now());
+  }
+
+  category(booking: PortalBooking | PortalPreview) {
+    if ('status' in booking && booking.status === 'CANCELLED') return 'cancelled';
+    return this.isPast(booking) ? 'past' : 'upcoming';
+  }
+
+  canOpen(booking: PortalBooking | PortalPreview) {
+    return this.category(booking) === 'upcoming' && Number.isFinite(portalInstant(this.valueDate(booking)));
+  }
+
+  canManage(booking: PortalBooking) {
+    return this.canOpen(booking) && booking.canChange && booking.status === 'CONFIRMED';
+  }
+
+  verified(booking: PortalBooking | PortalPreview): PortalBooking | null {
+    return 'start' in booking ? booking : null;
+  }
+
+  preview(booking: PortalBooking | PortalPreview): PortalPreview | null {
+    return 'date' in booking ? booking : null;
+  }
+
+  toggleDetails(booking: PortalBooking) {
+    if (this.busy() || !this.canOpen(booking)) return;
+    this.expanded.update(current => current === booking.reference ? null : booking.reference);
+  }
+
+  dateLabel(booking: PortalBooking | PortalPreview) {
+    const value = this.valueDate(booking);
+    if (!Number.isFinite(portalInstant(value))) return 'Fecha no disponible';
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : civilDate(new Date(portalInstant(value)).toISOString(), PORTAL_TIMEZONE);
+    return this.weekdayLabel(date) + ' ' + displayDay(date);
+  }
+
+  timeLabel(booking: PortalBooking) {
+    return Number.isFinite(portalInstant(booking.start)) && booking.start.includes('T')
+      ? localTime(new Date(portalInstant(booking.start)).toISOString(), PORTAL_TIMEZONE) : '';
+  }
+
+  duration(booking: PortalBooking) {
+    const minutes = (Date.parse(booking.end) - Date.parse(booking.start)) / 60000;
+    return Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : null;
   }
 
   slotLabel(start: string, timezone: string) {
