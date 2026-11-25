@@ -108,31 +108,35 @@ export class AgendaComponent<B extends AgendaBooking, S extends AgendaSlot> {
   private readonly board = viewChild<ElementRef<HTMLElement>>('board');
   private lastScroll = '';
   private lastBoard?: HTMLElement;
-  private lastMinute?: number;
+  private lastTimelineFrom?: number;
 
   constructor() {
     afterRenderEffect(() => {
       const board = this.board()?.nativeElement;
       if (!board || this.loading()) return;
       const timeline = this.timeline();
-      const current = this.currentMinute();
-      const previous = this.lastMinute;
-      const scrollKey = [this.calendarKey(), this.date(), this.rangeStart(), this.view(), this.fullDay(), timeline.from].join('|');
+      const previousFrom = this.lastTimelineFrom;
+      const scrollKey = [this.calendarKey(), this.date(), this.rangeStart(), this.view(), this.fullDay()].join('|');
       const reset = board !== this.lastBoard || scrollKey !== this.lastScroll;
       this.lastBoard = board;
       this.lastScroll = scrollKey;
-      this.lastMinute = current;
+      this.lastTimelineFrom = timeline.from;
 
-      if (timeline.days.some(day => day.date === this.today())) {
-        const headingHeight = board.querySelector('.day-header')?.clientHeight ?? 0;
-        const visibleHeight = board.clientHeight - headingHeight;
-        const offset = this.pixels(current - timeline.from);
-        const threshold = board.scrollTop + visibleHeight - 24;
-        const previousOffset = this.pixels((previous ?? current) - timeline.from);
-        const reachedEdge = previousOffset >= board.scrollTop && previousOffset < threshold && offset >= threshold;
-        if (reset || reachedEdge) board.scrollTop = Math.max(0, offset - visibleHeight / 2);
-      } else if (reset) {
-        board.scrollTop = 0;
+      if (reset) {
+        const selectedDay = timeline.days.find(day => day.date === this.date());
+        // Prefer real available slots and reservations. Opening hours are only
+        // a fallback when the selected day has no entries to focus on.
+        const startsFor = (days: typeof timeline.days) => {
+          const entries = days.flatMap(day => day.entries.map(entry => entry.from));
+          return entries.length ? entries : days.flatMap(day => day.hours.map(hour => hour.from));
+        };
+        const selectedStarts = startsFor(selectedDay ? [selectedDay] : []);
+        const starts = selectedStarts.length ? selectedStarts : startsFor(timeline.days);
+        const first = starts.length ? Math.min(...starts) : timeline.from;
+        board.scrollTop = Math.max(0, this.pixels(first - timeline.from - 30));
+      } else if (previousFrom !== undefined && previousFrom !== timeline.from) {
+        // If a refresh extends the grid, keep the time the user was viewing.
+        board.scrollTop = Math.max(0, board.scrollTop + this.pixels(previousFrom - timeline.from));
       }
 
       if (reset) {
