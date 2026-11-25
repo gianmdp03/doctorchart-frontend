@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
 
+type PlanBenefit = { label: string; included: boolean | null };
 type Plan = {
   id: number; module: string; tier: string; price: number | null; currency: string;
   days: number; description?: string; action?: 'BUY' | 'RENEW' | 'UPGRADE' | 'LOCKED'; lockReason?: string;
@@ -311,7 +312,9 @@ export class PricingComponent {
   protected async loadPlanLimits(): Promise<void> {
     this.limitsStatus.set('loading');
     try {
-      const limits = await firstValueFrom(this.http.get<Record<string, Record<string, unknown>>>(this.api + 'limits/' + this.product));
+      const limits = await firstValueFrom(this.http.get<Record<string, Record<string, unknown>>>(
+        this.api + 'limits/' + this.product, { params: { view: 'comparison' } },
+      ));
       this.planLimits.set(limits ?? {});
       this.limitsStatus.set('ready');
     } catch {
@@ -319,9 +322,44 @@ export class PricingComponent {
     }
   }
 
-  protected formatQuota(value: unknown): string | null {
+  protected planBenefits(limits?: Record<string, unknown>): PlanBenefit[] {
+    const flag = (key: string): boolean | null => {
+      const value = limits?.[key];
+      return typeof value === 'boolean' ? value : null;
+    };
+    const agenda = flag('appointments_enabled');
+    const secretary = flag('secretary_management_enabled');
+    const requiresAgenda = (key: string): boolean | null => {
+      const enabled = flag(key);
+      if (agenda === false || enabled === false) return false;
+      return agenda === null ? null : enabled;
+    };
+    const benefits: PlanBenefit[] = [
+      { label: 'Fichas de pacientes y consultas', included: true },
+      { label: 'Estudios adjuntos', included: true },
+      { label: 'Recetas en PDF', included: true },
+      { label: 'Agenda de turnos' + this.quotaDetail(limits?.['max_appointments'], 'turno activo', 'turnos activos', agenda), included: agenda },
+      { label: 'Teleconsulta', included: requiresAgenda('teleconsultation_enabled') },
+      { label: 'Reservas por internet', included: requiresAgenda('online_booking_enabled') },
+      { label: 'Gestión de secretaría' + this.quotaDetail(limits?.['max_secretaries'], 'asignación', 'asignaciones', secretary), included: secretary },
+    ];
+    const quotas = [['max_patients', 'paciente', 'pacientes'], ['max_records_per_patient', 'consulta por paciente', 'consultas por paciente']] as const;
+    for (const [key, singular, plural] of quotas) {
+      const label = this.formatQuota(limits?.[key], singular, plural);
+      if (label) benefits.push({ label, included: true });
+    }
+    return benefits;
+  }
+
+  private quotaDetail(value: unknown, singular: string, plural: string, included: boolean | null): string {
+    const quota = included === true ? this.formatQuota(value, singular, plural) : null;
+    return quota ? ' · ' + quota : '';
+  }
+
+  private formatQuota(value: unknown, singular: string, plural: string): string | null {
     if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < -1) return null;
-    return value === -1 ? 'Sin límite' : value.toLocaleString('es-AR');
+    if (value === -1) return plural.charAt(0).toUpperCase() + plural.slice(1) + ' sin límite';
+    return value.toLocaleString('es-AR') + ' ' + (value === 1 ? singular : plural);
   }
   protected duration(days: number): string { return ({ 30: '1 mes', 90: '3 meses', 180: '6 meses', 365: '12 meses' } as Record<number, string>)[days] ?? days + ' días'; }
   protected money(price: number | null, currency: string): string {

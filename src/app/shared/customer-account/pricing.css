@@ -135,11 +135,9 @@ p { margin: 0; line-height: 1.55; overflow-wrap: anywhere; }
 .plan-benefits p { color: var(--plan-muted); font-size: .835rem; }
 .plan-feature-list { display: grid; gap: .45rem; list-style: none; padding: 0; margin: .15rem 0 .45rem; font-size: .92rem; }
 .plan-feature-list li { display: grid; grid-template-columns: 1rem minmax(0, 1fr); gap: .5rem; }
-.plan-feature-list li span { color: var(--plan-accent); font-weight: 750; }
-.plan-benefits dl { margin: 0; padding-top: .3rem; border-top: 1px solid var(--plan-edge); font-size: .85rem; }
-.plan-benefits dl div { display: flex; justify-content: space-between; gap: .55rem; padding-block: .38rem; }
-.plan-benefits dt { color: var(--plan-muted); }
-.plan-benefits dd { margin: 0; text-align: end; font-weight: 700; font-variant-numeric: tabular-nums; }
+.plan-feature-list li [role="img"] { color: var(--plan-accent); font-weight: 750; }
+.plan-feature-list li:is(.is-excluded, .is-unknown),
+.plan-feature-list li:is(.is-excluded, .is-unknown) [role="img"] { color: var(--plan-muted); }
 .plan-benefits .limits-status { font-size: .8rem; }
 .benefits-notice { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; color: var(--plan-muted); }
 .payment-summary { background: var(--plan-card); }

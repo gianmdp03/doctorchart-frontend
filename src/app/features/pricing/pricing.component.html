@@ -224,19 +224,19 @@
             </div>
             <div class="plan-benefits">
               <h3>Qué incluye</h3>
+              @let limits = planLimits()[plan.tier];
+              @let benefits = planBenefits(limits);
               <ul class="plan-feature-list" role="list">
-                <li><span aria-hidden="true">✓</span>Fichas clínicas</li>
-                <li><span aria-hidden="true">✓</span>Estudios adjuntos</li>
-                <li><span aria-hidden="true">✓</span>Recetas en PDF</li>
+                @for (benefit of benefits; track benefit.label) {
+                  <li [class.is-excluded]="benefit.included === false" [class.is-unknown]="benefit.included === null">
+                    <span role="img" [attr.aria-label]="benefit.included === null ? 'Sin información' : benefit.included ? 'Incluido' : 'No incluido'">{{ benefit.included === null ? '–' : benefit.included ? '✓' : '×' }}</span>
+                    <span>{{ benefit.label }}</span>
+                  </li>
+                }
               </ul>
-              @if (planLimits()[plan.tier]; as limits) {
-                <dl aria-label="Límites y disponibilidad">
-                  @if (formatQuota(limits['max_patients']); as quota) { <div><dt>Pacientes</dt><dd>{{ quota }}</dd></div> }
-                  @if (formatQuota(limits['max_records_per_patient']); as quota) { <div><dt>Consultas por paciente</dt><dd>{{ quota }}</dd></div> }
-                </dl>
-              } @else if (limitsStatus() === 'loading') {
+              @if (limitsStatus() === 'loading' && !limits) {
                 <p class="limits-status" role="status">Cargando límites…</p>
-              } @else if (limitsStatus() === 'ready') {
+              } @else if (limitsStatus() === 'ready' && !limits) {
                 <p class="limits-status">Todavía no hay información de límites para este plan.</p>
               }
             </div>
