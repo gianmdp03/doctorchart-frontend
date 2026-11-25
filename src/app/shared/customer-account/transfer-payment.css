@@ -1,0 +1,146 @@
+.transfer-page.transfer-payment {
+  --checkout-surface: var(--plan-card, var(--card));
+  --checkout-text: var(--plan-text, var(--foreground));
+  --checkout-muted: var(--plan-muted, var(--muted-foreground));
+  --checkout-line: var(--plan-edge, var(--border));
+  --checkout-action: var(--plan-accent, var(--primary));
+  --checkout-on-action: var(--plan-ink, var(--primary-foreground));
+  --checkout-padding: clamp(1rem, 4vw, 2rem);
+  --checkout-inset: color-mix(in srgb, var(--checkout-action) 5%, var(--checkout-surface));
+  display: grid;
+  width: min(100%, 48rem);
+  max-width: none;
+  margin-inline: auto;
+  gap: 0;
+  color: var(--checkout-text);
+  background: var(--checkout-surface);
+  border: 1px solid var(--checkout-line);
+  border-radius: 1rem;
+}
+.transfer-payment .transfer-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  align-items: center;
+  gap: 1rem 1.5rem;
+  padding: var(--checkout-padding);
+  border-radius: 1rem 1rem 0 0;
+  background: var(--checkout-inset);
+}
+.transfer-payment .transfer-payment-identity {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: start;
+  gap: .75rem;
+  min-width: 0;
+}
+.transfer-payment .transfer-payment-identity img { width: 2rem; height: 2rem; object-fit: contain; }
+.transfer-payment .transfer-title {
+  margin: 0 0 .3rem;
+  font-size: 1.625rem;
+  font-weight: 730;
+  letter-spacing: -.03em;
+  line-height: 1.18;
+  text-wrap: balance;
+}
+.transfer-payment .transfer-title:focus-visible,
+.transfer-payment summary:focus-visible {
+  outline: 2px solid var(--checkout-action);
+  outline-offset: 3px;
+}
+.transfer-payment .transfer-payment-amount {
+  min-width: 0;
+  padding-inline-start: 1.5rem;
+  border-inline-start: 1px solid var(--checkout-line);
+}
+.transfer-payment .transfer-payment-amount > p:first-child { font-weight: 650; }
+.transfer-payment .transfer-total {
+  font-size: 2rem;
+  font-weight: 740;
+  line-height: 1.15;
+  letter-spacing: -.035em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.transfer-payment .transfer-payment-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .25rem 1rem;
+  padding: .65rem var(--checkout-padding);
+  border-block: 1px solid var(--checkout-line);
+  font-size: .875rem;
+}
+.transfer-payment .transfer-payment-status .transfer-state {
+  display: flex;
+  align-items: baseline;
+  gap: .55rem;
+  font-weight: 700;
+}
+.transfer-payment .transfer-payment-status .transfer-state::before {
+  content: "";
+  width: .48rem;
+  height: .48rem;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+.transfer-payment:is([data-status=pending], [data-status=verifying]) .transfer-state { color: var(--checkout-action); }
+.transfer-payment:is([data-status=expired], [data-status=rejected], [data-status=refunded]) .transfer-state { color: var(--checkout-muted); }
+.transfer-payment .transfer-payment-status .transfer-live {
+  display: block;
+  padding: 0;
+  background: none;
+  color: var(--checkout-muted);
+  font-size: .8125rem;
+}
+.transfer-payment .transfer-payment-status .transfer-live[data-live=true] { color: var(--dc-positive, light-dark(#176849, #92d8b2)); }
+.transfer-payment .transfer-bank-panel {
+  display: grid;
+  min-width: 0;
+  gap: .75rem;
+  padding: 1.25rem var(--checkout-padding);
+  border: 0;
+  background: none;
+}
+.transfer-payment .transfer-payment-heading { margin: 0; font-size: 1rem; font-weight: 730; }
+.transfer-payment .transfer-warning {
+  color: var(--dc-caution, light-dark(#754b10, #f2cd91));
+  font-size: .875rem;
+  font-weight: 550;
+  text-wrap: pretty;
+}
+.transfer-payment .transfer-copy-feedback:not(:empty) { margin: 0; }
+.transfer-payment .transfer-payment-expiry { font-size: .8125rem; color: var(--checkout-muted); }
+.transfer-payment .transfer-payment-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .35rem 1rem;
+  padding: .85rem var(--checkout-padding);
+  border-top: 1px solid var(--checkout-line);
+}
+.transfer-payment .transfer-payment-footer .transfer-actions,
+.transfer-payment .transfer-payment-footer .transfer-reference { min-width: 0; }
+.transfer-payment .transfer-payment-footer summary {
+  display: list-item;
+  width: fit-content;
+  min-height: 44px;
+  padding-block: .675rem;
+  cursor: pointer;
+}
+.transfer-payment .transfer-payment-footer .transfer-reference p { overflow-wrap: anywhere; user-select: all; }
+.transfer-payment .transfer-payment-footer .transfer-reference[open] { flex-basis: 100%; }
+@media (max-width: 36rem) {
+  .transfer-payment .transfer-summary { grid-template-columns: minmax(0, 1fr); }
+  .transfer-payment .transfer-payment-amount {
+    padding-inline-start: 0;
+    padding-block-start: .8rem;
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--checkout-line);
+  }
+  .transfer-payment .transfer-title { font-size: 1.375rem; }
+  .transfer-payment .transfer-total { font-size: 1.75rem; }
+  .transfer-payment .transfer-payment-footer { align-items: flex-start; flex-direction: column; }
+}

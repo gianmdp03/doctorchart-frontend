@@ -14,6 +14,8 @@ class PricingHarness extends PricingComponent {
   choose = () => this.select(this.availablePlans()[0]!);
   beginTransfer = () => this.startTransfer();
   recoverTransfer = () => this.startTransfer(true);
+  closeTransfer = () => this.cancelCheckout();
+  transferOpen = this.checkoutOpen;
   selectedPayment = this.paymentMethod;
   currentTransfer = this.transfer;
   savedTransfer = this.transferRequestSaved;
@@ -135,5 +137,27 @@ describe('DoctorChart pricing on central Billing', () => {
     await methods;
     expect(authPlanRefresh).toHaveBeenCalledOnce();
     expect(pricing.currentTransfer()?.status).toBe('credited');
+  });
+
+  it('reopens the existing order from the selected plan instead of creating another transfer', async () => {
+    const pricing = createPricing({ rayaOrder: order.externalReference });
+    const catalog = pricing.loadCatalog();
+    (await vi.waitFor(() => http.expectOne(api + 'plans/contextual'))).flush([plan]);
+    await catalog;
+    const methods = pricing.loadPaymentMethods();
+    await loadRayaHistory();
+    const lookup = api + 'transfers/' + order.externalReference;
+    (await vi.waitFor(() => http.expectOne(lookup))).flush(order);
+    await methods;
+
+    pricing.closeTransfer();
+    expect(pricing.transferOpen()).toBe(false);
+    await pricing.choose();
+    const resumed = pricing.beginTransfer();
+    http.expectNone({ method: 'POST', url: api + 'transfers' });
+    (await vi.waitFor(() => http.expectOne({ method: 'GET', url: lookup }))).flush(order);
+    await resumed;
+    expect(pricing.transferOpen()).toBe(true);
+    expect(pricing.savedTransfer()).toBe(false);
   });
 });

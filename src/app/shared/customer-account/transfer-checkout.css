@@ -3,35 +3,12 @@
 .transfer-warning { color: var(--destructive); font-size: .89rem; font-weight: 700; }
 .transfer-amount { font-weight: 740; font-size: clamp(1.4rem, 3vw, 1.9rem); line-height: 1.25; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .transfer-instructions { display: grid; gap: .55rem; border-top: 1px solid var(--plan-edge); padding-top: 1rem; }
-.transfer-bank { display: grid; gap: .5rem; margin: .15rem 0 0; }
-.transfer-bank > div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .45rem .75rem; border-radius: 10px; padding: .55rem .75rem; background: var(--plan-soft); }
-.transfer-bank > div > div { min-width: 0; }
-.transfer-bank dt { color: var(--plan-muted); font-size: .8rem; font-weight: 650; }
-.transfer-bank dd { margin: 0; font-weight: 720; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .transfer-copy-feedback:empty { position: absolute; }
 .transfer-operation { color: var(--plan-muted); font-size: .85rem; }
 .transfer-operation summary { display: list-item; width: fit-content; cursor: pointer; padding-block: .45rem; }
 .transfer-operation p { user-select: all; }
 
-.transfer-live { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .75rem; padding: .55rem .75rem; border-radius: 10px; background: var(--plan-soft); color: var(--plan-muted); font-size: .89rem; }
-.transfer-live strong { color: var(--plan-text); font-variant-numeric: tabular-nums; }
+
 
 .pricing-checkout { min-height: 100svh; align-content: start; padding-block: clamp(1rem, 5svh, 5rem); }
 .pricing-checkout:has(> .transfer-success) { align-content: center; }
-.transfer-page { display: grid; }
-.transfer-page .transfer-bank-panel { border-top: 1px solid var(--plan-edge); }
-.transfer-page { width: 100%; max-width: 70rem; margin-inline: auto; align-content: start; gap: 1.5rem; }
-.transfer-page .transfer-title { margin: 0; font-size: clamp(2rem, 5vw, 3.8rem); font-weight: 750; letter-spacing: -.035em; line-height: 1.05; text-wrap: balance; }
-.transfer-page .transfer-total { font-size: clamp(1.7rem, 4vw, 2.7rem); line-height: 1.15; }
-.transfer-page .transfer-summary { display: grid; align-content: start; gap: 1.25rem; }
-.transfer-page .transfer-bank-panel { min-width: 0; }
-@media (min-width: 52rem) {
-  .transfer-page { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); column-gap: clamp(2rem, 6vw, 5rem); }
-  .transfer-page .transfer-summary { grid-column: 1; grid-row: 1 / span 3; padding-block: 1rem; }
-  .transfer-page .transfer-bank-panel,
-  .transfer-page .transfer-actions,
-  .transfer-page .transfer-reference { grid-column: 2; }
-  .transfer-page .transfer-bank-panel { border: 1px solid var(--plan-edge, var(--border)); background: var(--plan-card, var(--card)); border-radius: 16px; padding: 1.5rem; }
-}
-
-.transfer-page .transfer-title:focus { outline: none; }

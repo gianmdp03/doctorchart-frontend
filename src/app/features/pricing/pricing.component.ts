@@ -1,3 +1,4 @@
+import { TransferBankDetails } from '../../shared/customer-account/transfer-bank-details';
 import { readRayaEvents } from '../../shared/customer-account/raya-events';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
@@ -45,9 +46,9 @@ const referencePattern = /^[A-Za-z0-9_-]{1,128}$/;
 
 @Component({
   selector: 'app-product-pricing',
-  imports: [ThemeToggleComponent, RouterLink],
+  imports: [ThemeToggleComponent, RouterLink, TransferBankDetails],
   templateUrl: './pricing.component.html',
-  styleUrls: ['../../shared/customer-account/pricing.css', '../../shared/customer-account/transfer-checkout.css', '../../shared/customer-account/transfer-receipt.css'],
+  styleUrls: ['../../shared/customer-account/pricing.css', '../../shared/customer-account/transfer-checkout.css', '../../shared/customer-account/transfer-receipt.css', '../../shared/customer-account/transfer-payment.css'],
 })
 export class PricingComponent {
   private readonly auth = inject(AuthService);
@@ -103,7 +104,6 @@ export class PricingComponent {
   protected readonly expiredLink = signal(false);
   private linkTimer?: ReturnType<typeof setTimeout>;
 
-  protected readonly bankFields = [{ key: 'alias', label: 'alias' }, { key: 'cvu', label: 'CVU' }] as const;
   protected readonly copyFeedback = signal('');
   protected readonly bankTransfer = computed(() => {
     const transfer = this.transfer();
@@ -151,6 +151,14 @@ export class PricingComponent {
     return !!reference && reference === this.dismissedReference();
   });
   protected readonly checkoutResumable = computed(() => this.checkoutClosed() && this.transfer()?.status !== 'credited');
+  protected readonly resumeSelectedTransfer = computed(() => {
+    const order = this.transfer();
+    const plan = this.selected();
+    return this.checkoutClosed() && !!order && !!plan &&
+      ['pending', 'verifying', 'review'].includes(order.status) &&
+      order.items.some(item => item.module.toLowerCase() === this.product && item.tier === plan.tier &&
+        (plan.action === 'UPGRADE' || item.days === plan.days));
+  });
 
   protected readonly pollReference = computed(() => {
     const transfer = this.transfer();
@@ -399,10 +407,7 @@ export class PricingComponent {
     try {
       await this.fetchTransfer(owner, reference, signal);
       if (signal?.aborted || this.destroyRef.destroyed) return;
-      if (reveal) {
-        if (this.dismissedReference() === reference) this.dismissedReference.set(null);
-        this.revealTransfer();
-      }
+      if (reveal) this.revealTransfer(reference);
     } catch {
       if (signal?.aborted || this.destroyRef.destroyed) return;
       this.transferError.set(signal ? 'No pudimos actualizar el estado. Podés volver a consultarlo en unos segundos.' : 'No pudimos consultar la transferencia. Volvé a intentarlo.');
@@ -411,11 +416,13 @@ export class PricingComponent {
     }
   }
 
-  protected async startTransfer(recover = false, previousReference?: string): Promise<void> {
+  protected async startTransfer(recover = false): Promise<void> {
     const owner = this.auth.currentUser()?.id;
     const plan = this.selected();
     if (!owner || !this.rayaAvailable() || this.checking() || this.transferLoading()) return;
+    if (!recover && this.resumeSelectedTransfer()) return this.reopenCheckout();
     if (!recover && (!plan || plan.action === 'LOCKED' || (plan.action === 'UPGRADE' && !this.quote()?.canUpgrade))) return;
+    const previousReference = this.previousTransfer();
     this.checking.set(true);
     this.transferError.set('');
     let pending: SavedTransferRequest | null = null;
@@ -448,7 +455,7 @@ export class PricingComponent {
       if (this.auth.currentUser()?.id !== owner) return;
       this.showTransfer(owner, result);
       this.clearTransferRequest(owner, pending.key);
-      this.revealTransfer();
+      this.revealTransfer(result.externalReference);
       if (result.status === 'credited') await this.load(true);
     } catch (err) {
       if (this.auth.currentUser()?.id !== owner) return;
@@ -457,7 +464,7 @@ export class PricingComponent {
         try {
           await this.fetchTransfer(owner, attemptReference);
           if (this.auth.currentUser()?.id === owner) this.clearTransferRequest(owner, pending.key);
-          this.revealTransfer();
+          this.revealTransfer(attemptReference);
           return;
         } catch { /* Keep the same idempotency key until a read can identify the order. */ }
       }
@@ -472,7 +479,9 @@ export class PricingComponent {
     }
   }
 
-  private revealTransfer(): void {
+  private revealTransfer(reference: string): void {
+    if (this.transfer()?.externalReference !== reference) return;
+    if (this.dismissedReference() === reference) this.dismissedReference.set(null);
     window.requestAnimationFrame(() => {
       const heading = document.getElementById('transfer-title');
       heading?.focus({ preventScroll: true });
