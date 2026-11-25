@@ -32,9 +32,10 @@ export class AppointmentsPageComponent{
  readonly patientZone=this.browser?userTimeZone():'UTC';
  country=ARGENTINA;
  readonly specialties=signal<PublicSpecialty[]>([]);
+ readonly specialtiesLoading=signal(false);
+ readonly specialtiesError=signal(false);
  readonly hasSearched=signal(false);
  private catalogGeneration=0;
- private specialtiesCountry='';
  filters={province:'',city:'',specialty:'',modality:'' as AppointmentModality|''};
  page=0;hasMore=false;date=civilDate(new Date().toISOString(),this.country.timezone);
  contactName='';contactPhone:string|null=null;attendeeName='';different=false;document='';email='';answers:Record<string,string>={};consent=false;
@@ -49,22 +50,14 @@ export class AppointmentsPageComponent{
  private message(err:unknown,fallback:string){const value=err as {status?:number;error?:{code?:string;message?:string}};if(value.status===429)return 'Recibimos demasiadas solicitudes. Esperá un minuto y reintentá.';if(value.status===503)return 'El servicio no está disponible. Si estabas confirmando, conservá el formulario y reintentá para verificar el resultado.';if(value.status===404)return 'Este profesional o consultorio ya no está disponible para reservar online.';if(value.status===403)return 'Las reservas online o su verificación no están disponibles. Reintentá o contactá al consultorio.';return value.error?.message||fallback;}
  changeCountry(country:BookingCountry){
   this.country=country;
-  this.filters.specialty='';
-  this.specialties.set([]);
-  this.specialtiesCountry='';
   this.changeProvince('');
   this.date=civilDate(new Date().toISOString(),country.timezone);
-  void this.loadSpecialties();
  }
  changeProvince(province:string){this.filters['province']=province;this.filters['city']='';this.clearSearch();}
  changeModality(modality:AppointmentModality|''){
   this.filters.modality=modality;
-  this.filters.specialty='';
-  this.specialties.set([]);
-  this.specialtiesCountry='';
   if(modality==='TELECONSULTATION')this.changeProvince('');
   else this.clearSearch();
-  void this.loadSpecialties();
  }
  clearSearch():void {
   this.searchGeneration++;
@@ -75,17 +68,25 @@ export class AppointmentsPageComponent{
   this.page=0;
   this.hasMore=false;
  }
- private async loadSpecialties():Promise<void> {
-  const key=this.country.code+'|'+this.filters.modality;
-  if(this.specialtiesCountry===key)return;
+ async loadSpecialties():Promise<void> {
+  if(this.specialtiesLoading())return;
   const generation=++this.catalogGeneration;
+  this.specialtiesLoading.set(true);
+  this.specialtiesError.set(false);
   try {
-   const specialties=await firstValueFrom(this.api.specialties(this.country.name,this.filters.modality));
-   if(generation===this.catalogGeneration && !this.id()){
+   const specialties=await firstValueFrom(this.api.specialties());
+   if(generation===this.catalogGeneration){
     this.specialties.set(specialties);
-    this.specialtiesCountry=key;
+    if(this.filters.specialty && !specialties.some(specialty=>specialty.code===this.filters.specialty)){
+     this.filters.specialty='';
+     this.clearSearch();
+    }
    }
-  }catch { /* The submitted search can retry loading the catalog. */ }
+  }catch {
+   if(generation===this.catalogGeneration)this.specialtiesError.set(true);
+  }finally {
+   if(generation===this.catalogGeneration)this.specialtiesLoading.set(false);
+  }
  }
  supportsOffer(clinic:PublicClinic){return clinic.modality==='TELECONSULTATION'||!!bookingCountry(clinic.country);}
  readonly hasLocalTimeDifference = computed(() => {
@@ -110,17 +111,11 @@ export class AppointmentsPageComponent{
   this.hasSearched.set(true);
   const generation=++this.searchGeneration,country=this.country;
   const filters={...this.filters,country:country.name};
-  const specialtiesKey=country.code+'|'+filters.modality;
-  const includeSpecialties=this.specialtiesCountry!==specialtiesKey;
   this.busy.set(true);
   this.error.set('');
   try {
-   const result=await firstValueFrom(this.api.search(includeSpecialties?{...filters,includeSpecialties:'1'}:filters,page));
+   const result=await firstValueFrom(this.api.search(filters,page));
    if(generation!==this.searchGeneration)return;
-   if(includeSpecialties && result.specialties){
-    this.specialties.set(result.specialties);
-    this.specialtiesCountry=specialtiesKey;
-   }
    const province=filters.province.toLowerCase(),city=filters.city.toLowerCase();
    const doctors=result.items.map(doctor=>({
     ...doctor,

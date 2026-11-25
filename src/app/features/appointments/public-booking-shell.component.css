@@ -2,7 +2,6 @@
 main { flex: 1; min-width: 0; }
 .public-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 70px; padding: 12px max(24px, calc((100vw - 1192px) / 2)); border-bottom: 1px solid var(--dc-line); background: var(--dc-paper); }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--dc-text); font-size: 1.125rem; font-weight: 750; letter-spacing: -.03em; text-decoration: none; }
-.brand span { margin-left: 6px; padding-left: 16px; border-left: 1px solid var(--dc-line); color: var(--dc-text-secondary); font-size: .8125rem; font-weight: 400; letter-spacing: 0; }
 .public-header-actions { display: flex; align-items: center; gap: 8px; }
 .portal-link { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; border: 1px solid transparent; border-radius: var(--dc-radius-control); color: var(--dc-brand-ink); font-size: .875rem; font-weight: 650; text-decoration: none; white-space: nowrap; }
 .portal-link:hover { background: var(--dc-brand-soft); border-color: var(--dc-brand); }
@@ -13,7 +12,6 @@ main { flex: 1; min-width: 0; }
 @media (max-width: 760px) {
   .public-header { min-height: 68px; padding: 12px 16px; gap: 8px; flex-wrap: wrap; }
   .brand { font-size: 1rem; gap: 8px; }
-  .brand span { display: none; }
   .public-header-actions { gap: 6px; flex-wrap: wrap; }
   .footer-content { flex-direction: column; align-items: flex-start; padding-inline: 16px; }
 }

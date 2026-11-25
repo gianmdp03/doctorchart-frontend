@@ -22,14 +22,22 @@ describe('Anonymous public booking page',()=>{
   await c.loadProfile();
   expect(c.profile()).toBeNull();
  });
- it('uses the published specialty catalog and displays only clinics matching the location',async()=>{
+ it('refreshes the active specialty catalog and searches by the selected specialty and location',async()=>{
   const otherClinic={...profile.clinics[0],id:'other',city:'Otra localidad'};
   const specialties=[{code:'PEDIATRICS',name:'Pediatría'},{code:'CARDIOLOGY',name:'Cardiología'}];
-  api.search.mockReturnValue(of({items:[{...profile,clinics:[otherClinic,...profile.clinics]}],specialties,hasMore:false}));
+  api.specialties=vi.fn().mockReturnValueOnce(of(specialties));
+  await c.loadSpecialties();
+  expect(c.specialties()).toEqual(specialties);
+  c.filters.specialty='PEDIATRICS';
+  c.changeModality('IN_PERSON');
+  const updated=[...specialties,{code:'DERMATOLOGY',name:'Dermatología'}];
+  api.specialties.mockReturnValueOnce(of(updated));
+  await c.loadSpecialties();
+  expect(c.specialties()).toEqual(updated);
+  api.search.mockReturnValue(of({items:[{...profile,clinics:[otherClinic,...profile.clinics]}],hasMore:false}));
   c.filters.city='Ciudad';
   await c.search();
-  expect(api.search).toHaveBeenCalledWith(expect.objectContaining({includeSpecialties:'1'}),0);
-  expect(c.specialties()).toEqual(specialties);
+  expect(api.search).toHaveBeenCalledWith(expect.objectContaining({specialty:'PEDIATRICS',modality:'IN_PERSON',city:'Ciudad'}),0);
   expect(c.doctors()[0].clinics).toEqual(profile.clinics);
  });
  it('sends administrative data and independent attendee, never a clinical patient ID',async()=>{fill();await c.submit();const body=api.book.mock.calls[0][1];expect(body.contactName).toBe('Solicitante');expect(body.attendeeName).toBe('Atendido');expect(body.patientId).toBeUndefined();expect(c.confirmation()?.reference).toBe('public-reference');f.detectChanges();expect(f.nativeElement.textContent).toContain('Pediatría histórica');expect(c.document).toBe('');expect(c.email).toBe('');});
