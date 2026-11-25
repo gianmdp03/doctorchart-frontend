@@ -14,6 +14,8 @@ import {
 } from '../../../core/models/vaccination.model';
 import { dialogPatient } from '../../dynamic-form-renderer/clinical-dialog.fixture';
 import { DatePickerComponent } from '../../../shared/date-picker/date-picker.component';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 @Component({
   imports: [PatientVaccinationsComponent],
   template:
@@ -118,6 +120,55 @@ describe('Patient vaccination backend schedule and revision handoff', () => {
     expect(child().futureDoses()).toHaveLength(1);
     expect(fixture.nativeElement.textContent).toContain('3 meses');
     expect(fixture.nativeElement.querySelector('input[type="date"]')).toBeNull();
+  });
+  it('shows current and missing doses before future age stages, sorting numeric ages without changing server status', () => {
+    const c = child();
+    const future = definitions[2];
+    c.schedule.set({...schedule(), doses:[
+      {...future,id:'late',dueFrom:120,dueTo:120,dueAgeLabel:'10 años'},
+      definitions[0], definitions[1],
+      {...future,id:'second',dueFrom:24,dueTo:24,dueAgeLabel:'2 años'},
+      {...future,id:'early-a',dueFrom:12,dueTo:12,dueAgeLabel:'12 meses'},
+      {...future,id:'early-b',dueFrom:12,dueTo:12,dueAgeLabel:'12 meses'},
+    ]});
+    fixture.detectChanges();
+    expect(c.futureStages().map(stage => stage.doses.map(dose => dose.id)))
+      .toEqual([['early-a','early-b'],['second'],['late']]);
+    expect(Array.from(fixture.nativeElement.querySelectorAll('.dose-group h3')).map((heading:any) => heading.id))
+      .toEqual(['vaccines-current','vaccines-overdue','vaccines-future','vaccines-applied']);
+    expect(fixture.nativeElement.querySelector('details.future-doses')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.stage-heading').textContent).toContain('Próxima etapa');
+    expect(c.overdueDoses()[0].status).toBe('PENDIENTE');
+    expect(api.save).not.toHaveBeenCalled();
+  });
+  it('displays a confirmed application date separately from its accessible date editor', () => {
+    const c = child();
+    c.markApplied(c.doses()[0], true);
+    fixture.detectChanges();
+    const card = fixture.nativeElement.querySelector('.applied-card');
+    expect(card.querySelector('.applied-date > span').textContent).toBe('Aplicada el');
+    expect(card.querySelector('time').textContent).toBe('05/10/2026');
+    expect(card.querySelector('time').getAttribute('datetime')).toBe('2026-10-05');
+    expect(card.querySelector('.date-editor').open).toBe(false);
+    expect(card.querySelector('summary').textContent).toContain('Corregir fecha');
+    expect(c.displayDate(null)).toBe('Sin fecha registrada');
+    expect(c.displayDate('2026-02-31')).toBe('Sin fecha registrada');
+  });
+  it('exports the rendered component for optional visual review', () => {
+    const directory = process.env['VACCINE_VISUAL_DIR'];
+    if (!directory) return;
+    const c = child();
+    const applied = {...definitions[0],id:'applied',vaccineName:'Vacuna aplicada de prueba',status:'APLICADA' as const,appliedAt:'2026-09-21'};
+    c.schedule.set({...schedule(), doses:[...definitions,applied,
+      {...definitions[2],id:'future-two',vaccineName:'Otra vacuna de prueba',dueFrom:24,dueTo:24,dueAgeLabel:'2 años'},
+    ]});
+    fixture.detectChanges();
+    mkdirSync(directory, {recursive:true});
+    const styles = resolve('dist/doctorchart-frontend/browser/styles.css').replaceAll('\\','/');
+    const clone = fixture.nativeElement.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.applied-card input[type="checkbox"]').forEach(input => input.setAttribute('checked',''));
+    writeFileSync(join(directory,'vaccines.html'), `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file:///${styles}">${document.head.innerHTML}<style>body{margin:0;padding:24px;background:var(--dc-canvas)}app-patient-vaccinations{max-width:1440px;margin:auto}@media(max-width:600px){body{padding:12px}}</style></head><body>${clone.outerHTML}</body></html>`);
+    expect(c.futureStages()).toHaveLength(2);
   });
   it('publishes the saved patient revision and reloads saved applications when reopening the tab', () => {
     let c = child();

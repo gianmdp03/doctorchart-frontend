@@ -55,10 +55,20 @@ export class PatientVaccinationsComponent {
   readonly loadError = signal<string | null>(null);
   readonly ageLabel = computed(() => this.schedule()?.ageLabel ?? '—');
   readonly doses = computed(() => this.schedule()?.doses ?? []);
-  readonly overdueDoses = computed(() => this.doses().filter((d) => d.status === 'PENDIENTE'));
-  readonly currentDoses = computed(() => this.doses().filter((d) => d.status === 'ACTUAL'));
-  readonly futureDoses = computed(() => this.doses().filter((d) => d.status === 'FUTURA'));
-  readonly appliedDoses = computed(() => this.doses().filter((d) => d.status === 'APLICADA'));
+  readonly overdueDoses = computed(() => this.byAge('PENDIENTE'));
+  readonly currentDoses = computed(() => this.byAge('ACTUAL'));
+  readonly futureDoses = computed(() => this.byAge('FUTURA'));
+  readonly appliedDoses = computed(() => this.byAge('APLICADA'));
+  readonly futureStages = computed(() => {
+    const stages: {key: string; ageLabel: string; doses: PatientVaccinationDose[]}[] = [];
+    for (const dose of this.futureDoses()) {
+      const key = `${dose.dueFrom}:${dose.dueTo}:${dose.dueAgeLabel}`;
+      const stage = stages.find(stage => stage.key === key);
+      if (stage) stage.doses.push(dose);
+      else stages.push({key, ageLabel:dose.dueAgeLabel, doses:[dose]});
+    }
+    return stages;
+  });
   readonly canSave = computed(
     () =>
       !this.isSaving() &&
@@ -257,5 +267,12 @@ export class PatientVaccinationsComponent {
       ACTUAL: 'Corresponde ahora',
       FUTURA: 'Futura',
     }[status];
+  }
+  private byAge(status: VaccinationStatus) {
+    return this.doses().filter(dose => dose.status === status)
+      .sort((a, b) => a.dueFrom - b.dueFrom || a.dueTo - b.dueTo);
+  }
+  displayDate(date: string | null | undefined) {
+    return date && validIsoDate(date) ? date.split('-').reverse().join('/') : 'Sin fecha registrada';
   }
 }
