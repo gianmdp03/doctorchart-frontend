@@ -11,11 +11,14 @@ class PricingHarness extends PricingComponent {
   loadCatalog = () => this.load();
   loadPaymentMethods = () => this.loadTransfers();
   availablePlans = this.plans;
+  visiblePlans = this.visible;
+  changeCycle = (days: number) => this.setCycle(days);
   choose = () => this.select(this.availablePlans()[0]!);
   beginTransfer = () => this.startTransfer();
   recoverTransfer = () => this.startTransfer(true);
   closeTransfer = () => this.cancelCheckout();
   transferOpen = this.checkoutOpen;
+  transferResumable = this.checkoutResumable;
   selectedPayment = this.paymentMethod;
   currentTransfer = this.transfer;
   savedTransfer = this.transferRequestSaved;
@@ -159,5 +162,44 @@ describe('DoctorChart pricing on central Billing', () => {
     await resumed;
     expect(pricing.transferOpen()).toBe(true);
     expect(pricing.savedTransfer()).toBe(false);
+  });
+
+  it('orders every billing cycle by tier regardless of catalog order', async () => {
+    const pricing = createPricing({});
+    const pending = pricing.loadCatalog();
+    (await vi.waitFor(() => http.expectOne(api + 'plans/contextual'))).flush([
+      { ...plan, id: 18, tier: 'UNLIMITED' },
+      { ...plan, id: 19, tier: 'PRO', days: 90 },
+      plan,
+      { ...plan, id: 20, tier: 'UNLIMITED', days: 90 },
+      { ...plan, id: 21, tier: 'PRO' },
+      { ...plan, id: 22, days: 90 },
+    ]);
+    await pending;
+    expect(pricing.visiblePlans().map(({ id }) => id)).toEqual([17, 21, 18]);
+    pricing.changeCycle(90);
+    expect(pricing.visiblePlans().map(({ id }) => id)).toEqual([22, 19, 20]);
+  });
+
+  it('recovers a stale return as history and starts a fresh transfer', async () => {
+    const pricing = createPricing({ rayaOrder: order.externalReference });
+    const catalog = pricing.loadCatalog();
+    (await vi.waitFor(() => http.expectOne(api + 'plans/contextual'))).flush([plan]);
+    await catalog;
+    const methods = pricing.loadPaymentMethods();
+    await loadRayaHistory();
+    (await vi.waitFor(() => http.expectOne(api + 'transfers/' + order.externalReference)))
+      .flush({ ...order, status: 'price_changed' });
+    await methods;
+    expect(pricing.transferOpen()).toBe(false);
+    expect(pricing.transferResumable()).toBe(false);
+
+    await pricing.choose();
+    const next = pricing.beginTransfer();
+    const creation = await vi.waitFor(() => http.expectOne({ method: 'POST', url: api + 'transfers' }));
+    expect(creation.request.body).toEqual({ returnApp: 'doctorchart', planIds: [plan.id] });
+    creation.flush({ ...order, externalReference: 'raya-new-price', amount: 1200 });
+    await next;
+    expect(pricing.transferOpen()).toBe(true);
   });
 });

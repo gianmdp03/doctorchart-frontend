@@ -1,11 +1,11 @@
 export interface RayaStatusEvent {
   externalReference: string;
-  status: 'pending' | 'verifying' | 'credited' | 'expired' | 'rejected' | 'review' | 'refunded';
+  status: 'pending' | 'verifying' | 'credited' | 'expired' | 'rejected' | 'review' | 'refunded' | 'price_changed';
   preparing: boolean;
   expiresAt: string;
 }
 
-const statuses = new Set(['pending', 'verifying', 'credited', 'expired', 'rejected', 'review', 'refunded']);
+const statuses = new Set(['pending', 'verifying', 'credited', 'expired', 'rejected', 'review', 'refunded', 'price_changed']);
 
 export async function readRayaEvents(
   url: string,

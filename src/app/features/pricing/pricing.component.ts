@@ -15,7 +15,7 @@ type Plan = {
   days: number; description?: string; action?: 'BUY' | 'RENEW' | 'UPGRADE' | 'LOCKED'; lockReason?: string;
 };
 type Quote = { canUpgrade: boolean; proratedUpgradeAmount: number; remainingDays: number; currency: string; message: string };
-type TransferStatus = 'verifying' | 'pending' | 'credited' | 'expired' | 'rejected' | 'review' | 'refunded';
+type TransferStatus = 'verifying' | 'pending' | 'credited' | 'expired' | 'rejected' | 'review' | 'refunded' | 'price_changed';
 type Transfer = {
   externalReference: string;
   bankTransfer?: { cvu: string; alias?: string };
@@ -33,6 +33,8 @@ type TransferRequest = { returnApp: 'doctorchart'; previousReference?: string } 
   ({ planIds: [number]; targetPlanId?: never } | { targetPlanId: number; planIds?: never });
 type SavedTransferRequest = { key: string; body: TransferRequest };
 
+const tierOrder: Record<string, number> = { BASIC: 0, PRO: 1, UNLIMITED: 2 };
+
 const transferStatus: Record<TransferStatus, string> = {
   verifying: 'Verificando pago',
   pending: 'Esperando transferencia',
@@ -40,6 +42,7 @@ const transferStatus: Record<TransferStatus, string> = {
   expired: 'Orden vencida',
   rejected: 'Pago rechazado',
   review: 'Operación bajo revisión',
+  price_changed: 'Orden sin vigencia por cambio de precio',
   refunded: 'Pago reembolsado',
 };
 const referencePattern = /^[A-Za-z0-9_-]{1,128}$/;
@@ -113,7 +116,7 @@ export class PricingComponent {
 
   protected async copyBankValue(value: string, label: string): Promise<void> {
     const order = this.transfer();
-    if (!order?.expiresAt || Date.parse(order.expiresAt) <= Date.now()) return;
+    if (order?.status !== 'pending' || !order.expiresAt || Date.parse(order.expiresAt) <= Date.now()) return;
     try {
       await navigator.clipboard.writeText(value);
       if (this.transfer() === order) this.copyFeedback.set(label === 'CVU' ? 'CVU copiado.' : 'Alias copiado.');
@@ -138,7 +141,9 @@ export class PricingComponent {
       (plan.action === 'UPGRADE' || item.days === plan.days)) ? transfer.externalReference : null;
   });
   protected readonly cycles = computed(() => [...new Set(this.plans().map(plan => plan.days))].sort((a, b) => a - b));
-  protected readonly visible = computed(() => this.plans().filter(plan => plan.days === this.cycle()));
+  protected readonly visible = computed(() => this.plans()
+    .filter(plan => plan.days === this.cycle())
+    .sort((a, b) => (tierOrder[a.tier] ?? 3) - (tierOrder[b.tier] ?? 3)));
 
   protected readonly checkoutOpen = computed(() => !!this.transfer() && !this.checkoutClosed());
   private manualAvailableAt = 0;
@@ -148,9 +153,9 @@ export class PricingComponent {
   private readonly dismissedReference = signal<string | null>(null);
   protected readonly checkoutClosed = computed(() => {
     const reference = this.transfer()?.externalReference;
-    return !!reference && reference === this.dismissedReference();
+    return this.transfer()?.status === 'price_changed' || (!!reference && reference === this.dismissedReference());
   });
-  protected readonly checkoutResumable = computed(() => this.checkoutClosed() && this.transfer()?.status !== 'credited');
+  protected readonly checkoutResumable = computed(() => this.checkoutClosed() && !['credited', 'price_changed'].includes(this.transfer()?.status ?? ''));
   protected readonly resumeSelectedTransfer = computed(() => {
     const order = this.transfer();
     const plan = this.selected();
@@ -162,12 +167,11 @@ export class PricingComponent {
 
   protected readonly pollReference = computed(() => {
     const transfer = this.transfer();
-    return !this.checkoutClosed() && transfer && (transfer.status === 'pending' || transfer.status === 'verifying')
+    return transfer && (transfer.status === 'pending' || transfer.status === 'verifying')
       ? transfer.externalReference : null;
   });
 
   protected cancelCheckout(): void {
-    this.checkoutConnection?.abort();
     this.dismissedReference.set(this.transfer()?.externalReference ?? null);
   }
 
@@ -468,7 +472,8 @@ export class PricingComponent {
           return;
         } catch { /* Keep the same idempotency key until a read can identify the order. */ }
       }
-      if (firstSubmission && pending && err instanceof HttpErrorResponse && [400, 401, 403, 422].includes(err.status)) {
+      if (pending && err instanceof HttpErrorResponse &&
+          (err.error?.code === 'checkout_price_changed' || (firstSubmission && [400, 401, 403, 422].includes(err.status)))) {
         try { this.clearTransferRequest(owner, pending.key); } catch { /* Preserve recovery if storage is unavailable. */ }
       }
       this.transferError.set(err instanceof HttpErrorResponse
