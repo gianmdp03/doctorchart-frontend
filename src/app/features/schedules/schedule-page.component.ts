@@ -14,7 +14,7 @@ import { BrowserUiStorageService } from '../../core/services/browser-ui-storage.
 import { isArgentineTimezone } from '../../core/date/user-time-zone';
 import { ClinicsService } from '../clinics/clinics.service';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
-import { lucideArrowLeft, lucideBuilding2, lucideCircleAlert, lucideVideo } from '@ng-icons/lucide';
+import { lucideArrowLeft, lucideBuilding2, lucideCircleAlert, lucideVideo, lucideCalendarDays, lucideCalendarOff, lucidePlus, lucideSlidersHorizontal, lucideScanEye } from '@ng-icons/lucide';
 import { Clinic, ClinicCapabilities, isCapabilityVerified, modalityLabel, parseClinicHttpError } from '../clinics/clinics.models';
 import { AgendaWindow, Availability, ClinicSchedule, OccupiedSchedule, ScheduleConflict, ScheduleDay, ScheduleException, ScheduleRange, ScheduleUpdate } from './schedules.models';
 import { addDays, civilDate, localTime, offsetLabel } from '../calendar/bookings.models';
@@ -43,10 +43,32 @@ interface LocalConflict {
 function emptyDraft():Draft{return {minNoticeMinutes:null,maxAdvanceDays:null,weekly:Array.from({length:7},(_,i)=>({weekday:i+1,ranges:[]})),exceptions:[]};}
 @Component({
  selector:'app-schedule-page',imports:[CommonModule,FormsModule,RouterLink,DatePickerComponent,TimePickerComponent,NgIconComponent],
- providers: [provideIcons({ lucideArrowLeft, lucideBuilding2, lucideCircleAlert, lucideVideo })],
+ providers: [provideIcons({ lucideArrowLeft, lucideBuilding2, lucideCircleAlert, lucideVideo, lucideCalendarDays, lucideCalendarOff, lucidePlus, lucideSlidersHorizontal, lucideScanEye })],
  templateUrl:'./schedule-page.component.html',styleUrl:'./schedule-page.component.css',
 })
 export class SchedulePageComponent {
+ // Presentation only: the overview reflects the same scoped blocks as the editor.
+ visibleRanges(day: ScheduleDay): ScheduleRange[] {
+  const scope = this.teleconsultationScope();
+  return scope ? day.ranges.filter(range => range.specialtyContextId === scope.id) : day.ranges;
+ }
+ timePosition(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return Math.max(0, Math.min(100, (hours * 60 + minutes) / 1440 * 100));
+ }
+ scrollToSection(event: Event, id: string): void {
+  event.preventDefault();
+  const target = (event.currentTarget as HTMLElement).ownerDocument.getElementById(id);
+  if (!target) return;
+  const doc = target.ownerDocument;
+  const headerHeight = doc.querySelector('app-header')?.getBoundingClientRect().height ?? 0;
+  const saveHeight = doc.querySelector('.save-bar')?.getBoundingClientRect().height ?? 0;
+  target.style.scrollMarginTop = `${headerHeight + saveHeight + 32}px`;
+  target.scrollIntoView({ block: 'start', behavior: 'instant' });
+  target.setAttribute('tabindex', '-1');
+  target.focus({ preventScroll: true });
+ }
+
   private readonly interaction = inject(InteractionStatusService);
  private readonly api=inject(SchedulesService);
  private readonly workspace=inject(WorkspaceStore);

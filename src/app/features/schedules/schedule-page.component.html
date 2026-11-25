@@ -1,11 +1,11 @@
 <div class="schedule-page">
- <a routerLink="/clinics" class="dc-button"><ng-icon name="lucideArrowLeft" aria-hidden="true" /> Volver a consultorios</a>
+ <a routerLink="/clinics" class="back-link"><ng-icon name="lucideArrowLeft" aria-hidden="true" /> Volver a consultorios</a>
  <header class="page-heading">
   @if (teleconsultationScope(); as scope) {
    <h1>Teleconsulta de {{ scope.name }}</h1>
    <p class="muted">Elegí en qué días y horarios atendés por teleconsulta.</p>
   } @else {
-   <h1>Mis horarios</h1><p class="muted">Configurá cuándo atendés y revisá qué turnos pueden reservarse.</p>
+   <h1>Mis horarios</h1><p class="muted">Organizá tu semana de atención y revisá qué turnos pueden reservarse.</p>
   }
  </header>
  @if (busy()) { <p role="status">Cargando agenda…</p> }
@@ -15,7 +15,7 @@
  @if (clinic(); as selected) {
   @if (!teleconsultationScope()) {
   <section class="selected-clinic" aria-label="Lugar de atención seleccionado">
-   <div><h2>{{ selected.modality === 'TELECONSULTATION' ? 'Teleconsulta' : selected.name }}</h2>@if(selected.modality!=='TELECONSULTATION'){<p>{{ selected.address }} · {{ selected.city }}</p>}<p>{{ selected.status === 'ACTIVE' ? 'Activo' : 'Desactivado' }}</p></div>
+   <div class="clinic-identity"><ng-icon [name]="selected.modality === 'TELECONSULTATION' ? 'lucideVideo' : 'lucideBuilding2'" aria-hidden="true" /><div><span class="clinic-caption">Lugar de atención</span><h2>{{ selected.modality === 'TELECONSULTATION' ? 'Teleconsulta' : selected.name }}</h2>@if(selected.modality!=='TELECONSULTATION'){<p>{{ selected.address }} · {{ selected.city }}</p>}<span class="clinic-status" [class.is-inactive]="selected.status !== 'ACTIVE'">{{ selected.status === 'ACTIVE' ? 'Activo' : 'Desactivado' }}</span></div></div>
    @if(choiceTotal()>1){<label>Cambiar consultorio<select [ngModel]="selected.id" (ngModelChange)="selectClinic($event)" [disabled]="saving()"><option [value]="selected.id">{{ selected.name }}</option>@for (item of choices(); track item.id) {@if(item.id !== selected.id){<option [value]="item.id">{{ item.name }}</option>}}</select></label>}
  @if(choiceTotal()>100){<div class="actions"><button type="button" (click)="nextChoices(-1)" [disabled]="choicePage()===0||choicesBusy()">Anteriores</button><span>Página {{ choicePage()+1 }}</span><button type="button" (click)="nextChoices(1)" [disabled]="(choicePage()+1)*100>=choiceTotal()||choicesBusy()">Siguientes</button></div>}
   </section>
@@ -26,11 +26,30 @@
   } @else if (!canEdit() && !busy() && !saving() && !validatingBlocks()) {<div class="notice" role="status">La agenda está en modo lectura: comprobá el estado del consultorio y tus permisos comerciales. <button type="button" (click)="retryCapabilities()">Reintentar permisos</button></div>}
   @if (conflict()) {<div class="notice" data-testid="schedule-version-conflict">La agenda guardada cambió en otra sesión. Podés revisar o copiar tus cambios antes de descartarlos. <button type="button" (click)="discardDraft()">Descartar borrador y cargar agenda guardada</button></div>}
 
+  <nav class="schedule-nav" aria-label="Secciones de la agenda">
+   <a href="#weekly-heading" (click)="scrollToSection($event, 'weekly-heading')"><ng-icon name="lucideCalendarDays" aria-hidden="true" /> Semana habitual</a>
+   <a href="#add-block-heading" (click)="scrollToSection($event, 'add-block-heading')"><ng-icon name="lucidePlus" aria-hidden="true" /> Agregar horario</a>
+   @if (!teleconsultationScope()) {<a href="#rules-heading" (click)="scrollToSection($event, 'rules-heading')">Reglas y excepciones</a>}
+   <a href="#preview-heading" (click)="scrollToSection($event, 'preview-heading')">Ver disponibilidad</a>
+  </nav>
+  <section class="week-glance" aria-label="Resumen de la semana en edición">
+   <div class="glance-heading"><ng-icon name="lucideCalendarDays" aria-hidden="true" /><div><strong>Tu semana de un vistazo</strong><span>Semana en edición · distribución de 00 a 24 h</span></div></div>
+   <div class="glance-days">
+    @for (day of draft.weekly; track day.weekday) {
+     <a href="#schedule-day-{{day.weekday}}" (click)="scrollToSection($event, 'schedule-day-' + day.weekday)" [class.has-ranges]="visibleRanges(day).length > 0">
+      <strong>{{ weekdays[day.weekday-1].slice(0,3) }}</strong>
+      <span class="glance-track" aria-hidden="true">@for (range of visibleRanges(day); track $index) {<i [style.left.%]="timePosition(range.start)" [style.width.%]="timePosition(range.end) - timePosition(range.start)"></i>}</span>
+      <span class="glance-times">@for (range of visibleRanges(day); track $index) {<span>{{ range.start }}–{{ range.end }}</span>} @empty {<span>Sin horarios</span>}</span>
+      <span class="sr-only">{{ weekdays[day.weekday-1] }}. Editar horarios.</span>
+     </a>
+    }
+   </div>
+  </section>
   <div class="save-bar">
    <div aria-live="polite">
     @if (draftStatus() === 'stored') {<strong>Borrador en esta pestaña</strong><span>Guardá la agenda para aplicar los cambios.</span>}
     @else if (draftStatus() === 'unavailable') {<strong>No se pudo guardar el borrador</strong><span>Guardá la agenda antes de recargar.</span>}
-    @else {<strong>Horarios de atención</strong>}
+    @else {<strong>Horarios de atención</strong><span>Los cambios se aplican al guardar la agenda.</span>}
    </div>
    <button type="button" class="dc-button dc-button--primary primary" data-testid="save-schedule" [disabled]="!canSave()" (click)="save()">{{ saving() ? 'Guardando…' : 'Guardar agenda' }}</button>
   </div>
@@ -45,7 +64,7 @@
    <fieldset [disabled]="!canEdit()" class="editor add-editor">
     <legend class="sr-only">Agregar horarios</legend>
    <section class="panel add-block-panel" aria-labelledby="add-block-heading">
-    <h2 id="add-block-heading">Agregar un horario</h2>
+    <h2 id="add-block-heading"><ng-icon name="lucidePlus" aria-hidden="true" /> Agregar un horario</h2>
     @if (!isTeleconsultation()) {
      <label>Especialidad del nuevo bloque
       <select aria-label="Especialidad del bloque" [ngModel]="specialty()?.id??''" (ngModelChange)="chooseSpecialty($event)">
@@ -126,9 +145,9 @@
   }
    <fieldset [disabled]="!canEdit()" class="editor week-editor">
     <legend class="sr-only">Editar horarios y reglas</legend>
-   <section class="panel" aria-labelledby="weekly-heading"><h2 id="weekly-heading">Semana habitual</h2><p class="muted">Editá los bloques y guardá la agenda para aplicar los cambios.</p>
+   <section class="panel weekly-panel" aria-labelledby="weekly-heading"><h2 id="weekly-heading"><ng-icon name="lucideCalendarDays" aria-hidden="true" /> Semana habitual</h2><p class="muted">Estos horarios se repiten cada semana. Podés ajustar cada bloque por separado.</p><div class="weekly-grid">
     @for (day of draft.weekly; track day.weekday) {
-     <div class="day-row"><h3>{{ weekdays[day.weekday-1] }}</h3><div class="ranges">
+     <div class="day-row" [id]="'schedule-day-' + day.weekday" [class.day-off]="!day.ranges.length"><h3><span class="day-marker" aria-hidden="true">{{ weekdays[day.weekday-1].slice(0,1) }}</span>{{ weekdays[day.weekday-1] }}</h3><div class="ranges">
       @if (!day.ranges.length) {<span class="muted">Sin horarios</span>}
       @for (range of day.ranges; track range.id ?? $index; let i=$index) {
        @if (teleconsultationScope() && range.specialtyContextId !== teleconsultationScope()?.id) {
@@ -141,16 +160,16 @@
       @if(rangesError(day.ranges);as message){<p class="date-error" role="alert">{{message}}</p>}
      </div></div>
     }
-   </section>
+   </div></section>
    @if (!teleconsultationScope()) {
-   <section class="panel" aria-labelledby="rules-heading"><h2 id="rules-heading">Reglas de los turnos</h2><p class="muted">Definí con cuánta anticipación pueden reservarse tus turnos. Cada bloque tiene su propia duración.</p><div class="settings">
-    <label>Anticipación mínima (minutos)<input id="schedule-notice" type="number" min="0" max="525600" step="1" [ngModel]="draft.minNoticeMinutes" (ngModelChange)="draft.minNoticeMinutes=$event; keepDraft()" placeholder="0 permite disponibilidad inmediata"></label>
-    <label>Horizonte máximo (días)<input id="schedule-horizon" type="number" min="1" max="366" step="1" [ngModel]="draft.maxAdvanceDays" (ngModelChange)="draft.maxAdvanceDays=$event; keepDraft()" placeholder="Ingresá el horizonte"></label>
+   <section class="panel rules-panel" aria-labelledby="rules-heading"><h2 id="rules-heading"><ng-icon name="lucideSlidersHorizontal" aria-hidden="true" /> Reglas de los turnos</h2><p class="muted">Definí con cuánta anticipación pueden reservarse tus turnos. Cada bloque tiene su propia duración.</p><div class="settings">
+    <label>Anticipación mínima (minutos)<input id="schedule-notice" type="number" min="0" max="525600" step="1" [ngModel]="draft.minNoticeMinutes" (ngModelChange)="draft.minNoticeMinutes=$event; keepDraft()" placeholder="0 permite disponibilidad inmediata"><small class="muted">Tiempo mínimo entre la reserva y la consulta.</small></label>
+    <label>Horizonte máximo (días)<input id="schedule-horizon" type="number" min="1" max="366" step="1" [ngModel]="draft.maxAdvanceDays" (ngModelChange)="draft.maxAdvanceDays=$event; keepDraft()" placeholder="Ingresá el horizonte"><small class="muted">Hasta cuántos días hacia adelante se puede reservar.</small></label>
    </div></section>
    }
    @if (!teleconsultationScope()) {
-   <section class="panel" aria-labelledby="exceptions-heading"><h2 id="exceptions-heading">Excepciones</h2><p class="muted">Cerrá un día por feriado o cargá horarios especiales. La excepción reemplaza el horario habitual en esas fechas.</p>
-    @if (!draft.exceptions.length) {<p class="muted">No hay excepciones configuradas.</p>}
+   <section class="panel exceptions-panel" aria-labelledby="exceptions-heading"><h2 id="exceptions-heading"><ng-icon name="lucideCalendarOff" aria-hidden="true" /> Excepciones</h2><p class="muted">Cerrá un día por feriado o cargá horarios especiales. La excepción reemplaza el horario habitual en esas fechas.</p>
+    @if (!draft.exceptions.length) {<p class="exception-empty"><ng-icon name="lucideCalendarDays" aria-hidden="true" /><span>Tu semana habitual se mantiene.<small>Agregá una excepción para feriados, vacaciones u horarios especiales.</small></span></p>}
     @for (exception of draft.exceptions; track $index; let e=$index) {
      <div class="exception"><div class="settings">
       <label>Motivo<input [ngModel]="exception.label" (ngModelChange)="exception.label=$event; keepDraft()" maxlength="160" placeholder="Ej.: vacaciones"></label>
@@ -168,7 +187,7 @@
    }
    </fieldset>
   </div>
-  <section class="panel preview" aria-labelledby="preview-heading"><h2 id="preview-heading">Disponibilidad calculada</h2><p class="muted">Consultá los horarios de la agenda guardada en la zona horaria del consultorio.</p>
+  <section class="panel preview" aria-labelledby="preview-heading"><h2 id="preview-heading"><ng-icon name="lucideScanEye" aria-hidden="true" /> Disponibilidad calculada</h2><p class="muted">Consultá los horarios de la agenda guardada en la zona horaria del consultorio.</p>
    <div class="actions preview-controls"><div class="picker-field"><label for="availability-date">Fecha inicial</label><app-date-picker [(ngModel)]="previewDate" inputId="availability-date" inputLabel="Fecha inicial" #previewPicker /></div><label>Vista<select [(ngModel)]="previewDays"><option [ngValue]="1">Día</option><option [ngValue]="7">Semana</option></select></label><button type="button" (click)="preview()" [disabled]="previewBusy() || !!previewPicker.error()">{{ previewBusy() ? 'Calculando…' : 'Ver disponibilidad' }}</button></div>
    @if (previewError()) {<p role="alert" class="notice error">{{ previewError() }}</p>}
    @if (previewDaysWithSlots(); as days) {
