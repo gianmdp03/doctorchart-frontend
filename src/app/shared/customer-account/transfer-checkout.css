@@ -16,10 +16,11 @@
 .transfer-live { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .75rem; padding: .55rem .75rem; border-radius: 10px; background: var(--plan-soft); color: var(--plan-muted); font-size: .89rem; }
 .transfer-live strong { color: var(--plan-text); font-variant-numeric: tabular-nums; }
 
-.pricing-checkout { padding-block: clamp(1.5rem, 7vw, 5rem); }
+.pricing-checkout { min-height: 100svh; align-content: start; padding-block: clamp(1rem, 5svh, 5rem); }
+.pricing-checkout:has(> .transfer-success) { align-content: center; }
 .transfer-page { display: grid; }
 .transfer-page .transfer-bank-panel { border-top: 1px solid var(--plan-edge); }
-.transfer-page { min-height: calc(100svh - 3rem); width: 100%; max-width: 70rem; margin-inline: auto; align-content: start; gap: 1.5rem; }
+.transfer-page { width: 100%; max-width: 70rem; margin-inline: auto; align-content: start; gap: 1.5rem; }
 .transfer-page .transfer-title { margin: 0; font-size: clamp(2rem, 5vw, 3.8rem); font-weight: 750; letter-spacing: -.035em; line-height: 1.05; text-wrap: balance; }
 .transfer-page .transfer-total { font-size: clamp(1.7rem, 4vw, 2.7rem); line-height: 1.15; }
 .transfer-page .transfer-summary { display: grid; align-content: start; gap: 1.25rem; }
