@@ -8,7 +8,6 @@ import type { PortalBooking } from './appointments.models';
 import { authInterceptor } from '../../core/interceptors/auth.interceptor';
 import { timeZoneInterceptor } from '../../core/interceptors/time-zone.interceptor';
 import { AuthService } from '../../core/services/auth.service';
-import type { PortalBooking } from './appointments.models';
 
 const draft = {document:'12345678', reference:'ref', maskedEmail:'tes***@example.invalid', requestId:'request-id'};
 const booking = {reference:'ref', status:'CONFIRMED', start:'2030-01-01T10:00:00Z', end:'2030-01-01T10:30:00Z', doctorName:'Profesional', clinicName:'Consultorio', timezone:'UTC', version:'1', canChange:true};
@@ -120,14 +119,18 @@ describe('Mis turnos', () => {
       http.expectNone(req => req.url.endsWith('/my-bookings/change'));
       expect(fixture.nativeElement.textContent).toContain('Esperando tu confirmación');
 
-      const pending = fixture.componentInstance.acceptProposal(proposed);
+      const element: HTMLElement = fixture.nativeElement;
+      const actions = Array.from(element.querySelectorAll<HTMLButtonElement>('.appointment-card button'));
+      const confirm = actions.find(button => button.textContent?.trim() === 'Confirmar turno');
+      expect(confirm).toBeDefined();
+      confirm!.click();
       const request = http.expectOne(req => req.url.endsWith('/my-bookings/change'));
       expect(request.request.body).toEqual({reference, expectedVersion:'2', action:'confirm'});
       expect(request.request.withCredentials).toBe(true);
       request.flush({rescheduleResponse:'PATIENT_ACCEPTED'});
       await vi.waitFor(() => expect(fixture.componentInstance.feedback()).toContain('Confirmaste el nuevo horario'));
       http.expectOne(req => req.url.endsWith('/my-bookings')).flush({items:[{...proposed, version:'3', rescheduleResponse:'PATIENT_ACCEPTED'}],hasMore:false});
-      await pending;
+      await vi.waitFor(() => expect(fixture.componentInstance.busy()).toBe(false));
       fixture.detectChanges();
       expect(fixture.nativeElement.textContent).toContain('Confirmaste el nuevo horario');
       expect(fixture.nativeElement.textContent).not.toContain('Esperando tu confirmación');
@@ -166,7 +169,7 @@ describe('Mis turnos', () => {
       http.expectOne(req => req.url.endsWith('/my-bookings')).flush({items:[{...booking, reference, version:'3', start, end}],hasMore:false});
       await pending;
       fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('.constancia .status').textContent.trim()).toBe('Confirmado');
+      expect(fixture.nativeElement.querySelector('.appointment-card .status').textContent.trim()).toBe('Confirmado');
     } finally {
       window.history.replaceState(null, '', original);
     }

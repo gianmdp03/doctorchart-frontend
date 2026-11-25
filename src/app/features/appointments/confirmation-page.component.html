@@ -72,10 +72,17 @@
       }
       <a class="search-link" routerLink="/appointments">Buscar un turno</a>
     </div>
-<<<<<<< Updated upstream
   </header>
 
-  @if (feedback()) { <p class="booking-feedback" role="status">{{feedback()}}</p> }
+  @if (feedback()) {
+    <div class="booking-feedback" role="status">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <path d="m8 12 2.5 2.5L16 9" />
+      </svg>
+      <span>{{feedback()}}</span>
+    </div>
+  }
   @if (error()) {
     <div class="error" role="alert"><p>{{error()}}</p>
       <button type="button" class="dc-button" [disabled]="busy()" (click)="step() === 'preview' ? lookupBookings() : loadBookings()">Volver a intentar</button>
@@ -92,39 +99,6 @@
               <strong>{{group.items.length}}</strong><span>{{group.title}}</span>
             </div>
           }
-=======
-    @if (feedback()) {
-      <div class="booking-feedback" role="status">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="9" />
-          <path d="m8 12 2.5 2.5L16 9" />
-        </svg>
-        <span>{{feedback()}}</span>
-      </div>
-    }
-    @if (items().length && change()?.action !== 'cancel') {
-      <p class="booking-policy">Podés cancelar <strong>antes de la hora de inicio</strong>. Si no podés asistir, avisá lo antes posible.</p>
-    }
-    @if (!items().length && !busy() && !error()) { <p>No encontramos turnos asociados a esos datos.</p> }
-    @for (booking of items(); track booking.reference) {
-      @let awaitingPatient = booking.status === 'CONFIRMED' && booking.rescheduleResponse === 'AWAITING_PATIENT';
-      <article class="constancia">
-        <p class="status" [class.status-pending]="awaitingPatient" [class.status-cancelled]="booking.status === 'CANCELLED'">{{awaitingPatient ? 'Esperando tu confirmación' : statusLabel(booking.status)}}</p>
-        <h2>{{booking.doctorName}}</h2>
-        <p class="when">{{slotLabel(booking.start, booking.timezone)}} · {{localTime(booking.end, booking.timezone)}}</p>
-        <p>{{booking.clinicName}} · {{booking.modality === 'TELECONSULTATION' ? 'Teleconsulta' : 'Presencial'}}</p>
-        @if (booking.address) { <p>{{booking.address}}</p> }
-        @if (booking.canChange && !change()) {
-          <div class="portal-actions">
-            @if (awaitingPatient) {
-              <button type="button" class="dc-button dc-button--primary" [disabled]="busy()" (click)="acceptProposal(booking)">Confirmar turno</button>
-            }
-            @if (booking.publicDoctorId && booking.publicClinicId) {
-              <button type="button" class="dc-button" [disabled]="busy()" (click)="chooseChange(booking, 'reschedule')">{{awaitingPatient ? 'Elegir otra fecha' : 'Reprogramar'}}</button>
-            }
-            <button type="button" class="dc-button" [disabled]="busy()" (click)="chooseChange(booking, 'cancel')">Cancelar turno</button>
-          </div>
->>>>>>> Stashed changes
         }
       </div>
       @if (hasMore() || hasMorePreviews()) { <p class="coverage-note">El resumen corresponde a los turnos cargados. Cargá más para ampliar la lista.</p> }
@@ -153,7 +127,10 @@
                   <div class="card-heading">
                     <h3>{{dateLabel(booking)}}</h3>
                     <div class="card-status">
-                      @if (verified(booking); as detail) { <span class="status" [class.status-cancelled]="detail.status === 'CANCELLED'">{{statusLabel(detail.status)}}</span> }
+                      @if (verified(booking); as detail) {
+                        @let awaitingPatient = isAwaitingPatient(detail);
+                        <span class="status" [class.status-pending]="awaitingPatient" [class.status-cancelled]="detail.status === 'CANCELLED'">{{awaitingPatient ? 'Esperando tu confirmación' : statusLabel(detail.status)}}</span>
+                      }
                       @if (isPast(booking)) { <span class="past-label">Fecha pasada</span> }
                     </div>
                   </div>
@@ -179,7 +156,13 @@
                       @if (verified(booking); as detail) {
                         <button type="button" class="dc-button" (click)="toggleDetails(detail)" [disabled]="busy() || !canOpen(booking)" [attr.aria-describedby]="isPast(booking) ? 'past-' + booking.reference : null" [attr.aria-expanded]="expanded() === booking.reference && canOpen(booking)" [attr.aria-controls]="canOpen(booking) ? 'details-' + booking.reference : null">{{expanded() === booking.reference && canOpen(booking) ? 'Ocultar detalles' : 'Ver detalles'}}</button>
                         @if (canManage(detail) && !change()) {
-                          @if (detail.publicDoctorId && detail.publicClinicId) { <button type="button" class="quiet-button" [disabled]="busy()" (click)="chooseChange(detail, 'reschedule')">Reprogramar</button> }
+                          @let awaitingPatient = isAwaitingPatient(detail);
+                          @if (awaitingPatient) {
+                            <button type="button" class="dc-button dc-button--primary" [disabled]="busy()" (click)="acceptProposal(detail)">Confirmar turno</button>
+                          }
+                          @if (detail.publicDoctorId && detail.publicClinicId) {
+                            <button type="button" class="quiet-button" [disabled]="busy()" (click)="chooseChange(detail, 'reschedule')">{{awaitingPatient ? 'Elegir otra fecha' : 'Reprogramar'}}</button>
+                          }
                           <button type="button" class="quiet-button cancel-action" [disabled]="busy()" (click)="chooseChange(detail, 'cancel')">Cancelar turno</button>
                         }
                       } @else if (preview(booking); as item) {
@@ -197,7 +180,7 @@
                         <h4>Información de tu reserva</h4>
                         <dl>
                           <div><dt>Referencia de reserva</dt><dd>{{detail.reference}}</dd></div>
-                          <div><dt>Estado de la reserva</dt><dd>{{statusLabel(detail.status)}}</dd></div>
+                          <div><dt>Estado de la reserva</dt><dd>{{isAwaitingPatient(detail) ? 'Esperando tu confirmación' : statusLabel(detail.status)}}</dd></div>
                           <div><dt>Fecha de atención</dt><dd>{{dateLabel(detail)}}</dd></div>
                           @if (timeLabel(detail)) { <div><dt>Horario</dt><dd>{{timeLabel(detail)}} h · Buenos Aires</dd></div> }
                           @if (detail.clinicName) { <div><dt>Centro de atención</dt><dd>{{detail.clinicName}}</dd></div> }

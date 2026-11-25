@@ -24,7 +24,7 @@ export class ClinicalNavigationService {
  }
  beginWrite(){const revision=this.revision;this.pendingWrites.update(n=>n+1);return {success:(url:string)=>{
   if(revision!==this.revision)return;
-  const path=new URL(url,'http://localhost').pathname;
+  const path=new URL(url,'https://doctorchart.invalid').pathname;
   const editor=/\/workspace\/(wizard\/draft|finish-onboarding)$/.test(path)?'wizard':/\/workspace\/quick-notes$/.test(path)?'notes':/\/patients(?:\/\d+)?$/.test(path)?'patient':/\/encounters(?:\/\d+)?$/.test(path)?'encounter':null;
   if(editor){this.dirtyEditors.delete(editor);this.dirty.set(this.dirtyEditors.size>0);}
  },end:()=>this.pendingWrites.update(n=>Math.max(0,n-1))};}

@@ -10,6 +10,13 @@ test('static hosting serves public pages, client routes, aliases, assets and rea
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
   try {
+    for (const path of ['/account/security', '/support/tickets/123', '/reset-password', '/email-change-success']) {
+      const response = await fetch(origin + path);
+      assert.equal(response.status, 200, path);
+      assert.equal(response.headers.get('cache-control'), 'no-store', path);
+      assert.equal(response.headers.get('referrer-policy'), 'no-referrer', path);
+      assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow', path);
+    }
     for (const path of site.publicPaths) { const response = await fetch(origin + path); assert.equal(response.status, 200); const html = await response.text(); assert.match(html, /index, follow/); assert.match(html, /<h1\b/); assert.equal(response.headers.get('cache-control'), 'no-cache'); }
     for (const path of ["/help","/help/appointments","/help/secretaries","/help/clinical","/specialties","/appointments/confirmation","/staff/login","/staff/activate","/staff/recover","/staff/calendar","/secretaries","/appointments","/appointments/12345678-1234-4123-8123-123456789abc","/booking-publication","/calendar","/clinics/103/schedule","/pricing","/register","/register/confirmed","/login","/patients/123","/patients/access-audit","/patients/archived","/records/123/edit","/clinics","/clinics/new","/clinics/103/edit","/admin/specialties","/plan-required","/profile","/encounters/77","/vaccination-calendar","/pacientes/123","/ficha/123/editar"]) { const response = await fetch(origin + path + '?source=test'); assert.equal(response.status, 200); assert.match(await response.text(), /<app-root\b[^>]*>\s*<\/app-root>/); assert.match(response.headers.get('x-robots-tag'), /noindex/); }
     for (const [from, to] of Object.entries(site.redirects)) { const response = await fetch(origin + from + '?x=1', { redirect: 'manual' }); assert.equal(response.status, 301); assert.equal(response.headers.get('location'), to + '?x=1'); }

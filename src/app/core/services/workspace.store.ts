@@ -108,8 +108,8 @@ export class WorkspaceStore {
         this.applySetup(null);
         return null;
       }
-      const url = new URL(globalThis.location?.href ?? 'http://localhost');
-      const [explicit, duplicate] = url.searchParams.getAll('specialtyContextId');
+      const params = new URLSearchParams(globalThis.location?.search);
+      const [explicit, duplicate] = params.getAll('specialtyContextId');
       const linkedId = duplicate === undefined && /^[1-9]\d*$/.test(explicit ?? '') ? Number(explicit) : null;
       let preferredId: number | null = null;
       try {

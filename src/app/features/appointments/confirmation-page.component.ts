@@ -1,11 +1,5 @@
-<<<<<<< Updated upstream
-import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
-import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
-=======
-import { Component, DestroyRef, ElementRef, Injector, afterNextRender, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Injector, PLATFORM_ID, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { DOCUMENT, isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
->>>>>>> Stashed changes
-import { PLATFORM_ID } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -88,7 +82,6 @@ export class ConfirmationPageComponent {
 
   constructor() {
     const browser = isPlatformBrowser(inject(PLATFORM_ID));
-<<<<<<< Updated upstream
     const clock = browser ? setInterval(() => this.now.set(Date.now()), 1000) : undefined;
     effect(() => {
       const selected = this.change();
@@ -104,7 +97,6 @@ export class ConfirmationPageComponent {
         if (!booking || !this.canOpen(booking)) this.expanded.set(null);
       }
     });
-=======
     if (browser) {
       const params = new URLSearchParams(this.location?.hash.slice(1));
       const action = params.get('action'), reference = params.get('reference'), version = params.get('version');
@@ -115,7 +107,6 @@ export class ConfirmationPageComponent {
         this.focusedReference = reference;
       }
     }
->>>>>>> Stashed changes
     const info = inject(Router).currentNavigation()?.extras.info as {bookingDni?: unknown} | undefined;
     const dni = typeof info?.bookingDni === 'string' && /^[0-9]{5,8}$/.test(info.bookingDni) ? info.bookingDni : '';
     const draft = this.api.takePortalDraft();
@@ -184,10 +175,6 @@ export class ConfirmationPageComponent {
     this.busy.set(true);
     try {
       await this.fetchBookings(false);
-<<<<<<< Updated upstream
-      if (this.alive) this.step.set('list');
-    } catch (error) {
-=======
       if (!this.alive) return;
       const proposal = this.proposalLink();
       if (proposal && !this.items().some(item => item.reference === proposal.reference)) {
@@ -196,8 +183,8 @@ export class ConfirmationPageComponent {
       }
       this.step.set('list');
       if (proposal) await this.openProposal();
-    } catch {
->>>>>>> Stashed changes
+    } catch (error) {
+      if (!this.alive) return;
       // An unopened or expired browser session starts at the identity form.
       const status = (error as {status?:number}).status;
       if (status !== 401 && status !== 403) this.error.set('No pudimos recuperar tus turnos. Ingresá tu DNI para volver a intentar.');
@@ -336,7 +323,7 @@ export class ConfirmationPageComponent {
     if (!link) return;
     const booking = this.items().find(item => item.reference === link.reference);
     this.proposalLink.set(null);
-    if (booking?.canChange && booking.rescheduleResponse === 'AWAITING_PATIENT' &&
+    if (booking && this.isAwaitingPatient(booking) && this.canManage(booking) &&
         booking.rescheduleProposalVersion === link.version) {
       if (link.action === 'reschedule') {
         if (booking.publicDoctorId && booking.publicClinicId) {
@@ -471,7 +458,7 @@ export class ConfirmationPageComponent {
   }
 
   acceptProposal(booking: PortalBooking) {
-    if (!booking.canChange || booking.rescheduleResponse !== 'AWAITING_PATIENT') return;
+    if (!this.canManage(booking) || !this.isAwaitingPatient(booking)) return;
     return this.run(async () => {
       await this.updateBooking(booking, 'confirm', '', '');
       if (!this.alive) return;
@@ -524,6 +511,10 @@ export class ConfirmationPageComponent {
 
   canManage(booking: PortalBooking) {
     return this.canOpen(booking) && booking.canChange && booking.status === 'CONFIRMED';
+  }
+
+  isAwaitingPatient(booking: PortalBooking) {
+    return booking.status === 'CONFIRMED' && booking.rescheduleResponse === 'AWAITING_PATIENT';
   }
 
   verified(booking: PortalBooking | PortalPreview): PortalBooking | null {

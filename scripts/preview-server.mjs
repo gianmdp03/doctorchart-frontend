@@ -5,9 +5,10 @@ import { brotliCompressSync, gzipSync } from 'node:zlib';
 
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.avif': 'image/avif', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.xml': 'application/xml', '.txt': 'text/plain; charset=utf-8' };
 
-export function createPreview({ directory, clientPatterns = [], redirects = {}, publicPaths = ['/'], shell = 'index.csr.html' }) {
+export function createPreview({ directory, clientPatterns = [], privateClientPattern, redirects = {}, publicPaths = ['/'], shell = 'index.csr.html' }) {
   const root = realpathSync(directory);
   const patterns = clientPatterns.map(pattern => new RegExp(pattern));
+  const privatePattern = privateClientPattern ? new RegExp(privateClientPattern) : null;
   return http.createServer((req, res) => {
     let pathname;
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
@@ -18,8 +19,9 @@ export function createPreview({ directory, clientPatterns = [], redirects = {}, 
     let file = resolve(root, '.' + pathname);
     if (file !== root && !file.startsWith(root + sep)) { res.writeHead(403); res.end(); return; }
     let status = 200;
+    const privateRoute = privatePattern?.test(normalized) ?? false;
     if (publicPaths.includes(normalized)) file = resolve(root, '.' + normalized, 'index.html');
-    else if (patterns.some(pattern => pattern.test(normalized))) file = resolve(root, shell);
+    else if (privateRoute || patterns.some(pattern => pattern.test(normalized))) file = resolve(root, shell);
     else if (!extname(file) || !existsSync(file) || statSync(file).isDirectory()) {
       file = resolve(root, '404.html'); status = 404;
     }
@@ -30,10 +32,11 @@ export function createPreview({ directory, clientPatterns = [], redirects = {}, 
     const mime = types[extname(file)] ?? 'application/octet-stream';
     res.setHeader('Content-Type', mime);
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Cache-Control', /[-.][A-Za-z0-9_-]{8,}\.(js|css)$/.test(file) ? 'public, max-age=31536000, immutable' : 'no-cache');
+    res.setHeader('Referrer-Policy', privateRoute ? 'no-referrer' : 'strict-origin-when-cross-origin');
+    const cacheControl = /[-.][A-Za-z0-9_-]{8,}\.(js|css)$/.test(file) ? 'public, max-age=31536000, immutable' : 'no-cache';
+    res.setHeader('Cache-Control', privateRoute ? 'no-store' : cacheControl);
     res.setHeader('Vary', 'Accept-Encoding');
-    if (extname(file) === '.html' && !publicPaths.includes(normalized)) res.setHeader('X-Robots-Tag', 'noindex, follow');
+    if (extname(file) === '.html' && !publicPaths.includes(normalized)) res.setHeader('X-Robots-Tag', privateRoute ? 'noindex, nofollow' : 'noindex, follow');
     const accept = req.headers['accept-encoding'] ?? '';
     if (/^(text\/|application\/(json|xml))/.test(mime) || mime === 'image/svg+xml') {
       if (accept.includes('br')) { body = brotliCompressSync(body); res.setHeader('Content-Encoding', 'br'); }
