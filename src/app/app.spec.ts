@@ -60,7 +60,7 @@ describe('App recovers the empty entry route after login', () => {
       ]),
       {provide:AuthService,useValue:{currentUser,authReady:Promise.resolve(),isLoggedIn:computed(()=>!!currentUser()),isSuperAdmin:()=>false,hasDoctorchartPlan:()=>true,openLoginModal:vi.fn()}},
       {provide:DoctorProfileService,useValue:{clearProfile:vi.fn(),loadProfile}},
-      {provide:WorkspaceStore,useValue:{loadContexts:async()=>[],contexts:()=>[],clearSetup:vi.fn(),loadSetup:vi.fn().mockResolvedValue(null),isOnboardingCompleted:()=>false}},
+      {provide:WorkspaceStore,useValue:{loadContexts:async()=>[],contexts:()=>[],bindSession:vi.fn(),clearSetup:vi.fn(),loadSetup:vi.fn().mockResolvedValue(null),isOnboardingCompleted:()=>false}},
       {provide:ActivePatientService,useValue:{clear:vi.fn()}},
       {provide:ClinicalEncounterService,useValue:{clear:vi.fn()}},
     ]}).overrideComponent(App,{set:{imports:[RouterOutlet],template:'<router-outlet />'}}).compileComponents();
@@ -135,7 +135,7 @@ describe('App administrative entry', () => {
     };
     workspace = {
       isModuleActive: vi.fn().mockReturnValue(false),
-      clearSetup: vi.fn(), loadSetup: vi.fn().mockResolvedValue(null), loadPreferences: vi.fn().mockResolvedValue(null),
+      bindSession: vi.fn(), clearSetup: vi.fn(), loadSetup: vi.fn().mockResolvedValue(null), loadPreferences: vi.fn().mockResolvedValue(null),
       preferences: signal(null), preferencesError: signal(null), isLoading: signal(false),
       isOnboardingCompleted: completed, loaded: signal(false), error: signal(null),
     };
@@ -233,7 +233,7 @@ describe('App administrative entry', () => {
     currentUser.set(user('SUPER_ADMIN'));
     fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
     expect(profile['clearProfile']).toHaveBeenCalledTimes(2);
-    expect(workspace['clearSetup']).toHaveBeenCalledTimes(2);
+    expect(workspace['bindSession']).toHaveBeenCalledTimes(2);
     expect(workspace['loadSetup']).toHaveBeenCalledOnce();
     expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/admin/specialties']);
   });

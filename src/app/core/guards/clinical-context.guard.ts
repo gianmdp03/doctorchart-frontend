@@ -6,7 +6,9 @@ import {AuthService} from '../services/auth.service';
 
 export const clinicalContextGuard:CanActivateFn=async(route,state)=>{
  const navigation=inject(ClinicalNavigationService);
- const store=inject(WorkspaceStore),router=inject(Router),auth=inject(AuthService);await auth.authReady;if(!auth.isLoggedIn())return true;if(auth.isSuperAdmin())return router.createUrlTree(['/admin/specialties']);
+ const store=inject(WorkspaceStore),router=inject(Router),auth=inject(AuthService);await auth.authReady;
+ store.bindSession(auth.currentUser()?.id ?? null, auth.isSuperAdmin(), auth.hasDoctorchartPlan());
+ if(!auth.isLoggedIn())return true;if(auth.isSuperAdmin())return router.createUrlTree(['/admin/specialties']);
  try{
   const contexts=await store.loadContexts();const values=route.queryParamMap.getAll('specialtyContextId');if(values.length>1)return router.createUrlTree(['/specialties']);
   const explicit=values[0];if(values.length && !/^[1-9]\d*$/.test(explicit))return router.createUrlTree(['/specialties']);let id=explicit?Number(explicit):store.specialtyContextId();

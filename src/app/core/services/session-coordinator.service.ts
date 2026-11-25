@@ -33,7 +33,7 @@ export class SessionCoordinatorService {
         if (adminIdentity || !planActive) this.activePatient.clear();
         this.clinicalEncounters.clear();
         this.doctorProfileService.clearProfile();
-        this.workspaceStore.clearSetup();
+        this.workspaceStore.bindSession(identity, adminIdentity, planActive);
         if (identity && adminIdentity) {
           const path = this.router.url.split(/[?#]/)[0];
           const sharedAccount = /^\/(?:account|support|forgot-password|reset-password|email-change-success)(?:\/|$)/.test(path);

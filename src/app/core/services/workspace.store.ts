@@ -17,6 +17,15 @@ export class WorkspaceStore {
   private contextsLoaded=false;
   private requestedContext:number|null=null;
   private accountEpoch=0;
+  private sessionKey: string | null = null;
+
+  /** Guards and the lazy session coordinator can initialize the same account concurrently. */
+  bindSession(identity: string | null, admin: boolean, planActive: boolean): void {
+    const key = JSON.stringify([identity, admin, planActive]);
+    if (this.sessionKey === key) return;
+    this.sessionKey = key;
+    this.clearSetup();
+  }
 
   async loadContexts(force=false):Promise<SpecialtyContextSummary[]>{
     if(!force&&this.contextsLoaded)return this.clone(this.contexts());

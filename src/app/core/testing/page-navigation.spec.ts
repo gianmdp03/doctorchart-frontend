@@ -34,7 +34,7 @@ describe('Routed consultation and professional profile', () => {
       provideRouter(routes),
       provideLocationMocks(),
       { provide: AuthService, useValue: { authReady: Promise.resolve(), currentUser: signal({ id: 'doctor-a' }), isLoggedIn: () => true, isSuperAdmin: () => false, hasDoctorchartPlan: () => true, userName: () => 'Sofía Mendoza', userEmail: () => 'sofia@example.com' } },
-      { provide: WorkspaceStore, useValue: { specialtyContextId:()=>101,contexts:()=>[{id:101,ready:true}],loadContexts:async()=>[{id:101,ready:true}],activateContext:async()=>dialogWorkspace(),isOnboardingCompleted:()=>true,loadSetup: async () => dialogWorkspace() } },
+      { provide: WorkspaceStore, useValue: { bindSession:vi.fn(),specialtyContextId:()=>101,contexts:()=>[{id:101,ready:true}],loadContexts:async()=>[{id:101,ready:true}],activateContext:async()=>dialogWorkspace(),isOnboardingCompleted:()=>true,loadSetup: async () => dialogWorkspace() } },
       { provide: ClinicalEncounterService, useValue: { getById, getAll: () => of({ content: [record], totalElements: 1, totalPages: 1 }) } },
       { provide: ActivePatientService, useValue: { loadPatient: vi.fn(), activePatient: signal(null), patientId: signal(null) } },
       { provide: PatientRecordActionsService, useValue: { has: () => true } },
@@ -80,7 +80,7 @@ describe('Patient drafts across routed clinical screens', () => {
     await TestBed.configureTestingModule({ providers: [
       provideRouter(routes), provideLocationMocks(), provideHttpClient(), provideHttpClientTesting(),
       { provide: AuthService, useValue: { authReady: Promise.resolve(), currentUser: owner, isLoggedIn: () => !!owner(), isSuperAdmin: () => false, hasDoctorchartPlan: () => true } },
-      { provide: WorkspaceStore, useValue: { specialtyContextId:()=>101,contexts:()=>[{id:101,ready:true}],loadContexts:async()=>[{id:101,ready:true}],activateContext:async()=>dialogWorkspace(),isOnboardingCompleted:()=>true,loadSetup: async () => dialogWorkspace(), patientRecordTabs: () => ['SUMMARY', 'ENCOUNTERS', 'STUDIES', 'PRESCRIPTIONS'], hasRecordTab: (tab: string) => tab !== 'GROWTH', isModuleActive: () => false } },
+      { provide: WorkspaceStore, useValue: { bindSession:vi.fn(),specialtyContextId:()=>101,contexts:()=>[{id:101,ready:true}],loadContexts:async()=>[{id:101,ready:true}],activateContext:async()=>dialogWorkspace(),isOnboardingCompleted:()=>true,loadSetup: async () => dialogWorkspace(), patientRecordTabs: () => ['SUMMARY', 'ENCOUNTERS', 'STUDIES', 'PRESCRIPTIONS'], hasRecordTab: (tab: string) => tab !== 'GROWTH', isModuleActive: () => false } },
       { provide: ActivePatientService, useValue: { loadPatient: vi.fn(), activePatient: patient, patientId: computed(() => patient()?.id ?? null) } },
       { provide: ClinicalEncounterService, useValue: { getById: () => of(dialogEncounter()), getByPatient: () => of([]) } },
       { provide: PatientPrescriptionService, useValue: { list: () => of([]) } },

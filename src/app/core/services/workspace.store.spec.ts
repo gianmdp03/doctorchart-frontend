@@ -64,6 +64,34 @@ describe('WorkspaceStore canonical lifecycle', () => {
     expect(store.preferences()).toBeNull();
   });
 
+  it('does not invalidate an in-flight read when the same restored session binds twice', async () => {
+    store.bindSession('doctor-a', false, true);
+    const response = new Subject<WorkspaceSetup>();
+    service.getCurrentSetup.mockReturnValueOnce(response);
+    const pending = store.loadSetup();
+    await vi.waitFor(() => expect(response.observed).toBe(true));
+    store.bindSession('doctor-a', false, true);
+    response.next(setup);
+    response.complete();
+    expect(await pending).toEqual(setup);
+    expect(store.loaded()).toBe(true);
+  });
+
+  it('still clears clinical state when account, role or entitlement changes', async () => {
+    store.bindSession('doctor-a', false, true);
+    await store.loadSetup();
+    const clear = vi.spyOn(store, 'clearSetup');
+    store.bindSession('doctor-a', false, true);
+    expect(clear).not.toHaveBeenCalled();
+    store.bindSession('doctor-b', false, true);
+    store.bindSession('doctor-b', true, true);
+    store.bindSession('doctor-b', true, false);
+    store.bindSession(null, false, false);
+    expect(clear).toHaveBeenCalledTimes(4);
+    expect(store.currentSetup()).toBeNull();
+    expect(store.contexts()).toEqual([]);
+  });
+
   it('updates the selected specialty in its existing list position', () => {
     const first = store.contexts()[0];
     store.contexts.set([first, { ...first, id: 202 }]);
