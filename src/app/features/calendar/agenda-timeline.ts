@@ -1,7 +1,7 @@
 import { addDays, civilDate, localTime } from './bookings.models';
 import type { Booking } from './bookings.models';
 
-export type AgendaBooking = Pick<Booking, 'id' | 'start' | 'end' | 'status' | 'contactName' | 'attendeeName' | 'specialty'>;
+export type AgendaBooking = Pick<Booking, 'id' | 'start' | 'end' | 'status' | 'rescheduleResponse' | 'contactName' | 'attendeeName' | 'specialty'>;
 export interface AgendaSlot { start: string; end: string; }
 export interface AgendaDay<S extends AgendaSlot> {
   date: string;

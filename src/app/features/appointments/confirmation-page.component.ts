@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
+=======
+import { Component, DestroyRef, ElementRef, Injector, afterNextRender, inject, signal, viewChild } from '@angular/core';
+import { DOCUMENT, isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
+>>>>>>> Stashed changes
 import { PLATFORM_ID } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -14,6 +19,7 @@ import { PublicBookingShellComponent } from './public-booking-shell.component';
 import { PORTAL_TIMEZONE, portalDatePassed, portalInstant } from './portal-booking-time';
 
 type BookingAction = 'cancel' | 'reschedule';
+type ProposalLink = { reference: string; version: string; action: 'confirm' | 'reschedule' };
 const slotWeekday = new Intl.DateTimeFormat('es-AR', {weekday:'long', timeZone:'UTC'});
 
 @Component({
@@ -29,6 +35,7 @@ export class ConfirmationPageComponent {
   private readonly stepHeading = viewChild<ElementRef<HTMLElement>>('stepHeading');
   private readonly changeHeading = viewChild<ElementRef<HTMLElement>>('changeHeading');
   private readonly proof = new AbortController();
+  private readonly location = inject(DOCUMENT).location;
 
   private resendTimer?: ReturnType<typeof setTimeout>;
   private expiryTimer?: ReturnType<typeof setTimeout>;
@@ -53,6 +60,7 @@ export class ConfirmationPageComponent {
   readonly canResend = signal(true);
   readonly error = signal('');
   readonly feedback = signal('');
+  readonly proposalLink = signal<ProposalLink | null>(null);
   readonly items = signal<PortalBooking[]>([]);
   readonly hasMore = signal(false);
   readonly previews = signal<PortalPreview[]>([]);
@@ -80,6 +88,7 @@ export class ConfirmationPageComponent {
 
   constructor() {
     const browser = isPlatformBrowser(inject(PLATFORM_ID));
+<<<<<<< Updated upstream
     const clock = browser ? setInterval(() => this.now.set(Date.now()), 1000) : undefined;
     effect(() => {
       const selected = this.change();
@@ -95,10 +104,24 @@ export class ConfirmationPageComponent {
         if (!booking || !this.canOpen(booking)) this.expanded.set(null);
       }
     });
+=======
+    if (browser) {
+      const params = new URLSearchParams(this.location?.hash.slice(1));
+      const action = params.get('action'), reference = params.get('reference'), version = params.get('version');
+      if ((action === 'confirm' || action === 'reschedule') && reference &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(reference) &&
+          version && /^[1-9]\d{0,18}$/.test(version)) {
+        this.proposalLink.set({action, reference, version});
+        this.focusedReference = reference;
+      }
+    }
+>>>>>>> Stashed changes
     const info = inject(Router).currentNavigation()?.extras.info as {bookingDni?: unknown} | undefined;
     const dni = typeof info?.bookingDni === 'string' && /^[0-9]{5,8}$/.test(info.bookingDni) ? info.bookingDni : '';
     const draft = this.api.takePortalDraft();
-    if (dni && browser) {
+    if (this.proposalLink()) {
+      void this.restoreSession();
+    } else if (dni && browser) {
       this.document = dni;
       void this.lookupBookings();
     } else if (draft) {
@@ -161,8 +184,20 @@ export class ConfirmationPageComponent {
     this.busy.set(true);
     try {
       await this.fetchBookings(false);
+<<<<<<< Updated upstream
       if (this.alive) this.step.set('list');
     } catch (error) {
+=======
+      if (!this.alive) return;
+      const proposal = this.proposalLink();
+      if (proposal && !this.items().some(item => item.reference === proposal.reference)) {
+        this.items.set([]);
+        return;
+      }
+      this.step.set('list');
+      if (proposal) await this.openProposal();
+    } catch {
+>>>>>>> Stashed changes
       // An unopened or expired browser session starts at the identity form.
       const status = (error as {status?:number}).status;
       if (status !== 401 && status !== 403) this.error.set('No pudimos recuperar tus turnos. Ingresá tu DNI para volver a intentar.');
@@ -197,6 +232,8 @@ export class ConfirmationPageComponent {
   }
 
   lookupBookings(append = false) {
+    const proposal = this.proposalLink();
+    if (proposal && !append) return this.requestCode(proposal.reference);
     return this.run(async () => {
       const {token, solution} = await this.proofOfWork();
       const {items, hasMore} = await this.request(this.api.previewPortalBookings(
@@ -278,6 +315,10 @@ export class ConfirmationPageComponent {
     await this.fetchBookings(false);
     this.previews.set([]);
     this.hasMorePreviews.set(false);
+    if (this.proposalLink()) {
+      await this.openProposal();
+      return;
+    }
     const selected = this.items().find(item => item.reference === reference);
     this.expanded.set(selected && this.canOpen(selected) ? reference : null);
     if (action && selected && this.canManage(selected)) {
@@ -288,6 +329,37 @@ export class ConfirmationPageComponent {
       this.closeChange();
       this.focusStep();
     }
+  }
+
+  private async openProposal() {
+    const link = this.proposalLink();
+    if (!link) return;
+    const booking = this.items().find(item => item.reference === link.reference);
+    this.proposalLink.set(null);
+    if (booking?.canChange && booking.rescheduleResponse === 'AWAITING_PATIENT' &&
+        booking.rescheduleProposalVersion === link.version) {
+      if (link.action === 'reschedule') {
+        if (booking.publicDoctorId && booking.publicClinicId) {
+          this.prepareChange(booking, 'reschedule');
+          try {
+            await this.fetchSlots(this.date, booking);
+          } catch {
+            if (this.alive) this.error.set('No pudimos consultar los horarios. Elegí una fecha para reintentar.');
+          }
+          return;
+        }
+        this.feedback.set('Para elegir otra fecha, comunicate con el consultorio. No tiene horarios publicados para reprogramar online.');
+      }
+    } else {
+      this.feedback.set('La propuesta de ese correo ya no está pendiente. Revisá el estado actual del turno.');
+    }
+    this.focusStep();
+  }
+
+  leaveProposal() {
+    if (this.busy()) return;
+    this.proposalLink.set(null);
+    this.resetView();
   }
 
   private clearCode() {
@@ -389,23 +461,39 @@ export class ConfirmationPageComponent {
     return this.run(async () => {
       const start = selected.action === 'reschedule' ? this.start : '';
       const reason = this.changeReason.trim();
-      const signature = JSON.stringify([selected.booking.reference, selected.booking.version, selected.action, start, reason]);
-      if (this.mutation?.signature !== signature) this.mutation = {signature, key:crypto.randomUUID()};
-      try {
-        await this.request(this.api.changePortalBooking(selected.booking, selected.action, start, this.mutation.key, reason));
-      } catch (error) {
-        if ((error as {status?: number}).status === 409) {
-          this.closeChange();
-          await this.fetchBookings(false);
-        }
-        throw error;
-      }
+      await this.updateBooking(selected.booking, selected.action, start, reason);
       if (!this.alive) return;
       this.closeChange();
       this.feedback.set(selected.action === 'cancel' ? 'El turno se canceló.' : 'El turno se reprogramó.');
       await this.fetchBookings(false);
       this.focusStep();
     }, 'No pudimos confirmar el cambio. Volvé a intentarlo.');
+  }
+
+  acceptProposal(booking: PortalBooking) {
+    if (!booking.canChange || booking.rescheduleResponse !== 'AWAITING_PATIENT') return;
+    return this.run(async () => {
+      await this.updateBooking(booking, 'confirm', '', '');
+      if (!this.alive) return;
+      this.closeChange();
+      this.feedback.set('Confirmaste el nuevo horario. El consultorio ya puede verlo en la agenda.');
+      await this.fetchBookings(false);
+      this.focusStep();
+    }, 'No pudimos confirmar el turno. Volvé a intentarlo.');
+  }
+
+  private async updateBooking(booking: PortalBooking, action: BookingAction | 'confirm', start: string, reason: string) {
+    const signature = JSON.stringify([booking.reference, booking.version, action, start, reason]);
+    if (this.mutation?.signature !== signature) this.mutation = {signature, key:crypto.randomUUID()};
+    try {
+      await this.request(this.api.changePortalBooking(booking, action, start, this.mutation.key, reason));
+    } catch (error) {
+      if ((error as {status?: number}).status === 409) {
+        this.closeChange();
+        await this.fetchBookings(false);
+      }
+      throw error;
+    }
   }
 
   weekdayLabel(date: string) {

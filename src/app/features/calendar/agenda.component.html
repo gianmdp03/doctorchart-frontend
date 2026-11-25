@@ -78,6 +78,9 @@
           ><ng-icon name="lucideCheck" /><b>{{ stats.confirmed }}</b>
           {{ stats.confirmed === 1 ? 'confirmado' : 'confirmados' }}</span
         >
+        @if (stats.pending) {
+          <span class="stat" data-status="AWAITING_PATIENT"><ng-icon name="lucideClock3" /><b>{{ stats.pending }}</b> en espera</span>
+        }
         <span class="stat" data-status="CHECKED_IN"
           ><ng-icon name="lucideLogIn" /><b>{{ stats.checkedIn }}</b>
           {{ stats.checkedIn === 1 ? 'presente' : 'presentes' }}</span
@@ -206,7 +209,7 @@
                     [class.short-event]="pixels(entry.height) < 34"
                     [class.tall-event]="pixels(entry.height) >= 52"
                     [class.shared-cancellation]="entry.sharedCancellation"
-                    [attr.data-status]="booking.status"
+                    [attr.data-status]="bookingState(booking)"
                     [attr.data-booking-id]="booking.id"
                     [style.top.px]="pixels(entry.from - calendar.from)"
                     [style.height.px]="pixels(entry.height)"
@@ -237,7 +240,7 @@
                       ><span>{{ name }}</span></span
                     >
                     <span class="event-meta"
-                      ><ng-icon [name]="statusIcons[booking.status]" /><span
+                      ><ng-icon [name]="statusIcons[bookingState(booking)]" /><span
                         >{{ status }}
                         @if (booking.specialty && pixels(entry.height) >= 52) {
                           · {{ booking.specialty.name }}

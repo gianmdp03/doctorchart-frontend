@@ -16,7 +16,7 @@ import {BookingsService} from './bookings.service';
 import {FEATURE_FLAGS} from '../../core/config/feature-flags';
 import {PublicBookingDetails,PublicBookingForm} from '../appointments/appointments.models';
 import {BookingPortalFieldsComponent,bookingPortalIntake} from './booking-portal-fields.component';
-import {Booking,BookingEvent,BookingStatus,STATUS_LABELS,bookingStatusLabel,transitions,addDays,civilDate,localTime,displayDay,slotOffsetLabel} from './bookings.models';
+import {Booking,BookingEvent,BookingState,BookingStatus,STATUS_LABELS,bookingState,bookingStatusLabel,transitions,addDays,civilDate,localTime,displayDay,slotOffsetLabel} from './bookings.models';
 import {CalendarClinic,StaffAgenda} from '../staff/staff-agenda';
 import {StaffAccountComponent} from '../staff/staff-account.component';
 import { AgendaComponent, type AgendaView } from './agenda.component';
@@ -55,7 +55,7 @@ export class CalendarPageComponent {
  readonly agendaSlotSelected = (slot: Slot) => this.isSelectedSlot(slot);
  readonly agendaSlotContext = (slot: Slot) => this.clinicId || this.staff ? this.slotSpecialty(slot) : slot.clinic.name;
  readonly agendaBookingContext = (booking: Booking) => this.bookingClinic(booking);
- readonly agendaBookingStatus = (booking: Booking) => bookingStatusLabel(booking.status, this.bookingModality(booking));
+ readonly agendaBookingStatus = (booking: Booking) => bookingStatusLabel(bookingState(booking), this.bookingModality(booking));
 
  setAgendaView(view: AgendaView): void {
   if (!this.writing()) this.agendaView.set(view);
@@ -88,22 +88,37 @@ export class CalendarPageComponent {
  portalDraft={document:'',email:'',answers:{} as Record<string,string>};
  readonly bookingForm=signal<PublicBookingForm|null>(null);
  readonly formError=signal('');
- readonly statuses:BookingStatus[]=Object.keys(STATUS_LABELS) as BookingStatus[];
- readonly statusLabel=bookingStatusLabel;readonly displayDay=displayDay;readonly localTime=localTime;readonly slotOffsetLabel=slotOffsetLabel;readonly transitions=transitions;
+ readonly statuses=Object.keys(STATUS_LABELS) as BookingState[];
+ readonly bookingState=bookingState;
+ readonly statusLabel=bookingStatusLabel;readonly displayDay=displayDay;readonly localTime=localTime;readonly slotOffsetLabel=slotOffsetLabel;
  readonly civilDay=civilDate;readonly modalityLabel=modalityLabel;
  private readonly browserZone=Intl.DateTimeFormat().resolvedOptions().timeZone;
  get calendarZone(){return this.staff ? this.staff.assignment()?.timezone || 'America/Argentina/Buenos_Aires' : this.browserZone;}
  dateToday(){return civilDate(new Date().toISOString(),this.staff?.assignment()?.timezone || (this.staff ? 'America/Argentina/Buenos_Aires' : Intl.DateTimeFormat().resolvedOptions().timeZone));}
  weekday(date:string){return new Intl.DateTimeFormat('es-AR',{weekday:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));}
- eventDate(instant:string){const zone=this.selected()?this.bookingZone(this.selected()!):'UTC';return displayDay(civilDate(instant,zone))+' '+localTime(instant,zone);}
- eventLabel(kind:string){return ({CREATED:'Turno creado',STATUS_CHANGED:'Estado actualizado',RESCHEDULED:'Turno reprogramado'} as Record<string,string>)[kind]??kind;}
+ eventDate(instant:string,zone=this.selected()?this.bookingZone(this.selected()!):'UTC'){return displayDay(civilDate(instant,zone))+' '+localTime(instant,zone);}
+ eventLabel(event:BookingEvent){
+  const response=event.after.rescheduleResponse;
+  if(response==='AWAITING_PATIENT')return 'El consultorio propuso un horario';
+  if(response==='PATIENT_ACCEPTED')return 'El paciente confirmó el horario';
+  if(event.kind==='RESCHEDULED'&&event.actorId==='PUBLIC_PATIENT')return 'El paciente reprogramó el turno';
+  return ({CREATED:'Turno creado',STATUS_CHANGED:'Estado actualizado',RESCHEDULED:'Turno reprogramado'} as Record<string,string>)[event.kind]??event.kind;
+ }
  draftSlots(){return this.days().flatMap(d=>d.slots);}
  chooseDraftSlot(value:string){const s=this.draftSlots().find(s=>s.clinic.id+'|'+s.start===value);if(s)this.openSlot(s);}
  refreshCreateSlot(){const current=this.slot();if(current&&this.draftSlots().some(s=>s.clinic.id===current.clinic.id&&s.start===current.start)){this.conflict.set(false);this.editorError.set('');}else this.editorError.set('El horario original ya no está libre. Seleccioná otro horario actualizado debajo.');}
  constructor(){
   if(this.staff) void this.load();
   else effect(()=>{const owner=this.auth.currentUser()?.id??null;if(owner!==this.owner){this.owner=owner;this.generation++;this.capEpoch++;this.close();this.clinics.set([]);this.days.set([]);this.setCaps(null);if(owner)void this.load();}});
-  const timer=setInterval(()=>{this.clock.set(Date.now());},1000);const refresh=setInterval(()=>{if(this.staff&&!this.writing()&&!this.loading())void this.loadStaff(true);else if(this.owner)void this.retryCapabilities();},30000);
+  const timer=setInterval(()=>{this.clock.set(Date.now());},1000);
+  const refresh=setInterval(()=>{
+   if(this.writing()||this.loading())return;
+   if(this.staff)void this.loadStaff(true);
+   else if(this.owner){
+    if(this.days().some(day=>day.bookings.some(booking=>bookingState(booking)!==booking.status)))void this.load(true);
+    else void this.retryCapabilities();
+   }
+  },30000);
   this.destroy.onDestroy(()=>{this.generation++;this.editorEpoch++;this.capEpoch++;this.targetEpoch++;clearInterval(timer);clearInterval(refresh);if(this.expiry)clearTimeout(this.expiry);});
  }
  private current(g:number,owner=this.owner){return g===this.generation&&owner===(this.auth.currentUser()?.id??null);}
@@ -122,6 +137,11 @@ export class CalendarPageComponent {
   if (status === 'CHECKED_IN' && modality === 'TELECONSULTATION') return 'Marcar presente';
   return 'Marcar: ' + bookingStatusLabel(status, modality);
  }
+ allowedTransitions(booking:Booking):BookingStatus[]{
+  const state=bookingState(booking);
+  if(state==='AWAITING_PATIENT')return ['CANCELLED'];
+  return transitions(booking.status);
+ }
  specialtyName(b:Booking){return b.specialty?.name||'Especialidad sin registro histórico';}
  time(b:Booking){return localTime(b.start,this.bookingZone(b));}
  private validDate(date:string){return /^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(Date.parse(date+'T12:00:00Z'))&&new Date(date+'T12:00:00Z').toISOString().slice(0,10)===date;}
@@ -133,10 +153,10 @@ export class CalendarPageComponent {
  slotSpecialty(slot:Slot){return this.staff
   ? this.days().flatMap(day=>day.bookings).find(booking=>booking.specialtyContextId===slot.specialtyContextId)?.specialty?.name??''
   : this.workspace.contexts().find(c=>String(c.id)===slot.specialtyContextId)?.specialty.name??'Especialidad';}
- async load(){
-  if(this.staff)return this.loadStaff();
+ async load(background=false){
+  if(this.staff)return this.loadStaff(background);
   const g=++this.generation,owner=this.owner,date=this.date,count=7,id=this.clinicId;
-  this.loading.set(true);this.error.set('');this.days.set([]);
+  if(!background){this.loading.set(true);this.error.set('');this.days.set([]);}
   try{
    await this.workspace.loadContexts();const clinics:Clinic[]=[];let page=0,total=1;
    while(clinics.length<total){const next=await firstValueFrom(this.clinicsApi.listClinics({page:page++,size:100}));if(!this.current(g,owner))return;clinics.push(...next.items);total=next.totalElements;if(!next.items.length)break;}
@@ -163,8 +183,9 @@ export class CalendarPageComponent {
     }}catch(e){failures.push(`${clinic.name}: ${parseClinicHttpError(e,'No se pudo consultar la disponibilidad.').userMessage}`);}}));
    if(!this.current(g,owner))return;
    const unique=[...new Map(bookings.map(b=>[b.id,b])).values()];
-   this.days.set(Array.from({length:count},(_,i)=>{const d=addDays(date,i);return {date:d,hours:[...(hoursByDate.get(d) ?? [])].map(([start,end])=>({start,end})),closed:visible.length>0&&closedByDate.get(d)?.size===visible.length,bookings:unique.filter(b=>(!this.contextFilter||b.specialtyContextId===this.contextFilter)&&(!this.statusFilter||b.status===this.statusFilter)&&(!id||b.clinicId===id)&&(!this.modalityFilter||this.bookingModality(b)===this.modalityFilter)&&civilDate(b.start,this.calendarZone)===d).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start)),slots:slots.filter(s=>(!this.contextFilter||s.specialtyContextId===this.contextFilter)&&civilDate(s.start,this.calendarZone)===d).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start))};}));
-   if(failures.length)this.error.set(failures.join(' · '));
+   this.days.set(Array.from({length:count},(_,i)=>{const d=addDays(date,i);return {date:d,hours:[...(hoursByDate.get(d) ?? [])].map(([start,end])=>({start,end})),closed:visible.length>0&&closedByDate.get(d)?.size===visible.length,bookings:unique.filter(b=>(!this.contextFilter||b.specialtyContextId===this.contextFilter)&&(!this.statusFilter||bookingState(b)===this.statusFilter)&&(!id||b.clinicId===id)&&(!this.modalityFilter||this.bookingModality(b)===this.modalityFilter)&&civilDate(b.start,this.calendarZone)===d).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start)),slots:slots.filter(s=>(!this.contextFilter||s.specialtyContextId===this.contextFilter)&&civilDate(s.start,this.calendarZone)===d).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start))};}));
+   this.error.set(failures.join(' · '));
+   if(background)void this.refreshSelected(unique);
   }catch(e){if(this.current(g,owner))this.error.set(parseClinicHttpError(e,'No pudimos cargar el calendario.').userMessage);}
   finally{if(this.current(g,owner))this.loading.set(false);}
  }
@@ -227,6 +248,7 @@ export class CalendarPageComponent {
     const schedule = availability.days.find(item => item.date === day);
     return {date:day,hours:schedule?.hours,closed:schedule?.closed,bookings:bookings.filter(b=>civilDate(b.start,clinic.timezone)===day),slots:(schedule?.slots??[]).map(slot=>({...slot,clinic}))};
    }));
+   if(background)void this.refreshSelected(bookings);
   }catch(error){
    if(!current())return;
    this.error.set(staffError(error));
@@ -239,6 +261,21 @@ export class CalendarPageComponent {
     if((error as {status?:number}).status===401)staff.invalidateSession();
    }
   }finally{if(current())this.loading.set(false);}
+ }
+ private async refreshSelected(bookings:Booking[]){
+  const selected=this.selected();
+  if(!selected||this.editor()!=='detail'||this.detailBusy()||this.writing())return;
+  const current=bookings.find(booking=>booking.id===selected.id);
+  if(!current||current.version===selected.version)return;
+  this.selected.set(current);
+  if(this.staff)return;
+  const epoch=this.editorEpoch;
+  try{
+   const {items}=await firstValueFrom(this.api.events(current.id));
+   if(epoch===this.editorEpoch&&this.selected()?.version===current.version)this.events.set(items.filter(event=>event.kind!=='PATIENT_LINKED'));
+  }catch{
+   if(epoch===this.editorEpoch)this.editorError.set('No pudimos actualizar el historial del turno.');
+  }
  }
  close(){this.editorEpoch++;this.targetEpoch++;this.editor.set(null);this.selected.set(null);this.slot.set(null);this.events.set([]);this.publicDetails.set(null);this.targetSlots.set([]);this.editorError.set('');this.conflict.set(false);this.receipt=null;this.detailBusy.set(false);this.targetBusy.set(false);this.contactName='';this.contactPhone=null;this.attendeeName='';this.differentPerson=false;this.changeReason='';this.portalDraft={document:'',email:'',answers:{}};this.bookingForm.set(null);this.formError.set('');}
  private focusAfterRender(target:()=>ElementRef<HTMLElement>|undefined){
@@ -295,7 +332,7 @@ export class CalendarPageComponent {
  }
  async status(status:BookingStatus){
   const booking=this.selected();
-  if(!booking||this.detailBusy()||!this.canSetStatus(status)||!transitions(booking.status).includes(status))return;
+  if(!booking||this.detailBusy()||!this.canSetStatus(status)||!this.allowedTransitions(booking).includes(status))return;
   let reason:string|undefined;
   if(status==='CANCELLED'){
    if(this.editor()!=='cancel'){

@@ -2,15 +2,18 @@ import type { AppointmentModality } from '../clinics/clinics.models';
 import { isArgentineTimezone } from '../../core/date/user-time-zone';
 
 export type BookingStatus = 'CONFIRMED'|'CHECKED_IN'|'COMPLETED'|'NO_SHOW'|'CANCELLED';
+export type RescheduleResponse = 'AWAITING_PATIENT'|'PATIENT_ACCEPTED';
+export type BookingState = BookingStatus|'AWAITING_PATIENT';
 export interface Booking {
  id:string;clinicId:string;start:string;end:string;status:BookingStatus;version:string;
  contactName:string;contactPhone:string;attendeeName?:string;createdAt:string;updatedAt:string;
+ rescheduleResponse?:RescheduleResponse;
  // Optional only for replay receipts issued before schema 14.
  specialtyContextId?:string;specialty?:{id:string;code:string;name:string};
  clinicSnapshot?:{modality?:AppointmentModality;name:string;address:string;publicAddress:string;timezone:string};
  provenance?:{kind:'SCHEDULE_BLOCK'|'LEGACY_CONTEXT_ONLY';blockId?:string;scheduleVersion?:string;weekday?:number;exceptionId?:string;from?:string;through?:string;startMinute?:number;endMinute?:number;slotMinutes?:number;timezone?:string};
 }
-export interface BookingEvent {version:string;kind:string;actorId:string;occurredAt:string;before:Booking|null;after:Booking;}
+export interface BookingEvent {version:string;kind:string;actorId:string;occurredAt:string;before:Booking|null;after:Booking & {changeReason?:string};}
 export interface BookingPage {items:Booking[];page:number;size:number;totalElements:number;}
 export interface BookingPortalIdentity {document:string;email:string;answers:Record<string,string>;}
 export interface BookingCreate {clinicId:string;start:string;contactName:string;contactPhone:string;attendeeName:string;specialtyContextId?:string;portal?:BookingPortalIdentity & {formVersion:string};}
@@ -21,8 +24,13 @@ export const BOOKING_SUCCESS_MESSAGES = {
   status: 'El estado del turno se actualizó.',
 } as const;
 
-export const STATUS_LABELS:Record<BookingStatus,string>={CONFIRMED:'Confirmado',CHECKED_IN:'En consultorio',COMPLETED:'Atendido',NO_SHOW:'Ausente',CANCELLED:'Cancelado'};
-export function bookingStatusLabel(status: BookingStatus, modality?: AppointmentModality | ''): string {
+export const STATUS_LABELS:Record<BookingState,string>={CONFIRMED:'Confirmado',AWAITING_PATIENT:'En espera del paciente',CHECKED_IN:'En consultorio',COMPLETED:'Atendido',NO_SHOW:'Ausente',CANCELLED:'Cancelado'};
+export function bookingState(booking: Pick<Booking, 'status' | 'rescheduleResponse'>): BookingState {
+  const response = booking.rescheduleResponse;
+  return booking.status === 'CONFIRMED' && response === 'AWAITING_PATIENT'
+    ? response : booking.status;
+}
+export function bookingStatusLabel(status: BookingState, modality?: AppointmentModality | ''): string {
   return status === 'CHECKED_IN' && modality !== 'IN_PERSON' ? 'Presente' : STATUS_LABELS[status];
 }
 export function transitions(status:BookingStatus):BookingStatus[]{return status==='CONFIRMED'?['CHECKED_IN','NO_SHOW','CANCELLED']:status==='CHECKED_IN'?['COMPLETED','CANCELLED']:[];}

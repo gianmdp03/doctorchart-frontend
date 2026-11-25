@@ -3,7 +3,7 @@
   <div class="change-reason">
    <label for="portal-change-reason">{{action === 'cancel' ? 'Motivo de la cancelación' : 'Motivo de la reprogramación'}}</label>
    <textarea id="portal-change-reason" rows="3" [(ngModel)]="changeReason" [maxlength]="reasonLimit" required [disabled]="busy()" aria-describedby="portal-reason-help"></textarea>
-   <div class="change-help"><span id="portal-reason-help">Indicá brevemente el motivo. Se incluirá en el correo de confirmación.</span><span aria-hidden="true">{{changeReason.length}} / {{reasonLimit}}</span></div>
+   <div class="change-help"><span id="portal-reason-help">Indicá brevemente el motivo. Evitá incluir información clínica.</span><span aria-hidden="true">{{changeReason.length}} / {{reasonLimit}}</span></div>
   </div>
  </ng-template>
  @if (step() === 'identity' || step() === 'code') {
@@ -20,14 +20,17 @@
      @if (step() === 'identity') {
     <form class="entry-panel patient-panel" ngNativeValidate #form="ngForm" (ngSubmit)="form.valid && lookupBookings()" [attr.aria-busy]="busy()">
       <div class="patient-panel-heading">
-       <h2 #stepHeading tabindex="-1">Buscá tus turnos</h2>
-       <p>Usá el DNI que ingresaste al reservar.</p>
+       <h2 #stepHeading tabindex="-1">{{proposalLink() ? 'Revisá el nuevo horario' : 'Buscá tus turnos'}}</h2>
+       <p>{{proposalLink() ? 'Ingresá el DNI de la reserva para recibir un código de acceso en tu correo.' : 'Usá el DNI que ingresaste al reservar.'}}</p>
       </div>
       <label for="portal-document">DNI de la reserva</label>
       <input id="portal-document" name="document" [(ngModel)]="document" required pattern="[0-9]{5,8}"
         aria-describedby="portal-document-hint" maxlength="8" inputmode="numeric" autocomplete="off" [disabled]="busy()" />
       <p class="field-hint" id="portal-document-hint">Entre 5 y 8 dígitos, sin puntos.</p>
-      <button class="portal-primary" type="submit" [disabled]="busy()">{{busy() ? 'Buscando…' : 'Ver mis turnos'}}</button>
+      <button class="portal-primary" type="submit" [disabled]="busy()">{{busy() ? 'Procesando…' : proposalLink() ? 'Enviar código' : 'Ver mis turnos'}}</button>
+      @if(proposalLink()){
+        <button type="button" class="quiet-button" (click)="leaveProposal()" [disabled]="busy()">Ver todos mis turnos</button>
+      }
     </form>
      } @else {
     <form class="entry-panel code-panel patient-panel" (ngSubmit)="verifyCode()" [attr.aria-busy]="busy()">
@@ -69,6 +72,7 @@
       }
       <a class="search-link" routerLink="/appointments">Buscar un turno</a>
     </div>
+<<<<<<< Updated upstream
   </header>
 
   @if (feedback()) { <p class="booking-feedback" role="status">{{feedback()}}</p> }
@@ -88,6 +92,39 @@
               <strong>{{group.items.length}}</strong><span>{{group.title}}</span>
             </div>
           }
+=======
+    @if (feedback()) {
+      <div class="booking-feedback" role="status">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <path d="m8 12 2.5 2.5L16 9" />
+        </svg>
+        <span>{{feedback()}}</span>
+      </div>
+    }
+    @if (items().length && change()?.action !== 'cancel') {
+      <p class="booking-policy">Podés cancelar <strong>antes de la hora de inicio</strong>. Si no podés asistir, avisá lo antes posible.</p>
+    }
+    @if (!items().length && !busy() && !error()) { <p>No encontramos turnos asociados a esos datos.</p> }
+    @for (booking of items(); track booking.reference) {
+      @let awaitingPatient = booking.status === 'CONFIRMED' && booking.rescheduleResponse === 'AWAITING_PATIENT';
+      <article class="constancia">
+        <p class="status" [class.status-pending]="awaitingPatient" [class.status-cancelled]="booking.status === 'CANCELLED'">{{awaitingPatient ? 'Esperando tu confirmación' : statusLabel(booking.status)}}</p>
+        <h2>{{booking.doctorName}}</h2>
+        <p class="when">{{slotLabel(booking.start, booking.timezone)}} · {{localTime(booking.end, booking.timezone)}}</p>
+        <p>{{booking.clinicName}} · {{booking.modality === 'TELECONSULTATION' ? 'Teleconsulta' : 'Presencial'}}</p>
+        @if (booking.address) { <p>{{booking.address}}</p> }
+        @if (booking.canChange && !change()) {
+          <div class="portal-actions">
+            @if (awaitingPatient) {
+              <button type="button" class="dc-button dc-button--primary" [disabled]="busy()" (click)="acceptProposal(booking)">Confirmar turno</button>
+            }
+            @if (booking.publicDoctorId && booking.publicClinicId) {
+              <button type="button" class="dc-button" [disabled]="busy()" (click)="chooseChange(booking, 'reschedule')">{{awaitingPatient ? 'Elegir otra fecha' : 'Reprogramar'}}</button>
+            }
+            <button type="button" class="dc-button" [disabled]="busy()" (click)="chooseChange(booking, 'cancel')">Cancelar turno</button>
+          </div>
+>>>>>>> Stashed changes
         }
       </div>
       @if (hasMore() || hasMorePreviews()) { <p class="coverage-note">El resumen corresponde a los turnos cargados. Cargá más para ampliar la lista.</p> }

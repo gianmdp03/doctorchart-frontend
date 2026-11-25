@@ -39,9 +39,9 @@ export class AppointmentsService{
  endPortalSession() {
   return this.http.post<void>(this.base+'/my-bookings/logout', {}, {transferCache:false,withCredentials:true});
  }
- changePortalBooking(booking: PortalBooking, action: 'cancel'|'reschedule', start: string, key: string, reason: string) {
+ changePortalBooking(booking: PortalBooking, action: 'cancel'|'reschedule'|'confirm', start: string, key: string, reason: string) {
   return this.http.post(this.base+'/my-bookings/change', {
-   reference:booking.reference, expectedVersion:booking.version, action, reason, ...(start ? {start} : {}),
+   reference:booking.reference, expectedVersion:booking.version, action, ...(reason ? {reason} : {}), ...(start ? {start} : {}),
   }, {headers:{'Idempotency-Key':key}, transferCache:false,withCredentials:true});
  }
  publication(){return this.http.get<Publication>(environment.apiUrl+'/booking-publication');}

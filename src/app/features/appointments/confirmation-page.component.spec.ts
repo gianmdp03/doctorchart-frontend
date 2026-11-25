@@ -4,6 +4,7 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { provideRouter } from '@angular/router';
 import { ConfirmationPageComponent } from './confirmation-page.component';
 import { AppointmentsService } from './appointments.service';
+import type { PortalBooking } from './appointments.models';
 import { authInterceptor } from '../../core/interceptors/auth.interceptor';
 import { timeZoneInterceptor } from '../../core/interceptors/time-zone.interceptor';
 import { AuthService } from '../../core/services/auth.service';
@@ -61,7 +62,7 @@ describe('Mis turnos', () => {
     expect(update.request.withCredentials).toBe(true);
     expect(update.request.headers.get('Idempotency-Key')).toBeTruthy();
     update.flush({});
-    await Promise.resolve();
+    await vi.waitFor(() => expect(page.feedback()).toBe('El turno se canceló.'));
     http.expectOne(req => req.url.endsWith('/my-bookings')).flush({items:[{...booking, status:'CANCELLED', canChange:false}], hasMore:false});
     await change;
     fixture.detectChanges();
@@ -100,6 +101,75 @@ describe('Mis turnos', () => {
     expect(page.step()).toBe('code');
     expect(page.items()).toEqual([]);
     expect(page.error()).toContain('venció');
+  });
+
+  it('opens a proposal from the email and confirms it only after an explicit patient action', async () => {
+    const reference = '22222222-2222-4222-8222-222222222222';
+    const original = window.location.href;
+    window.history.replaceState(null, '', '#action=confirm&reference=' + reference + '&version=2');
+    try {
+      const fixture = TestBed.createComponent(ConfirmationPageComponent);
+      const http = TestBed.inject(HttpTestingController);
+      const proposed: PortalBooking = {...booking, reference, version:'2', rescheduleProposalVersion:'2',
+        rescheduleResponse:'AWAITING_PATIENT', address:'', publicDoctorId:null, publicClinicId:null, specialtyContextId:'101'};
+      const list = http.expectOne(req => req.url.endsWith('/my-bookings'));
+      expect(list.request.body.focusReference).toBe(reference);
+      list.flush({items:[proposed],hasMore:false});
+      await fixture.whenStable();
+      fixture.detectChanges();
+      http.expectNone(req => req.url.endsWith('/my-bookings/change'));
+      expect(fixture.nativeElement.textContent).toContain('Esperando tu confirmación');
+
+      const pending = fixture.componentInstance.acceptProposal(proposed);
+      const request = http.expectOne(req => req.url.endsWith('/my-bookings/change'));
+      expect(request.request.body).toEqual({reference, expectedVersion:'2', action:'confirm'});
+      expect(request.request.withCredentials).toBe(true);
+      request.flush({rescheduleResponse:'PATIENT_ACCEPTED'});
+      await vi.waitFor(() => expect(fixture.componentInstance.feedback()).toContain('Confirmaste el nuevo horario'));
+      http.expectOne(req => req.url.endsWith('/my-bookings')).flush({items:[{...proposed, version:'3', rescheduleResponse:'PATIENT_ACCEPTED'}],hasMore:false});
+      await pending;
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Confirmaste el nuevo horario');
+      expect(fixture.nativeElement.textContent).not.toContain('Esperando tu confirmación');
+    } finally {
+      window.history.replaceState(null, '', original);
+    }
+  });
+
+  it('lets a verified patient book a free time directly from the alternate-date link', async () => {
+    const reference = '22222222-2222-4222-8222-222222222222';
+    const original = window.location.href;
+    window.history.replaceState(null, '', '#action=reschedule&reference=' + reference + '&version=2');
+    try {
+      const fixture = TestBed.createComponent(ConfirmationPageComponent);
+      const http = TestBed.inject(HttpTestingController);
+      http.expectOne(req => req.url.endsWith('/my-bookings')).flush({items:[{
+        ...booking, reference, version:'2', rescheduleProposalVersion:'2', rescheduleResponse:'AWAITING_PATIENT',
+        publicDoctorId:'doctor', publicClinicId:'clinic', specialtyContextId:'101',
+      }],hasMore:false});
+      await vi.waitFor(() => expect(fixture.componentInstance.loadingSlots()).toBe(true));
+      const start = '2030-01-01T11:00:00Z', end = '2030-01-01T11:30:00Z';
+      http.expectOne(req => req.url.endsWith('/availability')).flush({days:[{date:'2030-01-01',slots:[{start,end}]}]});
+      await vi.waitFor(() => expect(fixture.componentInstance.busy()).toBe(false));
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Reprogramar turno');
+      http.expectNone(req => req.url.endsWith('/my-bookings/change'));
+      const page = fixture.componentInstance;
+      page.start = start;
+      page.changeReason = 'No puedo en el horario anterior';
+      const pending = page.confirmChange();
+      const request = http.expectOne(req => req.url.endsWith('/my-bookings/change'));
+      expect(request.request.body).toEqual({reference, expectedVersion:'2', action:'reschedule', start, reason:page.changeReason});
+      request.flush({status:'CONFIRMED',start,end});
+      await vi.waitFor(() => expect(page.feedback()).toBe('El turno se reprogramó.'));
+      http.expectOne(req => req.url.endsWith('/my-bookings')).flush({items:[{...booking, reference, version:'3', start, end}],hasMore:false});
+      await pending;
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.constancia .status').textContent.trim()).toBe('Confirmado');
+    } finally {
+      window.history.replaceState(null, '', original);
+    }
   });
 
   it('shows the reason immediately when the patient chooses a change before verifying access', async () => {

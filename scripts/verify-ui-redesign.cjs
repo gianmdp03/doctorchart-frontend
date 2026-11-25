@@ -223,13 +223,47 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       boundary.state.emptyPatients = false;
     });
     await run('patient-form', doctor, '/patients/new?specialtyContextId=101', '#field-sys_firstName', async p => {
-      await p.locator('#field-sys_firstName').fill('Paciente de prueba');
+      const firstName = p.locator('#field-sys_firstName');
+      const dni = p.locator('#field-sys_dni');
+      const birthDate = p.locator('#field-sys_dob');
+      const email = p.locator('#field-sys_email');
+      assert.equal(await p.locator('.field-error').count(), 0);
+
+      await dni.fill('123abc');
+      assert.equal(await p.locator('#error-sys_dni').count(), 0);
+      await dni.press('Shift+Tab');
+      await p.locator('#error-sys_dni').waitFor();
+      assert.equal(await dni.getAttribute('aria-invalid'), 'true');
+      assert.equal(await p.locator('#error-sys_firstName').count(), 0);
+      await dni.fill('12345678');
+      await p.locator('#error-sys_dni').waitFor({ state: 'detached' });
+
+      await birthDate.fill('31/02/2000');
+      await p.locator('[data-field-key="sys_dob"] mat-datepicker-toggle button').focus();
+      assert.equal(await p.locator('#error-sys_dob').count(), 0);
+      await p.locator('#field-sys_sex').focus();
+      await p.locator('#error-sys_dob').waitFor();
+      await birthDate.fill('12/04/1990');
+      await p.locator('#error-sys_dob').waitFor({ state: 'detached' });
+
+      await email.fill('correo-invalido');
+      await firstName.focus();
+      await p.locator('#error-sys_email').waitFor();
+      await email.fill('paciente@example.test');
+      await p.locator('#error-sys_email').waitFor({ state: 'detached' });
+
+      const phone = p.locator('#field-sys_phone:enabled');
+      await phone.fill('abc');
+      assert.equal(await p.locator('#field-sys_phone-phone-error').count(), 0);
+      await email.click();
+      await p.locator('#field-sys_phone-phone-error').waitFor();
+      await phone.fill('');
+      await p.locator('#field-sys_phone-phone-error').waitFor({ state: 'detached' });
+
+      await firstName.fill('Paciente de prueba');
       await p.locator('#field-sys_lastName').fill('Pérez');
-      await p.locator('#field-sys_dni').fill('12345678');
-      await p.locator('#field-sys_dob').fill('12/04/1990');
-      await p.locator('#field-sys_dob').press('Tab');
       await p.locator('#field-sys_sex').selectOption('FEMALE');
-      assert.equal(await p.locator('#field-sys_firstName').inputValue(), 'Paciente de prueba');
+      assert.equal(await firstName.inputValue(), 'Paciente de prueba');
     });
     await run('patient-edit', doctor, '/patients/1/edit?specialtyContextId=101', '#field-sys_firstName', async p => {
       assert.equal(await p.locator('#field-sys_firstName').inputValue(), 'Paciente de prueba');

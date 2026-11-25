@@ -78,6 +78,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .constancia { margin-top: 24px; }
 .status { display: inline-flex; margin: 0; padding: 4px 10px; border-radius: var(--dc-radius-pill); background: var(--dc-brand-soft); color: var(--dc-brand-ink); font-size: .8125rem; font-weight: 600; }
 .status-cancelled { background: var(--dc-raised); color: var(--dc-text-secondary); }
+.status-pending { background: var(--dc-caution-soft); color: var(--dc-caution); }
 .when { font-size: 1.125rem; font-weight: 600; }
 .error { margin-top: 24px; padding: 16px; border: 1px solid currentColor; border-radius: var(--dc-radius-control); color: var(--dc-danger); background: var(--dc-danger-soft); }
 @media (max-width: 600px) { .recovery-page { padding: 24px 16px 48px; } h1 { font-size: 1.75rem; } .entry-panel, .constancia { padding: 20px 16px; } }

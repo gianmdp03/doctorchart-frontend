@@ -83,6 +83,11 @@ export class RegisterPageComponent {
       }
     } catch (err) {
       const failure = err as { code?: string; status?: number; message?: string } | null;
+      if (failure?.status === 409 && failure.message === 'DNI_ALREADY_IN_USE') {
+        this.error.set('Este DNI ya está en uso. Iniciá sesión con la cuenta que ya tenés.');
+        this.focusAfterRender('signup-dni');
+        return;
+      }
       switch (failure?.code) {
         case 'over_email_send_rate_limit':
         case 'over_request_rate_limit':
@@ -104,6 +109,8 @@ export class RegisterPageComponent {
             this.error.set('No pudimos enviar el correo de confirmación. Reintentá en unos minutos.');
           } else if (failure?.status === 0 || failure?.code === 'request_timeout') {
             this.error.set('No hubo respuesta del servicio de registro. Revisá tu conexión y el correo antes de reintentar.');
+          } else if (failure?.status === 500 && failure.message === 'Database error saving new user') {
+            this.error.set('No pudimos guardar tu cuenta. Si ya registraste este DNI, iniciá sesión con tu cuenta anterior. Si es tu primera cuenta, reintentá en unos minutos.');
           } else {
             this.error.set('No pudimos completar el registro. Si ya tenés una cuenta, iniciá sesión. Si no, reintentá en unos momentos.');
           }

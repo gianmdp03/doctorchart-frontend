@@ -10,6 +10,7 @@ import {
   inject,
   input,
   Injector,
+  linkedSignal,
   output,
   signal,
   untracked,
@@ -83,8 +84,25 @@ export class DynamicFormRendererComponent {
   }
   readonly encounter = input(false);
   readonly headingLevel = input<2 | 3>(3);
+  private readonly touchedFields = linkedSignal({
+    source: this.definition,
+    computation: () => new Set<string>(),
+  });
+
+  onFieldFocusOut(field: WizardFieldDefinition, event: FocusEvent): void {
+    if (this.readonly() || isPhoneField(field) || this.touchedFields().has(field.key)) return;
+    const next = event.relatedTarget;
+    if (next instanceof Element &&
+        ((event.currentTarget as HTMLElement).contains(next) ||
+         (field.type === 'DATE' && next.closest('mat-datepicker-content')))) return;
+
+    this.touchedFields.update(fields => new Set(fields).add(field.key));
+  }
+
   visibleFieldError(field: WizardFieldDefinition): string | null {
-    return this.showErrors() && !this.readonly() ? this.fieldError(field) : null;
+    return !this.readonly() && (this.showErrors() || this.touchedFields().has(field.key))
+      ? this.fieldError(field)
+      : null;
   }
   readonly valuesChange = output<WizardFormValues>();
   readonly validityChange = output<boolean>();

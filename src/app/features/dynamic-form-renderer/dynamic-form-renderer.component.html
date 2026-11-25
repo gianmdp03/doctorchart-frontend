@@ -27,6 +27,7 @@
                 [class.wide]="field.type === 'TEXTAREA'"
                 [class.has-error]="!readonly() && !!visibleFieldError(field)"
                 [attr.data-field-key]="field.key"
+                (focusout)="onFieldFocusOut(field, $event)"
               >
                 @if (readonly() && field.type !== 'FORMULA') {
                   <span class="saved-label">{{ field.label }}</span>

@@ -9,7 +9,7 @@ import {
   lucideMaximize2, lucideMinimize2, lucidePlus, lucideX,
 } from '@ng-icons/lucide';
 import { DatePickerComponent } from '../../shared/date-picker/date-picker.component';
-import { addDays, civilDate, displayDay, localTime } from './bookings.models';
+import { addDays, bookingState, civilDate, displayDay, localTime } from './bookings.models';
 import {
   AgendaBooking, AgendaDay, AgendaSlot, hourLabel, makeTimeline, minute, monday, PIXELS_PER_MINUTE,
 } from './agenda-timeline';
@@ -17,6 +17,7 @@ import {
 export type AgendaView = '1' | '7';
 export const AGENDA_STATUS_ICONS = {
   CONFIRMED: 'lucideCheck',
+  AWAITING_PATIENT: 'lucideClock3',
   CHECKED_IN: 'lucideLogIn',
   COMPLETED: 'lucideCircleCheck',
   NO_SHOW: 'lucideCircleMinus',
@@ -94,13 +95,15 @@ export class AgendaComponent<B extends AgendaBooking, S extends AgendaSlot> {
     return {
       date,
       total: bookings.length,
-      confirmed: bookings.filter(booking => booking.status === 'CONFIRMED').length,
+      confirmed: bookings.filter(booking => bookingState(booking) === 'CONFIRMED').length,
+      pending: bookings.filter(booking => bookingState(booking) !== booking.status).length,
       checkedIn: bookings.filter(booking => booking.status === 'CHECKED_IN').length,
       cancelled: bookings.filter(booking => booking.status === 'CANCELLED').length,
-      next: bookings.find(booking => booking.status === 'CONFIRMED' && Date.parse(booking.start) >= this.now()),
+      next: bookings.find(booking => bookingState(booking) === 'CONFIRMED' && Date.parse(booking.start) >= this.now()),
     };
   });
   readonly statusIcons = AGENDA_STATUS_ICONS;
+  readonly bookingState = bookingState;
   readonly displayDay = displayDay;
   readonly hourLabel = hourLabel;
   readonly pixels = (minutes: number) => minutes * PIXELS_PER_MINUTE;

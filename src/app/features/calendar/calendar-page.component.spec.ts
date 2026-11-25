@@ -27,6 +27,24 @@ describe('M5 calendar',()=>{
  });
  afterEach(()=>{fixture.destroy();vi.useRealTimers();});
  it('loads multiple clinics and renders bookings separately from available slots',()=>{expect(c.days().length).toBe(7);expect(c.days()[0].bookings[0].id).toBe('1');expect(c.days()[0].slots.length).toBe(2);expect(fixture.nativeElement.textContent).toContain('Persona atendida');});
+ it('shows a clinic proposal as pending and a replacement booked by the patient as confirmed',async()=>{
+  const proposed:Booking={...b,rescheduleResponse:'AWAITING_PATIENT'};
+  const alternate:Booking={...b,version:'2',start:'2030-01-07T10:00:00Z',end:'2030-01-07T10:30:00Z'};
+  api.get.mockReturnValueOnce(of(proposed)).mockReturnValueOnce(of(alternate));
+  api.events.mockReturnValueOnce(of({items:[]})).mockReturnValueOnce(of({items:[
+   {version:'2',kind:'RESCHEDULED',actorId:'PUBLIC_PATIENT',occurredAt:b.start,before:proposed,after:alternate},
+  ]}));
+  await c.openBooking(proposed);
+  fixture.detectChanges();
+  const page=fixture.nativeElement as HTMLElement;
+  expect(page.querySelector('.slot-summary .status')?.textContent).toContain('En espera del paciente');
+  expect(c.allowedTransitions(proposed)).toEqual(['CANCELLED']);
+  await c.openBooking(alternate);
+  fixture.detectChanges();
+  expect(page.querySelector('.slot-summary .status')?.textContent).toContain('Confirmado');
+  expect(page.textContent).toContain('El paciente reprogramó el turno');
+  expect(api.status).not.toHaveBeenCalled();
+ });
  it.each([
   { modality: 'TELECONSULTATION', action: 'Marcar presente', label: 'Presente' },
   { modality: 'IN_PERSON', action: 'Marcar: En consultorio', label: 'En consultorio' },

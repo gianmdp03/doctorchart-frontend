@@ -58,6 +58,7 @@
               }}<span aria-hidden="true"> *</span></label
             >
             <textarea
+              #details="ngModel"
               [id]="'field-' + group.details"
               rows="4"
               maxlength="4000"
@@ -65,13 +66,13 @@
               [ngModel]="values()[group.details] ?? ''"
               (ngModelChange)="update(group.details, $event)"
               aria-required="true"
-              [attr.aria-invalid]="showErrors() && !$any(values()[group.details])?.trim()"
-              [attr.aria-describedby]="'hint-' + group.details + (showErrors() && !$any(values()[group.details])?.trim() ? ' error-' + group.details : '')"
+              [attr.aria-invalid]="(showErrors() || details.touched) && !$any(values()[group.details])?.trim()"
+              [attr.aria-describedby]="'hint-' + group.details + ((showErrors() || details.touched) && !$any(values()[group.details])?.trim() ? ' error-' + group.details : '')"
             ></textarea>
             <small [id]="'hint-' + group.details"
               >Un registro por línea. Se mostrará automáticamente en el resumen.</small
             >
-            @if (showErrors() && !$any(values()[group.details])?.trim()) {
+            @if ((showErrors() || details.touched) && !$any(values()[group.details])?.trim()) {
               <p class="error" role="alert" [id]="'error-' + group.details">Detallá la información que seleccionaste.</p>
             }
           }

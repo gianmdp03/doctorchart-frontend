@@ -1,4 +1,5 @@
 import type {AppointmentModality} from '../clinics/clinics.models';
+import type {RescheduleResponse} from '../calendar/bookings.models';
 
 export interface PublicQuestion{key:string;label:string;required:boolean;}
 export interface PublicBookingForm{version:string;questions:PublicQuestion[];}
@@ -14,6 +15,8 @@ export interface PortalPreview { reference: string; date: string; canChange: boo
 export type PortalBooking = Omit<PublicConfirmation, 'contactName' | 'attendeeName' | 'verificationRequestId' | 'maskedEmail'> & {
   version: string;
   canChange: boolean;
+  rescheduleResponse?: RescheduleResponse | null;
+  rescheduleProposalVersion?: string | null;
   publicDoctorId: string | null;
   publicClinicId: string | null;
   specialtyContextId: string;

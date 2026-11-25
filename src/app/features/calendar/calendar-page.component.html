@@ -85,7 +85,7 @@
        <div class="reservations">
         @for (b of day.bookings; track b.id) {
          <button type="button" class="booking" [attr.aria-pressed]="selected()?.id === b.id"
-           [class.cancelled]="b.status === 'CANCELLED'" [attr.data-status]="b.status"
+           [class.cancelled]="b.status === 'CANCELLED'" [attr.data-status]="bookingState(b)"
            (click)="openBooking(b)" [disabled]="writing()">
           <span class="booking-time">{{localTime(b.start,calendarZone)}}
            @if (slotOffsetLabel(b.start,calendarZone); as offset) { <small>{{offset}}</small> }
@@ -150,7 +150,7 @@
    <dl><dt>Solicitante</dt><dd>{{b.contactName}}</dd><dt>Teléfono</dt><dd>{{(b.contactPhone | phoneDisplay | async) || b.contactPhone || 'Sin registrar'}}</dd></dl>
    @if(editor()==='detail'){
     <div class="state-actions">
-    @for(target of transitions(b.status);track target){@if(!staff || canSetStatus(target)){<button [class.danger]="target==='CANCELLED'" [disabled]="!canSetStatus(target)||writing()||conflict()||detailBusy()" (click)="status(target)">{{statusAction(target, bookingModality(b))}}</button>}}
+    @for(target of allowedTransitions(b);track target){@if(!staff || canSetStatus(target)){<button [class.danger]="target==='CANCELLED'" [disabled]="!canSetStatus(target)||writing()||conflict()||detailBusy()" (click)="status(target)">{{statusAction(target, bookingModality(b))}}</button>}}
     @if(b.status==='CONFIRMED' && (!staff || canReschedule())){<button id="booking-move" class="dc-button dc-button--primary primary" [disabled]="!canReschedule()||writing()||conflict()||detailBusy()" (click)="beginMove()">Reprogramar</button>}</div>
    }
    @if(editor()==='cancel' && canSetStatus('CANCELLED')){
@@ -166,7 +166,7 @@
    }
    @if(editor()==='move' && (!staff || canReschedule())){
     <section class="move booking-change" aria-labelledby="move-heading">
-    <header><h3 #moveHeading id="move-heading" tabindex="-1">Reprogramar turno</h3><p>Elegí el nuevo horario e indicá el motivo. Si la reserva tiene un correo registrado, el paciente recibirá ambos datos.</p></header>
+    <header><h3 #moveHeading id="move-heading" tabindex="-1">Reprogramar turno</h3><p>Elegí el nuevo horario e indicá el motivo. Si la reserva tiene un correo registrado, le pediremos al paciente que confirme el cambio.</p></header>
     <div class="change-schedule"><label>Consultorio<select id="move-clinic" [(ngModel)]="moveClinic" (ngModelChange)="loadTargets()" [disabled]="writing()">@for(c of clinics();track c.id){@if(c.status==='ACTIVE'&&canMoveTo(c)){<option [value]="c.id">{{c.name}} · {{modalityLabel(c.modality)}}</option>}}</select></label><div class="picker-field"><label for="move-date">Fecha</label><app-date-picker inputId="move-date" inputLabel="Fecha" [value]="moveDate" (valueChange)="moveDate=$event;loadTargets()" /></div>
     <label>Horario<select id="move-slot" [(ngModel)]="moveStart" [disabled]="targetBusy()||writing()"><option value="">Seleccioná un horario</option>@for(s of targetSlots();track s.start){<option [value]="s.start">{{localTime(s.start,s.clinic.timezone)}}@if(slotOffsetLabel(s.start,s.clinic.timezone); as offset){ · {{offset}}}</option>}</select></label></div>
     @if(targetBusy()){<p role="status">Buscando horarios…</p>}
@@ -184,7 +184,18 @@
    }
    @if(!staff){
    @if(publicDetails();as details){<details class="history"><summary>Datos administrativos de la reserva</summary><dl><dt>Documento</dt><dd>{{details.documentCountry}} · {{details.documentType}} {{details.document}}</dd><dt>Email</dt><dd>{{details.email}}</dd></dl>@for(question of details.form.questions;track question.key){<p><strong>{{question.label}}</strong><br />{{details.answers[question.key]||'Sin respuesta'}}</p>}</details>}
-   <details class="history"><summary>Historial de modificaciones · {{events().length}}</summary><ol>@for(event of events();track event.version){<li><strong>{{eventLabel(event.kind)}}</strong><br />{{eventDate(event.occurredAt)}} · versión {{event.version}}</li>}</ol></details>
+   <details class="history">
+    <summary>Historial de modificaciones · {{events().length}}</summary>
+    <ol>
+     @for(event of events();track event.version){
+      <li>
+       <strong>{{eventLabel(event)}}</strong><br />{{eventDate(event.occurredAt)}} · versión {{event.version}}
+       @if(event.kind==='RESCHEDULED'){<br />Nuevo horario · {{eventDate(event.after.start, event.after.clinicSnapshot?.timezone)}}}
+       @if(event.after.changeReason;as reason){<br />Motivo · {{reason}}}
+      </li>
+     }
+    </ol>
+   </details>
    }
    </section>
   }
