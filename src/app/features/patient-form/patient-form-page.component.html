@@ -87,12 +87,24 @@
       <div class="form-card">
         <app-dynamic-form-renderer [headingLevel]="2" [preserveExistingPhones]="isEditMode()"
           [showErrors]="submissionAttempted()" [definition]="form"
+          [fieldNotice]="{ key: dniFieldKey() ?? '', template: dniNotice }"
           [values]="values()"
           [formulaResults]="formulaResults()"
           [readonly]="readonly()"
           (valuesChange)="onValuesChange($event)"
+          (fieldBlur)="onFieldBlur($event)"
           (validityChange)="onFormValidityChange($event)"
         />
+        <ng-template #dniNotice>
+          @if (duplicateDni(); as duplicate) {
+            <p class="dni-notice" role="alert">Ya tenés un paciente con este DNI en esta especialidad.</p>
+            @if (duplicate.patientId !== null) {
+              <button type="button" class="btn-conflict-action" (click)="openDuplicatePatient(duplicate.patientId)">
+                Ver ficha existente
+              </button>
+            }
+          }
+        </ng-template>
         @if (isEditMode()) {
           <label>
             Motivo de corrección (opcional)

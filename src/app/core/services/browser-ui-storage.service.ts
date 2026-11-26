@@ -50,6 +50,25 @@ export class BrowserUiStorageService {
     return this.write('sessionStorage', this.scheduleKey(owner, clinic), draft);
   }
 
+  listScheduleDrafts(owner: string): { clinicId: string; serialized: string }[] {
+    if (!this.isBrowser || !owner) return [];
+    const prefix = this.scheduleKey(owner, '');
+    try {
+      const storage = window.sessionStorage;
+      const drafts: { clinicId: string; serialized: string }[] = [];
+      for (let index = 0; index < storage.length; index++) {
+        const key = storage.key(index);
+        if (!key?.startsWith(prefix)) continue;
+        const clinicId = key.slice(prefix.length);
+        const serialized = storage.getItem(key);
+        if (/^[1-9][0-9]{0,18}$/.test(clinicId) && serialized) drafts.push({ clinicId, serialized });
+      }
+      return drafts;
+    } catch {
+      return [];
+    }
+  }
+
   private patientKey(owner: string, contextId?: number): string { return `doctorchart_active_patient:${encodeURIComponent(owner)}${contextId === undefined ? '' : ':' + contextId}`; }
 
   private scheduleKey(owner: string, clinic: string): string {

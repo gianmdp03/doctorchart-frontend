@@ -11,6 +11,7 @@
 /login /index.csr 200
 /account /index.csr 200
 /account/security /index.csr 200
+/account/backup /index.csr 200
 /support /index.csr 200
 /support/new /index.csr 200
 /support/tickets/:id /index.csr 200

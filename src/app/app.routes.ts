@@ -46,6 +46,7 @@ const baseRoutes: Routes = [
   { path: 'email-change-success', title: 'Confirmación de correo', providers: [customerAccountProvider], data: { customerMode: 'email' }, loadComponent: customerRecovery },
   { path: 'account', title: 'Mi cuenta', providers: [customerAccountProvider], canActivate: [customerAccountGuard], loadComponent: () => import('./shared/customer-account/profile-page').then(m => m.CustomerProfilePage) },
   { path: 'account/security', title: 'Seguridad de tu cuenta', providers: [customerAccountProvider], canActivate: [customerAccountGuard], loadComponent: () => import('./shared/customer-account/security-page').then(m => m.CustomerSecurityPage) },
+  { path: 'account/backup', title: 'Copia de seguridad | DoctorChart', providers: [customerAccountProvider], canActivate: [customerAccountGuard], loadComponent: () => import('./features/practice-export/practice-export-page.component').then(m => m.PracticeExportPageComponent) },
   { path: 'support', title: 'Soporte', providers: [customerAccountProvider], canActivate: [customerAccountGuard], data: { customerMode: 'list' }, loadComponent: customerSupport },
   { path: 'support/new', title: 'Enviar ticket', providers: [customerAccountProvider], canActivate: [customerAccountGuard], data: { customerMode: 'new' }, loadComponent: customerSupport },
   { path: 'support/tickets/:id', title: 'Detalle del ticket', providers: [customerAccountProvider], canActivate: [customerAccountGuard], data: { customerMode: 'detail' }, loadComponent: customerSupport },

@@ -48,6 +48,10 @@ export class PatientService {
     return this.http.post<PatientDetailDTO>(this.baseUrl, patient);
   }
 
+  checkDni(nationalId: string): Observable<{ patientId: number | null }> {
+    return this.http.post<{ patientId: number | null }>(`${this.baseUrl}/check-dni`, { nationalId });
+  }
+
   updatePatient(id: number, patient: PatientUpdateRequestDTO): Observable<PatientDetailDTO> {
     return this.http.put<PatientDetailDTO>(`${this.baseUrl}/${id}`, patient);
   }

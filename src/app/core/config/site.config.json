@@ -4,7 +4,7 @@
     "/",
     "/professionals"
   ],
-  "privateClientPattern": "^/(account(/security)?|support(/new|/tickets/[^/]+)?|forgot-password|reset-password|email-change-success)$",
+  "privateClientPattern": "^/(account(/security|/backup)?|support(/new|/tickets/[^/]+)?|forgot-password|reset-password|email-change-success)$",
   "clientPatterns": [
     "^/(pricing|register|register/confirmed)$",
     "^/(login|sin-plan|perfil|asistente|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",

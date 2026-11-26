@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
 import { PricingComponent } from './pricing.component';
@@ -41,10 +41,10 @@ describe('DoctorChart pricing on central Billing', () => {
   const authPlanRefresh = vi.fn();
   let http: HttpTestingController;
 
-  function createPricing(query: Record<string, string>) {
+  function configurePricing(query: Record<string, string>) {
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(), provideHttpClientTesting(),
+        provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(query) } } },
         {
@@ -57,6 +57,10 @@ describe('DoctorChart pricing on central Billing', () => {
       ],
     });
     http = TestBed.inject(HttpTestingController);
+  }
+
+  function createPricing(query: Record<string, string>) {
+    configurePricing(query);
     return TestBed.runInInjectionContext(() => new PricingHarness());
   }
 
@@ -179,6 +183,62 @@ describe('DoctorChart pricing on central Billing', () => {
     expect(pricing.visiblePlans().map(({ id }) => id)).toEqual([17, 21, 18]);
     pricing.changeCycle(90);
     expect(pricing.visiblePlans().map(({ id }) => id)).toEqual([22, 19, 20]);
+  });
+
+  it('keeps verified quotas when Billing only sends legacy limits and shows the differences after retry', async () => {
+    configurePricing({});
+    const fixture = TestBed.createComponent(PricingComponent);
+    fixture.detectChanges();
+    const comparisonUrl = api + 'limits/doctorchart?view=comparison';
+    const limits = {
+      BASIC: { max_patients: 300, max_records_per_patient: 100 },
+      PRO: { max_patients: 1000, max_records_per_patient: 1000 },
+      UNLIMITED: { max_patients: -1, max_records_per_patient: -1 },
+    };
+    http.expectOne(comparisonUrl).flush(limits);
+    (await vi.waitFor(() => http.expectOne(api + 'plans/contextual'))).flush([
+      plan,
+      { ...plan, id: 18, tier: 'PRO' },
+      { ...plan, id: 19, tier: 'UNLIMITED' },
+    ]);
+    await loadRayaHistory();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const page = fixture.nativeElement as HTMLElement;
+    const benefits = Array.from(page.querySelectorAll('.plan-benefits'));
+    expect(benefits.map(card => card.textContent)).toEqual([
+      expect.stringContaining('300 pacientes'),
+      expect.stringContaining('1.000 pacientes'),
+      expect.stringContaining('Pacientes sin límite'),
+    ]);
+    expect(benefits.every(card => !card.textContent.includes('Agenda de turnos'))).toBe(true);
+    const retry = page.querySelector<HTMLButtonElement>('.benefits-notice button')!;
+    expect(retry).not.toBeNull();
+    retry.click();
+
+    const enabled = {
+      appointments_enabled: true, max_appointments: -1,
+      teleconsultation_enabled: true, secretary_management_enabled: true,
+    };
+    http.expectOne(comparisonUrl).flush({
+      BASIC: {
+        ...limits.BASIC, appointments_enabled: false, teleconsultation_enabled: false,
+        online_booking_enabled: false, secretary_management_enabled: false,
+      },
+      PRO: { ...limits.PRO, ...enabled, online_booking_enabled: false, max_secretaries: 3 },
+      UNLIMITED: { ...limits.UNLIMITED, ...enabled, online_booking_enabled: true, max_secretaries: -1 },
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const status = (card: Element, label: string) => Array.from(card.querySelectorAll('li'))
+      .find(row => row.textContent.includes(label))?.querySelector('[role="img"]')?.getAttribute('aria-label');
+    expect(benefits.map(card => status(card, 'Agenda de turnos'))).toEqual(['No incluido', 'Incluido', 'Incluido']);
+    expect(benefits.map(card => status(card, 'Reservas por internet'))).toEqual(['No incluido', 'No incluido', 'Incluido']);
+    expect(benefits[1].textContent).toContain('3 asignaciones');
+    expect(benefits[2].textContent).toContain('Asignaciones sin límite');
+    expect(page.querySelector('.benefits-notice')).toBeNull();
   });
 
   it('recovers a stale return as history and starts a fresh transfer', async () => {

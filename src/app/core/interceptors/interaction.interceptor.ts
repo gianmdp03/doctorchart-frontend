@@ -11,11 +11,13 @@ export const interactionInterceptor: HttpInterceptorFn = (request, next) => {
   const navigation=inject(ClinicalNavigationService);
   return defer(() => {
     const end = status.begin();
-    const write=!['GET','HEAD','OPTIONS'].includes(request.method)&&request.url.startsWith(environment.apiUrl+'/')&&/\/(patients|encounters|workspace)(\/|$)/.test(request.url)?navigation.beginWrite():null;
+    const read = ['GET', 'HEAD', 'OPTIONS'].includes(request.method)
+      || request.url === `${environment.apiUrl}/patients/check-dni`;
+    const write=!read&&request.url.startsWith(environment.apiUrl+'/')&&/\/(patients|encounters|workspace)(\/|$)/.test(request.url)?navigation.beginWrite():null;
     const milliseconds = request.body instanceof FormData ? 60000 : 20000;
     return next(request).pipe(timeout({ each: milliseconds }),tap(event=>{if(event instanceof HttpResponse)write?.success(request.url);}), catchError(error => {
       if (error instanceof TimeoutError) {
-        const message = ['GET', 'HEAD', 'OPTIONS'].includes(request.method)
+        const message = read
           ? 'La conexión demoró demasiado. Podés reintentar la consulta.'
           : 'No pudimos confirmar la operación. Revisá el estado antes de repetirla para evitar duplicados.';
         status.error.set(message);

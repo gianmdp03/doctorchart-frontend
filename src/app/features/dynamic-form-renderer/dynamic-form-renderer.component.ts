@@ -1,5 +1,5 @@
 import { PhoneDisplayPipe } from '../../shared/phone-input/phone-display.pipe';
-import { AsyncPipe } from '@angular/common';
+import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
 import { todayDate } from '../../core/date/user-time-zone';
 import {
   afterNextRender,
@@ -13,6 +13,7 @@ import {
   linkedSignal,
   output,
   signal,
+  TemplateRef,
   untracked,
   viewChildren,
 } from '@angular/core';
@@ -54,7 +55,7 @@ export const inputValues = (
 
 @Component({
   selector: 'app-dynamic-form-renderer',
-  imports: [FormsModule,PhoneDisplayPipe,AsyncPipe, DatePickerComponent, ClinicalHistoryFieldsComponent, PhoneInputComponent],
+  imports: [FormsModule,PhoneDisplayPipe,AsyncPipe, NgTemplateOutlet, DatePickerComponent, ClinicalHistoryFieldsComponent, PhoneInputComponent],
   templateUrl: './dynamic-form-renderer.component.html',
   styleUrl: './dynamic-form-renderer.component.css',
 })
@@ -76,6 +77,7 @@ export class DynamicFormRendererComponent {
   readonly readonly = input(false);
   readonly showErrors = input(false);
   readonly preserveExistingPhones = input(false);
+  readonly fieldNotice = input<{ key: string; template: TemplateRef<unknown> }>();
   private readonly phones = viewChildren(PhoneInputComponent);
   readonly isPhoneField = isPhoneField;
   phoneValue(field: WizardFieldDefinition): string | null {
@@ -90,13 +92,16 @@ export class DynamicFormRendererComponent {
   });
 
   onFieldFocusOut(field: WizardFieldDefinition, event: FocusEvent): void {
-    if (this.readonly() || isPhoneField(field) || this.touchedFields().has(field.key)) return;
+    if (this.readonly() || isPhoneField(field)) return;
     const next = event.relatedTarget;
     if (next instanceof Element &&
         ((event.currentTarget as HTMLElement).contains(next) ||
          (field.type === 'DATE' && next.closest('mat-datepicker-content')))) return;
 
-    this.touchedFields.update(fields => new Set(fields).add(field.key));
+    if (!this.touchedFields().has(field.key)) {
+      this.touchedFields.update(fields => new Set(fields).add(field.key));
+    }
+    this.fieldBlur.emit(field.key);
   }
 
   visibleFieldError(field: WizardFieldDefinition): string | null {
@@ -105,6 +110,7 @@ export class DynamicFormRendererComponent {
       : null;
   }
   readonly valuesChange = output<WizardFormValues>();
+  readonly fieldBlur = output<string>();
   readonly validityChange = output<boolean>();
   readonly currentValues = signal<WizardFormValues>({});
   private readonly rawNumbers = signal<Record<string, string>>({});

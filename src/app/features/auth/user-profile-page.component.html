@@ -12,5 +12,9 @@
       <div><dt>Matrícula profesional</dt><dd>{{ license() }}</dd></div>
     </dl></section>
   </div>
+  <section class="profile-session" aria-labelledby="profile-backup-title">
+    <div><h2 id="profile-backup-title">Copia de seguridad</h2><p>Guardá una copia de tu práctica, con los documentos y adjuntos, en un ZIP.</p></div>
+    <a routerLink="/account/backup" class="dc-button profile-button">Abrir copia de seguridad</a>
+  </section>
   <footer class="profile-session"><div><h2>Sesión de DoctorChart</h2><p>Podés cerrar tu sesión en este equipo cuando termines de atender.</p></div><button class="dc-button profile-button" type="button" [disabled]="isSubmitting()" (click)="handleSignOut()">{{ isSubmitting() ? 'Cerrando sesión...' : 'Cerrar sesión' }}</button></footer>
 </section>

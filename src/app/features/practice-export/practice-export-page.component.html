@@ -1,0 +1,163 @@
+<section class="account-page export-page" aria-labelledby="export-title">
+  <header class="page-top">
+    <div class="export-heading">
+      <p class="eyebrow">RESPALDO DE TU PRÁCTICA</p>
+      <h1 id="export-title">Copia de seguridad</h1>
+      <p class="muted">Descargá los datos de tu práctica en un ZIP cifrado, incluidos los PDFs emitidos y los adjuntos que conserva DoctorChart.</p>
+    </div>
+    <a class="button quiet back-link" routerLink="/account">
+      <ng-icon name="lucideArrowLeft" size="16" aria-hidden="true" />
+      <span>Volver a Mi cuenta</span>
+    </a>
+  </header>
+
+  @if (sessionMatches()) {
+    @let copy = job();
+    <div class="export-layout">
+      <section class="panel export-main-panel" aria-label="Preparación y descarga">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <span class="panel-icon" aria-hidden="true">
+              <ng-icon name="lucideFileArchive" size="20" />
+            </span>
+            <div>
+              <h2>Archivo de respaldo</h2>
+              <p class="field-help">Generado al momento con vista consistente de tu cuenta.</p>
+            </div>
+          </div>
+          @if (copy?.status === 'ready') {
+            <span class="status-badge ready">
+              <ng-icon name="lucideCheck" size="14" aria-hidden="true" />
+              <span>Lista para descargar</span>
+            </span>
+          } @else if (starting() || copy?.status === 'preparing') {
+            <span class="status-badge preparing">
+              <ng-icon name="lucideRefreshCw" size="14" aria-hidden="true" />
+              <span>En preparación</span>
+            </span>
+          }
+        </div>
+
+        @if (copy?.status !== 'preparing') {
+          <div class="browser-option-card">
+            <label class="browser-option" for="include-browser-checkbox">
+              <input
+                #browser
+                id="include-browser-checkbox"
+                type="checkbox"
+                class="browser-checkbox"
+                [checked]="includeBrowser()"
+                [disabled]="discovering() || starting() || downloading()"
+                (change)="includeBrowser.set(browser.checked)"
+                aria-describedby="export-browser-help"
+              >
+              <span class="browser-option-text">Incluir mis preferencias y borradores de agenda de esta pestaña</span>
+            </label>
+            <p id="export-browser-help" class="field-help">Se incluyen tema, tamaño de letra, contexto activo y borradores disponibles en este navegador.</p>
+          </div>
+        }
+
+        @if (discovering()) {
+          <div class="export-progress" role="status">
+            <progress aria-label="Consultando copia"></progress>
+            <span>Consultando tu última copia…</span>
+          </div>
+        } @else if (starting() || (copy?.status === 'preparing' && !retryStatus())) {
+          <div class="export-progress" role="status">
+            <progress aria-label="Preparando copia"></progress>
+            <span>Preparando copia…</span>
+          </div>
+        }
+
+        @if (retryStatus()) {
+          <div class="actions">
+            <button type="button" class="button" (click)="checkStatus()">
+              <ng-icon name="lucideRefreshCw" size="16" aria-hidden="true" />
+              <span>Volver a consultar</span>
+            </button>
+          </div>
+        }
+
+        @if (password(); as key) {
+          <div class="key-panel">
+            <div class="key-panel-head">
+              <ng-icon name="lucideKeyRound" size="18" aria-hidden="true" />
+              <h2>Clave para abrir el ZIP</h2>
+            </div>
+            <p class="field-help">Guardá esta clave antes de salir de la pantalla. La vas a necesitar para extraer los archivos.</p>
+            <div class="key-row">
+              <code>{{ key }}</code>
+              <button type="button" class="button" (click)="copyPassword()"><ng-icon name="lucideCopy" size="15" aria-hidden="true" />Copiar clave</button>
+            </div>
+          </div>
+        } @else if (copy?.status === 'preparing' || copy?.status === 'ready') {
+          <p class="notice key-reminder">Para abrir este ZIP vas a necesitar la clave que se mostró al pedir la copia. Si no la guardaste, podés preparar otra copia cuando termine esta.</p>
+        }
+
+        @if (copy?.status === 'ready') {
+          <div class="copy-details">
+            <h2>Copia lista para descargar</h2>
+            <dl>
+              @if (copy?.preparedAt; as prepared) {
+                <div><dt>Fecha de corte</dt><dd>{{ dateTime(prepared) }}</dd></div>
+              }
+              @if (copy?.bytes; as bytes) {
+                <div><dt>Tamaño</dt><dd>{{ size(bytes) }}</dd></div>
+              }
+              @if (copy?.expiresAt; as expires) {
+                <div><dt>Disponible hasta</dt><dd>{{ dateTime(expires) }}</dd></div>
+              }
+            </dl>
+          </div>
+        }
+
+        @if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
+        @if (statusMessage()) { <p class="notice status-ok" role="status">{{ statusMessage() }}</p> }
+
+        @if (copy?.status !== 'preparing') {
+          <div class="actions export-actions">
+            @if (copy?.status === 'ready') {
+              <button type="button" class="button primary" [disabled]="discovering() || starting() || downloading()" (click)="download()"><ng-icon name="lucideDownload" size="16" aria-hidden="true" />{{ downloading() ? 'Descargando ZIP…' : 'Descargar ZIP' }}</button>
+            }
+            <button type="button" class="button" [class.primary]="copy?.status !== 'ready'"
+              [disabled]="discovering() || starting() || downloading()" (click)="prepare()">{{ copy?.status === 'ready' ? 'Preparar otra copia' : 'Preparar copia' }}</button>
+          </div>
+        }
+      </section>
+
+      <aside class="export-aside" aria-label="Información de respaldo">
+        <section class="panel info-panel" aria-labelledby="export-scope-title">
+          <div class="info-head">
+            <ng-icon name="lucideShieldCheck" size="18" aria-hidden="true" />
+            <h2 id="export-scope-title">Qué incluye tu copia</h2>
+          </div>
+          <ul class="scope-list">
+            <li>Especialidades, formularios personalizados, borradores y versiones históricas.</li>
+            <li>Pacientes, historias clínicas, evoluciones, recetas, órdenes y vacunas.</li>
+            <li>PDFs emitidos y estudios adjuntos conservados byte por byte.</li>
+            <li>Consultorios, agenda de turnos, equipo, permisos y datos de tu cuenta.</li>
+          </ul>
+        </section>
+
+        <section class="panel info-panel" aria-labelledby="export-open-title">
+          <div class="info-head">
+            <ng-icon name="lucideFolderOpen" size="18" aria-hidden="true" />
+            <h2 id="export-open-title">Cómo abrir tu copia</h2>
+          </div>
+          <ol class="steps-list">
+            <li>Descargá el archivo ZIP y guardá la clave en un lugar seguro.</li>
+            <li>Extraelo con <a href="https://www.7-zip.org/" target="_blank" rel="noreferrer">7‑Zip</a> u otra herramienta compatible con ZIP AES.</li>
+            <li>Abrí <code>INDICE.html</code> en tu navegador para recorrer fichas y documentos sin conexión.</li>
+          </ol>
+        </section>
+      </aside>
+    </div>
+  } @else {
+    <section class="panel signed-out-panel">
+      <p class="notice" role="status">Iniciá sesión para acceder a tus copias.</p>
+      <div class="actions">
+        <a class="button primary" routerLink="/login" [queryParams]="{ returnUrl: '/account/backup' }">Iniciar sesión</a>
+      </div>
+    </section>
+  }
+</section>

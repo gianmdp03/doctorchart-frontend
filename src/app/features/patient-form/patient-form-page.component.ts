@@ -84,6 +84,15 @@ export class PatientFormPageComponent implements OnInit {
   readonly isSubmitting = signal(false);
   readonly isLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  private readonly dniCheck = signal<{ dni: string; duplicate: boolean; patientId: number | null } | null>(null);
+  readonly dniFieldKey = computed(() => {
+    const fields = this.definition()?.categories.flatMap(category => category.fields) ?? [];
+    return ['sys_dni', 'patient.nationalId', 'nationalId'].find(key => fields.some(field => field.key === key));
+  });
+  readonly duplicateDni = computed(() => {
+    const check = this.dniCheck();
+    return check?.duplicate && check.dni === this.currentDni() && this.identity() === this.owner ? check : null;
+  });
   readonly conflict = signal<'workspace' | 'record' | null>(null);
   readonly remoteWorkspace = signal<WorkspaceSetup | null>(null);
   readonly remoteRecord = signal<PatientDetailDTO | null>(null);
@@ -132,6 +141,7 @@ export class PatientFormPageComponent implements OnInit {
       this.isFormValid.set(false);
       this.isSubmitting.set(false);
       this.submissionAttempted.set(false);
+      this.dniCheck.set(null);
       const idParam = params.get('id');
       if (idParam !== null) {
         const id = Number(idParam);
@@ -205,12 +215,50 @@ export class PatientFormPageComponent implements OnInit {
   onValuesChange(values: WizardFormValues): void {
     if (!this.readonly()) {
       this.values.set(structuredClone(values));
+      if (this.dniCheck()?.dni !== this.currentDni()) this.dniCheck.set(null);
       this.formulaResults.set({});
     }
   }
 
   onFormValidityChange(valid: boolean): void {
     this.isFormValid.set(valid);
+  }
+
+  onFieldBlur(key: string): void {
+    if (key === this.dniFieldKey() && !this.readonly()) void this.checkDni(false);
+  }
+
+  openDuplicatePatient(patientId: number): void {
+    void this.router.navigate(['/patients', patientId]);
+  }
+
+  private currentDni(): string {
+    const value = this.values()[this.dniFieldKey() ?? ''];
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private async checkDni(duplicate: boolean): Promise<void> {
+    const dni = this.currentDni();
+    if (!/^\d{6,8}$/.test(dni) || dni === this.record()?.nationalId?.trim()) {
+      if (duplicate) this.errorMessage.set('Ya tenés un paciente con este DNI en esta especialidad.');
+      return;
+    }
+    if (!duplicate && this.dniCheck()?.dni === dni) return;
+
+    const check = { dni, duplicate, patientId: null };
+    const epoch = this.epoch;
+    this.dniCheck.set(check);
+    try {
+      const { patientId } = await firstValueFrom(
+        this.patientService.checkDni(dni).pipe(takeUntilDestroyed(this.destroyRef)),
+      );
+      if (this.alive(epoch) && this.dniCheck() === check) {
+        const match = patientId === this.patientId() ? null : patientId;
+        this.dniCheck.set({ dni, duplicate: duplicate || match !== null, patientId: match });
+      }
+    } catch {
+      if (this.alive(epoch) && this.dniCheck() === check && !duplicate) this.dniCheck.set(null);
+    }
   }
 
   cancel(): void {
@@ -239,6 +287,7 @@ export class PatientFormPageComponent implements OnInit {
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
     const epoch = ++this.epoch;
+    if (!this.duplicateDni()) this.dniCheck.set(null);
 
     try {
       const values = inputValues(definition, this.values());
@@ -264,6 +313,11 @@ export class PatientFormPageComponent implements OnInit {
       void this.router.navigate(['/patients', saved.id]);
     } catch (error) {
       if (this.alive(epoch)) {
+        const response = error as { status?: number; error?: { code?: string } };
+        if (response.status === 409 && response.error?.code === 'PATIENT_DNI_ALREADY_EXISTS') {
+          void this.checkDni(true);
+          return;
+        }
         this.conflict.set(conflictKind(error));
         this.errorMessage.set(
           errorMessage(error, 'No pudimos guardar el paciente. Tus respuestas se conservan.'),
@@ -340,6 +394,7 @@ export class PatientFormPageComponent implements OnInit {
       return;
     }
     this.record.set(structuredClone(remote));
+    this.dniCheck.set(null);
     this.definition.set(withClinicalHistory(structuredClone(remote.formDefinitionSnapshot)));
     this.values.set(structuredClone(remote.formValues));
     this.formulaResults.set(structuredClone(remote.formulaResults));

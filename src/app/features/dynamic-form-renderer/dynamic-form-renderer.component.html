@@ -163,6 +163,11 @@
                     }
                   }
                 }
+                @if (fieldNotice(); as notice) {
+                  @if (notice.key === field.key) {
+                    <ng-container [ngTemplateOutlet]="notice.template" />
+                  }
+                }
               </div>
             }
           }

@@ -145,6 +145,16 @@ export class PricingComponent {
   protected readonly visible = computed(() => this.plans()
     .filter(plan => plan.days === this.cycle())
     .sort((a, b) => (tierOrder[a.tier] ?? 3) - (tierOrder[b.tier] ?? 3)));
+  protected readonly comparisonIncomplete = computed(() =>
+    this.limitsStatus() === 'unavailable' ||
+    (this.limitsStatus() === 'ready' && this.visible().some(plan => {
+      const limits = this.planLimits()[plan.tier];
+      return [
+        'appointments_enabled', 'teleconsultation_enabled',
+        'online_booking_enabled', 'secretary_management_enabled',
+      ].some(key => typeof limits?.[key] !== 'boolean');
+    })),
+  );
 
   protected readonly checkoutOpen = computed(() => !!this.transfer() && !this.checkoutClosed());
   private manualAvailableAt = 0;

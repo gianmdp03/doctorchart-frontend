@@ -190,8 +190,8 @@
         </div>
       </section>
     </div>
-    @if (limitsStatus() === 'unavailable') {
-      <p class="benefits-notice" role="status">Los límites de los planes no están disponibles por ahora.
+    @if (comparisonIncomplete()) {
+      <p class="benefits-notice" role="status">Por ahora solo mostramos las funciones y los cupos que pudimos verificar.
         <button class="button secondary" type="button" (click)="loadPlanLimits()">Reintentar</button>
       </p>
     }
@@ -228,16 +228,16 @@
               @let benefits = planBenefits(limits);
               <ul class="plan-feature-list" role="list">
                 @for (benefit of benefits; track benefit.label) {
-                  <li [class.is-excluded]="benefit.included === false" [class.is-unknown]="benefit.included === null">
-                    <span role="img" [attr.aria-label]="benefit.included === null ? 'Sin información' : benefit.included ? 'Incluido' : 'No incluido'">{{ benefit.included === null ? '–' : benefit.included ? '✓' : '×' }}</span>
-                    <span>{{ benefit.label }}</span>
-                  </li>
+                  @if (benefit.included !== null) {
+                    <li [class.is-excluded]="!benefit.included">
+                      <span role="img" [attr.aria-label]="benefit.included ? 'Incluido' : 'No incluido'">{{ benefit.included ? '✓' : '×' }}</span>
+                      <span>{{ benefit.label }}</span>
+                    </li>
+                  }
                 }
               </ul>
               @if (limitsStatus() === 'loading' && !limits) {
                 <p class="limits-status" role="status">Cargando límites…</p>
-              } @else if (limitsStatus() === 'ready' && !limits) {
-                <p class="limits-status">Todavía no hay información de límites para este plan.</p>
               }
             </div>
           </article>

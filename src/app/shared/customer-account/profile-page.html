@@ -5,6 +5,7 @@
   </div>
   <nav class="account-nav" aria-label="Opciones de cuenta">
     <a class="button" routerLink="/account/security">Seguridad</a>
+    <a class="button" routerLink="/account/backup">Copia de seguridad</a>
     <a class="button" routerLink="/pricing">Planes y suscripción</a>
     <a class="button" routerLink="/support">Soporte</a>
     <button class="button quiet" type="button" [disabled]="busy()" (click)="signOut()">Cerrar sesión</button>

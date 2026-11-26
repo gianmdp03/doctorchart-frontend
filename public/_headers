@@ -182,6 +182,8 @@
 /account*
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
+/account/backup
+  Referrer-Policy: no-referrer
 /support*
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store

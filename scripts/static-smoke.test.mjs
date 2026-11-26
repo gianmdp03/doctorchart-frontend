@@ -10,7 +10,7 @@ test('static hosting serves public pages, client routes, aliases, assets and rea
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
   try {
-    for (const path of ['/account/security', '/support/tickets/123', '/reset-password', '/email-change-success']) {
+    for (const path of ['/account/security', '/account/backup', '/support/tickets/123', '/reset-password', '/email-change-success']) {
       const response = await fetch(origin + path);
       assert.equal(response.status, 200, path);
       assert.equal(response.headers.get('cache-control'), 'no-store', path);
