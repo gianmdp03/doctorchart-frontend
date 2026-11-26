@@ -22,6 +22,7 @@ import {
   parseClinicHttpError,
   validateIanaTimezone,
 } from './clinics.models';
+import { formatClinicDate } from './clinics.models';
 import { ClinicsService } from './clinics.service';
 
 describe('ClinicsService HTTP contract & never-fallback behavior', () => {
@@ -415,4 +416,10 @@ describe('Contract validation & MockClinicsBackend rules (M2-CLINICS-v1)', () =>
       expect(parsed.isStateConflict).toBe(true);
     }
   });
+});
+
+it('formats a clinic update using the local day across UTC midnight', () => {
+  expect(formatClinicDate('2026-11-26T00:23:00Z', 'America/Argentina/Buenos_Aires'))
+    .toBe('25/11/2026');
+  expect(formatClinicDate('not-a-date')).toBe('—');
 });

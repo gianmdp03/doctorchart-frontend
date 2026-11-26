@@ -119,16 +119,32 @@ export class PatientFormPageComponent implements OnInit {
     });
 
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      this.epoch++;
+      this.record.set(null);
+      this.workspace.set(null);
+      this.definition.set(null);
+      this.values.set({});
+      this.formulaResults.set({});
+      this.correctionReason.set('');
+      this.conflict.set(null);
+      this.remoteRecord.set(null);
+      this.remoteWorkspace.set(null);
+      this.isFormValid.set(false);
+      this.isSubmitting.set(false);
       this.submissionAttempted.set(false);
       const idParam = params.get('id');
-      if (idParam) {
+      if (idParam !== null) {
         const id = Number(idParam);
-        if (!isNaN(id) && id > 0) {
+        this.isEditMode.set(true);
+        if (Number.isSafeInteger(id) && id > 0) {
           this.patientId.set(id);
-          this.isEditMode.set(true);
           void this.loadPatientForEdit(id);
           return;
         }
+        this.patientId.set(null);
+        this.isLoading.set(false);
+        this.errorMessage.set('El identificador del paciente no es válido.');
+        return;
       }
       this.patientId.set(null);
       this.isEditMode.set(false);
@@ -218,7 +234,7 @@ export class PatientFormPageComponent implements OnInit {
     const workspace = this.workspace();
 
     if (!definition || this.readonly() || !this.isFormValid()) return;
-    if (!record && !workspace) return;
+    if (this.isEditMode() ? !record || record.id !== this.patientId() : !workspace) return;
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);

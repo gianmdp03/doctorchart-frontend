@@ -1,4 +1,4 @@
-import { displayLocalDate } from '../../core/date/display-date';
+import { formatInstant } from '../../core/date/user-time-zone';
 
 export type AppointmentModality = 'IN_PERSON' | 'TELECONSULTATION';
 
@@ -570,12 +570,12 @@ export function formatClinicStatusLabel(status: ClinicStatus): string {
   }
 }
 
-export function formatClinicDate(isoTimestamp: string | null | undefined): string {
+export function formatClinicDate(isoTimestamp: string | null | undefined, timeZone?: string): string {
   if (!isoTimestamp) {
     return '—';
   }
-  const datePart = isoTimestamp.slice(0, 10);
-  return displayLocalDate(datePart);
+  return formatInstant(isoTimestamp, false, timeZone);
+
 }
 
 export function formatQuotaSummary(

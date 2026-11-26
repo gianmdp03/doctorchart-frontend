@@ -123,6 +123,18 @@
   stroke-width: 1.2;
   stroke-dasharray: 5 4;
 }
+.bmi-boys-under-five .grid-line:not(.major-grid):not(.year-grid) {
+  opacity: .48;
+}
+.bmi-boys-under-five .bmi-transition-line {
+  stroke: var(--dc-control-line, #64748b);
+  vector-effect: non-scaling-stroke;
+}
+.bmi-boys-under-five .bmi-transition-note {
+  padding: 8px 12px;
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-surface-low, #f8fafc);
+}
 .bmi-period-label {
   fill: var(--dc-ink-secondary, #475569);
   font-size: 10px;

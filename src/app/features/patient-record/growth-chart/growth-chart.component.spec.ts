@@ -214,6 +214,12 @@ describe('GrowthChartComponent — all twenty official references', () => {
       String(fixture.componentInstance.xScale()(24)),
     );
     saveVisual(fixture.nativeElement, 'bmi-patient-boys');
+    fixture.componentInstance.compact.set(true);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.xLabels()).toEqual([]);
+    expect(fixture.componentInstance.years()).toEqual([0, 12, 24, 36, 48, 60]);
+    expect(fixture.nativeElement.querySelector('.bmi-height-band')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.bmi-period-label')).toHaveLength(0);
   });
   it('does not show a two-period transition in a BMI reference ending at two years', () => {
     const fixture = TestBed.createComponent(GrowthChartComponent);

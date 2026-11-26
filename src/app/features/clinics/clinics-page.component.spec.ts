@@ -46,6 +46,46 @@ describe('ClinicsPageComponent', () => {
     fixture.detectChanges();
   });
 
+  it('automatically renews expired permissions without losing the list or selected filter', async () => {
+    vi.useFakeTimers();
+    try {
+      const expiring = structuredClone(component.capabilities()!);
+      expiring.entitlements.validUntil = new Date(Date.now() + 1000).toISOString();
+      const caps = vi.spyOn(mockBackend, 'getCapabilities').mockReturnValueOnce(of(expiring));
+      await component.reloadAll();
+      component.selectStatusFilter('INACTIVE');
+      const listed = component.clinics();
+      await vi.advanceTimersByTimeAsync(1005);
+      expect(caps).toHaveBeenCalledTimes(2);
+      expect(component.capabilities()?.entitlements.status).toBe('VERIFIED');
+      expect(component.statusFilter()).toBe('INACTIVE');
+      expect(component.clinics()).toEqual(listed);
+    } finally {
+      fixture.destroy();
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps expired permissions read-only when renewal fails and preserves clinics', async () => {
+    vi.useFakeTimers();
+    try {
+      const expiring = structuredClone(component.capabilities()!);
+      expiring.entitlements.validUntil = new Date(Date.now() + 1000).toISOString();
+      const caps = vi.spyOn(mockBackend, 'getCapabilities').mockReturnValueOnce(of(expiring));
+      await component.reloadAll();
+      const listed = component.clinics();
+      caps.mockReturnValueOnce(throwError(() => MOCK_CLINIC_ERRORS.entitlementsUnavailable()));
+      await vi.advanceTimersByTimeAsync(1005);
+      expect(caps).toHaveBeenCalledTimes(2);
+      expect(component.capabilities()?.entitlements.status).toBe('UNAVAILABLE');
+      expect(component.canCreate()).toBe(false);
+      expect(component.clinics()).toEqual(listed);
+      expect(component.capabilityBanner()?.showRetryButton).toBe(true);
+    } finally {
+      fixture.destroy();
+      vi.useRealTimers();
+    }
+  });
   it('renders the clinics list with Argentine dates and quota summary when VERIFIED', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('2 de 3 consultorios utilizados (activos + inactivos)');

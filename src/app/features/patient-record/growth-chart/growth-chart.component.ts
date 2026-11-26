@@ -124,7 +124,7 @@ export class GrowthChartComponent {
   readonly xGrid = computed(() => this.mobileTicks(this.ticks(this.axes().x, true), 16));
   readonly yGrid = computed(() => this.mobileTicks(this.ticks(this.axes().y, true), 16));
   readonly xLabels = computed(() => {
-    if (this.usesYearsOnly()) return [];
+    if (this.usesYearsOnly() || this.compact() && this.isBoysBMIUnderFive()) return [];
     const values = this.ticks(this.axes().x, false);
     if (this.compact() && this.definition().x.variable === 'AGE') {
       const axis = this.axes().x, step = axis.max - axis.min >= 36 ? 12 : axis.max - axis.min >= 18 ? 6 : 3;
@@ -136,6 +136,9 @@ export class GrowthChartComponent {
   readonly years = computed(() => {
     const x = this.axes().x;
     if (x.variable !== 'AGE') return [];
+    if (this.compact() && this.isBoysBMIUnderFive()) {
+      return this.ticks({ ...x, step: 12 }, false);
+    }
     if (this.usesStandardDeviations()) {
       return this.mobileTicks(this.ticks({ ...x, step: 12 }, false), 4);
     }
@@ -144,6 +147,7 @@ export class GrowthChartComponent {
   readonly visiblePoints = computed(() =>
     this.chart().points.filter((p) => this.inFrame(p, this.axes().x, this.axes().y)),
   );
+  readonly isBoysBMIUnderFive = computed(() => this.definition().id === 'bfa06_boys');
   readonly hasBMITransition = computed(
     () =>
       this.definition().dataset.startsWith('bfa06') &&
