@@ -102,13 +102,13 @@ describe('SidebarComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')[2].getAttribute('href')).toBe('/vaccination-calendar');
   });
 
-  it('omits turnos in Basic and shows the navigation in Pro and Unlimited', () => {
+  it('shows scheduling navigation in Basic, Pro and Unlimited', () => {
     clinicsEnabled.set(true);
-    for (const [tier, visible] of [['BASIC', false], ['PRO', true], ['UNLIMITED', true]] as const) {
+    for (const tier of ['BASIC', 'PRO', 'UNLIMITED']) {
       authServiceMock.doctorchartPlanTier.set(tier);
       fixture.detectChanges();
       const links = fixture.nativeElement.querySelectorAll('a[href="/calendar"], a[href="/booking-publication"], a[href="/secretaries"], a[href="/clinics"]');
-      expect(links).toHaveLength(visible ? 4 : 0);
+      expect(links).toHaveLength(4);
     }
   });
 

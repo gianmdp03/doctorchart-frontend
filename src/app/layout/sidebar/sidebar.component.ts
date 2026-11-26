@@ -73,7 +73,7 @@ export class SidebarComponent {
     () => this.workspace.clinicsEnabled?.() ?? FEATURE_FLAGS.CLINICS_ENABLED,
   );
   readonly schedulingMenuVisible = computed(() =>
-    this.clinicsEnabled() && this.workspace.hasReadyContext() && this.authService.doctorchartPlanTier() !== 'BASIC',
+    this.clinicsEnabled() && this.workspace.hasReadyContext(),
   );
 
   readonly isCollapsed = signal<boolean>(false);

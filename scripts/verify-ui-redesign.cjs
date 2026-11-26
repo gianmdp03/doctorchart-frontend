@@ -196,7 +196,7 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.getByRole('heading', { name: 'Fichas sin consultas' }).waitFor();
       await p.getByRole('heading', { name: 'Pacientes atendidos por mes' }).waitFor();
       assert.equal(await p.getByRole('heading', { name: 'Turnos de hoy' }).count(), 0);
-      assert.equal(await p.getByTestId('sidebar-calendar-link').count(), 0);
+      await p.getByTestId('sidebar-calendar-link').waitFor();
       assert.equal(boundary.requests.filter(r => r.path.endsWith('/bookings')).length, 0);
       await p.locator('.patient-queue-link').first().click();
       await p.waitForURL(base + '/patients/2?tab=history&specialtyContextId=101');
@@ -385,6 +385,11 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
         assert.equal(await p.getByRole('link', { name: 'Ver planes', exact: true }).getAttribute('href'), '/pricing');
         assert.ok(!boundary.requests.some(r => /\/(?:booking-publication|bookings|availability)(?:\/|$)/.test(r.path)));
         assert.equal(boundary.writes.length, 0);
+        await p.locator('.sidebar-nav a[href="/dashboard"]').click();
+        await p.locator('.patient-queue-card').waitFor();
+        assert.equal(await p.locator('.agenda-card').count(), 0);
+        await p.locator('.sidebar-nav a[href="' + route + '"]').click();
+        await p.getByRole('heading', { name: 'Tu plan Básico no incluye esta función' }).waitFor();
         await p.setViewportSize({ width: 320, height: 844 });
         await setTheme(p, 'dark');
         await capture(p, 'basic' + route.replace('/', '-') + '-320-dark');
