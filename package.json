@@ -4,7 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --port 4202",
+    "demo": "ng run doctorchart-frontend:serve-demo",
+    "start:demo": "ng run doctorchart-frontend:serve-demo",
     "build": "node scripts/build-deploy.mjs",
+    "build:demo": "ng run doctorchart-frontend:build-demo",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:growth:visual": "node scripts/verify-growth-visuals.mjs",

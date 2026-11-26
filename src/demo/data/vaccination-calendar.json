@@ -1,0 +1,1031 @@
+{
+  "metadata": {
+    "titulo": "Calendario Nacional de Vacunación 2026",
+    "pais": "Argentina",
+    "organismo": "Ministerio de Salud | República Argentina",
+    "bajada": "Las vacunas están disponibles en centros de salud y hospitales públicos de todo el país y no requieren una orden médica.",
+    "telefono": "0800 222 1002",
+    "sitio_web": "argentina.gob.ar/salud/vacunas",
+    "ano_vigencia": 2026
+  },
+  "grupos_etarios_columnas": [
+    {
+      "grupo": "Primeros 2 años de vida",
+      "columnas": [
+        {
+          "id": "recien_nacido",
+          "nombre": "Recién nacido",
+          "orden": 1
+        },
+        {
+          "id": "2_meses",
+          "nombre": "2 meses",
+          "orden": 2
+        },
+        {
+          "id": "3_meses",
+          "nombre": "3 meses",
+          "orden": 3
+        },
+        {
+          "id": "4_meses",
+          "nombre": "4 meses",
+          "orden": 4
+        },
+        {
+          "id": "5_meses",
+          "nombre": "5 meses",
+          "orden": 5
+        },
+        {
+          "id": "6_meses",
+          "nombre": "6 meses",
+          "orden": 6
+        },
+        {
+          "id": "12_meses",
+          "nombre": "12 meses",
+          "orden": 7
+        },
+        {
+          "id": "15_meses",
+          "nombre": "15 meses",
+          "orden": 8
+        },
+        {
+          "id": "18_meses",
+          "nombre": "18 meses",
+          "orden": 9
+        },
+        {
+          "id": "24_meses",
+          "nombre": "24 meses",
+          "orden": 10
+        }
+      ]
+    },
+    {
+      "grupo": "Etapa Escolar",
+      "columnas": [
+        {
+          "id": "nacidos_2021",
+          "nombre": "Nacidos en 2021",
+          "subtitulo": "5 años",
+          "orden": 11
+        },
+        {
+          "id": "nacidos_2015",
+          "nombre": "Nacidos en 2015",
+          "subtitulo": "11 años",
+          "orden": 12
+        }
+      ]
+    },
+    {
+      "grupo": "Adolescencia y Adultos",
+      "columnas": [
+        {
+          "id": "a_partir_15_anos",
+          "nombre": "A partir de los 15 años",
+          "orden": 13
+        },
+        {
+          "id": "adultos",
+          "nombre": "Adultos",
+          "orden": 14
+        }
+      ]
+    },
+    {
+      "grupo": "Personas Gestantes y Puérperas",
+      "columnas": [
+        {
+          "id": "embarazadas",
+          "nombre": "Embarazadas",
+          "orden": 15
+        },
+        {
+          "id": "puerperas",
+          "nombre": "Puérperas",
+          "orden": 16
+        }
+      ]
+    },
+    {
+      "grupo": "Personal de Salud",
+      "columnas": [
+        {
+          "id": "personal_salud",
+          "nombre": "Personal de salud",
+          "orden": 17
+        }
+      ]
+    }
+  ],
+  "referencias_patologias": {
+    "1": "Previene formas graves de tuberculosis.",
+    "2": "Previene meningitis, neumonía y sepsis por neumococo.",
+    "3": "DTP-HB-Hib: previene Difteria, Tétanos, Tos Convulsa, Hepatitis B y Haemophilus Influenzae b.",
+    "4": "Vacuna antipoliomielítica inactivada tipo Salk.",
+    "5": "Previene sarampión, rubéola y paperas.",
+    "6": "DTP previene difteria, tétanos y tos convulsa.",
+    "7": "dTpa previene difteria, tétanos y tos convulsa.",
+    "8": "dT previene difteria y tétanos.",
+    "9": "VSR previene bronquiolitis y neumonía hasta los 6 meses de edad."
+  },
+  "notas_aplicacion": {
+    "A": "Antes de egresar de la maternidad.",
+    "B": "En las primeras 12 horas de vida.",
+    "C": "Vacunación Universal. Si no hubiera recibido el esquema completo, deberá completarlo. En caso de tener que iniciar, aplicar 1ª dosis, 2ª dosis al mes de la primera y 3ª dosis a los seis meses de la primera.",
+    "D": "La 1ª dosis debe administrarse antes de las catorce semanas y seis días o tres meses y medio de vida.",
+    "E": "La 2ª dosis debe administrarse antes de las veinticuatro semanas o los seis meses de vida.",
+    "F": "Deberán recibir 2 dosis de la vacuna separadas al menos por cuatro semanas.",
+    "G": "Recomendada en adultos de 65 años o más.",
+    "H": "En cada embarazo deberán recibir la vacuna antigripal en cualquier trimestre de la gestación.",
+    "I": "Puérperas deberán recibir vacuna antigripal si no la hubiesen recibido durante el embarazo antes del egreso de la maternidad y hasta un máximo de diez días después del parto.",
+    "J": "2ª dosis, en el año en que cumplen 5 años, para quienes nacieron en 2021, 2022, 2023 y en los primeros 6 meses de 2024.",
+    "K": "Si no hubiera recibido dos dosis de triple viral o una dosis de triple viral + 1 dosis de doble viral después del año de vida para los nacidos después de 1965.",
+    "L": "Aplicar a partir de la semana 20 de gestación en cada embarazo independientemente del tiempo transcurrido desde la dosis previa.",
+    "M": "Personal de salud que asista menores de 12 meses. Revacunar cada 5 años.",
+    "N": "Varones y mujeres.",
+    "O": "Se aplica entre las semanas 32 y 36.6 del embarazo durante la temporada de circulación del VSR.",
+    "P": "Residentes en zonas de riesgo.",
+    "Q": "Residentes en zona de riesgo si la 1ª dosis la recibió antes de los 2 años.",
+    "R": "Residentes y/o trabajadores con riesgo ocupacional en zona de riesgo y que no hayan recibido anteriormente la vacuna. Toda persona entre 2 y 59 años residente en zona de riesgo debe recibir 1 dosis (consultar previamente con el equipo de salud las contraindicaciones para esta vacuna)."
+  },
+  "vacunas": [
+    {
+      "id": "bcg",
+      "nombre": "BCG",
+      "categoria": "calendario_regular",
+      "referencia_patologia": {
+        "numero": 1,
+        "descripcion": "Previene formas graves de tuberculosis."
+      },
+      "aplicaciones": [
+        {
+          "columnas": [
+            "recien_nacido"
+          ],
+          "dosis": "Única dosis",
+          "tipo": "dosis_unica",
+          "notas": [
+            {
+              "letra": "A",
+              "condicion": "Antes de egresar de la maternidad."
+            }
+          ],
+          "id": "dose-99fe267e-d300-45c5-9ca0-0ef4a26c8d82",
+          "ageRule": {
+            "fromMonths": 0,
+            "toMonths": 0,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hepatitis_b",
+      "nombre": "Hepatitis B",
+      "categoria": "calendario_regular",
+      "referencia_patologia": null,
+      "aplicaciones": [
+        {
+          "columnas": [
+            "recien_nacido"
+          ],
+          "dosis": "Dosis neonatal",
+          "tipo": "dosis_primaria",
+          "notas": [
+            {
+              "letra": "B",
+              "condicion": "En las primeras 12 horas de vida."
+            }
+          ],
+          "id": "dose-82854cff-4ff6-43d1-865d-5c7d5cd7868c",
+          "ageRule": {
+            "fromMonths": 0,
+            "toMonths": 0,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "adultos"
+          ],
+          "dosis": "Iniciar o completar esquema",
+          "tipo": "esquema",
+          "notas": [
+            {
+              "letra": "C",
+              "condicion": "Vacunación Universal. Si no hubiera recibido el esquema completo, deberá completarlo. En caso de tener que iniciar, aplicar 1ª dosis, 2ª dosis al mes de la primera y 3ª dosis a los seis meses de la primera."
+            }
+          ],
+          "id": "dose-dbdaeb43-151b-496f-a31e-d880da0e0d5a",
+          "ageRule": {
+            "fromMonths": 216,
+            "toMonths": 216,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "neumococo_conjugada",
+      "nombre": "Neumococo Conjugada",
+      "categoria": "calendario_regular",
+      "referencia_patologia": {
+        "numero": 2,
+        "descripcion": "Previene meningitis, neumonía y sepsis por neumococo."
+      },
+      "aplicaciones": [
+        {
+          "columnas": [
+            "2_meses"
+          ],
+          "dosis": "1ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-4e5852a3-05ba-45bd-8ba9-20650e28b80f",
+          "ageRule": {
+            "fromMonths": 2,
+            "toMonths": 2,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "4_meses"
+          ],
+          "dosis": "2ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-607929d6-153a-479a-915c-2a5fe1f4f9c0",
+          "ageRule": {
+            "fromMonths": 4,
+            "toMonths": 4,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "12_meses"
+          ],
+          "dosis": "Refuerzo",
+          "tipo": "refuerzo",
+          "notas": [],
+          "id": "dose-f74caf60-4693-4426-8f51-3e6dd946db2d",
+          "ageRule": {
+            "fromMonths": 12,
+            "toMonths": 12,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "adultos"
+          ],
+          "dosis": "Única dosis",
+          "tipo": "dosis_unica",
+          "notas": [
+            {
+              "letra": "G",
+              "condicion": "Recomendada en adultos de 65 años o más."
+            }
+          ],
+          "id": "dose-a28c45ac-f7ef-44cd-a108-8027e8b9ba89",
+          "ageRule": {
+            "fromMonths": 216,
+            "toMonths": 216,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "quintuple_pentavalente",
+      "nombre": "Quíntuple o Pentavalente",
+      "categoria": "calendario_regular",
+      "referencia_patologia": {
+        "numero": 3,
+        "descripcion": "DTP-HB-Hib: previene Difteria, Tétanos, Tos Convulsa, Hepatitis B y Haemophilus Influenzae b."
+      },
+      "aplicaciones": [
+        {
+          "columnas": [
+            "2_meses"
+          ],
+          "dosis": "1ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-44356de2-ee16-46ac-afde-191444a135e2",
+          "ageRule": {
+            "fromMonths": 2,
+            "toMonths": 2,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "4_meses"
+          ],
+          "dosis": "2ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-006226b6-4030-4f04-8476-1d26a29883b2",
+          "ageRule": {
+            "fromMonths": 4,
+            "toMonths": 4,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "6_meses"
+          ],
+          "dosis": "3ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-ff2d81cb-e702-4ad2-92d2-54444a40d5a1",
+          "ageRule": {
+            "fromMonths": 6,
+            "toMonths": 6,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "15_meses",
+            "18_meses"
+          ],
+          "dosis": "1º refuerzo (15-18 m)",
+          "tipo": "refuerzo",
+          "notas": [],
+          "id": "dose-ec80b14e-c2c0-45c0-9a30-09858c610ce4",
+          "ageRule": {
+            "fromMonths": 15,
+            "toMonths": 18,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ipv",
+      "nombre": "IPV",
+      "categoria": "calendario_regular",
+      "referencia_patologia": {
+        "numero": 4,
+        "descripcion": "Vacuna antipoliomielítica inactivada tipo Salk."
+      },
+      "aplicaciones": [
+        {
+          "columnas": [
+            "2_meses"
+          ],
+          "dosis": "1ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-04d8659c-5802-4bda-9efd-1836bf6452a0",
+          "ageRule": {
+            "fromMonths": 2,
+            "toMonths": 2,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "4_meses"
+          ],
+          "dosis": "2ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-c625ff78-a38e-4f5c-bcea-7be4c724116e",
+          "ageRule": {
+            "fromMonths": 4,
+            "toMonths": 4,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "6_meses"
+          ],
+          "dosis": "3ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-551c2974-bcca-4b63-86c5-9e92ffc1c39e",
+          "ageRule": {
+            "fromMonths": 6,
+            "toMonths": 6,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "nacidos_2021"
+          ],
+          "dosis": "Refuerzo",
+          "tipo": "refuerzo",
+          "notas": [],
+          "id": "dose-5bf879f8-5537-495e-b864-5f8e0fb8abf4",
+          "ageRule": {
+            "fromMonths": 60,
+            "toMonths": 60,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "rotavirus",
+      "nombre": "Rotavirus",
+      "categoria": "calendario_regular",
+      "referencia_patologia": null,
+      "aplicaciones": [
+        {
+          "columnas": [
+            "2_meses"
+          ],
+          "dosis": "1ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [
+            {
+              "letra": "D",
+              "condicion": "La 1ª dosis debe administrarse antes de las catorce semanas y seis días o tres meses y medio de vida."
+            }
+          ],
+          "id": "dose-cf85c146-aa37-45fe-b941-f961dc05d72e",
+          "ageRule": {
+            "fromMonths": 2,
+            "toMonths": 2,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "4_meses"
+          ],
+          "dosis": "2ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [
+            {
+              "letra": "E",
+              "condicion": "La 2ª dosis debe administrarse antes de las veinticuatro semanas o los seis meses de vida."
+            }
+          ],
+          "id": "dose-f8154270-9423-4bb9-86bb-cc7a002cb81a",
+          "ageRule": {
+            "fromMonths": 4,
+            "toMonths": 4,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "meningococo_acyw",
+      "nombre": "Meningococo ACYW",
+      "categoria": "calendario_regular",
+      "referencia_patologia": null,
+      "aplicaciones": [
+        {
+          "columnas": [
+            "3_meses"
+          ],
+          "dosis": "1ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-ba825ebb-176f-4e5b-b74a-0ff1204f1c90",
+          "ageRule": {
+            "fromMonths": 3,
+            "toMonths": 3,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "5_meses"
+          ],
+          "dosis": "2ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-0473ae02-2e68-48c7-a402-95c7f732b56b",
+          "ageRule": {
+            "fromMonths": 5,
+            "toMonths": 5,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "15_meses"
+          ],
+          "dosis": "Refuerzo",
+          "tipo": "refuerzo",
+          "notas": [],
+          "id": "dose-e4878ad8-2b8e-455f-839a-adb780d43e36",
+          "ageRule": {
+            "fromMonths": 15,
+            "toMonths": 15,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "nacidos_2015"
+          ],
+          "dosis": "Única dosis",
+          "tipo": "dosis_unica",
+          "notas": [],
+          "id": "dose-49350f6c-a5cd-4160-ba0c-70a47921f033",
+          "ageRule": {
+            "fromMonths": 132,
+            "toMonths": 132,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "antigripal",
+      "nombre": "Antigripal",
+      "categoria": "calendario_regular",
+      "referencia_patologia": null,
+      "aplicaciones": [
+        {
+          "columnas": [
+            "6_meses",
+            "12_meses",
+            "15_meses",
+            "18_meses",
+            "24_meses"
+          ],
+          "dosis": "Dosis anual (6 a 24 meses)",
+          "tipo": "dosis_anual",
+          "notas": [
+            {
+              "letra": "F",
+              "condicion": "Deberán recibir 2 dosis de la vacuna separadas al menos por cuatro semanas."
+            }
+          ],
+          "id": "dose-97b52b74-361c-4f72-8291-19d5a5d6d1d4",
+          "ageRule": {
+            "fromMonths": 6,
+            "toMonths": 24,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "adultos"
+          ],
+          "dosis": "Dosis anual",
+          "tipo": "dosis_anual",
+          "notas": [
+            {
+              "letra": "G",
+              "condicion": "Recomendada en adultos de 65 años o más."
+            }
+          ],
+          "id": "dose-f258e125-a830-4530-8d2e-6ee57ed3edde",
+          "ageRule": {
+            "fromMonths": 216,
+            "toMonths": 216,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "embarazadas"
+          ],
+          "dosis": "Una dosis",
+          "tipo": "dosis_anual",
+          "notas": [
+            {
+              "letra": "H",
+              "condicion": "En cada embarazo deberán recibir la vacuna antigripal en cualquier trimestre de la gestación."
+            }
+          ],
+          "id": "dose-dad96a94-35d6-4546-a920-c6995b9b3610",
+          "ageRule": null
+        },
+        {
+          "columnas": [
+            "puerperas"
+          ],
+          "dosis": "Una dosis",
+          "tipo": "dosis_anual",
+          "notas": [
+            {
+              "letra": "I",
+              "condicion": "Puérperas deberán recibir vacuna antigripal si no la hubiesen recibido durante el embarazo antes del egreso de la maternidad y hasta un máximo de diez días después del parto."
+            }
+          ],
+          "id": "dose-fc29b1ec-454e-49c2-9225-3b868eecd088",
+          "ageRule": null
+        },
+        {
+          "columnas": [
+            "personal_salud"
+          ],
+          "dosis": "Dosis anual",
+          "tipo": "dosis_anual",
+          "notas": [],
+          "id": "dose-1f995741-5099-46a2-b3f4-3c9ec3c7c411",
+          "ageRule": null
+        }
+      ]
+    },
+    {
+      "id": "hepatitis_a",
+      "nombre": "Hepatitis A",
+      "categoria": "calendario_regular",
+      "referencia_patologia": null,
+      "aplicaciones": [
+        {
+          "columnas": [
+            "12_meses"
+          ],
+          "dosis": "Única dosis",
+          "tipo": "dosis_unica",
+          "notas": [],
+          "id": "dose-1ccf025e-cc87-4d9d-8507-a448334d0605",
+          "ageRule": {
+            "fromMonths": 12,
+            "toMonths": 12,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "triple_viral",
+      "nombre": "Triple Viral",
+      "categoria": "calendario_regular",
+      "referencia_patologia": {
+        "numero": 5,
+        "descripcion": "Previene sarampión, rubéola y paperas."
+      },
+      "aplicaciones": [
+        {
+          "columnas": [
+            "12_meses"
+          ],
+          "dosis": "1ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-6ef7b983-09d7-48cd-ad2f-c9f694de03fc",
+          "ageRule": {
+            "fromMonths": 12,
+            "toMonths": 12,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "nacidos_2021"
+          ],
+          "dosis": "2ª dosis Nacidos 2021/22/23/24",
+          "tipo": "dosis_primaria",
+          "notas": [
+            {
+              "letra": "J",
+              "condicion": "2ª dosis, en el año en que cumplen 5 años, para quienes nacieron en 2021, 2022, 2023 y en los primeros 6 meses de 2024."
+            }
+          ],
+          "id": "dose-6ccfff2d-a6b4-4a07-9e23-3b0f86a2d477",
+          "ageRule": {
+            "fromMonths": 60,
+            "toMonths": 60,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "adultos"
+          ],
+          "dosis": "Iniciar o completar esquema",
+          "tipo": "esquema",
+          "notas": [
+            {
+              "letra": "K",
+              "condicion": "Si no hubiera recibido dos dosis de triple viral o una dosis de triple viral + 1 dosis de doble viral después del año de vida para los nacidos después de 1965."
+            }
+          ],
+          "id": "dose-3a61e3b7-2e57-48bc-acf3-6a98c6c2581b",
+          "ageRule": {
+            "fromMonths": 216,
+            "toMonths": 216,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "personal_salud"
+          ],
+          "dosis": "Iniciar o completar esquema",
+          "tipo": "esquema",
+          "notas": [
+            {
+              "letra": "K",
+              "condicion": "Si no hubiera recibido dos dosis de triple viral o una dosis de triple viral + 1 dosis de doble viral después del año de vida para los nacidos después de 1965."
+            }
+          ],
+          "id": "dose-ba8cae69-7843-4542-b9f2-9de77adfbc6b",
+          "ageRule": null
+        }
+      ]
+    },
+    {
+      "id": "varicela",
+      "nombre": "Varicela",
+      "categoria": "calendario_regular",
+      "referencia_patologia": null,
+      "aplicaciones": [
+        {
+          "columnas": [
+            "15_meses"
+          ],
+          "dosis": "1ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-1fe0eb1c-45c9-4e63-856f-1717daab60c6",
+          "ageRule": {
+            "fromMonths": 15,
+            "toMonths": 15,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "nacidos_2021"
+          ],
+          "dosis": "2ª dosis",
+          "tipo": "dosis_primaria",
+          "notas": [],
+          "id": "dose-2ace4b22-35a1-4468-92e4-0f9e41ae39c1",
+          "ageRule": {
+            "fromMonths": 60,
+            "toMonths": 60,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "triple_bacteriana_celular",
+      "nombre": "Triple Bacteriana Celular",
+      "categoria": "calendario_regular",
+      "referencia_patologia": {
+        "numero": 6,
+        "descripcion": "DTP previene difteria, tétanos y tos convulsa."
+      },
+      "aplicaciones": [
+        {
+          "columnas": [
+            "nacidos_2021"
+          ],
+          "dosis": "2º refuerzo",
+          "tipo": "refuerzo",
+          "notas": [],
+          "id": "dose-1d009f36-7605-4963-a568-2dbc34b16f0d",
+          "ageRule": {
+            "fromMonths": 60,
+            "toMonths": 60,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "triple_bacteriana_acelular",
+      "nombre": "Triple Bacteriana Acelular",
+      "categoria": "calendario_regular",
+      "referencia_patologia": {
+        "numero": 7,
+        "descripcion": "dTpa previene difteria, tétanos y tos convulsa."
+      },
+      "aplicaciones": [
+        {
+          "columnas": [
+            "nacidos_2015"
+          ],
+          "dosis": "Refuerzo",
+          "tipo": "refuerzo",
+          "notas": [],
+          "id": "dose-a8fb21c9-8958-4722-8268-897f8a954ac2",
+          "ageRule": {
+            "fromMonths": 132,
+            "toMonths": 132,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "embarazadas"
+          ],
+          "dosis": "Una dosis",
+          "tipo": "esquema",
+          "notas": [
+            {
+              "letra": "L",
+              "condicion": "Aplicar a partir de la semana 20 de gestación en cada embarazo independientemente del tiempo transcurrido desde la dosis previa."
+            }
+          ],
+          "id": "dose-d25e9f34-32a0-4d44-bfa4-006091b78e51",
+          "ageRule": null
+        },
+        {
+          "columnas": [
+            "personal_salud"
+          ],
+          "dosis": "Una dosis",
+          "tipo": "esquema",
+          "notas": [
+            {
+              "letra": "M",
+              "condicion": "Personal de salud que asista menores de 12 meses. Revacunar cada 5 años."
+            }
+          ],
+          "id": "dose-7ffa62f7-8f27-4e47-8591-73e89167dfe7",
+          "ageRule": null
+        }
+      ]
+    },
+    {
+      "id": "doble_bacteriana",
+      "nombre": "Doble Bacteriana",
+      "categoria": "calendario_regular",
+      "referencia_patologia": {
+        "numero": 8,
+        "descripcion": "dT previene difteria y tétanos."
+      },
+      "aplicaciones": [
+        {
+          "columnas": [
+            "a_partir_15_anos",
+            "adultos"
+          ],
+          "dosis": "Refuerzo cada 10 años",
+          "tipo": "refuerzo",
+          "notas": [],
+          "id": "dose-68b73946-fade-4258-b3df-1ddab15987f0",
+          "ageRule": {
+            "fromMonths": 180,
+            "toMonths": 216,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "vph",
+      "nombre": "Virus Papiloma Humano",
+      "categoria": "calendario_regular",
+      "referencia_patologia": null,
+      "aplicaciones": [
+        {
+          "columnas": [
+            "nacidos_2015"
+          ],
+          "dosis": "Única dosis",
+          "tipo": "dosis_unica",
+          "notas": [
+            {
+              "letra": "N",
+              "condicion": "Varones y mujeres."
+            }
+          ],
+          "id": "dose-f79059d9-7362-419e-89a1-fd6349327626",
+          "ageRule": {
+            "fromMonths": 132,
+            "toMonths": 132,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "vsr",
+      "nombre": "Virus Sincicial Respiratorio",
+      "categoria": "calendario_regular",
+      "referencia_patologia": {
+        "numero": 9,
+        "descripcion": "VSR previene bronquiolitis y neumonía hasta los 6 meses de edad."
+      },
+      "aplicaciones": [
+        {
+          "columnas": [
+            "embarazadas"
+          ],
+          "dosis": "Única dosis",
+          "tipo": "dosis_unica",
+          "notas": [
+            {
+              "letra": "O",
+              "condicion": "Se aplica entre las semanas 32 y 36.6 del embarazo durante la temporada de circulación del VSR."
+            }
+          ],
+          "id": "dose-1ac830ca-832d-41ff-9d74-cb5e68bb0233",
+          "ageRule": null
+        }
+      ]
+    },
+    {
+      "id": "fiebre_amarilla",
+      "nombre": "Fiebre Amarilla",
+      "categoria": "exclusivo_zonas_de_riesgo",
+      "referencia_patologia": null,
+      "aplicaciones": [
+        {
+          "columnas": [
+            "18_meses"
+          ],
+          "dosis": "1ª dosis",
+          "tipo": "riesgo",
+          "notas": [
+            {
+              "letra": "P",
+              "condicion": "Residentes en zonas de riesgo."
+            }
+          ],
+          "id": "dose-5413f9ea-2ce3-430f-91d7-6104ca0186dd",
+          "ageRule": {
+            "fromMonths": 18,
+            "toMonths": 18,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "nacidos_2015"
+          ],
+          "dosis": "Refuerzo",
+          "tipo": "refuerzo",
+          "notas": [
+            {
+              "letra": "Q",
+              "condicion": "Residentes en zona de riesgo si la 1ª dosis la recibió antes de los 2 años."
+            }
+          ],
+          "id": "dose-7398400c-4dff-49a9-8917-783bf6040553",
+          "ageRule": {
+            "fromMonths": 132,
+            "toMonths": 132,
+            "graceMonths": 1
+          }
+        },
+        {
+          "columnas": [
+            "a_partir_15_anos",
+            "adultos"
+          ],
+          "dosis": "Única dosis",
+          "tipo": "riesgo",
+          "notas": [
+            {
+              "letra": "Q",
+              "condicion": "Residentes en zona de riesgo si la 1ª dosis la recibió antes de los 2 años."
+            }
+          ],
+          "id": "dose-44d2f0d9-80a4-4d47-a64c-10f002f46639",
+          "ageRule": {
+            "fromMonths": 180,
+            "toMonths": 216,
+            "graceMonths": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "fiebre_hemorragica_argentina",
+      "nombre": "Fiebre Hemorrágica Argentina",
+      "categoria": "exclusivo_zonas_de_riesgo",
+      "referencia_patologia": null,
+      "aplicaciones": [
+        {
+          "columnas": [
+            "a_partir_15_anos",
+            "adultos"
+          ],
+          "dosis": "Única dosis",
+          "tipo": "riesgo",
+          "notas": [
+            {
+              "letra": "R",
+              "condicion": "Residentes y/o trabajadores con riesgo ocupacional en zona de riesgo y que no hayan recibido anteriormente la vacuna. Toda persona entre 2 y 59 años residente en zona de riesgo debe recibir 1 dosis (consultar previamente con el equipo de salud las contraindicaciones para esta vacuna)."
+            }
+          ],
+          "id": "dose-2c51eae9-1407-4091-a5f5-5d67ae4149d2",
+          "ageRule": {
+            "fromMonths": 180,
+            "toMonths": 216,
+            "graceMonths": 1
+          }
+        }
+      ]
+    }
+  ],
+  "calendarId": "argentina-2026-v1"
+}

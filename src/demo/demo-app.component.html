@@ -1,0 +1,233 @@
+<input #sessionFileInput type="file" accept=".json,application/json" hidden (change)="onSessionFileSelected($event)" />
+
+@if (demoSession.hasSession()) {
+  <div class="demo-bar" role="region" aria-label="Controles de demostración">
+    <div class="demo-bar-left">
+      <span class="demo-brand-tag">DemoChart</span>
+      <span class="demo-meta">
+        {{ activeSpecialtyName() }} · Sesión local hasta {{ demoSession.until() | date:'dd/MM HH:mm' }}
+      </span>
+      @if (isTurnosVisualRoute()) {
+        <span class="demo-visual-tag" title="Turnos y teleconsulta son únicamente visuales en DemoChart">
+          <ng-icon name="lucideEye" aria-hidden="true" /> Modo visual (solo lectura)
+        </span>
+      }
+    </div>
+
+    <div class="demo-bar-actions">
+      <button type="button" class="demo-bar-btn" [disabled]="demoSession.busy()" (click)="openGeneratorPage()">
+        <ng-icon name="lucideSparkles" aria-hidden="true" />
+        <span>Generar pacientes</span>
+      </button>
+      <button type="button" class="demo-bar-btn" [disabled]="demoSession.busy()" (click)="sessionFileInput.click()">
+        <ng-icon name="lucideUpload" aria-hidden="true" />
+        <span>Importar JSON</span>
+      </button>
+      <button type="button" class="demo-bar-btn" [disabled]="demoSession.busy()" (click)="demoSession.downloadSession()">
+        <ng-icon name="lucideDownload" aria-hidden="true" />
+        <span>Exportar JSON</span>
+      </button>
+      <button type="button" class="demo-bar-btn demo-bar-btn--quiet" (click)="returnToStart()">
+        <ng-icon name="lucideHome" aria-hidden="true" />
+        <span>Inicio demo</span>
+      </button>
+    </div>
+
+    <details #mobileDemoMenu class="demo-mobile-menu">
+      <summary>Opciones demo</summary>
+      <div class="demo-mobile-dropdown" (click)="mobileDemoMenu.open = false">
+        <button type="button" class="demo-bar-btn" [disabled]="demoSession.busy()" (click)="openGeneratorPage()">
+          <ng-icon name="lucideSparkles" aria-hidden="true" /> Generar pacientes
+        </button>
+        <button type="button" class="demo-bar-btn" [disabled]="demoSession.busy()" (click)="sessionFileInput.click()">
+          <ng-icon name="lucideUpload" aria-hidden="true" /> Importar JSON
+        </button>
+        <button type="button" class="demo-bar-btn" [disabled]="demoSession.busy()" (click)="demoSession.downloadSession()">
+          <ng-icon name="lucideDownload" aria-hidden="true" /> Exportar JSON
+        </button>
+        <button type="button" class="demo-bar-btn" (click)="returnToStart()">
+          <ng-icon name="lucideHome" aria-hidden="true" /> Inicio demo
+        </button>
+      </div>
+    </details>
+  </div>
+
+  @if (demoSession.error() || demoSession.notice() || pendingImport()) {
+    <div class="demo-banners">
+      @if (demoSession.error()) {
+        <p class="demo-alert demo-alert--error" role="alert">{{ demoSession.error() }}</p>
+      }
+      @if (demoSession.notice()) {
+        <p class="demo-alert demo-alert--info" role="status">{{ demoSession.notice() }}</p>
+      }
+      @if (pendingImport()) {
+        <div class="demo-confirm" role="region" aria-label="Confirmar importación de sesión">
+          <span>¿Reemplazar la sesión actual por la del archivo JSON? Exportá la actual primero si querés conservarla.</span>
+          <div class="demo-confirm-actions">
+            <button type="button" class="demo-btn demo-btn--primary" [disabled]="demoSession.busy()" (click)="applyPendingImport()">
+              Confirmar importación
+            </button>
+            <button type="button" class="demo-btn" [disabled]="demoSession.busy()" (click)="cancelPendingImport()">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <app-interaction-status />
+  <app-private-shell />
+  <app-scroll-to-top />
+} @else {
+  <div class="demo-landing-shell">
+    <header class="demo-top">
+      <div class="demo-top-brand">
+        <img src="/doctorchart-logo.svg" width="36" height="36" alt="" />
+        <div>
+          <strong>DemoChart</strong>
+          <span>Entorno de prueba de DoctorChart</span>
+        </div>
+      </div>
+      <div class="demo-top-actions">
+        <button type="button" class="demo-btn" [disabled]="demoSession.busy() || !demoSession.ready()" (click)="sessionFileInput.click()">
+          <ng-icon name="lucideUpload" aria-hidden="true" />
+          <span>Importar sesión JSON</span>
+        </button>
+        @if (demoSession.hasStoredSession()) {
+          <button type="button" class="demo-btn" [disabled]="demoSession.busy()" (click)="demoSession.downloadSession()">
+            <ng-icon name="lucideDownload" aria-hidden="true" />
+            <span>Exportar sesión</span>
+          </button>
+        }
+        <app-theme-toggle />
+      </div>
+    </header>
+
+    <main class="demo-main">
+      @if (!demoSession.ready() && !demoSession.error()) {
+        <p class="demo-status" role="status">Inicializando almacenamiento local de DemoChart…</p>
+      }
+
+      @if (demoSession.error()) {
+        <p class="demo-alert demo-alert--error" role="alert">{{ demoSession.error() }}</p>
+      }
+      @if (demoSession.notice()) {
+        <p class="demo-alert demo-alert--info" role="status">{{ demoSession.notice() }}</p>
+      }
+
+      @if (pendingImport()) {
+        <div class="demo-confirm" role="region" aria-label="Confirmar importación de sesión">
+          <span>Ya existe una sesión guardada en este navegador. ¿Querés reemplazarla por la del archivo JSON?</span>
+          <div class="demo-confirm-actions">
+            <button type="button" class="demo-btn demo-btn--primary" [disabled]="demoSession.busy()" (click)="applyPendingImport()">
+              Confirmar importación
+            </button>
+            <button type="button" class="demo-btn" [disabled]="demoSession.busy()" (click)="cancelPendingImport()">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (demoSession.ready()) {
+        @if (demoSession.hasStoredSession()) {
+          <section class="demo-resume-card" aria-label="Sesión guardada">
+            <div>
+              <h2>Tenés una sesión activa en este navegador</h2>
+              <p>Guardada localmente en IndexedDB hasta el {{ demoSession.until() | date:'dd/MM/yyyy, HH:mm' }} hs.</p>
+            </div>
+            <div class="demo-resume-actions">
+              <button type="button" class="demo-btn demo-btn--primary" (click)="resumeExisting()">
+                <span>Continuar sesión actual</span>
+                <ng-icon name="lucideArrowRight" aria-hidden="true" />
+              </button>
+            </div>
+          </section>
+        }
+
+        <section class="demo-hero-card">
+          <div class="demo-hero-copy">
+            <h1>Probá DoctorChart con historias clínicas listas para recorrer</h1>
+            <p class="demo-lead">
+              Elegí una especialidad y generá al instante un consultorio de ejemplo con pacientes de distintas edades,
+              consultas en múltiples fechas, curvas de crecimiento OMS, calendario de vacunación, recetas y estudios.
+              Todo se guarda únicamente en tu navegador por 24 horas.
+            </p>
+
+            <div class="demo-specialty-picker">
+              <label for="demo-specialty-select">Especialidad médica (por defecto Pediatría)</label>
+              <select
+                id="demo-specialty-select"
+                [ngModel]="selectedSpecialtyId()"
+                (ngModelChange)="selectedSpecialtyId.set(+$event)"
+              >
+                @for (spec of specialties; track spec.id) {
+                  <option [value]="spec.id">{{ spec.name }}</option>
+                }
+              </select>
+              <p class="demo-specialty-desc">{{ selectedSpecialty().description }}</p>
+              <div class="demo-feature-chips" aria-label="Módulos incluidos en esta especialidad">
+                <span class="demo-chip">Historia clínica completa</span>
+                <span class="demo-chip">Wizard personalizable</span>
+                @if (selectedSpecialty().patientRecordTabs.includes('GROWTH')) {
+                  <span class="demo-chip">Curvas OMS y Myrelid</span>
+                }
+                @if (selectedSpecialty().patientRecordTabs.includes('VACCINATION')) {
+                  <span class="demo-chip">Vacunación 2026</span>
+                }
+                <span class="demo-chip">Recetas y estudios</span>
+                <span class="demo-chip">Turnos y teleconsulta (vista visual)</span>
+              </div>
+            </div>
+
+            <div class="demo-cta-row">
+              <button
+                type="button"
+                class="demo-btn demo-btn--primary"
+                [disabled]="demoSession.busy()"
+                (click)="generateAndEnter(false)"
+              >
+                <ng-icon name="lucideSparkles" aria-hidden="true" />
+                <span>Generar ejemplo y entrar al panel</span>
+              </button>
+              <button
+                type="button"
+                class="demo-btn"
+                [disabled]="demoSession.busy()"
+                (click)="generateAndEnter(true)"
+              >
+                <ng-icon name="lucideSliders" aria-hidden="true" />
+                <span>Personalizar wizard primero</span>
+              </button>
+            </div>
+
+            <p class="demo-footnote">
+              Sin cuentas ni backend · Exportá tu sesión en JSON para compartirla o retomarla en otro navegador.
+            </p>
+          </div>
+
+          <aside class="demo-preview-card" aria-label="Resumen del ejemplo generado">
+            <div class="demo-preview-header">
+              <ng-icon [name]="selectedSpecialty().code === 'pediatrics' ? 'lucideBaby' : 'lucideStethoscope'" aria-hidden="true" />
+              <div>
+                <strong>{{ selectedSpecialty().name }}</strong>
+                <span>8 pacientes generados automáticamente</span>
+              </div>
+            </div>
+            <ul class="demo-preview-list">
+              <li>Pacientes varones y mujeres de distintas edades</li>
+              <li>Consultas distribuidas en distintas fechas (incluyendo hoy)</li>
+              <li>Antecedentes, alergias y medicación habitual</li>
+              <li>Recetas con PDF de demostración y estudios adjuntos</li>
+              @if (selectedSpecialty().code === 'pediatrics') {
+                <li>Curvas OMS de peso, talla, IMC y perímetro cefálico</li>
+                <li>Calendario Nacional de Vacunación interactivo</li>
+              }
+            </ul>
+          </aside>
+        </section>
+      }
+    </main>
+  </div>
+}

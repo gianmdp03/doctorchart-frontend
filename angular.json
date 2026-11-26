@@ -97,6 +97,83 @@
           },
           "defaultConfiguration": "production"
         },
+        "build-demo": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/main.demo.ts",
+            "index": {
+              "input": "src/index.demo.html",
+              "output": "index.html"
+            },
+            "tsConfig": "tsconfig.demo.json",
+            "outputPath": "dist/demochart",
+            "fileReplacements": [
+              {
+                "replace": "src/environments/environment.ts",
+                "with": "src/demo/environment.demo.ts"
+              }
+            ],
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "hosting/demochart",
+                "output": "/"
+              },
+              {
+                "glob": "doctorchart-logo.svg",
+                "input": "public",
+                "output": "/"
+              },
+              {
+                "glob": "bycode-logo.svg",
+                "input": "public",
+                "output": "/"
+              },
+              {
+                "glob": "favicon.ico",
+                "input": "public",
+                "output": "/"
+              },
+              {
+                "glob": "theme-init.js",
+                "input": "public",
+                "output": "/"
+              },
+              {
+                "glob": "**/*",
+                "input": "public/fonts",
+                "output": "/fonts"
+              },
+              {
+                "glob": "**/*",
+                "input": "public/help",
+                "output": "/help"
+              }
+            ],
+            "styles": [
+              "src/styles.css",
+              "src/styles-m3.css",
+              "src/styles-dark.css"
+            ],
+            "outputHashing": "all",
+            "optimization": {
+              "fonts": false,
+              "styles": {
+                "inlineCritical": false
+              }
+            }
+          },
+          "configurations": {
+            "production": {},
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "outputHashing": "none"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
@@ -108,6 +185,21 @@
             },
             "development": {
               "buildTarget": "doctorchart-frontend:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "serve-demo": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "port": 4204
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "doctorchart-frontend:build-demo:production"
+            },
+            "development": {
+              "buildTarget": "doctorchart-frontend:build-demo:development"
             }
           },
           "defaultConfiguration": "development"
