@@ -147,7 +147,7 @@
     </section>
   </div>
 
-  @if (loadError(); as error) { <p role="alert">{{ error }} <button type="button" class="m3-chip" (click)="loadInitial()">Reintentar</button></p> }
+  @if (loadError(); as error) { <p role="alert">{{ error }} <button type="button" class="m3-chip" (click)="retryLoad()">Reintentar</button></p> }
   <div class="mobile-patient-list">
     @for (patient of patients(); track patient.id) {
       <article class="mobile-patient-row">
@@ -331,24 +331,54 @@
     </div>
   </div>
 
-  <!-- Invisible Infinite Scroll Footer & Sentinel -->
-  @if (patients().length > 0) {
-    <div class="infinite-scroll-footer">
-      <div #scrollSentinel class="scroll-sentinel" aria-hidden="true"></div>
-      @if (hasMore()) {
-        <button type="button" class="dc-button" [attr.aria-disabled]="isLoadingMore()" (click)="loadMore()">Cargar más pacientes</button>
-      }
-      @if (isLoadingMore()) {
-        <div class="loading-more-box" role="status">
-          <div class="loading-spinner mini-spinner" aria-hidden="true"></div>
-          <span>Cargando más pacientes...</span>
+  <!-- Numbered Pagination -->
+  @if (totalElements() > 0 && !loadError()) {
+    <nav class="directory-pagination" aria-label="Paginación del directorio de pacientes">
+      <p class="pagination-summary" role="status">
+        Mostrando {{ rangeStart() }}–{{ rangeEnd() }} de {{ totalElements() }} pacientes
+      </p>
+      @if (totalPages() > 1) {
+        <div class="pagination-controls">
+          <button
+            type="button"
+            class="pagination-btn pagination-nav"
+            [disabled]="!hasPreviousPage() || isLoading()"
+            aria-label="Página anterior"
+            (click)="previousPage()"
+          >
+            ‹ Anterior
+          </button>
+          <div class="pagination-pages">
+            @for (item of visiblePages(); track $index) {
+              @if (item === 'ellipsis') {
+                <span class="pagination-ellipsis" aria-hidden="true">…</span>
+              } @else {
+                <button
+                  type="button"
+                  class="pagination-btn pagination-page"
+                  [class.is-active]="item === currentPage()"
+                  [attr.aria-current]="item === currentPage() ? 'page' : null"
+                  [attr.aria-label]="'Página ' + (item + 1)"
+                  [disabled]="isLoading()"
+                  (click)="goToPage(item)"
+                >
+                  {{ item + 1 }}
+                </button>
+              }
+            }
+          </div>
+          <button
+            type="button"
+            class="pagination-btn pagination-nav"
+            [disabled]="!hasNextPage() || isLoading()"
+            aria-label="Página siguiente"
+            (click)="nextPage()"
+          >
+            Siguiente ›
+          </button>
         </div>
-      } @else if (!hasMore() && totalElements() > 15) {
-        <div class="end-of-directory">
-          <span>✓ Directorio completo ({{ totalElements() }} pacientes)</span>
-        </div>
       }
-    </div>
+    </nav>
   }
 
 </div>

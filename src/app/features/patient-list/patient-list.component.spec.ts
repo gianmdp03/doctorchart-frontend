@@ -104,7 +104,7 @@ describe('PatientListComponent', () => {
       const button = buttons.find(button => button.textContent?.trim() === filter.label)!;
       expect(button).toBeTruthy();
       button.click(); fixture.detectChanges();
-      expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(0, 20, 'fullName,asc', '', filter.value);
+      expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(0, 10, 'fullName,asc', '', filter.value);
       expect(button.getAttribute('aria-pressed')).toBe('true');
     }
     expect(fixture.nativeElement.textContent).not.toContain('Adultos (≥ 18 años)');
@@ -146,7 +146,7 @@ describe('PatientListComponent', () => {
     TestBed.inject(AuthService).currentUser.set({ id: 'doctor-b' } as any);
     fixture.detectChanges();
     expect(component.selectedFilter()).toBe('ALL');
-    expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(0, 20, 'fullName,asc', '', 'ALL');
+    expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(0, 10, 'fullName,asc', '', 'ALL');
     expect(fixture.nativeElement.textContent).not.toContain('Recién nacidos');
   });
 
@@ -169,7 +169,7 @@ describe('PatientListComponent', () => {
     component.setFilter('VACCINE_PENDING');
     expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(
       0,
-      20,
+      10,
       'fullName,asc',
       '',
       'VACCINE_PENDING',
@@ -181,29 +181,78 @@ describe('PatientListComponent', () => {
     component.setFilter('INFANT');
     expect(component.patients()).toHaveLength(1); // No local filtering of a server result.
   });
-  it('keeps the active filter across pages and retries the same page after failure', () => {
+  it('navigates 10-per-page across 72 patients, replaces rows, and retries the target page after failure', () => {
+    const makePage = (startId: number, count: number) =>
+      Array.from({ length: count }, (_, idx) => ({
+        id: startId + idx,
+        fullName: `Paciente ${startId + idx}`,
+        birthDate: '2020-05-12',
+        ageDisplay: '6 años',
+        ageGroup: 'CHILD',
+        hasPendingVaccine: false,
+      }));
+
     patientServiceMock.getPatients.mockReturnValueOnce(
-      of({ content: [], totalElements: 45, totalPages: 3 }),
+      of({ content: makePage(1, 10), totalElements: 72, totalPages: 8 }),
     );
     component.setFilter('ADULT');
-    expect(component.hasMore()).toBe(true);
+    fixture.detectChanges();
+    expect(component.pageSize).toBe(10);
+    expect(component.currentPage()).toBe(0);
+    expect(component.totalPages()).toBe(8);
+    expect(component.rangeStart()).toBe(1);
+    expect(component.rangeEnd()).toBe(10);
+    expect(component.hasPreviousPage()).toBe(false);
+    expect(component.hasNextPage()).toBe(true);
+    expect(component.visiblePages()).toEqual([0, 1, 2, 3, 4, 'ellipsis', 7]);
+
     patientServiceMock.getPatients.mockReturnValueOnce(throwError(() => ({ status: 500 })));
-    component.loadMore();
+    component.nextPage();
     expect(component.currentPage()).toBe(0);
     expect(component.loadError()).toContain('No se pudo');
+
     patientServiceMock.getPatients.mockReturnValueOnce(
-      of({ content: [], totalElements: 45, totalPages: 3 }),
+      of({ content: makePage(11, 10), totalElements: 72, totalPages: 8 }),
     );
-    component.loadMore();
+    component.retryLoad();
+    fixture.detectChanges();
     expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(
       1,
-      20,
+      10,
       'fullName,asc',
       '',
       'ADULT',
     );
     expect(component.currentPage()).toBe(1);
-    expect(component.totalElements()).toBe(45);
+    expect(component.patients()).toHaveLength(10);
+    expect(component.patients()[0].id).toBe(11);
+    expect(component.rangeStart()).toBe(11);
+    expect(component.rangeEnd()).toBe(20);
+    expect(component.hasPreviousPage()).toBe(true);
+
+    patientServiceMock.getPatients.mockReturnValueOnce(
+      of({ content: makePage(71, 2), totalElements: 72, totalPages: 8 }),
+    );
+    component.goToPage(7);
+    fixture.detectChanges();
+    expect(component.currentPage()).toBe(7);
+    expect(component.patients()).toHaveLength(2);
+    expect(component.rangeStart()).toBe(71);
+    expect(component.rangeEnd()).toBe(72);
+    expect(component.hasNextPage()).toBe(false);
+    expect(component.visiblePages()).toEqual([0, 'ellipsis', 3, 4, 5, 6, 7]);
+
+    patientServiceMock.getPatients.mockReturnValueOnce(
+      of({ content: makePage(61, 10), totalElements: 72, totalPages: 8 }),
+    );
+    component.previousPage();
+    expect(component.currentPage()).toBe(6);
+
+    patientServiceMock.getPatients.mockReturnValueOnce(
+      of({ content: makePage(1, 10), totalElements: 72, totalPages: 8 }),
+    );
+    component.setFilter('ALL');
+    expect(component.currentPage()).toBe(0);
   });
   it('cancels an earlier query and suppresses responses from the previous account', () => {
     const pending = new Subject<any>();
@@ -230,7 +279,8 @@ describe('PatientListComponent', () => {
     );
     component.loadInitial();
     expect(component.loadError()).toBeNull();
-    expect(component.hasMore()).toBe(false);
+    expect(component.hasNextPage()).toBe(false);
+    expect(component.visiblePages()).toEqual([]);
   });
 
   it('cancels the account screen request and its search timer on destruction', () => {

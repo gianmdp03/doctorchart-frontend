@@ -153,6 +153,18 @@ describe('DemoChart core & HttpBackend', () => {
     expect(pagedRes.body?.totalPages).toBe(3);
     expect(pagedRes.body?.content.length).toBe(3);
 
+    const emptySearchRes = (await firstValueFrom(
+      backend.handle(
+        new HttpRequest('GET', '/api/doctorchart/patients', {
+          params: new HttpParams().set('page', '0').set('size', '10').set('search', '__no_match__'),
+        }),
+      ),
+    )) as HttpResponse<{ content: unknown[]; totalElements: number; totalPages: number }>;
+    expect(emptySearchRes.status).toBe(200);
+    expect(emptySearchRes.body?.totalElements).toBe(0);
+    expect(emptySearchRes.body?.totalPages).toBe(0);
+    expect(emptySearchRes.body?.content.length).toBe(0);
+
     await expect(
       firstValueFrom(
         backend.handle(

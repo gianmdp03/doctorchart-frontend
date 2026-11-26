@@ -344,8 +344,8 @@ export class DemoHttpBackend implements HttpBackend {
 
     // 5. Patients directory & record endpoints
     if (path === '/patients' && method === 'GET') {
-      const page = Number(url.searchParams.get('page') || 0);
-      const size = Number(url.searchParams.get('size') || 10);
+      const page = Math.max(0, Math.floor(Number(url.searchParams.get('page') || 0) || 0));
+      const size = Math.max(1, Math.min(100, Math.floor(Number(url.searchParams.get('size') || 10) || 10)));
       const search = (url.searchParams.get('search') || '').trim().toLowerCase();
       const filter = (url.searchParams.get('filter') || 'ALL') as PatientDirectoryFilter;
       const asOf = new Date().toISOString().slice(0, 10);
@@ -373,7 +373,7 @@ export class DemoHttpBackend implements HttpBackend {
         });
       }
 
-      list.sort((a, b) => a.fullName.localeCompare(b.fullName, 'es'));
+      list.sort((a, b) => a.fullName.localeCompare(b.fullName, 'es') || a.id - b.id);
       const paged = this.paginate(list, page, size);
       return new HttpResponse({ status: 200, body: paged });
     }
@@ -1582,7 +1582,7 @@ export class DemoHttpBackend implements HttpBackend {
     const start = page * safeSize;
     const content = items.slice(start, start + safeSize);
     const totalElements = items.length;
-    const totalPages = Math.max(1, Math.ceil(totalElements / safeSize));
+    const totalPages = totalElements === 0 ? 0 : Math.ceil(totalElements / safeSize);
     return {
       content,
       totalElements,

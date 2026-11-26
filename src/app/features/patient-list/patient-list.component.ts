@@ -6,13 +6,9 @@ import { displayLocalDate } from '../../core/date/display-date';
 import {
   Component,
   OnInit,
-  HostListener,
   inject,
   signal,
   computed,
-  effect,
-  ElementRef,
-  viewChild,
   DestroyRef,
   PLATFORM_ID,
 } from '@angular/core';
@@ -146,27 +142,51 @@ export class PatientListComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
 
-  readonly sentinelRef = viewChild<ElementRef<HTMLElement>>('scrollSentinel');
-
   readonly patients = signal<PatientCardItem[]>([]);
   readonly selectedFilter = signal<PatientDirectoryFilter>('ALL');
   readonly searchQuery = signal<string>('');
   readonly isLoading = signal<boolean>(false);
-  readonly isLoadingMore = signal<boolean>(false);
 
   readonly currentPage = signal<number>(0);
-  readonly pageSize = 20;
-  readonly totalPages = signal<number>(1);
+  readonly pageSize = 10;
+  readonly totalPages = signal<number>(0);
   readonly totalElements = signal<number>(0);
 
-  readonly hasMore = computed(() => this.currentPage() + 1 < this.totalPages());
+  readonly hasPreviousPage = computed(() => this.currentPage() > 0);
+  readonly hasNextPage = computed(() => this.currentPage() + 1 < this.totalPages());
+  readonly rangeStart = computed(() =>
+    this.totalElements() === 0 || this.patients().length === 0
+      ? 0
+      : this.currentPage() * this.pageSize + 1,
+  );
+  readonly rangeEnd = computed(() =>
+    this.totalElements() === 0 || this.patients().length === 0
+      ? 0
+      : Math.min(this.totalElements(), this.currentPage() * this.pageSize + this.patients().length),
+  );
+  readonly visiblePages = computed<Array<number | 'ellipsis'>>(() => {
+    const total = this.totalPages();
+    if (total <= 0) return [];
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, index) => index);
+    }
+    const current = this.currentPage();
+    const last = total - 1;
+    if (current <= 3) {
+      return [0, 1, 2, 3, 4, 'ellipsis', last];
+    }
+    if (current >= last - 3) {
+      return [0, 'ellipsis', last - 4, last - 3, last - 2, last - 1, last];
+    }
+    return [0, 'ellipsis', current - 1, current, current + 1, 'ellipsis', last];
+  });
 
   readonly visibleColumnsCount = computed(() =>
     this.doctorSpecialtyService.supportsGrowthCharts() ? 7 : 6,
   );
 
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private observer: IntersectionObserver | null = null;
+  private requestedPage = 0;
   readonly loadError = signal<string | null>(null);
   private readonly reads = new AccountReadScope(() => {
     // An account change may also change specialty; never reuse an exclusive filter.
@@ -179,33 +199,6 @@ export class PatientListComponent implements OnInit {
   constructor() {
     this.destroyRef.onDestroy(() => {
       if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
-    });
-    effect(() => {
-      const el = this.sentinelRef()?.nativeElement;
-      if (
-        !isPlatformBrowser(this.platformId) ||
-        !el ||
-        typeof IntersectionObserver === 'undefined'
-      ) {
-        return;
-      }
-      if (this.observer) {
-        this.observer.disconnect();
-      }
-      this.observer = new IntersectionObserver(
-        (entries) => {
-          if (
-            entries[0].isIntersecting &&
-            this.hasMore() &&
-            !this.isLoadingMore() &&
-            !this.isLoading()
-          ) {
-            this.loadMore();
-          }
-        },
-        { rootMargin: '300px 0px', threshold: 0.01 },
-      );
-      this.observer.observe(el);
     });
   }
 
@@ -227,9 +220,6 @@ export class PatientListComponent implements OnInit {
         window.removeEventListener('patient-created', handlePatientCreated);
         window.removeEventListener('auth-success', handleAuthChange);
         window.removeEventListener('auth-signout', handleAuthChange);
-        if (this.observer) {
-          this.observer.disconnect();
-        }
       });
     }
   }
@@ -241,8 +231,8 @@ export class PatientListComponent implements OnInit {
     }
     const current = this.reads.begin();
     this.patients.set([]);
-    this.isLoadingMore.set(false);
     this.currentPage.set(0);
+    this.requestedPage = 0;
     this.totalPages.set(0);
     this.totalElements.set(0);
     this.loadError.set(null);
@@ -251,17 +241,49 @@ export class PatientListComponent implements OnInit {
       return;
     }
     this.isLoading.set(true);
-    this.fetchPage(0, search ?? this.searchQuery(), current, false);
+    this.fetchPage(0, (search ?? this.searchQuery()).trim(), current, false);
   }
-  loadMore(): void {
-    if (this.isLoadingMore() || !this.hasMore() || this.isLoading() || !this.reads.authenticated())
+
+  goToPage(page: number): void {
+    if (
+      page < 0 ||
+      page >= this.totalPages() ||
+      page === this.currentPage() ||
+      this.isLoading() ||
+      !this.reads.authenticated()
+    ) {
       return;
+    }
     const current = this.reads.begin();
-    this.isLoadingMore.set(true);
+    this.requestedPage = page;
+    this.isLoading.set(true);
     this.loadError.set(null);
-    this.fetchPage(this.currentPage() + 1, this.searchQuery(), current, true);
+    this.fetchPage(page, this.searchQuery().trim(), current, true);
   }
-  private fetchPage(page: number, query: string, current: () => boolean, append: boolean): void {
+
+  previousPage(): void {
+    this.goToPage(this.currentPage() - 1);
+  }
+
+  nextPage(): void {
+    this.goToPage(this.currentPage() + 1);
+  }
+
+  retryLoad(): void {
+    if (this.requestedPage === 0) {
+      this.loadInitial();
+      return;
+    }
+    if (!this.reads.authenticated() || this.isLoading()) {
+      return;
+    }
+    const current = this.reads.begin();
+    this.isLoading.set(true);
+    this.loadError.set(null);
+    this.fetchPage(this.requestedPage, this.searchQuery().trim(), current, false);
+  }
+
+  private fetchPage(page: number, query: string, current: () => boolean, scrollOnSuccess: boolean): void {
     this.patientService
       .getPatients(page, this.pageSize, 'fullName,asc', query, this.selectedFilter())
       .pipe(takeUntil(this.reads.canceled))
@@ -269,37 +291,22 @@ export class PatientListComponent implements OnInit {
         next: (response) => {
           if (!current()) return;
           const items = response.content.map(dto => mapDtoToCardItem(dto, this.doctorSpecialtyService.isPediatrics()));
-          this.patients.update((existing) =>
-            append
-              ? [...existing, ...items.filter((item) => !existing.some((p) => p.id === item.id))]
-              : items,
-          );
+          this.patients.set(items);
           this.currentPage.set(page);
           this.totalPages.set(getTotalPages(response));
           this.totalElements.set(getTotalElements(response));
           this.isLoading.set(false);
-          this.isLoadingMore.set(false);
+          if (scrollOnSuccess && isPlatformBrowser(this.platformId) && typeof document !== 'undefined') {
+            document.getElementById('view-patient-list')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+          }
         },
         error: () => {
           if (current()) {
             this.loadError.set('No se pudo cargar el directorio. Reintentá la carga.');
             this.isLoading.set(false);
-            this.isLoadingMore.set(false);
           }
         },
       });
-  }
-
-  @HostListener('window:scroll')
-  onWindowScroll(): void {
-    if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined') {
-      return;
-    }
-    const scrollPos = window.innerHeight + window.scrollY;
-    const threshold = document.documentElement.scrollHeight - 350;
-    if (scrollPos >= threshold && this.hasMore() && !this.isLoadingMore() && !this.isLoading()) {
-      this.loadMore();
-    }
   }
 
   isActive(patientId: number): boolean {
