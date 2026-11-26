@@ -127,15 +127,6 @@
             />
           </clipPath>
         </defs>
-        @if (isBoysBMIUnderFive() && hasBMITransition()) {
-          <rect
-            class="bmi-height-band"
-            [attr.x]="xScale()(24)"
-            [attr.y]="plot.top"
-            [attr.width]="plot.right - xScale()(24)"
-            [attr.height]="plot.bottom - plot.top"
-          />
-        }
         @for (tick of xGrid(); track tick) {
           <line
             class="grid-line"

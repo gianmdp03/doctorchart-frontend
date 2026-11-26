@@ -218,7 +218,7 @@ describe('GrowthChartComponent — all twenty official references', () => {
     fixture.detectChanges();
     expect(fixture.componentInstance.xLabels()).toEqual([]);
     expect(fixture.componentInstance.years()).toEqual([0, 12, 24, 36, 48, 60]);
-    expect(fixture.nativeElement.querySelector('.bmi-height-band')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.bmi-height-band')).toBeNull();
     expect(fixture.nativeElement.querySelectorAll('.bmi-period-label')).toHaveLength(0);
   });
   it('does not show a two-period transition in a BMI reference ending at two years', () => {

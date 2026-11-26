@@ -123,9 +123,6 @@
   stroke-width: 1.2;
   stroke-dasharray: 5 4;
 }
-.bmi-boys-under-five .bmi-height-band {
-  fill: color-mix(in srgb, var(--dc-blue-soft) 36%, transparent);
-}
 .bmi-boys-under-five .grid-line:not(.major-grid):not(.year-grid) {
   opacity: .48;
 }
