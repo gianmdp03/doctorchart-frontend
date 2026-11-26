@@ -94,6 +94,11 @@ export class PricingComponent {
     const cents = Math.round(amount * 100);
     return Math.round(cents * (100 - this.rayaDiscountPercent()) / 100) / 100;
   }
+  protected netWithoutNationalTaxes(amount: number | null | undefined, currency: string): number | null {
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) return null;
+    if ((currency || 'ARS').toUpperCase() !== 'ARS') return null;
+    return Math.round((amount / 1.21) * 100) / 100;
+  }
   protected readonly transferError = signal('');
   protected readonly transferLoading = signal(false);
   private readonly transferRequestOwner = signal<string | null>(null);

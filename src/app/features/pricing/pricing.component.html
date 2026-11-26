@@ -206,11 +206,16 @@
               @if (featured) { <span class="plan-highlight">Opción intermedia</span> }
               @if (plan.description) { <p>{{ plan.description }}</p> }
             </div>
+            @let effectivePrice = plan.price != null && discounted(plan.currency) ? rayaPrice(plan.price) : plan.price;
+            @let netPrice = netWithoutNationalTaxes(effectivePrice, plan.currency);
             <div class="plan-price">
               @if (plan.price != null && discounted(plan.currency)) { <del class="was-price">{{ money(plan.price, plan.currency) }}</del> }
-              <p class="price">{{ money(plan.price != null && discounted(plan.currency) ? rayaPrice(plan.price) : plan.price, plan.currency) }}
+              <p class="price">{{ money(effectivePrice, plan.currency) }}
                 <small>{{ paymentMethod() === 'card' ? 'cada' : 'por' }} {{ duration(plan.days) }}</small>
               </p>
+              @if (netPrice !== null) {
+                <p class="tax-free-price">PRECIO SIN IMPUESTOS NACIONALES: {{ money(netPrice, plan.currency) }}</p>
+              }
             </div>
             <div class="plan-action">
               @if (plan.lockReason) { <p>{{ plan.lockReason }}</p> }
@@ -256,12 +261,17 @@
             } @else if (checking()) { <p role="status">Calculando el importe…</p> }
           }
           @if (amount != null && (plan.action !== 'UPGRADE' || quote()?.canUpgrade)) {
+            @let effectiveTotal = discounted(currency) ? rayaPrice(amount) : amount;
+            @let netTotal = netWithoutNationalTaxes(effectiveTotal, currency);
             <p class="payment-total">
               @if (discounted(currency)) { <del>{{ money(amount, currency) }}</del> }
-              <strong>{{ money(discounted(currency) ? rayaPrice(amount) : amount, currency) }}</strong>
+              <strong>{{ money(effectiveTotal, currency) }}</strong>
               @if (paymentMethod() === 'card' && plan.action !== 'UPGRADE') { <small>Cada {{ duration(plan.days) }} · débito automático</small> }
               @if (paymentMethod() === 'raya') { <small>Pago único @if (discounted(currency)) { · {{ rayaDiscountPercent() }}% de descuento }</small> }
             </p>
+            @if (netTotal !== null) {
+              <p class="tax-free-price">PRECIO SIN IMPUESTOS NACIONALES: {{ money(netTotal, currency) }}</p>
+            }
           }
           @if (paymentMethod() && currency !== 'ARS') {
             <p>Este medio de pago está disponible para planes en pesos.</p>
