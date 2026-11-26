@@ -14,6 +14,10 @@ DemoChart es la variante interactiva, 100% estática y sin backend de DoctorChar
   ```bash
   npm run build:demo
   ```
+- Despliegue en Cloudflare Workers (usando [wrangler.demochart.json](../wrangler.demochart.json)):
+  - **Build command:** `npm run build:demo`
+  - **Deploy command:** `npx wrangler deploy --config wrangler.demochart.json`
+  - **Variable de entorno:** `NODE_VERSION=24`
 - Producción normal de DoctorChart (sin cambios):
   ```bash
   npm run build
