@@ -111,7 +111,7 @@ export class DemoHttpBackend implements HttpBackend {
   private readonly store = inject(DemoSessionService);
 
   handle(req: HttpRequest<unknown>): Observable<HttpEvent<unknown>> {
-    const url = new URL(req.url, 'https://demochart.local');
+    const url = new URL(req.urlWithParams, 'https://demochart.local');
     const path = url.pathname;
     const method = req.method.toUpperCase();
 
