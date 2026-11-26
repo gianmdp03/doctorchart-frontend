@@ -3,523 +3,650 @@
   width: 100%;
   min-width: 0;
 }
-
 .dashboard-page {
   display: grid;
-  gap: var(--dc-space-6);
+  gap: 1.5rem;
   color: var(--dc-text);
 }
-
 .day-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  gap: 0.75rem 1.5rem;
   flex-wrap: wrap;
-  gap: .5rem 1.25rem;
+  padding-block: 0.25rem;
 }
-
 .day-header h1 {
   margin: 0;
   font-size: 1.75rem;
-  line-height: 1.2;
-  font-weight: 700;
-  letter-spacing: -.03em;
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.03em;
   overflow-wrap: anywhere;
 }
-
 .day-date {
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: 0.5rem;
   margin: 0;
   color: var(--dc-text-secondary);
-  font-size: .8125rem;
+  font-size: 0.8125rem;
 }
-
-.day-date span::first-letter { text-transform: uppercase; }
-
-.metrics {
+.day-date span::first-letter {
+  text-transform: uppercase;
+}
+.metrics-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+.metric {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'label icon' 'number icon';
+  gap: 0.75rem 1rem;
+  padding: 1.25rem 1.5rem;
   border: 1px solid var(--dc-line);
   border-radius: var(--dc-radius-card);
   background: var(--dc-paper);
 }
-
-.metrics-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 0;
-}
-
-.metric {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: 'number icon' 'label label';
-  align-content: start;
-  align-items: start;
-  gap: .5rem;
-  padding: 1.125rem 1.5rem;
-}
-
-.metric + .metric { border-inline-start: 1px solid var(--dc-line); }
-.metric-today {
-  border-radius: calc(var(--dc-radius-card) - 1px) 0 0 calc(var(--dc-radius-card) - 1px);
-  background: var(--dc-brand-soft);
-  color: var(--dc-brand-ink);
-}
-
-.metric > ng-icon {
-  grid-area: icon;
-  align-self: center;
-  font-size: 1.125rem;
-  color: var(--dc-text-muted);
-}
-
-.metric-today > ng-icon { color: inherit; }
-
 .metric dt {
   grid-area: label;
-  font-size: .8125rem;
-  line-height: 1.35;
   color: var(--dc-text-secondary);
-  font-weight: 550;
+  font-size: 0.875rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
 }
-
-.metric-today dt { color: inherit; }
-
 .metric dd {
   grid-area: number;
   margin: 0;
   font-size: 2rem;
   line-height: 1;
   font-weight: 650;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -.03em;
   overflow-wrap: anywhere;
 }
-
+.metric > ng-icon {
+  grid-area: icon;
+  align-self: center;
+  color: var(--dc-text-muted);
+  font-size: 1.375rem;
+}
+.metric-today dd,
+.metric-today > ng-icon {
+  color: var(--dc-brand-ink);
+}
 .day-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
+  align-items: stretch;
 }
-
-.day-main, .day-aside {
-  display: grid;
-  gap: 1.25rem;
-  min-width: 0;
-}
-
 .panel {
-  --panel-inset: 1.25rem;
+  --panel-inset: 1.5rem;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   border: 1px solid var(--dc-line);
   border-radius: var(--dc-radius-card);
   background: var(--dc-paper);
 }
-
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: .25rem 1rem;
-  padding: 1.125rem var(--panel-inset) .75rem;
+  gap: 0.5rem 1rem;
+  min-height: 5rem;
+  padding: 1.25rem var(--panel-inset);
 }
-
 .section-title {
   display: flex;
   align-items: center;
-  gap: .625rem;
+  gap: 0.625rem;
+  min-width: 0;
 }
-
 .section-title > ng-icon {
   flex: none;
-  color: var(--dc-brand-ink);
+  color: var(--dc-text-muted);
   font-size: 1.125rem;
 }
-
 .section-title h2 {
   margin: 0;
   font-size: 1rem;
   font-weight: 650;
-  letter-spacing: -.015em;
-  line-height: 1.35;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
 }
-
-.text-action, .period-bar button, .agenda-refresh {
+.section-description {
+  margin: 0.375rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--dc-text-secondary);
+}
+.activity-heading {
+  min-height: 5rem;
+}
+.chart-description {
+  width: 100%;
+  margin-top: -0.125rem;
+}
+.text-action,
+.period-bar button,
+.agenda-refresh {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .375rem;
+  gap: 0.375rem;
   min-height: 44px;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--dc-brand-ink);
   font: inherit;
-  font-size: .8125rem;
-  font-weight: 650;
+  font-size: 0.8125rem;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
 }
-
-.text-action:hover { text-decoration: underline; text-underline-offset: .2em; }
-
-.agenda-heading { padding-block: .625rem; }
-
+.text-action:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
 .agenda-refresh {
   min-width: 44px;
   border-radius: var(--dc-radius-control);
 }
-
-.agenda-refresh:hover:not(:disabled) { background: var(--dc-subtle); }
-.agenda-refresh:disabled { color: var(--dc-text-muted); cursor: default; }
-
+.agenda-refresh:hover:not(:disabled) {
+  background: var(--dc-subtle);
+}
+.agenda-refresh:disabled {
+  color: var(--dc-text-muted);
+  cursor: default;
+}
 .period-bar {
   display: flex;
+  align-self: flex-start;
   flex-wrap: wrap;
-  gap: .875rem;
-  padding-inline: var(--panel-inset);
-  border-bottom: 1px solid var(--dc-line);
-}
-
-.period-bar button {
-  min-width: 44px;
-  padding-inline: .375rem;
-  border-block: 2px solid transparent;
-  color: var(--dc-text-secondary);
-}
-
-.period-bar button:hover { color: var(--dc-brand-ink); }
-
-.period-bar button[aria-pressed="true"] {
-  border-bottom-color: var(--dc-brand);
-  color: var(--dc-brand-ink);
-}
-
-.activity-list, .agenda-list {
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.activity-list { padding-bottom: .25rem; }
-
-.recent-consultation + .recent-consultation { border-top: 1px solid var(--dc-line); }
-
-.record-link {
-  display: grid;
-  grid-template-columns: minmax(4.7rem, auto) minmax(0, 1fr) auto auto;
-  grid-template-areas: 'date name action arrow';
-  gap: .5rem;
-  align-items: center;
-  min-height: 3.75rem;
-  padding: .75rem var(--panel-inset);
-  color: inherit;
-  text-decoration: none;
-}
-
-.record-link:hover { background: var(--dc-subtle); }
-.record-link:focus-visible { outline-offset: -3px; }
-
-.record-date {
-  grid-area: date;
-  display: grid;
-  gap: .1rem;
-  color: var(--dc-text-secondary);
-  font-size: .8125rem;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.3;
-}
-
-.patient-name, .agenda-person strong {
-  font-size: .9375rem;
-  font-weight: 650;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-}
-
-.patient-name { grid-area: name; }
-
-.record-action, .record-arrow {
-  color: var(--dc-brand-ink);
-  font-size: .8125rem;
-  font-weight: 600;
-}
-
-.record-action { grid-area: action; }
-.record-arrow { grid-area: arrow; }
-.record-link:hover .record-action { text-decoration: underline; text-underline-offset: .2em; }
-
-.panel-state, .activity-limit, .agenda-limit {
-  margin: 0;
-  padding: 1.125rem var(--panel-inset);
-  color: var(--dc-text-secondary);
-  font-size: .9375rem;
-  line-height: 1.5;
-}
-
-.panel-state p { margin: 0; }
-
-.empty-state {
-  display: grid;
-  justify-items: start;
-  gap: .375rem;
-  padding-block: 1.375rem 1.75rem;
-}
-
-.empty-state h3 {
-  margin: .25rem 0 0;
-  font-size: .9375rem;
-  color: var(--dc-text);
-  font-weight: 650;
-}
-
-.state-icon {
-  display: grid;
-  place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  gap: 0.25rem;
+  margin: 0 var(--panel-inset) 1rem;
+  padding: 0.25rem;
   border-radius: var(--dc-radius-control);
   background: var(--dc-subtle);
-  color: var(--dc-text-muted);
-  font-size: 1.125rem;
+  border: 1px solid var(--dc-line);
 }
-
-.compact-state { padding-block: 0 1.125rem; }
-.activity-limit, .agenda-limit { padding-block: .75rem; font-size: .8125rem; }
-
-.loading-state { display: grid; gap: .65rem; }
-
-.skeleton {
-  display: block;
-  width: 70%;
-  height: .75rem;
-  border-radius: var(--dc-radius-sm);
-  background: var(--dc-raised);
-}
-
-.loading-state .skeleton:nth-child(2) { width: 45%; }
-
-.metric-skeleton {
-  width: min(100%, 2.5rem);
-  height: .8em;
-  margin-block: .1em;
-}
-
-.agenda-totals {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .5rem;
-  margin: .25rem 0 0;
-  padding: .875rem var(--panel-inset);
-  border-top: 1px solid var(--dc-line);
-  background: var(--dc-subtle);
-}
-
-.agenda-totals > div { display: flex; flex-direction: column-reverse; gap: .25rem; }
-
-.agenda-totals dt, .agenda-person > span {
-  font-size: .75rem;
+.period-bar button {
+  min-width: 5rem;
+  min-height: 36px;
+  padding-inline: 0.875rem;
+  border-radius: 6px;
   color: var(--dc-text-secondary);
-  line-height: 1.35;
 }
-
-.agenda-totals dd {
-  margin: 0;
-  color: var(--dc-text);
-  font-size: 1.25rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 650;
-  line-height: 1.15;
+.period-bar button:hover {
+  color: var(--dc-brand-ink);
 }
-
-.agenda-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(0, 6rem);
-  align-items: start;
-  gap: .75rem;
-  padding: .75rem var(--panel-inset);
-  border-top: 1px solid var(--dc-line);
+.period-bar button[aria-pressed='true'] {
+  background: var(--dc-brand-soft);
+  color: var(--dc-brand-ink);
 }
-
-.agenda-row time {
-  color: var(--dc-text-secondary);
-  font-size: .8125rem;
-  font-weight: 550;
-  font-variant-numeric: tabular-nums;
+.recent-activity-card,
+.patient-queue-card,
+.agenda-card {
+  min-height: 20rem;
 }
-
-.agenda-person { display: grid; gap: .2rem; overflow-wrap: anywhere; }
-
-.booking-state {
-  justify-self: end;
-  font-size: .75rem;
-  line-height: 1.4;
-  color: var(--dc-text-secondary);
-  text-align: right;
-}
-
-.state-present { color: var(--dc-positive); }
-.state-awaiting { color: var(--dc-caution); }
-
-.agenda-card:not(:has(.agenda-list)) .agenda-totals {
-  border-radius: 0 0 calc(var(--dc-radius-card) - 1px) calc(var(--dc-radius-card) - 1px);
-}
-
-.patient-months {
-  display: grid;
-  gap: .625rem;
-  margin: 0;
-  padding: .25rem var(--panel-inset) 1rem;
-}
-
-.patient-month {
-  display: grid;
-  grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr);
-  align-items: center;
-  gap: .75rem;
-  color: var(--dc-text-secondary);
-  font-size: .8125rem;
-}
-
-.patient-month dt::first-letter { text-transform: uppercase; }
-
-.patient-month dd {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 5ch;
-  align-items: center;
-  gap: .75rem;
-  margin: 0;
-  font-variant-numeric: tabular-nums;
-  text-align: end;
-}
-
-.month-track {
-  height: .625rem;
-  min-width: 0;
-  border-radius: var(--dc-radius-sm);
-  background: var(--dc-raised);
-}
-
-.month-track > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--dc-brand);
-  opacity: .55;
-}
-
-.current-month { color: var(--dc-brand-ink); }
-.current-month .month-track > span { opacity: 1; }
-
-.first-visits-count {
-  margin: 0;
-  padding: .75rem var(--panel-inset);
-  border-top: 1px solid var(--dc-line);
-  color: var(--dc-text-secondary);
-  font-size: .8125rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.first-visits-count strong { color: var(--dc-text); }
-
+.activity-list,
+.agenda-list,
 .patient-queue {
   margin: 0;
   padding: 0;
   list-style: none;
+  min-height: 0;
+  overflow: auto;
+  max-height: 18rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dc-control-line) transparent;
 }
-
-.patient-queue li { border-top: 1px solid var(--dc-line); }
-
+.recent-consultation,
+.patient-queue li,
+.agenda-row {
+  border-top: 1px solid var(--dc-line);
+}
+.record-link {
+  display: grid;
+  grid-template-columns: minmax(4rem, auto) minmax(0, 1fr) auto auto;
+  grid-template-areas: 'date name action arrow';
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3.5rem;
+  padding: 0.5rem var(--panel-inset);
+  color: inherit;
+  text-decoration: none;
+}
+.record-date {
+  grid-area: date;
+  display: grid;
+  gap: 0.125rem;
+  color: var(--dc-text-secondary);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+}
+.patient-name {
+  grid-area: name;
+}
+.patient-name,
+.agenda-person strong {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.record-action {
+  grid-area: action;
+}
+.record-arrow {
+  grid-area: arrow;
+}
+.record-action,
+.record-arrow {
+  color: var(--dc-brand-ink);
+  font-size: 0.8125rem;
+}
+.record-link:hover,
+.patient-queue-link:hover {
+  background: var(--dc-subtle);
+}
+.record-link:hover .record-action,
+.patient-queue-link:hover span {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.record-link:focus-visible,
+.patient-queue-link:focus-visible {
+  outline-offset: -3px;
+}
+.panel-state,
+.activity-limit,
+.agenda-limit {
+  margin: 0;
+  padding: 1.25rem var(--panel-inset);
+  color: var(--dc-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.panel-state p {
+  margin: 0;
+  max-width: 42ch;
+}
+.empty-state {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding-block: 1.75rem 2rem;
+}
+.empty-state h3 {
+  margin: 0.375rem 0 0;
+  color: var(--dc-text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.state-icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-radius-card);
+  color: var(--dc-text-muted);
+  font-size: 1.375rem;
+}
+.compact-state {
+  padding-block: 0.25rem 1.25rem;
+}
+.activity-limit,
+.agenda-limit {
+  padding-block: 0.75rem;
+  font-size: 0.8125rem;
+}
+.loading-state {
+  display: grid;
+  gap: 0.875rem;
+}
+.skeleton {
+  display: block;
+  width: 70%;
+  height: 0.875rem;
+  border-radius: 6px;
+  background: var(--dc-raised);
+}
+.loading-state .skeleton:nth-child(2) {
+  width: 45%;
+}
+.metric-skeleton {
+  width: 2.5rem;
+  max-width: 100%;
+  height: 0.8em;
+  margin-block: 0.1em;
+}
+.agenda-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.875rem var(--panel-inset);
+  margin: 0;
+  border-top: 1px solid var(--dc-line);
+  background: var(--dc-subtle);
+}
+.agenda-totals > div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.25rem;
+}
+.agenda-totals dt,
+.agenda-person > span {
+  font-size: 0.75rem;
+  color: var(--dc-text-secondary);
+  line-height: 1.4;
+}
+.agenda-totals dd {
+  margin: 0;
+  color: var(--dc-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.agenda-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 7rem);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem var(--panel-inset);
+}
+.agenda-row time {
+  color: var(--dc-text-secondary);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.agenda-person {
+  display: grid;
+  gap: 0.125rem;
+  overflow-wrap: anywhere;
+}
+.booking-state {
+  justify-self: end;
+  color: var(--dc-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: right;
+}
+.state-present {
+  color: var(--dc-positive);
+}
+.state-awaiting {
+  color: var(--dc-caution);
+}
+.patient-months-card,
+.notes-card {
+  min-height: 18rem;
+}
+.patient-months {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin: 0 0 1.25rem;
+  padding: 0 var(--panel-inset);
+}
+.patient-month {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: stretch;
+  gap: 0.75rem;
+  min-width: 0;
+  color: var(--dc-text-secondary);
+  font-size: 0.75rem;
+  text-align: center;
+}
+.patient-month dt {
+  text-wrap: balance;
+  min-height: 3em;
+}
+.patient-month dt::first-letter {
+  text-transform: uppercase;
+}
+.patient-month dd {
+  position: relative;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+.patient-month dd strong {
+  color: var(--dc-text);
+  font-size: 1.125rem;
+  line-height: 1.4;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.month-track {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 7rem;
+  border-bottom: 1px solid var(--dc-control-line);
+}
+.month-track > span {
+  display: block;
+  width: 3.5rem;
+  max-width: 70%;
+  background: var(--dc-text-muted);
+  border-radius: 5px 5px 0 0;
+}
+.current-month .month-track > span {
+  background: var(--dc-brand);
+}
+.current-month dt,
+.current-month dd strong {
+  color: var(--dc-brand-ink);
+}
+.first-visits-count {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+  margin: auto 0 0;
+  padding: 0.875rem var(--panel-inset);
+  border-top: 1px solid var(--dc-line);
+  color: var(--dc-text-secondary);
+  font-size: 0.8125rem;
+}
+.first-visits-count strong {
+  color: var(--dc-text);
+  font-variant-numeric: tabular-nums;
+}
 .patient-queue-link {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.5rem;
   align-items: center;
-  gap: .5rem;
-  min-height: 3.25rem;
-  padding: .75rem var(--panel-inset);
+  min-height: 3.5rem;
+  padding: 0.875rem var(--panel-inset);
   color: inherit;
-  font-size: .8125rem;
+  font-size: 0.8125rem;
   text-decoration: none;
 }
-
-.patient-queue-link strong { overflow-wrap: anywhere; }
-.patient-queue-link span, .patient-queue-link ng-icon { color: var(--dc-brand-ink); }
-.patient-queue-link:hover { background: var(--dc-subtle); }
-.patient-queue-link:hover span { text-decoration: underline; text-underline-offset: .2em; }
-.patient-queue-link:focus-visible { outline-offset: -3px; }
-.patient-queue li:last-child .patient-queue-link { border-radius: 0 0 calc(var(--dc-radius-card) - 1px) calc(var(--dc-radius-card) - 1px); }
-.patient-queue-card:has(.agenda-limit) .patient-queue-link { border-radius: 0; }
-
-.notes-widget-body { padding: 0 var(--panel-inset) 1rem; }
-
+.patient-queue-link strong {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.patient-queue-link span,
+.patient-queue-link ng-icon {
+  color: var(--dc-brand-ink);
+}
+.notes-widget-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 0 var(--panel-inset) 1.25rem;
+}
 .notes-textarea {
+  display: block;
+  flex: 1;
   width: 100%;
-  min-height: 5.5rem;
-  padding: .625rem .75rem;
+  min-height: 9rem;
+  padding: 1rem;
   border: 1px solid var(--dc-control-line);
   border-radius: var(--dc-radius-control);
   background: var(--dc-subtle);
   color: var(--dc-text);
   caret-color: var(--dc-brand);
   font: inherit;
-  font-size: .9375rem;
-  line-height: 1.5;
+  font-size: 0.875rem;
+  line-height: 1.7;
   resize: vertical;
 }
-
-.notes-textarea::placeholder { color: var(--dc-text-muted); opacity: 1; }
-.notes-textarea:hover { border-color: var(--dc-brand); }
-.notes-actions { display: flex; justify-content: flex-end; margin-top: .5rem; }
-
+.notes-textarea::placeholder {
+  color: var(--dc-text-muted);
+  opacity: 1;
+}
+.notes-textarea:hover {
+  border-color: var(--dc-brand);
+}
+.notes-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+}
 .saved-status {
   display: inline-flex;
   align-items: center;
-  gap: .25rem;
+  gap: 0.25rem;
   color: var(--dc-positive);
-  font-size: .75rem;
+  font-size: 0.75rem;
 }
-
 .note-error {
-  margin: 0 0 .625rem;
+  margin: 0 0 0.75rem;
   color: var(--dc-danger);
-  font-size: .8125rem;
+  font-size: 0.8125rem;
 }
-
 :where(button, a, textarea):focus-visible {
   outline: 2px solid var(--dc-focus);
   outline-offset: 2px;
 }
-
-@media (max-width: 940px) {
-  .day-layout { grid-template-columns: minmax(0, 1fr); }
-  .day-main, .day-aside { display: contents; }
-  .agenda-card, .patient-queue-card { order: 1; }
-  .patient-months-card { order: 2; }
-  .notes-card { order: 3; }
+@media (max-width: 1150px) {
+  .panel {
+    --panel-inset: 1.125rem;
+  }
+  .record-link {
+    grid-template-columns: 4rem minmax(0, 1fr) auto;
+    grid-template-areas: 'date name arrow' 'date action arrow';
+    gap: 0.125rem 0.5rem;
+  }
+  .patient-queue-link {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .patient-queue-link span {
+    grid-row: 2;
+  }
+  .patient-queue-link ng-icon {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
 }
-
+@media (max-width: 900px) {
+  .day-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .recent-activity-card,
+  .patient-queue-card,
+  .agenda-card {
+    min-height: 18rem;
+  }
+  .metric {
+    padding: 1.125rem;
+  }
+}
 @media (max-width: 580px) {
-  .dashboard-page { gap: 1rem; }
-  .day-header h1 { font-size: 1.5rem; }
-  .day-layout, .day-aside { gap: 1rem; }
-  .panel { --panel-inset: .875rem; }
+  .dashboard-page {
+    gap: 1.125rem;
+  }
+  .day-header h1 {
+    font-size: 1.5rem;
+  }
+  .metrics-list {
+    gap: 0.5rem;
+  }
   .metric {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'icon' 'number' 'label';
-    gap: .375rem;
-    padding: .75rem .625rem;
+    gap: 0.5rem;
+    padding: 0.875rem 0.625rem;
   }
-  .metric dd { font-size: 1.5rem; }
-  .metric dt { font-size: .75rem; }
-  .metric > ng-icon { font-size: 1rem; }
-  .activity-heading { padding-bottom: .25rem; }
-  .record-link {
-    grid-template-columns: minmax(4rem, auto) minmax(0, 1fr) auto;
-    grid-template-areas: 'date name arrow' 'date action arrow';
-    gap: .125rem .5rem;
+  .metric > ng-icon {
+    font-size: 1rem;
+  }
+  .metric dd {
+    font-size: 1.5rem;
+  }
+  .metric dt {
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+  .day-layout {
+    gap: 1rem;
+  }
+  .panel {
+    --panel-inset: 1rem;
+  }
+  .panel-header {
+    padding-block: 1rem;
+  }
+  .activity-heading {
+    gap: 0.25rem;
+  }
+  .section-description {
+    max-width: 32ch;
+  }
+  .patient-months {
+    gap: 0.625rem;
+  }
+  .month-track {
+    height: 6rem;
+  }
+  .agenda-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .booking-state {
+    grid-column: 2;
+    justify-self: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 380px) {
+  .metrics-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .metric {
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+    grid-template-areas: "icon label number";
+    align-items: center;
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .metric dt {
+    font-size: 0.8125rem;
+    overflow-wrap: normal;
   }
 }

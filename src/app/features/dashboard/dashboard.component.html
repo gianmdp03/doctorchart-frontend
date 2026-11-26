@@ -27,23 +27,45 @@
   </section>
 
   <div class="day-layout">
-    <div class="day-main">
-    <section class="panel recent-activity-card" aria-labelledby="activity-title" [attr.aria-busy]="activityLoading()">
+    <section
+      class="panel recent-activity-card"
+      aria-labelledby="activity-title"
+      [attr.aria-busy]="activityLoading()"
+    >
       <header class="panel-header activity-heading">
-        <div class="section-title">
-          <ng-icon name="lucideClipboardList" aria-hidden="true" />
-          <h2 id="activity-title">Actividad clínica</h2>
+        <div>
+          <div class="section-title">
+            <ng-icon name="lucideClipboardList" aria-hidden="true" />
+            <h2 id="activity-title">Actividad clínica</h2>
+          </div>
+          <p class="section-description">Retomá las historias de tus últimas atenciones.</p>
         </div>
-        <a class="text-action" routerLink="/encounters" [queryParams]="{ specialtyContextId: specialtyContextId() }">
+        <a
+          class="text-action"
+          routerLink="/encounters"
+          [queryParams]="{ specialtyContextId: specialtyContextId() }"
+        >
           Todas las consultas <ng-icon name="lucideArrowRight" aria-hidden="true" />
         </a>
       </header>
 
       <div class="period-bar" role="group" aria-label="Período de las atenciones">
-        <button type="button" data-period="today" [attr.aria-pressed]="activityPeriod() === 'today'"
-          (click)="activityPeriod.set('today')">Hoy</button>
-        <button type="button" data-period="recent" [attr.aria-pressed]="activityPeriod() === 'recent'"
-          (click)="activityPeriod.set('recent')">Recientes</button>
+        <button
+          type="button"
+          data-period="today"
+          [attr.aria-pressed]="activityPeriod() === 'today'"
+          (click)="activityPeriod.set('today')"
+        >
+          Hoy
+        </button>
+        <button
+          type="button"
+          data-period="recent"
+          [attr.aria-pressed]="activityPeriod() === 'recent'"
+          (click)="activityPeriod.set('recent')"
+        >
+          Recientes
+        </button>
       </div>
 
       @if (activityLoading()) {
@@ -57,12 +79,21 @@
           <button type="button" class="text-action" (click)="loadActivity()">Reintentar</button>
         </div>
       } @else if (activityRows().length) {
-        <ul class="activity-list">
+        <ul class="activity-list" tabindex="0" aria-label="Atenciones registradas">
           @for (row of activityRows(); track row.id) {
             <li class="recent-consultation">
-              <a class="record-link" [routerLink]="['/patients', row.patientId]"
+              <a
+                class="record-link"
+                [routerLink]="['/patients', row.patientId]"
                 [queryParams]="{ tab: 'history', specialtyContextId: specialtyContextId() }"
-                [attr.aria-label]="'Abrir historia clínica de ' + row.patientName + ', ' + row.date + (row.time ? ' a las ' + row.time : '')">
+                [attr.aria-label]="
+                  'Abrir historia clínica de ' +
+                  row.patientName +
+                  ', ' +
+                  row.date +
+                  (row.time ? ' a las ' + row.time : '')
+                "
+              >
                 <span class="record-date">
                   @if (activityPeriod() === 'recent' || !row.time) {
                     <span>{{ row.date }}</span>
@@ -78,8 +109,13 @@
             </li>
           }
         </ul>
-        @if (activityPeriod() === 'today' && (activity()?.encountersToday ?? 0) > activityRows().length) {
-          <p class="activity-limit">Se muestran {{ activityRows().length }} de las {{ activity()?.encountersToday }} atenciones de hoy.</p>
+        @if (
+          activityPeriod() === 'today' && (activity()?.encountersToday ?? 0) > activityRows().length
+        ) {
+          <p class="activity-limit">
+            Se muestran {{ activityRows().length }} de las
+            {{ activity()?.encountersToday }} atenciones de hoy.
+          </p>
         }
       } @else {
         <div class="panel-state empty-state">
@@ -97,160 +133,223 @@
         </div>
       }
     </section>
-
-      <section class="panel patient-months-card" aria-labelledby="patient-months-title" [attr.aria-busy]="activityLoading()">
+    @if (calendarAvailable()) {
+      <section
+        class="panel agenda-card"
+        aria-labelledby="agenda-title"
+        [attr.aria-busy]="agendaLoading()"
+      >
+        <header class="panel-header agenda-heading">
+          <div class="section-title">
+            <ng-icon name="lucideCalendarDays" aria-hidden="true" />
+            <h2 id="agenda-title">Turnos de hoy</h2>
+          </div>
+          @if (!agendaError()) {
+            <button
+              type="button"
+              class="agenda-refresh"
+              aria-label="Actualizar turnos de hoy"
+              title="Actualizar turnos de hoy"
+              [disabled]="agendaLoading()"
+              (click)="loadAgenda()"
+            >
+              <ng-icon name="lucideRefreshCw" aria-hidden="true" />
+            </button>
+          }
+        </header>
+        @if (agendaLoading()) {
+          <div class="panel-state loading-state" role="status">
+            <span class="skeleton"></span><span class="skeleton"></span>
+            <span class="sr-only">Cargando turnos</span>
+          </div>
+        } @else if (agendaError()) {
+          <div class="panel-state compact-state" role="alert">
+            <p>No se pudieron cargar los turnos.</p>
+            <button type="button" class="text-action" (click)="loadAgenda()">Reintentar</button>
+          </div>
+        } @else if (agenda().pending + agenda().present + agenda().completed > 0) {
+          <dl class="agenda-totals">
+            <div>
+              <dt>Por atender</dt>
+              <dd>{{ agenda().pending }}</dd>
+            </div>
+            <div>
+              <dt>Presentes</dt>
+              <dd>{{ agenda().present }}</dd>
+            </div>
+            <div>
+              <dt>Finalizados</dt>
+              <dd>{{ agenda().completed }}</dd>
+            </div>
+          </dl>
+          @if (agenda().rows.length) {
+            <ul class="agenda-list" tabindex="0" aria-label="Turnos de hoy">
+              @for (row of agenda().rows; track row.id) {
+                <li class="agenda-row">
+                  <time [attr.datetime]="row.start">{{ row.time }} h</time>
+                  <div class="agenda-person">
+                    <strong>{{ row.name }}</strong>
+                    @if (row.place) {
+                      <span>{{ row.place }}</span>
+                    }
+                  </div>
+                  <span
+                    class="booking-state"
+                    [class.state-present]="row.state === 'CHECKED_IN'"
+                    [class.state-awaiting]="row.state === 'AWAITING_PATIENT'"
+                    >{{ row.status }}</span
+                  >
+                </li>
+              }
+            </ul>
+            @if (agenda().pending + agenda().present > agenda().rows.length) {
+              <p class="agenda-limit">Se muestran {{ agenda().rows.length }} turnos abiertos.</p>
+            }
+          }
+        } @else {
+          <div class="panel-state empty-state">
+            <div class="state-icon"><ng-icon name="lucideCalendarDays" aria-hidden="true" /></div>
+            <h3>Sin turnos para hoy</h3>
+            <p>No hay turnos activos para esta especialidad hoy.</p>
+          </div>
+        }
+      </section>
+    } @else {
+      <section
+        class="panel patient-queue-card"
+        aria-labelledby="patient-queue-title"
+        [attr.aria-busy]="activityLoading()"
+      >
         <header class="panel-header">
           <div class="section-title">
-            <ng-icon name="lucideChartNoAxesColumn" aria-hidden="true" />
-            <h2 id="patient-months-title">Pacientes atendidos por mes</h2>
+            <ng-icon name="lucideUsers" aria-hidden="true" />
+            <h2 id="patient-queue-title">Fichas sin consultas</h2>
           </div>
         </header>
         @if (activityLoading()) {
           <div class="panel-state loading-state" role="status">
             <span class="skeleton"></span><span class="skeleton"></span>
-            <span class="sr-only">Cargando el resumen mensual</span>
+            <span class="sr-only">Cargando fichas sin consultas</span>
           </div>
         } @else if (patientActivity(); as summary) {
-          <dl class="patient-months">
-            @for (month of monthlyPatients(); track month.month) {
-              <div class="patient-month" [class.current-month]="$last">
-                <dt><time [attr.datetime]="month.month">{{ month.label }}</time></dt>
-                <dd>
-                  <span class="month-track" aria-hidden="true"><span [style.width.%]="month.width"></span></span>
-                  <strong>{{ month.patients }}</strong>
-                </dd>
-              </div>
+          @if (summary.patientsWithoutEncounter.length) {
+            <ul class="patient-queue" tabindex="0" aria-label="Pacientes con fichas sin consultas">
+              @for (patient of summary.patientsWithoutEncounter; track patient.patientId) {
+                <li>
+                  <a
+                    class="patient-queue-link"
+                    [routerLink]="['/patients', patient.patientId]"
+                    [queryParams]="{ tab: 'history', specialtyContextId: specialtyContextId() }"
+                    [attr.aria-label]="'Abrir historia clínica de ' + patient.patientFullName"
+                  >
+                    <strong>{{ patient.patientFullName }}</strong>
+                    <span>Historia clínica</span>
+                    <ng-icon name="lucideArrowRight" aria-hidden="true" />
+                  </a>
+                </li>
+              }
+            </ul>
+            @if (summary.withoutEncounters > summary.patientsWithoutEncounter.length) {
+              <p class="agenda-limit">
+                {{ summary.withoutEncounters }} fichas sin consultas en total.
+              </p>
             }
-          </dl>
-          <p class="first-visits-count"><strong>{{ summary.firstVisitsThisMonth }}</strong>
-            {{ summary.firstVisitsThisMonth === 1 ? 'primera consulta' : 'primeras consultas' }} este mes
-          </p>
+          } @else {
+            <div class="panel-state empty-state">
+              <div class="state-icon"><ng-icon name="lucideUsers" aria-hidden="true" /></div>
+              <h3>Sin fichas pendientes</h3>
+              <p>
+                Acá vas a encontrar a los pacientes que todavía no tienen una consulta registrada.
+              </p>
+            </div>
+          }
         } @else {
-          <p class="panel-state compact-state">El resumen mensual no está disponible.</p>
+          <p class="panel-state compact-state">Las fichas sin consultas no están disponibles.</p>
         }
       </section>
-    </div>
-
-    <div class="day-aside">
-      @if (calendarAvailable()) {
-        <section class="panel agenda-card" aria-labelledby="agenda-title" [attr.aria-busy]="agendaLoading()">
-          <header class="panel-header agenda-heading">
-            <div class="section-title">
-              <ng-icon name="lucideCalendarDays" aria-hidden="true" />
-              <h2 id="agenda-title">Turnos de hoy</h2>
-            </div>
-            @if (!agendaError()) {
-              <button type="button" class="agenda-refresh" aria-label="Actualizar turnos de hoy"
-                title="Actualizar turnos de hoy" [disabled]="agendaLoading()" (click)="loadAgenda()">
-                <ng-icon name="lucideRefreshCw" aria-hidden="true" />
-              </button>
-            }
-          </header>
-          @if (agendaLoading()) {
-            <div class="panel-state loading-state" role="status">
-              <span class="skeleton"></span><span class="skeleton"></span>
-              <span class="sr-only">Cargando turnos</span>
-            </div>
-          } @else if (agendaError()) {
-            <div class="panel-state compact-state" role="alert">
-              <p>No se pudieron cargar los turnos.</p>
-              <button type="button" class="text-action" (click)="loadAgenda()">Reintentar</button>
-            </div>
-          } @else if (agenda().pending + agenda().present + agenda().completed > 0) {
-            <dl class="agenda-totals">
-              <div><dt>Por atender</dt><dd>{{ agenda().pending }}</dd></div>
-              <div><dt>Presentes</dt><dd>{{ agenda().present }}</dd></div>
-              <div><dt>Finalizados</dt><dd>{{ agenda().completed }}</dd></div>
-            </dl>
-            @if (agenda().rows.length) {
-              <ul class="agenda-list">
-                @for (row of agenda().rows; track row.id) {
-                  <li class="agenda-row">
-                    <time [attr.datetime]="row.start">{{ row.time }} h</time>
-                    <div class="agenda-person">
-                      <strong>{{ row.name }}</strong>
-                      @if (row.place) {
-                        <span>{{ row.place }}</span>
-                      }
-                    </div>
-                    <span class="booking-state" [class.state-present]="row.state === 'CHECKED_IN'"
-                      [class.state-awaiting]="row.state === 'AWAITING_PATIENT'">{{ row.status }}</span>
-                  </li>
-                }
-              </ul>
-              @if (agenda().pending + agenda().present > agenda().rows.length) {
-                <p class="agenda-limit">Se muestran {{ agenda().rows.length }} turnos abiertos.</p>
-              }
-            }
-          } @else {
-            <p class="panel-state compact-state">No hay turnos activos para esta especialidad hoy.</p>
-          }
-        </section>
-      } @else {
-        <section class="panel patient-queue-card" aria-labelledby="patient-queue-title" [attr.aria-busy]="activityLoading()">
-          <header class="panel-header">
-            <div class="section-title">
-              <ng-icon name="lucideUsers" aria-hidden="true" />
-              <h2 id="patient-queue-title">Fichas sin consultas</h2>
-            </div>
-          </header>
-          @if (activityLoading()) {
-            <div class="panel-state loading-state" role="status">
-              <span class="skeleton"></span><span class="skeleton"></span>
-              <span class="sr-only">Cargando fichas sin consultas</span>
-            </div>
-          } @else if (patientActivity(); as summary) {
-            @if (summary.patientsWithoutEncounter.length) {
-              <ul class="patient-queue">
-                @for (patient of summary.patientsWithoutEncounter; track patient.patientId) {
-                  <li>
-                    <a class="patient-queue-link" [routerLink]="['/patients', patient.patientId]"
-                      [queryParams]="{ tab: 'history', specialtyContextId: specialtyContextId() }"
-                      [attr.aria-label]="'Abrir historia clínica de ' + patient.patientFullName">
-                      <strong>{{ patient.patientFullName }}</strong>
-                      <span>Historia clínica</span>
-                      <ng-icon name="lucideArrowRight" aria-hidden="true" />
-                    </a>
-                  </li>
-                }
-              </ul>
-              @if (summary.withoutEncounters > summary.patientsWithoutEncounter.length) {
-                <p class="agenda-limit">{{ summary.withoutEncounters }} fichas sin consultas en total.</p>
-              }
-            } @else {
-              <p class="panel-state compact-state">Las fichas sin una consulta registrada aparecerán acá.</p>
-            }
-          } @else {
-            <p class="panel-state compact-state">Las fichas sin consultas no están disponibles.</p>
-          }
-        </section>
-      }
-
-      <section class="panel notes-card" aria-labelledby="notes-title">
-        <header class="panel-header notes-heading">
-          <div class="section-title">
-            <ng-icon name="lucideNotebookPen" aria-hidden="true" />
-            <h2 id="notes-title">Notas de la especialidad</h2>
-          </div>
-          @if (isNotesSaved()) {
-            <span class="saved-status" role="status"><ng-icon name="lucideCheck" aria-hidden="true" /> Guardado</span>
-          }
-        </header>
-        <div class="notes-widget-body">
-          @if (notesError()) { <p class="note-error" role="alert">{{ notesError() }}</p> }
-          <textarea id="quick-notes" aria-labelledby="notes-title" class="notes-textarea"
-            placeholder="Escribí un recordatorio o un pendiente…" [ngModel]="quickNotes()"
-            (ngModelChange)="onNotesInput($event)" rows="3"></textarea>
-          @if (isNotesDirty()) {
-            <div class="notes-actions">
-              <button type="button" class="dc-button dc-button--primary save-notes-button"
-                [disabled]="isSavingNotes()" (click)="saveNotes()">
-                {{ isSavingNotes() ? 'Guardando…' : 'Guardar' }}
-              </button>
-            </div>
-          }
+    }
+    <section
+      class="panel patient-months-card"
+      aria-labelledby="patient-months-title"
+      [attr.aria-busy]="activityLoading()"
+    >
+      <header class="panel-header">
+        <div class="section-title">
+          <ng-icon name="lucideChartNoAxesColumn" aria-hidden="true" />
+          <h2 id="patient-months-title">Pacientes atendidos por mes</h2>
         </div>
-      </section>
-    </div>
+        <p class="section-description chart-description">
+          Cada paciente se cuenta una vez por mes.
+        </p>
+      </header>
+      @if (activityLoading()) {
+        <div class="panel-state loading-state" role="status">
+          <span class="skeleton"></span><span class="skeleton"></span>
+          <span class="sr-only">Cargando el resumen mensual</span>
+        </div>
+      } @else if (patientActivity(); as summary) {
+        <dl class="patient-months">
+          @for (month of monthlyPatients(); track month.month) {
+            <div class="patient-month" [class.current-month]="$last">
+              <dt>
+                <time [attr.datetime]="month.month">{{ month.label }}</time>
+              </dt>
+              <dd>
+                <span class="month-track" aria-hidden="true"
+                  ><span [style.height.%]="month.width"></span
+                ></span>
+                <strong>{{ month.patients }}</strong>
+              </dd>
+            </div>
+          }
+        </dl>
+        <p class="first-visits-count">
+          <strong>{{ summary.firstVisitsThisMonth }}</strong>
+          {{ summary.firstVisitsThisMonth === 1 ? 'primera consulta' : 'primeras consultas' }} este
+          mes
+        </p>
+      } @else {
+        <p class="panel-state compact-state">El resumen mensual no está disponible.</p>
+      }
+    </section>
+    <section class="panel notes-card" aria-labelledby="notes-title">
+      <header class="panel-header notes-heading">
+        <div class="section-title">
+          <ng-icon name="lucideNotebookPen" aria-hidden="true" />
+          <h2 id="notes-title">Notas de la especialidad</h2>
+        </div>
+        @if (isNotesSaved()) {
+          <span class="saved-status" role="status"
+            ><ng-icon name="lucideCheck" aria-hidden="true" /> Guardado</span
+          >
+        }
+      </header>
+      <div class="notes-widget-body">
+        @if (notesError()) {
+          <p class="note-error" role="alert">{{ notesError() }}</p>
+        }
+        <textarea
+          id="quick-notes"
+          aria-labelledby="notes-title"
+          class="notes-textarea"
+          placeholder="Escribí un recordatorio o un pendiente…"
+          [ngModel]="quickNotes()"
+          (ngModelChange)="onNotesInput($event)"
+          rows="3"
+        ></textarea>
+        @if (isNotesDirty()) {
+          <div class="notes-actions">
+            <button
+              type="button"
+              class="dc-button dc-button--primary save-notes-button"
+              [disabled]="isSavingNotes()"
+              (click)="saveNotes()"
+            >
+              {{ isSavingNotes() ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        }
+      </div>
+    </section>
   </div>
 </div>
