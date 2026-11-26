@@ -2,7 +2,7 @@ import { afterRenderEffect, Component, computed, ElementRef, inject, signal, vie
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIconComponent, provideIcons } from '@ng-icons/core';
-import { lucideArrowLeft, lucideArrowRight, lucideBookOpen, lucideCalendarClock, lucideContact, lucideInfo, lucideMaximize2, lucideStethoscope } from '@ng-icons/lucide';
+import { lucideArrowLeft, lucideArrowRight, lucideBookOpen, lucideCalendarClock, lucideCircleHelp, lucideContact, lucideInfo, lucideMaximize2, lucideStethoscope } from '@ng-icons/lucide';
 import { HELP_GUIDES, type HelpStep } from './help-guides';
 
 @Component({
@@ -10,7 +10,7 @@ import { HELP_GUIDES, type HelpStep } from './help-guides';
   imports: [NgIconComponent, RouterLink],
   providers: [provideIcons({
     lucideArrowLeft, lucideArrowRight, lucideBookOpen, lucideCalendarClock,
-    lucideContact, lucideInfo, lucideMaximize2, lucideStethoscope,
+    lucideCircleHelp, lucideContact, lucideInfo, lucideMaximize2, lucideStethoscope,
   })],
   templateUrl: './help-page.component.html',
   styleUrl: './help-page.component.css',

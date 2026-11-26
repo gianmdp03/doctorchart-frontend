@@ -12,7 +12,7 @@
     "^/(login|plan-required|profile|assistant|dashboard|encounters|vaccination-calendar|calculators|patients|patients/new|clinics|clinics/new|schedules|specialties|records|admin/specialties|onboarding/select-specialty|onboarding/setup)$",
     "^/(patients|records|encounters|clinics)/[^/]+(/edit)?$",
     "^/calendar$",
-    "^/help(?:/(appointments|secretaries|clinical))?$",
+    "^/help(?:/(appointments|secretaries|clinical|account))?$",
     "^/clinics/[^/]+/schedule$",
     "^/appointments(?:/[0-9a-f-]{36})?$",
     "^/booking-publication$",
