@@ -24,10 +24,10 @@ h2 { margin: 0; font-size: clamp(1.15rem, 2vw, 1.4rem); font-weight: 700; letter
 p { margin: 0; line-height: 1.55; overflow-wrap: anywhere; }
 .intro p { color: var(--plan-muted); max-width: 62ch; }
 .intro .button { margin-top: .25rem; }
-.period { display: grid; gap: 8px; justify-items: start; }
-.period h2 { font-size: 1rem; }
-.period .actions { padding: 4px; border: 1px solid var(--plan-edge); border-radius: 12px; background: var(--plan-card); gap: 4px; }
-.period .button { border-color: transparent; }
+.period { display: grid; gap: .625rem; justify-items: start; }
+.period h2 { font-size: .9375rem; font-weight: 700; letter-spacing: -.01em; }
+.period .actions { padding: .25rem; border: 1px solid var(--plan-edge); border-radius: 12px; background: var(--plan-card); gap: .25rem; }
+.period .button { border-color: transparent; background: transparent; color: var(--plan-text); }
 .selection { display: grid; gap: 18px; min-width: 0; align-items: start; }
 .plan-controls {
   display: grid;
@@ -82,7 +82,7 @@ p { margin: 0; line-height: 1.55; overflow-wrap: anywhere; }
 }
 .plan-benefits { grid-row: 4; align-content: start; }
 @media (min-width: 60rem) {
-  .plan-controls { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+  .plan-controls { grid-template-columns: minmax(0, 1fr) auto; gap: 1.25rem clamp(1.25rem, 3vw, 2.25rem); }
 }
 @media (max-width: 38rem) {
   .plan { grid-template-rows: auto; grid-row: auto; }
@@ -117,19 +117,81 @@ p { margin: 0; line-height: 1.55; overflow-wrap: anywhere; }
 .button:disabled { background: var(--plan-soft); color: var(--plan-muted); border-color: var(--plan-edge); cursor: default; }
 :focus-visible { outline: 3px solid var(--plan-accent); outline-offset: 3px; }
 .payment-choice { min-inline-size: 0; padding: 0; margin: 0; border: 0; }
-.payment-choice legend { padding: 0; margin-bottom: .5rem; font-size: 1rem; font-weight: 720; letter-spacing: -.02em; }
-.payment-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .75rem; }
-.payment-option { display: grid; grid-template-columns: 1rem minmax(0, 1fr); align-items: start; gap: .75rem; min-height: 44px; padding: .9rem 1rem; border: 1px solid var(--plan-edge); border-radius: 12px; background: var(--plan-card); cursor: pointer; }
-.payment-option input { inline-size: 1rem; block-size: 1rem; margin: .23rem 0 0; accent-color: var(--plan-accent); }
-.payment-option:has(input:checked) { border-color: var(--plan-accent); background: var(--plan-soft); }
+.payment-choice legend { padding: 0; margin-bottom: .625rem; font-size: .9375rem; font-weight: 700; letter-spacing: -.01em; }
+.payment-options { display: flex; flex-wrap: wrap; gap: .75rem; }
+.payment-option {
+  flex: 1 1 15rem;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  align-items: start;
+  gap: .75rem;
+  min-height: 48px;
+  padding: .875rem 1rem;
+  border: 1px solid var(--plan-edge);
+  border-radius: 12px;
+  background: var(--plan-card);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+.payment-option:only-child { flex: 0 1 23rem; }
+.payment-option input { inline-size: 1rem; block-size: 1rem; margin: .2rem 0 0; accent-color: var(--plan-accent); }
+.payment-option:hover:not(:has(input:disabled)) { border-color: color-mix(in srgb, var(--plan-accent) 55%, var(--plan-edge)); }
+.payment-option:has(input:checked) {
+  border-color: var(--plan-accent);
+  background: var(--plan-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--plan-accent) 35%, transparent);
+}
 .payment-option:has(input:focus-visible) { outline: 2px solid var(--plan-accent); outline-offset: 2px; }
-.payment-option:has(input:disabled) { cursor: default; }
+.payment-option:has(input:disabled) { cursor: default; opacity: .7; }
 .payment-option strong, .payment-option small { display: block; }
-.payment-option strong { font-size: .98rem; line-height: 1.4; }
-.payment-option small { margin-top: .22rem; font-size: .82rem; color: var(--plan-muted); }
-.payment-option .saving { display: inline-block; margin-inline-start: .35em; font-weight: 700; color: var(--plan-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.period .actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 4rem), 1fr)); width: min(100%, 27rem); box-sizing: border-box; }
-.period .button { padding-inline: .3rem; }
+.payment-option strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem;
+  font-size: .95rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.payment-option small { margin-top: .25rem; font-size: .8125rem; line-height: 1.4; color: var(--plan-muted); }
+.payment-option .saving {
+  display: inline-flex;
+  align-items: center;
+  padding: .125rem .5rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--plan-text);
+  background: color-mix(in srgb, var(--plan-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--plan-accent) 30%, transparent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.period .actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.period .button {
+  min-width: 4.25rem;
+  padding: .45rem .85rem;
+  border-radius: 8px;
+  font-size: .875rem;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.period .button:hover:not(:disabled):not([aria-pressed=true]) { background: var(--plan-soft); box-shadow: none; }
+.period .button[aria-pressed=true] { background: var(--plan-fill); color: var(--plan-ink); border-color: transparent; box-shadow: none; }
+@media (max-width: 36rem) {
+  .period { justify-items: stretch; }
+  .period .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .payment-option, .period .button { transition: none; }
+}
 .plan-price .was-price { display: block; margin-bottom: .18rem; color: var(--plan-muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
 .plan-benefits { display: grid; gap: .45rem; padding-block: .8rem .25rem; border-top: 1px solid var(--plan-edge); }
 .plan-benefits h3 { margin: 0; font-size: .875rem; font-weight: 730; }
