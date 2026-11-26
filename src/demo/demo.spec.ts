@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpErrorResponse, HttpRequest, HttpResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpParams, HttpRequest, HttpResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { encodeDemoSession, parseDemoSession } from './demo-data';
 import { createInitialDemoSession } from './demo-generator';
@@ -128,9 +128,21 @@ describe('DemoChart core & HttpBackend', () => {
 
     const listRes = (await firstValueFrom(
       backend.handle(new HttpRequest('GET', '/api/doctorchart/patients')),
-    )) as HttpResponse<{ content: unknown[] }>;
+    )) as HttpResponse<{ content: unknown[]; totalElements: number; totalPages: number }>;
     expect(listRes.status).toBe(200);
     expect(listRes.body?.content.length).toBe(8);
+
+    const pagedRes = (await firstValueFrom(
+      backend.handle(
+        new HttpRequest('GET', '/api/doctorchart/patients', {
+          params: new HttpParams().set('page', '1').set('size', '3'),
+        }),
+      ),
+    )) as HttpResponse<{ content: Array<{ id: number }>; number: number; totalPages: number }>;
+    expect(pagedRes.status).toBe(200);
+    expect(pagedRes.body?.number).toBe(1);
+    expect(pagedRes.body?.totalPages).toBe(3);
+    expect(pagedRes.body?.content.length).toBe(3);
 
     await expect(
       firstValueFrom(
