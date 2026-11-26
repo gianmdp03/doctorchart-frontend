@@ -51,13 +51,23 @@
       </a>
     }
 
-    @if (clinicsEnabled() && workspace.hasReadyContext()) {
+    @if (schedulingMenuVisible()) {
       <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">Turnos</div>
-    }
-    @if(staffEnabled && clinicsEnabled() && workspace.hasReadyContext()){<a routerLink="/secretaries" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Secretaría"><ng-icon name="lucideContact" class="nav-icon"/><span class="nav-label">Secretaría</span></a>}
- @if (publicAppointmentsEnabled && clinicsEnabled() && workspace.hasReadyContext()) {<a routerLink="/booking-publication" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Publicación de reservas online"><ng-icon name="lucideGlobe" class="nav-icon" /><span class="nav-label">Reservas online</span></a>}
- @if (calendarEnabled() && workspace.hasReadyContext()) {<a routerLink="/calendar" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Agenda de turnos" data-testid="sidebar-calendar-link"><ng-icon name="lucideCalendarClock" class="nav-icon" /><span class="nav-label">Agenda de turnos</span></a>}
-    @if (clinicsEnabled() && workspace.hasReadyContext()) {
+      @if (staffEnabled) {
+        <a routerLink="/secretaries" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Secretaría">
+          <ng-icon name="lucideContact" class="nav-icon" /><span class="nav-label">Secretaría</span>
+        </a>
+      }
+      @if (publicAppointmentsEnabled) {
+        <a routerLink="/booking-publication" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Publicación de reservas online">
+          <ng-icon name="lucideGlobe" class="nav-icon" /><span class="nav-label">Reservas online</span>
+        </a>
+      }
+      @if (calendarEnabled()) {
+        <a routerLink="/calendar" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Agenda de turnos" data-testid="sidebar-calendar-link">
+          <ng-icon name="lucideCalendarClock" class="nav-icon" /><span class="nav-label">Agenda de turnos</span>
+        </a>
+      }
       <a
         routerLink="/clinics"
         routerLinkActive="active" ariaCurrentWhenActive="page"

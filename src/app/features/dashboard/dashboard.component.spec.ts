@@ -1,180 +1,273 @@
-import { clinicalFormFixture } from '../../core/models/clinical-form.fixture';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { DashboardComponent } from './dashboard.component';
-import { AuthService } from '../../core/services/auth.service';
-import { PatientService } from '../../core/services/patient.service';
-import { ActivePatientService } from '../../core/services/active-patient.service';
-import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
-import { DoctorProfileService } from '../../core/services/doctor-profile.service';
-import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
-import { WorkspaceStore } from '../../core/services/workspace.store';
 import { signal } from '@angular/core';
-import { of, Subject, throwError } from 'rxjs';
 import { provideRouter } from '@angular/router';
-import { UserClockService } from '../../core/services/user-clock.service';
+import { of, Subject, throwError } from 'rxjs';
+import { clinicalFormFixture } from '../../core/models/clinical-form.fixture';
+import { ClinicalEncounterDashboard } from '../../core/models/clinical-encounter.model';
+import { AuthService } from '../../core/services/auth.service';
 import { ClinicalContextService } from '../../core/services/clinical-context.service';
+import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
+import { UserClockService } from '../../core/services/user-clock.service';
+import { WorkspaceStore } from '../../core/services/workspace.store';
+import { Booking } from '../calendar/bookings.models';
+import { BookingsService } from '../calendar/bookings.service';
+import { ClinicsService } from '../clinics/clinics.service';
+import { DashboardComponent } from './dashboard.component';
+
+const day = '2026-11-26';
+const zone = 'America/Argentina/Buenos_Aires';
+const encounter = (id: number, patientFullName: string, encounterLocalDate: string) => ({
+  encounter: {
+    ...clinicalFormFixture(),
+    id,
+    patientId: id,
+    patientFullName,
+    encounterDate: encounterLocalDate + 'T15:30:00Z',
+    specialtyContextId: 101,
+    specialtyId: 1,
+    specialty: { id: 1, code: 'pediatrics', name: 'Pediatría', description: null },
+    consultationType: 'FIRST_VISIT' as const,
+  },
+  patientAgeLabel: '',
+  patientNationalId: null,
+  encounterLocalDate,
+});
+const activity: ClinicalEncounterDashboard = {
+  asOfDate: day,
+  totalPatients: 230,
+  encountersThisMonth: 12,
+  encountersToday: 3,
+  recentEncounters: [
+    encounter(1, 'Paciente de hoy', day),
+    encounter(2, 'Paciente anterior', '2026-11-25'),
+  ],
+  upcomingFollowUps: [],
+  patientActivity: {
+    monthlyPatients: [
+      { month: '2026-09', patients: 8 },
+      { month: '2026-10', patients: 5 },
+      { month: '2026-11', patients: 9 },
+    ],
+    firstVisitsThisMonth: 4,
+    withoutEncounters: 1,
+    patientsWithoutEncounter: [{ patientId: 7, patientFullName: 'Ficha pendiente de consulta' }],
+  },
+};
+const verifiedCapabilities = {
+  entitlements: { status: 'VERIFIED', revision: 'fixture', validUntil: '2099-01-01T00:00:00Z', clinicManagement: true, max_clinics: 3 },
+};
+const booking = (id: string, overrides: Partial<Booking> = {}): Booking => ({
+  id,
+  clinicId: '1',
+  specialtyContextId: '101',
+  start: day + 'T13:00:00Z',
+  end: day + 'T13:30:00Z',
+  status: 'CONFIRMED',
+  version: '1',
+  contactName: 'Contacto',
+  attendeeName: 'Paciente turno ' + id,
+  contactPhone: '',
+  createdAt: day,
+  updatedAt: day,
+  ...overrides,
+});
 
 describe('DashboardComponent', () => {
-  let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
-
-  let authServiceMock: any;
-  let patientServiceMock: any;
-  let activePatientServiceMock: any;
-  let specialtyServiceMock: any;
-  let profileServiceMock: any;
-  let clinicalEncounterServiceMock: any;
-  let workspaceStoreMock: any;
+  let component: DashboardComponent;
+  const authUser = signal({ id: 'doctor-a' });
+  const planTier = signal('PRO');
+  const clockDay = signal(day);
+  const clinicsEnabled = signal(true);
+  const savedNotes = signal('Mis notas guardadas');
+  const updateQuickNotes = vi.fn();
+  const getDashboard = vi.fn();
+  const getAll = vi.fn();
+  const list = vi.fn();
+  const getCapabilities = vi.fn();
 
   beforeEach(async () => {
-    authServiceMock = {
-      currentUser: signal({ id: 'doctor-a' }),
-      isLoggedIn: signal(true),
-      userName: signal('Dra. Sofía Mendoza'),
-      userEmail: signal('sofia@doctorchart.com'),
-      hasDoctorchartPlan: signal(true),
-    };
-
-    patientServiceMock = {
-      getPatients: vi.fn().mockReturnValue(
-        of({
-          content: [
-            { id: 1, fullName: 'Mateo Rossi', birthDate: '2024-05-10', nationalId: '50123456' },
-            { id: 2, fullName: 'Lucía Fernández', birthDate: '2020-08-15', nationalId: '48999111' },
-          ],
-          totalElements: 2,
-          totalPages: 1,
-          size: 6,
-          number: 0,
-        }),
-      ),
-    };
-
-    activePatientServiceMock = {
-      patientId: signal(1),
-      loadPatient: vi.fn(),
-    };
-
-    specialtyServiceMock = {
-      activeSpecialty: signal('PEDIATRICS'),
-      isPediatricMode: signal(true),
-      currentSpecialtyOption: signal({
-        value: 'PEDIATRICS',
-        label: 'Pediatría y Neonatología',
-        shortLabel: 'Pediatría',
-        icon: 'baby',
-      }),
-    };
-
-    profileServiceMock = {
-      profile: signal({ specialty: 'PEDIATRICS' }),
-      hasSpecialty: signal(true),
-    };
-
-    clinicalEncounterServiceMock = {
-      getDashboard: vi.fn().mockReturnValue(
-        of({
-          totalPatients: 2,
-          asOfDate: '2026-10-05',
-          encountersThisMonth: 12,
-          encountersToday: 3,
-          upcomingFollowUps: [],
-          recentEncounters: [
-            {
-              patientAgeLabel: '2 años, 4 m',
-              patientNationalId: '50123456',
-              encounterLocalDate: '2026-09-24',
-              encounter: {
-                ...clinicalFormFixture(),
-                specialtyId: 1,
-                specialty: { id: 1, code: 'pediatrics', name: 'Pediatría', description: null },
-                consultationType: 'FIRST_VISIT',
-                id: 101,
-                patientId: 1,
-                patientFullName: 'Mateo Rossi',
-                encounterDate: '2026-09-24T10:00:00Z',
-                chiefComplaint: 'Control clínico',
-                primaryDiagnosisDescription: 'Rinitis alérgica',
-                primaryDiagnosisCode: 'J30.1',
-              },
-            },
-          ],
-        }),
-      ),
-      getByPatient: vi.fn().mockReturnValue(of([])),
-      getAll: vi.fn().mockReturnValue(of({ content: [], page: { totalElements: 0, totalPages: 0 } })),
-    };
-
-    workspaceStoreMock = {
-      quickNotes: signal('Mis notas guardadas'),
-      specialtyDisplayName: signal('Pediatría'),
-      clinicsEnabled: signal(true),
-      hasReadyContext: signal(true),
-      updateQuickNotes: vi.fn().mockResolvedValue(undefined),
-    };
+    authUser.set({ id: 'doctor-a' });
+    planTier.set('PRO');
+    clockDay.set(day);
+    savedNotes.set('Mis notas guardadas');
+    clinicsEnabled.set(true);
+    updateQuickNotes.mockReset().mockResolvedValue(undefined);
+    getDashboard.mockReset().mockReturnValue(of(activity));
+    getAll.mockReset();
+    list.mockReset().mockReturnValue(of({ items: [], totalElements: 0 }));
+    getCapabilities.mockReset().mockReturnValue(of(verifiedCapabilities));
 
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
       providers: [
         provideRouter([]),
-        { provide: AuthService, useValue: authServiceMock },
-        { provide: PatientService, useValue: patientServiceMock },
-        { provide: ActivePatientService, useValue: activePatientServiceMock },
-        { provide: DoctorSpecialtyService, useValue: specialtyServiceMock },
-        { provide: DoctorProfileService, useValue: profileServiceMock },
-        { provide: ClinicalEncounterService, useValue: clinicalEncounterServiceMock },
-        { provide: WorkspaceStore, useValue: workspaceStoreMock },
+        { provide: AuthService, useValue: { currentUser: authUser, doctorchartPlanTier: planTier, userName: () => 'Dra. Sofía Mendoza' } },
+        { provide: ClinicalEncounterService, useValue: { getDashboard, getAll } },
+        { provide: BookingsService, useValue: { list } },
+        { provide: ClinicsService, useValue: { getCapabilities } },
+        { provide: UserClockService, useValue: { now: () => Date.parse(clockDay() + 'T16:00:00Z'), timeZone: () => zone, day: clockDay } },
+        { provide: WorkspaceStore, useValue: { quickNotes: savedNotes, clinicsEnabled, hasReadyContext: () => true, updateQuickNotes } },
       ],
     }).compileComponents();
-
+    TestBed.inject(ClinicalContextService).bind(101);
     fixture = TestBed.createComponent(DashboardComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
   });
 
-  it('should create the dashboard component', () => {
-    expect(component).toBeTruthy();
+  it('uses the complete server counts and opens the correct history from today or recent activity', () => {
+    const page = fixture.nativeElement as HTMLElement;
+    expect(component.greeting()).toBe('Buenas tardes, Dra. Sofía Mendoza');
+    expect([...page.querySelectorAll('.metric dd')].map(e => e.textContent?.trim())).toEqual(['3', '12', '230']);
+    expect(page.querySelector('.activity-limit')?.textContent).toContain('1 de las 3');
+    expect(page.querySelectorAll('.record-link')).toHaveLength(1);
+    expect(page.querySelector('.record-link')?.getAttribute('href')).toBe('/patients/1?tab=history&specialtyContextId=101');
+    expect(page.querySelector('a[href^="/encounters"]')).not.toBeNull();
+    expect(page.querySelector('a[href="/patients"]')).toBeNull();
+    expect(getAll).not.toHaveBeenCalled();
+    page.querySelector<HTMLButtonElement>('[data-period="recent"]')!.click();
+    fixture.detectChanges();
+    expect(page.querySelectorAll('.record-link')).toHaveLength(2);
+    expect(page.querySelector('.activity-list')?.textContent).toContain('25/11/2026');
   });
 
-  it('does not display legacy upcoming consultations from the dashboard response', () => {
-    clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(of({ totalPatients: 1, asOfDate: '2026-10-05', encountersThisMonth: 1, encountersToday: 1, recentEncounters: [], upcomingFollowUps: [{ encounterId: 1, patientId: 1, patientFullName: 'Paciente', followUpDate: '2026-10-06' }] }));
-    component.loadKpiData(); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.followup-card')).toBeNull();
+  it('reloads dashboard data on local day rollover and reuses the existing clinical change events', async () => {
+    clockDay.set('2026-11-27');
+    fixture.detectChanges();
+    expect(getDashboard).toHaveBeenCalledTimes(2);
+    await fixture.whenStable();
+    expect(list).toHaveBeenLastCalledWith('2026-11-26T00:00:00Z', '2026-11-29T00:00:00Z', 0);
+    window.dispatchEvent(new CustomEvent('patient-created'));
+    expect(getDashboard).toHaveBeenCalledTimes(3);
   });
 
-  it('reloads reminders when the local calendar day changes', () => {
-    const clock = TestBed.inject(UserClockService);
-    const before = clinicalEncounterServiceMock.getDashboard.mock.calls.length;
-    clock.now.set(clock.now() + 86_400_000); fixture.detectChanges();
-    expect(clinicalEncounterServiceMock.getDashboard.mock.calls.length).toBe(before + 1);
+  it('replaces agenda with patients without consultations when the new plan denies access', async () => {
+    const page = fixture.nativeElement as HTMLElement;
+    expect(page.querySelector('.agenda-card')).not.toBeNull();
+    const requestedBookings = list.mock.calls.length;
+    const requestedCapabilities = getCapabilities.mock.calls.length;
+    planTier.set('BASIC');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(page.querySelector('.agenda-card')).toBeNull();
+    expect(list).toHaveBeenCalledTimes(requestedBookings);
+    expect(getCapabilities).toHaveBeenCalledTimes(requestedCapabilities);
+    expect(page.querySelector('.patient-queue-link')?.getAttribute('href')).toBe('/patients/7?tab=history&specialtyContextId=101');
+    expect([...page.querySelectorAll('.patient-month strong')].map(e => e.textContent?.trim())).toEqual(['8', '5', '9']);
+    expect(page.querySelector('.first-visits-count')?.textContent).toContain('4 primeras consultas este mes');
+    planTier.set('PRO');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(page.querySelector('.agenda-card')).not.toBeNull();
+    expect(page.querySelector('.patient-queue-card')).toBeNull();
   });
 
-  it('should compute greeting message with doctor name', () => {
-    expect(component.greeting()).toContain('Dra. Sofía Mendoza');
-    expect(component.greeting()).not.toContain('Dr(a).');
+  it('uses the clinical summary when the server denies calendar access for a non-Basic plan', async () => {
+    const requestedBookings = list.mock.calls.length;
+    getCapabilities.mockReturnValueOnce(of({ entitlements: { status: 'DENIED' } }));
+    await component.loadAgenda();
+    fixture.detectChanges();
+    expect(component.calendarAvailable()).toBe(false);
+    expect(list).toHaveBeenCalledTimes(requestedBookings);
+    expect(fixture.nativeElement.querySelector('.patient-queue-card')).not.toBeNull();
   });
 
-  it('should load KPIs and directory on init', () => {
-    expect(patientServiceMock.getPatients).toHaveBeenCalled();
-    expect(clinicalEncounterServiceMock.getDashboard).toHaveBeenCalled();
-    expect(component.totalPatients()).toBe(2);
-    expect(component.encountersMonthCount()).toBe(12);
-    expect(component.encountersTodayCount()).toBe(3);
-    expect(component.recentEncounters().length).toBe(1);
-    expect(component.directoryPatients().length).toBe(2);
+  it('shows an activity failure without interpreting it as zero and leaves notes usable', () => {
+    getDashboard.mockReturnValueOnce(throwError(() => ({ status: 503 })));
+    component.loadActivity();
+    fixture.detectChanges();
+    const page = fixture.nativeElement as HTMLElement;
+    expect(page.querySelector('[role="alert"]')?.textContent).toContain('No se pudieron cargar');
+    expect([...page.querySelectorAll('.metric dd')].map(e => e.textContent?.trim())).toEqual(['—', '—', '—']);
+    expect(page.querySelector<HTMLTextAreaElement>('textarea')?.value).toBe('Mis notas guardadas');
+    page.querySelector<HTMLButtonElement>('[role="alert"] button')!.click();
+    expect(component.activityError()).toBe(false);
   });
 
-  it('should hydrate quick notes from workspace store', () => {
-    expect(component.quickNotes()).toBe('Mis notas guardadas');
-    expect(component.isNotesDirty()).toBe(false);
+  it('cancels superseded and cross-account activity reads', () => {
+    const old = new Subject<ClinicalEncounterDashboard>();
+    const latest = new Subject<ClinicalEncounterDashboard>();
+    getDashboard.mockReturnValueOnce(old).mockReturnValueOnce(latest);
+    component.loadActivity();
+    component.loadActivity();
+    expect(old.observed).toBe(false);
+    authUser.set({ id: 'doctor-b' });
+    latest.next(activity);
+    expect(component.activity()).toBeNull();
+    fixture.detectChanges();
+    expect(latest.observed).toBe(false);
   });
+
+  it('paginates bookings, scopes to the local date and specialty, and interprets active statuses', async () => {
+    const present = booking('present', {
+      start: '2026-11-27T01:00:00Z',
+      status: 'CHECKED_IN',
+      clinicSnapshot: { modality: 'TELECONSULTATION', name: '', address: '', publicAddress: '', timezone: zone },
+    });
+    list.mockReturnValueOnce(of({
+      totalElements: 7,
+      items: [
+        booking('awaiting', { rescheduleResponse: 'AWAITING_PATIENT' }),
+        booking('other', { specialtyContextId: '202' }),
+        booking('previous', { start: day + 'T01:00:00Z' }),
+        booking('cancelled', { status: 'CANCELLED' }),
+      ],
+    })).mockReturnValueOnce(of({
+      totalElements: 7,
+      items: [present, booking('completed', { status: 'COMPLETED' }), booking('absent', { status: 'NO_SHOW' })],
+    }));
+    await component.loadAgenda();
+    fixture.detectChanges();
+    const agenda = component.agenda();
+    expect(list).toHaveBeenLastCalledWith('2026-11-25T00:00:00Z', '2026-11-28T00:00:00Z', 1);
+    expect(agenda).toMatchObject({ pending: 1, present: 1, completed: 1 });
+    expect(agenda.rows).toMatchObject([
+      { id: 'present', time: '22:00', status: 'Presente', place: 'Teleconsulta' },
+      { id: 'awaiting', time: '10:00', status: 'En espera del paciente' },
+    ]);
+  });
+
+  it('discards bookings from a previous specialty and hides a disabled calendar', async () => {
+    const pending = new Subject();
+    list.mockReturnValueOnce(pending);
+    const request = component.loadAgenda();
+    await Promise.resolve();
+    expect(pending.observed).toBe(true);
+    TestBed.inject(ClinicalContextService).bind(202);
+    pending.next({ items: [booking('private')], totalElements: 1 });
+    await request;
+    expect(component.agenda().rows).toEqual([]);
+    clinicsEnabled.set(false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.agenda-card')).toBeNull();
+  });
+
+  it('handles a booking read error independently and lets the clinician retry', async () => {
+    list.mockReturnValueOnce(throwError(() => ({ status: 503 })));
+    await component.loadAgenda();
+    fixture.detectChanges();
+    const error = fixture.nativeElement.querySelector('.agenda-card [role="alert"]');
+    expect(error.textContent).toContain('No se pudieron cargar los turnos');
+    expect(component.activity()?.encountersToday).toBe(3);
+    error.querySelector('button').click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(component.agendaError()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.agenda-card').textContent).toContain('No hay turnos activos');
+  });
+
   it('loads the new specialty note and ignores a late save from the previous specialty', async () => {
     let finish!: () => void;
-    workspaceStoreMock.updateQuickNotes.mockImplementation(() => new Promise<void>((resolve) => finish = resolve));
+    updateQuickNotes.mockImplementationOnce(() => new Promise<void>(resolve => finish = resolve));
     component.onNotesInput('Borrador de Pediatría');
     const saving = component.saveNotes();
     TestBed.inject(ClinicalContextService).bind(202);
-    workspaceStoreMock.quickNotes.set('Nota de Medicina General');
+    savedNotes.set('Nota de Medicina General');
     fixture.detectChanges();
     finish();
     await saving;
@@ -182,225 +275,34 @@ describe('DashboardComponent', () => {
     expect(component.isNotesDirty()).toBe(false);
     expect(component.isNotesSaved()).toBe(false);
   });
-  it('keeps the save action for edits typed while an earlier save is pending', async () => {
-    let finish!:()=>void;
-    workspaceStoreMock.updateQuickNotes.mockImplementation(()=>new Promise<void>(resolve=>finish=resolve));
-    component.onNotesInput('primera versión'); fixture.detectChanges();
-    fixture.nativeElement.querySelector('.save-notes-button').click();
-    component.onNotesInput('segunda versión');
-    finish(); await fixture.whenStable(); fixture.detectChanges();
+
+  it('keeps edits typed during an earlier save', async () => {
+    let finish!: () => void;
+    updateQuickNotes.mockImplementationOnce(() => new Promise<void>(resolve => finish = resolve));
+    component.onNotesInput('Primera versión');
+    const saving = component.saveNotes();
+    component.onNotesInput('Segunda versión');
+    finish();
+    await saving;
+    expect(updateQuickNotes).toHaveBeenCalledWith('Primera versión');
     expect(component.isNotesDirty()).toBe(true);
     expect(component.isNotesSaved()).toBe(false);
-    expect(fixture.nativeElement.querySelector('.save-notes-button')).toBeTruthy();
-    expect(workspaceStoreMock.updateQuickNotes).toHaveBeenCalledWith('primera versión');
   });
-  it('shows a failed notes save in the document and permits a successful retry', async () => {
-    workspaceStoreMock.updateQuickNotes.mockRejectedValueOnce(new Error('offline'));
-    component.onNotesInput('borrador conservado'); fixture.detectChanges();
-    fixture.nativeElement.querySelector('.save-notes-button').click();
-    await fixture.whenStable(); fixture.detectChanges();
+
+  it('shows a failed notes save and keeps the draft for a successful retry', async () => {
+    updateQuickNotes.mockRejectedValueOnce(new Error('offline'));
+    component.onNotesInput('Borrador conservado');
+    const save = () => fixture.nativeElement.querySelector('.save-notes-button').click();
+    fixture.detectChanges();
+    save();
+    await fixture.whenStable();
+    fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.notes-widget-body [role="alert"]').textContent).toContain('No pudimos confirmar');
-    expect(component.quickNotes()).toBe('borrador conservado');
-    expect(component.isNotesDirty()).toBe(true);
-    expect(fixture.nativeElement.querySelector('.save-notes-button').disabled).toBe(false);
-    fixture.nativeElement.querySelector('.save-notes-button').click();
-    await fixture.whenStable(); fixture.detectChanges();
+    expect(component.quickNotes()).toBe('Borrador conservado');
+    save();
+    await fixture.whenStable();
+    fixture.detectChanges();
     expect(component.isNotesSaved()).toBe(true);
     expect(component.notesError()).toBeNull();
-  });
-
-  it('should mark notes as dirty when typing and save to backend', async () => {
-    component.onNotesInput('Nueva nota importante');
-    expect(component.quickNotes()).toBe('Nueva nota importante');
-    expect(component.isNotesDirty()).toBe(true);
-
-    await component.saveNotes();
-    expect(workspaceStoreMock.updateQuickNotes).toHaveBeenCalledWith('Nueva nota importante');
-    expect(component.isNotesDirty()).toBe(false);
-    expect(component.isNotesSaved()).toBe(true);
-  });
-
-  it('uses the complete server total independently of the directory page', () => {
-    clinicalEncounterServiceMock.getDashboard.mockReturnValue(
-      of({
-        totalPatients: 230,
-        asOfDate: '2026-10-05',
-        encountersThisMonth: 0,
-        encountersToday: 0,
-        recentEncounters: [],
-      }),
-    );
-    component.loadKpiData();
-    expect(component.totalPatients()).toBe(230);
-    expect(component.encountersMonthCount()).toBe(0);
-    expect(component.encountersTodayCount()).toBe(0);
-    expect(clinicalEncounterServiceMock.getByPatient).not.toHaveBeenCalled();
-  });
-
-  it('should reload KPIs when patient-created event is dispatched', () => {
-    const kpiSpy = vi.spyOn(component, 'loadKpiData');
-    const dirSpy = vi.spyOn(component, 'loadDirectory');
-
-    window.dispatchEvent(
-      new CustomEvent('patient-created', { detail: { id: 99, fullName: 'Nuevo Paciente' } }),
-    );
-
-    expect(kpiSpy).toHaveBeenCalled();
-    expect(dirSpy).toHaveBeenCalledWith(0, '');
-  });
-
-  it('renders recent patient metadata and clinical highlights from the backend projection', () => {
-    expect(component.recentEncounters()[0].patientName).toBe('Mateo Rossi');
-    expect(component.recentEncounters()[0].patientMeta).toBe('2 años, 4 m • DNI 50123456');
-    expect(component.recentEncounters()[0].encounterDateOnly).toBe('24/09/2026');
-    expect(component.recentEncounters()[0].isToday).toBe(false);
-    expect(clinicalEncounterServiceMock.getByPatient).not.toHaveBeenCalled();
-  });
-
-  it('paginates the complete history using server totals and keeps each consultation action', () => {
-    const encounter = { ...clinicalFormFixture(), id: 101, patientId: 1, patientFullName: 'Mateo Rossi', encounterDate: '2026-09-24T10:00:00Z', consultationType: 'FIRST_VISIT', chiefComplaint: 'Control clínico' };
-    clinicalEncounterServiceMock.getAll.mockReturnValue(of({
-      content: [encounter], page: { totalElements: 1560, totalPages: 312, number: 0, size: 5 },
-    }));
-    component.loadRecentPage(0);
-    fixture.detectChanges();
-    expect(clinicalEncounterServiceMock.getAll).toHaveBeenLastCalledWith(0, 5, 'encounterDate,desc', '');
-    expect(component.recentTotal()).toBe(1560);
-    expect(component.recentTotalPages()).toBe(312);
-    expect(fixture.nativeElement.querySelectorAll('.recent-consultation')).toHaveLength(1);
-    expect(fixture.nativeElement.querySelector('.recent-count').textContent).toContain('1–1 de 1560');
-    expect(fixture.nativeElement.querySelector('.recent-patient-info').textContent).toContain('DNI 50123456');
-    const detail = vi.spyOn(component, 'openEncounterDetail').mockImplementation(() => {});
-    const record = vi.spyOn(component, 'openPatient').mockImplementation(() => {});
-    fixture.nativeElement.querySelector('.recent-detail-btn').click();
-    fixture.nativeElement.querySelector('.recent-record-btn').click();
-    expect(detail.mock.calls[0][0]).toBe(101);
-    expect(record).toHaveBeenCalledWith(1);
-    component.loadRecentPage(1);
-    expect(clinicalEncounterServiceMock.getAll).toHaveBeenLastCalledWith(1, 5, 'encounterDate,desc', '');
-    expect(component.recentRange()).toBe('6–6 de 1560');
-  });
-
-  it('debounces history searches, searches on Enter, and resets the page when its size changes', () => {
-    vi.useFakeTimers();
-    try {
-      const count = clinicalEncounterServiceMock.getAll.mock.calls.length;
-      component.onRecentSearchInput({ target: { value: 'Ma' } } as any);
-      vi.advanceTimersByTime(200);
-      component.onRecentSearchInput({ target: { value: 'Mateo' } } as any);
-      vi.advanceTimersByTime(350);
-      expect(clinicalEncounterServiceMock.getAll.mock.calls.length).toBe(count + 1);
-      expect(clinicalEncounterServiceMock.getAll).toHaveBeenLastCalledWith(0, 5, 'encounterDate,desc', 'Mateo');
-      component.onRecentSearchInput({ target: { value: 'Rinitis' } } as any);
-      component.loadRecentPage(0);
-      component.changeRecentPageSize('10');
-      expect(clinicalEncounterServiceMock.getAll).toHaveBeenLastCalledWith(0, 10, 'encounterDate,desc', 'Rinitis');
-      component.clearRecentSearch();
-      expect(clinicalEncounterServiceMock.getAll).toHaveBeenLastCalledWith(0, 10, 'encounterDate,desc', '');
-    } finally { vi.useRealTimers(); }
-  });
-
-  it('cancels superseded history pages and rejects replies after an account switch', () => {
-    const older = new Subject<any>(), latest = new Subject<any>();
-    clinicalEncounterServiceMock.getAll.mockReturnValueOnce(older).mockReturnValueOnce(latest);
-    component.loadRecentPage(0);
-    component.loadRecentPage(1);
-    expect(older.observed).toBe(false);
-    authServiceMock.currentUser.set({ id: 'doctor-b' });
-    latest.next({ content: [{ patientFullName: 'Private result' }], page: { totalElements: 999, totalPages: 999 } });
-    expect(component.recentPageItems()).toEqual([]);
-    fixture.detectChanges();
-    expect(latest.observed).toBe(false);
-    expect(component.recentPage()).toBe(0);
-    expect(component.recentSearch()).toBe('');
-  });
-
-  it('distinguishes a history failure from an empty search and supports retry', () => {
-    component.recentSearch.set('Inexistente');
-    clinicalEncounterServiceMock.getAll.mockReturnValueOnce(throwError(() => ({ status: 503 })));
-    component.loadRecentPage(0);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.recent-empty[role="alert"]')).not.toBeNull();
-    fixture.nativeElement.querySelector('.recent-empty button').click();
-    fixture.detectChanges();
-    expect(component.recentPageError()).toBeNull();
-    expect(fixture.nativeElement.querySelector('.recent-empty').textContent).toContain('No encontramos esas consultas');
-  });
-  it('shows an error without turning failed statistics into zero activity', () => {
-    clinicalEncounterServiceMock.getDashboard.mockReturnValue(throwError(() => ({ status: 500 })));
-    component.loadKpiData();
-    expect(component.metricsError()).toContain('No se pudo');
-    expect(component.totalPatients()).toBeNull();
-    expect(component.encountersTodayCount()).toBeNull();
-    expect(component.recentEncounters()).toEqual([]);
-  });
-  it('cancels earlier reads and ignores replies after an account switch before effects run', () => {
-    const old = new Subject<any>(),
-      latest = new Subject<any>();
-    clinicalEncounterServiceMock.getDashboard.mockReturnValueOnce(old).mockReturnValueOnce(latest);
-    component.loadKpiData();
-    component.loadKpiData();
-    expect(old.observed).toBe(false);
-    authServiceMock.currentUser.set({ id: 'doctor-b' });
-    latest.next({
-      totalPatients: 999,
-      encountersToday: 999,
-      encountersThisMonth: 999,
-      recentEncounters: [],
-    });
-    expect(component.totalPatients()).toBeNull();
-    fixture.detectChanges();
-    expect(latest.observed).toBe(false);
-  });
-  it('cancels a directory search when a new one starts and keeps its latest page', () => {
-    const pending = new Subject<any>();
-    patientServiceMock.getPatients.mockReturnValueOnce(pending);
-    component.loadDirectory(0, 'older');
-    component.loadDirectory(0, 'newer');
-    expect(pending.observed).toBe(false);
-    pending.next({ content: [], totalPages: 99 });
-    expect(component.directoryPatients()).toHaveLength(2);
-  });
-
-  it('cancels pending account directory requests on destruction', () => {
-    const pending = new Subject<any>();
-    patientServiceMock.getPatients.mockReturnValue(pending);
-    component.loadDirectory(0);
-    expect(pending.observed).toBe(true);
-    fixture.destroy();
-    expect(pending.observed).toBe(false);
-  });
-
-  it('debounces rapid directory search input and triggers search with enter key', () => {
-    vi.useFakeTimers();
-    const initialCalls = patientServiceMock.getPatients.mock.calls.length;
-
-    component.onDirectorySearchInput({ target: { value: 'Ro' } } as any);
-    vi.advanceTimersByTime(100);
-    component.onDirectorySearchInput({ target: { value: 'Rossi' } } as any);
-
-    expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(initialCalls);
-
-    vi.advanceTimersByTime(400);
-    expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(initialCalls + 1);
-    expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(
-      0,
-      6,
-      'fullName,asc',
-      'Rossi',
-    );
-
-    // Enter key triggers immediate search
-    component.onDirectorySearchInput({ target: { value: 'Fernandez' } } as any);
-    component.onDirectorySearchEnter();
-    expect(patientServiceMock.getPatients).toHaveBeenCalledTimes(initialCalls + 2);
-    expect(patientServiceMock.getPatients).toHaveBeenLastCalledWith(
-      0,
-      6,
-      'fullName,asc',
-      'Fernandez',
-    );
-
-    vi.useRealTimers();
   });
 });

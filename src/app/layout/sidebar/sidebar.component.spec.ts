@@ -25,6 +25,7 @@ describe('SidebarComponent', () => {
     authServiceMock = {
       isLoggedIn: signal(true),
       isSuperAdmin: signal(false),
+      doctorchartPlanTier: signal('PRO'),
       userName: signal('Carlos Gómez'),
     };
 
@@ -99,6 +100,16 @@ describe('SidebarComponent', () => {
     navigation.set([CLINICAL_NAVIGATION.DASHBOARD, CLINICAL_NAVIGATION.VACCINATION, CLINICAL_NAVIGATION.PATIENTS, CLINICAL_NAVIGATION.WIZARD]);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')[2].getAttribute('href')).toBe('/vaccination-calendar');
+  });
+
+  it('omits turnos in Basic and shows the navigation in Pro and Unlimited', () => {
+    clinicsEnabled.set(true);
+    for (const [tier, visible] of [['BASIC', false], ['PRO', true], ['UNLIMITED', true]] as const) {
+      authServiceMock.doctorchartPlanTier.set(tier);
+      fixture.detectChanges();
+      const links = fixture.nativeElement.querySelectorAll('a[href="/calendar"], a[href="/booking-publication"], a[href="/secretaries"], a[href="/clinics"]');
+      expect(links).toHaveLength(visible ? 4 : 0);
+    }
   });
 
   it('clears clinical navigation while no workspace is loaded', () => {

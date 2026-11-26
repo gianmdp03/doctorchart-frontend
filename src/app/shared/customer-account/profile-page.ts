@@ -18,6 +18,7 @@ export class CustomerProfilePage {
   private readonly context = inject(CUSTOMER_ACCOUNT);
   private readonly router = inject(Router);
   private readonly destroy = inject(DestroyRef);
+  protected readonly homePath = this.context.product === 'doctorchart' ? '/dashboard' : '/';
   readonly profile = signal<AccountProfile | null>(null);
   readonly avatar = signal('');
   readonly busy = signal(false);

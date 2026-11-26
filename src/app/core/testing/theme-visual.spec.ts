@@ -12,12 +12,12 @@ import { GrowthChartComponent } from '../../features/patient-record/growth-chart
 import { growthReferenceFixture } from './growth.fixture';
 import { clinicalFormFixture } from '../models/clinical-form.fixture';
 import { AuthService } from '../services/auth.service';
-import { PatientService } from '../services/patient.service';
 import { ActivePatientService } from '../services/active-patient.service';
 import { DoctorProfileService } from '../services/doctor-profile.service';
 import { DoctorSpecialtyService } from '../services/doctor-specialty.service';
 import { ClinicalEncounterService } from '../services/clinical-encounter.service';
 import { WorkspaceStore } from '../services/workspace.store';
+import { BookingsService } from '../../features/calendar/bookings.service';
 
 @Component({
   imports: [HeaderComponent, SidebarComponent, DashboardComponent, DatePickerComponent, GrowthChartComponent],
@@ -42,9 +42,7 @@ describe('Theme integration', () => {
         userName: signal('Sofía Mendoza'), userEmail: signal('demo@example.com'),
         hasDoctorchartPlan: signal(true), doctorchartPlanTier: signal('PROFESSIONAL'),
       } },
-      { provide: PatientService, useValue: { getPatients: () => of({ content: [
-        { id: 1, fullName: 'Paciente de ejemplo', birthDate: '2024-05-10', nationalId: '50123456' },
-      ], totalElements: 1, totalPages: 1, size: 6, number: 0 }) } },
+      { provide: BookingsService, useValue: { list: () => of({ items: [], totalElements: 0 }) } },
       { provide: ActivePatientService, useValue: { patientId: signal(null), loadPatient: () => undefined } },
       { provide: DoctorProfileService, useValue: { profile: signal({ specialty: 'PEDIATRICS' }), hasSpecialty: signal(true) } },
       { provide: DoctorSpecialtyService, useValue: {
@@ -52,17 +50,16 @@ describe('Theme integration', () => {
         currentSpecialtyOption: signal({ shortLabel: 'Pediatría', label: 'Pediatría', value: 'PEDIATRICS' }),
       } },
       { provide: ClinicalEncounterService, useValue: { getDashboard: () => of({
-        totalPatients: 24, encountersThisMonth: 12, encountersToday: 3, recentEncounters: [], upcomingFollowUps: [{ encounterId: 101, patientId: 1, patientFullName: 'Mateo Rossi', followUpDate: '2026-10-24' }], asOfDate: '2026-10-23',
-      }), getAll: () => of({ content: [{
-        ...clinicalFormFixture(), id: 101, patientId: 1, patientFullName: 'Paciente de ejemplo',
-        encounterDate: '2026-10-01T15:00:00Z', consultationType: 'FOLLOW_UP',
-        chiefComplaint: 'Control de crecimiento', primaryDiagnosisDescription: 'Control clínico',
-        formValues: { evolution: 'Evolución favorable. Control de crecimiento.', weight: 14.77 },
-        formDefinitionSnapshot: { categories: [{ key: 'consultation', title: 'Consulta', enabled: true, fields: [
-          { key: 'evolution', label: 'Evolución', type: 'TEXTAREA', required: false },
-          { key: 'weight', label: 'Peso', type: 'NUMBER', required: false, unit: 'kg' },
-        ] }] },
-      }], page: { totalElements: 1, totalPages: 1 } }) } },
+        totalPatients: 24, encountersThisMonth: 12, encountersToday: 1, asOfDate: '2026-10-23',
+        upcomingFollowUps: [],
+        recentEncounters: [{
+          encounter: {
+            ...clinicalFormFixture(), id: 101, patientId: 1, patientFullName: 'Paciente de ejemplo',
+            encounterDate: '2026-10-23T15:00:00Z', consultationType: 'FOLLOW_UP',
+          },
+          patientAgeLabel: '2 años', patientNationalId: null, encounterLocalDate: '2026-10-23',
+        }],
+      }) } },
       { provide: WorkspaceStore, useValue: { contexts:()=>[],hasReadyContext:()=>true, clinicsEnabled:signal(true), specialtyDisplayName:signal('Pediatría'), quickNotes: signal('Recordatorio de ejemplo'), navigation: signal([
         { id: 'DASHBOARD', path: '/dashboard', label: 'Inicio', title: 'Inicio', icon: 'lucideLayoutDashboard' },
         { id: 'PATIENTS', path: '/patients', label: 'Pacientes', title: 'Pacientes', icon: 'lucideUsers' },
@@ -93,8 +90,8 @@ describe('Theme integration', () => {
     expect(document.documentElement.classList.contains('dark')).toBe(true);
     expect(fixture.nativeElement.querySelector('.date-picker-input').value).toBe('13/10/2026');
     expect(fixture.nativeElement.querySelectorAll('.reference-curve').length).toBe(5);
-    expect(fixture.nativeElement.querySelector('.recent-patient-info h3')?.textContent).toContain('Paciente de ejemplo');
-    expect(fixture.nativeElement.querySelector('.recent-clinical-summary b')?.textContent).toContain('Evolución');
+    expect(fixture.nativeElement.querySelector('.patient-name')?.textContent).toContain('Paciente de ejemplo');
+    expect(fixture.nativeElement.querySelector('.record-link')?.getAttribute('href')).toContain('/patients/1?tab=history');
     saveWorkspace('dark');
     button.click(); fixture.detectChanges();
     expect(document.documentElement.classList.contains('dark')).toBe(false);
@@ -102,7 +99,7 @@ describe('Theme integration', () => {
     if (!output) return;
     // Export actual Angular markup and scoped styles for Chromium visual verification.
     mkdirSync(output, { recursive: true });
-    fixture.nativeElement.querySelector('.date-picker-input').click();
+    fixture.nativeElement.querySelector('mat-datepicker-toggle button').click();
     fixture.detectChanges(); await fixture.whenStable();
     const overlay = document.querySelector('.cdk-overlay-container');
     expect(overlay?.querySelector('mat-calendar')).toBeTruthy();
