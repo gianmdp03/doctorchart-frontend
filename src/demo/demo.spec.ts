@@ -126,6 +126,15 @@ describe('DemoChart core & HttpBackend', () => {
     });
     const backend = TestBed.inject(DemoHttpBackend);
 
+    const dashRes = (await firstValueFrom(
+      backend.handle(new HttpRequest('GET', '/api/doctorchart/encounters/dashboard')),
+    )) as HttpResponse<{
+      totalPatients: number;
+      patientActivity?: { monthlyPatients: Array<{ month: string; patients: number }> };
+    }>;
+    expect(dashRes.status).toBe(200);
+    expect(dashRes.body?.patientActivity?.monthlyPatients.length).toBe(3);
+
     const listRes = (await firstValueFrom(
       backend.handle(new HttpRequest('GET', '/api/doctorchart/patients')),
     )) as HttpResponse<{ content: unknown[]; totalElements: number; totalPages: number }>;

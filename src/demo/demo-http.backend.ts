@@ -1479,6 +1479,30 @@ export class DemoHttpBackend implements HttpBackend {
         };
       });
 
+    const [yearStr, monthStr] = asOfDate.split('-');
+    const baseYear = Number(yearStr);
+    const baseMonth = Number(monthStr);
+    const monthlyPatients: { month: string; patients: number }[] = [];
+    for (let offset = 2; offset >= 0; offset--) {
+      const d = new Date(Date.UTC(baseYear, baseMonth - 1 - offset, 1));
+      const m = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      const uniquePatients = new Set(
+        ctxEncounters.filter((e) => e.encounterDate.slice(0, 7) === m).map((e) => e.patientId),
+      );
+      monthlyPatients.push({ month: m, patients: uniquePatients.size });
+    }
+
+    const firstVisitByPatient = new Map<number, string>();
+    for (const e of ctxEncounters) {
+      const ym = e.encounterDate.slice(0, 7);
+      const prev = firstVisitByPatient.get(e.patientId);
+      if (!prev || ym < prev) firstVisitByPatient.set(e.patientId, ym);
+    }
+    const firstVisitsThisMonth = [...firstVisitByPatient.values()].filter((ym) => ym === monthPrefix).length;
+    const patientsWithoutEncounter = ctxPatients
+      .filter((p) => !firstVisitByPatient.has(p.id))
+      .map((p) => ({ patientId: p.id, patientFullName: p.fullName }));
+
     return {
       totalPatients: ctxPatients.length,
       asOfDate,
@@ -1486,6 +1510,12 @@ export class DemoHttpBackend implements HttpBackend {
       encountersToday,
       recentEncounters,
       upcomingFollowUps,
+      patientActivity: {
+        monthlyPatients,
+        firstVisitsThisMonth,
+        withoutEncounters: patientsWithoutEncounter.length,
+        patientsWithoutEncounter,
+      },
     };
   }
 
