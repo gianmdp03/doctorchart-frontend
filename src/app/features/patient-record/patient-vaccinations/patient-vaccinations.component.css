@@ -7,7 +7,7 @@
 .vaccines-summary { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 28px; }
 .summary { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px; border-radius: var(--dc-radius-control); font-size: .875rem; text-decoration: none; }
 .summary strong { font-variant-numeric: tabular-nums; font-size: 1rem; }
-.summary:hover { text-decoration: underline; text-underline-offset: 4px; }
+
 .pending { background: var(--dc-danger-soft); color: var(--dc-danger); }
 .current { background: var(--dc-caution-soft); color: var(--dc-caution); }
 .future { background: var(--dc-blue-soft); color: var(--dc-blue); }

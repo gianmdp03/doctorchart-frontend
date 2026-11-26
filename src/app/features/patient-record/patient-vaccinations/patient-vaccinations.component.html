@@ -21,12 +21,12 @@
   } @else if (loadError(); as error) {
     <p class="save-error" role="alert">{{ error }}</p>
   } @else {
-    <nav class="vaccines-summary" aria-label="Resumen del calendario de vacunación">
-      <a class="summary current" href="#vaccines-current"><strong>{{ currentDoses().length }}</strong> {{ currentDoses().length === 1 ? 'corresponde ahora' : 'corresponden ahora' }}</a>
-      <a class="summary pending" href="#vaccines-overdue"><strong>{{ overdueDoses().length }}</strong> {{ overdueDoses().length === 1 ? 'anterior sin registrar' : 'anteriores sin registrar' }}</a>
-      <a class="summary future" href="#vaccines-future"><strong>{{ futureDoses().length }}</strong> más adelante</a>
-      <a class="summary applied" href="#vaccines-applied"><strong>{{ appliedDoses().length }}</strong> {{ appliedDoses().length === 1 ? 'aplicada' : 'aplicadas' }}</a>
-    </nav>
+    <div class="vaccines-summary" role="group" aria-label="Resumen del calendario de vacunación">
+      <span class="summary current"><strong>{{ currentDoses().length }}</strong> {{ currentDoses().length === 1 ? 'corresponde ahora' : 'corresponden ahora' }}</span>
+      <span class="summary pending"><strong>{{ overdueDoses().length }}</strong> {{ overdueDoses().length === 1 ? 'anterior sin registrar' : 'anteriores sin registrar' }}</span>
+      <span class="summary future"><strong>{{ futureDoses().length }}</strong> más adelante</span>
+      <span class="summary applied"><strong>{{ appliedDoses().length }}</strong> {{ appliedDoses().length === 1 ? 'aplicada' : 'aplicadas' }}</span>
+    </div>
 
     <section class="dose-group current-group" aria-labelledby="vaccines-current">
       <div class="group-heading"><div><h3 id="vaccines-current" tabindex="-1">Corresponden ahora <span class="group-count">{{ currentDoses().length }}</span></h3><p>Para la edad actual del paciente: {{ ageLabel() }}.</p></div></div>
