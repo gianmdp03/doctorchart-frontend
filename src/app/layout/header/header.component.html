@@ -57,11 +57,8 @@
           <a routerLink="/support" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">Soporte</a>
 
           @if (!authService.isSuperAdmin()) {
-          <a
-            href="/pricing"
-            class="dropdown-action-item"
-          >
-            <ng-icon name="lucideExternalLink" class="menu-action-icon" />
+          <a routerLink="/pricing" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">
+            <ng-icon name="lucideCreditCard" class="menu-action-icon" aria-hidden="true" />
             <span>Planes y suscripción</span>
           </a>
 

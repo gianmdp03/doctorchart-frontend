@@ -28,6 +28,8 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       return { c, boundary, p: await c.newPage() };
     }
     const doctor = await context({});
+    const basicDoctor = await context({ planTier: 'BASIC' });
+    const unlimitedDoctor = await context({ planTier: 'UNLIMITED' });
     const anonymous = await context({ authenticated: false });
     const admin = await context({ role: 'SUPER_ADMIN' });
     const staff = await context({ authenticated: false });
@@ -126,7 +128,9 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
     });
     await run('register', anonymous, '/register', '.register-card');
     await run('register-confirmed', anonymous, '/register/confirmed', '.register-card');
-    await run('pricing', anonymous, '/pricing', '.pricing');
+    await run('pricing', anonymous, '/pricing', '.pricing', async p => {
+      assert.equal(await p.getByRole('link', { name: 'Volver a DoctorChart', exact: true }).getAttribute('href'), '/professionals');
+    });
     await run('plan-required', noPlan, '/plan-required', '.plan-card');
     await run('professionals', anonymous, '/professionals', '.hero');
     await run('public-booking', anonymous, '/appointments/' + fixtures.publicId + '?specialtyContextId=101', '[data-public-slot]', async p => {
@@ -181,15 +185,50 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.locator('#portal-change-reason').fill('No voy a poder asistir ese día.');
     });
     await run('dashboard', doctor, '/dashboard?specialtyContextId=101', '.notes-textarea', async p => {
+      await p.getByRole('heading', { name: 'Turnos de hoy' }).waitFor();
+      await p.getByRole('heading', { name: 'Pacientes atendidos por mes' }).waitFor();
+      assert.equal(await p.locator('.patient-month').count(), 3);
       await p.locator('.notes-textarea').fill('Recordatorio de prueba para esta especialidad.');
       await p.getByRole('button', { name: 'Guardar', exact: true }).click();
       await p.getByText('Guardado', { exact: true }).waitFor();
+    });
+    await run('dashboard-basic', basicDoctor, '/dashboard?specialtyContextId=101', '.patient-queue-link', async (p, boundary) => {
+      await p.getByRole('heading', { name: 'Fichas sin consultas' }).waitFor();
+      await p.getByRole('heading', { name: 'Pacientes atendidos por mes' }).waitFor();
+      assert.equal(await p.getByRole('heading', { name: 'Turnos de hoy' }).count(), 0);
+      assert.equal(await p.getByTestId('sidebar-calendar-link').count(), 0);
+      assert.equal(boundary.requests.filter(r => r.path.endsWith('/bookings')).length, 0);
+      await p.locator('.patient-queue-link').first().click();
+      await p.waitForURL(base + '/patients/2?tab=history&specialtyContextId=101');
+      await p.getByRole('region', { name: 'Historia Clínica' }).waitFor();
+      await p.goBack();
+      await p.locator('.patient-queue-link').waitFor();
+    });
+    await run('dashboard-unlimited', unlimitedDoctor, '/dashboard?specialtyContextId=101', '.agenda-card', async p => {
+      assert.equal(await p.getByRole('heading', { name: 'Fichas sin consultas' }).count(), 0);
+      await p.getByTestId('sidebar-calendar-link').waitFor();
+      await p.getByRole('heading', { name: 'Pacientes atendidos por mes' }).waitFor();
     });
     await run('account-menu', doctor, '/dashboard?specialtyContextId=101', '.profile-avatar-btn', async p => {
       await p.locator('.profile-avatar-btn').click();
       await p.locator('#account-options').waitFor();
       assert.equal(await p.locator('.profile-avatar-btn').getAttribute('aria-expanded'), 'true');
       await p.getByRole('link', { name: 'Perfil Profesional', exact: true }).waitFor();
+    });
+    await run('account-returns', doctor, '/dashboard?specialtyContextId=202', '.dashboard-page', async p => {
+      const dashboard = new URL('/dashboard?specialtyContextId=202', base).href;
+      await p.locator('.profile-avatar-btn').click();
+      await p.getByRole('link', { name: 'Ver mi perfil', exact: true }).click();
+      await p.waitForURL(base + '/account');
+      await p.getByRole('link', { name: 'Volver al inicio', exact: true }).click();
+      await p.waitForURL(dashboard);
+
+      await p.locator('.profile-avatar-btn').click();
+      await p.getByRole('link', { name: 'Planes y suscripción', exact: true }).click();
+      await p.waitForURL(base + '/pricing');
+      await p.getByRole('link', { name: 'Volver a DoctorChart', exact: true }).click();
+      await p.waitForURL(dashboard);
+      await p.getByRole('heading', { name: 'Actividad clínica' }).waitFor();
     });
     await run('mobile-navigation', doctor, '/dashboard?specialtyContextId=101', '.notes-textarea', async p => {
       await p.setViewportSize({ width: 390, height: 844 });

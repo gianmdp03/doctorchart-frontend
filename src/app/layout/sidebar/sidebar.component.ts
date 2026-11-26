@@ -72,6 +72,9 @@ export class SidebarComponent {
   readonly clinicsEnabled = computed(
     () => this.workspace.clinicsEnabled?.() ?? FEATURE_FLAGS.CLINICS_ENABLED,
   );
+  readonly schedulingMenuVisible = computed(() =>
+    this.clinicsEnabled() && this.workspace.hasReadyContext() && this.authService.doctorchartPlanTier() !== 'BASIC',
+  );
 
   readonly isCollapsed = signal<boolean>(false);
   narrowViewport = false;

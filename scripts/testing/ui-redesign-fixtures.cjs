@@ -45,14 +45,14 @@ const publicClinic = { ...clinic, id: '33333333-3333-4333-8333-333333333333' };
 const profile = { id: publicId, name: 'Profesional de prueba', description: 'Perfil sintético para la revisión visual. No corresponde a una persona real.', specialty: 'Medicina General', specialtyCode: 'general_medicine', specialties: [{ id: '101', code: 'general_medicine', name: 'Medicina General', clinics: [publicClinic] }, { id: '202', code: 'dermatology', name: 'Dermatología', clinics: [publicClinic] }], clinics: [publicClinic], form: { version: '1', questions: [] } };
 const page = (content, size = 20) => ({ content, totalElements: content.length, totalPages: 1, size, number: 0, page: { totalElements: content.length, totalPages: 1, size, number: 0 } });
 
-async function install(context, { role = 'COMPANY', authenticated = true, hasPlan = true, initialSetup = false, state = {} } = {}) {
+async function install(context, { role = 'COMPANY', authenticated = true, hasPlan = true, planTier = 'PRO', initialSetup = false, state = {} } = {}) {
   const requests = [], writes = [], unexpected = [];
   const teleconsultations = contexts.map(context => ({
     specialtyContextId: String(context.id), specialty: context.specialty.name,
     clinicId: virtual.id, enabled: context.id === 101,
   }));
   let portalVerified = false;
-  const user = { id: userId, aud: 'authenticated', email: 'profesional@example.test', role: 'authenticated', app_metadata: { role, app_modules: { doctorchart: { active: true, tier: 'PRO', expires_at: '2099-01-01T00:00:00Z' } } }, user_metadata: { full_name: 'Profesional de prueba' } };
+  const user = { id: userId, aud: 'authenticated', email: 'profesional@example.test', role: 'authenticated', app_metadata: { role, app_modules: { doctorchart: { active: true, tier: planTier, expires_at: '2099-01-01T00:00:00Z' } } }, user_metadata: { full_name: 'Profesional de prueba' } };
   if (!hasPlan) user.app_metadata.app_modules = {};
   const token = 'eyJhbGciOiJIUzI1NiJ9.' + Buffer.from(JSON.stringify({ sub: userId, exp: 4070908800, role: 'authenticated' })).toString('base64url') + '.synthetic';
   if (authenticated) await context.addInitScript(session => { try { localStorage.setItem('sb-localhost-auth-token', JSON.stringify(session)); } catch {} }, { access_token: token, refresh_token: 'synthetic', token_type: 'bearer', expires_in: 3600, expires_at: 4070908800, user });
@@ -83,7 +83,17 @@ async function install(context, { role = 'COMPANY', authenticated = true, hasPla
     if (p.includes('/admin/specialties/') && /wizard|versions/.test(p)) return fulfill({ specialtyId: 2, version: 1, publishedVersion: 1, publishedDefinition: definition, draftDefinition: definition });
     if (p.endsWith('/billing/plans')) return fulfill({ message: 'El catálogo de planes no está disponible en este ensayo visual.' }, 503);
     if (p.endsWith('/specialties')) return fulfill(specialties);
-    if (p.endsWith('/encounters/dashboard')) return fulfill({ totalPatients: 6, asOfDate: today, encountersThisMonth: 12, encountersToday: 3, recentEncounters: [{ encounter: encounter(id), patientAgeLabel: '36 años', patientNationalId: '12345678', encounterLocalDate: today }], upcomingFollowUps: [{ encounterId: 501, patientId: 1, patientFullName: patient(id).fullName, followUpDate: tomorrow }] });
+    if (p.endsWith('/encounters/dashboard')) {
+      const [year, month] = today.split('-').map(Number);
+      const monthlyPatients = [3, 4, 5].map((patients, index) => ({
+        month: new Date(Date.UTC(year, month - 3 + index, 1)).toISOString().slice(0, 7), patients,
+      }));
+      return fulfill({ totalPatients: 6, asOfDate: today, encountersThisMonth: 12, encountersToday: 3,
+        recentEncounters: [{ encounter: encounter(id), patientAgeLabel: '36 años', patientNationalId: '12345678', encounterLocalDate: today }],
+        upcomingFollowUps: [{ encounterId: 501, patientId: 1, patientFullName: patient(id).fullName, followUpDate: tomorrow }],
+        patientActivity: { monthlyPatients, firstVisitsThisMonth: 2, withoutEncounters: 1,
+          patientsWithoutEncounter: [{ patientId: 2, patientFullName: patient(id, 2).fullName }] } });
+    }
     if (p.endsWith('/patients') && method === 'GET') return fulfill(page(state.emptyPatients ? [] : patients(id)));
     if (p.endsWith('/patients') && method === 'POST') return fulfill({ ...patient(id, 7), formValues: request.postDataJSON().values }, 201);
     if (/\/patients\/\d+$/.test(p)) return fulfill(id === 303 ? { ...patient(id), birthDate: growth.birthDate, gender: 'MALE', formValues: { ...formValues, sys_dob: growth.birthDate, sys_sex: 'MALE' } } : patient(id, Number(p.split('/').at(-1))));
@@ -96,7 +106,11 @@ async function install(context, { role = 'COMPANY', authenticated = true, hasPla
     if (p.endsWith('/studies') || p.endsWith('/prescriptions') || p.endsWith('/medications')) return fulfill([]);
     if (p.endsWith('/vaccinations')) return fulfill({ patientId: 1, patientVersion: 1, calendarId: '2026', asOfDate: today, ageInMonths: 439, ageLabel: '36 años', doses: [] });
     if (p.endsWith('/follow-ups')) return fulfill({ items: [] });
-    if (p.endsWith('/clinics/capabilities')) return fulfill({ entitlements: { status: 'VERIFIED', revision: 'fixture', validUntil: '2099-01-01T00:00:00Z', clinicManagement: true, max_clinics: 3 }, usage: { counted: 1 }, actions: { create: true, edit: true, activate: true, deactivate: true, archive: true, restore: true }, reason: null });
+    if (p.endsWith('/clinics/capabilities')) {
+      const canBook = planTier !== 'BASIC';
+      return fulfill({ entitlements: { status: canBook ? 'VERIFIED' : 'DENIED', revision: 'fixture', validUntil: '2099-01-01T00:00:00Z', clinicManagement: canBook, max_clinics: canBook ? 3 : 0 },
+        usage: { counted: 1 }, actions: { create: canBook, edit: canBook, activate: canBook, deactivate: canBook, archive: canBook, restore: canBook }, reason: canBook ? null : 'APPOINTMENTS_DISABLED' });
+    }
     if (/\/clinics\/(103|104)$/.test(p)) return fulfill(p.endsWith('104') ? virtual : assignedClinic);
     if (p.endsWith('/teleconsultations')) return fulfill(teleconsultations);
     if (/\/teleconsultations\/\d+$/.test(p) && method === 'PUT') {

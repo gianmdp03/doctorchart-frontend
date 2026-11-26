@@ -86,6 +86,12 @@ export interface ClinicalEncounterDashboard {
   encountersToday: number;
   recentEncounters: DashboardRecentEncounter[];
   upcomingFollowUps: UpcomingFollowUp[];
+  patientActivity?: {
+    monthlyPatients: { month: string; patients: number }[];
+    firstVisitsThisMonth: number;
+    withoutEncounters: number;
+    patientsWithoutEncounter: { patientId: number; patientFullName: string }[];
+  };
 }
 
 export interface UpcomingFollowUp {

@@ -2,7 +2,7 @@
   @if (!checkoutOpen()) {
   <header>
     <div class="actions">
-      <a class="dc-button button secondary" routerLink="/professionals">Volver a DoctorChart</a>
+      <a class="dc-button button secondary" [routerLink]="isLoggedIn() ? '/dashboard' : '/professionals'">Volver a DoctorChart</a>
       <app-theme-toggle />
     </div>
     <div class="intro">
