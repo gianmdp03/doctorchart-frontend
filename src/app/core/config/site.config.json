@@ -6,7 +6,7 @@
   ],
   "privateClientPattern": "^/(account(/security|/backup)?|support(/new|/tickets/[^/]+)?|forgot-password|reset-password|email-change-success)$",
   "clientPatterns": [
-    "^/(pricing|register|register/confirmed)$",
+    "^/(pricing|register|register/confirmed|terms|privacy|withdrawal)$",
     "^/(login|sin-plan|perfil|asistente|dashboard|consultas|calendario-vacunacion|calculadoras|pacientes|pacientes/nuevo|ficha|admin/especialidades|onboarding/select-specialty|onboarding/setup)$",
     "^/(pacientes|ficha|consultas)/[^/]+(/editar)?$",
     "^/(login|plan-required|profile|assistant|dashboard|encounters|vaccination-calendar|calculators|patients|patients/new|clinics|clinics/new|schedules|specialties|records|admin/specialties|onboarding/select-specialty|onboarding/setup)$",

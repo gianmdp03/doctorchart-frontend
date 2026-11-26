@@ -19,7 +19,7 @@ describe('Product signup', () => {
     fixture.detectChanges();
     fixture.componentInstance.form.setValue({
       fullName: 'Nombre Prueba', dni: '12345678', email: 'merchant@example.test',
-      password: 'test-password', confirmation: 'test-password',
+      password: 'test-password', confirmation: 'test-password', acceptTerms: true,
     });
     await fixture.componentInstance.submit();
     fixture.detectChanges();
@@ -41,7 +41,7 @@ describe('Product signup', () => {
     fixture.detectChanges();
     fixture.componentInstance.form.setValue({
       fullName: 'Nombre Prueba', dni: '12345678', email: 'merchant@example.test',
-      password: 'test-password', confirmation: 'test-password',
+      password: 'test-password', confirmation: 'test-password', acceptTerms: true,
     });
     await fixture.componentInstance.submit();
     fixture.detectChanges();
@@ -60,7 +60,7 @@ describe('Product signup', () => {
     fixture.detectChanges();
     fixture.componentInstance.form.setValue({
       fullName: 'Nombre Prueba', dni: '12345678', email: 'merchant@example.test',
-      password: 'test-password', confirmation: 'test-password',
+      password: 'test-password', confirmation: 'test-password', acceptTerms: true,
     });
 
     await fixture.componentInstance.submit();
@@ -78,5 +78,18 @@ describe('Product signup', () => {
     expect(fixture.nativeElement.querySelector('a[href^="/login"]')).not.toBeNull();
     await fixture.componentInstance.submit();
     expect(auth.signUp).not.toHaveBeenCalled();
+  });
+
+  it('requires accepting Terms and Privacy before calling signUp', async () => {
+    const fixture = TestBed.createComponent(RegisterPageComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.form.setValue({
+      fullName: 'Nombre Prueba', dni: '12345678', email: 'merchant@example.test',
+      password: 'test-password', confirmation: 'test-password', acceptTerms: false,
+    });
+    await fixture.componentInstance.submit();
+    fixture.detectChanges();
+    expect(auth.signUp).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('#signup-terms')?.getAttribute('aria-invalid')).toBe('true');
   });
 });

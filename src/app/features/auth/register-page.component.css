@@ -5,6 +5,37 @@
   color: var(--dc-text);
 }
 
+.consent-field {
+  display: grid;
+  gap: 4px;
+}
+.consent-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding-block: 4px;
+  font-size: .85rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--dc-text-secondary);
+  cursor: pointer;
+}
+.consent-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--dc-brand);
+}
+.consent-label a {
+  color: var(--dc-brand-ink);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .register-page {
   display: grid;
   align-items: center;

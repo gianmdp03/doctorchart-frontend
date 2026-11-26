@@ -79,6 +79,24 @@
                 @if (fieldError('confirmation'); as message) { <small class="field-error" id="signup-confirm-error">{{ message }}</small> }
               </div>
             </div>
+            <div class="consent-field">
+              <label for="signup-terms" class="consent-label">
+                <input
+                  id="signup-terms"
+                  type="checkbox"
+                  formControlName="acceptTerms"
+                  [attr.aria-invalid]="fieldError('acceptTerms') ? 'true' : 'false'"
+                  [attr.aria-describedby]="fieldError('acceptTerms') ? 'signup-terms-error' : null"
+                />
+                <span>
+                  Acepto los
+                  <a routerLink="/terms" target="_blank" rel="noopener noreferrer">Términos y condiciones</a>
+                  y la
+                  <a routerLink="/privacy" target="_blank" rel="noopener noreferrer">Política de privacidad</a>.
+                </span>
+              </label>
+              @if (fieldError('acceptTerms'); as message) { <small class="field-error" id="signup-terms-error">{{ message }}</small> }
+            </div>
             @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
             <button class="primary-action" type="submit" [disabled]="submitting()">
               {{ submitting() ? 'Creando cuenta…' : 'Crear cuenta' }}

@@ -11,6 +11,7 @@ const registrationFields = [
   ['email', 'signup-email', 'Ingresá un correo electrónico válido.'],
   ['password', 'signup-pass', 'Ingresá una contraseña de al menos 6 caracteres.'],
   ['confirmation', 'signup-confirm', 'Volvé a escribir la contraseña.'],
+  ['acceptTerms', 'signup-terms', 'Debés aceptar los Términos y condiciones y la Política de privacidad para crear tu cuenta.'],
 ] as const;
 
 type RegistrationControl = (typeof registrationFields)[number][0];
@@ -39,6 +40,7 @@ export class RegisterPageComponent {
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmation: ['', [Validators.required]],
+    acceptTerms: [false, [Validators.requiredTrue]],
   });
 
   fieldError(control: RegistrationControl): string | null {

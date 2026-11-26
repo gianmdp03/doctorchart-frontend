@@ -98,6 +98,9 @@ const baseRoutes: Routes = [
     loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent),
   },
   { path: 'pricing', title: 'Planes de DoctorChart', loadComponent: () => import('./features/pricing/pricing.component').then(m => m.PricingComponent) },
+  { path: 'terms', title: 'Términos y condiciones | DoctorChart', providers: [customerAccountProvider], data: { legalMode: 'terms' }, loadComponent: () => import('./shared/customer-account/legal-page').then(m => m.CustomerLegalPage) },
+  { path: 'privacy', title: 'Política de privacidad | DoctorChart', providers: [customerAccountProvider], data: { legalMode: 'privacy' }, loadComponent: () => import('./shared/customer-account/legal-page').then(m => m.CustomerLegalPage) },
+  { path: 'withdrawal', title: 'Botón de arrepentimiento y baja | DoctorChart', providers: [customerAccountProvider], data: { legalMode: 'withdrawal' }, loadComponent: () => import('./shared/customer-account/legal-page').then(m => m.CustomerLegalPage) },
   { path: 'register/confirmed', data: { confirmation: true }, loadComponent: () => import('./features/auth/register-page.component').then(m => m.RegisterPageComponent) },
   { path: 'register', loadComponent: () => import('./features/auth/register-page.component').then(m => m.RegisterPageComponent) },
   {
