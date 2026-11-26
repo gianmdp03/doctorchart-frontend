@@ -38,7 +38,7 @@ export class UserProfilePageComponent {
   });
 
   readonly email = computed(() => {
-    return this.authService.userEmail() || 'usuario@doctorchart.app';
+    return this.authService.userEmail() || 'No informado';
   });
 
   readonly dni = computed(() => {
@@ -48,7 +48,7 @@ export class UserProfilePageComponent {
 
   readonly role = computed(() => {
     const user = this.user();
-    return (user?.user_metadata?.['role'] as string) || 'Médico Especialista';
+    return (user?.user_metadata?.['role'] as string) || 'No informado';
   });
 
   readonly license = computed(() => doctorPrintIdentity(this.user()?.user_metadata).license || 'No informada');

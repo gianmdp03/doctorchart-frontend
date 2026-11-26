@@ -5,6 +5,7 @@
   [class.de-chart]="usesStandardDeviations()"
   [attr.data-reference-page]="usesStandardDeviations() ? definition().pdfPage : null"
   [class.bmi-chart]="definition().indicator === 'BMI'"
+  [class.bmi-boys-under-five]="isBoysBMIUnderFive()"
   [attr.data-chart-id]="definition().id"
 >
   <header class="oms-top-banner">
@@ -76,8 +77,8 @@
     }
     @if (hasBMITransition()) {
       <p class="bmi-transition-note">
-        Hasta los 2 años, el IMC usa longitud (acostado); después, estatura (de pie). El salto entre
-        las curvas corresponde a ese cambio de referencia OMS.
+        El tramo de nacimiento a 2 años usa longitud acostado. El tramo de 2 a 5 años usa estatura
+        de pie. Las líneas se interrumpen a los 2 años por el cambio de referencia OMS.
       </p>
     }
     @if (outsidePDFCount() > 0) {
@@ -91,7 +92,8 @@
       </div>
     }
     <div
-      class="chart-scroll" role="region"
+      class="chart-scroll"
+      role="region"
       cdkScrollable
       tabindex="0"
       [attr.aria-label]="definition().title + ': gráfico desplazable'"
@@ -106,12 +108,14 @@
           {{ definition().title }} · {{ sexLabel() }} · {{ rangeLabel() }}
         </title>
         <desc [attr.id]="clipId() + '-desc'">
-          {{ usesStandardDeviations()
-            ? 'Curvas de −3 a +3 desviaciones estándar, digitalizadas de las láminas del INAN.'
-            : 'Curvas OMS P3, P15, P50, P85 y P97.' }}
-          Eje horizontal: {{ xTitle() }}. Eje vertical:
-          {{ yTitle() }}. Las mediciones se identifican con {{ markerLabel() }}. Sus valores y
-          fechas están disponibles también en el detalle.
+          {{
+            usesStandardDeviations()
+              ? 'Curvas de −3 a +3 desviaciones estándar, digitalizadas de las láminas del INAN.'
+              : 'Curvas OMS P3, P15, P50, P85 y P97.'
+          }}
+          Eje horizontal: {{ xTitle() }}. Eje vertical: {{ yTitle() }}. Las mediciones se
+          identifican con {{ markerLabel() }}. Sus valores y fechas están disponibles también en el
+          detalle.
         </desc>
         <defs>
           <clipPath [attr.id]="clipId()">
@@ -123,6 +127,15 @@
             />
           </clipPath>
         </defs>
+        @if (isBoysBMIUnderFive() && hasBMITransition()) {
+          <rect
+            class="bmi-height-band"
+            [attr.x]="xScale()(24)"
+            [attr.y]="plot.top"
+            [attr.width]="plot.right - xScale()(24)"
+            [attr.height]="plot.bottom - plot.top"
+          />
+        }
         @for (tick of xGrid(); track tick) {
           <line
             class="grid-line"
@@ -145,22 +158,24 @@
           />
         }
         @if (hasBMITransition()) {
-          <text
-            class="bmi-period-label"
-            [attr.x]="(plot.left + xScale()(24)) / 2"
-            y="14"
-            text-anchor="middle"
-          >
-            IMC con longitud · 0–2 años
-          </text>
-          <text
-            class="bmi-period-label"
-            [attr.x]="(xScale()(24) + plot.right) / 2"
-            y="14"
-            text-anchor="middle"
-          >
-            IMC con estatura · 2–5 años
-          </text>
+          @if (!isBoysBMIUnderFive() || !compact()) {
+            <text
+              class="bmi-period-label"
+              [attr.x]="(plot.left + xScale()(24)) / 2"
+              y="14"
+              text-anchor="middle"
+            >
+              IMC con longitud · 0–2 años
+            </text>
+            <text
+              class="bmi-period-label"
+              [attr.x]="(xScale()(24) + plot.right) / 2"
+              y="14"
+              text-anchor="middle"
+            >
+              IMC con estatura · 2–5 años
+            </text>
+          }
           <line
             class="bmi-transition-line"
             [attr.x1]="xScale()(24)"
@@ -185,7 +200,11 @@
           >
             {{ tick }}
           </text>
-          <text class="tick-label right-axis-label" [attr.x]="plot.right + 60" [attr.y]="yScale()(tick) + 4">
+          <text
+            class="tick-label right-axis-label"
+            [attr.x]="plot.right + 60"
+            [attr.y]="yScale()(tick) + 4"
+          >
             {{ tick }}
           </text>
         }
@@ -196,7 +215,13 @@
             [attr.y]="plot.bottom + 19"
             text-anchor="middle"
           >
-            {{ definition().x.variable === 'AGE' ? (compact() ? tick + ' m' : monthLabel(tick)) : tick }}
+            {{
+              definition().x.variable === 'AGE'
+                ? compact()
+                  ? tick + ' m'
+                  : monthLabel(tick)
+                : tick
+            }}
           </text>
         }
         @for (tick of years(); track tick) {
@@ -209,8 +234,19 @@
             {{ tick === 0 ? 'Nacimiento' : tick / 12 + (tick === 12 ? ' año' : ' años') }}
           </text>
         }
-        <text class="axis-title" [attr.x]="(plot.left + plot.right) / 2" [attr.y]="plot.bottom + 60" text-anchor="middle">{{ xTitle() }}</text>
-        <text class="axis-title" [attr.transform]="'translate(14 ' + (plot.top + plot.bottom) / 2 + ') rotate(-90)'" text-anchor="middle">
+        <text
+          class="axis-title"
+          [attr.x]="(plot.left + plot.right) / 2"
+          [attr.y]="plot.bottom + 60"
+          text-anchor="middle"
+        >
+          {{ xTitle() }}
+        </text>
+        <text
+          class="axis-title"
+          [attr.transform]="'translate(14 ' + (plot.top + plot.bottom) / 2 + ') rotate(-90)'"
+          text-anchor="middle"
+        >
           {{ yTitle() }}
         </text>
         <g [attr.clip-path]="'url(#' + clipId() + ')'">
@@ -223,7 +259,9 @@
               [attr.d]="curve.path"
               [attr.stroke]="curve.color"
             >
-              <title>{{ usesStandardDeviations() ? curve.label : 'OMS P' + curve.percentile }}</title>
+              <title>
+                {{ usesStandardDeviations() ? curve.label : 'OMS P' + curve.percentile }}
+              </title>
             </path>
           }
           <path class="patient-line" [attr.d]="patientPath()" />
@@ -367,7 +405,9 @@
     @if (!usesStandardDeviations() && definition().indicator === 'HEIGHT') {
       @if (latestMeasurement(); as latest) {
         @if (latest.encounterId && latest.measurementMode === 'RECUMBENT' && !latest.evaluation) {
-          <a class="position-review-link" [routerLink]="['/encounters', latest.encounterId]">Revisar postura en la consulta</a>
+          <a class="position-review-link" [routerLink]="['/encounters', latest.encounterId]"
+            >Revisar postura en la consulta</a
+          >
         }
       }
     }
@@ -381,8 +421,12 @@
       @if (usesStandardDeviations()) {
         <li><span class="legend-sample" [style.color]="deviationColors[0]"></span>0 DE</li>
         <li><span class="legend-sample" [style.color]="deviationColors[1]"></span>−1 y +1 DE</li>
-        <li><span class="legend-sample de-middle" [style.color]="deviationColors[2]"></span>−2 y +2 DE</li>
-        <li><span class="legend-sample de-outer" [style.color]="deviationColors[3]"></span>−3 y +3 DE</li>
+        <li>
+          <span class="legend-sample de-middle" [style.color]="deviationColors[2]"></span>−2 y +2 DE
+        </li>
+        <li>
+          <span class="legend-sample de-outer" [style.color]="deviationColors[3]"></span>−3 y +3 DE
+        </li>
       } @else {
         <li><span class="legend-sample median"></span>P50 (mediana)</li>
         <li><span class="legend-sample middle"></span>P15 y P85</li>
@@ -441,7 +485,13 @@
                   }
                   <td>
                     {{ point.note ?? '—' }}
-                    @if (!usesStandardDeviations() && point.encounterId && point.measurementMode === 'RECUMBENT' && !point.evaluation && definition().indicator === 'HEIGHT') {
+                    @if (
+                      !usesStandardDeviations() &&
+                      point.encounterId &&
+                      point.measurementMode === 'RECUMBENT' &&
+                      !point.evaluation &&
+                      definition().indicator === 'HEIGHT'
+                    ) {
                       <a [routerLink]="['/encounters', point.encounterId]">Revisar consulta</a>
                     }
                     @if (point.adjustmentCm) {
