@@ -220,10 +220,28 @@ export class ClinicsPageComponent implements OnInit {
         if (this.destroyed) return;
         this.capabilityExpiryTick.update((v) => v + 1);
         this.capabilities.set(createUnavailableCapabilities(this.capabilities()));
+        void this.renewCapabilities();
       }, delayMs);
     }
   }
 
+  private async renewCapabilities(): Promise<void> {
+    const generation = this.accountGeneration;
+    const owner = this.currentOwnerId();
+    const previous = this.capabilities();
+    const current = () => !this.destroyed && generation === this.accountGeneration
+      && owner === this.currentOwnerId() && previous === this.capabilities();
+    if (!this.readScope.authenticated()) return;
+    try {
+      const caps = await firstValueFrom(
+        this.clinicsService.getCapabilities().pipe(takeUntil(this.readScope.canceled)),
+      );
+      if (current()) this.setCapabilities(caps);
+    } catch {
+      // Expired rights stay unavailable; never grant writes on a failed renewal.
+      if (current()) this.setCapabilities(createUnavailableCapabilities(previous));
+    }
+  }
   private resetState(): void {
     this.accountGeneration += 1;
     this.mutationOperationId += 1;
