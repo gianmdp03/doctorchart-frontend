@@ -436,14 +436,18 @@ export class DemoHttpBackend implements HttpBackend {
             recordedAt: nowIso,
             authorUserId: DEMO_CLINICIAN_ID,
           });
-          if (body.kind === 'ALLERGY' && !p.allergies.includes(body.text)) {
-            p.allergies.push(body.text);
+          if (body.kind === 'ALLERGY') {
+            const items = p.clinicalEntries
+              .filter((e) => e.kind === 'ALLERGY' && e.status === 'ACTIVE')
+              .map((e) => e.text);
             p.formValues['sys_allergyStatus'] = 'PRESENT';
-            p.formValues['sys_allergies'] = p.allergies.join('\n');
-          } else if (body.kind === 'PROBLEM' && !p.chronicConditions.includes(body.text)) {
-            p.chronicConditions.push(body.text);
+            p.formValues['sys_allergies'] = items.join('\n');
+          } else if (body.kind === 'PROBLEM') {
+            const items = p.clinicalEntries
+              .filter((e) => e.kind === 'PROBLEM' && e.status === 'ACTIVE')
+              .map((e) => e.text);
             p.formValues['sys_conditionStatus'] = 'PRESENT';
-            p.formValues['sys_conditions'] = p.chronicConditions.join('\n');
+            p.formValues['sys_conditions'] = items.join('\n');
           }
         } else if (body.operation === 'RESOLVE') {
           const entry = p.clinicalEntries.find((e) => e.id === body.entryId);
@@ -1176,8 +1180,8 @@ export class DemoHttpBackend implements HttpBackend {
       email: p.email,
       address: p.address,
       insuranceInfo: p.insuranceInfo,
-      allergies: p.allergies,
-      chronicConditions: p.chronicConditions,
+      allergies: [],
+      chronicConditions: [],
       guardianInfo: p.guardianInfo,
       personalHistory: p.personalHistory,
       familyHistory: p.familyHistory,
