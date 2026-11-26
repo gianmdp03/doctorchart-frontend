@@ -1,6 +1,6 @@
 <header class="top-app-header">
   <!-- Left: Header spacing / Navigation anchor -->
-  <div class="header-left"><span class="workspace-label">{{ authService.isSuperAdmin() ? "Administración" : "Espacio clínico" }}</span></div>
+  <div class="header-left"><span class="workspace-label">{{ authService.isSuperAdmin() ? "Administración" : planBadgeLabel() }}</span></div>
 
   <!-- Center -->
   <div class="header-center">
@@ -46,9 +46,7 @@
           <div class="profile-dropdown-header">
             <span class="user-fullname">{{ bycodeAccount.name() || 'Mi cuenta' }}</span>
             <span class="user-email">{{ authService.userEmail() }}</span>
-            @if (planBadgeLabel()) {
-              <span class="user-plan-pill">{{ planBadgeLabel() }}</span>
-            }
+            <span class="user-plan-pill">{{ planBadgeLabel() }}</span>
           </div>
 
           <div class="profile-menu-divider"></div>

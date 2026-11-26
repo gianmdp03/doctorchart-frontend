@@ -34,6 +34,28 @@ describe('Anonymous public booking page',()=>{
    expect(api.book).not.toHaveBeenCalled();
   } finally {clock.mockRestore();}
  });
+ it('shows the published avatar and falls back to the initial if it cannot load',async()=>{
+  const avatarPath='/public/appointments/doctors/'+profile.id+'/avatar';
+  api.profile.mockReturnValue(of({...profile,avatarPath}));
+  await c.loadProfile();
+  f.detectChanges();
+  expect((f.nativeElement as HTMLElement).querySelector('.professional-monogram img')?.getAttribute('src')).toContain(avatarPath);
+
+  c.id.set('');
+  api.search.mockReturnValue(of({items:[{...profile,avatarPath},{...profile,id:'another',name:'Sin foto'}],hasMore:false}));
+  await c.search();
+  f.detectChanges();
+  const avatars=(f.nativeElement as HTMLElement).querySelectorAll('.doctor-card-monogram');
+  const photo=avatars[0].querySelector('img')!;
+  expect(photo.getAttribute('src')).toContain(avatarPath);
+  photo.dispatchEvent(new Event('error'));
+  expect(photo.hidden).toBe(true);
+  expect(avatars[0].textContent?.trim()).toBe('P');
+  photo.dispatchEvent(new Event('load'));
+  expect(photo.hidden).toBe(false);
+  expect(avatars[1].querySelector('img')).toBeNull();
+  expect(avatars[1].textContent?.trim()).toBe('S');
+ });
  it('limits the directory and direct profiles to enabled countries',async()=>{
   const foreignClinic={...profile.clinics[0],id:'foreign',country:'Uruguay'};
   const mixed={...profile,clinics:[foreignClinic,...profile.clinics]};

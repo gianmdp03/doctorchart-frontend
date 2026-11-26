@@ -40,7 +40,7 @@ describe('Theme integration', () => {
       { provide: AuthService, useValue: {
         currentUser: signal({ id: 'visual-doctor' }), isLoggedIn: signal(true), isSuperAdmin: signal(false),
         userName: signal('Sofía Mendoza'), userEmail: signal('demo@example.com'),
-        hasDoctorchartPlan: signal(true), doctorchartPlanTier: signal('PROFESSIONAL'),
+        hasDoctorchartPlan: signal(true), doctorchartPlanTier: signal('PRO'),
       } },
       { provide: BookingsService, useValue: { list: () => of({ items: [], totalElements: 0 }) } },
       { provide: ActivePatientService, useValue: { patientId: signal(null), loadPatient: () => undefined } },

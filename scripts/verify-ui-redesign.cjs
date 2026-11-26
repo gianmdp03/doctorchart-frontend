@@ -376,6 +376,21 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.getByText('No hay horarios ocupados por otras agendas este día.', { exact: true }).waitFor();
       await days.first().click();
     });
+    for (const [route, title] of [['/calendar', 'Agenda de turnos'], ['/booking-publication', 'Reservas online']]) {
+      await run('basic' + route.replace('/', '-'), basicDoctor, route, 'app-basic-booking-notice', async (p, boundary) => {
+        assert.equal(new URL(p.url()).pathname, route);
+        await p.getByRole('heading', { name: title, exact: true }).waitFor();
+        await p.getByRole('heading', { name: 'Tu plan Básico no incluye esta función' }).waitFor();
+        await p.locator('.top-app-header').getByText('Plan Básico', { exact: true }).waitFor();
+        assert.equal(await p.getByRole('link', { name: 'Ver planes', exact: true }).getAttribute('href'), '/pricing');
+        assert.ok(!boundary.requests.some(r => /\/(?:booking-publication|bookings|availability)(?:\/|$)/.test(r.path)));
+        assert.equal(boundary.writes.length, 0);
+        await p.setViewportSize({ width: 320, height: 844 });
+        await setTheme(p, 'dark');
+        await capture(p, 'basic' + route.replace('/', '-') + '-320-dark');
+        await p.setViewportSize({ width: 1440, height: 1000 });
+      });
+    }
     await run('calendar', doctor, '/calendar?specialtyContextId=101', '.day-header button', async p => {
       const day = p.locator('.day-header button').filter({ hasText: String(Number(fixtures.tomorrow.slice(-2))) });
       if (await day.count() === 1) await day.click();
@@ -431,7 +446,7 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
     });
     await run('not-found', doctor, '/route-that-does-not-exist', '.not-found');
 
-    for (const target of [doctor, anonymous, admin, staff, noPlan, newDoctor]) {
+    for (const target of [doctor, basicDoctor, unlimitedDoctor, anonymous, admin, staff, noPlan, newDoctor]) {
       report.unexpected.push(...target.boundary.unexpected);
       await target.c.close();
     }

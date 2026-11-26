@@ -32,7 +32,7 @@ describe('Finite interaction feedback', () => {
     expect(error).toHaveBeenCalledOnce();
     expect(request.cancelled).toBe(true);
     expect(status.busy()).toBe(false);
-    expect(status.error()).toContain('evitar duplicados');
+    expect(status.error()).toContain('pudo haberse procesado');
     backend.expectNone('/save');
   });
   it('bounds an auth SDK promise that never settles', async () => {

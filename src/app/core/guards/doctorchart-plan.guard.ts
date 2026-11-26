@@ -9,7 +9,7 @@ export const doctorchartPlanGuard: CanActivateFn = async (route, state) => {
   await authService.authReady;
 
   if (!authService.isLoggedIn()) {
-    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+    return router.createUrlTree(['/login'], { queryParams: { reason: 'auth_required', returnUrl: state.url } });
   }
 
   if (authService.hasDoctorchartPlan()) {

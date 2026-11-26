@@ -80,6 +80,9 @@ small { font-size: .75rem; font-weight: 400; line-height: 1.5; }
 .clinic-card { display: flex; flex-direction: column; min-width: 0; padding: 24px; border: 1px solid var(--dc-line); border-radius: var(--dc-radius-card); background: var(--dc-paper); }
 .doctor-card-heading { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
 .doctor-card-monogram { display: grid; place-items: center; width: 56px; height: 56px; flex-shrink: 0; border-radius: 14px; background: var(--dc-brand-soft); color: var(--dc-brand-ink); font-size: 1.5rem; font-weight: 650; }
+.doctor-card-monogram, .professional-monogram { position: relative; overflow: hidden; }
+.doctor-card-monogram img, .professional-monogram img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.doctor-card-monogram img[hidden], .professional-monogram img[hidden] { display: none; }
 .clinic-card h3 { font-size: 1.125rem; line-height: 1.4; overflow-wrap: anywhere; }
 .result-clinic { display: block; color: var(--dc-text); font-size: .875rem; font-weight: 600; overflow-wrap: anywhere; }
 .result-address { margin: 8px 0 16px; color: var(--dc-text-secondary); font-size: .8125rem; overflow-wrap: anywhere; }
@@ -189,6 +192,8 @@ legend { margin-bottom: 16px; font-size: .875rem; font-weight: 600; }
   border-radius: 24px;
   background: var(--dc-brand-soft);
 }
+.professional-identity { display: flex; align-items: flex-start; gap: var(--dc-space-4); min-width: 0; }
+.professional-identity > div:last-child { min-width: 0; }
 .booking-hero .booking-context { margin-bottom: 6px; color: var(--dc-brand-ink); font-size: .8125rem; font-weight: 650; }
 .booking-hero h1 { font-size: clamp(1.8rem, 3.6vw, 3rem); overflow-wrap: anywhere; text-wrap: pretty; }
 .booking-hero .professional-specialty { color: var(--dc-text); font-size: 1rem; }

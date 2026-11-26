@@ -74,7 +74,16 @@
      @for(doctor of doctors();track doctor.id){
       @for(clinic of doctor.clinics;track clinic.id){
        <article class="clinic-card">
-        <div class="doctor-card-heading"><div class="doctor-card-monogram" aria-hidden="true">{{doctor.name.slice(0,1)}}</div><h3>{{doctor.name}}</h3></div>
+        <div class="doctor-card-heading">
+         <div class="doctor-card-monogram" aria-hidden="true">
+          {{doctor.name.slice(0,1)}}
+          @if (doctor.avatarPath; as avatarPath) {
+           <img #photo [src]="apiUrl + avatarPath" alt="" loading="lazy" decoding="async"
+                (load)="photo.hidden = false" (error)="photo.hidden = true" />
+          }
+         </div>
+         <h3>{{doctor.name}}</h3>
+        </div>
         <strong class="result-clinic">{{clinic.name}}</strong>
         <p class="result-address">{{modalityLabel(clinic.modality)}} @if(clinic.modality!=='TELECONSULTATION'){<br />{{clinic.address}}<br />{{clinic.city}}, {{clinic.province}}}</p>
         <p class="result-specialty">{{specialtyNames(doctor)}}</p>
@@ -112,11 +121,20 @@
   @if(busy()&&!profile()){<p role="status" class="empty">Consultando el perfil…</p>}
   @if(profile();as d){
    <section class="professional booking-hero">
-    <div>
-     <p class="booking-context">Reserva online</p>
-     <h1>{{d.name}}</h1>
-     @if(specialtyNames(d); as specialty){<p class="professional-specialty">{{specialty}}</p>}
-     @if(d.description){<p class="professional-description">{{d.description}}</p>}
+    <div class="professional-identity">
+     <div class="professional-monogram" aria-hidden="true">
+      {{d.name.slice(0,1)}}
+      @if (d.avatarPath; as avatarPath) {
+       <img #photo [src]="apiUrl + avatarPath" alt="" decoding="async"
+            (load)="photo.hidden = false" (error)="photo.hidden = true" />
+      }
+     </div>
+     <div>
+      <p class="booking-context">Reserva online</p>
+      <h1>{{d.name}}</h1>
+      @if(specialtyNames(d); as specialty){<p class="professional-specialty">{{specialty}}</p>}
+      @if(d.description){<p class="professional-description">{{d.description}}</p>}
+     </div>
     </div>
     <ol class="booking-progress" aria-label="Pasos de la reserva">
      <li [attr.aria-current]="!formOpen() ? 'step' : null">Lugar y horario</li>

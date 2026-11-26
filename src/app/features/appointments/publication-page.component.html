@@ -161,6 +161,7 @@
     } @else {
       <section class="publication-panel editor" aria-labelledby="review-title">
         <h2 #editorTitle id="review-title" tabindex="-1">Revisá tu página de turnos</h2>
+        <p class="muted">Si tenés una foto de perfil en Bycode, se muestra junto a tu nombre mientras las reservas estén publicadas.</p>
         <div class="review-profile">
           <div><strong>{{ draft.name || 'Falta el nombre público' }}</strong>@if (draft.description) { <p class="muted">{{ draft.description }}</p> }</div>
           <button type="button" class="dc-button dc-button--secondary" (click)="setStage('profile')" [disabled]="saving()">Editar página pública</button>

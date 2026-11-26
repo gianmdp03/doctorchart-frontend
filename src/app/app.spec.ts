@@ -70,7 +70,7 @@ describe('App recovers the empty entry route after login', () => {
     const fixture=TestBed.createComponent(App); fixture.detectChanges();
     const router=TestBed.inject(Router);
     expect(await router.navigateByUrl('/')).toBe(true);
-    expect(router.url).toBe('/login?returnUrl=%2Fdashboard');
+    expect(router.url).toBe('/login?reason=auth_required&returnUrl=%2Fdashboard');
     currentUser.set(doctor); fixture.detectChanges(); await fixture.whenStable();
     await vi.waitFor(() => expect(router.url).toBe('/onboarding/select-specialty'));
     fixture.detectChanges();

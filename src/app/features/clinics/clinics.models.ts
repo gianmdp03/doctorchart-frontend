@@ -1,4 +1,5 @@
 import { formatInstant } from '../../core/date/user-time-zone';
+import { httpErrorMessage, SESSION_EXPIRED } from '../../core/utils/user-error';
 
 export type AppointmentModality = 'IN_PERSON' | 'TELECONSULTATION';
 
@@ -722,6 +723,7 @@ export interface ParsedClinicError {
 export function parseClinicHttpError(
   error: unknown,
   fallbackMessage: string,
+  write = false,
 ): ParsedClinicError {
   const errObj = error as {
     status?: number;
@@ -764,10 +766,10 @@ export function parseClinicHttpError(
   const isVersionConflict = status === 409 && code === 'VERSION_CONFLICT';
   const isStateConflict = status === 409 && code === 'CLINIC_STATE_CONFLICT';
 
-  let userMessage = serverMessage || fallbackMessage;
+  let userMessage = httpErrorMessage(error, fallbackMessage, { write });
   switch (code) {
     case 'UNAUTHENTICATED':
-      userMessage = 'Tu sesión expiró o no es válida. Volvé a iniciar sesión.';
+      userMessage = SESSION_EXPIRED;
       break;
     case 'DOCTORCHART_PLAN_REQUIRED':
       userMessage =

@@ -5,7 +5,7 @@ export interface PublicQuestion{key:string;label:string;required:boolean;}
 export interface PublicBookingForm{version:string;questions:PublicQuestion[];}
 export interface PublicClinic{id:string;modality?:AppointmentModality;name:string;country:string;province:string;city:string;address:string;timezone:string;}
 export interface PublicContext{id:string;code:string;name:string;clinics:PublicClinic[];}
-export interface PublicDoctor{specialties?:PublicContext[];id:string;name:string;description:string;specialtyCode:string;specialty:string;clinics:PublicClinic[];form:{version:string;questions:PublicQuestion[]};}
+export interface PublicDoctor{specialties?:PublicContext[];id:string;name:string;description:string;specialtyCode:string;specialty:string;clinics:PublicClinic[];form:{version:string;questions:PublicQuestion[]};avatarPath?:string;}
 export interface PublicBookingDraft{specialtyContextId?:string;clinicId:string;start:string;formVersion:string;contactName:string;contactPhone:string;attendeeName:string;documentCountry:string;documentType:'DNI';document:string;email:string;answers:Record<string,string>;}
 export interface PublicConfirmation{modality?:AppointmentModality;specialtyName?:string;verificationRequestId?:string;maskedEmail?:string;reference:string;status:string;start:string;end:string;doctorName:string;clinicName:string;address:string;timezone:string;contactName:string;attendeeName:string;}
 export interface AvailabilityDay { date: string; slots: { start: string; end: string }[]; }

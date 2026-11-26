@@ -84,18 +84,16 @@ export class HeaderComponent implements OnDestroy {
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly searchReads = new AccountReadScope(() => this.clearSearch());
 
-  readonly planBadgeLabel = computed<string | null>(() => {
-    if (!this.authService.hasDoctorchartPlan()) {
-      return null;
+  readonly planBadgeLabel = computed(() => {
+    switch (this.authService.doctorchartPlanTier()) {
+      case 'FREE_TRIAL': return 'Prueba gratuita';
+      case 'BASIC': return 'Plan Básico';
+      case 'PRO': return 'Plan Pro';
+      case 'UNLIMITED': return 'Plan Ilimitado';
+      case 'ENTERPRISE': return 'Plan Enterprise';
+      case 'SUPER_ADMIN': return 'Super Admin';
+      default: return 'Sin plan activo';
     }
-    const tier = this.authService.doctorchartPlanTier();
-    if (tier === 'SUPER_ADMIN') {
-      return 'Super Admin';
-    }
-    if (tier) {
-      return `Plan ${tier}`;
-    }
-    return 'Plan Activo';
   });
 
   readonly clinicianInitials = computed(() => {

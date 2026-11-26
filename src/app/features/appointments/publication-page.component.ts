@@ -235,7 +235,7 @@ export class PublicationPageComponent {
       this.feedback.set(publication.published ? 'Reservas online activas.' : 'Cambios guardados. Las reservas online están pausadas.');
     } catch (err) {
       if (this.isCurrent(generation)) {
-        const parsed = parseClinicHttpError(err, 'No se pudo guardar. Los campos ingresados se conservaron.');
+        const parsed = parseClinicHttpError(err, 'No se pudo guardar. Los campos ingresados se conservaron.', true);
         this.error.set(parsed.userMessage);
         if (parsed.isVersionConflict) this.conflict.set(true);
       }

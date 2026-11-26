@@ -1,3 +1,4 @@
+import { httpErrorMessage } from '../../core/utils/user-error';
 import { PhoneInputComponent } from '../../shared/phone-input/phone-input.component';
 import {afterNextRender,Component,DestroyRef,ElementRef,Injector,PLATFORM_ID,computed,inject,signal,viewChildren} from '@angular/core';
 import {CommonModule,DOCUMENT,isPlatformBrowser} from '@angular/common';import {FormsModule} from '@angular/forms';import {ActivatedRoute,Router,RouterLink,convertToParamMap} from '@angular/router';import {takeUntilDestroyed} from '@angular/core/rxjs-interop';import {firstValueFrom,combineLatest,of} from 'rxjs';
@@ -5,6 +6,7 @@ import { PublicBookingShellComponent } from './public-booking-shell.component';
 import {userTimeZone} from '../../core/date/user-time-zone';
 import {modalityLabel, type AppointmentModality} from '../clinics/clinics.models';
 import {FEATURE_FLAGS} from '../../core/config/feature-flags';
+import { environment } from '../../../environments/environment';
 import {ARGENTINA,BOOKING_COUNTRIES,BookingCountry,bookingCountry,localitiesFor} from '../../core/location/booking-locations';
 import {DatePickerComponent} from '../../shared/date-picker/date-picker.component';
 import {AppointmentsService,PublicSpecialty} from './appointments.service';import {PublicDoctor,PublicClinic,PublicBookingDraft,PublicConfirmation} from './appointments.models';import {civilDate,localTime,displayDay,slotOffsetLabel,addDays} from '../calendar/bookings.models';import {solveProof} from './proof-of-work';
@@ -19,6 +21,7 @@ export class AppointmentsPageComponent{
  private readonly browserDocument=inject(DOCUMENT);
  private readonly browser=isPlatformBrowser(inject(PLATFORM_ID));
  readonly confirmationEnabled=FEATURE_FLAGS.NOTIFICATIONS_ENABLED;
+ protected readonly apiUrl = environment.apiUrl;
  lookupDni = '';
  openMyBookings() {
   if (!/^[0-9]{5,8}$/.test(this.lookupDni)) return;
@@ -81,7 +84,12 @@ export class AppointmentsPageComponent{
   if(this.id())void this.loadProfile();else if(this.browser)void this.loadSpecialties();
  });this.destroy.onDestroy(()=>{this.generation++;this.slotsGeneration++;this.searchGeneration++;this.catalogGeneration++;this.controller?.abort();});}
  private reset(){this.generation++;this.slotsGeneration++;this.searchGeneration++;this.sending.set(false);this.status.set('');this.controller?.abort();this.profile.set(null);this.specialtyContextId.set('');this.confirmation.set(null);this.returnedDays.set([]);this.selectedStart.set('');this.formOpen.set(false);this.error.set('');this.formError.set('');this.conflict.set(false);this.attempt=null;this.contactName='';this.contactPhone=null;this.attendeeName='';this.different=false;this.document='';this.email='';this.answers={};this.consent=false;}
- private message(err:unknown,fallback:string){const value=err as {status?:number;error?:{code?:string;message?:string}};if(value.status===429)return 'Recibimos demasiadas solicitudes. Esperá un minuto y reintentá.';if(value.status===503)return 'El servicio no está disponible. Si estabas confirmando, conservá el formulario y reintentá para verificar el resultado.';if(value.status===404)return 'Este profesional o consultorio ya no está disponible para reservar online.';if(value.status===403)return 'Las reservas online o su verificación no están disponibles. Reintentá o contactá al consultorio.';return value.error?.message||fallback;}
+ private message(err: unknown, fallback: string, write = false) {
+  const status = (err as { status?: number } | null)?.status;
+  if (status === 404) return 'Este profesional o consultorio ya no está disponible para reservar online.';
+  if (status === 403) return 'Las reservas online o su verificación no están disponibles. Reintentá o contactá al consultorio.';
+  return httpErrorMessage(err, fallback, { write });
+ }
  changeCountry(country:BookingCountry){
   this.country=country;
   this.changeProvince('');
@@ -230,7 +238,7 @@ export class AppointmentsPageComponent{
    this.api.setPortalDraft({requestId:confirmation.verificationRequestId,document:body.document,reference:confirmation.reference,maskedEmail:confirmation.maskedEmail});
   }else this.api.setPortalDraft(null);
   this.confirmation.set(confirmation);this.focusHeading('confirmation-title');this.confirmationDoctorId.set(id);this.formOpen.set(false);this.attempt=null;this.document='';this.email='';this.contactPhone=null;this.answers={};this.consent=false;}
-  catch(err){if(g!==this.generation||id!==this.id())return;const e=err as {status?:number;error?:{code?:string}};this.formError.set(this.message(err,'No pudimos confirmar. Tus datos se conservaron; reintentá con el mismo formulario.'));if(e.status===409){this.conflict.set(true);if(e.error?.code==='FORM_VERSION_CONFLICT'){this.sending.set(false);await this.loadProfile(true)}else await this.loadSlots();}}
+  catch(err){if(g!==this.generation||id!==this.id())return;const e=err as {status?:number;error?:{code?:string}};this.formError.set(this.message(err,'No pudimos confirmar. Tus datos se conservaron; reintentá con el mismo formulario.',true));if(e.status===409){this.conflict.set(true);if(e.error?.code==='FORM_VERSION_CONFLICT'){this.sending.set(false);await this.loadProfile(true)}else await this.loadSlots();}}
   finally{if(g===this.generation){this.sending.set(false);this.status.set('');}}
  }
 }

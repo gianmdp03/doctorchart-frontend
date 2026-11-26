@@ -41,7 +41,7 @@ describe('HeaderComponent', () => {
       userName: signal('Dr. Santiago'),
       userEmail: signal('santiago@bycode.io'),
       hasDoctorchartPlan: signal(true),
-      doctorchartPlanTier: signal('PROFESSIONAL'),
+      doctorchartPlanTier: signal('BASIC'),
       signOut: vi.fn(),
       openProfileModal: vi.fn(),
     };
@@ -93,7 +93,7 @@ describe('HeaderComponent', () => {
   });
 
   it('should compute plan badge correctly', () => {
-    expect(component.planBadgeLabel()).toBe('Plan PROFESSIONAL');
+    expect(component.planBadgeLabel()).toBe('Plan Básico');
   });
 
   it('should keep header clean without redundant specialty badge', () => {

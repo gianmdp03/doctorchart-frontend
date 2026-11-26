@@ -26,8 +26,8 @@ describe('English canonical application routes', () => {
   });
   it('keeps application pages behind their existing guards', () => {
     for (const route of routes.filter(route => route.loadComponent && route.path !== '**')) {
-      if (['', 'professionals', 'login', 'register', 'register/confirmed', 'pricing', 'forgot-password', 'reset-password', 'email-change-success'].includes(route.path!)) continue;
-      expect(route.canActivate?.length).toBeGreaterThan(0);
+      if (['', 'professionals', 'login', 'register', 'register/confirmed', 'pricing', 'forgot-password', 'reset-password', 'email-change-success', 'terms', 'privacy', 'withdrawal'].includes(route.path!)) continue;
+      expect(route.canActivate?.length ?? 0, route.path).toBeGreaterThan(0);
       expect(route.path).not.toMatch(/pacientes|consultas|perfil|asistente|sin-plan|especialidades|calculadoras|ficha|vacunacion|editar|nuevo/);
     }
   });

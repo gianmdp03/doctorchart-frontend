@@ -70,7 +70,7 @@ describe('doctorchartPlanGuard', () => {
       doctorchartPlanGuard(routeMock, stateMock)
     );
 
-    expect(TestBed.inject(Router).serializeUrl(canActivate as import('@angular/router').UrlTree)).toBe('/login?returnUrl=%2Fpatients%2F42');
+    expect(TestBed.inject(Router).serializeUrl(canActivate as import('@angular/router').UrlTree)).toBe('/login?reason=auth_required&returnUrl=%2Fpatients%2F42');
     expect(authServiceMock.openLoginModal).not.toHaveBeenCalled();
 
     dispatchSpy.mockRestore();

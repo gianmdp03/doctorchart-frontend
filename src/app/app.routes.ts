@@ -1,3 +1,4 @@
+import { basicBookingPlanMatch } from './core/guards/basic-booking-plan.guard';
 import { CanActivateFn, Routes } from '@angular/router';
 import { EnvironmentInjector, inject, runInInjectionContext } from '@angular/core';
 import { firstValueFrom, isObservable } from 'rxjs';
@@ -29,6 +30,7 @@ function orderedGuards(guards:CanActivateFn[]):CanActivateFn{
  })();};
 }
 const clinicalNavigationGuard = (module: Parameters<typeof import('./core/guards/clinical-navigation.guard').clinicalNavigationGuard>[0]) => lazyGuard(() => import('./core/guards/clinical-navigation.guard').then(m => m.clinicalNavigationGuard(module)));
+const loadBasicBookingNotice = () => import('./features/appointments/basic-booking-notice.component').then(m => m.BasicBookingNoticeComponent);
 const doctorchartPlanGuard = lazyGuard(() => import('./core/guards/doctorchart-plan.guard').then(m => m.doctorchartPlanGuard));
 const doctorOnboardingGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.doctorOnboardingGuard));
 const doctorWizardGuard = lazyGuard(() => import('./core/guards/doctor-onboarding.guard').then(m => m.doctorWizardGuard));
@@ -248,8 +250,26 @@ const baseRoutes: Routes = [
     path:'appointments',canActivate:[lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/appointments-page.component').then(m=>m.AppointmentsPageComponent),
  },{path:'appointments/confirmation',canActivate:[lazyGuard(()=>import('./core/guards/notifications.guard').then(m=>m.notificationsGuard))],loadComponent:()=>import('./features/appointments/confirmation-page.component').then(m=>m.ConfirmationPageComponent),
  },{path:'appointments/:publicId',canActivate:[lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/appointments-page.component').then(m=>m.AppointmentsPageComponent),
- },{path:'booking-publication',canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,clinicsGuard,lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/publication-page.component').then(m=>m.PublicationPageComponent),
- },{path:'calendar',
+ },
+  {
+    path: 'booking-publication',
+    pathMatch: 'full',
+    canMatch: [basicBookingPlanMatch],
+    canActivate: [doctorchartPlanGuard],
+    data: { featureTitle: 'Reservas online' },
+    loadComponent: loadBasicBookingNotice,
+  },
+  {path:'booking-publication',canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,clinicsGuard,lazyGuard(()=>import('./core/guards/public-appointments.guard').then(m=>m.publicAppointmentsGuard))],loadComponent:()=>import('./features/appointments/publication-page.component').then(m=>m.PublicationPageComponent),
+ },
+  {
+    path: 'calendar',
+    pathMatch: 'full',
+    canMatch: [basicBookingPlanMatch],
+    canActivate: [doctorchartPlanGuard],
+    data: { featureTitle: 'Agenda de turnos' },
+    loadComponent: loadBasicBookingNotice,
+  },
+  {path:'calendar',
     runGuardsAndResolvers:'always',
     canActivate:[doctorchartPlanGuard,doctorOnboardingGuard,lazyGuard(()=>import('./core/guards/calendar.guard').then(m=>m.calendarGuard))],
     loadComponent:()=>import('./features/calendar/calendar-page.component').then(m=>m.CalendarPageComponent),

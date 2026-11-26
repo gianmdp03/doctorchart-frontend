@@ -1,10 +1,10 @@
+import type { PortalBooking } from './appointments.models';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { ConfirmationPageComponent } from './confirmation-page.component';
 import { AppointmentsService } from './appointments.service';
-import type { PortalBooking } from './appointments.models';
 import { authInterceptor } from '../../core/interceptors/auth.interceptor';
 import { timeZoneInterceptor } from '../../core/interceptors/time-zone.interceptor';
 import { AuthService } from '../../core/services/auth.service';

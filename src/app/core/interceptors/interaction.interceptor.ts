@@ -1,3 +1,4 @@
+import { READ_TIMEOUT, WRITE_UNCONFIRMED } from '../utils/user-error';
 import { HttpErrorResponse, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, defer, finalize, throwError, timeout, TimeoutError,tap } from 'rxjs';
@@ -17,9 +18,7 @@ export const interactionInterceptor: HttpInterceptorFn = (request, next) => {
     const milliseconds = request.body instanceof FormData ? 60000 : 20000;
     return next(request).pipe(timeout({ each: milliseconds }),tap(event=>{if(event instanceof HttpResponse)write?.success(request.url);}), catchError(error => {
       if (error instanceof TimeoutError) {
-        const message = read
-          ? 'La conexión demoró demasiado. Podés reintentar la consulta.'
-          : 'No pudimos confirmar la operación. Revisá el estado antes de repetirla para evitar duplicados.';
+        const message = read ? READ_TIMEOUT : WRITE_UNCONFIRMED;
         status.error.set(message);
         return throwError(() => new HttpErrorResponse({ status: 0, statusText: 'Timeout', error: { message } }));
       }

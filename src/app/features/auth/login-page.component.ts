@@ -1,9 +1,10 @@
+import { AUTH_REQUIRED, signInErrorMessage } from '../../core/utils/user-error';
 import { GOOGLE_AUTH_ENABLED } from '../../auth-policy';
 import { isPlatformBrowser } from '@angular/common';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { afterNextRender, Component, ElementRef, Injector, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -23,7 +24,7 @@ export class LoginPageComponent {
   private readonly router = inject(Router);
 
   readonly isSubmitting = signal<boolean>(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly errorMessage = signal<string | null>(inject(ActivatedRoute).snapshot.queryParamMap.get('reason') === 'auth_required' ? AUTH_REQUIRED : null);
   readonly successMessage = signal<string | null>(null);
   readonly showPassword = signal<boolean>(false);
 
@@ -67,7 +68,7 @@ export class LoginPageComponent {
       });
 
       if (response.error) {
-        this.errorMessage.set(this.translateAuthError(response.error.message, response.error.code));
+        this.errorMessage.set(signInErrorMessage(response.error));
         this.isSubmitting.set(false);
         return;
       }
@@ -85,10 +86,9 @@ export class LoginPageComponent {
         this.successMessage.set('¡Inicio de sesión exitoso!');
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error inesperado al iniciar sesión.';
       this.errorMessage.set(authenticated
         ? 'Tu sesión se inició. Recargá esta página para continuar.'
-        : this.translateAuthError(msg));
+        : signInErrorMessage(err));
     } finally {
       this.isSubmitting.set(false);
     }
@@ -104,13 +104,12 @@ export class LoginPageComponent {
     try {
       const response = await this.authService.signInWithOAuth('google');
       if (response.error) {
-        this.errorMessage.set(this.translateAuthError(response.error.message));
+        this.errorMessage.set(signInErrorMessage(response.error));
         this.isSubmitting.set(false);
       }
     } catch (err: unknown) {
       this.isSubmitting.set(false);
-      const msg = err instanceof Error ? err.message : 'No se pudo iniciar sesión con Google.';
-      this.errorMessage.set(msg);
+      this.errorMessage.set(signInErrorMessage(err));
     }
   }
 
@@ -120,24 +119,4 @@ export class LoginPageComponent {
     return !this.router.url || ['/', '/login'].includes(this.router.url.split(/[?#]/)[0]) ? '/dashboard' : this.router.url;
   }
 
-  private translateAuthError(message: string, code?: string): string {
-    if (!message) return 'Error de autenticación';
-    const lower = message.toLowerCase();
-    if (code === 'email_not_confirmed' || lower.includes('email not confirmed')) {
-      return 'Primero confirmá tu correo desde el enlace de activación. Si no lo encontrás, revisá el correo no deseado.';
-    }
-    if (lower.includes('invalid login credentials') || lower.includes('invalid credentials')) {
-      return 'Credenciales inválidas. Verifique su correo y contraseña.';
-    }
-    if (lower.includes('user already registered') || lower.includes('already exists')) {
-      return 'Ya existe una cuenta registrada con este correo electrónico.';
-    }
-    if (lower.includes('password should be at least')) {
-      return 'La contraseña debe tener al menos 6 caracteres.';
-    }
-    if (lower.includes('rate limit')) {
-      return 'Demasiados intentos. Por favor espere unos momentos antes de reintentar.';
-    }
-    return message;
-  }
 }
