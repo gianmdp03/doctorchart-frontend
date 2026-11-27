@@ -1,0 +1,227 @@
+<section class="signatures-page" aria-labelledby="signatures-title">
+  <header class="page-heading">
+    <div>
+      <h1 id="signatures-title">Firmas para PDFs</h1>
+      <p>Dibujá y administrá tus firmas manuscritas para recetas y órdenes médicas.</p>
+    </div>
+    <div class="heading-actions">
+      @if (returnUrl()) {
+        <button type="button" class="dc-button" (click)="goBack()">{{ returnLabel() }}</button>
+      } @else {
+        <a routerLink="/profile" class="dc-button">← Volver al perfil</a>
+      }
+      @if (!isEditorOpen()) {
+        <button
+          type="button"
+          class="dc-button dc-button--primary"
+          [disabled]="busy() || signaturesService.signatures().length >= 20"
+          (click)="startCreate()"
+        >
+          <ng-icon name="lucidePlus" />
+          <span>Nueva firma</span>
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (signaturesService.error(); as loadErr) {
+    <p class="sig-error" role="alert">{{ loadErr }}</p>
+  }
+
+  @if (isEditorOpen()) {
+    <section class="sig-editor-card" aria-labelledby="sig-editor-title">
+      <h2 id="sig-editor-title">{{ editingId() === null ? 'Nueva firma' : 'Editar firma' }}</h2>
+
+      @if (formError(); as err) {
+        <p class="sig-error" role="alert">{{ err }}</p>
+      }
+
+      <div class="sig-form-grid">
+        <label class="sig-field">
+          <span>Nombre identificatorio <span aria-hidden="true">*</span></span>
+          <input
+            type="text"
+            maxlength="120"
+            placeholder="Ej: Dra. Paula Gómez / Dra. Julieta Pérez"
+            [ngModel]="name()"
+            (ngModelChange)="name.set($event)"
+          />
+        </label>
+
+        <label class="sig-field">
+          <span>Aclaración / sello debajo de la firma (opcional)</span>
+          <input
+            type="text"
+            maxlength="200"
+            placeholder="Ej: Dra. Julieta Pérez — MN 54321"
+            [ngModel]="stampText()"
+            (ngModelChange)="stampText.set($event)"
+          />
+        </label>
+      </div>
+
+      <label class="sig-checkbox">
+        <input
+          type="checkbox"
+          [ngModel]="isFavorite()"
+          (ngModelChange)="isFavorite.set($event)"
+        />
+        <span>Usar como firma favorita por defecto al emitir PDFs</span>
+      </label>
+
+      @if (editingSignature(); as existing) {
+        @if (!redrawing()) {
+          <div class="existing-drawing-box">
+            <div class="sig-paper-preview">
+              @if (signaturesService.thumbnailUrl(existing); as imgUrl) {
+                <img [src]="imgUrl" [alt]="'Firma ' + existing.name" />
+              } @else if (signaturesService.thumbnailFailed(existing)) {
+                <span class="muted">No se pudo cargar la imagen.</span>
+              } @else {
+                <span class="muted">Cargando imagen...</span>
+              }
+            </div>
+            <button type="button" class="dc-button btn-xs" (click)="redrawing.set(true)">
+              Redibujar firma
+            </button>
+          </div>
+        }
+      }
+
+      @if (editingId() === null || redrawing()) {
+        <div class="sig-pad-wrap">
+          <div class="sig-pad-header">
+            <span>Dibujo de la firma</span>
+            @if (editingId() !== null) {
+              <button type="button" class="dc-button dc-button--quiet btn-xs" (click)="redrawing.set(false)">
+                Conservar dibujo actual
+              </button>
+            }
+          </div>
+          <app-signature-pad [height]="190" (dirtyChange)="hasPadInk.set($event)" />
+        </div>
+      }
+
+      <div class="sig-live-footer-preview" aria-label="Vista previa de cómo se verá en el PDF">
+        <span class="preview-caption">Vista previa del pie en el PDF:</span>
+        <div class="pdf-footer-sample">
+          <div class="pdf-sample-line"></div>
+          <strong>Firma y sello del profesional</strong>
+          @if (stampText().trim()) {
+            <span>{{ stampText().trim() }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="sig-editor-actions">
+        <button type="button" class="dc-button" [disabled]="busy()" (click)="cancelEditor()">
+          Cancelar
+        </button>
+        <button type="button" class="dc-button dc-button--primary" [disabled]="busy()" (click)="save()">
+          {{ busy() ? 'Guardando...' : 'Guardar firma' }}
+        </button>
+      </div>
+    </section>
+  }
+
+  @if (signaturesService.loading() && !signaturesService.loaded()) {
+    <p role="status" class="muted">Cargando firmas guardadas...</p>
+  } @else if (signaturesService.signatures().length === 0 && !isEditorOpen()) {
+    <section class="sig-empty-card">
+      <ng-icon name="lucidePenTool" class="empty-icon" />
+      <h2>Todavía no guardaste ninguna firma</h2>
+      <p>
+        Dibujá tu firma manuscrita una sola vez (y opcionalmente agregá otras firmas de colegas) para
+        que aparezca automáticamente en tus recetas y órdenes de estudios.
+      </p>
+      <button type="button" class="dc-button dc-button--primary" (click)="startCreate()">
+        <ng-icon name="lucidePlus" />
+        <span>Dibujar mi primera firma</span>
+      </button>
+    </section>
+  } @else {
+    <div class="sig-grid">
+      @for (sig of signaturesService.signatures(); track sig.id) {
+        <article class="sig-card" [class.is-favorite]="sig.isFavorite">
+          <div class="sig-card-head">
+            <div>
+              <h3>{{ sig.name }}</h3>
+              @if (sig.stampText) {
+                <p class="sig-stamp">{{ sig.stampText }}</p>
+              } @else {
+                <p class="sig-stamp muted">Sin aclaración adicional</p>
+              }
+            </div>
+            @if (sig.isFavorite) {
+              <span class="favorite-badge" aria-label="Firma favorita actual">
+                <ng-icon name="lucideStar" />
+                <span>Favorita</span>
+              </span>
+            } @else {
+              <button
+                type="button"
+                class="favorite-toggle"
+                [disabled]="busy()"
+                (click)="markFavorite(sig)"
+                title="Usar como firma favorita por defecto"
+              >
+                <ng-icon name="lucideStar" />
+                <span>Favorita</span>
+              </button>
+            }
+          </div>
+
+          <div class="sig-paper-preview">
+            @if (signaturesService.thumbnailUrl(sig); as imgUrl) {
+              <img [src]="imgUrl" [alt]="'Firma ' + sig.name" />
+            } @else if (signaturesService.thumbnailFailed(sig)) {
+              <span class="muted">No se pudo cargar la imagen.</span>
+            } @else {
+              <span class="muted">Cargando...</span>
+            }
+          </div>
+
+          <div class="sig-card-actions">
+            <button
+              type="button"
+              class="dc-button btn-xs"
+              [disabled]="busy()"
+              (click)="startEdit(sig)"
+            >
+              <ng-icon name="lucideEdit3" />
+              <span>Editar</span>
+            </button>
+            @if (pendingDeleteId() === sig.id) {
+              <button
+                type="button"
+                class="dc-button dc-button--danger btn-xs"
+                [disabled]="busy()"
+                (click)="confirmDelete(sig)"
+              >
+                Confirmar
+              </button>
+              <button
+                type="button"
+                class="dc-button dc-button--quiet btn-xs"
+                [disabled]="busy()"
+                (click)="pendingDeleteId.set(null)"
+              >
+                Cancelar
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="dc-button dc-button--quiet btn-xs"
+                [disabled]="busy()"
+                (click)="pendingDeleteId.set(sig.id)"
+              >
+                <ng-icon name="lucideTrash2" />
+                <span>Eliminar</span>
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

@@ -369,6 +369,14 @@
             "title": "Motivo de consulta",
             "fields": [
               {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
+              {
                 "key": "chiefComplaint",
                 "type": "TEXTAREA",
                 "label": "Motivo de consulta",
@@ -805,6 +813,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -1263,6 +1279,14 @@
             "title": "Motivo y síntomas",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -1770,6 +1794,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -2314,6 +2346,14 @@
             "enabled": true,
             "fields": [
               {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
+              {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
                 "type": "TEXTAREA",
@@ -2845,6 +2885,14 @@
             "enabled": true,
             "fields": [
               {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
+              {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
                 "type": "TEXTAREA",
@@ -3332,6 +3380,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -3835,6 +3891,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -4368,6 +4432,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -4905,6 +4977,14 @@
             "enabled": true,
             "fields": [
               {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
+              {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
                 "type": "TEXTAREA",
@@ -5411,6 +5491,14 @@
             "enabled": true,
             "fields": [
               {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
+              {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
                 "type": "TEXTAREA",
@@ -5889,6 +5977,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -6386,6 +6482,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -6923,6 +7027,14 @@
             "enabled": true,
             "fields": [
               {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
+              {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
                 "type": "TEXTAREA",
@@ -7412,6 +7524,14 @@
             "enabled": true,
             "fields": [
               {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
+              {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
                 "type": "TEXTAREA",
@@ -7877,6 +7997,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -8351,6 +8479,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -8849,6 +8985,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
@@ -9362,6 +9506,14 @@
             "title": "Motivo y evolución",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",

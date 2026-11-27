@@ -9,6 +9,9 @@
           @if (searchQuery()) {
             <span class="filter-count-note"> (búsqueda: "{{ searchQuery() }}")</span>
           }
+          @if (diseaseQuery().trim()) {
+            <span class="filter-count-note"> (enfermedad última consulta: "{{ diseaseQuery().trim() }}")</span>
+          }
         </p>
       </div>
       <button type="button" class="dc-button dc-button--primary" (click)="createPatient()">
@@ -37,6 +40,33 @@
             class="clear-search-btn"
             aria-label="Limpiar búsqueda"
             (click)="clearSearch(); directorySearch.focus()"
+          >
+            ✕
+          </button>
+        }
+      </div>
+
+      <!-- Disease Filter Input (matches latest active encounter) -->
+      <div class="directory-search-wrapper directory-disease-wrapper" role="search">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+        </svg>
+        <input
+          #diseaseSearch
+          type="search"
+          class="directory-search-input"
+          placeholder="Enfermedad (ej.: bronquitis)..."
+          aria-label="Filtrar por enfermedad en la última historia clínica"
+          [value]="diseaseQuery()"
+          (input)="onDiseaseInput($event)"
+          (keydown.enter)="onDiseaseEnter()"
+        />
+        @if (diseaseQuery()) {
+          <button
+            type="button"
+            class="clear-search-btn"
+            aria-label="Limpiar filtro de enfermedad"
+            (click)="clearDisease(); diseaseSearch.focus()"
           >
             ✕
           </button>
@@ -175,6 +205,7 @@
             <th class="th-age" scope="col">Edad & Nacimiento</th>
             <th class="th-phone" scope="col">Contacto</th>
             <th class="th-encounters" scope="col">Controles Previos</th>
+            <th class="th-disease" scope="col">Última enfermedad</th>
             @if (doctorSpecialtyService.supportsGrowthCharts()) {
               <th class="th-vaccines" scope="col">Vacunación</th>
             }
@@ -255,6 +286,17 @@
                     <span class="pill-dot"></span>
                     <span>Sin controles previos</span>
                   </div>
+                }
+              </td>
+
+              <!-- Última enfermedad -->
+              <td data-label="Última enfermedad" class="td-disease">
+                @if (patient.lastEncounterDisease) {
+                  <span class="encounter-disease-tag" [title]="patient.lastEncounterDisease">
+                    {{ patient.lastEncounterDisease }}
+                  </span>
+                } @else {
+                  <span class="cell-muted">—</span>
                 }
               </td>
 

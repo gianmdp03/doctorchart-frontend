@@ -38,7 +38,7 @@
               <button
                 type="button"
                 (click)="toggleCategory(category.key)"
-                [disabled]="readonly() || category.system"
+                [disabled]="readonly() || category.system || categoryHasSystemFields(category)"
                 [attr.aria-label]="(category.enabled ? 'Activa' : 'Inactiva') + ': ' + category.title + (category.enabled ? '. Desactivar categoría' : '. Activar categoría')"
               >
                 {{ category.enabled ? 'Activa' : 'Inactiva' }}
@@ -82,7 +82,7 @@
                 <span class="field-error" role="alert">{{ error }}</span>
               }
             </label>
-            @if (!category.system) {
+            @if (!category.system && !categoryHasSystemFields(category)) {
               <button
                 type="button"
                 class="danger"
@@ -100,6 +100,8 @@
           }
           @if (category.system) {
             <p class="hint">Categoría fija del sistema con los datos del paciente. Podés agregar campos adicionales; los campos originales están protegidos.</p>
+          } @else if (categoryHasSystemFields(category)) {
+            <p class="hint">Contiene datos del sistema protegidos. Podés agregar otros campos o renombrar la categoría, pero no ocultarla ni eliminarla.</p>
           }
           <div class="fields-list">
             @for (field of category.fields; track field.key; let fi = $index) {

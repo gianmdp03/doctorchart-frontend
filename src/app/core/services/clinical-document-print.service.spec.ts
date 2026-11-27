@@ -163,4 +163,43 @@ describe('ClinicalDocumentPrintService', () => {
     expect(createObjectURLSpy).toHaveBeenCalled();
     expect(mockWindow.location.href).toBe('blob:http://localhost/test-uuid');
   });
+
+  it('sends signatureId or signatureMode=none on getPdfBlob() and issue()', () => {
+    const mockBlob = new Blob(['%PDF-signed'], { type: 'application/pdf' });
+    service.getPdfBlob({ source: 'PRESCRIPTION_RECORD', id: 15, patientId: 2 }, { mode: 'SELECTED', signatureId: 7 }).subscribe((b) => {
+      expect(b).toEqual(mockBlob);
+    });
+    const pdfReq = httpMock.expectOne((r) => r.url.endsWith('/patients/2/prescriptions/15/pdf') && r.params.get('signatureId') === '7');
+    pdfReq.flush(mockBlob);
+
+    service.issue({ source: 'PRESCRIPTION_RECORD', id: 15, patientId: 2, type: 'PRESCRIPTION' }, { mode: 'NONE' }).subscribe((res) => {
+      expect(res.id).toBe(99);
+    });
+    const issueReq = httpMock.expectOne(`${environment.apiUrl}/patients/2/prescriptions/15/documents`);
+    expect(issueReq.request.body).toEqual({ type: 'PRESCRIPTION', signatureId: null });
+    issueReq.flush({ id: 99 });
+  });
+
+  it('caches preview blobs per signature and fetches immediately when switching signature', () => {
+    const blobPaula = new Blob(['%PDF-paula'], { type: 'application/pdf' });
+    const blobJulieta = new Blob(['%PDF-julieta'], { type: 'application/pdf' });
+    const ref = { source: 'PRESCRIPTION_RECORD' as const, id: 15, patientId: 2 };
+
+    let got1: Blob | undefined;
+    service.getPreviewPdfBlob(ref, { mode: 'SELECTED', signatureId: 1 }, 'sha-paula').subscribe((b) => (got1 = b));
+    httpMock.expectOne((r) => r.params.get('signatureId') === '1').flush(blobPaula);
+    expect(got1).toEqual(blobPaula);
+
+    // Same signature hits cache with no HTTP request.
+    let got2: Blob | undefined;
+    service.getPreviewPdfBlob(ref, { mode: 'SELECTED', signatureId: 1 }, 'sha-paula').subscribe((b) => (got2 = b));
+    httpMock.expectNone((r) => r.url.endsWith('/pdf'));
+    expect(got2).toEqual(blobPaula);
+
+    // Switching signature immediately triggers a fresh request.
+    let got3: Blob | undefined;
+    service.getPreviewPdfBlob(ref, { mode: 'SELECTED', signatureId: 2 }, 'sha-julieta').subscribe((b) => (got3 = b));
+    httpMock.expectOne((r) => r.params.get('signatureId') === '2').flush(blobJulieta);
+    expect(got3).toEqual(blobJulieta);
+  });
 });

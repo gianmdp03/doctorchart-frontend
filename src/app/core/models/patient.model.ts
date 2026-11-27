@@ -53,5 +53,6 @@ export interface PatientListDTO {
   gender?: string | null;
   totalEncounters?: number | null;
   lastEncounterDate?: string | null;
+  lastEncounterDisease?: string | null;
 }
 

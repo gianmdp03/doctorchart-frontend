@@ -7,7 +7,7 @@ import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.ser
 import { DoctorProfileService } from '../../core/services/doctor-profile.service';
 import { signal } from '@angular/core';
 import { of, Subject, throwError } from 'rxjs';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 
 describe('HeaderComponent', () => {
   let component: HeaderComponent;
@@ -153,5 +153,32 @@ describe('HeaderComponent', () => {
       vi.advanceTimersByTime(250);
       expect(patientServiceMock.getPatients).not.toHaveBeenCalled();
     } finally { vi.useRealTimers(); }
+  });
+
+  it('navigates to /login on successful sign out when the login route is configured', async () => {
+    const router = TestBed.inject(Router);
+    router.resetConfig([{ path: 'login', children: [] }]);
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    authServiceMock.signOut.mockResolvedValue({ error: null });
+
+    await component.handleSignOut();
+
+    expect(authServiceMock.signOut).toHaveBeenCalledOnce();
+    expect(navigateSpy).toHaveBeenCalledWith('/login');
+  });
+
+  it('does not navigate to /login on sign out when no login route exists (DemoChart) or when signOut fails', async () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    authServiceMock.signOut.mockResolvedValue({ error: null });
+
+    await component.handleSignOut();
+    expect(navigateSpy).not.toHaveBeenCalled();
+
+    router.resetConfig([{ path: 'login', children: [] }]);
+    authServiceMock.signOut.mockResolvedValue({ error: new Error('network') });
+
+    await component.handleSignOut();
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 });

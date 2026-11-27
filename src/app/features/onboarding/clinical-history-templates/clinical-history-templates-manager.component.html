@@ -1,0 +1,275 @@
+<section class="templates-manager" aria-label="Plantillas de historia clínica">
+  @if (errorMessage(); as err) {
+    <div class="tm-alert tm-alert-error" role="alert">
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  @if (statusMessage(); as msg) {
+    <div class="tm-alert tm-alert-success" role="status" aria-live="polite">
+      <span>{{ msg }}</span>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="tm-loading" role="status" aria-live="polite">
+      Cargando plantillas de historia clínica...
+    </div>
+  } @else if (mode() === 'list') {
+    <div class="tm-intro">
+      <p class="tm-intro-text">
+        Podés crear distintas plantillas de historia clínica para adaptar el registro de información a
+        diferentes tipos de pacientes, consultas o necesidades médicas. Al crear una nueva historia
+        clínica, podrás elegir cuál utilizar. Cada plantilla es independiente y podés personalizarla
+        según tus necesidades.
+      </p>
+      @if (!readonly()) {
+        <button type="button" class="tm-btn tm-btn-primary" (click)="openCreateFlow()">
+          Agregar otra plantilla
+        </button>
+      }
+    </div>
+
+    @if (uninstallableDefaults().length > 0 && !readonly()) {
+      <div class="tm-defaults-banner">
+        <div class="tm-defaults-copy">
+          <strong>Plantillas predeterminadas disponibles</strong>
+          <p>
+            Tu especialidad ofrece {{ uninstallableDefaults().length }}
+            {{ uninstallableDefaults().length === 1 ? 'plantilla sugerida' : 'plantillas sugeridas' }}
+            que podés sumar sin modificar las que ya tenés.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="tm-btn tm-btn-secondary"
+          [disabled]="saving()"
+          (click)="importSystemDefaults()"
+        >
+          Cargar plantillas predeterminadas
+        </button>
+      </div>
+    }
+
+    <div class="tm-grid">
+      @for (tpl of templates(); track tpl.id) {
+        <article class="tm-card">
+          <div class="tm-card-head">
+            <div class="tm-card-title-row">
+              <h2 class="tm-card-title">{{ tpl.name }}</h2>
+              @if (tpl.sourceDefaultCode) {
+                <span class="tm-badge">Predeterminada</span>
+              }
+            </div>
+            <p class="tm-card-meta">
+              {{ countEnabledCategories(tpl) }}
+              {{ countEnabledCategories(tpl) === 1 ? 'sección' : 'secciones' }} ·
+              {{ countActiveFields(tpl) }}
+              {{ countActiveFields(tpl) === 1 ? 'campo activo' : 'campos activos' }}
+            </p>
+          </div>
+
+          <div class="tm-card-actions">
+            <button
+              type="button"
+              class="tm-btn tm-btn-secondary"
+              (click)="openEditor(tpl)"
+            >
+              {{ readonly() ? 'Ver estructura' : 'Editar estructura' }}
+            </button>
+
+            @if (!readonly()) {
+              <button
+                type="button"
+                class="tm-btn tm-btn-ghost-danger"
+                [disabled]="!canArchiveMore() || saving()"
+                [attr.title]="canArchiveMore() ? null : 'Debe haber al menos una plantilla activa'"
+                (click)="requestArchive(tpl)"
+              >
+                Archivar
+              </button>
+            }
+          </div>
+
+          @if (!canArchiveMore() && !readonly()) {
+            <p class="tm-helper">Debe quedar al menos una plantilla activa.</p>
+          }
+
+          @if (confirmingArchiveId() === tpl.id) {
+            <div class="tm-inline-confirm" role="region" aria-label="Confirmar archivo de plantilla">
+              <p>
+                ¿Archivar «{{ tpl.name }}»? Las historias clínicas ya registradas conservarán su
+                estructura y nombre originales.
+              </p>
+              <div class="tm-inline-confirm-actions">
+                <button
+                  type="button"
+                  class="tm-btn tm-btn-danger"
+                  [disabled]="saving()"
+                  (click)="confirmArchive(tpl)"
+                >
+                  Confirmar archivo
+                </button>
+                <button
+                  type="button"
+                  class="tm-btn tm-btn-secondary"
+                  [disabled]="saving()"
+                  (click)="cancelArchive()"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          }
+        </article>
+      }
+    </div>
+
+    @if (archivedTemplates().length > 0) {
+      <div class="tm-archived-section">
+        <button
+          type="button"
+          class="tm-archived-toggle"
+          [attr.aria-expanded]="showArchived()"
+          (click)="showArchived.set(!showArchived())"
+        >
+          Plantillas archivadas ({{ archivedTemplates().length }})
+        </button>
+
+        @if (showArchived()) {
+          <div class="tm-archived-list">
+            @for (arch of archivedTemplates(); track arch.id) {
+              <div class="tm-archived-item">
+                <div>
+                  <strong>{{ arch.name }}</strong>
+                  <span class="tm-archived-meta">
+                    {{ countActiveFields(arch) }} campos activos
+                  </span>
+                </div>
+                @if (!readonly()) {
+                  <button
+                    type="button"
+                    class="tm-btn tm-btn-secondary"
+                    [disabled]="saving()"
+                    (click)="restoreTemplate(arch)"
+                  >
+                    Restaurar
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  } @else if (mode() === 'create') {
+    <div class="tm-subpanel">
+      <div class="tm-subpanel-header">
+        <button type="button" class="tm-btn tm-btn-secondary" (click)="cancelCreate()">
+          Volver a plantillas
+        </button>
+        <h2 class="tm-subpanel-title">Nueva plantilla de historia clínica</h2>
+      </div>
+
+      <div class="tm-field-group">
+        <label for="new-template-name" class="tm-label">Nombre de la nueva plantilla</label>
+        <input
+          id="new-template-name"
+          type="text"
+          class="tm-input"
+          maxlength="120"
+          placeholder="Ej. Control neonatal, Primera consulta cardiológica..."
+          [ngModel]="newTemplateName()"
+          (ngModelChange)="newTemplateName.set($event)"
+        />
+      </div>
+
+      @if (templates().length === 1) {
+        <p class="tm-base-note">
+          Se creará una copia independiente a partir de «{{ templates()[0].name }}». Luego podrás
+          editar sus campos y secciones sin afectar la original.
+        </p>
+      } @else {
+        <fieldset class="tm-base-fieldset">
+          <legend class="tm-label">¿Qué plantilla querés utilizar como base para la nueva?</legend>
+          <div class="tm-radio-grid">
+            @for (tpl of templates(); track tpl.id) {
+              <label
+                class="tm-radio-card"
+                [class.selected]="selectedBaseTemplateId() === tpl.id"
+              >
+                <input
+                  type="radio"
+                  name="baseTemplate"
+                  [value]="tpl.id"
+                  [checked]="selectedBaseTemplateId() === tpl.id"
+                  (change)="selectedBaseTemplateId.set(tpl.id)"
+                />
+                <span class="tm-radio-content">
+                  <strong>{{ tpl.name }}</strong>
+                  <span>
+                    {{ countEnabledCategories(tpl) }} secciones · {{ countActiveFields(tpl) }} campos
+                  </span>
+                </span>
+              </label>
+            }
+          </div>
+        </fieldset>
+      }
+
+      <div class="tm-subpanel-actions">
+        <button
+          type="button"
+          class="tm-btn tm-btn-primary"
+          [disabled]="saving()"
+          (click)="submitCreate()"
+        >
+          {{ saving() ? 'Creando...' : 'Crear y personalizar' }}
+        </button>
+        <button type="button" class="tm-btn tm-btn-secondary" [disabled]="saving()" (click)="cancelCreate()">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  } @else if (mode() === 'editor' && editingForm(); as formDef) {
+    <div class="tm-editor-view">
+      <div class="tm-editor-topbar">
+        <button type="button" class="tm-btn tm-btn-secondary" (click)="closeEditor()">
+          Volver a plantillas
+        </button>
+
+        <div class="tm-editor-name-wrap">
+          <label for="edit-template-name" class="tm-label">Nombre de la plantilla</label>
+          <input
+            id="edit-template-name"
+            type="text"
+            class="tm-input"
+            maxlength="120"
+            [disabled]="readonly()"
+            [ngModel]="editingName()"
+            (ngModelChange)="editingName.set($event)"
+          />
+        </div>
+
+        @if (!readonly()) {
+          <button
+            type="button"
+            class="tm-btn tm-btn-primary"
+            [disabled]="saving()"
+            (click)="saveEditor()"
+          >
+            {{ saving() ? 'Guardando...' : 'Guardar plantilla' }}
+          </button>
+        }
+      </div>
+
+      <app-form-field-editor
+        [standaloneHeading]="true"
+        [definition]="formDef"
+        section="encounterForm"
+        [readonly]="readonly()"
+        (definitionChange)="onEditorDefinitionChange($event)"
+      />
+    </div>
+  }
+</section>

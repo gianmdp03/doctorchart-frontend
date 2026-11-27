@@ -13,6 +13,8 @@ describe('Forms stay in the routed page', () => {
           const source = readFileSync(file, 'utf8');
           // M5 requires an accessible unsaved-changes decision; it contains no editor form.
           if(file.endsWith('clinical-switch-dialog.component.ts')){expect(source).not.toMatch(/<form|<input|<textarea/);continue;}
+          // PDF preview modal displays a read-only PDF preview with a signature selector; it contains no editor form.
+          if(file.endsWith('pdf-preview-modal.component.html')){expect(source).not.toMatch(/<form|<input|<textarea/);continue;}
           // The shared clock picker only chooses a value for the routed input.
           if (file.endsWith('time-picker.component.ts')) {
             const picker = source.split('<ng-template cdkConnectedOverlay')[1]?.split('</ng-template>')[0];
@@ -31,7 +33,7 @@ describe('Forms stay in the routed page', () => {
 
   it('registers guarded pages and serves their URLs on refresh', () => {
     const config = JSON.parse(readFileSync('src/app/core/config/site.config.json', 'utf8'));
-    for (const [path, url] of [['encounters/:id', '/encounters/77'], ['profile', '/profile'], ['assistant', '/assistant'], ['clinics', '/clinics'], ['clinics/new', '/clinics/new'], ['clinics/:id/edit', '/clinics/103/edit']]) {
+    for (const [path, url] of [['encounters/:id', '/encounters/77'], ['profile', '/profile'], ['signatures', '/signatures'], ['assistant', '/assistant'], ['clinics', '/clinics'], ['clinics/new', '/clinics/new'], ['clinics/:id/edit', '/clinics/103/edit']]) {
       const route = routes.find(route => route.path === path)!;
       expect(route.loadComponent).toBeDefined(); expect(route.canActivate?.length).toBeGreaterThan(0);
       expect(config.clientPatterns.some((pattern: string) => new RegExp(pattern).test(url))).toBe(true);

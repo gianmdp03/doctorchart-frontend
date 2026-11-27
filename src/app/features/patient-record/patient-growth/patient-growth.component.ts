@@ -1,4 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
+import { ActivePatientService } from '../../../core/services/active-patient.service';
+import { ClinicalDocumentPrintService } from '../../../core/services/clinical-document-print.service';
 import { GrowthChartComponent } from '../growth-chart/growth-chart.component';
 import { PatientGrowthStore } from './patient-growth.store';
 import { PatientEncountersStore } from '../patient-encounters/patient-encounters.store';
@@ -12,6 +14,18 @@ import { GrowthMetricType } from '../../../core/models/growth-chart.model';
 export class PatientGrowthComponent {
   readonly growth = inject(PatientGrowthStore);
   private readonly history = inject(PatientEncountersStore);
+  private readonly activePatientService = inject(ActivePatientService);
+  private readonly printService = inject(ClinicalDocumentPrintService);
+
+  printWithCurves(): void {
+    const patientId = this.activePatientService.patientId();
+    if (!patientId) return;
+    this.printService.openPreview({
+      source: 'CLINICAL_HISTORY',
+      patientId,
+      growthReference: this.isDown() ? 'BOTH' : 'OMS',
+    });
+  }
   readonly encounters = computed(() => new Map(this.history.encounters().map((e) => [e.id, e])));
   readonly isDown = computed(() => this.growth.referenceFamily() === 'DOWN');
   readonly metricOptions = computed(() =>

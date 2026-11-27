@@ -33,12 +33,19 @@
       <div class="patient-mark" aria-hidden="true">HC</div>
       <div class="patient-heading">
         <h2>{{ record.patientFullName || 'Paciente #' + record.patientId }}</h2>
-        <p>{{ record.specialty.name }} · {{ getConsultationTypeLabel(record.consultationType) }}</p>
+        <p>{{ record.specialty.name }} · {{ getConsultationTypeLabel(record.consultationType) }}@if (record.encounterTemplateName) { · {{ record.encounterTemplateName }} }</p>
       </div>
       <div class="recorded-at">
         <span>Fecha de atención</span><strong>{{ formatDate(record.encounterDate) }}</strong>
       </div>
       @if (!isEditing()) {
+        <button
+          type="button"
+          class="dc-button dc-button--quiet"
+          (click)="printEncounter(record)"
+        >
+          Imprimir consulta (PDF)
+        </button>
         <button
           type="button"
           class="dc-button dc-button--quiet revision-trigger"

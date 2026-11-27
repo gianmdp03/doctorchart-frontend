@@ -109,6 +109,10 @@ function fileToDataUrl(file: File): Promise<string> {
 @Injectable({ providedIn: 'root' })
 export class DemoHttpBackend implements HttpBackend {
   private readonly store = inject(DemoSessionService);
+  private demoLicense = '';
+  private demoLicenseConfigured = false;
+  private demoLogoBlob: Blob | null = null;
+  private demoLogoSha: string | null = null;
 
   handle(req: HttpRequest<unknown>): Observable<HttpEvent<unknown>> {
     const url = new URL(req.urlWithParams, 'https://demochart.local');
@@ -156,6 +160,10 @@ export class DemoHttpBackend implements HttpBackend {
           specialty: { id: entry.id, code: entry.code, name: entry.name, description: entry.description },
           isSpecialtyLocked: false,
           createdAt: new Date().toISOString(),
+          professionalLicense: this.demoLicense,
+          licenseConfigured: this.demoLicenseConfigured,
+          hasClinicLogo: this.demoLogoBlob !== null,
+          clinicLogoSha256: this.demoLogoSha,
         },
       });
     }
@@ -283,8 +291,275 @@ export class DemoHttpBackend implements HttpBackend {
       return new HttpResponse({ status: 200, body: this.toWorkspaceSetup(this.store.session(), updated) });
     }
 
+    if (path === '/workspace/encounter-templates' || path.startsWith('/workspace/encounter-templates/')) {
+      const ensureTemplates = (target: DemoContextRecord, draftSession: DemoSession) => {
+        if (!target.encounterTemplates || target.encounterTemplates.length === 0) {
+          const now = new Date().toISOString();
+          target.encounterTemplates = [
+            {
+              id: draftSession.nextId++,
+              workspaceId: draftSession.workspaceId,
+              specialtyContextId: target.specialtyContextId,
+              name: 'Historia clínica general',
+              formDefinition: structuredClone(target.definition.encounterForm),
+              sourceDefaultCode: 'default',
+              displayOrder: 0,
+              version: 0,
+              archivedAt: null,
+              createdAt: now,
+              updatedAt: now,
+            },
+          ];
+        }
+        return target.encounterTemplates;
+      };
+
+      const buildTemplatesResponse = (target: DemoContextRecord) => {
+        const entry = findDemoSpecialty(target.specialtyId);
+        const list = target.encounterTemplates ?? [];
+        return {
+          specialtyContextId: target.specialtyContextId,
+          specialty: { id: entry.id, code: entry.code, name: entry.name, description: entry.description },
+          templates: structuredClone(list.filter((t) => !t.archivedAt)),
+          archivedTemplates: structuredClone(list.filter((t) => !!t.archivedAt)),
+          systemDefaults: [],
+        };
+      };
+
+      if (method === 'GET' && path === '/workspace/encounter-templates') {
+        await this.store.mutate((draft) => {
+          const target = draft.contexts.find((c) => c.specialtyContextId === contextId) ?? draft.contexts[0];
+          ensureTemplates(target, draft);
+        });
+        const latest = this.store.session();
+        const target = latest.contexts.find((c) => c.specialtyContextId === contextId) ?? latest.contexts[0];
+        return new HttpResponse({ status: 200, body: buildTemplatesResponse(target) });
+      }
+
+      if (method === 'POST' && path === '/workspace/encounter-templates') {
+        const body = req.body as { name: string; sourceTemplateId?: number; formDefinition?: any };
+        let created: any;
+        await this.store.mutate((draft) => {
+          const target = draft.contexts.find((c) => c.specialtyContextId === contextId) ?? draft.contexts[0];
+          const list = ensureTemplates(target, draft);
+          const source = list.find((t) => t.id === body.sourceTemplateId && !t.archivedAt) ?? list.find((t) => !t.archivedAt);
+          const now = new Date().toISOString();
+          created = {
+            id: draft.nextId++,
+            workspaceId: draft.workspaceId,
+            specialtyContextId: target.specialtyContextId,
+            name: body.name.trim(),
+            formDefinition: structuredClone(body.formDefinition ?? source?.formDefinition ?? target.definition.encounterForm),
+            sourceDefaultCode: null,
+            displayOrder: list.length,
+            version: 0,
+            archivedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          };
+          list.push(created);
+        });
+        return new HttpResponse({ status: 201, body: structuredClone(created) });
+      }
+
+      const tplMatch = path.match(/^\/workspace\/encounter-templates\/(\d+)(?:\/(archive|restore))?$/);
+      if (tplMatch) {
+        const tplId = Number(tplMatch[1]);
+        const action = tplMatch[2];
+        let updatedTpl: any;
+        await this.store.mutate((draft) => {
+          const target = draft.contexts.find((c) => c.specialtyContextId === contextId) ?? draft.contexts[0];
+          const list = ensureTemplates(target, draft);
+          const tpl = list.find((t) => t.id === tplId);
+          if (!tpl) throw new HttpErrorResponse({ status: 404, error: { message: 'Plantilla no encontrada.' } });
+          if (!action && method === 'PUT') {
+            const body = req.body as { name: string; formDefinition: any };
+            tpl.name = body.name.trim();
+            tpl.formDefinition = structuredClone(body.formDefinition);
+            tpl.version++;
+            tpl.updatedAt = new Date().toISOString();
+          } else if (action === 'archive' && method === 'POST') {
+            if (list.filter((t) => !t.archivedAt).length <= 1) {
+              throw new HttpErrorResponse({ status: 409, error: { message: 'Debe quedar al menos una plantilla activa.' } });
+            }
+            tpl.archivedAt = new Date().toISOString();
+            tpl.version++;
+            tpl.updatedAt = tpl.archivedAt;
+          } else if (action === 'restore' && method === 'POST') {
+            tpl.archivedAt = null;
+            tpl.version++;
+            tpl.updatedAt = new Date().toISOString();
+          }
+          updatedTpl = tpl;
+        });
+        return new HttpResponse({ status: 200, body: structuredClone(updatedTpl) });
+      }
+
+      if (method === 'POST' && path === '/workspace/encounter-templates/import-defaults') {
+        const latest = this.store.session();
+        const target = latest.contexts.find((c) => c.specialtyContextId === contextId) ?? latest.contexts[0];
+        return new HttpResponse({ status: 200, body: buildTemplatesResponse(target) });
+      }
+    }
+
     if (method === 'GET' && path === '/workspace/preferences') {
       return new HttpResponse({ status: 200, body: this.toPreferences(ctx) });
+    }
+
+    if (method === 'GET' && path === '/workspace/print-identity') {
+      return new HttpResponse({
+        status: 200,
+        body: {
+          professionalLicense: this.demoLicense,
+          licenseConfigured: this.demoLicenseConfigured,
+          hasLogo: this.demoLogoBlob !== null,
+          logoSha256: this.demoLogoSha,
+          logoWidth: this.demoLogoBlob ? 512 : null,
+          logoHeight: this.demoLogoBlob ? 512 : null,
+          updatedAt: this.demoLogoBlob || this.demoLicenseConfigured ? new Date().toISOString() : null,
+        },
+      });
+    }
+
+    if (method === 'PUT' && path === '/workspace/print-identity') {
+      const body = (req.body as { professionalLicense?: string } | null) ?? {};
+      this.demoLicense = String(body.professionalLicense ?? '').trim();
+      this.demoLicenseConfigured = true;
+      return new HttpResponse({
+        status: 200,
+        body: {
+          professionalLicense: this.demoLicense,
+          licenseConfigured: true,
+          hasLogo: this.demoLogoBlob !== null,
+          logoSha256: this.demoLogoSha,
+          logoWidth: this.demoLogoBlob ? 512 : null,
+          logoHeight: this.demoLogoBlob ? 512 : null,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    }
+
+    if (method === 'POST' && path === '/workspace/logo') {
+      const formData = req.body instanceof FormData ? req.body : null;
+      const uploaded = formData?.get('file');
+      this.demoLogoBlob = uploaded instanceof Blob ? uploaded : new Blob(['demo-logo'], { type: 'image/png' });
+      this.demoLogoSha = `demo-logo-${Date.now()}`;
+      return new HttpResponse({
+        status: 200,
+        body: {
+          professionalLicense: this.demoLicense,
+          licenseConfigured: this.demoLicenseConfigured,
+          hasLogo: true,
+          logoSha256: this.demoLogoSha,
+          logoWidth: 512,
+          logoHeight: 512,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    }
+
+    if (method === 'GET' && path === '/workspace/logo') {
+      if (!this.demoLogoBlob) {
+        throw new HttpErrorResponse({
+          status: 404,
+          error: { code: 'CLINIC_LOGO_NOT_FOUND', message: 'No hay un logo de consultorio cargado.' },
+        });
+      }
+      return new HttpResponse({ status: 200, body: this.demoLogoBlob });
+    }
+
+    if (method === 'DELETE' && path === '/workspace/logo') {
+      this.demoLogoBlob = null;
+      this.demoLogoSha = null;
+      return new HttpResponse({ status: 204 });
+    }
+
+    if (method === 'GET' && path === '/workspace/signatures') {
+      const items = [...(session.signatures ?? [])]
+        .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite) || a.id - b.id)
+        .map(({ dataUrl: _d, ...summary }) => summary);
+      return new HttpResponse({ status: 200, body: { items } });
+    }
+
+    const sigImgMatch = path.match(/^\/workspace\/signatures\/(\d+)\/image$/);
+    if (method === 'GET' && sigImgMatch) {
+      const sigId = Number(sigImgMatch[1]);
+      const found = (session.signatures ?? []).find((s) => s.id === sigId);
+      if (!found) throw new HttpErrorResponse({ status: 404, error: { code: 'SIGNATURE_NOT_FOUND', message: 'No se encontró la firma solicitada.' } });
+      return new HttpResponse({ status: 200, body: dataUrlToBlob(found.dataUrl) });
+    }
+
+    if (method === 'POST' && path === '/workspace/signatures') {
+      const body = req.body as { name?: string; stampText?: string; imageBase64?: string; isFavorite?: boolean };
+      const name = (body.name ?? '').trim();
+      const stampText = (body.stampText ?? '').trim();
+      if (!name || !body.imageBase64) throw new HttpErrorResponse({ status: 400, error: { code: 'INVALID_REQUEST', message: 'Indicá un nombre y dibujá la firma.' } });
+      let createdId = 0;
+      await this.store.mutate((draft) => {
+        draft.signatures ??= [];
+        const makeFav = draft.signatures.length === 0 || Boolean(body.isFavorite);
+        if (makeFav) {
+          for (const s of draft.signatures) s.isFavorite = false;
+        }
+        createdId = draft.nextId++;
+        const now = new Date().toISOString();
+        draft.signatures.push({
+          id: createdId,
+          name,
+          stampText,
+          isFavorite: makeFav,
+          width: 320,
+          height: 120,
+          sha256: `demo-sig-${createdId}-${Date.now()}`,
+          dataUrl: body.imageBase64!,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+      const created = this.store.session().signatures?.find((s) => s.id === createdId);
+      if (!created) throw new HttpErrorResponse({ status: 500, error: { code: 'INTERNAL_ERROR', message: 'No se pudo guardar la firma.' } });
+      const { dataUrl: _d, ...summary } = created;
+      return new HttpResponse({ status: 201, body: summary });
+    }
+
+    const sigMatch = path.match(/^\/workspace\/signatures\/(\d+)$/);
+    if (sigMatch && method === 'PATCH') {
+      const sigId = Number(sigMatch[1]);
+      const body = req.body as { name?: string; stampText?: string; imageBase64?: string; isFavorite?: boolean };
+      await this.store.mutate((draft) => {
+        draft.signatures ??= [];
+        const target = draft.signatures.find((s) => s.id === sigId);
+        if (!target) return;
+        if (body.isFavorite) {
+          for (const s of draft.signatures) s.isFavorite = false;
+        }
+        if (body.name !== undefined) target.name = body.name.trim();
+        if (body.stampText !== undefined) target.stampText = body.stampText.trim();
+        if (body.imageBase64) {
+          target.dataUrl = body.imageBase64;
+          target.sha256 = `demo-sig-${sigId}-${Date.now()}`;
+        }
+        if (body.isFavorite !== undefined) target.isFavorite = body.isFavorite;
+        target.updatedAt = new Date().toISOString();
+      });
+      const updated = this.store.session().signatures?.find((s) => s.id === sigId);
+      if (!updated) throw new HttpErrorResponse({ status: 404, error: { code: 'SIGNATURE_NOT_FOUND', message: 'No se encontró la firma solicitada.' } });
+      const { dataUrl: _d, ...summary } = updated;
+      return new HttpResponse({ status: 200, body: summary });
+    }
+
+    if (sigMatch && method === 'DELETE') {
+      const sigId = Number(sigMatch[1]);
+      await this.store.mutate((draft) => {
+        draft.signatures ??= [];
+        const target = draft.signatures.find((s) => s.id === sigId);
+        const wasFav = target?.isFavorite ?? false;
+        draft.signatures = draft.signatures.filter((s) => s.id !== sigId);
+        if (wasFav && draft.signatures.length > 0) {
+          draft.signatures[draft.signatures.length - 1].isFavorite = true;
+        }
+      });
+      return new HttpResponse({ status: 204, body: null });
     }
 
     if (method === 'PUT' && path === '/workspace/quick-notes') {
@@ -347,12 +622,22 @@ export class DemoHttpBackend implements HttpBackend {
       const page = Math.max(0, Math.floor(Number(url.searchParams.get('page') || 0) || 0));
       const size = Math.max(1, Math.min(100, Math.floor(Number(url.searchParams.get('size') || 10) || 10)));
       const search = (url.searchParams.get('search') || '').trim().toLowerCase();
+      const disease = (url.searchParams.get('disease') || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       const filter = (url.searchParams.get('filter') || 'ALL') as PatientDirectoryFilter;
       const asOf = new Date().toISOString().slice(0, 10);
 
       let list = session.patients
         .filter((p) => p.specialtyContextId === contextId)
-        .map((p) => this.toPatientListDTO(session, p, asOf));
+        .map((p) => {
+          const dto = this.toPatientListDTO(session, p, asOf);
+          const latest = session.encounters
+            .filter((e) => e.patientId === p.id)
+            .sort((a, b) => b.encounterDate.localeCompare(a.encounterDate) || b.id - a.id)[0];
+          const latestDisease = latest
+            ? ((latest.formValues?.['sys_disease'] as string | undefined) ?? '').trim() || null
+            : null;
+          return { ...dto, lastEncounterDisease: latestDisease };
+        });
 
       if (search) {
         list = list.filter(
@@ -361,6 +646,13 @@ export class DemoHttpBackend implements HttpBackend {
             (p.nationalId ?? '').toLowerCase().includes(search) ||
             (p.phone ?? '').toLowerCase().includes(search),
         );
+      }
+
+      if (disease) {
+        list = list.filter((p) => {
+          const val = (p.lastEncounterDisease ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          return val.includes(disease);
+        });
       }
 
       if (filter !== 'ALL') {
@@ -734,9 +1026,27 @@ export class DemoHttpBackend implements HttpBackend {
       const patient = session.patients.find((p) => p.id === pId);
       if (!patient) throw new HttpErrorResponse({ status: 404, error: { message: 'Paciente no encontrado.' } });
       const doc = this.buildPrintDocument(session, patient, col, itemId, ctx);
+      const resolveDemoSig = (sigIdParam: number | null | undefined, sigMode: string | null) => {
+        const list = session.signatures ?? [];
+        if (sigMode === 'none' || sigIdParam === null) return null;
+        if (typeof sigIdParam === 'number' && sigIdParam > 0) {
+          return list.find((s) => s.id === sigIdParam) ?? null;
+        }
+        return list.find((s) => s.isFavorite) ?? null;
+      };
       if (action === 'print') return new HttpResponse({ status: 200, body: doc });
-      if (action === 'pdf') return new HttpResponse({ status: 200, body: generateDemoPdfBlob(doc) });
+      if (action === 'pdf') {
+        const rawId = url.searchParams.get('signatureId');
+        const sigMode = url.searchParams.get('signatureMode');
+        const sig = resolveDemoSig(rawId ? Number(rawId) : undefined, sigMode);
+        return new HttpResponse({
+          status: 200,
+          body: generateDemoPdfBlob(doc, sig, { license: this.demoLicense, hasLogo: this.demoLogoBlob !== null }),
+        });
+      }
       if (action === 'documents' && method === 'POST') {
+        const body = (req.body ?? {}) as { signatureId?: number | null };
+        const sig = resolveDemoSig(body.signatureId, body.signatureId === null ? 'none' : null);
         let issuedId = 0;
         await this.store.mutate((draft) => {
           issuedId = draft.nextId++;
@@ -752,6 +1062,9 @@ export class DemoHttpBackend implements HttpBackend {
             type: doc.type,
             status: 'ISSUED',
             reason: null,
+            signatureId: sig?.id ?? null,
+            signatureName: sig?.name ?? null,
+            signatureStampText: sig?.stampText ?? null,
           });
         });
         return new HttpResponse({ status: 200, body: { id: issuedId } });
@@ -768,7 +1081,31 @@ export class DemoHttpBackend implements HttpBackend {
       const col = issued.source === 'PRESCRIPTION_RECORD' ? 'prescriptions' : 'encounters';
       const printDoc = this.buildPrintDocument(session, patient, col, issued.sourceId, ctx);
       printDoc.code = issued.code;
-      return new HttpResponse({ status: 200, body: generateDemoPdfBlob(printDoc) });
+      const sig = issued.signatureName
+        ? { name: issued.signatureName, stampText: issued.signatureStampText ?? '' }
+        : null;
+      return new HttpResponse({
+        status: 200,
+        body: generateDemoPdfBlob(printDoc, sig, { license: this.demoLicense, hasLogo: this.demoLogoBlob !== null }),
+      });
+    }
+
+    const historyPdfMatch = path.match(/^\/patients\/(\d+)\/clinical-history\/pdf$/);
+    if (method === 'GET' && historyPdfMatch) {
+      const pId = Number(historyPdfMatch[1]);
+      const patient = session.patients.find((p) => p.id === pId);
+      if (!patient) throw new HttpErrorResponse({ status: 404, error: { message: 'Paciente no encontrado.' } });
+      const encounters = session.encounters.filter((e) => e.patientId === pId);
+      const latest = encounters[0];
+      const entry = findDemoSpecialty(ctx?.specialtyId ?? 1);
+      const printDoc = this.buildPrintDocument(session, patient, 'encounters', latest?.id ?? 0, ctx);
+      printDoc.source = 'CLINICAL_HISTORY';
+      printDoc.patientInstructions = latest?.followUpInstructions ?? 'Historia clínica completa (DemoChart).';
+      printDoc.author.specialtyName = entry.name;
+      return new HttpResponse({
+        status: 200,
+        body: generateDemoPdfBlob(printDoc, null, { license: this.demoLicense, hasLogo: this.demoLogoBlob !== null }),
+      });
     }
 
     const docsListMatch = path.match(/^\/patients\/(\d+)\/documents$/);
@@ -895,6 +1232,14 @@ export class DemoHttpBackend implements HttpBackend {
         const id = draft.nextId++;
         const values = structuredClone(body.values);
         const enc = this.buildEncounterRecord(id, targetCtx, patient, body.consultationType, values, new Date().toISOString());
+        const selectedTpl = body.templateId
+          ? targetCtx.encounterTemplates?.find((t) => t.id === body.templateId && !t.archivedAt)
+          : targetCtx.encounterTemplates?.find((t) => !t.archivedAt);
+        if (selectedTpl) {
+          enc.encounterTemplateId = selectedTpl.id;
+          enc.encounterTemplateName = selectedTpl.name;
+          enc.formDefinitionSnapshot = structuredClone(selectedTpl.formDefinition);
+        }
         draft.encounters.push(enc);
         createdDetail = this.toEncounterDetail(draft, enc, targetCtx);
       });
@@ -943,6 +1288,9 @@ export class DemoHttpBackend implements HttpBackend {
             body.encounterDate ?? enc.encounterDate,
             enc.version + 1,
           );
+          rebuilt.formDefinitionSnapshot = structuredClone(enc.formDefinitionSnapshot);
+          rebuilt.encounterTemplateId = enc.encounterTemplateId ?? null;
+          rebuilt.encounterTemplateName = enc.encounterTemplateName ?? null;
           Object.assign(enc, rebuilt);
           updatedDetail = this.toEncounterDetail(draft, enc, targetCtx);
         });
@@ -1414,6 +1762,8 @@ export class DemoHttpBackend implements HttpBackend {
       encounterDate: e.encounterDate,
       specialtyId: entry.id,
       specialty: { id: entry.id, code: entry.code, name: entry.name, description: entry.description },
+      encounterTemplateId: e.encounterTemplateId ?? null,
+      encounterTemplateName: e.encounterTemplateName ?? null,
       consultationType: e.consultationType,
       chiefComplaint: e.chiefComplaint,
       primaryDiagnosisCode: e.primaryDiagnosisCode,

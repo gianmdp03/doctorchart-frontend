@@ -228,6 +228,12 @@ const baseRoutes: Routes = [
     loadComponent: () => import('./features/auth/user-profile-page.component').then(m => m.UserProfilePageComponent),
   },
   {
+    path: 'signatures',
+    runGuardsAndResolvers: 'always',
+    canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
+    loadComponent: () => import('./features/signatures/signatures-page.component').then(m => m.SignaturesPageComponent),
+  },
+  {
     path: 'encounters',
     runGuardsAndResolvers: 'always',
     canActivate: [doctorchartPlanGuard, doctorOnboardingGuard],
@@ -363,6 +369,7 @@ const pageTitles: Record<string, string> = {
   calculators: 'Calculadoras médicas',
   assistant: 'Asistente clínico',
   profile: 'Perfil profesional',
+  signatures: 'Mis firmas',
   'admin/specialties': 'Administración de especialidades',
   'onboarding/select-specialty': 'Selección de especialidad',
   'onboarding/setup': 'Configuración de fichas y consultas',

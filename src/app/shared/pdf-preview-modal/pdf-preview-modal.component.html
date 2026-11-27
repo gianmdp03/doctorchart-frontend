@@ -1,0 +1,119 @@
+@if (request(); as req) {
+  <div class="pdf-modal-backdrop" (click)="close()">
+    <section
+      class="pdf-modal-dialog"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pdf-preview-title"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="close()"
+    >
+      <header class="pdf-modal-header">
+        <div class="pdf-modal-title-group">
+          <h2 id="pdf-preview-title">{{ documentTitle() }}</h2>
+          <p>
+            @if (isClinicalHistory()) {
+              Revisá la historia clínica completa (incluyendo gráficos), elegí la firma y descargá o imprimí el PDF.
+            } @else {
+              Revisá el documento y elegí la firma antes de emitirlo.
+            }
+          </p>
+        </div>
+
+        <div class="pdf-signature-bar">
+          @if (isClinicalHistory() && doctorSpecialtyService.supportsGrowthCharts() && !req.encounterId) {
+            <label class="sig-select-label" for="modal-growth-ref-select">Curvas:</label>
+            <select
+              id="modal-growth-ref-select"
+              class="sig-select"
+              [value]="growthReference()"
+              [disabled]="loading()"
+              (change)="onGrowthReferenceChange($any($event.target).value)"
+            >
+              <option value="AUTO">Automática (OMS)</option>
+              <option value="BOTH">OMS + Síndrome de Down</option>
+              <option value="DOWN">Solo Síndrome de Down</option>
+              <option value="OMS">Solo OMS</option>
+            </select>
+          }
+          <label class="sig-select-label" for="modal-signature-select">Firma:</label>
+          <select
+            id="modal-signature-select"
+            class="sig-select"
+            [value]="selectValue()"
+            [disabled]="loading()"
+            (change)="onSignatureSelectionChange($any($event.target).value)"
+          >
+            @if (signaturesService.signatures().length === 0) {
+              <option value="default">Sin firma cargada</option>
+            } @else {
+              @for (sig of signaturesService.signatures(); track sig.id) {
+                <option [value]="sig.id">
+                  {{ sig.isFavorite ? '★ ' : '' }}{{ sig.name }}
+                </option>
+              }
+              <option value="none">Sin firma</option>
+            }
+          </select>
+          <button type="button" class="dc-button dc-button--quiet btn-xs" (click)="goToSignatures()">
+            Gestionar firmas
+          </button>
+        </div>
+      </header>
+
+      <div class="pdf-modal-body">
+        @if (loading()) {
+          <div class="pdf-modal-state" role="status">Generando vista previa del PDF...</div>
+        } @else if (error(); as msg) {
+          <div class="pdf-modal-state pdf-modal-error" role="alert">
+            <p>{{ msg }}</p>
+            <button type="button" class="dc-button btn-xs" (click)="onSignatureSelectionChange(selectValue())">
+              Reintentar
+            </button>
+          </div>
+        } @else if (safeUrl(); as url) {
+          <iframe
+            #previewFrame
+            class="pdf-preview-frame"
+            [src]="url"
+            title="Vista previa del documento PDF"
+          ></iframe>
+        }
+      </div>
+
+      <footer class="pdf-modal-footer">
+        <div class="footer-left">
+          @if (safeUrl() && !loading()) {
+            <button type="button" class="dc-button dc-button--quiet btn-xs" (click)="openPreviewInTab()">
+              Abrir vista previa aparte
+            </button>
+          }
+        </div>
+        <div class="footer-right">
+          <button type="button" class="dc-button" (click)="close()">Cerrar</button>
+          @if (isClinicalHistory()) {
+            <button
+              type="button"
+              class="dc-button dc-button--primary"
+              [disabled]="loading() || !!error()"
+              (click)="printPreview()"
+            >
+              Imprimir
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="dc-button dc-button--primary"
+              [disabled]="loading() || !!error()"
+              (click)="confirmAndIssue()"
+            >
+              Confirmar y emitir PDF
+            </button>
+          }
+        </div>
+      </footer>
+    </section>
+  </div>
+}

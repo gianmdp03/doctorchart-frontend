@@ -224,9 +224,12 @@ export class FormFieldEditorComponent {
       if (cat) cat.title = title.trim();
     });
   }
+  categoryHasSystemFields(category: WizardFormDefinition['categories'][number] | null | undefined): boolean {
+    return Boolean(category?.fields?.some((f) => f.system));
+  }
   toggleCategory(key: string): void {
     const c = this.categories().find((cat) => cat.key === key);
-    if (c?.system) return;
+    if (c?.system || this.categoryHasSystemFields(c)) return;
     this.commit((form) => {
       const cat = form.categories.find((cat) => cat.key === key);
       if (cat) cat.enabled = !cat.enabled;
@@ -243,7 +246,7 @@ export class FormFieldEditorComponent {
   }
   deleteCategory(key: string): void {
     const c = this.categories().find((cat) => cat.key === key);
-    if (c?.system) return;
+    if (c?.system || this.categoryHasSystemFields(c)) return;
     this.commit((form) => {
       form.categories = form.categories.filter((cat) => cat.key !== key);
     });

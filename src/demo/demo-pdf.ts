@@ -30,9 +30,28 @@ function wrapLines(text: string, maxChars = 84): string[] {
   return out;
 }
 
-export function generateDemoPdfBlob(doc: ClinicalPrintDocument): Blob {
+export interface DemoPdfSignature {
+  name: string;
+  stampText?: string;
+}
+
+export interface DemoPdfOptions {
+  license?: string;
+  hasLogo?: boolean;
+}
+
+export function generateDemoPdfBlob(
+  doc: ClinicalPrintDocument,
+  signature?: DemoPdfSignature | null,
+  options?: DemoPdfOptions,
+): Blob {
   const lines: Array<{ text: string; bold?: boolean; size?: number; gap?: number }> = [];
-  lines.push({ text: 'DEMOCHART — DOCUMENTO DE DEMOSTRACIÓN', bold: true, size: 13, gap: 18 });
+  lines.push({
+    text: options?.hasLogo ? 'DEMOCHART [LOGO CONSULTORIO] — DOCUMENTO DE DEMOSTRACIÓN' : 'DEMOCHART — DOCUMENTO DE DEMOSTRACIÓN',
+    bold: true,
+    size: 13,
+    gap: 18,
+  });
   lines.push({ text: 'Sin validez clínica ni legal. Uso exclusivo para demostración.', size: 9, gap: 18 });
   lines.push({ text: '--------------------------------------------------------------------------------', size: 10, gap: 14 });
   lines.push({
@@ -42,7 +61,8 @@ export function generateDemoPdfBlob(doc: ClinicalPrintDocument): Blob {
     gap: 20,
   });
   lines.push({ text: `Código: ${doc.code}   |   Fecha: ${doc.issuedAt.slice(0, 10).split('-').reverse().join('/')}`, size: 10, gap: 14 });
-  lines.push({ text: `Profesional: Dra. Valentina Gómez · MN 148.920 (${doc.author.specialtyName || 'Clínica'})`, size: 10, gap: 18 });
+  const licenseSuffix = options?.license?.trim() ? ` · ${options.license.trim()}` : '';
+  lines.push({ text: `Profesional: Dra. Valentina Gómez${licenseSuffix} (${doc.author.specialtyName || 'Clínica'})`, size: 10, gap: 18 });
 
   lines.push({ text: 'DATOS DEL PACIENTE', bold: true, size: 11, gap: 14 });
   lines.push({ text: `Nombre y apellido: ${doc.patient.fullName}`, size: 10, gap: 13 });
@@ -108,13 +128,27 @@ export function generateDemoPdfBlob(doc: ClinicalPrintDocument): Blob {
   }
 
   lines.push({ text: '', size: 10, gap: 16 });
-  lines.push({ text: '--------------------------------------------------------------------------------', size: 10, gap: 12 });
-  lines.push({ text: 'DOCUMENTO DE DEMOSTRACIÓN — GENERADO LOCALMENTE EN DEMOCHART', bold: true, size: 9, gap: 12 });
+  if (signature) {
+    lines.push({ text: '', size: 10, gap: 28 });
+    lines.push({ text: '________________________________________', size: 10, gap: 13 });
+    lines.push({ text: 'Firma y sello del profesional', bold: true, size: 9, gap: 12 });
+    if (signature.stampText?.trim()) {
+      lines.push({ text: signature.stampText.trim(), size: 8.5, gap: 12 });
+    }
+  } else {
+    lines.push({ text: '--------------------------------------------------------------------------------', size: 10, gap: 12 });
+    lines.push({ text: 'Firma y sello del profesional — Emitido sin firma digital', bold: true, size: 9, gap: 12 });
+  }
+  lines.push({ text: 'DOCUMENTO DE DEMOSTRACIÓN — GENERADO LOCALMENTE EN DEMOCHART', bold: true, size: 8, gap: 12 });
 
   const streamOps: string[] = ['BT'];
   let y = 795;
+  let signatureLineY: number | null = null;
   for (const line of lines) {
     if (y < 52) break;
+    if (line.text === '________________________________________') {
+      signatureLineY = y;
+    }
     if (line.text) {
       const font = line.bold ? '/F2' : '/F1';
       const size = line.size ?? 10;
@@ -123,6 +157,15 @@ export function generateDemoPdfBlob(doc: ClinicalPrintDocument): Blob {
     y -= line.gap ?? 14;
   }
   streamOps.push('ET');
+  if (signature && signatureLineY !== null) {
+    const base = signatureLineY + 8;
+    streamOps.push(
+      'q 0.1 0.14 0.25 RG 1.6 w',
+      `58 ${base + 4} m 76 ${base + 24} 90 ${base + 22} 96 ${base + 6} c`,
+      `104 ${base - 2} 118 ${base + 22} 136 ${base + 12} c`,
+      `152 ${base + 4} 174 ${base + 18} 198 ${base + 10} c S Q`,
+    );
+  }
   const stream = streamOps.join('\n');
 
   const objects = [

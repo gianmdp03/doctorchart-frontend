@@ -116,7 +116,7 @@ export class LoginPageComponent {
   private loginDestination(): string {
     const requested = this.router.parseUrl(this.router.url).queryParams['returnUrl'];
     if (typeof requested === 'string' && requested.startsWith('/') && !requested.startsWith('//') && !['/', '/login'].includes(requested.split(/[?#]/)[0])) return requested;
-    return !this.router.url || ['/', '/login'].includes(this.router.url.split(/[?#]/)[0]) ? '/dashboard' : this.router.url;
+    return '/dashboard';
   }
 
 }

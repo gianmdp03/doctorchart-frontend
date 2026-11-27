@@ -64,6 +64,8 @@ export interface DemoEncounterRecord {
   workspaceVersion: number;
   encounterDate: string;
   consultationType: ConsultationType;
+  encounterTemplateId?: number | null;
+  encounterTemplateName?: string | null;
   chiefComplaint: string | null;
   historyOfPresentIllness: string | null;
   physicalExamination: string | null;
@@ -121,6 +123,22 @@ export interface DemoIssuedDocument {
   type: PrescriptionDocumentType;
   status: 'ISSUED' | 'ANNULLED';
   reason: string | null;
+  signatureId?: number | null;
+  signatureName?: string | null;
+  signatureStampText?: string | null;
+}
+
+export interface DemoSignatureRecord {
+  id: number;
+  name: string;
+  stampText: string;
+  isFavorite: boolean;
+  width: number;
+  height: number;
+  sha256: string;
+  dataUrl: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DemoRevisionRecord {
@@ -158,6 +176,7 @@ export interface DemoContextRecord {
   patientColumnsConfig: PatientColumnsConfig;
   quickNotes: string | null;
   preferencesVersion: number;
+  encounterTemplates?: import('../app/core/models/encounter-template.model').EncounterTemplate[];
 }
 
 export interface DemoSession {
@@ -172,6 +191,7 @@ export interface DemoSession {
   documents: DemoIssuedDocument[];
   revisions: DemoRevisionRecord[];
   accessEvents: DemoAccessEvent[];
+  signatures?: DemoSignatureRecord[];
 }
 
 export const blankDemoSession = (): DemoSession => ({
@@ -186,6 +206,7 @@ export const blankDemoSession = (): DemoSession => ({
   documents: [],
   revisions: [],
   accessEvents: [],
+  signatures: [],
 });
 
 export function newDemoUuid(): string {
@@ -361,6 +382,17 @@ export function parseDemoSession(value: unknown): DemoSession {
     id: asInt(a['id'], 1),
   }));
 
+  const signatures = Array.isArray(doc['signatures'])
+    ? checkArray<DemoSignatureRecord>('signatures', 20, (s) => ({
+        ...(s as unknown as DemoSignatureRecord),
+        id: asInt(s['id'], 1),
+        name: asString(s['name'], 120, true),
+        stampText: asString(s['stampText'] ?? '', 200, false),
+        isFavorite: Boolean(s['isFavorite']),
+        dataUrl: asDataUrl(s['dataUrl']),
+      }))
+    : [];
+
   return {
     workspaceId,
     activeContextId,
@@ -373,5 +405,6 @@ export function parseDemoSession(value: unknown): DemoSession {
     documents,
     revisions,
     accessEvents,
+    signatures,
   };
 }

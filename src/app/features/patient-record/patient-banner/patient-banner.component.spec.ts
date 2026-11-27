@@ -79,7 +79,7 @@ describe('PatientBannerComponent', () => {
       [...fixture.nativeElement.querySelectorAll('.banner-actions-block > button')].map((el: any) =>
         el.textContent.trim(),
       ),
-    ).toEqual(['Editar datos', 'Nueva historia clínica']);
+    ).toEqual(['Editar datos', 'Nueva historia clínica', 'Imprimir historia']);
     expect(fixture.nativeElement.querySelector('.more-menu-container')).toBeNull();
     expect(fixture.nativeElement.querySelector('.btn-more-options')).toBeNull();
     expect(fixture.nativeElement.querySelector('.dropdown-actions-menu')).toBeNull();
@@ -91,7 +91,7 @@ describe('PatientBannerComponent', () => {
       [...fixture.nativeElement.querySelectorAll('.banner-actions-block > button')].map((el: any) =>
         el.textContent.trim(),
       ),
-    ).toEqual(['Nueva historia clínica', 'Editar datos']);
+    ).toEqual(['Imprimir historia', 'Nueva historia clínica', 'Editar datos']);
   });
   it('removes all buttons and blocks handlers when actions are cleared', () => {
     const edit = vi.spyOn(component.editPatient, 'emit'),

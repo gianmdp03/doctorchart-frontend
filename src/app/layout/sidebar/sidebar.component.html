@@ -38,6 +38,7 @@
       </a>
     } @else {
     <a routerLink="/specialties" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Mis especialidades"><ng-icon name="lucideStethoscope" class="nav-icon"/><span class="nav-label">Mis especialidades</span></a>
+    <a routerLink="/profile" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Perfil profesional"><ng-icon name="lucideUser" class="nav-icon"/><span class="nav-label">Perfil profesional</span></a>
     <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">
       @if (!isCollapsed() || narrowViewport) {
         <span>Clínica</span>

@@ -26,6 +26,7 @@ import {
   PrescriptionItem,
 } from '../../../core/models/clinical-encounter.model';
 import { ClinicalDocumentPrintService } from '../../../core/services/clinical-document-print.service';
+import { DoctorSignaturesService } from '../../../core/services/doctor-signatures.service';
 import { PrintDocumentReference } from '../../../core/models/clinical-print-document.model';
 import { parseNumberInput, textError } from '../../../core/models/form-validation';
 import { PatientRecordDraftsService } from '../patient-record-drafts.service';
@@ -42,6 +43,7 @@ export class PatientPrescriptionEditorStore {
   readonly prescriptionStore = inject(PatientPrescriptionStore);
   readonly activePatientService = inject(ActivePatientService);
   readonly authService = inject(AuthService);
+  readonly signaturesService = inject(DoctorSignaturesService);
   private readonly printService = inject(ClinicalDocumentPrintService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
@@ -336,7 +338,7 @@ export class PatientPrescriptionEditorStore {
           detail: ref,
         }),
       );
-      this.printService.openPdfInNewTab(ref);
+      this.printService.openPreview(ref, this.signaturesService.selectedChoice());
     }
   }
 
@@ -406,7 +408,7 @@ export class PatientPrescriptionEditorStore {
           detail: ref,
         }),
       );
-      this.printService.openPdfInNewTab(ref);
+      this.printService.openPreview(ref, this.signaturesService.selectedChoice());
     }
   }
 }

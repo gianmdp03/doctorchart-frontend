@@ -1,0 +1,55 @@
+<div class="signature-pad-shell">
+  <div class="signature-pad-toolbar">
+    <div class="pen-colors" role="group" aria-label="Color de tinta">
+      @for (c of penColors; track c.value) {
+        <button
+          type="button"
+          class="color-chip"
+          [class.active]="penColor() === c.value"
+          [attr.aria-pressed]="penColor() === c.value"
+          (click)="setPenColor(c.value)"
+        >
+          <span class="color-dot" [style.background]="c.value" aria-hidden="true"></span>
+          <span>{{ c.label }}</span>
+        </button>
+      }
+    </div>
+    <div class="pad-actions">
+      <button
+        type="button"
+        class="dc-button dc-button--quiet btn-xs"
+        [disabled]="!hasInk()"
+        (click)="undo()"
+      >
+        Deshacer trazo
+      </button>
+      <button
+        type="button"
+        class="dc-button dc-button--quiet btn-xs"
+        [disabled]="!hasInk()"
+        (click)="clear()"
+      >
+        Limpiar
+      </button>
+    </div>
+  </div>
+
+  <div class="signature-canvas-stage">
+    <canvas
+      #padCanvas
+      class="signature-canvas"
+      [style.height.px]="height()"
+      aria-label="Área para dibujar la firma"
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp($event)"
+      (pointercancel)="onPointerUp($event)"
+    ></canvas>
+    <div class="signature-baseline" aria-hidden="true"></div>
+    @if (!hasInk()) {
+      <span class="signature-placeholder" aria-hidden="true">
+        Dibujá tu firma aquí con mouse, dedo o lápiz óptico
+      </span>
+    }
+  </div>
+</div>

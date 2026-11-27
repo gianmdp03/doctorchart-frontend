@@ -1,20 +1,288 @@
 <section class="profile-page" aria-labelledby="profile-title">
-  <header class="page-heading"><div><h1 id="profile-title">Perfil profesional</h1><p>Tu identidad y los datos de tu práctica médica.</p></div><a routerLink="/dashboard" class="dc-button profile-button">← Volver a Inicio</a></header>
-  @if (errorMessage()) { <p class="profile-error" role="alert">{{ errorMessage() }}</p> }
+  <header class="page-heading">
+    <div>
+      <h1 id="profile-title">Perfil profesional</h1>
+      <p>Tu identidad clínica, el logo del consultorio y los datos que se muestran en tus PDFs.</p>
+    </div>
+    <a routerLink="/dashboard" class="dc-button profile-button">← Volver a Inicio</a>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="profile-error" role="alert">{{ errorMessage() }}</p>
+  }
+
   <div class="profile-layout">
-    <section class="profile-identity"><span class="profile-avatar" aria-hidden="true">{{ initials() }}</span><h2>{{ fullName() }}</h2><p>{{ email() }}</p><span class="specialty-pill">{{ doctorSpecialtyService.currentSpecialtyOption().label }}</span></section>
-    <section class="profile-details" aria-label="Datos profesionales"><h2>Información profesional</h2><dl>
-      <div><dt>Nombre completo</dt><dd>{{ fullName() }}</dd></div>
-      <div><dt>Correo electrónico</dt><dd>{{ email() }}</dd></div>
-      <div><dt>DNI / Documento</dt><dd>{{ dni() }}</dd></div>
-      <div><dt>Rol clínico</dt><dd>{{ role() }}</dd></div>
-      <div><dt>Especialidad</dt><dd>{{ doctorSpecialtyService.currentSpecialtyOption().label }}</dd></div>
-      <div><dt>Matrícula profesional</dt><dd>{{ license() }}</dd></div>
-    </dl></section>
+    <section class="profile-identity">
+      <span class="profile-avatar" aria-hidden="true">{{ initials() }}</span>
+      <h2>{{ fullName() }}</h2>
+      <p>{{ email() }}</p>
+      <span class="specialty-pill">{{ doctorSpecialtyService.currentSpecialtyOption().label }}</span>
+    </section>
+
+    <section class="profile-details" aria-label="Datos profesionales">
+      <h2>Información profesional</h2>
+      <dl>
+        <div><dt>Nombre completo</dt><dd>{{ fullName() }}</dd></div>
+        <div><dt>Correo electrónico</dt><dd>{{ email() }}</dd></div>
+        <div><dt>DNI / Documento</dt><dd>{{ dni() }}</dd></div>
+        <div><dt>Rol clínico</dt><dd>{{ role() }}</dd></div>
+        <div><dt>Especialidad</dt><dd>{{ doctorSpecialtyService.currentSpecialtyOption().label }}</dd></div>
+        <div>
+          <dt>Matrícula en PDFs</dt>
+          <dd>
+            @if (activeLicense()) {
+              {{ activeLicense() }}
+            } @else {
+              <span class="muted-note">No cargada (se omite en los PDFs)</span>
+            }
+          </dd>
+        </div>
+      </dl>
+    </section>
   </div>
+
+  <section class="profile-card print-brand-section" aria-labelledby="print-brand-title">
+    <div class="section-header">
+      <div>
+        <h2 id="print-brand-title">Membrete para recetas, órdenes e historias clínicas</h2>
+        <p>Configurá el logo de tu consultorio y tu matrícula opcional. Todo se actualiza automáticamente en los PDFs generados.</p>
+      </div>
+    </div>
+
+    <div class="print-brand-grid">
+      <div class="brand-column">
+        <div class="field-group">
+          <label for="professional-license-input" class="field-label">Matrícula profesional (opcional)</label>
+          <p class="field-hint">Si la ingresás, aparecerá junto a tu nombre en los PDFs. Si la dejás vacía, no se imprimirá nada.</p>
+          <div class="license-row">
+            <input
+              id="professional-license-input"
+              type="text"
+              class="dc-input"
+              maxlength="80"
+              [ngModel]="licenseDraft()"
+              (ngModelChange)="licenseDraft.set($event)"
+              placeholder="Ej.: MN 148.920 · MP 45.310"
+            />
+            <button
+              type="button"
+              class="dc-button profile-button profile-button--primary"
+              [disabled]="printIdentityService.savingLicense()"
+              (click)="saveLicense()"
+            >
+              {{ printIdentityService.savingLicense() ? 'Guardando...' : 'Guardar matrícula' }}
+            </button>
+            @if (activeLicense()) {
+              <button
+                type="button"
+                class="dc-button profile-button"
+                [disabled]="printIdentityService.savingLicense()"
+                (click)="clearLicense()"
+              >
+                Quitar
+              </button>
+            }
+          </div>
+          @if (licenseNotice()) {
+            <p class="inline-feedback inline-feedback--ok" aria-live="polite">{{ licenseNotice() }}</p>
+          }
+          @if (licenseError()) {
+            <p class="inline-feedback inline-feedback--error" role="alert">{{ licenseError() }}</p>
+          }
+        </div>
+
+        <div class="field-group">
+          <span class="field-label">Logo de consultorio</span>
+          <p class="field-hint">Subí una imagen JPG, PNG o WebP (hasta 10 MB). Se recorta, optimiza y comprime automáticamente antes de guardarse.</p>
+
+          @if (pendingLogo()) {
+            <div class="crop-workspace">
+              <div class="crop-canvas-wrap">
+                <canvas
+                  #cropPreview
+                  width="256"
+                  height="256"
+                  aria-label="Vista previa del recorte del logo"
+                  (pointerdown)="onCropPointerDown($event)"
+                  (pointermove)="onCropPointerMove($event)"
+                  (pointerup)="onCropPointerUp()"
+                  (pointercancel)="onCropPointerUp()"
+                ></canvas>
+              </div>
+              <div class="crop-controls">
+                <label class="range-field">
+                  <span>Zoom ({{ zoom().toFixed(2) }}×)</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.05"
+                    [value]="zoom()"
+                    (input)="zoom.set(+$any($event.target).value)"
+                  />
+                </label>
+                <label class="range-field">
+                  <span>Horizontal</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    [value]="horizontal()"
+                    (input)="horizontal.set(+$any($event.target).value)"
+                  />
+                </label>
+                <label class="range-field">
+                  <span>Vertical</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    [value]="vertical()"
+                    (input)="vertical.set(+$any($event.target).value)"
+                  />
+                </label>
+                <div class="crop-actions">
+                  <button
+                    type="button"
+                    class="dc-button profile-button profile-button--primary"
+                    [disabled]="printIdentityService.savingLogo()"
+                    (click)="saveLogo()"
+                  >
+                    {{ printIdentityService.savingLogo() ? 'Optimizando y guardando...' : 'Guardar logo' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="dc-button profile-button"
+                    [disabled]="printIdentityService.savingLogo()"
+                    (click)="cancelCrop()"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <div class="logo-current-row">
+              <div class="logo-thumb">
+                @if (printIdentityService.logoObjectUrl(); as logoUrl) {
+                  <img [src]="logoUrl" alt="Logo actual del consultorio" />
+                } @else {
+                  <span class="logo-placeholder">Sin logo</span>
+                }
+              </div>
+              <div class="logo-actions">
+                <input
+                  #logoInput
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  class="visually-hidden"
+                  (change)="chooseLogo(logoInput)"
+                />
+                <button
+                  type="button"
+                  class="dc-button profile-button"
+                  [disabled]="printIdentityService.savingLogo()"
+                  (click)="logoInput.click()"
+                >
+                  {{ printIdentityService.logoObjectUrl() ? 'Cambiar logo' : 'Subir logo del consultorio' }}
+                </button>
+                @if (printIdentityService.logoObjectUrl() && !confirmLogoDelete()) {
+                  <button
+                    type="button"
+                    class="dc-button profile-button profile-button--danger"
+                    [disabled]="printIdentityService.savingLogo()"
+                    (click)="confirmLogoDelete.set(true)"
+                  >
+                    Quitar logo
+                  </button>
+                }
+              </div>
+            </div>
+            @if (confirmLogoDelete()) {
+              <div class="inline-confirm" role="region" aria-label="Confirmar eliminación del logo">
+                <span>¿Quitar el logo de los próximos PDFs?</span>
+                <div class="inline-confirm-actions">
+                  <button
+                    type="button"
+                    class="dc-button profile-button profile-button--danger"
+                    [disabled]="printIdentityService.savingLogo()"
+                    (click)="removeLogo()"
+                  >
+                    {{ printIdentityService.savingLogo() ? 'Quitando...' : 'Confirmar eliminación' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="dc-button profile-button"
+                    [disabled]="printIdentityService.savingLogo()"
+                    (click)="confirmLogoDelete.set(false)"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            }
+          }
+          @if (logoNotice()) {
+            <p class="inline-feedback inline-feedback--ok" aria-live="polite">{{ logoNotice() }}</p>
+          }
+          @if (logoError()) {
+            <p class="inline-feedback inline-feedback--error" role="alert">{{ logoError() }}</p>
+          }
+        </div>
+      </div>
+
+      <aside class="letterhead-preview-wrap" aria-label="Vista previa del membrete en PDF">
+        <span class="preview-caption">Vista previa en PDFs</span>
+        <div class="letterhead-sheet">
+          <div class="letterhead-top">
+            @if (printIdentityService.logoObjectUrl(); as logoUrl) {
+              <img [src]="logoUrl" alt="" class="sheet-logo" />
+            }
+            <div class="sheet-title-block">
+              <span class="sheet-brand">DoctorChart</span>
+              <strong>Receta médica / Historia clínica</strong>
+            </div>
+            <span class="sheet-date">26/11/2026</span>
+          </div>
+          <div class="sheet-divider"></div>
+          <div class="sheet-author">
+            <span class="sheet-label">Profesional tratante</span>
+            <strong>{{ fullName() }}</strong>
+            <span>{{ doctorSpecialtyService.currentSpecialtyOption().label }}</span>
+            @if (activeLicense()) {
+              <span>Matrícula profesional: {{ activeLicense() }}</span>
+            }
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="profile-session" aria-labelledby="profile-signatures-title">
+    <div>
+      <h2 id="profile-signatures-title">Firmas para PDFs</h2>
+      <p>Dibujá tus firmas manuscritas, elegí tu favorita y personalizá tu sello para recetas, órdenes e historias clínicas.</p>
+    </div>
+    <a routerLink="/signatures" class="dc-button profile-button">Administrar firmas</a>
+  </section>
+
   <section class="profile-session" aria-labelledby="profile-backup-title">
-    <div><h2 id="profile-backup-title">Copia de seguridad</h2><p>Guardá una copia de tu práctica, con los documentos y adjuntos, en un ZIP.</p></div>
+    <div>
+      <h2 id="profile-backup-title">Copia de seguridad</h2>
+      <p>Guardá una copia de tu práctica, con los documentos y adjuntos, en un ZIP.</p>
+    </div>
     <a routerLink="/account/backup" class="dc-button profile-button">Abrir copia de seguridad</a>
   </section>
-  <footer class="profile-session"><div><h2>Sesión de DoctorChart</h2><p>Podés cerrar tu sesión en este equipo cuando termines de atender.</p></div><button class="dc-button profile-button" type="button" [disabled]="isSubmitting()" (click)="handleSignOut()">{{ isSubmitting() ? 'Cerrando sesión...' : 'Cerrar sesión' }}</button></footer>
+
+  <footer class="profile-session">
+    <div>
+      <h2>Sesión de DoctorChart</h2>
+      <p>Podés cerrar tu sesión en este equipo cuando termines de atender.</p>
+    </div>
+    <button class="dc-button profile-button" type="button" [disabled]="isSubmitting()" (click)="handleSignOut()">
+      {{ isSubmitting() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+    </button>
+  </footer>
 </section>

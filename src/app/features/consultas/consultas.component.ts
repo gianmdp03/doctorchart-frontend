@@ -154,7 +154,7 @@ export class ConsultasComponent implements OnInit {
       encounterDate: Number.isNaN(date.getTime())
         ? '—'
         : formatInstant(date),
-      consultationType: labels[e.consultationType] || e.consultationType,
+      consultationType: (labels[e.consultationType] || e.consultationType) + (e.encounterTemplateName ? ` · ${e.encounterTemplateName}` : ''),
       chiefComplaint: e.chiefComplaint || '—',
       primaryDiagnosis: e.primaryDiagnosisDescription || '—',
       primaryDiagnosisCode: e.primaryDiagnosisCode,

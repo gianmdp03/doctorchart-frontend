@@ -24,7 +24,8 @@ export class PatientService {
     size = 10,
     sort = 'fullName,asc',
     search?: string,
-    filter: PatientDirectoryFilter = 'ALL'
+    filter: PatientDirectoryFilter = 'ALL',
+    disease?: string,
   ): Observable<PagedResponse<PatientListDTO>> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -34,6 +35,9 @@ export class PatientService {
 
     if (search && search.trim()) {
       params = params.set('search', search.trim());
+    }
+    if (disease && disease.trim()) {
+      params = params.set('disease', disease.trim());
     }
 
     return this.http.get<PagedResponse<PatientListDTO>>(this.baseUrl, { params });

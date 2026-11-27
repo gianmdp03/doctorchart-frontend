@@ -52,7 +52,10 @@
           <div class="profile-menu-divider"></div>
 
           <a routerLink="/account" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)"><ng-icon name="lucideUser" class="menu-action-icon"/><span>Ver mi perfil</span></a>
-          <a routerLink="/support" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">Soporte</a>
+          <a routerLink="/support" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">
+            <ng-icon name="lucideLifeBuoy" class="menu-action-icon" aria-hidden="true" />
+            <span>Soporte</span>
+          </a>
 
           @if (!authService.isSuperAdmin()) {
           <a routerLink="/pricing" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">
@@ -63,6 +66,11 @@
           <a routerLink="/profile" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">
             <ng-icon name="lucideUser" class="menu-action-icon" />
             <span>Perfil Profesional</span>
+          </a>
+
+          <a routerLink="/signatures" class="dropdown-action-item" (click)="isProfileMenuOpen.set(false)">
+            <ng-icon name="lucidePenTool" class="menu-action-icon" />
+            <span>Mis firmas</span>
           </a>
 
           }

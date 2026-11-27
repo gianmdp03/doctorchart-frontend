@@ -1,0 +1,85 @@
+.signature-pad-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.signature-pad-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pen-colors,
+.pad-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.color-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--dc-border, #d5ded9);
+  background: var(--dc-surface, #ffffff);
+  color: var(--dc-ink, #1c2b2a);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.color-chip.active {
+  border-color: var(--dc-accent, #165b52);
+  background: color-mix(in srgb, var(--dc-accent, #165b52) 10%, transparent);
+  font-weight: 600;
+}
+
+.color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.signature-canvas-stage {
+  position: relative;
+  border: 1.5px dashed #b9c7c1;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.signature-canvas {
+  display: block;
+  width: 100%;
+  touch-action: none;
+  cursor: crosshair;
+  position: relative;
+  z-index: 2;
+}
+
+.signature-baseline {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 24%;
+  border-bottom: 1px dashed #cbd5e1;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.signature-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+  pointer-events: none;
+  z-index: 1;
+}

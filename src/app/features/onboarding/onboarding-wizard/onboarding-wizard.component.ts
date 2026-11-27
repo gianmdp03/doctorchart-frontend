@@ -7,6 +7,7 @@ import { WorkspaceStore } from '../../../core/services/workspace.store';
 import { WorkspaceSetup } from '../../../core/models/workspace.model';
 import { WizardDefinition, WizardFormDefinition, WizardStepKey } from '../../../core/models/wizard-definition.model';
 import { FormFieldEditorComponent } from '../../form-field-editor/form-field-editor.component';
+import { ClinicalHistoryTemplatesManagerComponent } from '../clinical-history-templates/clinical-history-templates-manager.component';
 
 type EditableStepKey = Exclude<WizardStepKey, 'specialty' | 'completed'>;
 interface WizardStep {
@@ -18,7 +19,7 @@ interface WizardStep {
 
 @Component({
   selector: 'app-onboarding-wizard',
-  imports: [FormFieldEditorComponent],
+  imports: [FormFieldEditorComponent, ClinicalHistoryTemplatesManagerComponent],
   templateUrl: './onboarding-wizard.component.html',
   styleUrl: './onboarding-wizard.component.css',
 })

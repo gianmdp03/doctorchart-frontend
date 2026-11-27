@@ -43,6 +43,7 @@ export interface PatientCardItem {
   totalEncounters: number;
   lastEncounterDate?: string | null;
   lastEncounterDateDisplay: string | null;
+  lastEncounterDisease: string | null;
   badgeText: string;
   badgeClass: string;
   hasPendingVaccine: boolean;
@@ -109,6 +110,7 @@ function mapDtoToCardItem(dto: PatientListDTO, pediatrics: boolean): PatientCard
     totalEncounters: dto.totalEncounters ?? 0,
     lastEncounterDate: dto.lastEncounterDate ?? null,
     lastEncounterDateDisplay: dto.lastEncounterDate ? displayLocalDate(dto.lastEncounterDate) : null,
+    lastEncounterDisease: dto.lastEncounterDisease?.trim() || null,
     badgeText,
     badgeClass,
     hasPendingVaccine: dto.hasPendingVaccine,
@@ -145,6 +147,7 @@ export class PatientListComponent implements OnInit {
   readonly patients = signal<PatientCardItem[]>([]);
   readonly selectedFilter = signal<PatientDirectoryFilter>('ALL');
   readonly searchQuery = signal<string>('');
+  readonly diseaseQuery = signal<string>('');
   readonly isLoading = signal<boolean>(false);
 
   readonly currentPage = signal<number>(0);
@@ -182,7 +185,7 @@ export class PatientListComponent implements OnInit {
   });
 
   readonly visibleColumnsCount = computed(() =>
-    this.doctorSpecialtyService.supportsGrowthCharts() ? 7 : 6,
+    this.doctorSpecialtyService.supportsGrowthCharts() ? 8 : 7,
   );
 
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -284,8 +287,11 @@ export class PatientListComponent implements OnInit {
   }
 
   private fetchPage(page: number, query: string, current: () => boolean, scrollOnSuccess: boolean): void {
-    this.patientService
-      .getPatients(page, this.pageSize, 'fullName,asc', query, this.selectedFilter())
+    const disease = this.diseaseQuery().trim();
+    const request$ = disease
+      ? this.patientService.getPatients(page, this.pageSize, 'fullName,asc', query, this.selectedFilter(), disease)
+      : this.patientService.getPatients(page, this.pageSize, 'fullName,asc', query, this.selectedFilter());
+    request$
       .pipe(takeUntil(this.reads.canceled))
       .subscribe({
         next: (response) => {
@@ -350,9 +356,41 @@ export class PatientListComponent implements OnInit {
     this.loadInitial('');
   }
 
+  onDiseaseInput(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.diseaseQuery.set(val);
+    this.reads.cancel();
+
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+
+    this.searchDebounceTimer = setTimeout(() => {
+      this.loadInitial();
+    }, 350);
+  }
+
+  onDiseaseEnter(): void {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
+    this.loadInitial();
+  }
+
+  clearDisease(): void {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
+    this.diseaseQuery.set('');
+    this.loadInitial();
+  }
+
   resetFilters(): void {
     this.selectedFilter.set('ALL');
     this.searchQuery.set('');
+    this.diseaseQuery.set('');
     this.loadInitial('');
   }
 

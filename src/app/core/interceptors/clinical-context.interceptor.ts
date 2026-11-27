@@ -8,7 +8,7 @@ import { ClinicalContextService } from '../services/clinical-context.service';
 
 export const clinicalContextInterceptor: HttpInterceptorFn = (request, next) => {
   const base = environment.apiUrl.replace(/\/$/, '');
-  const collections = ['/patients', '/encounters', '/calculators', '/medications', '/vaccination-calendar', '/charts', '/workspace/charts', '/workspace/clinical-access'];
+  const collections = ['/patients', '/encounters', '/calculators', '/medications', '/vaccination-calendar', '/charts', '/workspace/charts', '/workspace/clinical-access', '/workspace/encounter-templates'];
   if (!collections.some(path => request.url === base + path || request.url.startsWith(base + path + '/') || request.url.startsWith(base + path + '?'))) return next(request);
   const workspace = inject(WorkspaceStore);
   const context = inject(ClinicalContextService);

@@ -1,4 +1,6 @@
 import { signal } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { UserProfilePageComponent } from './user-profile-page.component';
@@ -18,6 +20,8 @@ describe('UserProfilePageComponent', () => {
     signOut = vi.fn().mockResolvedValue({ error: null });
     await TestBed.configureTestingModule({ imports: [UserProfilePageComponent], providers: [
       provideRouter([]),
+      provideHttpClient(),
+      provideHttpClientTesting(),
       { provide: AuthService, useValue: { currentUser: user, userName: name, userEmail: email, signOut } },
       { provide: ActivePatientService, useValue: { clear: vi.fn() } },
       { provide: DoctorProfileService, useValue: { clearProfile: vi.fn() } },
@@ -28,17 +32,18 @@ describe('UserProfilePageComponent', () => {
   it('renders all professional information in the page without an overlay', async () => {
     const fixture = await prepare(); const component = fixture.componentInstance;
     expect(component.fullName()).toBe('Sofía Mendoza'); expect(component.dni()).toBe('38111222');
-    expect(component.license()).toBe('MP 84219'); expect(component.initials()).toBe('SM');
+    expect(component.activeLicense()).toBe('MP 84219'); expect(component.initials()).toBe('SM');
     expect(fixture.nativeElement.textContent).toContain('Pediatría');
     expect(fixture.nativeElement.querySelector('[role="dialog"], [aria-modal], .m3-modal-backdrop')).toBeNull();
     expect(fixture.nativeElement.querySelector('a').getAttribute('href')).toBe('/dashboard');
   });
-  it('updates displayed identity and handles missing metadata', async () => {
+  it('updates displayed identity and omits license in PDF preview when missing', async () => {
     const fixture = await prepare(); user.set({ id: 'doctor-b', user_metadata: {} }); name.set('Lucas'); fixture.detectChanges();
     expect(fixture.componentInstance.dni()).toBe('No especificado');
-    expect(fixture.componentInstance.license()).toBe('No informada');
+    expect(fixture.componentInstance.activeLicense()).toBe('');
     expect(fixture.componentInstance.initials()).toBe('LU');
     expect(fixture.nativeElement.textContent).not.toContain('MP 84219');
+    expect(fixture.nativeElement.querySelector('.letterhead-sheet')?.textContent).not.toContain('Matrícula profesional');
   });
   it('signs out and returns to the login route', async () => {
     const fixture = await prepare(); const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);

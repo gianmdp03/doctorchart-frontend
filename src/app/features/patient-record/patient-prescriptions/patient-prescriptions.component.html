@@ -21,6 +21,25 @@
 
         <div class="rx-header-actions">
           @if (editor.recordActions.has('PRINT_DOCUMENT')) {
+            <div class="rx-signature-picker">
+              <label class="rx-sig-label" for="rx-signature-select">Firma:</label>
+              <select
+                id="rx-signature-select"
+                class="rx-input rx-sig-select"
+                [value]="signatureSelectValue()"
+                (change)="onSignatureSelect($any($event.target).value)"
+              >
+                @if (editor.signaturesService.signatures().length === 0) {
+                  <option value="default">Sin firma cargada</option>
+                } @else {
+                  @for (sig of editor.signaturesService.signatures(); track sig.id) {
+                    <option [value]="sig.id">{{ sig.isFavorite ? '★ ' : '' }}{{ sig.name }}</option>
+                  }
+                  <option value="none">Sin firma</option>
+                }
+              </select>
+              <a routerLink="/signatures" class="dc-button dc-button--quiet btn-xs">Mis firmas</a>
+            </div>
             <button
               type="button"
               class="dc-button dc-button--primary cta-primary-btn btn-sm"

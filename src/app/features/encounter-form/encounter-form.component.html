@@ -162,6 +162,73 @@
       </div>
     </fieldset>
 
+    @if (!isLoading() && !errorMessage() && templates().length >= 2 && !selectedTemplate()) {
+      <fieldset class="consultation-metadata-card template-selector-card" [disabled]="readonly()">
+        <legend class="metadata-legend">¿Qué plantilla de historia clínica querés utilizar?</legend>
+        <p class="template-selector-hint">
+          Elegí manualmente la plantilla para esta consulta. Esta elección aplica solo a este
+          registro y no queda fija para el paciente.
+        </p>
+        <div class="template-radio-grid">
+          @for (tpl of templates(); track tpl.id) {
+            <button
+              type="button"
+              class="template-radio-card"
+              (click)="selectTemplate(tpl)"
+            >
+              <strong>{{ tpl.name }}</strong>
+              <span>
+                {{ countTemplateCategories(tpl) }} secciones ·
+                {{ countTemplateFields(tpl) }} campos
+              </span>
+            </button>
+          }
+        </div>
+      </fieldset>
+    }
+
+    @if (templates().length >= 2 && selectedTemplate(); as activeTpl) {
+      <div class="selected-template-bar">
+        <div class="selected-template-info">
+          <span class="selected-template-label">Plantilla seleccionada:</span>
+          <strong>{{ activeTpl.name }}</strong>
+        </div>
+        @if (!readonly()) {
+          <button
+            type="button"
+            class="dc-button dc-button--quiet btn-change-template"
+            (click)="requestChangeTemplate()"
+          >
+            Cambiar plantilla
+          </button>
+        }
+      </div>
+
+      @if (confirmingSwitchBack()) {
+        <div class="template-switch-confirm" role="region" aria-label="Confirmar cambio de plantilla">
+          <p>
+            Si cambiás de plantilla, se descartarán los datos ingresados en esta consulta.
+          </p>
+          <div class="template-switch-actions">
+            <button
+              type="button"
+              class="dc-button dc-button--primary"
+              (click)="confirmDiscardAndSwitch()"
+            >
+              Descartar y cambiar
+            </button>
+            <button
+              type="button"
+              class="dc-button dc-button--quiet"
+              (click)="cancelSwitch()"
+            >
+              Seguir editando
+            </button>
+          </div>
+        </div>
+      }
+    }
+
     <!-- Dynamic Form Fields from Active Specialty Configuration -->
     @if (definition(); as form) {
       <div class="dynamic-form-container">

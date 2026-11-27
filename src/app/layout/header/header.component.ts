@@ -24,6 +24,8 @@ import {
   lucideUserPlus,
   lucideX,
   lucideSliders,
+  lucidePenTool,
+  lucideLifeBuoy,
   lucideType,
   lucideCalendarDays,
 } from '@ng-icons/lucide';
@@ -51,6 +53,8 @@ import { FEATURE_FLAGS } from '../../core/config/feature-flags';
       lucideUserPlus,
       lucideX,
       lucideSliders,
+      lucidePenTool,
+      lucideLifeBuoy,
       lucideType,
       lucideCalendarDays,
     }),
@@ -222,6 +226,9 @@ export class HeaderComponent implements OnDestroy {
 
   async handleSignOut(): Promise<void> {
     this.isProfileMenuOpen.set(false);
-    await this.authService.signOut();
+    const result = await this.authService.signOut();
+    if (!result?.error && this.router.config.some((route) => route.path === 'login')) {
+      await this.router.navigateByUrl('/login');
+    }
   }
 }

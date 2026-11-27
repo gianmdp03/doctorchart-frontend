@@ -105,6 +105,9 @@
               <h3 [id]="'consultation-title-' + encounter.id">
                 {{ getEncounterSummary(encounter) }}
               </h3>
+              @if (encounter.encounterTemplateName) {
+                <span class="encounter-template-badge">{{ encounter.encounterTemplateName }}</span>
+              }
               @if (
                 encounter.chiefComplaint?.trim() &&
                 encounter.primaryDiagnosisDescription?.trim() &&

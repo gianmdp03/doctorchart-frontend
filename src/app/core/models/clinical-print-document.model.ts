@@ -1,12 +1,18 @@
 import { PrescriptionItem } from './clinical-encounter.model';
 import { PrescriptionDocumentType } from './prescription.model';
 import { InsuranceInfo } from './patient.model';
+import { SignatureChoice } from './doctor-signature.model';
+
+export type GrowthPrintReference = 'AUTO' | 'OMS' | 'DOWN' | 'BOTH';
 
 export interface PrintDocumentReference {
-  source: 'PRESCRIPTION_RECORD' | 'ENCOUNTER';
+  source: 'PRESCRIPTION_RECORD' | 'ENCOUNTER' | 'CLINICAL_HISTORY';
   patientId: number;
-  id: number;
+  id?: number;
+  encounterId?: number;
+  growthReference?: GrowthPrintReference;
   type?: PrescriptionDocumentType;
+  signatureChoice?: SignatureChoice;
 }
 export interface ClinicalPrintDocument {
   source: PrintDocumentReference['source'];

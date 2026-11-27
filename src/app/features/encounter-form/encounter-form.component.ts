@@ -17,6 +17,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
+import { EncounterTemplateService } from '../../core/services/encounter-template.service';
+import { EncounterTemplate } from '../../core/models/encounter-template.model';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { AuthService } from '../../core/services/auth.service';
 import { PatientEncountersStore } from '../patient-record/patient-encounters/patient-encounters.store';
@@ -56,6 +58,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
   private readonly interaction = inject(InteractionStatusService);
   private readonly clinicalScope = inject(ClinicalContextService);
   private readonly encounterService = inject(ClinicalEncounterService);
+  private readonly templateService = inject(EncounterTemplateService);
   private readonly workspaceStore = inject(WorkspaceStore);
   private readonly auth = inject(AuthService);
   private readonly historyStore = inject(PatientEncountersStore, { optional: true });
@@ -93,6 +96,9 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
     }
   });
   readonly definition = signal<WizardFormDefinition | null>(null);
+  readonly templates = signal<EncounterTemplate[]>([]);
+  readonly selectedTemplate = signal<EncounterTemplate | null>(null);
+  readonly confirmingSwitchBack = signal(false);
   readonly workspace = signal<WorkspaceSetup | null>(null);
   readonly dynamicFormData = signal<WizardFormValues>({});
   readonly isDynamicFormValid = signal(false);
@@ -219,7 +225,20 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
         throw new Error('El formulario clínico no está disponible.');
       }
       this.workspace.set(structuredClone(workspace));
-      this.definition.set(withClinicalHistory(visibleEncounterForm(workspace.definition.encounterForm)));
+      const templatesRes = await firstValueFrom(this.templateService.list()).catch(() => null);
+      if (!this.alive(epoch)) return;
+      const activeTemplates = templatesRes?.templates ?? [];
+      this.templates.set(activeTemplates);
+      if (activeTemplates.length === 1) {
+        this.selectedTemplate.set(activeTemplates[0]);
+        this.definition.set(withClinicalHistory(visibleEncounterForm(activeTemplates[0].formDefinition)));
+      } else if (activeTemplates.length >= 2) {
+        this.selectedTemplate.set(null);
+        this.definition.set(null);
+      } else {
+        this.selectedTemplate.set(null);
+        this.definition.set(withClinicalHistory(visibleEncounterForm(workspace.definition.encounterForm)));
+      }
     } catch (error) {
       if (this.alive(epoch)) {
         this.errorMessage.set(
@@ -278,6 +297,7 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
           patientId,
           workspaceVersion: workspace.version,
           consultationType: effectiveConsultationType,
+          ...(this.selectedTemplate() ? { templateId: this.selectedTemplate()!.id } : {}),
           values: inputValues(visibleEncounterForm(definition), this.dynamicFormData()),
         }),
       );
@@ -295,6 +315,8 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
       }
       this.isSubmitting.set(false);
       this.definition.set(null);
+      this.selectedTemplate.set(this.templates().length === 1 ? this.templates()[0] : null);
+      this.confirmingSwitchBack.set(false);
       this.epoch++;
     } catch (error) {
       if (this.alive(epoch)) {
@@ -398,6 +420,50 @@ export class EncounterFormComponent implements OnInit, OnDestroy {
     } else {
       this.recordedInstant.set(new Date().toISOString());
     }
+  }
+
+  selectTemplate(template: EncounterTemplate): void {
+    this.selectedTemplate.set(template);
+    this.definition.set(withClinicalHistory(visibleEncounterForm(template.formDefinition)));
+    this.dynamicFormData.set({});
+    this.submissionAttempted.set(false);
+    this.confirmingSwitchBack.set(false);
+  }
+
+  requestChangeTemplate(): void {
+    if (this.hasEnteredValues()) {
+      this.confirmingSwitchBack.set(true);
+      return;
+    }
+    this.confirmDiscardAndSwitch();
+  }
+
+  confirmDiscardAndSwitch(): void {
+    this.selectedTemplate.set(null);
+    this.definition.set(null);
+    this.dynamicFormData.set({});
+    this.submissionAttempted.set(false);
+    this.confirmingSwitchBack.set(false);
+  }
+
+  cancelSwitch(): void {
+    this.confirmingSwitchBack.set(false);
+  }
+
+  countTemplateCategories(template: EncounterTemplate): number {
+    return template.formDefinition.categories.filter((c) => c.enabled).length;
+  }
+
+  countTemplateFields(template: EncounterTemplate): number {
+    return template.formDefinition.categories
+      .filter((c) => c.enabled)
+      .reduce((sum, c) => sum + c.fields.length, 0);
+  }
+
+  private hasEnteredValues(): boolean {
+    return Object.values(this.dynamicFormData()).some(
+      (v) => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0),
+    );
   }
 
   onCancel(): void {

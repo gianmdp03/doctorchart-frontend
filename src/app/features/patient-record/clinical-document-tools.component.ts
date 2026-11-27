@@ -16,6 +16,7 @@ interface IssuedDocument {
   status: 'ISSUED' | 'ANNULLED';
   sourceStatus: 'CURRENT' | 'CHANGED' | 'ANNULLED';
   reason: string | null;
+  signatureName?: string | null;
 }
 
 @Component({
@@ -35,6 +36,7 @@ interface IssuedDocument {
             <h4>{{ item.type === 'PRESCRIPTION' ? 'Receta' : 'Orden de estudios' }}</h4>
             <p>{{ item.issuedAt | date:'dd/MM/yyyy HH:mm' }}
               · {{ item.code }} · Versión clínica {{ item.sourceVersion }}
+              @if (item.signatureName) { · Firma: {{ item.signatureName }} }
               @if (item.status === 'ANNULLED') { · Emisión anulada. {{ item.reason }} }
               @if (item.sourceStatus === 'ANNULLED') { · Origen anulado }
               @if (item.sourceStatus === 'CHANGED') { · Origen actualizado }

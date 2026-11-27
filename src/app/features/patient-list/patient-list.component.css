@@ -35,8 +35,23 @@
 
 .directory-actions-group .directory-search-wrapper {
   flex: 1 1 14rem;
-  max-width: 32rem;
+  max-width: 26rem;
   min-width: 0;
+}
+
+.td-disease {
+  max-width: 14rem;
+}
+
+.encounter-disease-tag {
+  display: inline-block;
+  max-width: 100%;
+  font-size: 0.8125rem;
+  color: var(--dc-text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .directory-more { position: relative; }

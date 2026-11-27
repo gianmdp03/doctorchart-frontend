@@ -20,6 +20,7 @@ import { ClinicalEncounterList, ConsultationType } from '../../../core/models/cl
 import { WizardFormValues } from '../../../core/models/wizard-definition.model';
 import { PrescriptionDocumentType } from '../../../core/models/prescription.model';
 import { ClinicalDocumentPrintService } from '../../../core/services/clinical-document-print.service';
+import { DoctorSignaturesService } from '../../../core/services/doctor-signatures.service';
 import { PrintDocumentReference } from '../../../core/models/clinical-print-document.model';
 import { PatientRecordDraftsService } from '../patient-record-drafts.service';
 
@@ -34,6 +35,7 @@ export class PatientEncountersStore {
   private readonly activePatientService = inject(ActivePatientService);
   private readonly clinicalEncounterService = inject(ClinicalEncounterService);
   private readonly printService = inject(ClinicalDocumentPrintService);
+  private readonly signaturesService = inject(DoctorSignaturesService);
   private readonly router = inject(Router);
   private encounterRead = 0;
   private readonly drafts = inject(PatientRecordDraftsService).syncContext().encounter;
@@ -182,10 +184,11 @@ export class PatientEncountersStore {
       source: 'ENCOUNTER',
       id: enc.id,
       patientId: enc.patientId,
+      signatureChoice: this.signaturesService.selectedChoice(),
       ...(type ? { type } : {}),
     };
     if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      this.printService.openPdfInNewTab(ref);
+      this.printService.openPreview(ref);
     }
   }
 }

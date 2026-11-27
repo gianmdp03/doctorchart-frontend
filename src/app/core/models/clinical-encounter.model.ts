@@ -37,6 +37,7 @@ export interface ClinicalEncounterRequest {
   patientId: number;
   workspaceVersion: number;
   consultationType: ConsultationType;
+  templateId?: number;
   values: WizardFormValues;
 }
 export interface ClinicalEncounterUpdateRequest {
@@ -60,8 +61,11 @@ export interface ClinicalEncounterList extends ClinicalFormRecord {
   encounterDate: string;
   specialtyId: number;
   specialty: SpecialtySummary;
+  encounterTemplateId?: number | null;
+  encounterTemplateName?: string | null;
   consultationType: ConsultationType;
   chiefComplaint?: string | null;
+  disease?: string | null;
   primaryDiagnosisCode?: string | null;
   primaryDiagnosisDescription?: string | null;
   measurements?: AnthropometricMeasurements | null;

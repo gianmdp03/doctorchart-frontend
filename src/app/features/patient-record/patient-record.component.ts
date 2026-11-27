@@ -26,8 +26,9 @@ import { AnnulmentPromptComponent } from './annulment-prompt.component';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideUser, lucideUsers, lucidePlus, lucideEllipsis, lucideChevronRight, lucideArrowLeft, lucideHistory, lucideShieldCheck, lucideFiles } from '@ng-icons/lucide';
+import { lucideUser, lucideUsers, lucidePlus, lucidePrinter, lucideEllipsis, lucideChevronRight, lucideArrowLeft, lucideHistory, lucideShieldCheck, lucideFiles } from '@ng-icons/lucide';
 import { AuthService } from '../../core/services/auth.service';
+import { ClinicalDocumentPrintService } from '../../core/services/clinical-document-print.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { PatientDetailDTO } from '../../core/models/patient.model';
 import { PatientBannerComponent } from './patient-banner/patient-banner.component';
@@ -71,7 +72,7 @@ export interface RecordTabItem {
     PatientPrescriptionStore,
     PatientPrescriptionEditorStore,
     PatientStudiesStore,
-    provideIcons({ lucideUser, lucideUsers, lucidePlus, lucideEllipsis, lucideChevronRight, lucideArrowLeft, lucideHistory, lucideShieldCheck, lucideFiles }),
+    provideIcons({ lucideUser, lucideUsers, lucidePlus, lucidePrinter, lucideEllipsis, lucideChevronRight, lucideArrowLeft, lucideHistory, lucideShieldCheck, lucideFiles }),
   ],
   templateUrl: './patient-record.component.html',
   styleUrl: './patient-record.component.css',
@@ -86,6 +87,7 @@ export class PatientRecordComponent implements OnInit {
   readonly activePatientService = inject(ActivePatientService);
   private readonly patientApi = inject(PatientService);
   private readonly workspace = inject(WorkspaceStore);
+  private readonly printService = inject(ClinicalDocumentPrintService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -322,8 +324,13 @@ export class PatientRecordComponent implements OnInit {
   }
 
   printDocument(): void {
-    if (this.recordActions.has('PRINT_DOCUMENT'))
-      this.prescriptions.printRecord(this.history.encounters()[0]);
+    const patientId = this.activePatientService.patientId();
+    if (!patientId) return;
+    this.printService.openPreview({
+      source: 'CLINICAL_HISTORY',
+      patientId,
+      growthReference: 'AUTO',
+    });
   }
 
   navigateToGrowthCurves(): void {

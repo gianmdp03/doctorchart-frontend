@@ -781,7 +781,26 @@ export function createInitialDemoSession(specialtyId: number, openWizardFirst: b
   session.prescriptions = cohort.prescriptions;
   session.studies = cohort.studies;
   session.revisions = cohort.revisions;
-  session.nextId = cohort.nextId;
+  const sigSvg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="72" viewBox="0 0 220 72">' +
+    '<path d="M18 50 C 32 14, 48 16, 52 46 C 56 62, 74 20, 88 38 C 98 50, 114 22, 132 42 C 148 56, 174 30, 202 36" ' +
+    'fill="none" stroke="#111827" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const nowIso = new Date().toISOString();
+  session.signatures = [
+    {
+      id: cohort.nextId,
+      name: 'Dra. Valentina Gómez',
+      stampText: 'Dra. Valentina Gómez — MN 148.920',
+      isFavorite: true,
+      width: 220,
+      height: 72,
+      sha256: 'demo-sig-valentina-1',
+      dataUrl: `data:image/svg+xml;base64,${btoa(sigSvg)}`,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    },
+  ];
+  session.nextId = cohort.nextId + 1;
 
   return session;
 }

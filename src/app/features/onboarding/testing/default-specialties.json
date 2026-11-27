@@ -291,6 +291,14 @@
             "enabled": true,
             "fields": [
               {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
+              {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",
                 "type": "TEXTAREA",
@@ -732,6 +740,14 @@
             "title": "Motivo y síntomas",
             "enabled": true,
             "fields": [
+              {
+                "key": "sys_disease",
+                "label": "Enfermedad",
+                "type": "TEXT",
+                "required": false,
+                "system": true,
+                "placeholder": "Ej.: Bronquitis aguda (opcional)"
+              },
               {
                 "key": "chiefComplaint",
                 "label": "Motivo de consulta",

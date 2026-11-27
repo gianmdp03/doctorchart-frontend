@@ -20,6 +20,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { ClinicalEncounterService } from '../../core/services/clinical-encounter.service';
+import { ClinicalDocumentPrintService } from '../../core/services/clinical-document-print.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClinicalRevisionsComponent } from '../patient-record/clinical-revisions.component';
@@ -56,11 +57,20 @@ import {
 export class EncounterDetailPageComponent implements OnInit, OnDestroy {
   private readonly interaction = inject(InteractionStatusService);
   private readonly service = inject(ClinicalEncounterService);
+  private readonly printService = inject(ClinicalDocumentPrintService);
   private readonly auth = inject(AuthService);
   private readonly activePatient = inject(ActivePatientService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly clock = inject(UserClockService);
+
+  printEncounter(record: ClinicalEncounterDetail): void {
+    this.printService.openPreview({
+      source: 'CLINICAL_HISTORY',
+      patientId: record.patientId,
+      encounterId: record.id,
+    });
+  }
   private epoch = 0;
   private destroyed = false;
   private owner = this.identity();

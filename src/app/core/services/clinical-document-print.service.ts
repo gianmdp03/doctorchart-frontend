@@ -1,19 +1,24 @@
 import { ClinicalContextService } from './clinical-context.service';
 import { DestroyRef, effect, inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { EMPTY, Observable, switchMap } from 'rxjs';
+import { EMPTY, Observable, of, switchMap, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ClinicalPrintDocument, PrintDocumentReference } from '../models/clinical-print-document.model';
+import { SignatureChoice } from '../models/doctor-signature.model';
 import { AuthService } from './auth.service';
+import { DoctorPrintIdentityService } from './doctor-print-identity.service';
 
 @Injectable({ providedIn: 'root' })
 export class ClinicalDocumentPrintService {
  private readonly clinicalScope = inject(ClinicalContextService);
+ private readonly printIdentity = inject(DoctorPrintIdentityService);
  private contextKey(): string | null { const owner=this.auth.currentUser()?.id; return owner ? JSON.stringify([owner,this.clinicalScope.id()]) : null; }
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   readonly errorMessage = signal<string | null>(null);
+  readonly previewRequest = signal<PrintDocumentReference | null>(null);
   private readonly previews = new Map<string, Window | null>();
+  private readonly previewBlobCache = new Map<string, Blob>();
   private owner = this.contextKey();
 
   constructor() {
@@ -23,6 +28,8 @@ export class ClinicalDocumentPrintService {
         try { if (preview && !preview.closed) preview.close(); } catch {}
       }
       this.previews.clear();
+      this.previewBlobCache.clear();
+      this.previewRequest.set(null);
     };
     effect(() => {
       const owner = this.contextKey();
@@ -38,10 +45,67 @@ export class ClinicalDocumentPrintService {
     );
   }
 
-  getPdfBlob(reference: PrintDocumentReference): Observable<Blob> {
-    const source = this.origin(reference);
-    const params = reference.type ? new HttpParams().set('type', reference.type) : new HttpParams();
-    return this.http.get(source + '/pdf', { params, responseType: 'blob' });
+  getPdfBlob(reference: PrintDocumentReference, choice?: SignatureChoice): Observable<Blob> {
+    let params = reference.type ? new HttpParams().set('type', reference.type) : new HttpParams();
+    if (reference.source === 'CLINICAL_HISTORY') {
+      if (reference.encounterId) {
+        params = params.set('encounterId', String(reference.encounterId));
+      }
+      if (reference.growthReference) {
+        params = params.set('growthReference', reference.growthReference);
+      }
+    }
+    const effective = choice ?? reference.signatureChoice;
+    if (effective?.mode === 'NONE') {
+      params = params.set('signatureMode', 'none');
+    } else if (effective?.mode === 'SELECTED') {
+      params = params.set('signatureId', String(effective.signatureId));
+    }
+    if (reference.source === 'CLINICAL_HISTORY') {
+      return this.http.get(`${environment.apiUrl}/patients/${reference.patientId}/clinical-history/pdf`, {
+        params,
+        responseType: 'blob',
+      });
+    }
+    return this.http.get(this.origin(reference) + '/pdf', { params, responseType: 'blob' });
+  }
+
+  getPreviewPdfBlob(reference: PrintDocumentReference, choice?: SignatureChoice, signatureSha = ''): Observable<Blob> {
+    const effective = choice ?? reference.signatureChoice ?? { mode: 'DEFAULT' as const };
+    const choiceKey = effective.mode === 'SELECTED'
+      ? `selected:${effective.signatureId}:${signatureSha}`
+      : effective.mode === 'NONE'
+        ? 'none'
+        : `default:${signatureSha}`;
+    const logoKey = this.printIdentity.logoSha256() ?? '';
+    const licenseKey = this.printIdentity.authoritativeLicense();
+    const cacheKey = `${this.contextKey() ?? 'anon'}|${reference.source}|${reference.patientId}|${reference.id ?? reference.encounterId ?? ''}|${reference.growthReference ?? ''}|${reference.type ?? ''}|${choiceKey}|${logoKey}|${licenseKey}`;
+    const cached = this.previewBlobCache.get(cacheKey);
+    if (cached) {
+      return of(cached);
+    }
+    return this.getPdfBlob(reference, effective).pipe(
+      tap((blob) => {
+        if (this.previewBlobCache.size >= 12) {
+          const oldest = this.previewBlobCache.keys().next().value;
+          if (oldest !== undefined) this.previewBlobCache.delete(oldest);
+        }
+        this.previewBlobCache.set(cacheKey, blob);
+      }),
+    );
+  }
+
+  clearPreviewCache(): void {
+    this.previewBlobCache.clear();
+  }
+
+  openPreview(reference: PrintDocumentReference, choice?: SignatureChoice): void {
+    this.errorMessage.set(null);
+    this.previewRequest.set(choice ? { ...reference, signatureChoice: choice } : reference);
+  }
+
+  closePreview(): void {
+    this.previewRequest.set(null);
   }
 
   private origin(reference: PrintDocumentReference): string {
@@ -49,8 +113,14 @@ export class ClinicalDocumentPrintService {
     return `${environment.apiUrl}/patients/${reference.patientId}/${collection}/${reference.id}`;
   }
 
-  issue(reference: PrintDocumentReference): Observable<{id: number}> {
-    const body = reference.type ? { type: reference.type } : {};
+  issue(reference: PrintDocumentReference, choice?: SignatureChoice): Observable<{id: number}> {
+    const body: { type?: string; signatureId?: number | null } = reference.type ? { type: reference.type } : {};
+    const effective = choice ?? reference.signatureChoice;
+    if (effective?.mode === 'NONE') {
+      body.signatureId = null;
+    } else if (effective?.mode === 'SELECTED') {
+      body.signatureId = effective.signatureId;
+    }
     return this.http.post<{id: number}>(this.origin(reference) + '/documents', body);
   }
 
@@ -58,7 +128,7 @@ export class ClinicalDocumentPrintService {
     return this.http.get(`${environment.apiUrl}/patients/${patientId}/documents/${issueId}/pdf`, { responseType: 'blob' });
   }
 
-  openPdfInNewTab(reference: PrintDocumentReference): void {
+  openPdfInNewTab(reference: PrintDocumentReference, choice?: SignatureChoice): void {
     if (typeof window === 'undefined') return;
     this.errorMessage.set(null);
     const owner = this.contextKey();
@@ -76,7 +146,7 @@ export class ClinicalDocumentPrintService {
       targetWindow = null;
     }
 
-    this.issue(reference).pipe(switchMap(issue => {
+    this.issue(reference, choice).pipe(switchMap(issue => {
       if (owner === this.contextKey()) return this.originalPdf(reference.patientId, issue.id);
       try { targetWindow?.close(); } catch {}
       return EMPTY;
