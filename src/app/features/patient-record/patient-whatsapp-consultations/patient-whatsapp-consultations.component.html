@@ -1,0 +1,356 @@
+<div class="whatsapp-container">
+  <header class="whatsapp-header">
+    <div class="header-copy">
+      <div class="header-title-row">
+        <ng-icon name="lucideMessageCircle" class="header-icon" aria-hidden="true" />
+        <h2 class="section-title">Consultas por WhatsApp</h2>
+        @if (store.loaded()) {
+          <span class="count-badge">{{ store.consultations().length }}</span>
+        }
+      </div>
+      <p class="section-subtitle">
+        Registro manual e historial cronológico de consultas e indicaciones médicas realizadas por WhatsApp para este paciente.
+      </p>
+    </div>
+
+    @if (!store.isFormOpen()) {
+      <button
+        type="button"
+        class="dc-button dc-button--primary new-whatsapp-btn"
+        (click)="openCreateForm()"
+      >
+        <ng-icon name="lucidePlus" aria-hidden="true" />
+        <span>Nueva consulta por WhatsApp</span>
+      </button>
+    }
+  </header>
+
+  @if (store.isFormOpen()) {
+    <section class="whatsapp-form-card" aria-label="Registrar nueva consulta por WhatsApp">
+      <div class="form-card-header">
+        <h3>Nueva consulta por WhatsApp</h3>
+      </div>
+
+      @if (store.saveError(); as error) {
+        <div class="alert-box alert-error" role="alert">
+          <ng-icon name="lucideAlertCircle" class="alert-icon" aria-hidden="true" />
+          <span>{{ error }}</span>
+        </div>
+      }
+
+      <form (ngSubmit)="submitCreate()" class="whatsapp-form" novalidate>
+        <div class="datetime-row">
+          <div class="form-group">
+            <label for="wa-consulted-date" class="form-label">
+              Fecha de la consulta <span class="required-star" aria-hidden="true">*</span>
+            </label>
+            <app-date-picker
+              inputId="wa-consulted-date"
+              inputLabel="Fecha de la consulta"
+              [required]="true"
+              [max]="todayIso()"
+              [value]="store.draftDate()"
+              (valueChange)="onDateChange($event)"
+            />
+          </div>
+
+          <div class="form-group">
+            <span class="form-label">
+              Hora de la consulta <span class="required-star" aria-hidden="true">*</span>
+            </span>
+            <app-time-picker
+              [ngModel]="store.draftTime()"
+              (ngModelChange)="onTimeChange($event)"
+              name="consultedTime"
+              label="Hora de la consulta"
+              [disabled]="store.isSaving()"
+            />
+          </div>
+
+          <div class="use-now-wrap">
+            <button
+              type="button"
+              class="dc-button use-now-btn"
+              [disabled]="store.isSaving()"
+              (click)="useCurrentDateTime()"
+              title="Completar fecha y hora actuales"
+            >
+              <ng-icon name="lucideClock" aria-hidden="true" />
+              <span>Usar actual</span>
+            </button>
+          </div>
+        </div>
+
+        @if (store.draftTime() && timeError(); as tError) {
+          <span class="field-error" role="alert">{{ tError }}</span>
+        }
+
+        @if (instantResult().error; as dtError) {
+          <span class="field-error" role="alert">{{ dtError }}</span>
+        }
+
+        <div class="form-group">
+          <label for="wa-content" class="form-label">
+            Descripción de la consulta <span class="required-star" aria-hidden="true">*</span>
+          </label>
+          <textarea
+            id="wa-content"
+            name="content"
+            rows="6"
+            required
+            maxlength="20000"
+            class="form-textarea"
+            [ngModel]="store.draftContent()"
+            (ngModelChange)="onContentChange($event)"
+            [disabled]="store.isSaving()"
+            placeholder="Registrá el motivo de consulta, síntomas referidos, recomendaciones, indicaciones o tratamientos brindados por WhatsApp."
+          ></textarea>
+          <div class="textarea-meta">
+            <span class="field-hint">Un único campo libre. Conserva párrafos y saltos de línea.</span>
+            <span class="char-counter">{{ store.draftContent().length }} / 20000</span>
+          </div>
+          @if (store.draftContent() && contentError(); as cError) {
+            <span class="field-error" role="alert">{{ cError }}</span>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="dc-button"
+            [disabled]="store.isSaving()"
+            (click)="cancelCreateForm()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="dc-button dc-button--primary"
+            [disabled]="!canSubmitCreate()"
+          >
+            {{ store.isSaving() ? 'Guardando…' : 'Guardar consulta' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (store.pendingAnnul(); as target) {
+    <section class="inline-confirmation" aria-label="Confirmar anulación de consulta por WhatsApp">
+      <p>
+        La consulta del <strong>{{ formatDate(target.consultedAt) }}</strong> a las
+        <strong>{{ formatTime(target.consultedAt) }} h</strong> dejará de mostrarse como vigente y se conservará en el historial de revisiones.
+      </p>
+      <app-annulment-prompt
+        [target]="target.id"
+        [busy]="store.isAnnulling()"
+        (cancel)="store.cancelAnnul()"
+        (confirm)="store.confirmAnnul(patientId(), $event)"
+      />
+      @if (store.annulError(); as aError) {
+        <p class="field-error" role="alert">{{ aError }}</p>
+      }
+    </section>
+  }
+
+  @if (store.error(); as loadError) {
+    <div class="alert-box alert-error" role="alert">
+      <ng-icon name="lucideAlertCircle" class="alert-icon" aria-hidden="true" />
+      <span>{{ loadError }}</span>
+      <button type="button" class="dc-button retry-btn" (click)="retryLoad()">Reintentar</button>
+    </div>
+  }
+
+  <section class="history-section" aria-label="Historial de consultas por WhatsApp">
+    @if (store.isLoading() && !store.loaded()) {
+      <div class="loading-state" role="status">
+        <div class="spinner-small"></div>
+        <p>Cargando consultas por WhatsApp…</p>
+      </div>
+    } @else if (!hasConsultations() && !store.error()) {
+      <div class="empty-state">
+        <ng-icon name="lucideMessageCircle" class="empty-icon" aria-hidden="true" />
+        <h3>No hay consultas por WhatsApp registradas</h3>
+        <p>
+          Registrá manualmente las consultas, recomendaciones o indicaciones enviadas por WhatsApp para tenerlas siempre a mano en la ficha del paciente.
+        </p>
+        @if (!store.isFormOpen()) {
+          <button
+            type="button"
+            class="dc-button dc-button--primary"
+            (click)="openCreateForm()"
+          >
+            <ng-icon name="lucidePlus" aria-hidden="true" />
+            <span>Nueva consulta por WhatsApp</span>
+          </button>
+        }
+      </div>
+    } @else if (hasConsultations()) {
+      <div class="consultations-list">
+        @for (item of store.consultations(); track item.id) {
+          <article class="consultation-card">
+            @if (store.editingId() === item.id) {
+              <form (ngSubmit)="submitEdit(item)" class="whatsapp-form" novalidate>
+                <div class="form-card-header">
+                  <h4>Corregir consulta por WhatsApp</h4>
+                  <button
+                    type="button"
+                    class="dc-button dc-button--quiet use-now-btn"
+                    [disabled]="store.isUpdating()"
+                    (click)="useCurrentForEdit()"
+                  >
+                    <ng-icon name="lucideClock" aria-hidden="true" />
+                    <span>Usar actual</span>
+                  </button>
+                </div>
+
+                @if (store.updateError(); as uError) {
+                  <div class="alert-box alert-error" role="alert">
+                    <ng-icon name="lucideAlertCircle" class="alert-icon" aria-hidden="true" />
+                    <span>{{ uError }}</span>
+                  </div>
+                }
+
+                <div class="datetime-row">
+                  <div class="form-group">
+                    <label [for]="'wa-edit-date-' + item.id" class="form-label">
+                      Fecha de la consulta <span class="required-star" aria-hidden="true">*</span>
+                    </label>
+                    <app-date-picker
+                      [inputId]="'wa-edit-date-' + item.id"
+                      inputLabel="Fecha de la consulta"
+                      [required]="true"
+                      [max]="todayIso()"
+                      [value]="editDate()"
+                      (valueChange)="onEditDateChange($event)"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <span class="form-label">
+                      Hora de la consulta <span class="required-star" aria-hidden="true">*</span>
+                    </span>
+                    <app-time-picker
+                      [ngModel]="editTime()"
+                      (ngModelChange)="onEditTimeChange($event)"
+                      [name]="'editTime-' + item.id"
+                      label="Hora de la consulta"
+                      [disabled]="store.isUpdating()"
+                    />
+                    @if (editTime() && editTimeError(); as etError) {
+                      <span class="field-error" role="alert">{{ etError }}</span>
+                    }
+                  </div>
+                </div>
+
+                @if (editInstantResult().error; as edtError) {
+                  <span class="field-error" role="alert">{{ edtError }}</span>
+                }
+
+                <div class="form-group">
+                  <label [for]="'wa-edit-content-' + item.id" class="form-label">
+                    Descripción de la consulta <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <textarea
+                    [id]="'wa-edit-content-' + item.id"
+                    [name]="'editContent-' + item.id"
+                    rows="6"
+                    required
+                    maxlength="20000"
+                    class="form-textarea"
+                    [ngModel]="editContent()"
+                    (ngModelChange)="editContent.set($event)"
+                    [disabled]="store.isUpdating()"
+                  ></textarea>
+                  @if (editContent() && editContentError(); as ecError) {
+                    <span class="field-error" role="alert">{{ ecError }}</span>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label [for]="'wa-edit-reason-' + item.id" class="form-label">
+                    Motivo de la corrección (opcional)
+                  </label>
+                  <input
+                    [id]="'wa-edit-reason-' + item.id"
+                    [name]="'editReason-' + item.id"
+                    type="text"
+                    maxlength="1000"
+                    class="form-input"
+                    [ngModel]="editReason()"
+                    (ngModelChange)="editReason.set($event)"
+                    [disabled]="store.isUpdating()"
+                    placeholder="Ej: Precisión en la dosis indicada"
+                  />
+                  @if (editReasonError(); as erError) {
+                    <span class="field-error" role="alert">{{ erError }}</span>
+                  }
+                </div>
+
+                <div class="form-actions">
+                  <button
+                    type="button"
+                    class="dc-button"
+                    [disabled]="store.isUpdating()"
+                    (click)="cancelEdit()"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    class="dc-button dc-button--primary"
+                    [disabled]="!canSubmitEdit()"
+                  >
+                    {{ store.isUpdating() ? 'Guardando…' : 'Guardar corrección' }}
+                  </button>
+                </div>
+              </form>
+            } @else {
+              <div class="card-top">
+                <div class="card-datetime">
+                  <span class="datetime-pill">
+                    <ng-icon name="lucideCalendar" aria-hidden="true" />
+                    <strong>{{ formatDate(item.consultedAt) }}</strong>
+                  </span>
+                  <span class="datetime-pill">
+                    <ng-icon name="lucideClock" aria-hidden="true" />
+                    <strong>{{ formatTime(item.consultedAt) }} h</strong>
+                  </span>
+                  @if (item.version > 0) {
+                    <span class="edited-badge">Corregida</span>
+                  }
+                </div>
+
+                <div class="card-actions">
+                  <button
+                    type="button"
+                    class="dc-button dc-button--quiet action-btn"
+                    (click)="startEdit(item)"
+                  >
+                    <ng-icon name="lucidePencil" aria-hidden="true" />
+                    <span>Corregir</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="dc-button dc-button--quiet action-btn action-danger"
+                    (click)="store.requestAnnul(item)"
+                    aria-label="Anular consulta por WhatsApp"
+                  >
+                    <ng-icon name="lucideTrash2" aria-hidden="true" />
+                    <span>Anular</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="card-content">{{ item.content }}</div>
+
+              <footer class="card-footer">
+                <span>Registrada el {{ formatDateTime(item.createdAt) }}</span>
+              </footer>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>

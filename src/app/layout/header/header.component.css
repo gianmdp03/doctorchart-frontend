@@ -26,6 +26,14 @@
 .menu-action-icon { font-size: 1.125rem; flex-shrink: 0; }
 .logout-item { color: var(--dc-danger); }
 :where(button, a):focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 3px; }
-@media (max-width: 1000px) { .top-app-header { padding-inline: 20px; } .accessibility-badge { display: none; } }
-@media (max-width: 768px) { .top-app-header { min-height: 60px; padding: 8px 16px; gap: 8px; } .header-center { display: none; } .header-right { gap: 6px; } .accessibility-icon { display: none; } .workspace-label { font-size: .75rem; } .profile-dropdown-menu { position: fixed; top: auto; right: 12px; margin-top: 54px; } }
-@media (max-width: 360px) { .header-left { min-width: 0; } .workspace-label { display: block; } }
+@media (max-width: 1024px), (max-width: 1200px) and (pointer: coarse) {
+  .top-app-header { min-height: var(--app-header-height); padding: 5px clamp(16px, 3vw, 32px); gap: 8px; }
+  .header-center, .accessibility-badge { display: none; }
+  .header-right { gap: 6px; }
+  .accessibility-btn { min-width: 44px; }
+  .profile-dropdown-menu { overscroll-behavior: contain; }
+}
+@media (max-width: 600px) {
+  .accessibility-icon { display: none; }
+  .workspace-label { display: block; overflow-wrap: anywhere; }
+}

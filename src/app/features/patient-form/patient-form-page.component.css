@@ -107,6 +107,11 @@
   gap: 12px;
 }
 
+@media (max-width: 480px) {
+  .form-card { padding: 16px; }
+  .form-actions-bar { display: grid; grid-template-columns: minmax(0, 1fr); padding: 12px; }
+}
+
 .btn-cancel {
   padding: 0.65rem 1.4rem;
   background: var(--dc-surface, #ffffff);

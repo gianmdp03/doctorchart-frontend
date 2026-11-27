@@ -28,7 +28,7 @@
           #directorySearch
           type="search"
           class="directory-search-input"
-          placeholder="Buscar por DNI, nombre o teléfono..."
+          placeholder="DNI, nombre o teléfono"
           aria-label="Buscar pacientes"
           [value]="searchQuery()"
           (input)="onSearchInput($event)"
@@ -46,33 +46,6 @@
         }
       </div>
 
-      <!-- Disease Filter Input (matches latest active encounter) -->
-      <div class="directory-search-wrapper directory-disease-wrapper" role="search">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-        </svg>
-        <input
-          #diseaseSearch
-          type="search"
-          class="directory-search-input"
-          placeholder="Enfermedad (ej.: bronquitis)..."
-          aria-label="Filtrar por enfermedad en la última historia clínica"
-          [value]="diseaseQuery()"
-          (input)="onDiseaseInput($event)"
-          (keydown.enter)="onDiseaseEnter()"
-        />
-        @if (diseaseQuery()) {
-          <button
-            type="button"
-            class="clear-search-btn"
-            aria-label="Limpiar filtro de enfermedad"
-            (click)="clearDisease(); diseaseSearch.focus()"
-          >
-            ✕
-          </button>
-        }
-      </div>
-
       <details class="directory-more">
         <summary>Más opciones</summary>
         <nav aria-label="Opciones administrativas">
@@ -82,12 +55,43 @@
       </details>
     </div>
 
-    <section class="directory-filters" aria-label="Categorías de pacientes">
-      <div class="directory-filters-heading">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
-          <path d="M4 7h16M7 12h10M10 17h4" />
-        </svg>
-        <span>Filtrar pacientes</span>
+    <details class="directory-filters" [open]="filtersInitiallyOpen()">
+      <summary class="directory-filters-heading">
+        Filtrar pacientes
+        @if (selectedFilter() !== 'ALL' || diseaseQuery().trim()) {
+          <span class="active-filters-note">Filtros aplicados</span>
+        }
+      </summary>
+      <div class="directory-filters-topbar">
+        <div class="directory-disease-filter" role="search">
+          <label for="patient-disease-filter" class="disease-filter-label">Por enfermedad</label>
+          <div class="disease-filter-input-wrap">
+            <svg class="disease-filter-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
+            <input
+              id="patient-disease-filter"
+              #diseaseSearch
+              type="search"
+              class="disease-filter-input"
+              placeholder="Ej.: bronquitis, asma..."
+              aria-label="Filtrar por enfermedad en la última historia clínica"
+              [value]="diseaseQuery()"
+              (input)="onDiseaseInput($event)"
+              (keydown.enter)="onDiseaseEnter()"
+            />
+            @if (diseaseQuery()) {
+              <button
+                type="button"
+                class="clear-disease-btn"
+                aria-label="Limpiar filtro de enfermedad"
+                (click)="clearDisease(); diseaseSearch.focus()"
+              >
+                ✕
+              </button>
+            }
+          </div>
+        </div>
       </div>
       <div class="directory-filter-options" role="group" aria-label="Filtrar por categoría">
         <button
@@ -174,7 +178,7 @@
         }
 
       </div>
-    </section>
+    </details>
   </div>
 
   @if (loadError(); as error) { <p role="alert">{{ error }} <button type="button" class="m3-chip" (click)="retryLoad()">Reintentar</button></p> }
@@ -182,20 +186,37 @@
     @for (patient of patients(); track patient.id) {
       <article class="mobile-patient-row">
         <button type="button" class="mobile-patient-main" (click)="selectPatient(patient)">
-          <span class="mobile-avatar" aria-hidden="true">{{ patient.initials }}</span><span class="mobile-patient-copy"><strong>{{ patient.fullName }}</strong><span>{{ patient.ageDisplay }} · {{ patient.dni }}</span></span><span aria-hidden="true">›</span>
+          <span class="mobile-avatar" aria-hidden="true">{{ patient.initials }}</span>
+          <span class="mobile-patient-copy">
+            <strong>{{ patient.fullName }}</strong>
+            <span>{{ patient.ageDisplay }} · DNI {{ patient.rawNationalId || '—' }}</span>
+          </span>
+          <span class="sr-only">Abrir ficha clínica</span>
+          <span class="mobile-patient-arrow" aria-hidden="true">›</span>
         </button>
-        <details><summary>Más datos<span class="sr-only"> de {{ patient.fullName }}</span></summary><div class="mobile-patient-extra"><span>Contacto: {{ (patient.rawPhone | phoneDisplay | async) || patient.rawPhone || 'Sin registrar' }}</span><span>{{ patient.lastCheckup }}</span>@if (doctorSpecialtyService.supportsGrowthCharts()) { <span>Vacunación: {{ patient.hasPendingVaccine ? 'Pendiente' : 'Al día' }}</span> }<button type="button" (click)="selectPatient(patient)">Abrir ficha →</button></div></details>
+        <details>
+          <summary>Más datos<span class="sr-only"> de {{ patient.fullName }}</span></summary>
+          <dl class="mobile-patient-extra">
+            <div><dt>Identificación</dt><dd>ID #{{ patient.id }} · {{ patient.genderLabel }}</dd></div>
+            <div><dt>Nacimiento</dt><dd>{{ patient.birthDateDisplay }}</dd></div>
+            <div><dt>Contacto</dt><dd>{{ (patient.rawPhone | phoneDisplay | async) || patient.rawPhone || 'Sin registrar' }}</dd></div>
+            <div><dt>Controles</dt><dd>{{ patient.lastCheckup }}</dd></div>
+            <div><dt>Última enfermedad</dt><dd>{{ patient.lastEncounterDisease || 'Sin registrar' }}</dd></div>
+            @if (doctorSpecialtyService.supportsGrowthCharts()) {
+              <div><dt>Vacunación</dt><dd>{{ patient.hasPendingVaccine ? 'Pendiente' : 'Al día' }}</dd></div>
+            }
+          </dl>
+          <button class="dc-button dc-button--quiet mobile-open-record" type="button" (click)="selectPatient(patient)">Abrir ficha</button>
+        </details>
       </article>
-    } @empty {
-      @if (!isLoading() && !loadError()) {
-        <p>No se encontraron pacientes con los filtros actuales.</p>
-        <button type="button" class="dc-button" (click)="resetFilters()">Restablecer filtros</button>
-      }
     }
   </div>
   <!-- Cards Grid -->
   <!-- Patients Table -->
   <div class="patient-table-card">
+    <div class="patient-table-hint">
+      Hacé clic en cualquier fila para abrir la ficha clínica del paciente
+    </div>
     <div class="patient-table-responsive">
       <table class="patient-table" aria-label="Directorio de pacientes">
         <thead>
@@ -209,12 +230,19 @@
             @if (doctorSpecialtyService.supportsGrowthCharts()) {
               <th class="th-vaccines" scope="col">Vacunación</th>
             }
-            <th class="th-actions text-right" scope="col">Acciones</th>
           </tr>
         </thead>
         <tbody>
           @for (patient of patients(); track patient.id) {
-            <tr class="patient-row">
+            <tr
+              class="patient-row patient-row-clickable"
+              tabindex="0"
+              role="button"
+              [attr.aria-label]="'Abrir ficha clínica de ' + patient.fullName"
+              (click)="selectPatient(patient)"
+              (keydown.enter)="selectPatient(patient)"
+              (keydown.space)="$event.preventDefault(); selectPatient(patient)"
+            >
               <!-- Paciente (Avatar, Nombre, ID, Género) -->
               <td class="td-patient">
                 <div class="patient-cell-flex">
@@ -234,6 +262,12 @@
                       } @else if (patient.gender === 'female') {
                         <span class="gender-pill gender-pill-female" title="Mujer">♀ Mujer</span>
                       }
+                      <span class="patient-open-hint">
+                        Abrir ficha
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -323,21 +357,6 @@
                 </td>
               }
 
-              <!-- Acciones -->
-              <td data-label="Acciones" class="td-actions text-right">
-                <button
-                  type="button"
-                  class="btn-table-action"
-                  [attr.aria-label]="'Ver ficha de ' + patient.fullName"
-                  (click)="selectPatient(patient)"
-                  [title]="'Abrir ficha clínica de ' + patient.fullName"
-                >
-                  <span>Ver Ficha</span>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </button>
-              </td>
             </tr>
           } @empty {
             <tr>

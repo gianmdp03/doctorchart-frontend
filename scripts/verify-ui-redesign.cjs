@@ -164,7 +164,7 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.locator('#public-email').fill('prueba@example.test');
       await p.locator('#public-consent').check();
       await p.locator('#public-confirm').click();
-      await p.getByText('reserva-sintetica', { exact: true }).waitFor();
+      await p.getByRole('heading', { name: 'Turno confirmado', exact: true }).waitFor();
       assert.ok(boundary.writes.some(w => w.path.endsWith('/bookings') && w.body.specialtyContextId === '101' && !w.body.patientId));
     });
     await run('confirmation', anonymous, '/appointments', '#lookup-dni', async p => {
@@ -180,7 +180,7 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.getByRole('button', { name: 'Confirmar código' }).click();
       assert.equal(await p.locator('#portal-change-reason').inputValue(), 'Necesito elegir otro horario por un compromiso laboral.');
       await p.reload();
-      await p.locator('.constancia').waitFor();
+      await p.locator('.appointment-card').first().waitFor();
       await p.getByRole('button', { name: 'Cancelar turno', exact: true }).click();
       await p.locator('#portal-change-reason').fill('No voy a poder asistir ese día.');
     });
@@ -231,8 +231,17 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
       await p.getByRole('heading', { name: 'Actividad clínica' }).waitFor();
     });
     await run('mobile-navigation', doctor, '/dashboard?specialtyContextId=101', '.notes-textarea', async p => {
-      await p.setViewportSize({ width: 390, height: 844 });
       const toggle = p.getByRole('button', { name: 'Menú', exact: true });
+      for (const width of [834, 390]) {
+        await p.setViewportSize({ width, height: 844 });
+        await toggle.focus();
+        await p.keyboard.press('Enter');
+        const link = p.getByRole('link', { name: 'Agenda de turnos', exact: true });
+        await link.focus();
+        await p.keyboard.press('Escape');
+        assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
+        assert.equal(await toggle.evaluate(button => document.activeElement === button), true);
+      }
       await toggle.focus();
       await p.keyboard.press('Enter');
       await p.getByRole('link', { name: 'Agenda de turnos', exact: true }).waitFor();
@@ -346,6 +355,7 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
     await run('onboarding-selection', newDoctor, '/onboarding/select-specialty', '.onboarding-card');
     await run('field-editor', doctor, '/onboarding/setup?specialtyContextId=101', '.step-button', async p => {
       await p.locator('.step-button').filter({ hasText: 'Historia Clínica' }).click();
+      await p.getByRole('button', { name: 'Editar estructura', exact: true }).click();
       await p.locator('article[data-field-key="chiefComplaint"]').getByRole('button', { name: 'Editar', exact: true }).click();
       await p.getByLabel('Etiqueta', { exact: true }).waitFor();
     });
@@ -378,18 +388,20 @@ const persist = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stri
     });
     for (const [route, title] of [['/calendar', 'Agenda de turnos'], ['/booking-publication', 'Reservas online']]) {
       await run('basic' + route.replace('/', '-'), basicDoctor, route, 'app-basic-booking-notice', async (p, boundary) => {
+        const previousWrites = boundary.writes.length;
         assert.equal(new URL(p.url()).pathname, route);
         await p.getByRole('heading', { name: title, exact: true }).waitFor();
         await p.getByRole('heading', { name: 'Tu plan Básico no incluye esta función' }).waitFor();
         await p.locator('.top-app-header').getByText('Plan Básico', { exact: true }).waitFor();
         assert.equal(await p.getByRole('link', { name: 'Ver planes', exact: true }).getAttribute('href'), '/pricing');
         assert.ok(!boundary.requests.some(r => /\/(?:booking-publication|bookings|availability)(?:\/|$)/.test(r.path)));
-        assert.equal(boundary.writes.length, 0);
+        assert.equal(boundary.writes.length, previousWrites);
         await p.locator('.sidebar-nav a[href="/dashboard"]').click();
         await p.locator('.patient-queue-card').waitFor();
         assert.equal(await p.locator('.agenda-card').count(), 0);
         await p.locator('.sidebar-nav a[href="' + route + '"]').click();
         await p.getByRole('heading', { name: 'Tu plan Básico no incluye esta función' }).waitFor();
+        assert.equal(boundary.writes.length, previousWrites);
         await p.setViewportSize({ width: 320, height: 844 });
         await setTheme(p, 'dark');
         await capture(p, 'basic' + route.replace('/', '-') + '-320-dark');

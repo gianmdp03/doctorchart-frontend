@@ -11,6 +11,9 @@
 .field input, .field textarea, .field select { width: 100%; min-height: var(--dc-control-height); padding: 11px 12px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); background: var(--dc-paper); color: var(--dc-text); font: inherit; font-size: .9375rem; line-height: 1.5; box-sizing: border-box; }
 .field textarea { resize: vertical; min-height: 108px; }
 .field input:hover, .field textarea:hover, .field select:hover { border-color: var(--dc-brand); }
+@media (pointer: coarse) {
+  .field :is(input, textarea, select) { font-size: 1rem; }
+}
 .field input:focus, .field textarea:focus, .field select:focus { outline: 2px solid var(--dc-focus); outline-offset: 2px; }
 .field.has-error input, .field.has-error textarea, .field.has-error select { border-color: var(--dc-danger); }
 .number-with-unit { display: flex; align-items: center; gap: 10px; }

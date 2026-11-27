@@ -6,6 +6,7 @@ import { displayLocalDate } from '../../core/date/display-date';
 import {
   Component,
   OnInit,
+  afterNextRender,
   inject,
   signal,
   computed,
@@ -148,6 +149,7 @@ export class PatientListComponent implements OnInit {
   readonly selectedFilter = signal<PatientDirectoryFilter>('ALL');
   readonly searchQuery = signal<string>('');
   readonly diseaseQuery = signal<string>('');
+  readonly filtersInitiallyOpen = signal(true);
   readonly isLoading = signal<boolean>(false);
 
   readonly currentPage = signal<number>(0);
@@ -185,7 +187,7 @@ export class PatientListComponent implements OnInit {
   });
 
   readonly visibleColumnsCount = computed(() =>
-    this.doctorSpecialtyService.supportsGrowthCharts() ? 8 : 7,
+    this.doctorSpecialtyService.supportsGrowthCharts() ? 7 : 6,
   );
 
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -200,6 +202,7 @@ export class PatientListComponent implements OnInit {
   });
 
   constructor() {
+    afterNextRender(() => this.filtersInitiallyOpen.set(window.innerWidth > 600));
     this.destroyRef.onDestroy(() => {
       if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
     });

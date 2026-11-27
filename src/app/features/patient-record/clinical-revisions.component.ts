@@ -6,6 +6,7 @@ import { WizardFormDefinition, WizardFormValues, WizardFormulaResults } from '..
 import { wizardRecordEntries } from '../../core/models/wizard-record-display';
 import { ClinicalAccessComponent } from './clinical-access.component';
 import { ClinicalDocumentToolsComponent } from './clinical-document-tools.component';
+import { formatInstant } from '../../core/date/user-time-zone';
 import { AccountReadScope } from '../../core/services/account-read-scope';
 import { PatientService } from '../../core/services/patient.service';
 
@@ -33,6 +34,8 @@ const labels: Record<string, string> = {
   orders: 'Órdenes',
   dose_id: 'Dosis',
   applied_at: 'Fecha de aplicación',
+  consulted_at: 'Fecha y hora de consulta',
+  content: 'Descripción de la consulta',
 };
 
 const sexLabels: Readonly<Record<string, string>> = {
@@ -125,7 +128,7 @@ export class ClinicalRevisionsComponent {
   readonly nextCalculation = signal<number | null>(null);
   readonly entityLabels = {
     PATIENT: 'Ficha clínica', ENCOUNTER: 'Consulta', PRESCRIPTION: 'Receta u orden',
-    STUDY: 'Estudio', VACCINATION: 'Vacunación',
+    STUDY: 'Estudio', VACCINATION: 'Vacunación', WHATSAPP_CONSULTATION: 'Consulta por WhatsApp',
   };
   private readonly patients = inject(PatientService);
   private readonly document = inject(DOCUMENT);
@@ -256,7 +259,12 @@ export class ClinicalRevisionsComponent {
         formulaContext: {},
       });
     }
-    const rows = Object.entries(labels).map(([key, label]) => ({ label, value: previous[key] }));
+    const rows = Object.entries(labels).map(([key, label]) => ({
+      label,
+      value: key === 'consulted_at' && typeof previous[key] === 'string'
+        ? formatInstant(previous[key] as string, true)
+        : previous[key],
+    }));
     const snapshot = previous['form_definition_snapshot'] as { categories?: Array<{ fields?: Array<{ key: string; label: string }> }> } | undefined;
     const values = previous['form_values'] as Record<string, unknown> | undefined;
     const fieldLabels = new Map(snapshot?.categories?.flatMap(

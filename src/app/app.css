@@ -11,8 +11,14 @@
 .splash-spinner { width: 24px; height: 24px; border: 2px solid var(--dc-line); border-top-color: var(--dc-brand); border-radius: 50%; animation: spin .9s linear infinite; }
 .splash-content button { min-height: 44px; padding: 10px 16px; border: 1px solid var(--dc-control-line); border-radius: var(--dc-radius-control); background: var(--dc-paper); color: var(--dc-text); font: inherit; cursor: pointer; }
 @keyframes spin { to { transform: rotate(360deg); } }
-@media (max-width: 1000px) { .app-main-content { padding: 24px; } }
-@media (max-width: 768px) { .app-layout-shell { flex-direction: column; } .app-main-viewport { min-height: 0; } .app-main-content { padding: 20px 16px; } }
+@media (max-width: 1024px), (max-width: 1200px) and (pointer: coarse) {
+  .app-layout-shell { flex-direction: column; }
+  .app-main-viewport { min-height: 0; }
+  .app-main-content { padding: 24px clamp(16px, 3vw, 32px); }
+}
+@media (max-width: 600px) {
+  .app-main-content { padding-block: 16px 24px; }
+}
 @media (prefers-reduced-motion: reduce) { .splash-spinner { animation-duration: 2s; } }
 @media print { .app-layout-shell, .app-splash-screen { display: none !important; } }
 

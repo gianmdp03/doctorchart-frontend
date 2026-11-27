@@ -6,11 +6,12 @@ import { PatientGrowthComponent } from './patient-growth/patient-growth.componen
 import { PatientPrescriptionsComponent } from './patient-prescriptions/patient-prescriptions.component';
 import { PatientVaccinationsComponent } from './patient-vaccinations/patient-vaccinations.component';
 import { PatientStudiesComponent } from './patient-studies/patient-studies.component';
+import { PatientWhatsappConsultationsComponent } from './patient-whatsapp-consultations/patient-whatsapp-consultations.component';
 
 export type PatientRecordTab =
-  'resumen' | 'historia' | 'vacunas' | 'curvas' | 'recetas' | 'estudios';
+  'resumen' | 'historia' | 'vacunas' | 'curvas' | 'recetas' | 'estudios' | 'whatsapp';
 export interface PatientRecordModule {
-  id: PatientRecordModuleId;
+  id: PatientRecordModuleId | 'WHATSAPP_CONSULTATIONS';
   tab: PatientRecordTab;
   label: string;
   component: Type<unknown>;
@@ -67,4 +68,13 @@ export const PATIENT_RECORD_MODULES: Record<PatientRecordModuleId, PatientRecord
     panel: true,
     patientIdInput: 'patientId',
   },
+};
+
+export const WHATSAPP_CONSULTATIONS_MODULE: PatientRecordModule = {
+  id: 'WHATSAPP_CONSULTATIONS',
+  tab: 'whatsapp',
+  label: 'Consultas por WhatsApp',
+  component: PatientWhatsappConsultationsComponent,
+  panel: true,
+  patientIdInput: 'patientId',
 };

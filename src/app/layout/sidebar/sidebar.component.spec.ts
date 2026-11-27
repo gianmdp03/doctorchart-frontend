@@ -20,6 +20,7 @@ describe('SidebarComponent', () => {
   const clinicsEnabled = signal<boolean>(false);
 
   beforeEach(async () => {
+    vi.stubGlobal('innerWidth', 1440);
     navigation.set(Object.values(CLINICAL_NAVIGATION));
     clinicsEnabled.set(false);
     authServiceMock = {
@@ -60,6 +61,8 @@ describe('SidebarComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => vi.unstubAllGlobals());
+
   it('should create the sidebar component', () => {
     expect(component).toBeTruthy();
   });
@@ -72,7 +75,7 @@ describe('SidebarComponent', () => {
 
   it('should render all nav icons including calculator and sliders', () => {
     const icons = fixture.nativeElement.querySelectorAll('.sidebar-nav ng-icon');
-    expect(icons.length).toBe(6);
+    expect(icons.length).toBe(7);
     icons.forEach((ic: HTMLElement) => {
       const svg = ic.querySelector('svg');
       expect(svg).toBeTruthy();
@@ -95,11 +98,11 @@ describe('SidebarComponent', () => {
     navigation.set([CLINICAL_NAVIGATION.DASHBOARD, CLINICAL_NAVIGATION.PATIENTS, CLINICAL_NAVIGATION.WIZARD]);
     fixture.detectChanges();
     const links = [...fixture.nativeElement.querySelectorAll('.sidebar-nav a')] as HTMLAnchorElement[];
-    expect(links.map(link => link.getAttribute('href'))).toEqual(['/specialties','/dashboard', '/patients', '/onboarding/setup']);
+    expect(links.map(link => link.getAttribute('href'))).toEqual(['/specialties', '/profile', '/dashboard', '/patients', '/onboarding/setup']);
     expect(fixture.nativeElement.textContent).not.toContain('Vacunación');
     navigation.set([CLINICAL_NAVIGATION.DASHBOARD, CLINICAL_NAVIGATION.VACCINATION, CLINICAL_NAVIGATION.PATIENTS, CLINICAL_NAVIGATION.WIZARD]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')[2].getAttribute('href')).toBe('/vaccination-calendar');
+    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')[3].getAttribute('href')).toBe('/vaccination-calendar');
   });
 
   it('shows scheduling navigation in Basic, Pro and Unlimited', () => {
@@ -114,7 +117,8 @@ describe('SidebarComponent', () => {
 
   it('clears clinical navigation while no workspace is loaded', () => {
     navigation.set([]); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.sidebar-nav a')).toHaveLength(1);
+    const links = [...fixture.nativeElement.querySelectorAll('.sidebar-nav a')] as HTMLAnchorElement[];
+    expect(links.map(link => link.getAttribute('href'))).toEqual(['/specialties', '/profile']);
   });
 
   it('should toggle collapse state', () => {
@@ -141,6 +145,23 @@ describe('SidebarComponent', () => {
     } finally {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
     }
+  });
+
+  it('closes the tablet menu with Escape and returns focus to the menu button', () => {
+    vi.stubGlobal('innerWidth', 834);
+    component.syncViewport();
+    const menu = fixture.nativeElement.querySelector('.mobile-nav-toggle') as HTMLButtonElement;
+    menu.click();
+    fixture.detectChanges();
+    expect(menu.getAttribute('aria-expanded')).toBe('true');
+
+    const link = fixture.nativeElement.querySelector('.sidebar-nav a') as HTMLAnchorElement;
+    link.focus();
+    link.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+
+    expect(menu.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(menu);
   });
 
   it('offers administration without clinical navigation for a super admin', () => {

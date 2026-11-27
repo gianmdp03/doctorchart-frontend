@@ -147,7 +147,7 @@
                   [disabled]="writing()"
                   [attr.aria-pressed]="day.date === date()"
                   [attr.aria-current]="day.date === today() ? 'date' : null"
-                  [attr.aria-label]="'Ver ' + weekday(day.date) + ' ' + displayDay(day.date)"
+                  [attr.aria-description]="weekday(day.date) + ' ' + displayDay(day.date)"
                 >
                   <strong>{{ day.date.slice(8) }}</strong>
                   <span>{{ dayCount() === 1 ? weekday(day.date) : weekday(day.date).slice(0, 3) }}</span>
@@ -216,14 +216,6 @@
                     [style.--lane]="entry.lane"
                     [style.--lanes]="entry.laneCount"
                     [attr.aria-pressed]="selected()?.id === booking.id"
-                    [attr.aria-label]="
-                      entry.time +
-                      ', ' +
-                      name +
-                      ', ' +
-                      status +
-                      bookingHint(booking, ', ')
-                    "
                     [title]="
                       entry.time +
                       ' · ' +
@@ -240,29 +232,33 @@
                       ><span>{{ name }}</span></span
                     >
                     <span class="event-meta"
-                      ><ng-icon [name]="statusIcons[bookingState(booking)]" /><span
+                      ><ng-icon [name]="statusIcons[bookingState(booking)]" aria-hidden="true" /><span
                         >{{ status }}
                         @if (booking.specialty && pixels(entry.height) >= 52) {
                           · {{ booking.specialty.name }}
                         }
                       </span></span
                     >
+                    <span class="sr-only">
+                      @if (booking.specialty && pixels(entry.height) < 52) { {{ booking.specialty.name }} }
+                      {{ bookingContext()(booking) }}
+                    </span>
                   </button>
                 } @else if (entry.slot; as slot) {
                   @let allowed = allowSlot()(slot);
+                  @let context = slotContext()(slot);
+                  @let contextualSlot = view() === '1' && !!context && pixels(entry.height) >= 28;
                   @let slotLabel = allowed ? (editor() === 'move' ? 'Reprogramar' : 'Agregar turno') : 'Disponible';
                   <button
                     type="button"
                     class="available-slot"
                     [class.move-slot]="editor() === 'move'"
+                    [class.slot-with-context]="contextualSlot"
                     [class.shared-cancellation]="entry.sharedCancellation"
                     [style.top.px]="pixels(entry.from - calendar.from)"
                     [style.height.px]="pixels(entry.height)"
                     [style.--lane]="entry.lane"
                     [style.--lanes]="entry.laneCount"
-                    [attr.aria-label]="
-                      slotLabel + ' ' + entry.time + ', ' + displayDay(day.date) + slotHint(slot, ', ')
-                    "
                     [attr.aria-pressed]="slotSelected()(slot)"
                     [attr.data-slot-start]="slot.start"
                     [title]="slotLabel + ' ' + entry.time + slotHint(slot, ' · ')"
@@ -272,7 +268,10 @@
                     @if (slotLabel !== 'Disponible') {
                       <ng-icon name="lucidePlus" aria-hidden="true" />
                     }
-                    <time>{{ entry.time }}</time><span>{{ slotLabel }}</span>
+                    <time>{{ entry.time }}</time>
+                    @if (contextualSlot) { <span class="slot-context">{{ context }}</span> }
+                    <span class="slot-action" [class.sr-only]="contextualSlot">{{ slotLabel }}</span>
+                    <span class="sr-only">{{ displayDay(day.date) }} @if (!contextualSlot) { {{ context }} }</span>
                   </button>
                 }
               }

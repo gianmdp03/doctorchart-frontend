@@ -39,6 +39,13 @@ export class PatientRecordDraftsService {
     medications: signal<PrescriptionItem[]>([]),
     studies: signal<string[]>([]),
   };
+  readonly whatsappConsultation = {
+    open: signal(false),
+    date: signal(''),
+    time: signal(''),
+    exactInstant: signal<string | null>(null),
+    content: signal(''),
+  };
 
   constructor() {
     effect(() => {
@@ -62,6 +69,11 @@ export class PatientRecordDraftsService {
     rx.frequency.set('Cada 8 horas'); rx.route.set('Vía Oral'); rx.duration.set(null);
     rx.instructions.set(''); rx.studyName.set(''); rx.studySpecification.set('');
     rx.diagnosis.set(''); rx.generalInstructions.set(''); rx.medications.set([]); rx.studies.set([]);
+    this.whatsappConsultation.open.set(false);
+    this.whatsappConsultation.date.set('');
+    this.whatsappConsultation.time.set('');
+    this.whatsappConsultation.exactInstant.set(null);
+    this.whatsappConsultation.content.set('');
     return this;
   }
 }

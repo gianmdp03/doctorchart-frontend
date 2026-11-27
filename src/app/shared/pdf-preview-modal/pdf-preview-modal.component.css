@@ -11,7 +11,7 @@
 
 .pdf-modal-dialog {
   width: min(960px, 100%);
-  height: min(88vh, 840px);
+  height: min(88dvh, 840px);
   background: var(--dc-surface, #ffffff);
   color: var(--dc-ink, #1c2b2a);
   border-radius: 1rem;
@@ -109,4 +109,15 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+@media (max-width: 600px), (max-height: 540px) and (pointer: coarse) {
+  .pdf-modal-backdrop { padding: 8px; }
+  .pdf-modal-dialog { height: 100%; max-height: calc(100dvh - 16px); overflow-y: auto; overscroll-behavior: contain; }
+  .pdf-modal-header, .pdf-modal-footer { padding: .75rem; }
+  .pdf-modal-body:has(.pdf-preview-frame) { min-height: 42dvh; }
+  .pdf-preview-frame { flex: 1; height: auto; }
+  .pdf-signature-bar, .footer-left, .footer-right { flex-wrap: wrap; max-width: 100%; }
+  .sig-select { min-height: 44px; max-width: 100%; }
+  .pdf-modal-state { padding: 1rem; }
 }

@@ -17,6 +17,7 @@ import { By } from '@angular/platform-browser';
 import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
 import { PatientVaccinationsComponent } from './patient-vaccinations/patient-vaccinations.component';
 import { PatientStudiesComponent } from './patient-studies/patient-studies.component';
+import { PatientWhatsappConsultationsComponent } from './patient-whatsapp-consultations/patient-whatsapp-consultations.component';
 import { PatientSummaryComponent } from './patient-summary/patient-summary.component';
 import { PatientPrescriptionsComponent } from './patient-prescriptions/patient-prescriptions.component';
 import { PatientStudiesStore } from './patient-studies/patient-studies.store';
@@ -374,6 +375,7 @@ describe('PatientRecordComponent', () => {
       '4. Evolución y Curvas',
       '5. Recetas y Órdenes',
       '6. Estudios realizados',
+      '7. Consultas por WhatsApp',
     ]);
     expect(component.tabs()[1].badge).toBe(2);
     expect(component.tabs()[3].badge).toBe(6);
@@ -389,6 +391,7 @@ describe('PatientRecordComponent', () => {
       '3. Vacunas',
       '5. Recetas y Órdenes',
       '6. Estudios realizados',
+      '7. Consultas por WhatsApp',
     ]);
   });
 
@@ -399,6 +402,7 @@ describe('PatientRecordComponent', () => {
       '1. Historia Clínica',
       '2. Estudios realizados',
       '3. Resumen clínico',
+      '4. Consultas por WhatsApp',
     ]);
     component.setTab('estudios');
     fixture.detectChanges();
@@ -423,6 +427,9 @@ describe('PatientRecordComponent', () => {
     queryParams.next(new Map([['tab', 'historia']]));
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.directive(ClinicalTimelineComponent))).toBeTruthy();
+    queryParams.next(new Map([['tab', 'whatsapp']]));
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.directive(PatientWhatsappConsultationsComponent))).toBeTruthy();
   });
 
   it('removes selected modules immediately and discards their pending growth response', () => {

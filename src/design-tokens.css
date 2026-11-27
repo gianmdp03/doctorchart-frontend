@@ -246,6 +246,6 @@
 @media (prefers-reduced-motion: reduce) {
   :root { --dc-motion: 0ms; }
 }
-@media (max-width: 768px) {
-  :root { --app-header-height: 60px; }
+@media (max-width: 1024px), (max-width: 1200px) and (pointer: coarse) {
+  :root { --app-header-height: 55px; }
 }

@@ -389,7 +389,7 @@
         {{
           focusedPoint()
             ? tooltip(focusedPoint()!)
-            : 'Pasá el cursor o enfocá una medición para ver sus datos.'
+            : 'Tocá una medición, pasá el cursor o seleccionala con el teclado para ver sus datos.'
         }}
       </div>
     }
@@ -441,7 +441,7 @@
     @if (chart().points.length > 0) {
       <details class="measurement-details">
         <summary>Detalle de {{ chart().points.length }} mediciones</summary>
-        <div class="table-scroll">
+        <div class="table-scroll" role="region" tabindex="0" [attr.aria-label]="'Detalle de mediciones: ' + definition().title">
           <table [attr.aria-label]="'Mediciones: ' + definition().title">
             <thead>
               <tr>

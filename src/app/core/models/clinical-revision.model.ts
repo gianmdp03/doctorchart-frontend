@@ -6,7 +6,7 @@ export interface ArchivedPatient {
 
 export interface ClinicalRevision {
   id: number;
-  entity: 'PATIENT' | 'ENCOUNTER' | 'PRESCRIPTION' | 'STUDY' | 'VACCINATION';
+  entity: 'PATIENT' | 'ENCOUNTER' | 'PRESCRIPTION' | 'STUDY' | 'VACCINATION' | 'WHATSAPP_CONSULTATION';
   entityId: number;
   actorUserId: string;
   occurredAt: string;

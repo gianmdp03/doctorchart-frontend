@@ -67,7 +67,9 @@ describe('M5 calendar',()=>{
   expect(api.status).toHaveBeenCalledWith(b.id, b.version, 'CHECKED_IN', expect.any(String));
   expect(page.querySelector('.slot-summary .status')?.textContent?.trim()).toBe(label);
   expect(page.querySelector('.reservations .status')?.textContent?.trim()).toBe(label);
-  expect(page.querySelector('.event[data-booking-id="1"]')?.getAttribute('aria-label')).toContain(label);
+  const event = page.querySelector('.event[data-booking-id="1"]');
+  expect(event?.textContent).toContain(label);
+  expect(event?.getAttribute('aria-label')).toBeNull();
  });
  it('asks the doctor for a patient-facing reason before cancelling',async()=>{
   await c.openBooking(b);

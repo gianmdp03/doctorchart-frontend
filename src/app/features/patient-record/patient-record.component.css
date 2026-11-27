@@ -223,13 +223,19 @@
   display: contents;
 }
 
-@media (max-width: 600px) {
-  .flattened-tabs-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 8px; overflow: visible; border: 1px solid var(--dc-outline, #dce7e9); border-radius: 14px; }
-  .flat-tab-btn { min-width: 0; min-height: 44px; padding: 10px 8px; white-space: normal; text-align: left; font-size: 12px; border-radius: 8px; margin: 0; }
-  .flat-tab-btn.active { background: var(--dc-teal-surface, #e6f6f8); }
+@media (max-width: 1024px) {
+  .patient-record-page { gap: 16px; min-width: 0; }
+  .flattened-tabs-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: 4px;
+    padding: 6px;
+    overflow: visible;
+  }
+  .flat-tab-btn { min-width: 0; min-height: 44px; padding: 8px; white-space: normal; text-align: start; }
+  .flat-tab-btn > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .tab-counter-badge { flex-shrink: 0; }
 }
-
-@media (max-width: 600px) { .patient-record-page { gap: 10px; } .flattened-tabs-nav { padding: 5px; gap: 3px; grid-template-columns: repeat(3,minmax(0,1fr)); } .flat-tab-btn { min-height: 38px; padding: 6px 4px; font-size: 10px; gap: 3px; } .tab-counter-badge { font-size: 9px; padding: 1px 4px; } }
 
 .management-trigger { display: inline-flex; align-items: center; gap: .45rem; }
 .management-dialog {

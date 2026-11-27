@@ -194,10 +194,10 @@ legend { margin-bottom: 16px; font-size: .875rem; font-weight: 600; }
 }
 .professional-identity { display: flex; align-items: flex-start; gap: var(--dc-space-4); min-width: 0; }
 .professional-identity > div:last-child { min-width: 0; }
-.booking-hero .booking-context { margin-bottom: 6px; color: var(--dc-brand-ink); font-size: .8125rem; font-weight: 650; }
-.booking-hero h1 { font-size: clamp(1.8rem, 3.6vw, 3rem); overflow-wrap: anywhere; text-wrap: pretty; }
+.booking-hero h1 { margin-bottom: .25rem; font-size: clamp(1.8rem, 3.6vw, 3rem); overflow-wrap: anywhere; text-wrap: pretty; }
 .booking-hero .professional-specialty { color: var(--dc-text); font-size: 1rem; }
-.booking-hero .professional-description { margin-top: 10px; color: var(--dc-text-secondary); }
+.booking-hero .professional-description { grid-column: 1; margin: 0; color: var(--dc-text-secondary); overflow-wrap: anywhere; }
+.booking-hero > .booking-progress { grid-column: 2; grid-row: 1 / span 2; }
 .booking-hero .booking-progress { gap: 8px 16px; margin: 0; padding: 0; border: 0; }
 .booking-hero .booking-progress li::before { border-color: var(--dc-control-line); }
 .booking-hero .booking-progress li[aria-current='step']::before { border-color: transparent; }
@@ -250,7 +250,17 @@ legend { margin-bottom: 16px; font-size: .875rem; font-weight: 600; }
 @media (min-width: 940px) { .booking-layout > .steps { position: sticky; top: 24px; } }
 @media (max-width: 900px) {
   .booking-hero, .booking-layout { grid-template-columns: minmax(0, 1fr); }
-  .booking-hero { gap: 16px; }
+  .booking-hero { gap: 12px; }
+  .booking-hero > .booking-progress { grid-column: 1; grid-row: auto; }
+}
+@media (max-width: 600px) {
+  .booking-content { padding-top: 16px; }
+  .booking-hero { margin-bottom: 16px; padding: 16px; border-radius: var(--dc-radius-card); }
+  .booking-hero h1 { font-size: 1.5rem; }
+  .professional-identity { align-items: center; gap: 12px; }
+  .professional-monogram { inline-size: 44px; block-size: 44px; font-size: 1.125rem; }
+  .booking-hero .professional-description { font-size: .875rem; }
+  .booking-hero .booking-progress { gap: 8px 12px; border-top: 1px solid var(--dc-line); padding-top: 12px; }
 }
 @media (max-width: 420px) {
   .booking-week { grid-template-columns: repeat(4, minmax(0, 1fr)); }

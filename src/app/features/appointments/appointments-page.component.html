@@ -130,12 +130,11 @@
       }
      </div>
      <div>
-      <p class="booking-context">Reserva online</p>
       <h1>{{d.name}}</h1>
       @if(specialtyNames(d); as specialty){<p class="professional-specialty">{{specialty}}</p>}
-      @if(d.description){<p class="professional-description">{{d.description}}</p>}
      </div>
     </div>
+    @if(d.description){<p class="professional-description">{{d.description}}</p>}
     <ol class="booking-progress" aria-label="Pasos de la reserva">
      <li [attr.aria-current]="!formOpen() ? 'step' : null">Lugar y horario</li>
      <li [attr.aria-current]="formOpen() ? 'step' : null">Tus datos</li>
@@ -155,7 +154,7 @@
         <div class="booking-week" role="group" aria-label="Días de la semana">
           @for(option of days(); track option.date) {
             <button type="button" [attr.aria-pressed]="day.date===option.date"
-              [attr.aria-label]="weekday(option.date) + ' ' + displayDay(option.date) + ': ' + option.slots.length + ' horarios'"
+              [attr.aria-description]="displayDay(option.date)"
               [disabled]="sending()" (click)="chosenDay.set(option.date)">
               <span>{{weekday(option.date)}}</span>
               <strong>{{option.date.slice(8)}}</strong>

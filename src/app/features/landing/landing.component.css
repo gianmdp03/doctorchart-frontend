@@ -985,7 +985,7 @@ details[open] .faq-plus {
   .landing-header .brand { font-size: 16px; gap: 5px; }
   .landing-header .brand-mark { width: 26px; height: 26px; }
 }
-@media (max-width: 620px) {
+@media (max-width: 760px) {
   .header-inner.has-patient-entry {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;

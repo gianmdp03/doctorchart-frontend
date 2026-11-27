@@ -26,7 +26,8 @@
   color: var(--dc-blue);
 }
 .theme-girl .oms-top-banner {
-  background: #8d92c2;
+  background: var(--dc-pink-soft);
+  color: var(--dc-pink);
 }
 .oms-top-banner h3 {
   font-size: 17px;
@@ -317,12 +318,17 @@ footer a {
   font-size: 12px;
 }
 .measurement-details summary {
+  min-height: 44px;
+  padding-block: .65rem;
+  font-size: .875rem;
+  font-weight: 650;
   cursor: pointer;
   color: var(--dc-ink-secondary, #285265);
 }
 .table-scroll {
   overflow: auto;
   max-height: 380px;
+  scrollbar-color: var(--dc-control-line) transparent;
 }
 table {
   width: 100%;
@@ -344,37 +350,27 @@ th {
   color: var(--dc-ink-secondary, #344155);
 }
 @media (max-width: 700px) {
-  .chart-card-content {
-    padding: 12px;
-  }
-  .oms-top-banner {
-    padding: 14px;
-  }
-  .metrics-summary-bar {
-    gap: 12px;
-  }
-  .growth-svg {
-    min-width: 0;
-  }
-  .legend-container {
-    gap: 12px;
-  }
+  .chart-card-content { padding: 12px; }
+  .growth-svg { max-height: none; }
+  .growth-chart-card { margin-bottom: 12px; }
+  .oms-top-banner { padding: .75rem; gap: .25rem; }
+  .oms-top-banner h3 { font-size: 1rem; }
+  .oms-top-banner span { font-size: .8125rem; }
+  .metrics-summary-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; padding: .75rem; margin-bottom: 12px; }
+  .metrics-summary-bar dt { font-size: .75rem; letter-spacing: 0; margin-bottom: .125rem; text-transform: none; }
+  .metrics-summary-bar dd { font-size: .875rem; overflow-wrap: anywhere; }
+  .right-axis-label, .bmi-period-label, .year-label { display: none; }
+  .long-age-chart .year-label, .bmi-boys-under-five .year-label { display: initial; }
+  .tick-label, .percentile-label { font-size: 11px; }
+  .year-label { font-size: 10px; }
+  .axis-title { font-size: 12px; }
+  .reference-curve { stroke-width: 1.3; }
+  .grid-line { opacity: .5; }
+  .legend-container { font-size: .8125rem; gap: .5rem .75rem; }
+  .point-tooltip, footer, .notice { font-size: .8125rem; }
 }
 
-@media (max-width: 700px) {
- .growth-svg { min-width: 0; width: 100%; max-height: none; } .chart-scroll { overflow: visible; }
- .growth-chart-card { margin-bottom: 12px; } .oms-top-banner { padding: 10px 12px; gap: 4px; } .oms-top-banner h3 { font-size: 14px; } .oms-top-banner span { font-size: 10px; }
- .metrics-summary-bar { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; padding: 10px; margin-bottom: 10px; } .metrics-summary-bar dt { font-size: 8px; letter-spacing: 0; margin-bottom: 3px; } .metrics-summary-bar dd { font-size: 11px; }
- .right-axis-label { display: none; } .tick-label { font-size: 10px; } .year-label { font-size: 9px; } .axis-title { font-size: 11px; } .percentile-label { font-size: 9px; } .reference-curve { stroke-width: 1.3; } .grid-line { opacity: .5; } .bmi-period-label { font-size: 6px; }
- .legend-container { font-size: 10px; gap: 7px 12px; padding-top: 6px; } .point-tooltip { min-height: 0; font-size: 10px; padding: 6px; } footer { font-size: 9px; line-height: 1.5; margin: 8px 0; } .notice { padding: 7px; font-size: 11px; }
-}
-
-@media (max-width: 700px) { .bmi-period-label { display: none; } }
-
-@media (max-width: 700px) {
-  .year-label { display: none; }
-  .long-age-chart .year-label { display: initial; }
-}
+@media (pointer: coarse) { .point-hit-area { r: 12px; } }
 
 .chart-card-content a { text-decoration: underline; }
 

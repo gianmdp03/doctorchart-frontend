@@ -18,6 +18,9 @@ import {
   lucideContact,
   lucideGlobe,
   lucideCalendarClock,
+  lucideMenu,
+  lucideUser,
+  lucideX,
 } from '@ng-icons/lucide';
 import { FEATURE_FLAGS } from '../../core/config/feature-flags';
 import { DoctorSpecialtyService } from '../../core/services/doctor-specialty.service';
@@ -41,6 +44,9 @@ import { AuthService } from '../../core/services/auth.service';
       lucideContact,
       lucideGlobe,
       lucideCalendarClock,
+      lucideMenu,
+      lucideUser,
+      lucideX,
     }),
   ],
   templateUrl: './sidebar.component.html',
@@ -86,7 +92,8 @@ export class SidebarComponent {
 
   @HostListener('window:resize')
   syncViewport(): void {
-    const narrow = window.innerWidth <= 768;
+    const narrow = window.innerWidth <= 1024 ||
+      (window.innerWidth <= 1200 && window.matchMedia?.('(pointer: coarse)').matches === true);
     if (narrow === this.narrowViewport) return;
     if (narrow) {
       this.desktopCollapsed = this.isCollapsed();
@@ -95,8 +102,18 @@ export class SidebarComponent {
     this.narrowViewport = narrow;
   }
 
-  collapseAfterNavigation(): void {
-    if (this.narrowViewport) this.isCollapsed.set(true);
+  collapseAfterNavigation(event?: MouseEvent, trigger?: HTMLButtonElement): void {
+    if (!this.narrowViewport) return;
+    if (event && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || !(event.target instanceof Element) || !event.target.closest('a'))) return;
+    this.isCollapsed.set(true);
+    if (trigger && event?.detail === 0) trigger.focus();
+  }
+
+  closeCompactNavigation(event: Event, trigger: HTMLButtonElement): void {
+    if (!this.narrowViewport || this.isCollapsed() || event.defaultPrevented) return;
+    event.preventDefault();
+    this.isCollapsed.set(true);
+    trigger.focus();
   }
 
   toggleCollapse(): void {

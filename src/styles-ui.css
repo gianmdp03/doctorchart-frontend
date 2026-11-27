@@ -130,6 +130,7 @@ body {
   .dc-panel { padding: var(--dc-space-4); }
 }
 @media (pointer: coarse) {
+  :where(button, a, summary) { touch-action: manipulation; -webkit-tap-highlight-color: color-mix(in srgb, var(--dc-brand) 18%, transparent); }
   :where(button:not(.mat-calendar-body-cell), summary) { min-height: 44px; }
   :where(input[type='text'], input[type='email'], input[type='password'], input[type='tel'], input[type='search'], textarea, select) { font-size: 1rem; }
 }

@@ -180,7 +180,7 @@ La jerarquía del frontmatter registra el título del directorio público, el t�
 
 ## Layout
 
-Shell flex con barra lateral de 240px, reducible a 76px en escritorio, y contenido de ancho máximo 1560px. Padding principal de 32px, 24px bajo 1000px y 20px 16px bajo 768px. En móvil la barra pasa arriba, con botón explícito Menú/Cerrar menú y selector de especialidad visible. El header pasa de 72px a 60px.
+Shell flex con barra lateral de 240px, reducible a 76px, y contenido de ancho máximo 1560px. Hasta 1024px, y hasta 1200px con puntero táctil principal, la navegación pasa arriba con un botón Menú y el selector de especialidad visible. En tablet comparten una fila. Escape cierra el menú y devuelve el foco al botón. El directorio dispone las fichas en columnas según el espacio disponible y permite abrir los datos de cada paciente.
 
 Agenda: franja de siete días y dos zonas para reservas y disponibilidad/detalle; las zonas se apilan bajo 1120px. Bajo 768px los días conservan un ancho mínimo de 82px y desplazamiento horizontal. Reservas públicas: contenedor de 1240px, pasos y resumen de selección; una columna bajo 760px. Formularios clínicos: dos columnas, campos anchos a todo el grid y una columna bajo 600px. Wizard: contenedor de 1200px, rail de 224px y edición; el rail pasa a tira horizontal bajo 900px.
 

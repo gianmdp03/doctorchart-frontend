@@ -1,4 +1,4 @@
-<aside class="sidebar-container" [class.is-collapsed]="isCollapsed()">
+<aside class="sidebar-container" [class.is-collapsed]="isCollapsed()" (keydown.escape)="closeCompactNavigation($event, mobileNavToggle)">
   <!-- Sidebar Header: Brand Logo & Title -->
   <div class="sidebar-brand">
     <div class="brand-logo-icon" title="DoctorChart">
@@ -8,9 +8,9 @@
       <span class="brand-title">DoctorChart</span>
       @if (authService.isSuperAdmin()) { <span class="brand-specialty-pill">Administración</span> }
     </div>
-    <button type="button" class="mobile-nav-toggle" (click)="toggleCollapse()"
+    <button #mobileNavToggle type="button" class="mobile-nav-toggle" (click)="toggleCollapse()"
       [attr.aria-expanded]="!isCollapsed()" aria-controls="workspace-navigation workspace-footer">
-      <ng-icon [name]="isCollapsed() ? 'lucideChevronRight' : 'lucideChevronLeft'" aria-hidden="true" />
+      <ng-icon [name]="isCollapsed() ? 'lucideMenu' : 'lucideX'" aria-hidden="true" />
       {{ isCollapsed() ? 'Menú' : 'Cerrar menú' }}
     </button>
   </div>
@@ -29,7 +29,7 @@
   }
 
   <!-- Main Navigation Links -->
-  <nav id="workspace-navigation" class="sidebar-nav" aria-label="Navegación principal" (click)="collapseAfterNavigation()">
+  <nav id="workspace-navigation" class="sidebar-nav" aria-label="Navegación principal" (click)="collapseAfterNavigation($event, mobileNavToggle)">
     @if (authService.isSuperAdmin()) {
       <div class="nav-group-label" [class.sr-only]="isCollapsed() && !narrowViewport">Administración</div>
       <a routerLink="/admin/specialties" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-item" title="Especialidades y wizards">
@@ -88,7 +88,7 @@
     @if (!authService.isSuperAdmin()) {
       <nav aria-label="Ayuda">
         <a routerLink="/help" routerLinkActive="active" ariaCurrentWhenActive="page"
-          class="nav-item" aria-label="Ayuda" title="Ayuda" (click)="collapseAfterNavigation()">
+          class="nav-item" aria-label="Ayuda" title="Ayuda" (click)="collapseAfterNavigation($event, mobileNavToggle)">
           <ng-icon name="lucideBookOpen" class="nav-icon" aria-hidden="true" />
           <span class="nav-label">Ayuda</span>
         </a>

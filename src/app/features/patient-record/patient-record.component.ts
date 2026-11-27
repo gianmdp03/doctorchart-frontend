@@ -37,11 +37,13 @@ import { PatientGrowthStore } from './patient-growth/patient-growth.store';
 import { PatientPrescriptionEditorStore } from './patient-prescriptions/patient-prescription-editor.store';
 import { PatientPrescriptionStore } from './patient-prescriptions/patient-prescription.store';
 import { PatientStudiesStore } from './patient-studies/patient-studies.store';
+import { PatientWhatsappConsultationsStore } from './patient-whatsapp-consultations/patient-whatsapp-consultations.store';
 import { PatientRecordActionsService } from '../../core/experience/patient-record-actions.service';
 import { WorkspaceStore } from '../../core/services/workspace.store';
 import { PatientRecordModuleDirective } from './patient-record-module.directive';
 import {
   PATIENT_RECORD_MODULES,
+  WHATSAPP_CONSULTATIONS_MODULE,
   PatientRecordTab,
   PatientRecordModule,
 } from './patient-record-modules';
@@ -72,6 +74,7 @@ export interface RecordTabItem {
     PatientPrescriptionStore,
     PatientPrescriptionEditorStore,
     PatientStudiesStore,
+    PatientWhatsappConsultationsStore,
     provideIcons({ lucideUser, lucideUsers, lucidePlus, lucidePrinter, lucideEllipsis, lucideChevronRight, lucideArrowLeft, lucideHistory, lucideShieldCheck, lucideFiles }),
   ],
   templateUrl: './patient-record.component.html',
@@ -84,6 +87,7 @@ export class PatientRecordComponent implements OnInit {
   readonly history = inject(PatientEncountersStore);
   readonly growth = inject(PatientGrowthStore);
   readonly prescriptions = inject(PatientPrescriptionEditorStore);
+  readonly whatsapp = inject(PatientWhatsappConsultationsStore);
   readonly activePatientService = inject(ActivePatientService);
   private readonly patientApi = inject(PatientService);
   private readonly workspace = inject(WorkspaceStore);
@@ -118,9 +122,9 @@ export class PatientRecordComponent implements OnInit {
   ] as const;
   readonly annulling = signal(false);
   readonly annulmentError = signal('');
-  readonly tabs = computed<RecordTabItem[]>(() =>
-    this.workspace
-      .patientRecordTabs()
+  readonly tabs = computed<RecordTabItem[]>(() => {
+    const configured = this.workspace.patientRecordTabs();
+    const base = configured
       .map((id, index) => {
         const module = PATIENT_RECORD_MODULES[id];
         const badge =
@@ -131,8 +135,21 @@ export class PatientRecordComponent implements OnInit {
               : undefined;
         return { id: module.tab, label: `${index + 1}. ${module.label}`, badge, module };
       })
-      .filter((tab) => tab.module.id !== 'GROWTH' || this.growth.growthEnabled()),
-  );
+      .filter((tab) => tab.module.id !== 'GROWTH' || this.growth.growthEnabled());
+    if (configured.includes('ENCOUNTERS')) {
+      const badge =
+        this.whatsapp.loaded() && this.whatsapp.consultations().length > 0
+          ? this.whatsapp.consultations().length
+          : undefined;
+      base.push({
+        id: WHATSAPP_CONSULTATIONS_MODULE.tab,
+        label: `${configured.length + 1}. ${WHATSAPP_CONSULTATIONS_MODULE.label}`,
+        badge,
+        module: WHATSAPP_CONSULTATIONS_MODULE,
+      });
+    }
+    return base;
+  });
   readonly activeTab = computed(
     () =>
       this.tabs().find((tab) => tab.id === this.selectedTab()) ??
@@ -203,7 +220,7 @@ export class PatientRecordComponent implements OnInit {
       const urlTab = queryParams.get('tab');
       const englishTabs: Record<string, PatientRecordTab> = {
         summary: 'resumen', history: 'historia', vaccinations: 'vacunas',
-        growth: 'curvas', prescriptions: 'recetas', studies: 'estudios',
+        growth: 'curvas', prescriptions: 'recetas', studies: 'estudios', whatsapp: 'whatsapp',
       };
       const tabParam = (urlTab && (englishTabs[urlTab] ?? urlTab)) as PatientRecordTab | null;
       if (tabParam) {

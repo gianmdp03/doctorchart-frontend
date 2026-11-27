@@ -49,6 +49,7 @@ export class CalendarPageComponent {
  });
  selectDay(date: string) { if (!this.writing()) this.selectedDay.set(date); }
  readonly agendaView = signal<AgendaView>('7');
+ readonly agendaGuideInitiallyOpen = signal(true);
  readonly agendaBookings = computed(() => this.days().flatMap(day => day.bookings));
  readonly agendaSlotKey = (slot: Slot) => slot.clinic.id + '|' + slot.start + '|' + (slot.specialtyContextId ?? '');
  readonly agendaAllowSlot = (slot: Slot) => this.canBook(slot.clinic);
@@ -108,6 +109,12 @@ export class CalendarPageComponent {
  chooseDraftSlot(value:string){const s=this.draftSlots().find(s=>s.clinic.id+'|'+s.start===value);if(s)this.openSlot(s);}
  refreshCreateSlot(){const current=this.slot();if(current&&this.draftSlots().some(s=>s.clinic.id===current.clinic.id&&s.start===current.start)){this.conflict.set(false);this.editorError.set('');}else this.editorError.set('El horario original ya no está libre. Seleccioná otro horario actualizado debajo.');}
  constructor(){
+  afterNextRender(() => {
+   if (window.innerWidth <= 768) {
+    this.agendaView.set('1');
+    this.agendaGuideInitiallyOpen.set(false);
+   }
+  });
   if(this.staff) void this.load();
   else effect(()=>{const owner=this.auth.currentUser()?.id??null;if(owner!==this.owner){this.owner=owner;this.generation++;this.capEpoch++;this.close();this.clinics.set([]);this.days.set([]);this.setCaps(null);if(owner)void this.load();}});
   const timer=setInterval(()=>{this.clock.set(Date.now());},1000);

@@ -73,6 +73,12 @@ async function install(context, { role = 'COMPANY', authenticated = true, hasPla
     if (p.endsWith('/workspace/contexts')) return fulfill(initialSetup ? [] : contexts);
     if (p.endsWith('/workspace')) return fulfill(initialSetup ? null : setup(id));
     if (p.endsWith('/workspace/wizard/draft')) { const body = request.postDataJSON(); return fulfill({ ...setup(id), version: body.expectedVersion + 1, currentStepKey: body.currentStepKey, draftDefinition: body.definition, draftSourceWizardVersion: 1 }); }
+    if (p.endsWith('/workspace/encounter-templates') && method === 'GET') return fulfill({
+      specialtyContextId: id, specialty: contextSpecialty(id), archivedTemplates: [], systemDefaults: [],
+      templates: [{ id: 1, workspaceId: 1, specialtyContextId: id, name: 'Plantilla de prueba',
+        formDefinition: definition.encounterForm, sourceDefaultCode: null, displayOrder: 1,
+        version: 1, archivedAt: null, createdAt: today, updatedAt: today }],
+    });
     if (p.endsWith('/workspace/preferences')) return fulfill({ version: 1, patientColumnsConfig: {}, quickNotes: '' });
     if (p.endsWith('/workspace/quick-notes')) return fulfill({ version: 2, patientColumnsConfig: {}, quickNotes: request.postDataJSON()?.content || '' });
     if (p.endsWith('/admin/specialties')) return fulfill(defaults.map(d => ({ ...d, active: true, version: 1, publishedVersion: 1, hasDraft: false })));

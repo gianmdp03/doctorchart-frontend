@@ -1,0 +1,427 @@
+:host {
+  display: block;
+}
+
+.whatsapp-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.whatsapp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-copy {
+  flex: 1 1 280px;
+}
+
+.header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-icon {
+  color: var(--dc-brand);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-weight: 700;
+  color: var(--dc-ink, var(--dc-text));
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.count-badge {
+  background-color: var(--dc-brand-soft);
+  color: var(--dc-brand-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-variant-numeric: tabular-nums;
+}
+
+.section-subtitle {
+  font-size: 0.85rem;
+  color: var(--dc-text-secondary);
+  margin: 0.25rem 0 0;
+}
+
+.new-whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.whatsapp-form-card,
+.consultation-card {
+  background: var(--dc-paper);
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-radius-card);
+  padding: 1.25rem;
+}
+
+.form-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.form-card-header h3,
+.form-card-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dc-text);
+}
+
+.use-now-wrap {
+  display: flex;
+  align-items: flex-end;
+}
+
+.use-now-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 0.95rem;
+  border: 1px solid var(--dc-brand-soft);
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-brand-surface, #f0fdfa);
+  color: var(--dc-brand-ink);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dc-motion) var(--dc-ease), border-color var(--dc-motion) var(--dc-ease), color var(--dc-motion) var(--dc-ease);
+}
+
+.use-now-btn:hover:not(:disabled) {
+  background: var(--dc-brand);
+  border-color: var(--dc-brand);
+  color: var(--dc-on-brand, #ffffff);
+}
+
+.whatsapp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.datetime-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.85rem;
+}
+
+:host .datetime-row ::ng-deep .date-picker-shell,
+:host .datetime-row ::ng-deep .time-field {
+  height: 44px;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 1px solid var(--dc-control-line);
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-paper);
+}
+
+:host .datetime-row ::ng-deep .date-picker-input,
+:host .datetime-row ::ng-deep .time-field input {
+  height: 42px;
+  min-height: 42px;
+  padding: 0 12px;
+  font-size: 0.92rem;
+  line-height: 42px;
+  box-sizing: border-box;
+}
+
+:host .datetime-row ::ng-deep .date-picker-input {
+  padding-right: 0;
+}
+
+:host .datetime-row ::ng-deep .time-field button {
+  min-width: 42px;
+  min-height: 42px;
+  height: 42px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.form-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--dc-text-secondary);
+}
+
+.required-star {
+  color: var(--dc-danger);
+}
+
+.form-textarea,
+.form-input {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--dc-control-line);
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-paper);
+  color: var(--dc-text);
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 150px;
+}
+
+.form-textarea:focus,
+.form-input:focus {
+  outline: none;
+  border-color: var(--dc-brand);
+  box-shadow: 0 0 0 3px var(--dc-brand-soft);
+}
+
+.textarea-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--dc-text-secondary);
+}
+
+.char-counter {
+  font-size: 0.75rem;
+  color: var(--dc-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.field-error {
+  display: block;
+  color: var(--dc-danger);
+  font-size: 0.82rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.form-actions button {
+  min-height: 44px;
+}
+
+.alert-box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--dc-radius-control);
+  font-size: 0.88rem;
+  flex-wrap: wrap;
+}
+
+.alert-error {
+  background-color: var(--dc-danger-soft);
+  border: 1px solid var(--dc-danger);
+  color: var(--dc-danger);
+}
+
+.alert-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.retry-btn {
+  margin-left: auto;
+  min-height: 40px;
+}
+
+.inline-confirmation {
+  padding: 1rem;
+  border: 1px solid var(--dc-danger);
+  border-radius: var(--dc-radius-card);
+  background: var(--dc-danger-soft);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.inline-confirmation p {
+  margin: 0;
+  color: var(--dc-text);
+}
+
+.loading-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.75rem 1.5rem;
+  background: var(--dc-subtle);
+  border: 1px dashed var(--dc-line);
+  border-radius: var(--dc-radius-card);
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.empty-icon {
+  font-size: 2.25rem;
+  color: var(--dc-text-secondary);
+}
+
+.empty-state h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dc-text);
+}
+
+.empty-state p {
+  margin: 0;
+  max-width: 480px;
+  font-size: 0.88rem;
+  color: var(--dc-text-secondary);
+}
+
+.consultations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.consultation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--dc-line);
+  padding-bottom: 0.65rem;
+}
+
+.card-datetime {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.datetime-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--dc-radius-control);
+  background: var(--dc-subtle);
+  color: var(--dc-text);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.edited-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--dc-brand-soft);
+  color: var(--dc-brand-ink);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.action-danger:hover:not(:disabled) {
+  color: var(--dc-danger);
+  background: var(--dc-danger-soft);
+}
+
+.card-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--dc-text);
+  font-size: 0.94rem;
+  line-height: 1.6;
+}
+
+.card-footer {
+  font-size: 0.78rem;
+  color: var(--dc-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--dc-line);
+  border-top-color: var(--dc-brand);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .datetime-row {
+    grid-template-columns: 1fr;
+  }
+
+  .use-now-btn {
+    width: 100%;
+  }
+
+  .whatsapp-form-card,
+  .consultation-card {
+    padding: 1rem;
+  }
+}

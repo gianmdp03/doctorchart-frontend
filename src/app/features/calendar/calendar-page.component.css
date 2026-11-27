@@ -122,7 +122,8 @@ app-agenda { display: block; min-width: 0; }
 .schedule-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; margin-bottom: 28px; }
 .schedule-sidebar { min-width: 0; display: grid; gap: 20px; }
 .color-guide { padding: 0 6px; }
-.color-guide h2, .schedule-sidebar h2 { font-size: .9375rem; font-weight: 650; }
+.color-guide summary, .schedule-sidebar h2 { font-size: .9375rem; font-weight: 650; }
+.color-guide summary { min-height: 44px; width: fit-content; padding-block: 10px; cursor: pointer; }
 .color-guide ul { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 6px; }
 .color-guide li:has(.blocked-key), .color-guide li[data-status='CHECKED_IN'] { grid-column: span 2; }
 .color-guide li { display: flex; align-items: center; gap: 9px; color: var(--dc-text-secondary); font-size: .8125rem; line-height: 1.35; }
@@ -135,7 +136,7 @@ app-agenda { display: block; min-width: 0; }
   .schedule-sidebar { display: contents; }
   .month-overview { display: none; }
   .color-guide { order: 0; padding: 0; }
-  .color-guide ul { display: flex; flex-wrap: wrap; gap: 6px 15px; }
+  .color-guide ul { display: flex; flex-wrap: wrap; gap: 6px 15px; margin-top: 4px; }
   app-agenda { order: 1; }
   .day { order: 2; }
 }
@@ -287,3 +288,7 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .editor > a { display: inline-flex; align-items: center; min-height: 24px; text-decoration: underline; }
 
 @media (max-width: 420px) { .calendar-filters { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 360px) {
+ .agenda-actions { flex-wrap: wrap; }
+ .agenda-clinic { flex-basis: 100%; }
+}

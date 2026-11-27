@@ -64,8 +64,8 @@
    <aside class="schedule-sidebar" aria-label="Navegación y referencias de la agenda">
     <app-date-picker class="month-overview" [inlineMonth]="true" inputLabel="Elegir día de la agenda"
       [ngModel]="visibleDays()[0]?.date ?? selectedDay()" (ngModelChange)="changeDate($event)" [disabled]="writing()" />
-    <section class="color-guide" aria-label="Colores de la agenda">
-     <h2>Referencias</h2>
+    <details class="color-guide" [open]="agendaGuideInitiallyOpen()">
+     <summary>Referencias de la agenda</summary>
      <ul>
       <li><i class="free-key"></i>Horario libre</li>
       @for (status of statuses; track status) {
@@ -74,7 +74,7 @@
       <li><i class="blocked-key"></i>Fuera de horario o bloqueado</li>
       <li><i class="clock-key"></i>Hora actual</li>
      </ul>
-    </section>
+    </details>
     @if (!loading()) {
      @for (day of visibleDays(); track day.date) {
       <article class="day">
