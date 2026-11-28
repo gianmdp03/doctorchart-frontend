@@ -1,4 +1,4 @@
-@if (request(); as req) {
+@if (request()) {
   <div class="pdf-modal-backdrop" (click)="close()">
     <section
       class="pdf-modal-dialog"
@@ -15,7 +15,7 @@
           <h2 id="pdf-preview-title">{{ documentTitle() }}</h2>
           <p>
             @if (isClinicalHistory()) {
-              Revisá la historia clínica completa (incluyendo gráficos), elegí la firma y descargá o imprimí el PDF.
+              Revisá la consulta, elegí la firma y descargá o imprimí el PDF.
             } @else {
               Revisá el documento y elegí la firma antes de emitirlo.
             }
@@ -23,7 +23,7 @@
         </div>
 
         <div class="pdf-signature-bar">
-          @if (isClinicalHistory() && doctorSpecialtyService.supportsGrowthCharts() && !req.encounterId) {
+          @if (isClinicalHistory() && doctorSpecialtyService.supportsGrowthCharts()) {
             <label class="sig-select-label" for="modal-growth-ref-select">Curvas:</label>
             <select
               id="modal-growth-ref-select"
@@ -32,7 +32,7 @@
               [disabled]="loading()"
               (change)="onGrowthReferenceChange($any($event.target).value)"
             >
-              <option value="AUTO">Automática (OMS)</option>
+              <option value="AUTO">Automática</option>
               <option value="BOTH">OMS + Síndrome de Down</option>
               <option value="DOWN">Solo Síndrome de Down</option>
               <option value="OMS">Solo OMS</option>

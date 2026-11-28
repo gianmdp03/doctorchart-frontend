@@ -25,11 +25,5 @@ export const PATIENT_RECORD_ACTIONS: Record<PatientRecordActionId, RecordActionP
   },
   PRINT_DOCUMENT: {
     id: 'PRINT_DOCUMENT',
-    primary: {
-      label: 'Imprimir historia',
-      icon: 'lucidePrinter',
-      css: 'btn-secondary-edit',
-      title: 'Generar vista previa e imprimir la historia clínica en PDF',
-    },
   },
 };

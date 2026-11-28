@@ -55,7 +55,9 @@ export function generateDemoPdfBlob(
   lines.push({ text: 'Sin validez clínica ni legal. Uso exclusivo para demostración.', size: 9, gap: 18 });
   lines.push({ text: '--------------------------------------------------------------------------------', size: 10, gap: 14 });
   lines.push({
-    text: doc.type === 'STUDY_ORDERS' ? 'ORDEN DE ESTUDIOS COMPLEMENTARIOS' : 'RECETA MÉDICA (DEMO)',
+    text: doc.source === 'CLINICAL_HISTORY'
+      ? 'REGISTRO DE CONSULTA CLÍNICA'
+      : doc.type === 'STUDY_ORDERS' ? 'ORDEN DE ESTUDIOS COMPLEMENTARIOS' : 'RECETA MÉDICA (DEMO)',
     bold: true,
     size: 14,
     gap: 20,

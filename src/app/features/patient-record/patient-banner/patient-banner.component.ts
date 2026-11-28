@@ -16,7 +16,6 @@ import {
   lucideShieldAlert,
   lucideCheckCircle2,
   lucidePlus,
-  lucidePrinter,
   lucideChevronLeft,
   lucideUser,
   lucideCreditCard,
@@ -36,7 +35,6 @@ import { PatientRecordActionId } from '../../../core/models/specialty-experience
       lucideShieldAlert,
       lucideCheckCircle2,
       lucidePlus,
-      lucidePrinter,
       lucideChevronLeft,
       lucideUser,
       lucideCreditCard,
@@ -60,7 +58,6 @@ export class PatientBannerComponent {
   }
   @Output() newEncounter = new EventEmitter<void>();
   @Output() editPatient = new EventEmitter<void>();
-  @Output() printSummary = new EventEmitter<void>();
   @Output() viewCurves = new EventEmitter<void>();
 
   readonly initials = computed(() => {
@@ -187,13 +184,12 @@ export class PatientBannerComponent {
 
   runAction(id: PatientRecordActionId): void {
     if (!this.recordActions.has(id)) return;
-    const handlers: Record<PatientRecordActionId, () => void> = {
+    const handlers: Partial<Record<PatientRecordActionId, () => void>> = {
       EDIT_PATIENT: () => this.onEditPatient(),
       NEW_ENCOUNTER: () => this.onNewEncounter(),
       VIEW_GROWTH: () => this.goToCurves(),
-      PRINT_DOCUMENT: () => this.onPrintSummary(),
     };
-    handlers[id]();
+    handlers[id]?.();
   }
 
   goBack(): void {
@@ -208,11 +204,6 @@ export class PatientBannerComponent {
   onEditPatient(): void {
     if (!this.recordActions.has('EDIT_PATIENT')) return;
     this.editPatient.emit();
-  }
-
-  onPrintSummary(): void {
-    if (!this.recordActions.has('PRINT_DOCUMENT')) return;
-    this.printSummary.emit();
   }
 
   goToCurves(): void {

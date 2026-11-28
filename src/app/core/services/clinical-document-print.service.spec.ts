@@ -98,6 +98,22 @@ describe('ClinicalDocumentPrintService', () => {
     req.flush(mockBlob);
   });
 
+  it('requests a fresh PDF for the exact consultation whenever the preview opens', () => {
+    const reference = { source: 'CLINICAL_HISTORY', patientId: 5, encounterId: 44, growthReference: 'OMS' } as const;
+    const pdf = new Blob(['%PDF consultation'], { type: 'application/pdf' });
+    for (const encounterId of [44, 45, 44]) {
+      service.getPreviewPdfBlob({ ...reference, encounterId }, { mode: 'NONE' }).subscribe((blob) => {
+        expect(blob).toEqual(pdf);
+      });
+      httpMock.expectOne((request) =>
+        request.url === `${environment.apiUrl}/patients/5/clinical-history/pdf` &&
+        request.params.get('encounterId') === String(encounterId) &&
+        request.params.get('growthReference') === 'OMS' &&
+        request.params.get('signatureMode') === 'none',
+      ).flush(pdf);
+    }
+  });
+
   it('handles a forbidden JSON-as-blob response and closes the empty preview', () => {
     const close = vi.fn();
     vi.spyOn(window, 'open').mockReturnValue({ closed: false, document: {}, close } as unknown as Window);

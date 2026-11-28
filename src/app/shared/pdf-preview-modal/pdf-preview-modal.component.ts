@@ -41,7 +41,7 @@ export class PdfPreviewModalComponent {
     const req = this.request();
     if (!req) return 'Vista previa de documento';
     if (req.source === 'CLINICAL_HISTORY') {
-      return req.encounterId ? 'Vista previa · Consulta clínica' : 'Vista previa · Historia clínica';
+      return 'Vista previa · Consulta clínica';
     }
     return req.type === 'STUDY_ORDERS' ? 'Vista previa · Orden de estudios' : 'Vista previa · Receta médica';
   });
@@ -70,7 +70,9 @@ export class PdfPreviewModalComponent {
   }
 
   private async initializeForRequest(req: PrintDocumentReference): Promise<void> {
-    this.growthReference.set(req.growthReference ?? 'AUTO');
+    this.cleanupPreview();
+    this.loading.set(true);
+    this.growthReference.set(req.source === 'CLINICAL_HISTORY' ? req.growthReference ?? 'AUTO' : 'AUTO');
     await this.signaturesService.load();
     if (this.request() !== req) return;
 
@@ -164,9 +166,7 @@ export class PdfPreviewModalComponent {
     link.href = this.currentBlobUrl;
     link.download =
       req?.source === 'CLINICAL_HISTORY'
-        ? req.encounterId
-          ? `consulta-${req.encounterId}.pdf`
-          : `historia-clinica-paciente-${req.patientId}.pdf`
+        ? `consulta-${req.encounterId}.pdf`
         : `documento-${req?.id ?? 'clinico'}.pdf`;
     link.click();
   }
@@ -179,7 +179,7 @@ export class PdfPreviewModalComponent {
 
   confirmAndIssue(): void {
     const req = this.request();
-    if (!req) return;
+    if (!req || req.source === 'CLINICAL_HISTORY') return;
     const choice = this.currentChoice();
     this.printService.closePreview();
     this.printService.openPdfInNewTab(req, choice);

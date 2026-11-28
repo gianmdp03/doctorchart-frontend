@@ -1093,15 +1093,20 @@ export class DemoHttpBackend implements HttpBackend {
     const historyPdfMatch = path.match(/^\/patients\/(\d+)\/clinical-history\/pdf$/);
     if (method === 'GET' && historyPdfMatch) {
       const pId = Number(historyPdfMatch[1]);
-      const patient = session.patients.find((p) => p.id === pId);
+      const patient = session.patients.find((p) => p.id === pId && p.specialtyContextId === contextId);
       if (!patient) throw new HttpErrorResponse({ status: 404, error: { message: 'Paciente no encontrado.' } });
-      const encounters = session.encounters.filter((e) => e.patientId === pId);
-      const latest = encounters[0];
-      const entry = findDemoSpecialty(ctx?.specialtyId ?? 1);
-      const printDoc = this.buildPrintDocument(session, patient, 'encounters', latest?.id ?? 0, ctx);
+      const encounterId = Number(url.searchParams.get('encounterId'));
+      if (!Number.isSafeInteger(encounterId) || encounterId < 1) {
+        throw new HttpErrorResponse({ status: 400, error: { message: 'Indicá un identificador de consulta válido.' } });
+      }
+      const encounter = session.encounters.find((e) => e.patientId === pId && e.id === encounterId);
+      if (!encounter) {
+        throw new HttpErrorResponse({ status: 404, error: { message: 'Consulta no encontrada.' } });
+      }
+      const printDoc = this.buildPrintDocument(session, patient, 'encounters', encounterId, ctx);
       printDoc.source = 'CLINICAL_HISTORY';
-      printDoc.patientInstructions = latest?.followUpInstructions ?? 'Historia clínica completa (DemoChart).';
-      printDoc.author.specialtyName = entry.name;
+      printDoc.patient.ageAtIssue = formatAgeLabel(patient.birthDate, encounter.encounterDate.slice(0, 10));
+      printDoc.patientInstructions = encounter.followUpInstructions ?? encounter.treatmentPlan;
       return new HttpResponse({
         status: 200,
         body: generateDemoPdfBlob(printDoc, null, { license: this.demoLicense, hasLogo: this.demoLogoBlob !== null }),

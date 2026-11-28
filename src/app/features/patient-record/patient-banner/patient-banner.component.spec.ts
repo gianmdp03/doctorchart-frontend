@@ -79,7 +79,7 @@ describe('PatientBannerComponent', () => {
       [...fixture.nativeElement.querySelectorAll('.banner-actions-block > button')].map((el: any) =>
         el.textContent.trim(),
       ),
-    ).toEqual(['Editar datos', 'Nueva historia clínica', 'Imprimir historia']);
+    ).toEqual(['Editar datos', 'Nueva historia clínica']);
     expect(fixture.nativeElement.querySelector('.more-menu-container')).toBeNull();
     expect(fixture.nativeElement.querySelector('.btn-more-options')).toBeNull();
     expect(fixture.nativeElement.querySelector('.dropdown-actions-menu')).toBeNull();
@@ -91,21 +91,19 @@ describe('PatientBannerComponent', () => {
       [...fixture.nativeElement.querySelectorAll('.banner-actions-block > button')].map((el: any) =>
         el.textContent.trim(),
       ),
-    ).toEqual(['Imprimir historia', 'Nueva historia clínica', 'Editar datos']);
+    ).toEqual(['Nueva historia clínica', 'Editar datos']);
   });
   it('removes all buttons and blocks handlers when actions are cleared', () => {
     const edit = vi.spyOn(component.editPatient, 'emit'),
       create = vi.spyOn(component.newEncounter, 'emit'),
-      print = vi.spyOn(component.printSummary, 'emit'),
       curves = vi.spyOn(component.viewCurves, 'emit');
     configuredActions.set([]);
     fixture.detectChanges();
     component.onEditPatient();
     component.onNewEncounter();
-    component.onPrintSummary();
     component.goToCurves();
     expect(fixture.nativeElement.querySelector('.banner-actions-block').children).toHaveLength(0);
-    for (const spy of [edit, create, print, curves]) expect(spy).not.toHaveBeenCalled();
+    for (const spy of [edit, create, curves]) expect(spy).not.toHaveBeenCalled();
     expect(routerSpy.navigate).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('.patient-fullname').textContent).toContain(
       mockPatient.fullName,

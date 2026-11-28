@@ -1,3 +1,4 @@
+import { ClinicalDocumentPrintService } from '../../core/services/clinical-document-print.service';
 import { PatientRecordActionsService } from '../../core/experience/patient-record-actions.service';
 import { ActivePatientService } from '../../core/services/active-patient.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,15 +15,17 @@ import { dialogEncounter } from '../dynamic-form-renderer/clinical-dialog.fixtur
 describe('EncounterDetailPageComponent saved snapshot editing', () => {
   let fixture: ComponentFixture<EncounterDetailPageComponent>; let component: EncounterDetailPageComponent; let record: ClinicalEncounterDetail;
   const printEnabled=signal(true);
+  const printService = { openPreview: vi.fn() };
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let service: { getById: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }; const user = signal<{ id: string } | null>(null);
   beforeEach(async () => {
     const options = new Intl.DateTimeFormat().resolvedOptions();
     vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ ...options, timeZone: 'America/Argentina/Buenos_Aires' });
     printEnabled.set(true);
+    printService.openPreview.mockClear();
     params = new BehaviorSubject(convertToParamMap({ id: '77' }));
     user.set({ id: 'doctor-a' }); record = dialogEncounter(); service = { getById: vi.fn().mockImplementation(() => of(structuredClone(record))), update: vi.fn().mockImplementation((_id, request) => of({ ...record, version: 7, formValues: request.values, encounterDate: request.encounterDate })) };
-    await TestBed.configureTestingModule({ imports: [EncounterDetailPageComponent], providers: [provideRouter([]), { provide: ActivatedRoute, useValue: { paramMap: params } }, { provide: PatientRecordActionsService, useValue: { has: () => printEnabled() } },{provide:ActivePatientService,useValue:{activePatient:signal(null), loadPatient:vi.fn()}},{ provide: ClinicalEncounterService, useValue: service }, { provide: AuthService, useValue: { currentUser: user } }] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [EncounterDetailPageComponent], providers: [provideRouter([]), { provide: ClinicalDocumentPrintService, useValue: printService }, { provide: ActivatedRoute, useValue: { paramMap: params } }, { provide: PatientRecordActionsService, useValue: { has: () => printEnabled() } },{provide:ActivePatientService,useValue:{activePatient:signal(null), loadPatient:vi.fn()}},{ provide: ClinicalEncounterService, useValue: service }, { provide: AuthService, useValue: { currentUser: user } }] }).compileComponents();
     fixture = TestBed.createComponent(EncounterDetailPageComponent); component = fixture.componentInstance; fixture.detectChanges();
     await fixture.whenStable(); fixture.detectChanges();
   });
@@ -64,10 +67,19 @@ describe('EncounterDetailPageComponent saved snapshot editing', () => {
     });
   });
 
-  it('keeps the consultation readable and editable without a print action even when printing is enabled', () => {
-    expect([...fixture.nativeElement.querySelectorAll('button')].some((el:any)=>el.textContent.trim()==='Imprimir')).toBe(false);
-    expect([...fixture.nativeElement.querySelectorAll('button')].some((el:any)=>el.textContent.trim()==='Editar consulta')).toBe(true);
-    expect(component.encounter()).toEqual(record);
+  it('opens the PDF preview for the consultation selected in Historia Clínica', () => {
+    const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+    const print = buttons.filter((button) => button.textContent?.trim() === 'Imprimir consulta (PDF)');
+    expect(print).toHaveLength(1);
+    print[0].click();
+    expect(printService.openPreview).toHaveBeenCalledExactlyOnceWith({
+      source: 'CLINICAL_HISTORY',
+      patientId: record.patientId,
+      encounterId: record.id,
+    });
+    component.startEditing();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Imprimir consulta (PDF)');
   });
   it('displays its snapshot, backend result and Argentine instant without fetching a current template', () => {
     expect(service.getById).toHaveBeenCalledWith(77); expect(fixture.nativeElement.textContent).toContain('Consulta inédita');

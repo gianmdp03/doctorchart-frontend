@@ -336,7 +336,6 @@ describe('PatientRecordComponent', () => {
         el.textContent.toLowerCase().includes('imprimir'),
       ),
     ).toBe(false);
-    component.printDocument();
     rx.printRecord(history.encounters()[0]);
     rx.onPrintPrescription(mockEncountersList[0]);
     rx.reprintSavedRecord(issued(mockPatient.id, {}));
@@ -890,9 +889,12 @@ describe('PatientRecordComponent', () => {
     expect(customEvent.detail.source).toBe('PRESCRIPTION_RECORD');
   });
 
-  it('should display the growth curves module and allow toggling metrics in tab curvas', () => {
+  it('displays growth curves and metric controls without a consultation print action', () => {
     component.setTab('curvas');
     fixture.detectChanges();
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    expect(buttons.map((button) => button.textContent?.trim())).not.toContain('Imprimir con curvas (PDF)');
+    expect(buttons.map((button) => button.textContent?.trim())).not.toContain('Imprimir historia');
 
     expect(component.selectedTab()).toBe('curvas');
     expect(growth.selectedGrowthMetric()).toBe('WEIGHT');
@@ -1179,7 +1181,7 @@ describe('PatientRecordComponent', () => {
     expect(patientServiceSpy.getPatientById).toHaveBeenCalledTimes(1);
   });
 
-  it('passes the latest consultation to prescription printing from both the module and banner', async () => {
+  it('passes the latest consultation to prescription printing from its module', async () => {
     const enc = {
       ...mockEncountersList[0],
       prescriptions: [{ medicationName: 'Medicación de consulta' }],
@@ -1195,15 +1197,6 @@ describe('PatientRecordComponent', () => {
     ) as HTMLButtonElement;
     button.click();
     fixture.detectChanges();
-    expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({
-      source: 'ENCOUNTER',
-      id: 1,
-      patientId: 10492,
-    });
-    dispatch.mockClear();
-    fixture.debugElement
-      .query(By.directive(PatientBannerComponent))
-      .componentInstance.printSummary.emit();
     expect((dispatch.mock.calls[0][0] as CustomEvent).detail).toEqual({
       source: 'ENCOUNTER',
       id: 1,

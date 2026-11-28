@@ -5,15 +5,23 @@ import { SignatureChoice } from './doctor-signature.model';
 
 export type GrowthPrintReference = 'AUTO' | 'OMS' | 'DOWN' | 'BOTH';
 
-export interface PrintDocumentReference {
-  source: 'PRESCRIPTION_RECORD' | 'ENCOUNTER' | 'CLINICAL_HISTORY';
+export type PrintDocumentReference = {
   patientId: number;
-  id?: number;
-  encounterId?: number;
-  growthReference?: GrowthPrintReference;
-  type?: PrescriptionDocumentType;
   signatureChoice?: SignatureChoice;
-}
+} & (
+  | {
+      source: 'PRESCRIPTION_RECORD' | 'ENCOUNTER';
+      id: number;
+      type?: PrescriptionDocumentType;
+    }
+  | {
+      source: 'CLINICAL_HISTORY';
+      encounterId: number;
+      growthReference?: GrowthPrintReference;
+    }
+);
+export type IssuablePrintReference = Exclude<PrintDocumentReference, { source: 'CLINICAL_HISTORY' }>;
+
 export interface ClinicalPrintDocument {
   source: PrintDocumentReference['source'];
   id: number;
