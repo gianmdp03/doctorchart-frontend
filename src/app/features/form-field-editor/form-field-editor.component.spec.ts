@@ -5,6 +5,7 @@ import {
   WizardFormDefinition,
   WizardFormulaDefinition,
   createClinicalHistoryCategory,
+  createSystemPatientProfileCategory,
 } from '../../core/models/wizard-definition.model';
 import { customSpecialtyFixture } from '../onboarding/testing/custom-specialty.fixture';
 import { DynamicFormRendererComponent } from '../dynamic-form-renderer/dynamic-form-renderer.component';
@@ -268,6 +269,36 @@ describe('FormFieldEditorComponent canonical wizard', () => {
     component.deleteField('new_encounter_category', 'result');
     component.deleteField('new_encounter_category', 'readingA');
     expect(component.allFields().some((f) => f.key === 'readingA')).toBe(false);
+  });
+
+  it('adds a custom field to Datos Personales through the category button', () => {
+    const profile = createSystemPatientProfileCategory();
+    load({ categories: [profile] }, 'patientForm');
+    const host = fixture.nativeElement as HTMLElement;
+    const change = vi.fn();
+    component.definitionChange.subscribe(change);
+
+    const add = Array.from(host.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Agregar campo',
+    );
+    expect(add?.disabled).toBe(false);
+    add!.click();
+    fixture.detectChanges();
+
+    component.updateDraft({ label: 'Ocupación' });
+    fixture.detectChanges();
+    const apply = Array.from(host.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Aplicar campo',
+    );
+    expect(apply?.disabled).toBe(false);
+    apply!.click();
+    fixture.detectChanges();
+
+    const occupation = { key: 'Ocupacion', label: 'Ocupación', type: 'TEXT', required: false };
+    expect(change).toHaveBeenCalledWith({
+      categories: [{ ...profile, fields: [...profile.fields, occupation] }],
+    });
+    expect(host.querySelector('[data-field-key="Ocupacion"]')?.textContent).toContain('Ocupación');
   });
 
   it('prevents modifying or deleting locked system category and fields', () => {

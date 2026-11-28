@@ -169,16 +169,14 @@
               <p class="empty-fields">Agregá los campos que necesitás en esta categoría.</p>
             }
           </div>
-          @if (!category.system) {
-            <button
-              type="button"
-              class="dc-button dc-button--primary primary"
-              (click)="openField(category.key)"
-              [disabled]="readonly()"
-            >
-              Agregar campo
-            </button>
-          }
+          <button
+            type="button"
+            class="dc-button dc-button--primary primary"
+            (click)="openField(category.key)"
+            [disabled]="readonly()"
+          >
+            Agregar campo
+          </button>
         } @else {
           <p class="empty-fields">Agregá una categoría para empezar a configurar los campos.</p>
         }
